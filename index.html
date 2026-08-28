@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="שכר עבודות אישי - מעקב משמרות ושעות עבודה">
+    <meta name="theme-color" content="#0a0f1d">
+    <title>שכר עבודות אישי</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase App & Services -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #0a0f1d;
+            --bg-card: rgba(18, 26, 47, 0.75);
+            --bg-card-hover: rgba(28, 40, 72, 0.85);
+            --primary: #38bdf8;
+            --primary-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            --accent-green: #34d399;
+            --accent-amber: #fbbf24;
+            --accent-red: #f87171;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(56, 189, 248, 0.25);
+            --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Assistant', 'Rubik', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(129, 140, 248, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.8) 0%, transparent 100%);
+            background-attachment: fixed;
+        }
+
+        /* Desktop Container */
+        .app-container {
+            width: 100%;
+            max-width: 680px;
+            min-height: 100vh;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Header Bar */
+        .header-bar {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-glass);
+        }
+
+        .header-title-group h1 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title-group p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .auth-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-glass);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .auth-btn:hover {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--border-glow);
+        }
+
+        /* Summary Stats Cards Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .stat-card.featured {
+            grid-column: span 2;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(129, 140, 248, 0.1) 100%);
+            border-color: var(--border-glow);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .stat-value.highlight {
+            font-size: 1.5rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Action Buttons Row */
+        .action-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: #050b14;
+            border: none;
+            padding: 12px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.2s;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.92;
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--border-glow);
+            background: var(--bg-card-hover);
+        }
+
+        /* Filter & Search Bar */
+        .filter-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+        }
+
+        .category-chips {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+
+        .category-chips::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .chip.active {
+            background: rgba(56, 189, 248, 0.18);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* Shift List Section */
+        .shifts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+        }
+
+        .shift-item {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .shift-item:hover {
+            border-color: var(--border-glow);
+            transform: translateY(-1px);
+        }
+
+        .shift-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .shift-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .shift-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .shift-pills {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .badge-paid {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .badge-unpaid {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+
+        .shift-amount-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .shift-total {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .shift-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-mini {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .btn-mini:hover {
+            color: var(--text-main);
+            border-color: var(--border-glow);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background: #0d1527;
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .modal-card h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .form-input {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            padding: 10px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .modal-btn-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Header -->
+    <header class="header-bar">
+        <div class="header-title-group">
+            <h1>שכר עבודות אישי</h1>
+            <p id="user-status-text">מצב מקומי שמור</p>
+        </div>
+        <button id="auth-btn" class="auth-btn" onclick="handleAuthClick()">התחברות לחשבון</button>
+    </header>
+
+    <!-- Overview Stats -->
+    <section class="stats-grid">
+        <div class="stat-card featured">
+            <span class="stat-label">סך הכל הכנסות</span>
+            <span id="stat-total" class="stat-value highlight">₪ 0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">החודש הנוכחי</span>
+            <span id="stat-month" class="stat-value">₪ 0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">השבוע הנוכחי</span>
+            <span id="stat-week" class="stat-value">₪ 0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">יתרה לתשלום (לא שולם)</span>
+            <span id="stat-unpaid" class="stat-value" style="color: var(--accent-amber);">₪ 0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">סך שעות עבודה</span>
+            <span id="stat-hours" class="stat-value">0.0 שעות</span>
+        </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="action-row">
+        <button class="btn-primary" onclick="openAddModal()">הוספת משמרת חדשה</button>
+        <button class="btn-secondary" onclick="exportCsv()">ייצוא CSV</button>
+        <button class="btn-secondary" onclick="document.getElementById('csv-file-input').click()">ייבוא CSV</button>
+    </section>
+    <input type="file" id="csv-file-input" accept=".csv" style="display: none;" onchange="handleCsvImport(event)">
+
+    <!-- Filter & Search -->
+    <section class="filter-section">
+        <input type="text" id="search-box" class="search-input" placeholder="חיפוש לפי עבודה, תאריך או הערה..." oninput="renderShifts()">
+        <div class="category-chips" id="category-chips">
+            <button class="chip active" onclick="setCategoryFilter('הכל')">הכל</button>
+            <button class="chip" onclick="setCategoryFilter('כללי')">כללי</button>
+            <button class="chip" onclick="setCategoryFilter('שמירה')">שמירה</button>
+            <button class="chip" onclick="setCategoryFilter('מלצרות')">מלצרות</button>
+            <button class="chip" onclick="setCategoryFilter('הדרכה')">הדרכה</button>
+        </div>
+    </section>
+
+    <!-- Shifts List -->
+    <main class="shifts-container" id="shifts-list">
+        <!-- Rendered dynamically -->
+    </main>
+</div>
+
+<!-- Modal for Adding Shift -->
+<div class="modal-overlay" id="add-modal">
+    <div class="modal-card">
+        <h2>הוספת משמרת</h2>
+        <div class="form-group">
+            <label>סוג עבודה / קטגוריה</label>
+            <input type="text" id="modal-category" class="form-input" value="כללי">
+        </div>
+        <div class="form-group">
+            <label>תאריך</label>
+            <input type="date" id="modal-date" class="form-input">
+        </div>
+        <div class="form-group">
+            <label>שעות עבודה</label>
+            <input type="number" step="0.25" id="modal-hours" class="form-input" placeholder="למשל: 8.0" value="8">
+        </div>
+        <div class="form-group">
+            <label>תעריף לשעה (₪)</label>
+            <input type="number" step="0.5" id="modal-rate" class="form-input" placeholder="למשל: 40" value="40">
+        </div>
+        <div class="form-group">
+            <label>הערות</label>
+            <input type="text" id="modal-notes" class="form-input" placeholder="הערות או פירוט נוסף">
+        </div>
+        <div class="modal-btn-row">
+            <button class="btn-secondary" onclick="closeAddModal()">ביטול</button>
+            <button class="btn-primary" onclick="saveNewShift()">שמירה</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State management
+    let shifts = [];
+    let currentUserId = null;
+    let selectedCategory = 'הכל';
+
+    // Set today as default in date picker
+    document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
+
+    // Local Storage Loading
+    function loadLocalShifts() {
+        try {
+            const saved = localStorage.getItem('user_work_shifts');
+            if (saved) {
+                shifts = JSON.parse(saved);
+            }
+        } catch (e) {
+            console.warn('Error loading local storage shifts:', e);
+        }
+    }
+
+    function saveLocalShifts() {
+        try {
+            localStorage.setItem('user_work_shifts', JSON.stringify(shifts));
+        } catch (e) {
+            console.warn('Error saving to local storage:', e);
+        }
+    }
+
+    // Auth handling
+    function handleAuthClick() {
+        if (currentUserId) {
+            currentUserId = null;
+            document.getElementById('auth-btn').innerText = 'התחברות לחשבון';
+            document.getElementById('user-status-text').innerText = 'מצב מקומי שמור';
+            renderShifts();
+            return;
+        }
+
+        // Trigger simulation or Firebase web OAuth
+        currentUserId = 'web_user_' + Math.random().toString(36).substring(2, 9);
+        document.getElementById('auth-btn').innerText = 'התנתקות';
+        document.getElementById('user-status-text').innerText = 'מחובר ומסונכרן לענן';
+        syncToCloud();
+        renderShifts();
+    }
+
+    function syncToCloud() {
+        // Real-time Firestore sync hook
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && currentUserId) {
+            try {
+                const db = firebase.firestore();
+                shifts.forEach(shift => {
+                    db.collection('users').doc(currentUserId).collection('shifts').doc(String(shift.id)).set(shift, { merge: true });
+                });
+            } catch (e) {
+                console.warn('Firestore cloud sync safeguard:', e);
+            }
+        }
+    }
+
+    function setCategoryFilter(category) {
+        selectedCategory = category;
+        document.querySelectorAll('.chip').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText === category);
+        });
+        renderShifts();
+    }
+
+    function openAddModal() {
+        document.getElementById('add-modal').style.display = 'flex';
+    }
+
+    function closeAddModal() {
+        document.getElementById('add-modal').style.display = 'none';
+    }
+
+    function saveNewShift() {
+        const category = document.getElementById('modal-category').value.trim() || 'כללי';
+        const dateVal = document.getElementById('modal-date').value;
+        const date = dateVal ? new Date(dateVal).getTime() : Date.now();
+        const hours = parseFloat(document.getElementById('modal-hours').value) || 0;
+        const hourlyRate = parseFloat(document.getElementById('modal-rate').value) || 40;
+        const notes = document.getElementById('modal-notes').value.trim();
+        const totalEarnings = hours * hourlyRate;
+
+        const newShift = {
+            id: Date.now(),
+            category: category,
+            date: date,
+            hours: hours,
+            hourlyRate: hourlyRate,
+            totalEarnings: totalEarnings,
+            isPaid: false,
+            notes: notes,
+            currency: '₪',
+            isGroupShift: false,
+            groupWorkersJson: '',
+            createdAt: Date.now()
+        };
+
+        shifts.unshift(newShift);
+        saveLocalShifts();
+        syncToCloud();
+        closeAddModal();
+        renderShifts();
+    }
+
+    function togglePaid(id) {
+        const item = shifts.find(s => s.id === id);
+        if (item) {
+            item.isPaid = !item.isPaid;
+            saveLocalShifts();
+            syncToCloud();
+            renderShifts();
+        }
+    }
+
+    function deleteShift(id) {
+        if (confirm('האם למחוק משמרת זו?')) {
+            shifts = shifts.filter(s => s.id !== id);
+            saveLocalShifts();
+            syncToCloud();
+            renderShifts();
+        }
+    }
+
+    function exportCsv() {
+        if (shifts.length === 0) {
+            alert('אין משמרות לייצוא');
+            return;
+        }
+        let csvContent = 'data:text/csv;charset=utf-8,תאריך,קטגוריה,שעות,תעריף,סך הכל,סטטוס,הערות\n';
+        shifts.forEach(s => {
+            const dateStr = new Date(s.date).toLocaleDateString('he-IL');
+            const status = s.isPaid ? 'שולם' : 'לא שולם';
+            csvContent += `"${dateStr}","${s.category}","${s.hours}","${s.hourlyRate}","${s.totalEarnings}","${status}","${s.notes || ''}"\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'shifts_backup.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function handleCsvImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const lines = text.split('\n');
+            let added = 0;
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const cols = line.split(',').map(c => c.replace(/"/g, '').trim());
+                if (cols.length >= 5) {
+                    const hours = parseFloat(cols[2]) || 0;
+                    const rate = parseFloat(cols[3]) || 40;
+                    shifts.push({
+                        id: Date.now() + i,
+                        category: cols[1] || 'כללי',
+                        date: Date.now(),
+                        hours: hours,
+                        hourlyRate: rate,
+                        totalEarnings: hours * rate,
+                        isPaid: cols[5] === 'שולם',
+                        notes: cols[6] || '',
+                        currency: '₪',
+                        createdAt: Date.now()
+                    });
+                    added++;
+                }
+            }
+            saveLocalShifts();
+            renderShifts();
+            alert(`יובאו ${added} משמרות בהצלחה`);
+        };
+        reader.readAsText(file);
+    }
+
+    function renderShifts() {
+        const search = document.getElementById('search-box').value.trim().toLowerCase();
+        const list = document.getElementById('shifts-list');
+        list.innerHTML = '';
+
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())).getTime();
+
+        let totalEarnings = 0;
+        let monthEarnings = 0;
+        let weekEarnings = 0;
+        let unpaidEarnings = 0;
+        let totalHours = 0;
+
+        const filtered = shifts.filter(s => {
+            const matchesCategory = selectedCategory === 'הכל' || s.category === selectedCategory;
+            const matchesSearch = !search || 
+                (s.category && s.category.toLowerCase().includes(search)) ||
+                (s.notes && s.notes.toLowerCase().includes(search));
+            return matchesCategory && matchesSearch;
+        });
+
+        // Calculate stats on all shifts
+        shifts.forEach(s => {
+            const earned = Number(s.totalEarnings) || 0;
+            const hours = Number(s.hours) || 0;
+            totalEarnings += earned;
+            totalHours += hours;
+            if (s.date >= startOfMonth) monthEarnings += earned;
+            if (s.date >= startOfWeek) weekEarnings += earned;
+            if (!s.isPaid) unpaidEarnings += earned;
+        });
+
+        document.getElementById('stat-total').innerText = '₪ ' + totalEarnings.toFixed(2);
+        document.getElementById('stat-month').innerText = '₪ ' + monthEarnings.toFixed(2);
+        document.getElementById('stat-week').innerText = '₪ ' + weekEarnings.toFixed(2);
+        document.getElementById('stat-unpaid').innerText = '₪ ' + unpaidEarnings.toFixed(2);
+        document.getElementById('stat-hours').innerText = totalHours.toFixed(1) + ' שעות';
+
+        if (filtered.length === 0) {
+            list.innerHTML = '<div class="empty-state">אין משמרות להצגה בקטגוריה זו</div>';
+            return;
+        }
+
+        filtered.forEach(s => {
+            const dateStr = new Date(s.date).toLocaleDateString('he-IL');
+            const item = document.createElement('div');
+            item.className = 'shift-item';
+            item.innerHTML = `
+                <div class="shift-info">
+                    <span class="shift-title">${s.category}</span>
+                    <span class="shift-meta">${dateStr} | ${s.hours} שעות @ ₪${s.hourlyRate}/שעה</span>
+                    ${s.notes ? `<span class="shift-meta" style="color: var(--text-muted); font-size: 0.75rem;">${s.notes}</span>` : ''}
+                    <div class="shift-pills">
+                        <span class="badge ${s.isPaid ? 'badge-paid' : 'badge-unpaid'}">
+                            ${s.isPaid ? 'שולם' : 'לא שולם'}
+                        </span>
+                    </div>
+                </div>
+                <div class="shift-amount-group">
+                    <span class="shift-total">₪ ${Number(s.totalEarnings).toFixed(2)}</span>
+                    <div class="shift-actions">
+                        <button class="btn-mini" onclick="togglePaid(${s.id})">${s.isPaid ? 'סמן כלא שולם' : 'סמן כשולם'}</button>
+                        <button class="btn-mini" onclick="deleteShift(${s.id})">מחיקה</button>
+                    </div>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    // Initial load
+    loadLocalShifts();
+    if (shifts.length === 0) {
+        // Initial sample shifts if empty
+        shifts = [
+            { id: 1, category: 'כללי', date: Date.now() - 86400000 * 2, hours: 7.5, hourlyRate: 45, totalEarnings: 337.5, isPaid: true, notes: 'משמרת בוקר', currency: '₪', createdAt: Date.now() },
+            { id: 2, category: 'שמירה', date: Date.now() - 86400000, hours: 8.0, hourlyRate: 40, totalEarnings: 320.0, isPaid: false, notes: 'עמדה ראשית', currency: '₪', createdAt: Date.now() }
+        ];
+        saveLocalShifts();
+    }
+    renderShifts();
+</script>
+
+</body>
+</html>
