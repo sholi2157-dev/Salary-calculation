@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="start_shift"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_start_shift">
+        <intent
+            android:action="com.example.ACTION_START_SHIFT"
+            android:targetPackage="com.example"
+            android:targetClass="com.example.MainActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="import_excel"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_import_excel">
+        <intent
+            android:action="com.example.ACTION_IMPORT_EXCEL"
+            android:targetPackage="com.example"
+            android:targetClass="com.example.MainActivity" />
+    </shortcut>
+</shortcuts>

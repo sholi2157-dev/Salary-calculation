@@ -1,0 +1,8 @@
+{
+  "name": "שכר עבודות אישי",
+  "description": "Hebrew work and hours tracker with local storage",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
