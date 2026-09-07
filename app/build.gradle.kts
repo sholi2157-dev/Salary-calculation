@@ -16,6 +16,8 @@ android {
     targetSdk = 36
     versionCode = 1
     versionName = "1.0"
+    // Remains false until the existing Firebase project and user isolation are verified.
+    buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -37,6 +39,13 @@ android {
   }
 
   buildTypes {
+    create("preview") {
+      initWith(getByName("debug"))
+      applicationIdSuffix = ".preview"
+      versionNameSuffix = "-preview"
+      signingConfig = signingConfigs.getByName("debug")
+      matchingFallbacks += listOf("debug")
+    }
     release {
       isCrunchPngs = false
       isMinifyEnabled = false

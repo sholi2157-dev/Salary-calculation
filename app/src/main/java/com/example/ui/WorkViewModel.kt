@@ -88,8 +88,9 @@ class WorkViewModel(
     var lastAddedEntryId: Int? = null
 
     private fun getActiveUserId(): String? {
-        return currentUserSession.value?.uid
-            ?: com.example.api.FirebaseSafeInitializer.currentUser.value?.uid
+        // Enable cloud writes only after account isolation and migration are verified.
+        if (!com.example.BuildConfig.CLOUD_SYNC_ENABLED) return null
+        return com.example.api.AuthManager.getFirebaseAuthSafely()?.currentUser?.uid
     }
 
     fun undoLastAddedEntry() {
@@ -188,6 +189,7 @@ class WorkViewModel(
     val runCountAnimationTrigger = androidx.compose.runtime.mutableStateOf(0)
 
     val currentUserSession: StateFlow<com.example.api.AuthManager.UserSession?> = com.example.api.AuthManager.currentUser
+    private var cloudListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     fun signOut(context: Context) {
         com.example.api.AuthManager.signOut(context)
@@ -207,14 +209,16 @@ class WorkViewModel(
         // Subscribe to real-time Firestore snapshots for user
         viewModelScope.launch {
             currentUserSession.collect { session ->
-                val uid = session?.uid ?: com.example.api.FirebaseSafeInitializer.currentUser.value?.uid
+                cloudListener?.remove()
+                cloudListener = null
+                val uid = if (com.example.BuildConfig.CLOUD_SYNC_ENABLED) session?.uid else null
                 if (!uid.isNullOrBlank()) {
-                    com.example.api.FirestoreSyncManager.listenToUserShifts(
+                    cloudListener = com.example.api.FirestoreSyncManager.listenToUserShifts(
                         userId = uid,
                         onShiftsChanged = { remoteList ->
                             if (remoteList.isNotEmpty()) {
                                 viewModelScope.launch {
-                                    repository.syncRemoteEntries(remoteList)
+                                    if (getActiveUserId() == uid) repository.syncRemoteEntries(remoteList)
                                 }
                             }
                         }
@@ -222,6 +226,12 @@ class WorkViewModel(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        cloudListener?.remove()
+        cloudListener = null
+        super.onCleared()
     }
 
     // Observe Room DB entities
@@ -671,36 +681,7 @@ class WorkViewModel(
     // Export Data (JSON structure string)
     fun exportDataToString(): String {
         return try {
-            val root = JSONObject()
-
-            // Map categories to list
-            val catsJson = JSONArray()
-            for (cat in categories.value) {
-                catsJson.put(JSONObject().apply {
-                    put("name", cat.name)
-                })
-            }
-            root.put("categories", catsJson)
-
-            // Map work entries to list
-            val entriesJson = JSONArray()
-            for (entry in entries.value) {
-                entriesJson.put(JSONObject().apply {
-                    put("category", entry.category)
-                    put("date", entry.date)
-                    put("isTimeRange", entry.isTimeRange)
-                    put("startTime", entry.startTime)
-                    put("endTime", entry.endTime)
-                    put("hours", entry.hours)
-                    put("hourlyRate", entry.hourlyRate)
-                    put("totalEarnings", entry.totalEarnings)
-                    put("isPaid", entry.isPaid)
-                    put("notes", entry.notes)
-                })
-            }
-            root.put("entries", entriesJson)
-
-            root.toString(2)
+            com.example.data.WorkBackup.encode(categories.value, entries.value, workersDirectory.value)
         } catch (e: Exception) {
             ""
         }
@@ -768,57 +749,15 @@ class WorkViewModel(
         
         return if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
             try {
-                val root = JSONObject(trimmed)
+                val backup = com.example.data.WorkBackup.decode(trimmed)
 
                 viewModelScope.launch {
-                    // 1. Process categories
-                    if (root.has("categories")) {
-                        val catsArray = root.getJSONArray("categories")
-                        for (i in 0 until catsArray.length()) {
-                            val catObj = catsArray.getJSONObject(i)
-                            val name = catObj.optString("name", "").trim()
-                            if (name.isNotEmpty()) {
-                                // Deduplicate before insert
-                                val currentList = categories.value
-                                val exists = currentList.any { it.name.trim().lowercase() == name.lowercase() }
-                                if (!exists) {
-                                    repository.insertCategory(WorkCategory(name = name))
-                                }
-                            }
-                        }
-                    }
-
-                    // 2. Process entries
-                    if (root.has("entries")) {
-                        val entriesArray = root.getJSONArray("entries")
-                        for (i in 0 until entriesArray.length()) {
-                            val entryObj = entriesArray.getJSONObject(i)
-                            val category = entryObj.optString("category", "כללי")
-                            val date = entryObj.optLong("date", System.currentTimeMillis())
-                            val isTimeRange = entryObj.optBoolean("isTimeRange", false)
-                            val startTime = if (entryObj.has("startTime")) entryObj.optString("startTime") else null
-                            val endTime = if (entryObj.has("endTime")) entryObj.optString("endTime") else null
-                            val hours = entryObj.optDouble("hours", 0.0)
-                            val rate = entryObj.optDouble("hourlyRate", DEFAULT_RATE)
-                            val earnings = entryObj.optDouble("totalEarnings", hours * rate)
-                            val isPaid = entryObj.optBoolean("isPaid", false)
-                            val notes = entryObj.optString("notes", "")
-
-                            val uid = getActiveUserId()
-                            val entry = WorkEntry(
-                                category = category,
-                                date = date,
-                                isTimeRange = isTimeRange,
-                                startTime = startTime,
-                                endTime = endTime,
-                                hours = hours,
-                                hourlyRate = rate,
-                                totalEarnings = earnings,
-                                isPaid = isPaid,
-                                notes = notes
-                            )
-                            repository.insertEntry(entry, uid)
-                        }
+                    try {
+                        val added = repository.importBackup(backup)
+                        Toast.makeText(context, "נוספו $added משמרות", Toast.LENGTH_LONG).show()
+                    } catch (e: Exception) {
+                        android.util.Log.e("WorkViewModel", "Backup import failed", e)
+                        Toast.makeText(context, "הייבוא לא הושלם. הנתונים הקיימים נשמרו.", Toast.LENGTH_LONG).show()
                     }
                 }
                 true

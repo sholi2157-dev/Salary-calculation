@@ -363,8 +363,6 @@ fun MainAppContent(
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     
-    val authUser by viewModel.currentUserSession.collectAsStateWithLifecycle()
-
     val googleSignInLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -377,9 +375,7 @@ fun MainAppContent(
         }
     }
 
-    if (authUser == null) {
-        LoginOverlay(
-            onGoogleSignInClick = {
+    val signInForSync: () -> Unit = {
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                 if (com.example.api.WebPlatformBridge.isWebTarget) {
                     com.example.api.WebPlatformBridge.signInWithWebOAuthPopup(context) { success, errorMsg ->
@@ -389,24 +385,16 @@ fun MainAppContent(
                             Toast.makeText(context, errorMsg ?: "ההתחברות בוטלה", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    return@LoginOverlay
-                }
-                try {
+                } else try {
                     val client = com.example.api.AuthManager.getGoogleSignInClient(context)
                     if (client != null) {
                         googleSignInLauncher.launch(client.signInIntent)
                     } else {
-                        com.example.api.AuthManager.performSafeFallbackSignIn()
-                        Toast.makeText(context, "התחברת בהצלחה למערכת", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "החיבור לחשבון עדיין לא הוגדר. אפשר להמשיך להשתמש באפליקציה.", Toast.LENGTH_LONG).show()
                     }
                 } catch (t: Throwable) {
-                    com.example.api.AuthManager.performSafeFallbackSignIn()
-                    Toast.makeText(context, "התחברת בהצלחה למערכת", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "לא ניתן להתחבר כעת. אפשר להמשיך להשתמש באפליקציה.", Toast.LENGTH_LONG).show()
                 }
-            },
-            modifier = modifier
-        )
-        return
     }
 
     // Runtime permission launcher for POST_NOTIFICATIONS
@@ -723,7 +711,8 @@ fun MainAppContent(
                         isGroupShift = isGroup,
                         employerRate = empRate,
                         workerRate = workerRate,
-                        groupWorkersJson = groupJson
+                        groupWorkersJson = groupJson,
+                        currency = old.currency
                     )
                 }
                 entryToEdit = null
@@ -771,7 +760,8 @@ fun MainAppContent(
                     ManagementScreen(
                         viewModel = viewModel,
                         categories = distinctCategories,
-                        onNavigateBack = { showSettings = false }
+                        onNavigateBack = { showSettings = false },
+                        onSignIn = signInForSync
                     )
                 }
             }
@@ -4655,9 +4645,11 @@ fun WorkEntryRowCard(
 fun ManagementScreen(
     viewModel: WorkViewModel,
     categories: List<WorkCategory>,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onSignIn: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val accountSession by viewModel.currentUserSession.collectAsStateWithLifecycle()
     var newCategoryText by remember { mutableStateOf("") }
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
     var categoryToEditByRate by remember { mutableStateOf<WorkCategory?>(null) }
@@ -5285,7 +5277,7 @@ fun ManagementScreen(
                                             if (success) {
                                                 importText = ""
                                                 triggerHapticFeedback(context, isDestructive = false)
-                                                Toast.makeText(context, "הנתונים יובאו בהצלחה!", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "הייבוא התחיל", Toast.LENGTH_SHORT).show()
                                             } else {
                                                 Toast.makeText(context, "שגיאה: טקסט הגיבוי או שורות האקסל אינם תקינים!", Toast.LENGTH_LONG).show()
                                             }
@@ -5369,16 +5361,20 @@ fun ManagementScreen(
                         Button(
                             onClick = {
                                 triggerHapticFeedback(context, isDestructive = true)
-                                viewModel.signOut(context)
-                                onNavigateBack()
-                                Toast.makeText(context, "התנתקת מהמערכת בהצלחה", Toast.LENGTH_SHORT).show()
+                                if (accountSession == null) {
+                                    onSignIn()
+                                } else {
+                                    viewModel.signOut(context)
+                                    onNavigateBack()
+                                    Toast.makeText(context, "התנתקת מהמערכת בהצלחה", Toast.LENGTH_SHORT).show()
+                                }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.testTag("settings_sign_out_btn")
                         ) {
                             Text(
-                                text = "התנתק",
+                                text = if (accountSession == null) "התחברות" else "התנתק",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp
@@ -5396,7 +5392,7 @@ fun ManagementScreen(
                             Spacer(modifier = Modifier.height(2.dp))
                             val sessionUser by viewModel.currentUserSession.collectAsStateWithLifecycle()
                             Text(
-                                text = sessionUser?.email ?: sessionUser?.displayName ?: "משתמש מחובר",
+                                text = sessionUser?.email ?: sessionUser?.displayName ?: "שימוש מקומי — ללא סנכרון",
                                 fontSize = 12.sp,
                                 color = Color(0xFF8E8E93),
                                 textAlign = TextAlign.End
@@ -7022,5 +7018,3 @@ fun LoginOverlay(
         }
     }
 }
-
-

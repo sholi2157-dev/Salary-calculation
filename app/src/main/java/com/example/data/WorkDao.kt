@@ -5,6 +5,26 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WorkDao {
+    @Query("SELECT * FROM work_entries ORDER BY date DESC, createdAt DESC")
+    suspend fun getEntriesList(): List<WorkEntry>
+
+    @Query("SELECT * FROM worker_directory")
+    suspend fun getWorkersList(): List<WorkerDirectory>
+
+    @Transaction
+    suspend fun importBackup(backup: WorkBackup.Contents): Int {
+        val categoryNames = getCategoriesList().map { it.name.trim().lowercase(java.util.Locale.ROOT) }.toMutableSet()
+        for (category in backup.categories) {
+            if (categoryNames.add(category.name.trim().lowercase(java.util.Locale.ROOT))) insertCategory(category.copy(id = 0))
+        }
+        val workerNames = getWorkersList().map { it.name.trim() }.toMutableSet()
+        for (worker in backup.workers) {
+            if (workerNames.add(worker.name.trim())) insertWorker(worker.copy(id = 0))
+        }
+        val missing = WorkBackup.missingEntries(getEntriesList(), backup.entries)
+        for (entry in missing) insertEntry(entry.copy(id = 0))
+        return missing.size
+    }
     // Work Entries
     @Query("SELECT * FROM work_entries ORDER BY date DESC, createdAt DESC")
     fun getAllEntries(): Flow<List<WorkEntry>>

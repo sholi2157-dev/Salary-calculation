@@ -54,7 +54,6 @@ abstract class WorkDatabase : RoomDatabase() {
                     "sholi_work_tracker_db"
                 )
                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
-                .fallbackToDestructiveMigration(true)
                 .addCallback(DatabaseCallback(scope))
                 .build()
                 INSTANCE = instance
