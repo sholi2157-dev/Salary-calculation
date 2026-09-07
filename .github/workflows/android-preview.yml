@@ -24,7 +24,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
-      - run: gradle :app:testDebugUnitTest --tests com.example.WorkBackupTest :app:assemblePreview --console=plain
+      - run: gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain
       - uses: actions/upload-artifact@v4
         with:
           name: salary-android-preview

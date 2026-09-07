@@ -52,3 +52,32 @@ replacement project. Changes remain on a branch; production stays untouched.
 Local Android build attempt was blocked before compilation by network access to
 Gradle plugin repositories. The Android preview workflow is intended to run the
 actual tests/build on GitHub; its outcome must be checked, never assumed.
+
+## User feedback and next milestones (2026-09-07)
+
+The user installed preview from PR #1, imported the original JSON successfully,
+and reports that the appearance and reviewed behaviors look identical. This is
+positive manual evidence, not proof of every feature's parity.
+
+Current fixes: header-based clipboard table import (original 7-column export,
+11-column CSV, reordered Hebrew/English columns, TSV/CSV/semicolon/pipe, quoted
+multiline notes, dates and currency), atomic validation/import with row errors;
+category defaults applied on initial form load, category/default changes and
+opening the live-shift dialog, rather than taking the last historical shift rate.
+
+Outstanding requirements explicitly requested by user:
+- Website uses the same import contract and fixtures. No silent field guessing.
+- Import preview with mapped columns, totals per currency and uncertain cells;
+  support additional real-world layouts based on samples. Optional AI parsing
+  may propose rows, but requires review before committing financial records.
+- Settings support both Gemini and OpenAI GPT. Use actual API model IDs from
+  official provider catalogs; the current hard-coded labels do not establish
+  model availability. Refresh a server-maintained model catalog, so adding a
+  model does not require replacing the installed Android app. Preserve user
+  selection and expose retirement/unavailability explicitly. Authenticate the
+  backend and store provider keys there. Preserve existing AI entry behavior
+  until the replacement is connected and verified end to end.
+- Regression comparison: regular/manual/overnight and group shifts, category
+  rate after restart, editing currency/payment, filters, live timer, AI entry,
+  JSON/table import, export with multiline notes. Compare aggregate totals per
+  currency and original saved amounts; do not claim 100% identity from browsing.

@@ -747,117 +747,24 @@ class WorkViewModel(
         val trimmed = jsonStr.trim()
         if (trimmed.isEmpty()) return false
         
-        return if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-            try {
-                val backup = com.example.data.WorkBackup.decode(trimmed)
-
-                viewModelScope.launch {
-                    try {
-                        val added = repository.importBackup(backup)
-                        Toast.makeText(context, "נוספו $added משמרות", Toast.LENGTH_LONG).show()
-                    } catch (e: Exception) {
-                        android.util.Log.e("WorkViewModel", "Backup import failed", e)
-                        Toast.makeText(context, "הייבוא לא הושלם. הנתונים הקיימים נשמרו.", Toast.LENGTH_LONG).show()
-                    }
-                }
-                true
-            } catch (e: Exception) {
-                false
-            }
-        } else {
-            // Excel/CSV import
-            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                val lines = trimmed.split("\n")
-                var successCount = 0
-                var totalAttempted = 0
-                
-                for (line in lines) {
-                    val cleanLine = line.trim()
-                    if (cleanLine.isBlank()) continue
-                    
-                    // Check for headers
-                    if (cleanLine.contains("קטגוריה") || cleanLine.contains("תאריך")) {
-                        continue
-                    }
-                    totalAttempted++
-                    
-                    try {
-                        val delimiter = if (cleanLine.contains("\t")) "\t" else if (cleanLine.contains("|")) "|" else ","
-                        val rawCells = cleanLine.split(delimiter)
-                        val cells = rawCells.map { it.trim() }
-                        
-                        if (cells.size < 9) { // At least need up to Total/PaidStatus
-                            throw IllegalArgumentException("Not enough columns in row")
-                        }
-                        
-                        // a) Map Column 0 to Date
-                        val dateStr = cells[0]
-                        val parsedDate = parseDateStr(dateStr)
-                        
-                        // Column 1: Category
-                        val categoryStr = cells[1].ifBlank { "כללי" }
-                        
-                        // Column 2: Type
-                        val shiftType = cells[2]
-                        val isTimeRange = shiftType != "ידני"
-                        
-                        // b) Map Column 3 & 4 to Start/End Times
-                        var startTimeStr: String? = null
-                        var endTimeStr: String? = null
-                        if (isTimeRange) {
-                            startTimeStr = cells[3].takeIf { it.isNotBlank() }
-                            endTimeStr = cells[4].takeIf { it.isNotBlank() }
-                        }
-                        
-                        // c) Map Column 6 (Duration), Column 7 (Rate), and Column 8 (Total) to Double, handling comma-to-dot
-                        val durationStr = cells.getOrNull(6)?.replace(",", ".") ?: "0"
-                        val duration = durationStr.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: throw IllegalArgumentException("Invalid Duration")
-                        
-                        val rateStr = cells.getOrNull(7)?.replace(",", ".") ?: "0"
-                        val rate = rateStr.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: DEFAULT_RATE
-                        
-                        val totalStr = cells.getOrNull(8)?.replace(",", ".") ?: "0"
-                        val totalEarnings = totalStr.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: (duration * rate)
-                        
-                        // d) Map Column 9 (PaidStatus)
-                        val paidStr = cells.getOrNull(9)?.trim() ?: ""
-                        val isPaid = !(paidStr == "לא" || paidStr.isEmpty())
-                        
-                        // e) Map Column 10 to Notes
-                        val notesStr = cells.getOrNull(10)?.trim() ?: ""
-                        
-                        val cleanCategory = categoryStr.trim()
-                        val existingCategory = repository.getCategoryByName(cleanCategory)
-                        if (existingCategory == null) {
-                            repository.insertCategory(WorkCategory(name = cleanCategory, defaultRate = rate))
-                        }
-                        
-                        val uid = getActiveUserId()
-                        val entry = WorkEntry(
-                            category = cleanCategory,
-                            date = parsedDate,
-                            isTimeRange = isTimeRange,
-                            startTime = startTimeStr,
-                            endTime = endTimeStr,
-                            hours = duration,
-                            hourlyRate = rate,
-                            totalEarnings = totalEarnings,
-                            isPaid = isPaid,
-                            notes = notesStr
-                        )
-                        repository.insertEntry(entry, uid)
-                        successCount++
-                    } catch (e: Exception) {
-                        android.util.Log.w("Import", "Skipping malformed row: $cleanLine", e)
-                    }
-                }
-                
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    android.widget.Toast.makeText(context, "יובאו $successCount מתוך $totalAttempted שורות בהצלחה!", android.widget.Toast.LENGTH_LONG).show()
-                }
-            }
-            return true
+        val backup = try {
+            if (trimmed.startsWith("{")) com.example.data.WorkBackup.decode(trimmed)
+            else if (trimmed.startsWith("[")) com.example.data.WorkBackup.decode("{\"entries\":" + trimmed + "}")
+            else com.example.data.WorkTableImport.decode(jsonStr)
+        } catch (e: Exception) {
+            Toast.makeText(context, e.message ?: "לא ניתן לקרוא את הנתונים", Toast.LENGTH_LONG).show()
+            return false
         }
+        viewModelScope.launch {
+            try {
+                val added = repository.importBackup(backup)
+                Toast.makeText(context, "נוספו $added משמרות", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                android.util.Log.e("WorkViewModel", "Import failed", e)
+                Toast.makeText(context, "הייבוא לא הושלם. הנתונים הקיימים נשמרו.", Toast.LENGTH_LONG).show()
+            }
+        }
+        return true
     }
 
     // Export Work History to CSV and Share
@@ -874,7 +781,7 @@ class WorkViewModel(
             csvBuilder.append('\ufeff')
             
             // CSV Headers
-            csvBuilder.append("מזהה,מעסיק/קטגוריה,תאריך,שעות,תעריף שעתי,סה\"כ רווח,סטטוס תשלום,סוג דיווח,שעת כניסה,שעת יציאה,הערות\n")
+            csvBuilder.append("מזהה,מעסיק/קטגוריה,תאריך,שעות,תעריף שעתי,סה\"כ רווח,סטטוס תשלום,סוג דיווח,שעת כניסה,שעת יציאה,הערות,מטבע\n")
             
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.US)
             for (entry in entryList) {
@@ -889,7 +796,7 @@ class WorkViewModel(
                 val endTimeStr = entry.endTime ?: ""
                 val escapedNotes = escapeCsvField(entry.notes)
                 
-                csvBuilder.append("${entry.id},$escapedCategory,$formattedDate,$hoursStr,$rateStr,$earningsStr,$statusStr,$reportTypeStr,$startTimeStr,$endTimeStr,$escapedNotes\n")
+                csvBuilder.append("${entry.id},$escapedCategory,$formattedDate,$hoursStr,$rateStr,$earningsStr,$statusStr,$reportTypeStr,$startTimeStr,$endTimeStr,$escapedNotes,${entry.currency}\n")
             }
 
             // Write to local cache file

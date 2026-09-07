@@ -14,10 +14,11 @@ android {
     applicationId = "com.aistudio.worktracker.qztvdw"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = 2
+    versionName = "1.1"
     // Remains false until the existing Firebase project and user isolation are verified.
     buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
+    buildConfigField("String", "AI_SERVICE_URL", "\"${System.getenv("AI_SERVICE_URL") ?: ""}\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

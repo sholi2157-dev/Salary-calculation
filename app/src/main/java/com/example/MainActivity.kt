@@ -240,7 +240,7 @@ fun copyWhatsAppToClipboard(context: Context, filteredEntries: List<WorkEntry>, 
 }
 
 fun copyExcelToClipboard(context: Context, filteredEntries: List<WorkEntry>, selectedCategoryFilter: String) {
-    val headers = listOf("קטגוריה", "תאריך", "שעות", "תעריף שעתי", "שכר לתשלום", "סטטוס", "הערות")
+    val headers = listOf("קטגוריה", "תאריך", "שעות", "תעריף שעתי", "שכר לתשלום", "סטטוס", "הערות", "מטבע")
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("he", "IL"))
     val rows = filteredEntries.map { entry ->
         val dateStr = sdf.format(Date(entry.date))
@@ -252,8 +252,11 @@ fun copyExcelToClipboard(context: Context, filteredEntries: List<WorkEntry>, sel
             String.format(Locale.US, "%.2f", entry.hourlyRate),
             String.format(Locale.US, "%.2f", entry.totalEarnings),
             statusStr,
-            entry.notes
-        ).joinToString("\t")
+            entry.notes,
+            entry.currency
+        ).joinToString("\t") { cell ->
+            if (cell.any { it == '\t' || it == '\n' || it == '\r' || it == '"' }) "\"" + cell.replace("\"", "\"\"") + "\"" else cell
+        }
     }
     val tsvContent = (listOf(headers.joinToString("\t")) + rows).joinToString("\n")
     
@@ -976,6 +979,10 @@ fun DashboardScreen(
 
     var hourlyRateStr by remember { mutableStateOf("40") }
     var selectedCategory by remember { mutableStateOf("עצמאי") }
+    val selectedDefaultRate = categories.firstOrNull { it.name == selectedCategory }?.defaultRate
+    LaunchedEffect(selectedCategory, selectedDefaultRate) {
+        selectedDefaultRate?.let { hourlyRateStr = it.toString() }
+    }
     var isReportCardExpanded by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
@@ -1075,7 +1082,7 @@ fun DashboardScreen(
             try {
                 val cats = viewModel.categories.value.map { it.name }
                 val currentModel = viewModel.geminiModel.value
-                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, currentModel)
+                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, currentModel, viewModel.categories.value.associate { it.name to it.defaultRate })
                 if (!results.isNullOrEmpty()) {
                     viewModel.addShifts(results)
 
@@ -1489,7 +1496,7 @@ fun DashboardScreen(
                                     val rVal = newCatRate.toDoubleOrNull() ?: 40.0
                                     onAddCategory(newCatName, rVal)
                                     selectedCategory = newCatName
-                                    hourlyRateStr = rVal.toInt().toString()
+                                    hourlyRateStr = rVal.toString()
                                     showAddCategoryDialog = false
                                 }
                             },
@@ -2752,9 +2759,9 @@ fun DashboardScreen(
     }
 
     var dialogCategory by remember { mutableStateOf("עצמאי") }
-    var dialogRateStr by remember(dialogCategory) { 
-        val recentRate = recentEntries.firstOrNull { it.category == dialogCategory }?.hourlyRate ?: 40.0
-        mutableStateOf(recentRate.toString()) 
+    val dialogDefaultRate = categories.firstOrNull { it.name == dialogCategory }?.defaultRate ?: 40.0
+    var dialogRateStr by remember(dialogCategory, dialogDefaultRate, showQuickShiftDialog) {
+        mutableStateOf(dialogDefaultRate.toString())
     }
     var expanded by remember { mutableStateOf(false) }
 
@@ -4844,7 +4851,7 @@ fun ManagementScreen(
                                                     modifier = Modifier.clickable {
                                                         triggerHapticFeedback(context, isDestructive = false)
                                                         categoryToEditByRate = cat
-                                                        editRateText = String.format(Locale.US, "%.0f", cat.defaultRate)
+                                                        editRateText = cat.defaultRate.toString()
                                                     }
                                                 ) {
                                                     Icon(
@@ -4854,7 +4861,7 @@ fun ManagementScreen(
                                                         modifier = Modifier.size(12.dp)
                                                     )
                                                     Text(
-                                                        text = "${cat.name} (₪${String.format(Locale.US, "%.0f", cat.defaultRate)})",
+                                                        text = "${cat.name} (₪${cat.defaultRate.toString()})",
                                                         fontSize = 12.sp,
                                                         color = Color.White
                                                     )
@@ -5040,10 +5047,18 @@ fun ManagementScreen(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                val models = listOf(
-                                    "Gemini 3.5 Flash" to "Gemini 3.5 Flash",
-                                    "Gemini 3.1 Flash-Lite" to "Gemini 3.1 Flash-Lite"
-                                )
+                                var catalog by remember { mutableStateOf(com.example.api.AiService.defaults) }
+                                var catalogError by remember { mutableStateOf("") }
+                                var refresh by remember { mutableIntStateOf(0) }
+                                LaunchedEffect(refresh) {
+                                    if (com.example.api.AiService.configured) {
+                                        try { catalog = com.example.api.AiService.models(); catalogError = "" }
+                                        catch (e: Exception) { catalogError = e.message ?: "לא ניתן לרענן מודלים" }
+                                    } else catalogError = "ג׳מיני משתמש בחיבור הקיים. הפעלת GPT ורענון הרשימה דורשים הגדרת שירות המודלים בשרת."
+                                }
+                                TextButton(onClick = { refresh++ }) { Text("רענון רשימת המודלים") }
+                                if (catalogError.isNotBlank()) Text(catalogError, color = Color(0xFFFBBF24), fontSize = 14.sp)
+                                val models = catalog.map { it.id to (it.name + if (it.available) "" else " — טרם חובר") }
 
                                 models.forEach { (modelId, modelName) ->
                                     Row(
@@ -5278,8 +5293,6 @@ fun ManagementScreen(
                                                 importText = ""
                                                 triggerHapticFeedback(context, isDestructive = false)
                                                 Toast.makeText(context, "הייבוא התחיל", Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                Toast.makeText(context, "שגיאה: טקסט הגיבוי או שורות האקסל אינם תקינים!", Toast.LENGTH_LONG).show()
                                             }
                                         }
                                     },
