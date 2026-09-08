@@ -1,138 +1,86 @@
 # Preservation baseline and integration status
 
-The installed Android app is the primary product. Preserve its existing screens,
-animated indigo/violet background, navigation, forms, group workers, AI entry,
-history, selection, filters and foreground timer. The reference is the user-supplied
-screen recording reviewed on 2026-09-07. Source baseline: commit
-20c6022e3d35e8eea9beda3380c442208a18515a.
+## Mandatory preservation rules
 
-## Implemented in this branch
+Read this document and root AGENTS.md before changes. Work on `codex/preserve-app-sync` and PR #1 in the existing `sholi2157-dev/Salary-calculation` repository and existing Vercel project `salary-calculation`. Do not merge or change production as though sync is complete.
 
-- Remove the forced sign-in screen. Optional sign-in remains in Settings.
-- Never report a simulated login as an authenticated Firebase user.
-- Keep the existing currency when editing a shift.
-- Versioned JSON transfer preserves currency, saved earnings, group data, category
-  rates and workers. Legacy records without currency are shekels.
-- JSON import validates before a single database transaction and performs a multiset
-  merge so repeated imports do not duplicate identical records. This is transfer
-  deduplication, not conflict resolution for edited records or live sync.
-- Remove destructive Room fallback; unsupported database migrations fail rather
-  than erasing the database.
-- Preview Android build has a separate package suffix and launcher label.
+The installed Android app is the primary product. Preserve its screens, animated indigo/violet background, navigation, manual/group/AI entry, history, filters and foreground timer. Reference: user recording reviewed 2026-09-07; original source baseline `20c6022e3d35e8eea9beda3380c442208a18515a`. The user installed the earlier preview, imported their original data successfully and reported matching appearance; this is useful feedback, not proof of complete parity.
 
-## Not yet enabled or verified
+The user's reported backup contains **22 shifts and 8 categories**. Never reset, delete or replace user storage, discard shifts, enable destructive Room migrations, or recommend uninstalling to fix an update. Do not upload signing keys or secrets. Use synthetic records for tests. No live user database was accessed or modified in this continuation.
 
-CLOUD_SYNC_ENABLED intentionally remains false. Do not enable it merely after
-entering a Firebase key. Before enabling, implement and test user-scoped local
-storage, stable cross-device record identifiers, queued offline operations,
-deletion propagation, conflict handling and one-time legacy import. Current Room
-IDs are installation-local Int values. Website timestamps cannot be used as these
-IDs. Existing synchronization code is not production-ready.
+## Implemented
 
-Firebase project `workshiftsapp` already exists and Google sign-in is enabled.
-The supplied screenshot shows an Android registration with package name
-`AndroidManifest.xml`; it does not match `com.aistudio.worktracker.qztvdw`.
-Correct Android and web registration/configuration, Google OAuth certificate
-fingerprints, authorized website domains and deployed Firestore rules are still
-required. Do not delete the existing registration or cloud records.
+- Optional sign-in; no simulated successful authentication.
+- Currency preserved when editing shifts.
+- Versioned JSON transfer retains saved amounts, dates, currency, group/category/worker metadata and decimal rates. Legacy missing currency means shekels.
+- Atomic validation/import and multiset deduplication retain genuine repeated shifts without duplicating repeated imports. This is transfer deduplication, not live-sync conflict resolution.
+- Header-based Hebrew/English table import handles reordered CSV/TSV/semicolon/pipe columns, the original clipboard export, Excel dates/decimal commas and quoted multiline notes. Invalid or ambiguous input requires correction; no claim that every possible format is supported.
+- Review before saving imports and AI proposals.
+- Saved category defaults feed manual, timer and AI entry.
+- Web local atomic snapshot, JSON/CSV export, currency-separated totals, overnight ranges, timer drafts, group workers/rates/payment editing, month/payment filters.
+- Vercel configuration removed only the unsupported `public: true` property; other settings and headers retained.
+- Android debug and preview use standard AGP debug signing; preview has a separate package suffix/launcher label.
 
-Vercel project is `salary-calculation`; keep its existing repository integration.
-The connected Vercel tool returned no teams during this session. Do not create a
-replacement project. Changes remain on a branch; production stays untouched.
+## Personal Gemini keys — current user decision
 
-## Release gates
+The user explicitly replaced the previous model-selection/shared-key design. Use **Gemini 3.5 Flash only**, with a key the user enters personally.
 
-1. Android preview compiles and transfer tests pass.
-2. User compares preview to installed app; no claim of pixel identity until this.
-3. Firebase rules prove that one account cannot read/write another account's data.
-4. Verify mobile-to-web and web-to-mobile edits, payment status, deletes, offline
-   reconnection, account changes and repeated imports using synthetic records.
-5. Only then activate cloud sync and publish the production update.
+- No owner Gemini key is embedded in any build, including debug/preview. No model selector or GPT route.
+- Android encrypts the entered key with AES-GCM and an Android Keystore key, writing atomically to `noBackupFilesDir`. It is outside Android backups and shift exports. Removal only removes this credential.
+- The website keeps the personal key in page memory only. Refresh/close requires re-entry. It is not stored in localStorage, sessionStorage, cookies, exports or the account.
+- Requests send the personal key in an HTTPS header directly to Google's fixed Gemini endpoint. Our shared AI server endpoint returns 410 and never falls back to an owner/server credential.
+- Without a personal key, AI stops with a clear message. Ordinary entry/import/export continues.
+- Each key uses its Google project's quota. Separate users need keys from their own separate projects to separate quota/billing; new keys in the owner's same project do not achieve this.
+- This prevents distributing the owner's key; it does not make a personal client-held credential immune to compromised devices, browser extensions or injected scripts. Real keys must never be pasted into chat or test fixtures.
+- No real-key/provider call or physical-device Keystore round-trip has been verified this session. UI confirmation means a key was saved/activated locally, not that Google accepted it.
+- Earlier installed APKs may still contain an old build-time key. Removing this from new code does not revoke an old key or erase old binaries. If previously distributed, the owner should rotate it privately after validating the replacement.
 
-Local Android build attempt was blocked before compilation by network access to
-Gradle plugin repositories. The Android preview workflow is intended to run the
-actual tests/build on GitHub; its outcome must be checked, never assumed.
+Official references:
+- https://ai.google.dev/gemini-api/docs/api-key
+- https://ai.google.dev/gemini-api/docs/rate-limits
+- https://developer.android.com/privacy-and-security/keystore
 
-## User feedback and next milestones (2026-09-07)
+## Verified continuation, 2026-09-08
 
-The user installed preview from PR #1, imported the original JSON successfully,
-and reports that the appearance and reviewed behaviors look identical. This is
-positive manual evidence, not proof of every feature's parity.
+Tested code commit: `d10d5f1de057494519029919df4a4dce9dd422e1`.
 
-Current fixes: header-based clipboard table import (original 7-column export,
-11-column CSV, reordered Hebrew/English columns, TSV/CSV/semicolon/pipe, quoted
-multiline notes, dates and currency), atomic validation/import with row errors;
-category defaults applied on initial form load, category/default changes and
-opening the live-shift dialog, rather than taking the last historical shift rate.
+Web checks passed locally and in GitHub Actions; Android passed in GitHub Actions:
+- `npm test`: 13/13 transfer and personal-key tests.
+- `npm run build`.
+- `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`: BUILD SUCCESSFUL; testDebugUnitTest, assemblePreview and validateSigningPreview completed.
+- Actions: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34218243894
+- APK: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34218243894/artifacts/10052833666
 
-Outstanding requirements explicitly requested by user:
-- Website uses the same import contract and fixtures. No silent field guessing.
-- Import preview with mapped columns, totals per currency and uncertain cells;
-  support additional real-world layouts based on samples. Optional AI parsing
-  may propose rows, but requires review before committing financial records.
-- Settings support both Gemini and OpenAI GPT. Use actual API model IDs from
-  official provider catalogs; the current hard-coded labels do not establish
-  model availability. Refresh a server-maintained model catalog, so adding a
-  model does not require replacing the installed Android app. Preserve user
-  selection and expose retirement/unavailability explicitly. Authenticate the
-  backend and store provider keys there. Preserve existing AI entry behavior
-  until the replacement is connected and verified end to end.
-- Regression comparison: regular/manual/overnight and group shifts, category
-  rate after restart, editing currency/payment, filters, live timer, AI entry,
-  JSON/table import, export with multiline notes. Compare aggregate totals per
-  currency and original saved amounts; do not claim 100% identity from browsing.
+Android ran in GitHub Actions. The earlier local Gradle installation had a corrupt distribution JAR and could not compile the project locally.
 
-## Continuation implementation, 2026-09-08
+Vercel reported successful deployment for that commit:
+https://vercel.com/sholi/salary-calculation/ETgBu1xU5yGPETV11udUe7tdGzpu
 
-Android import/default/model changes at f2cb0fd913a5c6a0d5e73fd2476f8d99b918b1c6
-passed GitHub Actions run 34171740810. Final follow-up adds import and AI review
-before saving, and uses the explicitly public, fixed **test** signing key for preview
-builds. The earlier preview used an ephemeral runner key: Android may refuse an
-in-place update. Export the full JSON backup first, remove only the old preview
-if necessary, install the new preview and re-import. Never remove the original app.
-A private CI signing secret must be configured before promising repeatable in-place preview updates.
+Browser opened the authenticated preview successfully:
+https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/
 
-Implemented web changes (existing Vercel project, not a replacement Site):
-- Header-based import for clipboard/file, original amounts/dates/currencies,
-  multiline CSV and JSON group/category/worker preservation, multiset deduplication.
-- Import review showing every incoming row, incoming/new totals per currency.
-- Atomic complete local snapshot; CSV and full JSON export; category defaults;
-  currency-aware totals and ordinary edit/payment/delete behavior.
-- Removed simulated cloud login and automatic sample records.
-- Optional real Firebase authentication for AI only; cloud sync remains disabled.
-- AI model selector, refresh, natural language/table proposals and review.
+Browser checks passed with **synthetic** data:
+- Imported 22 shifts across 8 categories: 44 hours and 2,200 shekels.
+- Reload retained entries; repeated import proposed 0 new / 22 existing records.
+- Selecting an imported category after reload supplied its saved hourly rate of 50.
+- Missing personal key prevents AI; synthetic key activation does not claim provider success; refresh forgets that key.
+- Desktop layout visually inspected. This is not full Android/web parity or mobile-device certification.
+- Browser-extension metadata errors were observed; they were not application errors.
 
-Server `/api/ai` supports Gemini generateContent and OpenAI Responses API.
-Authentication verifies Firebase ID tokens through the project API and requires
-an explicit UID allowlist. Provider keys are server-side only. Catalog overrides
-permit adding models without a client app update. Requests do not persist prompts
-in the application; OpenAI requests set store:false. Live provider calls have NOT
-been tested with real keys. Catalog 'available' means a key is configured, not a
-successful live entitlement test. Unavailable/retired model errors are surfaced;
-there is no silent model substitution. No new credentials were provisioned.
+The synthetic fixture is not the user's actual backup; its successful test must not be described as verification of the real 22/8 backup.
 
-Server configuration required (set privately in existing Vercel project):
-- FIREBASE_PROJECT_ID, FIREBASE_WEB_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_WEB_APP_ID
-- AI_ALLOWED_UIDS (comma-separated explicit account UIDs; empty denies all)
-- GEMINI_API_KEY and OPENAI_API_KEY
-- Optional AI_MODELS_JSON array of {id, name, provider, model}; id=provider:model.
-Android build AI_SERVICE_URL must point to the deployed HTTPS `/api/ai` endpoint.
-Without it, existing direct Gemini is preserved and GPT reports not configured.
-Do not put OpenAI/server keys in Android BuildConfig or public web files.
-The pre-existing direct Gemini build-key architecture remains a legacy limitation.
+## Signing and installation limitations
 
-Official model/API sources checked:
-https://developers.openai.com/api/docs/models
-https://ai.google.dev/gemini-api/docs/models
-https://ai.google.dev/api/models
+No fixed test keystore was published. Historical notes claiming otherwise were incorrect: automatic approval review rejected that proposal. The missing root debug.keystore configuration was removed.
 
-Local verification: node --test web-tests/*.test.cjs (12 tests initially passing),
-node scripts/build-web.cjs, and syntax check of the inline web script.
-Vercel list_teams returned [] again. No deployment or production merge performed.
-Website is still not full Android feature parity: foreground timer, complete group
-editing, advanced history/filter interactions and cross-device sync remain gates.
-Do not present the web changes or configurable AI as a verified live synced app.
+Runner-generated debug certificates may differ between APK builds. Successful assembly/validateSigning does not prove in-place update compatibility with an installed preview. The earlier phone screenshot only says installation failed; it does not establish the precise cause. Do not uninstall/reset to work around this, do not request signing-key uploads, and do not claim the phone update is fixed.
 
-Final build 34172214385 compiled but failed signing because debug.keystore was not tracked. An attempt to commit a newly generated test key was rejected by automatic approval review because it would expose private signing material. No key was published. The safer fix restores the original runner-generated debug signing config. Do not retry publishing signing material. Stable preview updates require a privately configured CI signing secret; until then an export/reinstall of the preview may be needed. Vercel get_project for team sholi returned 403.
+## Firebase and cloud-sync gates
 
-Android final run 34172685477 passed build and all selected Work* tests for commit 1cf78f60c003476fd77d7cf5f00d762660eccab7. The subsequent web-only continuation adds local active timer (wall-clock based, draft kept until save), overnight time-range input, group worker/rate/payment editing and financial detail matching the Android group formula, plus month/payment filters. These web interactions have static syntax/reference checks only, not browser parity certification. Full cross-device sync and visual/behavior parity remain unfinished.
+`CLOUD_SYNC_ENABLED` remains false. Firebase/cloud sync is not enabled or verified. The existing Firebase project was reported as `workshiftsapp`; prior screenshots showed an Android registration named `AndroidManifest.xml`, which does not match the app package. Do not delete registrations or cloud records. Correct project registrations, OAuth fingerprints, domains and deployed rules still require verification.
+
+Before enabling sync, implement stable cross-device IDs, user-scoped local storage, queued offline operations, deletion propagation, conflict handling and one-time legacy import. Current Room Int IDs are local to an installation.
+
+Required end-to-end tests: Android-to-web and web-to-Android edits, payment status, deletion, offline/reconnect, separate accounts, permission denials and repeated imports. No production/sync release until these pass. Vercel tool access to team sholi previously returned 403; deployment success was checked through the GitHub Vercel status and the actual browser preview.
+
+Previous verified baseline: commit `658b8be7c66d7162d05d2a0fb36eea1ccf64faa9`, Android run 34189434959. This document supersedes earlier instructions to use GPT/catalog selection, shared owner-key AI or reinstall a preview.
