@@ -461,6 +461,11 @@
         </div>
     </section>
 
+    <section class="action-row">
+      <button class="btn-primary" id="timer-start" onclick="startTimer()">התחלת משמרת</button>
+      <button class="btn-secondary" id="timer-stop" onclick="stopTimer()" hidden>סיום משמרת</button>
+      <span id="timer-status" role="status"></span>
+    </section>
     <!-- Quick Actions -->
     <section class="action-row">
         <button class="btn-primary" onclick="openAddModal()">הוספת משמרת חדשה</button>
@@ -487,6 +492,8 @@
     <!-- Filter & Search -->
     <section class="filter-section">
         <input type="text" id="search-box" class="search-input" placeholder="חיפוש לפי עבודה, תאריך או הערה..." oninput="renderShifts()">
+        <label for="payment-filter">תשלום</label><select id="payment-filter" class="form-input" onchange="renderShifts()"><option value="all">הכל</option><option value="paid">שולם</option><option value="unpaid">טרם שולם</option></select>
+        <label for="month-filter">חודש</label><input type="month" id="month-filter" class="form-input" onchange="renderShifts()"><button class="btn-secondary" onclick="document.getElementById('month-filter').value='';renderShifts()">כל החודשים</button>
         <div class="category-chips" id="category-chips">
             <button class="chip active" onclick="setCategoryFilter('הכל')">הכל</button>
             <button class="chip" onclick="setCategoryFilter('כללי')">כללי</button>
@@ -514,7 +521,7 @@
 </dialog>
 <!-- Modal for Adding Shift -->
 <div class="modal-overlay" id="add-modal">
-    <div class="modal-card">
+    <div class="modal-card" style="max-height:85vh;overflow:auto">
         <h2>הוספת משמרת</h2>
         <div class="form-group">
             <label>סוג עבודה / קטגוריה</label>
@@ -525,7 +532,9 @@
             <input type="date" id="modal-date" class="form-input">
         </div>
         <div class="form-group">
-            <label>שעות עבודה</label>
+            <label><input id="modal-range" type="checkbox" onchange="toggleRange()"> לפי שעת התחלה וסיום</label>
+            <div id="range-fields" hidden><label for="modal-start">התחלה</label><input id="modal-start" type="time" class="form-input" value="08:00" onchange="updateRangeHours()"><label for="modal-end">סיום</label><input id="modal-end" type="time" class="form-input" value="16:00" onchange="updateRangeHours()"><small>שעת סיום מוקדמת מההתחלה מחושבת ביום הבא</small></div>
+            <label>שעות העבודה שלי</label>
             <input type="number" step="0.25" id="modal-hours" class="form-input" placeholder="למשל: 8.0" value="8">
         </div>
         <div class="form-group">
@@ -536,6 +545,14 @@
         <div class="form-group">
             <label>הערות</label>
             <input type="text" id="modal-notes" class="form-input" placeholder="הערות או פירוט נוסף">
+        </div>
+        <div class="form-group">
+          <label><input id="modal-group" type="checkbox" onchange="document.getElementById('group-fields').hidden=!this.checked"> עבודה קבוצתית</label>
+          <div id="group-fields" hidden>
+            <label for="group-employer-rate">תעריף המעסיק לכל שעת עובד</label><input id="group-employer-rate" type="number" min="0" step="0.01" class="form-input" value="50">
+            <label for="group-worker-rate">תעריף לתשלום לכל שעת עובד</label><input id="group-worker-rate" type="number" min="0" step="0.01" class="form-input" value="40">
+            <div id="group-rows"></div><button class="btn-secondary" onclick="addGroupRow()">הוספת עובד</button>
+          </div>
         </div>
         <div class="modal-btn-row">
             <button class="btn-secondary" onclick="closeAddModal()">ביטול</button>
@@ -549,7 +566,7 @@
     // State management
     let shifts = [];
     let currentUserId = null;
-    let categories = [], workers = [], pendingTransfer = null, editingShiftId = null;
+    let categories = [], workers = [], pendingTransfer = null, editingShiftId = null, timerToSave = false;
     try { const meta=JSON.parse(localStorage.getItem('work_transfer_meta')||'{}');categories=meta.categories||[];workers=meta.workers||[]; } catch {}
     let selectedCategory = 'הכל';
 
@@ -655,7 +672,11 @@
     }
 
     function openAddModal() {
-        editingShiftId=null;
+        editingShiftId=null;timerToSave=false;
+        document.getElementById('modal-hours').value=8;document.getElementById('modal-notes').value='';
+        const today=new Date();document.getElementById('modal-date').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+        document.getElementById('modal-range').checked=false;toggleRange();
+        document.getElementById('modal-group').checked=false;document.getElementById('group-fields').hidden=true;document.getElementById('group-rows').replaceChildren();
         document.getElementById('add-modal').style.display = 'flex';
         applyCategoryRate();
     }
@@ -668,12 +689,18 @@
         const category = document.getElementById('modal-category').value.trim() || 'כללי';
         const dateVal = document.getElementById('modal-date').value;
         const date = dateVal ? new Date(dateVal+'T00:00:00').getTime() : Date.now();
-        const hours = parseFloat(document.getElementById('modal-hours').value) || 0;
+        if(document.getElementById('modal-range').checked)updateRangeHours();
+        const hours = Number(document.getElementById('modal-hours').value);
         const hourlyRate = Number(document.getElementById('modal-rate').value);
         if(!Number.isFinite(hours)||hours<=0||!Number.isFinite(hourlyRate)||hourlyRate<0){alert('יש להזין שעות ותעריף תקינים');return;}
         const notes = document.getElementById('modal-notes').value.trim();
         const original=shifts.find(e=>e.id===editingShiftId);
-        if(original?.isGroupShift && (hours!==original.hours||hourlyRate!==original.hourlyRate)){alert('עריכת תעריפים ושעות של עבודה קבוצתית מתבצעת כרגע באפליקציה');return;}
+        const isGroup=document.getElementById('modal-group').checked;let groupMembers=[],employerRate=null,workerRate=null;
+        if(isGroup){try{
+            employerRate=WorkTransfer.number(document.getElementById('group-employer-rate').value);workerRate=WorkTransfer.number(document.getElementById('group-worker-rate').value);
+            groupMembers=[...document.querySelectorAll('#group-rows > div')].map(row=>{const name=row.querySelector('[data-field="name"]').value.trim();if(!name)throw Error('חסר שם עובד');return {...row.workerData,name,hours:WorkTransfer.number(row.querySelector('[data-field="hours"]').value),isPaid:row.querySelector('[data-field="paid"]').checked};});
+            if(!groupMembers.length)throw Error('יש להוסיף לפחות עובד אחד לקבוצה');
+        }catch(e){alert(e.message);return;}}
         const totalEarnings = Math.round(hours * hourlyRate * 100) / 100;
 
         const newShift = {
@@ -686,13 +713,17 @@
             isPaid: false,
             notes: notes,
             currency: document.getElementById('modal-currency').value,
-            isGroupShift: false,
-            groupWorkersJson: '',
+            isTimeRange:document.getElementById('modal-range').checked,
+            startTime:document.getElementById('modal-range').checked?document.getElementById('modal-start').value:null,
+            endTime:document.getElementById('modal-range').checked?document.getElementById('modal-end').value:null,
+            isGroupShift:isGroup,employerRate,workerRate,
+            groupWorkersJson:isGroup?JSON.stringify(groupMembers):'',
             createdAt: Date.now()
         };
 
-        try {persistAll(editingShiftId===null?[newShift,...shifts]:shifts.map(e=>e.id===editingShiftId?{...e,...newShift,id:e.id,createdAt:e.createdAt,isPaid:e.isPaid,totalEarnings:e.hours===hours&&e.hourlyRate===hourlyRate?e.totalEarnings:totalEarnings,isGroupShift:e.isGroupShift,groupWorkersJson:e.groupWorkersJson,employerRate:e.employerRate,workerRate:e.workerRate}:e));}
+        try {persistAll(editingShiftId===null?[newShift,...shifts]:shifts.map(e=>e.id===editingShiftId?{...e,...newShift,id:e.id,createdAt:e.createdAt,isPaid:e.isPaid,totalEarnings:e.hours===hours&&e.hourlyRate===hourlyRate?e.totalEarnings:totalEarnings}:e));}
         catch(e){alert('השמירה נכשלה: '+e.message);return;}
+        if(timerToSave){localStorage.removeItem('work_active_timer');timerToSave=false;renderTimer();}
         syncToCloud();
         closeAddModal();
         renderShifts();
@@ -700,7 +731,25 @@
 
     function togglePaid(id){try{persistAll(shifts.map(s=>s.id===id?{...s,isPaid:!s.isPaid}:s));renderShifts();}catch(e){alert('השמירה נכשלה: '+e.message);}}
     function deleteShift(id){if(confirm('האם למחוק משמרת זו?')){try{persistAll(shifts.filter(s=>s.id!==id));renderShifts();}catch(e){alert('המחיקה לא נשמרה: '+e.message);}}}
-    function editShift(id){const e=shifts.find(s=>s.id===id);if(!e)return;openAddModal();editingShiftId=id;document.getElementById('modal-category').value=e.category;const d=new Date(e.date);document.getElementById('modal-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');document.getElementById('modal-hours').value=e.hours;document.getElementById('modal-rate').value=e.hourlyRate;document.getElementById('modal-currency').value=e.currency;document.getElementById('modal-notes').value=e.notes;}
+    function editShift(id){const e=shifts.find(s=>s.id===id);if(!e)return;openAddModal();editingShiftId=id;document.getElementById('modal-category').value=e.category;const d=new Date(e.date);document.getElementById('modal-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');document.getElementById('modal-hours').value=e.hours;document.getElementById('modal-rate').value=e.hourlyRate;document.getElementById('modal-currency').value=e.currency;document.getElementById('modal-notes').value=e.notes;
+        document.getElementById('modal-range').checked=e.isTimeRange||false;document.getElementById('range-fields').hidden=!e.isTimeRange;document.getElementById('modal-hours').readOnly=Boolean(e.isTimeRange);if(e.startTime)document.getElementById('modal-start').value=e.startTime;if(e.endTime)document.getElementById('modal-end').value=e.endTime;
+        document.getElementById('modal-group').checked=e.isGroupShift||false;document.getElementById('group-fields').hidden=!e.isGroupShift;document.getElementById('group-employer-rate').value=e.employerRate??e.hourlyRate;document.getElementById('group-worker-rate').value=e.workerRate??e.hourlyRate;
+        for(const worker of JSON.parse(e.groupWorkersJson||'[]'))addGroupRow(worker);
+    }
+    function addGroupRow(worker={name:'',hours:0,isPaid:false}){
+        const row=document.createElement('div');row.workerData=worker;row.style.cssText='padding:10px 0;display:flex;gap:6px;flex-wrap:wrap';
+        const name=document.createElement('input');name.dataset.field='name';name.value=worker.name;name.placeholder='שם עובד';name.setAttribute('aria-label','שם עובד');name.className='form-input';
+        const hours=document.createElement('input');hours.type='number';hours.min=0;hours.step=0.25;hours.dataset.field='hours';hours.value=worker.hours;hours.setAttribute('aria-label','שעות העובד');hours.className='form-input';
+        const label=document.createElement('label'),paid=document.createElement('input');paid.type='checkbox';paid.dataset.field='paid';paid.checked=worker.isPaid;label.append(paid,document.createTextNode('שולם לעובד'));
+        const remove=document.createElement('button');remove.textContent='הסרת עובד';remove.className='btn-secondary';remove.onclick=()=>row.remove();row.append(name,hours,label,remove);document.getElementById('group-rows').append(row);
+    }
+    function toggleRange(){const on=document.getElementById('modal-range').checked;document.getElementById('range-fields').hidden=!on;document.getElementById('modal-hours').readOnly=on;if(on)updateRangeHours();}
+    function updateRangeHours(){const parse=s=>{const [h,m]=s.split(':').map(Number);return h*60+m;};let minutes=parse(document.getElementById('modal-end').value)-parse(document.getElementById('modal-start').value);if(minutes<0)minutes+=1440;document.getElementById('modal-hours').value=Number.isFinite(minutes)?minutes/60:'';}
+    function activeTimer(){try{return JSON.parse(localStorage.getItem('work_active_timer')||'null');}catch{return null;}}
+    function startTimer(){if(activeTimer())return;const category=prompt('באיזו קטגוריה מתחילה המשמרת?','עצמאי');if(!category?.trim())return;const rate=categories.find(c=>c.name===category.trim())?.defaultRate??40;localStorage.setItem('work_active_timer',JSON.stringify({category:category.trim(),rate,start:Date.now(),currency:document.getElementById('modal-currency').value}));renderTimer();}
+    function renderTimer(){const timer=activeTimer();document.getElementById('timer-start').hidden=Boolean(timer);document.getElementById('timer-stop').hidden=!timer;const seconds=timer?Math.max(0,Math.floor((Date.now()-timer.start)/1000)):0;document.getElementById('timer-status').textContent=timer?timer.category+' · '+String(Math.floor(seconds/3600)).padStart(2,'0')+':'+String(Math.floor(seconds/60)%60).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0'):'';}
+    function stopTimer(){const timer=activeTimer();if(!timer)return;openAddModal();timerToSave=true;document.getElementById('modal-category').value=timer.category;document.getElementById('modal-rate').value=timer.rate;document.getElementById('modal-currency').value=timer.currency;document.getElementById('modal-hours').value=(Date.now()-timer.start)/3600000;const d=new Date(timer.start);document.getElementById('modal-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+
 
     function exportCsv(){download('shifts.csv',WorkTransfer.csv(shifts),'text/csv;charset=utf-8');}
     function handleCsvImport(event){const file=event.target.files[0];if(file)file.text().then(openTransfer).catch(e=>alert(e.message));event.target.value='';}
@@ -728,7 +777,8 @@
             const matchesSearch = !search || 
                 (s.category && s.category.toLowerCase().includes(search)) ||
                 (s.notes && s.notes.toLowerCase().includes(search));
-            return matchesCategory && matchesSearch;
+            const paid=document.getElementById('payment-filter').value;const month=document.getElementById('month-filter').value;const d=new Date(s.date),recordMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+            return matchesCategory && matchesSearch && (paid==='all'||(paid==='paid'?s.isPaid:!s.isPaid)) && (!month||month===recordMonth);
         });
 
         // Calculate stats on all shifts
@@ -753,7 +803,7 @@
             return;
         }
 
-        filtered.forEach(s => {
+        filtered.sort((a,b)=>b.date-a.date).forEach(s => {
             const dateStr = new Date(s.date).toLocaleDateString('he-IL');
             const item = document.createElement('div');
             item.className = 'shift-item';
@@ -779,6 +829,7 @@
             item.querySelector('[data-action="edit"]').onclick=()=>editShift(s.id);
             item.querySelector('[data-action="paid"]').onclick=()=>togglePaid(s.id);
             item.querySelector('[data-action="delete"]').onclick=()=>deleteShift(s.id);
+            if(s.isGroupShift){try{const members=JSON.parse(s.groupWorkersJson||'[]');const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='עבודה קבוצתית · '+members.length+' עובדים';details.append(summary);let workerHours=0;for(const w of members){workerHours+=w.hours;const p=document.createElement('p');p.textContent=w.name+' · '+w.hours+' שעות · '+(w.isPaid?'שולם':'טרם שולם');details.append(p);}const total=document.createElement('p');total.textContent='כולל העובדים לתשלום: '+s.currency+' '+(s.totalEarnings+workerHours*(s.employerRate??0)).toFixed(2)+' · השכר שלי כולל הפרש תעריפים: '+s.currency+' '+(s.totalEarnings+workerHours*((s.employerRate??0)-(s.workerRate??0))).toFixed(2);details.append(total);item.querySelector('.shift-info').append(details);}catch{}}
             list.appendChild(item);
         });
     }
@@ -787,7 +838,7 @@
     loadLocalShifts();
     try {const saved=JSON.parse(localStorage.getItem('work_complete_backup')||'null');if(saved){shifts=saved.entries;categories=saved.categories;workers=saved.workers;}} catch(e){alert('לא ניתן לקרוא את הגיבוי המקומי. אין להזין נתונים לפני שחזור.');throw e;}
     const savedModel=localStorage.getItem('work_ai_model');if(savedModel){const select=document.getElementById('ai-model');if(![...select.options].some(o=>o.value===savedModel))select.add(new Option(savedModel,savedModel));select.value=savedModel;}
-    renderShifts();
+    renderShifts();renderTimer();setInterval(renderTimer,1000);
 </script>
 
 </body>
