@@ -6,6 +6,7 @@ import android.security.keystore.KeyProperties
 import android.util.AtomicFile
 import java.io.File
 import java.security.KeyStore
+import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -14,7 +15,14 @@ import javax.crypto.spec.GCMParameterSpec
 /** Device-only encrypted credential, excluded from Android backup and shift exports. */
 object PersonalAiKey {
     private const val ALIAS = "personal_gemini_v1"
-    private fun file(context: Context) = AtomicFile(File(context.noBackupFilesDir, "personal-gemini.enc"))
+    private fun file(context: Context): AtomicFile {
+        val uid = AuthManager.getFirebaseAuthSafely()?.currentUser?.uid
+        val name = if (uid == null) "personal-gemini.enc" else {
+            val digest = MessageDigest.getInstance("SHA-256").digest(uid.toByteArray(Charsets.UTF_8))
+            "personal-gemini-" + digest.joinToString("") { "%02x".format(it) } + ".enc"
+        }
+        return AtomicFile(File(context.noBackupFilesDir, name))
+    }
     private fun key(): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (store.getKey(ALIAS, null) as? SecretKey)?.let { return it }

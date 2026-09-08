@@ -414,7 +414,31 @@ fun MainAppContent(
     val distinctCategories = remember(categories) { categories.distinctBy { it.name.trim() } }
     val stats by viewModel.stats.collectAsStateWithLifecycle()
 
-    var selectedTab by androidx.compose.runtime.saveable.rememberSaveable { mutableIntStateOf(0) }
+    // Pager is the single navigation state: tab presses and RTL swipes stay in sync.
+    val mainPagerState = rememberPagerState(pageCount = { 2 })
+    val navigationScope = rememberCoroutineScope()
+    val selectedTab = mainPagerState.currentPage
+    val navigateToTab: (Int) -> Unit = { page ->
+        navigationScope.launch { mainPagerState.animateScrollToPage(page) }
+    }
+    val accountSession by viewModel.currentUserSession.collectAsStateWithLifecycle()
+    val keySetupPreferences = remember(context) {
+        context.getSharedPreferences("personal_ai_setup", Context.MODE_PRIVATE)
+    }
+    var showPersonalKeySetup by remember { mutableStateOf(false) }
+    val setupScope = accountSession?.uid ?: "local_device"
+    LaunchedEffect(setupScope) {
+        val hasKey = runCatching { com.example.api.PersonalAiKey.read(context).isNotBlank() }.getOrDefault(false)
+        showPersonalKeySetup = !hasKey && !keySetupPreferences.getBoolean("offered_$setupScope", false)
+    }
+    if (showPersonalKeySetup) {
+        key(setupScope) {
+            PersonalAiKeyDialog(onDismiss = {
+                keySetupPreferences.edit().putBoolean("offered_$setupScope", true).apply()
+                showPersonalKeySetup = false
+            })
+        }
+    }
     var showSettings by remember { mutableStateOf(false) }
     var entryToEdit by remember { mutableStateOf<WorkEntry?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -426,7 +450,7 @@ fun MainAppContent(
     var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
     var isFocusedMode by remember { mutableStateOf(false) }
 
-    LaunchedEffect(activeShiftStartTime, lastInteractionTime) {
+    LaunchedEffect(activeShiftStartTime, lastInteractionTime, selectedTab) {
         if (activeShiftStartTime != null && selectedTab == 0) {
             isFocusedMode = false
             kotlinx.coroutines.delay(7000)
@@ -450,7 +474,7 @@ fun MainAppContent(
         if (showSettings) {
             showSettings = false
         } else {
-            selectedTab = 0
+            navigateToTab(0)
         }
     }
 
@@ -547,7 +571,7 @@ fun MainAppContent(
                             selected = selectedTab == 0,
                             onClick = { 
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                selectedTab = 0 
+                                navigateToTab(0)
                             },
                             icon = { Icon(imageVector = Icons.Outlined.GridView, contentDescription = "ראשי", modifier = Modifier.size(20.dp)) },
                             label = { Text("ראשי", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
@@ -564,7 +588,7 @@ fun MainAppContent(
                             selected = selectedTab == 1,
                             onClick = { 
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                selectedTab = 1 
+                                navigateToTab(1)
                             },
                             icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = "היסטוריה", modifier = Modifier.size(20.dp)) },
                             label = { Text("היסטוריה", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
@@ -591,10 +615,11 @@ fun MainAppContent(
                         .fillMaxSize()
                         .weight(1f)
                 ) {
-                    Crossfade(
-                        targetState = selectedTab,
-                        label = "tab_crossfade",
-                        animationSpec = tween(durationMillis = 200)
+                    HorizontalPager(
+                        state = mainPagerState,
+                        modifier = Modifier.fillMaxSize().testTag("main_screen_pager"),
+                        beyondViewportPageCount = 1,
+                        key = { page -> if (page == 0) "dashboard" else "history" }
                     ) { currentTab ->
                         when (currentTab) {
                             0 -> {
@@ -641,7 +666,7 @@ fun MainAppContent(
                                         triggerHapticFeedback(context, isDestructive = false)
                                         viewModel.togglePaymentStatus(entry)
                                     },
-                                    onViewAll = { selectedTab = 1 },
+                                    onViewAll = { navigateToTab(1) },
                                     onAddEntry = { category, date, isRange, start, end, hours, rate, notes, isGroupShift, empRate, workerRate, groupJson, currency ->
                                         viewModel.addEntry(category, date, isRange, start, end, hours, rate, notes, false, isGroupShift, empRate, workerRate, groupJson, currency)
                                     },
@@ -4631,6 +4656,77 @@ fun WorkEntryRowCard(
     }
 }
 
+/** The secret is only entered here; never restored into a visible field or saved UI state. */
+@Composable
+private fun PersonalAiKeyDialog(onDismiss: () -> Unit, isFirstSetup: Boolean = true) {
+    val context = LocalContext.current
+    var draft by remember { mutableStateOf("") }
+    var showExplanation by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf<String?>(null) }
+    var hasKey by remember {
+        mutableStateOf(runCatching { com.example.api.PersonalAiKey.read(context).isNotBlank() }.getOrDefault(false))
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("שמירת משמרות בעזרת ג׳מיני", modifier = Modifier.weight(1f))
+                IconButton(onClick = { showExplanation = !showExplanation }) {
+                    Icon(Icons.Outlined.Info, contentDescription = "הסבר על המפתח האישי")
+                }
+            }
+        },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(if (hasKey) "מפתח אישי כבר שמור. אפשר להחליף או להסיר אותו כאן." else "אפשר להוסיף מפתח אישי עכשיו, או לדלג ולהוסיף בהגדרות בהמשך.")
+                AnimatedVisibility(visible = showExplanation) {
+                    Text("מפתח אישי מאפשר לתאר עבודה במילים ולקבל משמרות לבדיקה לפני שמירה. בלי מפתח אפשר להשתמש בכל הפעולות הרגילות. המפתח נשמר מוצפן במכשיר הזה, אינו מוצג במסכים ואינו נכלל בגיבוי המשמרות. הוא לא מסתנכרן למכשירים אחרים. הפענוח נשלח לגוגל ומשתמש במכסת הפרויקט שאליו שייך המפתח.")
+                }
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it; status = null },
+                    label = { Text(if (hasKey) "מפתח אישי חדש" else "מפתח אישי (לא חובה)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+                )
+                status?.let { Text(it) }
+                if (hasKey) {
+                    TextButton(onClick = {
+                        try {
+                            com.example.api.PersonalAiKey.remove(context)
+                            draft = ""
+                            hasKey = false
+                            status = "המפתח הוסר. המשמרות וכל שאר הנתונים נשמרו."
+                        } catch (_: Exception) {
+                            status = "הסרת המפתח לא הצליחה. אפשר לנסות שוב."
+                        }
+                    }) { Text("הסרת המפתח האישי") }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = draft.isNotBlank(),
+                onClick = {
+                    try {
+                        com.example.api.PersonalAiKey.save(context, draft)
+                        draft = ""
+                        Toast.makeText(context, "המפתח נשמר במכשיר. החיבור ייבדק בזמן הפענוח.", Toast.LENGTH_LONG).show()
+                        onDismiss()
+                    } catch (_: Exception) {
+                        status = "שמירת המפתח לא הצליחה. יש לבדוק את המפתח ולנסות שוב."
+                    }
+                }
+            ) { Text("שמירת המפתח") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(if (isFirstSetup) "לא עכשיו" else "סגירה") }
+        }
+    )
+}
+
 // ================= MANAGEMENT & BACKUP SCREEN =================
 @Composable
 fun ManagementScreen(
@@ -4640,9 +4736,13 @@ fun ManagementScreen(
     onSignIn: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var personalKeyDraft by remember { mutableStateOf("") }
-    var personalKeyStatus by remember { mutableStateOf("המפתח אישי למכשיר ואינו נכלל בגיבוי המשמרות") }
     val accountSession by viewModel.currentUserSession.collectAsStateWithLifecycle()
+    var showPersonalKeySettings by remember { mutableStateOf(false) }
+    if (showPersonalKeySettings) {
+        key(accountSession?.uid) {
+            PersonalAiKeyDialog(onDismiss = { showPersonalKeySettings = false }, isFirstSetup = false)
+        }
+    }
     var newCategoryText by remember { mutableStateOf("") }
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
     var categoryToEditByRate by remember { mutableStateOf<WorkCategory?>(null) }
@@ -4677,18 +4777,13 @@ fun ManagementScreen(
             }
 
             Card(colors = CardDefaults.cardColors(containerColor = Color(0x331E293B))) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("ג׳מיני — מפתח אישי", color = Color.White)
-                    Text("הפענוח נשלח לגוגל ונחשב במכסת הפרויקט של המפתח שלך. בלי מפתח אפשר להמשיך להשתמש בכל הפעולות הרגילות.", color = Color.White.copy(alpha = 0.7f))
-                    OutlinedTextField(value = personalKeyDraft, onValueChange = { personalKeyDraft = it },
-                        label = { Text("מפתח API אישי") }, singleLine = true,
-                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
-                    Button(onClick = {
-                        try { com.example.api.PersonalAiKey.save(context, personalKeyDraft); personalKeyDraft = ""; personalKeyStatus = "המפתח נשמר מוצפן במכשיר. החיבור ייבדק בזמן הפענוח" }
-                        catch (_: Exception) { personalKeyStatus = "שמירת המפתח לא הצליחה. יש לבדוק את המפתח ולנסות שוב" }
-                    }) { Text("שמירת מפתח אישי") }
-                    TextButton(onClick = { com.example.api.PersonalAiKey.remove(context); personalKeyDraft = ""; personalKeyStatus = "המפתח האישי הוסר. המשמרות נשמרו" }) { Text("הסרת המפתח האישי") }
-                    Text(personalKeyStatus, color = Color.White.copy(alpha = 0.7f))
+                Row(
+                    Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("שמירת משמרות בעזרת ג׳מיני", color = Color.White, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { showPersonalKeySettings = true }) { Text("מפתח אישי") }
                 }
             }
 
