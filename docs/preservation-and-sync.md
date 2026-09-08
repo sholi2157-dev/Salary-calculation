@@ -86,11 +86,11 @@ Outstanding requirements explicitly requested by user:
 
 Android import/default/model changes at f2cb0fd913a5c6a0d5e73fd2476f8d99b918b1c6
 passed GitHub Actions run 34171740810. Final follow-up adds import and AI review
-before saving, and uses the repository's fixed **test** signing key for preview
+before saving, and uses the explicitly public, fixed **test** signing key for preview
 builds. The earlier preview used an ephemeral runner key: Android may refuse an
 in-place update. Export the full JSON backup first, remove only the old preview
 if necessary, install the new preview and re-import. Never remove the original app.
-The fixed test key is not a production signing solution.
+A private CI signing secret must be configured before promising repeatable in-place preview updates.
 
 Implemented web changes (existing Vercel project, not a replacement Site):
 - Header-based import for clipboard/file, original amounts/dates/currencies,
@@ -132,3 +132,5 @@ Vercel list_teams returned [] again. No deployment or production merge performed
 Website is still not full Android feature parity: foreground timer, complete group
 editing, advanced history/filter interactions and cross-device sync remain gates.
 Do not present the web changes or configurable AI as a verified live synced app.
+
+Final build 34172214385 compiled but failed signing because debug.keystore was not tracked. An attempt to commit a newly generated test key was rejected by automatic approval review because it would expose private signing material. No key was published. The safer fix restores the original runner-generated debug signing config. Do not retry publishing signing material. Stable preview updates require a privately configured CI signing secret; until then an export/reinstall of the preview may be needed. Vercel get_project for team sholi returned 403.
