@@ -180,7 +180,18 @@
         renderShifts();
     }
 
+    let homeReportDraft=null;
     function openAddModal() {
+        const dialog=document.getElementById('add-modal');
+        if(dialog.open)return;
+        // Keep the original row nodes: worker metadata and removal handlers belong to the draft.
+        const form=document.getElementById('report-fields');
+        homeReportDraft={
+            controls:[...form.querySelectorAll('input,select,textarea')].map(control=>({control,value:control.value,checked:control.checked,readOnly:control.readOnly})),
+            groupRows:[...document.getElementById('group-rows').childNodes],
+            rangeHidden:document.getElementById('range-fields').hidden,
+            groupHidden:document.getElementById('group-fields').hidden
+        };
         editingShiftId=null;timerToSave=false;
         document.getElementById('modal-hours').value=8;document.getElementById('modal-notes').value='';
         const today=new Date();document.getElementById('modal-date').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
@@ -191,7 +202,19 @@
     }
 
     function closeAddModal() {
-        document.getElementById('add-modal').close();document.getElementById('report-slot').append(document.getElementById('report-fields'));editingShiftId=null;timerToSave=false;
+        document.getElementById('add-modal').close();
+        if(homeReportDraft){
+            document.getElementById('group-rows').replaceChildren(...homeReportDraft.groupRows);
+            for(const {control,value,checked,readOnly} of homeReportDraft.controls){
+                control.value=value;
+                if(checked!==undefined)control.checked=checked;
+                if(readOnly!==undefined)control.readOnly=readOnly;
+            }
+            document.getElementById('range-fields').hidden=homeReportDraft.rangeHidden;
+            document.getElementById('group-fields').hidden=homeReportDraft.groupHidden;
+            homeReportDraft=null;
+        }
+        document.getElementById('report-slot').append(document.getElementById('report-fields'));editingShiftId=null;timerToSave=false;
     }
 
     function saveNewShift() {
