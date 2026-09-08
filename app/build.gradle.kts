@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
@@ -38,15 +36,6 @@ android {
   }
 
   buildTypes {
-    debug {
-      // Legacy personal development only. Never embed the owner key in release.
-      val privateProperties = Properties()
-      val privateFile = rootProject.file(".env")
-      if (privateFile.isFile) privateFile.inputStream().use { privateProperties.load(it) }
-      val personalKey = System.getenv("GEMINI_API_KEY") ?: privateProperties.getProperty("GEMINI_API_KEY", "")
-      val escapedKey = personalKey.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")
-      buildConfigField("String", "GEMINI_API_KEY", "\"$escapedKey\"")
-    }
     create("preview") {
       initWith(getByName("debug"))
       applicationIdSuffix = ".preview"

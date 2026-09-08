@@ -479,10 +479,15 @@
 
     <section style="margin:20px 0;padding:20px;background:var(--bg-card);border-radius:16px">
       <h2>הוספה בטקסט חופשי</h2>
+      <label for="personal-ai-key">מפתח ג׳מיני אישי</label>
+      <input id="personal-ai-key" class="form-input" type="password" autocomplete="off" placeholder="מפתח API מהפרויקט האישי שלך">
+      <button class="btn-secondary" onclick="setPersonalAiKey()">הפעלת מפתח אישי</button>
+      <button class="btn-secondary" onclick="clearPersonalAiKey()">הסרת מפתח מהעמוד</button>
+      <p>המפתח נשמר בזיכרון העמוד בלבד עד רענון, ואינו נכלל בגיבוי. הפענוח נשלח ישירות לגוגל ונחשב במכסת הפרויקט שלך.</p>
       <label for="ai-text" style="display:block;margin-top:12px">מה עבדת? אפשר גם להדביק נתונים שלא נקראו בטבלה</label>
       <textarea id="ai-text" rows="3" class="form-input" style="width:100%" placeholder="אתמול עבדתי ארבע שעות בעצמאי"></textarea>
       <button id="ai-parse" class="btn-primary" onclick="parseAi()">פענוח ובדיקה לפני שמירה</button>
-      <p id="ai-status" role="status">השימוש במודלים דורש חיבור לחשבון והגדרת השירות.</p>
+      <p id="ai-status" role="status">אפשר להשתמש באפליקציה בלי AI. לפענוח יש להוסיף מפתח אישי.</p>
     </section>
     <!-- Filter & Search -->
     <section class="filter-section">
@@ -557,6 +562,7 @@
 </div>
 
 <script src="web/transfer.js"></script>
+<script src="web/personal-ai.js"></script>
 <script>
     // State management
     let shifts = [];
@@ -589,15 +595,13 @@
             if(!firebase.apps.length){const response=await fetch('/api/config');if(!response.ok)throw Error('שירות החשבון עדיין לא הוגדר');const config=await response.json();if(!config.firebase)throw Error('חיבור החשבון עדיין לא הוגדר בשרת');firebase.initializeApp(config.firebase);}
             if(firebase.auth().currentUser){await firebase.auth().signOut();currentUserId=null;}else{const result=await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());currentUserId=result.user.uid;}
             document.getElementById('auth-btn').textContent=currentUserId?'התנתקות':'התחברות לחשבון';
-            document.getElementById('user-status-text').textContent=currentUserId?'מחובר לשירות המודלים · הנתונים מקומיים':'מצב מקומי שמור';
+            document.getElementById('user-status-text').textContent=currentUserId?'מחובר לחשבון · הנתונים מקומיים':'מצב מקומי שמור';
         }catch(e){alert(e.message);}
     }
-    async function aiRequest(body){
-        const user=typeof firebase!=='undefined'&&firebase.apps.length?firebase.auth().currentUser:null;
-        if(!user)throw Error('יש להתחבר לחשבון באמצעות כפתור ההתחברות');
-        const response=await fetch('/api/ai',{method:body?'POST':'GET',headers:{Authorization:'Bearer '+await user.getIdToken(),'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
-        const data=await response.json();if(!response.ok)throw Error(data.error||'שירות המודלים אינו זמין');return data;
-    }
+    const personalAi=PersonalAi.createClient((...args)=>fetch(...args));
+    function setPersonalAiKey(){try{personalAi.setKey(document.getElementById('personal-ai-key').value);document.getElementById('personal-ai-key').value='';document.getElementById('ai-status').textContent='המפתח זמין לעמוד הנוכחי. החיבור ייבדק בפענוח.';}catch(e){document.getElementById('ai-status').textContent=e.message;}}
+    function clearPersonalAiKey(){personalAi.clearKey();document.getElementById('personal-ai-key').value='';document.getElementById('ai-status').textContent='המפתח הוסר מהעמוד. המשמרות נשמרו.';}
+    async function aiRequest(body){return personalAi.generate(body.prompt);}
     async function parseAi(){
         const input=document.getElementById('ai-text').value;if(!input.trim())return;
         const button=document.getElementById('ai-parse');button.disabled=true;

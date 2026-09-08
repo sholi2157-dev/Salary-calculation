@@ -38,21 +38,16 @@ object GeminiParser {
     suspend fun parseNaturalLanguageToShifts(
         input: String,
         existingCategories: List<String>,
-        categoryRates: Map<String, Double> = emptyMap()
+        categoryRates: Map<String, Double> = emptyMap(),
+        apiKey: String = ""
     ): List<ParsedShift> = withContext(Dispatchers.IO) {
-        val apiKey = if (BuildConfig.GEMINI_API_KEY.isNotEmpty()) BuildConfig.GEMINI_API_KEY else ""
-        val useServer = AiService.configured
-        check(useServer || BuildConfig.DEBUG) { "שירות הפענוח לגרסה המשותפת עדיין לא הוגדר" }
-        if (!useServer && (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY")) {
-            Log.e(TAG, "API Key is missing or default placeholder value.")
-            error("מפתח השירות של ג׳מיני לא הוגדר")
-        }
+        require(apiKey.isNotBlank()) { "יש להוסיף מפתח ג׳מיני אישי בהגדרות" }
 
         val modelIdentifier = "gemini-3.5-flash"
 
         Log.d("ModelVerification", "Active Model API ID: $modelIdentifier")
 
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelIdentifier:generateContent?key=$apiKey"
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelIdentifier:generateContent"
 
         // Calculate helper dates to provide to the model
         val now = Calendar.getInstance()
@@ -134,13 +129,11 @@ object GeminiParser {
 
         val request = Request.Builder()
             .url(url)
+            .header("x-goog-api-key", apiKey)
             .post(body)
             .build()
 
         suspend fun responseText(): String {
-            if (useServer) {
-                return AiService.generate(prompt)
-            }
             return client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     Log.e(TAG, "Request failed with status code ${response.code}: ${response.message}")
@@ -151,6 +144,7 @@ object GeminiParser {
                 val rootJson = JSONObject(responseBodyStr)
                 val candidates = rootJson.optJSONArray("candidates") ?: error("השירות לא החזיר נתוני משמרות תקינים")
                 val candidateObj = candidates.optJSONObject(0) ?: error("השירות לא החזיר נתוני משמרות תקינים")
+                check(candidateObj.optString("finishReason") == "STOP") { "ג׳מיני לא השלים את הפענוח" }
                 val contentObjRes = candidateObj.optJSONObject("content") ?: error("השירות לא החזיר נתוני משמרות תקינים")
                 val partsArrayRes = contentObjRes.optJSONArray("parts") ?: error("השירות לא החזיר נתוני משמרות תקינים")
                 val partObjRes = partsArrayRes.optJSONObject(0) ?: error("השירות לא החזיר נתוני משמרות תקינים")

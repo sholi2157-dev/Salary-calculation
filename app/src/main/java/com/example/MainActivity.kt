@@ -1081,7 +1081,7 @@ fun DashboardScreen(
             isAiParsing = true
             try {
                 val cats = viewModel.categories.value.map { it.name }
-                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, viewModel.categories.value.associate { it.name to it.defaultRate })
+                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, viewModel.categories.value.associate { it.name to it.defaultRate }, com.example.api.PersonalAiKey.read(context))
                 if (!results.isNullOrEmpty()) {
                     android.app.AlertDialog.Builder(context)
                         .setTitle("אישור המשמרות שפוענחו")
@@ -4640,6 +4640,8 @@ fun ManagementScreen(
     onSignIn: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    var personalKeyDraft by remember { mutableStateOf("") }
+    var personalKeyStatus by remember { mutableStateOf("המפתח אישי למכשיר ואינו נכלל בגיבוי המשמרות") }
     val accountSession by viewModel.currentUserSession.collectAsStateWithLifecycle()
     var newCategoryText by remember { mutableStateOf("") }
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
@@ -4672,6 +4674,22 @@ fun ManagementScreen(
                     color = Color.White,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
+            }
+
+            Card(colors = CardDefaults.cardColors(containerColor = Color(0x331E293B))) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("ג׳מיני — מפתח אישי", color = Color.White)
+                    Text("הפענוח נשלח לגוגל ונחשב במכסת הפרויקט של המפתח שלך. בלי מפתח אפשר להמשיך להשתמש בכל הפעולות הרגילות.", color = Color.White.copy(alpha = 0.7f))
+                    OutlinedTextField(value = personalKeyDraft, onValueChange = { personalKeyDraft = it },
+                        label = { Text("מפתח API אישי") }, singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
+                    Button(onClick = {
+                        try { com.example.api.PersonalAiKey.save(context, personalKeyDraft); personalKeyDraft = ""; personalKeyStatus = "המפתח נשמר מוצפן במכשיר. החיבור ייבדק בזמן הפענוח" }
+                        catch (_: Exception) { personalKeyStatus = "שמירת המפתח לא הצליחה. יש לבדוק את המפתח ולנסות שוב" }
+                    }) { Text("שמירת מפתח אישי") }
+                    TextButton(onClick = { com.example.api.PersonalAiKey.remove(context); personalKeyDraft = ""; personalKeyStatus = "המפתח האישי הוסר. המשמרות נשמרו" }) { Text("הסרת המפתח האישי") }
+                    Text(personalKeyStatus, color = Color.White.copy(alpha = 0.7f))
+                }
             }
 
             // Category 1: ניהול עבודה וקטגוריות
