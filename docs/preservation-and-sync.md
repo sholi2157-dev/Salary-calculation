@@ -81,3 +81,54 @@ Outstanding requirements explicitly requested by user:
   rate after restart, editing currency/payment, filters, live timer, AI entry,
   JSON/table import, export with multiline notes. Compare aggregate totals per
   currency and original saved amounts; do not claim 100% identity from browsing.
+
+## Continuation implementation, 2026-09-08
+
+Android import/default/model changes at f2cb0fd913a5c6a0d5e73fd2476f8d99b918b1c6
+passed GitHub Actions run 34171740810. Final follow-up adds import and AI review
+before saving, and uses the repository's fixed **test** signing key for preview
+builds. The earlier preview used an ephemeral runner key: Android may refuse an
+in-place update. Export the full JSON backup first, remove only the old preview
+if necessary, install the new preview and re-import. Never remove the original app.
+The fixed test key is not a production signing solution.
+
+Implemented web changes (existing Vercel project, not a replacement Site):
+- Header-based import for clipboard/file, original amounts/dates/currencies,
+  multiline CSV and JSON group/category/worker preservation, multiset deduplication.
+- Import review showing every incoming row, incoming/new totals per currency.
+- Atomic complete local snapshot; CSV and full JSON export; category defaults;
+  currency-aware totals and ordinary edit/payment/delete behavior.
+- Removed simulated cloud login and automatic sample records.
+- Optional real Firebase authentication for AI only; cloud sync remains disabled.
+- AI model selector, refresh, natural language/table proposals and review.
+
+Server `/api/ai` supports Gemini generateContent and OpenAI Responses API.
+Authentication verifies Firebase ID tokens through the project API and requires
+an explicit UID allowlist. Provider keys are server-side only. Catalog overrides
+permit adding models without a client app update. Requests do not persist prompts
+in the application; OpenAI requests set store:false. Live provider calls have NOT
+been tested with real keys. Catalog 'available' means a key is configured, not a
+successful live entitlement test. Unavailable/retired model errors are surfaced;
+there is no silent model substitution. No new credentials were provisioned.
+
+Server configuration required (set privately in existing Vercel project):
+- FIREBASE_PROJECT_ID, FIREBASE_WEB_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_WEB_APP_ID
+- AI_ALLOWED_UIDS (comma-separated explicit account UIDs; empty denies all)
+- GEMINI_API_KEY and OPENAI_API_KEY
+- Optional AI_MODELS_JSON array of {id, name, provider, model}; id=provider:model.
+Android build AI_SERVICE_URL must point to the deployed HTTPS `/api/ai` endpoint.
+Without it, existing direct Gemini is preserved and GPT reports not configured.
+Do not put OpenAI/server keys in Android BuildConfig or public web files.
+The pre-existing direct Gemini build-key architecture remains a legacy limitation.
+
+Official model/API sources checked:
+https://developers.openai.com/api/docs/models
+https://ai.google.dev/gemini-api/docs/models
+https://ai.google.dev/api/models
+
+Local verification: node --test web-tests/*.test.cjs (12 tests initially passing),
+node scripts/build-web.cjs, and syntax check of the inline web script.
+Vercel list_teams returned [] again. No deployment or production merge performed.
+Website is still not full Android feature parity: foreground timer, complete group
+editing, advanced history/filter interactions and cross-device sync remain gates.
+Do not present the web changes or configurable AI as a verified live synced app.

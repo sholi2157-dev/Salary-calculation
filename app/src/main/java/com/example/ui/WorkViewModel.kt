@@ -755,15 +755,29 @@ class WorkViewModel(
             Toast.makeText(context, e.message ?: "לא ניתן לקרוא את הנתונים", Toast.LENGTH_LONG).show()
             return false
         }
-        viewModelScope.launch {
-            try {
-                val added = repository.importBackup(backup)
-                Toast.makeText(context, "נוספו $added משמרות", Toast.LENGTH_LONG).show()
-            } catch (e: Exception) {
-                android.util.Log.e("WorkViewModel", "Import failed", e)
-                Toast.makeText(context, "הייבוא לא הושלם. הנתונים הקיימים נשמרו.", Toast.LENGTH_LONG).show()
-            }
-        }
+        val totals = backup.entries.groupBy { it.currency }.map { (currency, rows) ->
+            "$currency ${String.format(Locale.US, "%.2f", rows.sumOf { it.totalEarnings })}"
+        }.joinToString(" • ")
+        val summary = "נקראו ${backup.entries.size} משמרות.\nסכומי הקובץ: $totals\nרשומות שכבר קיימות לא יתווספו שוב.\n\n" +
+            backup.entries.take(20).joinToString("\n") { entry ->
+                "${entry.category} | ${SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(entry.date))} | ${entry.hours} שעות | ${entry.totalEarnings} ${entry.currency}"
+            } + if (backup.entries.size > 20) "\nועוד ${backup.entries.size - 20} משמרות" else ""
+        android.app.AlertDialog.Builder(context)
+            .setTitle("בדיקת נתונים לפני ייבוא")
+            .setMessage(summary)
+            .setNegativeButton("ביטול", null)
+            .setPositiveButton("שמירת הנתונים") { _, _ ->
+                viewModelScope.launch {
+                    try {
+                        val added = repository.importBackup(backup)
+                        performAutoBackup()
+                        Toast.makeText(context, "נוספו $added משמרות", Toast.LENGTH_LONG).show()
+                    } catch (e: Exception) {
+                        android.util.Log.e("WorkViewModel", "Import failed", e)
+                        Toast.makeText(context, "הייבוא לא הושלם. הנתונים הקיימים נשמרו.", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }.show()
         return true
     }
 

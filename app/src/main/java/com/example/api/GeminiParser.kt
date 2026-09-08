@@ -198,10 +198,7 @@ object GeminiParser {
                     if (rawResponseTemp.startsWith("[")) {
                         val jsonArr = org.json.JSONArray(rawResponseTemp)
                         for (i in 0 until jsonArr.length()) {
-                            val obj = jsonArr.optJSONObject(i)
-                            if (obj != null) {
-                                resultList.add(parseShiftObject(obj))
-                            }
+                            resultList.add(parseShiftObject(jsonArr.getJSONObject(i)))
                         }
                     } else {
                         val jsonObj = JSONObject(rawResponseTemp)
@@ -210,10 +207,7 @@ object GeminiParser {
                             ?: jsonObj.optJSONArray("items")
                         if (shiftsArr != null) {
                             for (i in 0 until shiftsArr.length()) {
-                                val obj = shiftsArr.optJSONObject(i)
-                                if (obj != null) {
-                                    resultList.add(parseShiftObject(obj))
-                                }
+                                resultList.add(parseShiftObject(shiftsArr.getJSONObject(i)))
                             }
                         } else {
                             resultList.add(parseShiftObject(jsonObj))

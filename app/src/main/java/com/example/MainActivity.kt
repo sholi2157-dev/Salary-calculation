@@ -1084,23 +1084,16 @@ fun DashboardScreen(
                 val currentModel = viewModel.geminiModel.value
                 val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, currentModel, viewModel.categories.value.associate { it.name to it.defaultRate })
                 if (!results.isNullOrEmpty()) {
-                    viewModel.addShifts(results)
+                    android.app.AlertDialog.Builder(context)
+                        .setTitle("אישור המשמרות שפוענחו")
+                        .setMessage(results.joinToString("\n\n") { "${it.category} | ${SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(it.date))}\n${it.hours} שעות × ${it.hourlyRate} ${it.currency}\n${it.notes}" })
+                        .setNegativeButton("ביטול", null)
+                        .setPositiveButton("הוספת המשמרות") { _, _ ->
+                            viewModel.addShifts(results)
+                            aiInputText = ""
+                            Toast.makeText(context, "המשמרות הועברו לשמירה", Toast.LENGTH_SHORT).show()
+                        }.show()
 
-                    aiInputText = ""
-                    triggerHapticFeedback(context, isDestructive = false)
-
-                    val msg = if (results.size > 1) "נוספו ${results.size} משמרות בהצלחה!" else "המשמרת נוספה!"
-                    scope.launch {
-                        val snackbarResult = snackbarHostState.showSnackbar(
-                            message = msg,
-                            actionLabel = "בטל",
-                            duration = SnackbarDuration.Long
-                        )
-                        if (snackbarResult == SnackbarResult.ActionPerformed) {
-                            viewModel.undoLastAddedEntry()
-                            Toast.makeText(context, "הוספת המשמרות בוטלה", Toast.LENGTH_SHORT).show()
-                        }
-                    }
                 } else {
                     isManualMode = true
                     isAiMode = false
@@ -5292,7 +5285,7 @@ fun ManagementScreen(
                                             if (success) {
                                                 importText = ""
                                                 triggerHapticFeedback(context, isDestructive = false)
-                                                Toast.makeText(context, "הייבוא התחיל", Toast.LENGTH_SHORT).show()
+                                                // The confirmation dialog owns the actual import.
                                             }
                                         }
                                     },
