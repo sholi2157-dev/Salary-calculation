@@ -1,0 +1,11 @@
+# Salary-calculation maintenance rules
+
+- Read `docs/preservation-and-sync.md` before changing this repository. Current user instructions override older historical notes there.
+- Work on `codex/preserve-app-sync` and PR #1. Preserve the existing Vercel project and production branch.
+- Preserve all user data and existing behavior. The user's reported backup contains 22 shifts and 8 categories. Never reset storage, replace a database, discard records, or recommend uninstalling as a shortcut. Use synthetic records for tests; do not modify the user's live records.
+- Never commit or upload secrets, credentials, keystores, signing keys, or encoded signing material. Use standard Android Gradle Plugin debug signing for debug/preview; no root debug.keystore dependency. Do not claim this solves existing-device signature mismatches.
+- Run `npm test`, `npm run build`, and `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`. If local Android dependencies are inaccessible, execute that command in GitHub Actions and inspect the actual result/logs.
+- Check GitHub Actions and the Vercel preview for the pushed code before finishing. If the preview is available, verify the site in the browser with synthetic data. Fix failures and rerun the relevant checks. Never infer success from a push alone.
+- Update `docs/preservation-and-sync.md` with the tested commit SHA and verified CI/Vercel results only after the required tests pass. Report blocked checks honestly rather than marking them passed.
+- Firebase and cloud sync are NOT verified. Do not present them as active until end-to-end tests cover user permissions, separate accounts, edits, deletion, offline/reconnect and conflict handling.
+- Use a single Gemini 3.5 Flash model; no model selector or GPT route. Preserve existing personal preview AI behavior. Public release builds must not embed the owner's provider key or fall back to direct owner-key calls. The server must authenticate and explicitly authorize each user before calling Gemini; never open access to friends by default. Shared approved requests still count toward the server project's quota; separate billing requires separate provider projects/credentials or a deliberately budgeted service.

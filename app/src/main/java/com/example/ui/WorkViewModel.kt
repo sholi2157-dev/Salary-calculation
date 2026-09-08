@@ -51,7 +51,6 @@ class WorkViewModel(
     }
 
     private val SERVICE_NOTIFICATION_ENABLED_KEY = booleanPreferencesKey("service_notification_enabled")
-    private val GEMINI_MODEL_KEY = stringPreferencesKey("gemini_model")
     private val DEFAULT_CURRENCY_KEY = stringPreferencesKey("default_currency")
 
     val defaultCurrency: StateFlow<String> = application.dataStore.data
@@ -62,16 +61,6 @@ class WorkViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = "₪"
-        )
-
-    val geminiModel: StateFlow<String> = application.dataStore.data
-        .map { preferences ->
-            preferences[GEMINI_MODEL_KEY] ?: "Gemini 3.5 Flash"
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "Gemini 3.5 Flash"
         )
 
     val serviceNotificationEnabled: StateFlow<Boolean> = application.dataStore.data
@@ -143,14 +132,6 @@ class WorkViewModel(
                         getApplication<Application>().startService(intent)
                     }
                 }
-            }
-        }
-    }
-
-    fun updateGeminiModel(model: String) {
-        viewModelScope.launch {
-            getApplication<Application>().dataStore.edit { preferences ->
-                preferences[GEMINI_MODEL_KEY] = model
             }
         }
     }

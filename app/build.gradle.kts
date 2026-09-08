@@ -16,6 +16,7 @@ android {
     targetSdk = 36
     versionCode = 2
     versionName = "1.1"
+    buildConfigField("String", "GEMINI_API_KEY", "\"\"")
     // Remains false until the existing Firebase project and user isolation are verified.
     buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
     buildConfigField("String", "AI_SERVICE_URL", "\"${System.getenv("AI_SERVICE_URL") ?: ""}\"")
@@ -31,15 +32,19 @@ android {
       keyAlias = "upload"
       keyPassword = System.getenv("KEY_PASSWORD")
     }
-    create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
-    }
+
   }
 
   buildTypes {
+    debug {
+      // Legacy personal development only. Never embed the owner key in release.
+      val privateProperties = java.util.Properties()
+      val privateFile = rootProject.file(".env")
+      if (privateFile.isFile) privateFile.inputStream().use { privateProperties.load(it) }
+      val personalKey = System.getenv("GEMINI_API_KEY") ?: privateProperties.getProperty("GEMINI_API_KEY", "")
+      val escapedKey = personalKey.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")
+      buildConfigField("String", "GEMINI_API_KEY", "\"$escapedKey\"")
+    }
     create("preview") {
       initWith(getByName("debug"))
       applicationIdSuffix = ".preview"
@@ -52,9 +57,6 @@ android {
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
-    }
-    debug {
-      signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
   compileOptions {
@@ -73,6 +75,8 @@ android {
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
+  // Server .env secrets must never be exported into Android BuildConfig/manifest.
+  ignoreList.add(".*")
 }
 
 // Some unused dependencies are commented out below instead of being removed.

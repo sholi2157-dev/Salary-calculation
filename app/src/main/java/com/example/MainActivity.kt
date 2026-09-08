@@ -1081,8 +1081,7 @@ fun DashboardScreen(
             isAiParsing = true
             try {
                 val cats = viewModel.categories.value.map { it.name }
-                val currentModel = viewModel.geminiModel.value
-                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, currentModel, viewModel.categories.value.associate { it.name to it.defaultRate })
+                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, viewModel.categories.value.associate { it.name to it.defaultRate })
                 if (!results.isNullOrEmpty()) {
                     android.app.AlertDialog.Builder(context)
                         .setTitle("אישור המשמרות שפוענחו")
@@ -1841,16 +1840,8 @@ fun DashboardScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            val savedGeminiModel by viewModel.geminiModel.collectAsStateWithLifecycle()
-                            val normalizedSavedGeminiModel = remember(savedGeminiModel) {
-                                when (savedGeminiModel) {
-                                    "gemini-1.5-flash" -> "Gemini 3.5 Flash"
-                                    "gemini-1.5-flash-8b", "gemini-1.5-flash-lite" -> "Gemini 3.1 Flash-Lite"
-                                    else -> if (savedGeminiModel.isBlank()) "Gemini 3.5 Flash" else savedGeminiModel
-                                }
-                            }
                             Text(
-                                text = "מודל פעיל: $normalizedSavedGeminiModel",
+                                text = "פענוח באמצעות ג׳מיני",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.5f),
                                 fontFamily = com.example.ui.theme.AssistantFontFamily,
@@ -4657,18 +4648,8 @@ fun ManagementScreen(
     var importText by remember { mutableStateOf("") }
 
     val savedNotificationEnabled by viewModel.serviceNotificationEnabled.collectAsStateWithLifecycle()
-    val savedGeminiModel by viewModel.geminiModel.collectAsStateWithLifecycle()
     val savedDefaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
-    val normalizedSavedGeminiModel = remember(savedGeminiModel) {
-        when (savedGeminiModel) {
-            "gemini-1.5-flash" -> "Gemini 3.5 Flash"
-            "gemini-1.5-flash-8b", "gemini-1.5-flash-lite" -> "Gemini 3.1 Flash-Lite"
-            else -> savedGeminiModel
-        }
-    }
-
     var draftNotificationEnabled by remember(savedNotificationEnabled) { mutableStateOf(savedNotificationEnabled) }
-    var draftGeminiModel by remember(normalizedSavedGeminiModel) { mutableStateOf(normalizedSavedGeminiModel) }
     var draftDefaultCurrency by remember(savedDefaultCurrency) { mutableStateOf(savedDefaultCurrency) }
 
     // Accordion state - default to all closed (-1)
@@ -4984,106 +4965,6 @@ fun ManagementScreen(
                                             text = "יחול אוטומטית בהוספת משמרות",
                                             color = Color(0xFF8E8E93),
                                             fontSize = 11.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Category 3: הגדרות בינה מלאכותית
-            Box(modifier = Modifier.fillMaxWidth()) {
-                val isExpanded = expandedSection == 2
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
-                    border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 2
-                        }
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (isExpanded) "צמצם" else "הרחב",
-                                tint = if (isExpanded) Color(0xFF6366F1) else Color(0xFF8E8E93)
-                            )
-                            Text(
-                                text = "הגדרות בינה מלאכותית",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isExpanded) Color(0xFF818CF8) else Color.White
-                            )
-                        }
-
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = isExpanded,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut()
-                        ) {
-                            Column(modifier = Modifier.padding(top = 16.dp)) {
-                                Text(
-                                    text = "בחר את מודל ה-AI שישמש לפענוח שעות העבודה והמשמרות שלך מטקסט חופשי או מהקלטה קולית.",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF8E8E93),
-                                    textAlign = TextAlign.End,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                var catalog by remember { mutableStateOf(com.example.api.AiService.defaults) }
-                                var catalogError by remember { mutableStateOf("") }
-                                var refresh by remember { mutableIntStateOf(0) }
-                                LaunchedEffect(refresh) {
-                                    if (com.example.api.AiService.configured) {
-                                        try { catalog = com.example.api.AiService.models(); catalogError = "" }
-                                        catch (e: Exception) { catalogError = e.message ?: "לא ניתן לרענן מודלים" }
-                                    } else catalogError = "ג׳מיני משתמש בחיבור הקיים. הפעלת GPT ורענון הרשימה דורשים הגדרת שירות המודלים בשרת."
-                                }
-                                TextButton(onClick = { refresh++ }) { Text("רענון רשימת המודלים") }
-                                if (catalogError.isNotBlank()) Text(catalogError, color = Color(0xFFFBBF24), fontSize = 14.sp)
-                                val models = catalog.map { it.id to (it.name + if (it.available) "" else " — טרם חובר") }
-
-                                models.forEach { (modelId, modelName) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                draftGeminiModel = modelId
-                                            }
-                                            .padding(vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        RadioButton(
-                                            selected = (draftGeminiModel == modelId),
-                                            onClick = {
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                draftGeminiModel = modelId
-                                            },
-                                            colors = RadioButtonDefaults.colors(
-                                                selectedColor = Color(0xFF6366F1),
-                                                unselectedColor = Color(0xFF8E8E93)
-                                            )
-                                        )
-                                        Text(
-                                            text = modelName,
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .padding(start = 8.dp),
-                                            textAlign = TextAlign.End
                                         )
                                     }
                                 }
@@ -5449,7 +5330,6 @@ fun ManagementScreen(
             Button(
                 onClick = {
                     viewModel.updateServiceNotificationEnabled(draftNotificationEnabled)
-                    viewModel.updateGeminiModel(draftGeminiModel)
                     viewModel.updateDefaultCurrency(draftDefaultCurrency)
                     Toast.makeText(context, "ההגדרות נשמרו בהצלחה!", Toast.LENGTH_SHORT).show()
                     onNavigateBack()

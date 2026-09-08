@@ -38,21 +38,17 @@ object GeminiParser {
     suspend fun parseNaturalLanguageToShifts(
         input: String,
         existingCategories: List<String>,
-        modelName: String = "Gemini 3.5 Flash",
         categoryRates: Map<String, Double> = emptyMap()
     ): List<ParsedShift> = withContext(Dispatchers.IO) {
         val apiKey = if (BuildConfig.GEMINI_API_KEY.isNotEmpty()) BuildConfig.GEMINI_API_KEY else ""
-        val useServer = AiService.configured || modelName.startsWith("openai:")
+        val useServer = AiService.configured
+        check(useServer || BuildConfig.DEBUG) { "שירות הפענוח לגרסה המשותפת עדיין לא הוגדר" }
         if (!useServer && (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY")) {
             Log.e(TAG, "API Key is missing or default placeholder value.")
             error("מפתח השירות של ג׳מיני לא הוגדר")
         }
 
-        val modelIdentifier = when (modelName) {
-            "Gemini 3.1 Flash-Lite", "gemini-3.1-flash-lite", "gemini-1.5-flash-8b" -> "gemini-3.1-flash-lite"
-            "Gemini 3.5 Flash", "gemini-3.5-flash", "gemini-1.5-flash" -> "gemini-3.5-flash"
-            else -> modelName.removePrefix("gemini:")
-        }
+        val modelIdentifier = "gemini-3.5-flash"
 
         Log.d("ModelVerification", "Active Model API ID: $modelIdentifier")
 
@@ -143,8 +139,7 @@ object GeminiParser {
 
         suspend fun responseText(): String {
             if (useServer) {
-                val serverModel = if (modelName.contains(":")) modelName else "gemini:$modelIdentifier"
-                return AiService.generate(serverModel, prompt)
+                return AiService.generate(prompt)
             }
             return client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
@@ -222,10 +217,9 @@ object GeminiParser {
 
     suspend fun parseNaturalLanguageToShift(
         input: String,
-        existingCategories: List<String>,
-        modelName: String = "Gemini 3.5 Flash"
+        existingCategories: List<String>
     ): ParsedShift? {
-        val list = parseNaturalLanguageToShifts(input, existingCategories, modelName)
+        val list = parseNaturalLanguageToShifts(input, existingCategories)
         return list.firstOrNull()
     }
 }
