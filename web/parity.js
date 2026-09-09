@@ -1,5 +1,7 @@
 let historyPeriod='all',historyCurrency='הכל',historySort='newest',displayedEntries=[];
 const iconPaths={
+ play:'M8 5v14l11-7zm2 3.6 5.3 3.4-5.3 3.4z',
+ stop:'M6 6h12v12H6zm2 2v8h8V8z',
  copy:'M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm4 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m0 16H8V7h12z',
  sort:'M3 6h18v2H3zm0 5h12v2H3zm0 5h6v2H3z',
  label:'M17.6 5H3v14h14.6l5-7zM16.6 17H5V7h11.6l3.5 5z',
@@ -20,7 +22,7 @@ function setPayment(value){document.getElementById('payment-filter').value=value
 function cycleCurrency(){historyCurrency=historyCurrency==='הכל'?'₪':historyCurrency==='₪'?'$':'הכל';document.getElementById('currency-filter').textContent=historyCurrency;renderShifts();}
 function setSort(value){historySort=value;document.getElementById('sort-dialog').close();renderShifts();}
 function renderHistoryControls(entries){document.getElementById('journal-title').textContent='יומן עבודה ('+entries.length+')';document.getElementById('displayed-total').textContent=formatTotals(WorkTransfer.totals(entries));const select=document.getElementById('category-filter');select.replaceChildren();for(const name of ['הכל',...new Set([...categories.map(c=>c.name),...shifts.map(s=>s.category)])]){const o=document.createElement('option');o.value=name;o.textContent=name==='הכל'?'כל הקטגוריות':name;select.append(o);}select.value=selectedCategory;}
-async function copyDisplayed(kind){const text=kind==='table'?WorkTransfer.csv(displayedEntries):displayedEntries.map(e=>new Date(e.date).toLocaleDateString('he-IL')+' · '+e.category+' · '+e.hours+' שעות · '+e.currency+' '+e.totalEarnings.toFixed(2)+' · '+(e.isPaid?'שולם':'ממתין')).join('\n')+'\nסה״כ: '+formatTotals(WorkTransfer.totals(displayedEntries));try{await navigator.clipboard.writeText(text);document.getElementById('report-dialog').close();showMessage('הדוח הועתק');}catch{showMessage('הדפדפן לא אפשר העתקה. אפשר לייצא קובץ דרך ההגדרות.');}}
+async function copyDisplayed(kind){const text=kind==='table'?WorkTransfer.csv(displayedEntries,'\t'):displayedEntries.map(e=>new Date(e.date).toLocaleDateString('he-IL')+' · '+e.category+' · '+e.hours+' שעות · '+e.currency+' '+e.totalEarnings.toFixed(2)+' · '+(e.isPaid?'שולם':'ממתין')).join('\n')+'\nסה״כ: '+formatTotals(WorkTransfer.totals(displayedEntries));try{await navigator.clipboard.writeText(text);document.getElementById('report-dialog').close();showMessage('הדוח הועתק');}catch{showMessage('הדפדפן לא אפשר העתקה. אפשר לייצא קובץ דרך ההגדרות.');}}
 function createShiftCard(entry,compact=false){
  const card=document.createElement('details');card.className='journal-card'+(compact?' compact':'');
  const summary=document.createElement('summary');const date=new Date(entry.date).toLocaleDateString('he-IL',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});

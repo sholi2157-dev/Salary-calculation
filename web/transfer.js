@@ -99,6 +99,6 @@ function rangeHours(start,end,breakMinutes=0,original=null){
  return (minutes-pause)/60;
 }
 function totals(entries){const t={};for(const e of entries)t[e.currency]=(t[e.currency]||0)+e.totalEarnings;return t;}
-function csv(entries){const fields=['category','date','hours','hourlyRate','totalEarnings','isPaid','notes','currency','startTime','endTime'];const quote=s=>'"'+String(s??'').replace(/"/g,'""')+'"';return '\ufeff'+[fields.join(','),...entries.map(e=>fields.map(k=>quote(k==='date'?new Date(e.date).toLocaleDateString('en-GB'):e[k])).join(','))].join('\r\n');}
+function csv(entries,delimiter=','){const fields=['category','date','hours','hourlyRate','totalEarnings','isPaid','notes','currency','startTime','endTime'];const quote=s=>'"'+String(s??'').replace(/"/g,'""')+'"';return '\ufeff'+[fields.join(delimiter),...entries.map(e=>fields.map(k=>quote(k==='date'?new Date(e.date).toLocaleDateString('en-GB'):e[k])).join(delimiter))].join('\r\n');}
 const api={decode,decodeTable,normalize,missing,totals,csv,number,table,rangeHours,inferredBreak};if(typeof module!=='undefined')module.exports=api;else root.WorkTransfer=api;
 })(globalThis);

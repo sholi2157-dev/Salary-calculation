@@ -7,3 +7,5 @@ test('multiset duplicate protection retains genuine repeated rows',()=>{const e=
 test('JSON group metadata and category decimals survive',()=>{const base=T.decode('category,date,hours,rate\nWork,2026-09-07,2,50').entries[0];const root={formatVersion:2,entries:[{...base,isGroupShift:true,employerRate:70,workerRate:50,groupWorkersJson:'[{"name":"A","hours":2,"isPaid":true}]'}],categories:[{name:'Work',defaultRate:50.5}],workers:[{name:'A'}]};assert.deepEqual(T.decode(JSON.stringify(root)),root);});
 test('currencies are never combined',()=>{assert.deepEqual(T.totals([{currency:'₪',totalEarnings:100},{currency:'$',totalEarnings:20}]),{'₪':100,'$':20});});
 test('ambiguous and negative numbers require correction',()=>{assert.throws(()=>T.number('1,234'));assert.throws(()=>T.number('-50'));});
+
+test('Excel clipboard TSV preserves columns and quoted multiline notes',()=>{const entries=T.decode('category,date,hours,rate,notes\nWork,2026-09-07,2,50,"one, two\nthree"').entries;const tsv=T.csv(entries,'\t');assert.ok(tsv.startsWith('\ufeffcategory\tdate\thours'));assert.deepEqual(T.decode(tsv).entries,entries);});
