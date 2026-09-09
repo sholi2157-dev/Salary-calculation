@@ -86,7 +86,19 @@ function missing(existing,incoming){
  for(const e of existing){const k=signature(e);counts.set(k,(counts.get(k)||0)+1);}
  return incoming.filter(e=>{const k=signature(e),n=counts.get(k)||0;if(n){counts.set(k,n-1);return false;}return true;});
 }
+// Preserve imported net hours when only non-time fields are edited.
+function rangeDuration(start,end){
+ const parse=s=>{check(/^([01]\d|2[0-3]):[0-5]\d$/.test(s),'יש להזין שעת התחלה וסיום תקינות');const [h,m]=s.split(':').map(Number);return h*60+m;};
+ let minutes=parse(end)-parse(start);if(minutes<0)minutes+=1440;return minutes;
+}
+function inferredBreak(entry){if(!entry?.isTimeRange)return 0;try{return Math.max(0,Math.round((rangeDuration(entry.startTime,entry.endTime)-entry.hours*60)*1000000)/1000000);}catch{return 0;}}
+function rangeHours(start,end,breakMinutes=0,original=null){
+ const minutes=rangeDuration(start,end),pause=number(breakMinutes);
+ if(original?.isTimeRange && start===original.startTime && end===original.endTime && Math.abs(pause-inferredBreak(original))<0.000001)return original.hours;
+ check(pause<minutes,'ההפסקה חייבת להיות קצרה ממשך המשמרת');
+ return (minutes-pause)/60;
+}
 function totals(entries){const t={};for(const e of entries)t[e.currency]=(t[e.currency]||0)+e.totalEarnings;return t;}
 function csv(entries){const fields=['category','date','hours','hourlyRate','totalEarnings','isPaid','notes','currency','startTime','endTime'];const quote=s=>'"'+String(s??'').replace(/"/g,'""')+'"';return '\ufeff'+[fields.join(','),...entries.map(e=>fields.map(k=>quote(k==='date'?new Date(e.date).toLocaleDateString('en-GB'):e[k])).join(','))].join('\r\n');}
-const api={decode,decodeTable,normalize,missing,totals,csv,number,table};if(typeof module!=='undefined')module.exports=api;else root.WorkTransfer=api;
+const api={decode,decodeTable,normalize,missing,totals,csv,number,table,rangeHours,inferredBreak};if(typeof module!=='undefined')module.exports=api;else root.WorkTransfer=api;
 })(globalThis);
