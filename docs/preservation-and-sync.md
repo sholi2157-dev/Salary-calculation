@@ -118,3 +118,39 @@ Tested source commit: `bd69f0f1545a48b64ca7053c227aca79465b822f`.
 - Android physical-device swipe and in-place installation remain unverified. Runs34255538565 and34256199895 produced different public certificate SHA-256 fingerprints: `7bd7c854a661b4a5236bc68846d9cb0a9455d4f9425917a6d7db58df1446a384` and `c73690066b090302908a1129cf2ccbc202a8d31709fca2d4c36e5cc1d57b0511`. Both package com.aistudio.worktracker.qztvdw.preview, versionCode2. This proves unstable signing between those builds, not the installed phone's exact certificate. Do not offer another APK as a proven update fix, uninstall, or upload private signing material.
 - Personal keys persist encrypted per account on a device, not across devices. Real provider calls and physical-device Keystore persistence remain unverified.
 - Firebase sync, separate-account data permissions and offline/reconnect remain disabled/unverified. No production change or PR merge.
+
+
+## Screenshot-based website checkpoint — 2026-09-09
+
+This conversation owns **website parity only**. Android implementation, installation/signing, accounts and Firebase sync belong to the separate Android conversation. No Android source was changed in this checkpoint. Read actual remote branch status before continuing; do not repeat the completed changes below.
+
+The user supplied accessible screenshots of main, history and settings (1000338850.png, 1000338852.png, 1000338854.png). These now supplement the Android source and supersede the earlier lack of static visual references. Kotlin Compose itself is not browser code; the website implements its layout and behavior in HTML/CSS/JavaScript.
+
+### Implemented from those references
+
+- Dark rounded expandable history cards with category avatars, label/payment/stopwatch/chevron vector icons, Hebrew long dates, payment dots, and compact recent cards. Existing edit, payment, notes and group details remain accessible inside expanded cards.
+- History toolbar, category selection, all/month/custom inclusive dates, payment pills, currency filter, newest/oldest/recently-added sorting and search. Combined filters drive the displayed count, currency-separated totals and copied report.
+- Clipboard table uses quoted TSV for direct Excel columns; file export remains CSV. A separate copy action creates a message summary; it does not send messages.
+- Settings accordion layout, account row and save/cancel placement follow the screenshot, with web AI intentionally omitted. Currency preference persists locally, affects new reports and updates the summary display immediately. Notifications text describes actual web limitations.
+- Assistant/Rubik typography retained and sizes/weights refined; stronger indigo/violet animated background, glass borders, glowing totals, spacing, rounded controls and vector report/timer icons aligned with the references. Reduced-motion support retained.
+- Monthly progress now follows the native 10,000 earnings target, using the selected currency rather than combining currencies; it no longer measures elapsed calendar days.
+
+### Verified result
+
+Tested source commit: `f1a98447e08c996fe40514f27c25dfb77640c6cd`.
+
+- `npm test`: **19/19 passed** locally and in Actions; includes combined history filters, immutable sorting and Excel TSV round-trip with multiline notes.
+- `npm run build`: passed locally and in Actions. `git diff --check` passed.
+- `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`: **BUILD SUCCESSFUL in 5m 21s**, verified from completed job 102505005116 and its logs.
+- Actions: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34363149842 — success.
+- Vercel: https://vercel.com/sholi/salary-calculation/EKaf5B3QDv9qpXYsRoyevoUrZhRJ — successful status for the tested source SHA.
+- Actual browser preview: https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/ — loaded and interacted with successfully.
+- Browser used synthetic 22 shifts / 8 categories, totaling 44 hours / 2,200 ILS. Payment filter yielded 11 records; category plus payment yielded 3 records / 300 ILS; adding a one-day range yielded 1 record / 100 ILS. August yielded 22 and September 0; USD filter excluded the ILS records. Oldest sort and card expansion/edit were exercised. Notes edit and refresh retained all 22 records and totals.
+- Saved currency survived refresh; cancel did not apply a changed selection. The final display refresh and currency heading were checked in the live preview.
+- After resuming the interrupted run, the final live site's Excel-copy action was verified from the clipboard: exactly 3 selected-category rows with tab-separated columns. No user records or personal keys were used. Inspected console errors were browser-extension metadata errors, not application-origin errors.
+
+### Honest remaining limits
+
+Desktop main/history/settings screenshots were inspected against the supplied app references. Phone-width and physical-device visual comparison is still required before claiming pixel identity; this browser did not expose a supported viewport-resize capability. This is a reviewed website preview, not a completed production release or certification of every Android feature. Advanced history/bulk actions and report behavior still require a complete source-based parity inventory beyond the three supplied screen states.
+
+Firebase/cloud sync remains disabled and unverified. Android installation and account/credential gates above remain owned by the other conversation. No production change or PR merge. Preserve the real 22-shift/8-category backup and all existing work.
