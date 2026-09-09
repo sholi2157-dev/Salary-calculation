@@ -22,7 +22,7 @@
 <body>
 
 <div class="app-container">
-  <header class="header-bar"><h1><span class="clock-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16m-1 3v6l5 3 1-1.7-4-2.3V7z"/></svg></span> שכר עבודות אישי</h1><div class="header-actions"><button class="icon-btn" aria-label="חיפוש בהיסטוריה" onclick="showPage(1);document.getElementById('search-box').focus()"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 3a6.5 6.5 0 1 0 4 11.6L20 21l1-1-6.4-6.5A6.5 6.5 0 0 0 9.5 3m0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9"/></svg></button><button class="icon-btn" aria-label="ניהול וקטגוריות" onclick="document.getElementById('settings-dialog').showModal()"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19.4 13a7 7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3H9l-.4 3a8 8 0 0 0-1.7 1L4.5 6l-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a8 8 0 0 0 1.7 1l.4 3h6l.4-3a8 8 0 0 0 1.7-1l2.4 1 2-3.4zM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8"/></svg></button></div></header>
+  <header class="header-bar"><h1><span class="clock-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16m-1 3v6l5 3 1-1.7-4-2.3V7z"/></svg></span> שכר עבודות אישי</h1><div class="header-actions"><button class="icon-btn" aria-label="חיפוש בהיסטוריה" onclick="openHistorySearch()"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 3a6.5 6.5 0 1 0 4 11.6L20 21l1-1-6.4-6.5A6.5 6.5 0 0 0 9.5 3m0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9"/></svg></button><button class="icon-btn" aria-label="ניהול וקטגוריות" onclick="openWebSettings()"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19.4 13a7 7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3H9l-.4 3a8 8 0 0 0-1.7 1L4.5 6l-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a8 8 0 0 0 1.7 1l.4 3h6l.4-3a8 8 0 0 0 1.7-1l2.4 1 2-3.4zM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8"/></svg></button></div></header>
   <main id="app-pages">
     <section id="page-home" class="app-page" aria-label="ראשי">
       <div class="summary-carousel" aria-label="סיכומי שכר" tabindex="0">
@@ -34,12 +34,22 @@
       <section class="glass-card report-card"><button class="card-heading" aria-expanded="true" onclick="toggleReport(this)"><span>דיווח חדש</span><span aria-hidden="true">⌃</span></button><div id="report-content"><div class="mode-switch" role="tablist" aria-label="אופן דיווח"><button role="tab" aria-selected="true" onclick="setReportMode('clock')">שעון</button><button role="tab" aria-selected="false" onclick="setReportMode('manual')">ידני</button><button role="tab" aria-selected="false" onclick="setReportMode('group')">קבוצה</button></div><div id="report-slot"></div></div></section>
       <section class="glass-card recent-section"><div class="section-heading"><h2>משמרות אחרונות שנוספו</h2><button class="text-button" onclick="showPage(1)">לכל ההיסטוריה</button></div><div id="recent-list"></div></section>
     </section>
-    <section id="page-history" class="app-page" hidden aria-label="היסטוריה"><div class="section-heading"><h2>היסטוריית משמרות</h2><button class="text-button" onclick="openAddModal()">＋ דיווח חדש</button></div><section class="filter-section glass-card"><label class="sr-only" for="search-box">חיפוש משמרות</label><input id="search-box" type="search" class="form-input" placeholder="חיפוש לפי עבודה, תאריך או הערה..." oninput="renderShifts()"><div class="form-columns"><label>תשלום<select id="payment-filter" class="form-input" onchange="renderShifts()"><option value="all">הכל</option><option value="paid">שולם</option><option value="unpaid">טרם שולם</option></select></label><label>חודש<input type="month" id="month-filter" class="form-input" onchange="renderShifts()"></label></div><button class="text-button" onclick="document.getElementById('month-filter').value='';renderShifts()">כל החודשים</button><div class="category-chips" id="category-chips"></div></section><div id="history-summary" class="history-summary"></div><div class="shifts-container" id="shifts-list"></div></section>
+    <section id="page-history" class="app-page" hidden aria-label="היסטוריה">
+      <div class="journal-toolbar"><h2 id="journal-title">יומן עבודה</h2><div class="journal-actions"><button class="micro-button" aria-label="שתף דוח" onclick="document.getElementById('report-dialog').showModal()" data-icon="copy"></button><button class="micro-button" aria-label="מיון" onclick="document.getElementById('sort-dialog').showModal()" data-icon="sort"></button><button id="currency-filter" class="micro-button" onclick="cycleCurrency()" aria-label="סינון מטבע">הכל</button></div></div>
+      <div id="history-search" hidden><label class="sr-only" for="search-box">חיפוש משמרות</label><input id="search-box" type="search" class="form-input" placeholder="חיפוש משמרת (קטגוריה, הערה)..." oninput="renderShifts()"></div>
+      <div class="history-filters"><div class="date-modes"><button class="selected" data-period="all" onclick="setPeriod('all')">הכל תאריכים</button><button data-period="month" onclick="setPeriod('month')">סינון חודשי</button><button data-period="range" onclick="setPeriod('range')">טווח מותאם</button></div><label class="sr-only" for="category-filter">קטגוריה</label><select id="category-filter" onchange="setCategoryFilter(this.value)"><option value="הכל">כל הקטגוריות</option></select></div>
+      <div id="period-inputs" class="form-columns" hidden><label id="month-label" hidden>חודש<input type="month" id="month-filter" class="form-input" onchange="renderShifts()"></label><label id="from-label" hidden>מתאריך<input type="date" id="date-from" class="form-input" onchange="renderShifts()"></label><label id="to-label" hidden>עד תאריך<input type="date" id="date-to" class="form-input" onchange="renderShifts()"></label></div>
+      <div class="payment-segments" aria-label="סינון תשלום"><button class="selected" data-payment="all" onclick="setPayment('all')">הכל</button><button data-payment="unpaid" onclick="setPayment('unpaid')">ממתין</button><button data-payment="paid" onclick="setPayment('paid')">שולם</button></div>
+      <select id="payment-filter" hidden><option value="all">הכל</option><option value="paid">שולם</option><option value="unpaid">ממתין</option></select><div id="category-chips" hidden></div>
+      <div class="journal-total"><span>סה״כ מוצג:</span><strong id="displayed-total"></strong></div><div id="history-summary" class="sr-only" aria-live="polite"></div><div class="shifts-container" id="shifts-list"></div>
+    </section>
   </main>
   <div class="live-control"><button id="timer-start" onclick="openTimerDialog()"><span aria-hidden="true">▷</span> התחל משמרת פעילה</button><button id="timer-stop" hidden onclick="stopTimer()"><span aria-hidden="true">□</span> סיים משמרת פעילה</button></div>
   <nav class="bottom-nav" aria-label="ניווט ראשי"><button id="nav-home" aria-current="page" onclick="showPage(0)"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm8-2h8v8h-8zm2 2v4h4v-4z"/></svg></span>ראשי</button><button id="nav-history" onclick="showPage(1)"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13 3a9 9 0 1 1-8.4 12.2l1.9-.7A7 7 0 1 0 7 8.4L10 11H2V3l3.5 3.5A9 9 0 0 1 13 3m-1 4h2v5l4 2.4-1 1.6-5-3z"/></svg></span>היסטוריה</button></nav>
 </div>
-<dialog id="settings-dialog"><div class="dialog-heading"><h2>הגדרות מערכת</h2><button class="icon-btn" aria-label="סגירת הגדרות" onclick="this.closest('dialog').close()">×</button></div><details open><summary>ניהול עבודה וקטגוריות</summary><div id="settings-categories"></div><button class="btn-secondary" onclick="openCategoryDialog()">הוספת קטגוריה</button></details><details><summary>ייבוא וייצוא נתונים</summary><div class="settings-actions"><button class="btn-secondary" onclick="exportJson()">גיבוי מלא</button><button class="btn-secondary" onclick="exportCsv()">ייצוא CSV</button><button class="btn-secondary" onclick="document.getElementById('csv-file-input').click()">ייבוא קובץ</button><button class="btn-secondary" onclick="document.getElementById('settings-dialog').close();openTransfer()">הדבקת נתונים</button></div></details><details><summary>חשבון</summary><p id="user-status-text">הנתונים נשמרים במכשיר זה. סנכרון ענן אינו פעיל.</p><button id="auth-btn" class="btn-secondary" onclick="handleAuthClick()">התחברות לחשבון</button></details><details><summary>בינה מלאכותית</summary><p>פענוח משמרות באמצעות ג׳מיני זמין כרגע באפליקציה בלבד. שם אפשר להוסיף מפתח אישי בהגדרות, או להמשיך בלעדיו.</p></details></dialog>
+<dialog id="settings-dialog"><h2>הגדרות מערכת</h2><details><summary>ניהול עבודה וקטגוריות</summary><div id="settings-categories"></div><button class="btn-secondary" onclick="openCategoryDialog()">הוספת קטגוריה</button></details><details><summary>הגדרת מטבע ראשי <span class="indigo">₪</span></summary><label for="default-currency">מטבע לדיווחים חדשים</label><select id="default-currency" class="form-input"><option>₪</option><option>$</option></select></details><details><summary>התראות מערכת</summary><p>הטיימר מוצג באתר בזמן שהדף פתוח. התראת רקע קבועה זמינה באפליקציה.</p></details><details><summary>תחזוקה וגיבוי נתונים</summary><div class="settings-actions"><button class="btn-secondary" onclick="exportJson()">גיבוי מלא</button><button class="btn-secondary" onclick="exportCsv()">ייצוא CSV</button><button class="btn-secondary" onclick="document.getElementById('csv-file-input').click()">ייבוא קובץ</button><button class="btn-secondary" onclick="document.getElementById('settings-dialog').close();openTransfer()">הדבקת נתונים</button></div></details><div class="account-row"><div><h3>חשבון משתמש</h3><p id="user-status-text">שימוש מקומי — ללא סנכרון</p></div><button id="auth-btn" class="btn-secondary" onclick="handleAuthClick()">התחברות</button></div><div class="settings-footer"><button class="btn-danger-outline" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveWebSettings()">שמור</button></div></dialog>
+<dialog id="sort-dialog"><h2>מיון</h2><button class="menu-option" onclick="setSort('newest')">תאריך: מהחדש לישן</button><button class="menu-option" onclick="setSort('oldest')">תאריך: מהישן לחדש</button><button class="menu-option" onclick="setSort('latest_added')">נוסף לאחרונה</button><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
+<dialog id="report-dialog"><h2>העתקת הדוח המוצג</h2><button class="menu-option" onclick="copyDisplayed('table')">העתקת טבלה לאקסל</button><button class="menu-option" onclick="copyDisplayed('message')">העתקת סיכום להודעה</button><p>הדוח כולל רק משמרות שתואמות לסינון הנוכחי.</p><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
 <input type="file" id="csv-file-input" accept=".csv,.tsv,.txt,.json" hidden onchange="handleCsvImport(event)">
 <dialog id="category-dialog"><h2>קטגוריה ותעריף</h2><label for="category-name">שם מעסיק / קטגוריה</label><input id="category-name" class="form-input"><label for="category-rate">תעריף שעתי לברירת מחדל</label><input id="category-rate" type="number" min="0" step="0.01" value="40" class="form-input"><p id="category-error" role="status"></p><div class="modal-btn-row"><button class="btn-secondary" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveCategoryDialog()">שמירה</button></div></dialog>
 <dialog id="timer-dialog"><h2>משמרת פעילה</h2><label for="timer-category">מעסיק / קטגוריה</label><input id="timer-category" class="form-input" list="category-options" onchange="document.getElementById('timer-rate').value=categories.find(c=>c.name===this.value.trim())?.defaultRate??40"><label for="timer-rate">תעריף לשעה</label><input id="timer-rate" type="number" min="0" step="0.01" class="form-input" value="40"><label for="timer-currency">מטבע</label><select id="timer-currency" class="form-input"><option>₪</option><option>$</option></select><p id="timer-error" role="status"></p><div class="modal-btn-row"><button class="btn-secondary" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="startTimer()">התחלת משמרת</button></div></dialog>
@@ -98,6 +108,8 @@
 </div></dialog>
 
 <script src="web/transfer.js"></script>
+<script src="web/history.js"></script>
+<script src="web/parity.js"></script>
 
 <script>
     // State management
@@ -304,14 +316,9 @@
         let unpaidEarnings = 0;
         let totalHours = 0;
 
-        const filtered = shifts.filter(s => {
-            const matchesCategory = selectedCategory === 'הכל' || s.category === selectedCategory;
-            const matchesSearch = !search || 
-                (s.category && s.category.toLowerCase().includes(search)) ||
-                (s.notes && s.notes.toLowerCase().includes(search));
-            const paid=document.getElementById('payment-filter').value;const month=document.getElementById('month-filter').value;const d=new Date(s.date),recordMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-            return matchesCategory && matchesSearch && (paid==='all'||(paid==='paid'?s.isPaid:!s.isPaid)) && (!month||month===recordMonth);
-        });
+        const filtered = WorkHistory.select(shifts,{category:selectedCategory,search,payment:document.getElementById('payment-filter').value,period:historyPeriod,month:document.getElementById('month-filter').value,from:document.getElementById('date-from').value,to:document.getElementById('date-to').value,currency:historyCurrency,sort:historySort});
+        displayedEntries=filtered;
+
 
         // Calculate stats on all shifts
         shifts.forEach(s => {
@@ -330,41 +337,13 @@
         document.getElementById('stat-unpaid').innerText=formatTotals(WorkTransfer.totals(shifts.filter(s=>!s.isPaid)));
         document.getElementById('stat-hours').innerText=totalHours.toFixed(1)+' שעות';
 
-        renderCompanionViews(filtered);
+        renderCompanionViews(filtered);renderHistoryControls(filtered);
         if (filtered.length === 0) {
             list.innerHTML = '<div class="empty-state">אין משמרות להצגה בקטגוריה זו</div>';
             return;
         }
 
-        filtered.sort((a,b)=>b.date-a.date).forEach(s => {
-            const dateStr = new Date(s.date).toLocaleDateString('he-IL');
-            const item = document.createElement('div');
-            item.className = 'shift-item';
-            item.innerHTML = `
-                <div class="shift-info">
-                    <span class="shift-title">${escapeHtml(s.category)}</span>
-                    <span class="shift-meta">${dateStr} | ${s.hours} שעות @ ${escapeHtml(s.currency)}${s.hourlyRate}/שעה</span>
-                    ${s.notes ? `<span class="shift-meta" style="color: var(--text-muted); font-size: 0.75rem;">${escapeHtml(s.notes)}</span>` : ''}
-                    <div class="shift-pills">
-                        <span class="badge ${s.isPaid ? 'badge-paid' : 'badge-unpaid'}">
-                            ${s.isPaid ? 'שולם' : 'לא שולם'}
-                        </span>
-                    </div>
-                </div>
-                <div class="shift-amount-group">
-                    <span class="shift-total">${escapeHtml(s.currency)} ${Number(s.totalEarnings).toFixed(2)}</span>
-                    <div class="shift-actions">
-                        <button class="btn-mini" data-action="paid">${s.isPaid ? 'סמן כלא שולם' : 'סמן כשולם'}</button>
-                        <button class="btn-mini" data-action="edit">עריכה</button><button class="btn-mini" data-action="delete">מחיקה</button>
-                    </div>
-                </div>
-            `;
-            item.querySelector('[data-action="edit"]').onclick=()=>editShift(s.id);
-            item.querySelector('[data-action="paid"]').onclick=()=>togglePaid(s.id);
-            item.querySelector('[data-action="delete"]').onclick=()=>deleteShift(s.id);
-            if(s.isGroupShift){try{const members=JSON.parse(s.groupWorkersJson||'[]');const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='עבודה קבוצתית · '+members.length+' עובדים';details.append(summary);let workerHours=0;for(const w of members){workerHours+=w.hours;const p=document.createElement('p');p.textContent=w.name+' · '+w.hours+' שעות · '+(w.isPaid?'שולם':'טרם שולם');details.append(p);}const total=document.createElement('p');total.textContent='כולל העובדים לתשלום: '+s.currency+' '+(s.totalEarnings+workerHours*(s.employerRate??0)).toFixed(2)+' · השכר שלי כולל הפרש תעריפים: '+s.currency+' '+(s.totalEarnings+workerHours*((s.employerRate??0)-(s.workerRate??0))).toFixed(2);details.append(total);item.querySelector('.shift-info').append(details);}catch{}}
-            list.appendChild(item);
-        });
+        for(const entry of filtered) list.append(createShiftCard(entry));
     }
 
     let currentPage=0,reportMode='clock';const pageScroll=[0,0];
@@ -385,7 +364,7 @@
         document.getElementById('history-summary').textContent=filtered.length+' משמרות · '+filtered.reduce((n,e)=>n+e.hours,0).toFixed(1)+' שעות · '+formatTotals(WorkTransfer.totals(filtered));
         const recent=document.getElementById('recent-list');recent.replaceChildren();const latest=[...shifts].sort((a,b)=>(b.createdAt??b.date)-(a.createdAt??a.date)).slice(0,3);
         if(!latest.length){const p=document.createElement('p');p.className='empty-state';p.textContent='המשמרת הראשונה שלך תופיע כאן';recent.append(p);}
-        for(const entry of latest){const details=document.createElement('details');details.className='recent-shift';const summary=document.createElement('summary');summary.innerHTML=`<span class="category-avatar">${escapeHtml(entry.category.slice(0,1))}</span><span class="recent-info"><b>${escapeHtml(entry.category)}</b><small>${new Date(entry.date).toLocaleDateString('he-IL',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'})}</small></span><span class="recent-amount"><b>${escapeHtml(entry.currency)} ${Number(entry.totalEarnings).toFixed(1)}</b><small>${entry.hours} ש׳ <i class="status-dot ${entry.isPaid?'paid':''}"></i></small></span><span class="chevron">⌄</span>`;const body=document.createElement('div');body.className='recent-details';const text=document.createElement('p');text.textContent=entry.hours+' שעות · '+entry.hourlyRate+' '+entry.currency+' לשעה'+(entry.notes?' · '+entry.notes:'');const paid=document.createElement('button');paid.className='badge '+(entry.isPaid?'badge-paid':'badge-unpaid');paid.textContent=entry.isPaid?'שולם':'ממתין לתשלום';paid.onclick=()=>togglePaid(entry.id);body.append(text,paid);details.append(summary,body);recent.append(details);}
+        for(const entry of latest)recent.append(createShiftCard(entry,true));
         const catBox=document.getElementById('settings-categories'),options=document.getElementById('category-options');catBox.replaceChildren();options.replaceChildren();for(const cat of categories){const row=document.createElement('button');row.className='category-setting';const name=document.createElement('span'),rate=document.createElement('b');name.textContent=cat.name;rate.textContent=cat.defaultRate+' / שעה';row.append(name,rate);row.onclick=()=>openCategoryDialog(cat.name);catBox.append(row);const opt=document.createElement('option');opt.value=cat.name;options.append(opt);}
         if(!activeTimer())renderToday();
     }
@@ -395,7 +374,7 @@
     loadLocalShifts();
     try {const saved=JSON.parse(localStorage.getItem('work_complete_backup')||'null');if(saved){shifts=saved.entries;categories=saved.categories;workers=saved.workers;}} catch(e){alert('לא ניתן לקרוא את הגיבוי המקומי. אין להזין נתונים לפני שחזור.');throw e;}
 
-    initAppViews();renderShifts();renderTimer();setInterval(renderTimer,1000);
+    initParity();initAppViews();renderShifts();renderTimer();setInterval(renderTimer,1000);
 </script>
 
 </body>
