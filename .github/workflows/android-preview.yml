@@ -1,0 +1,73 @@
+name: Android preview
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'web/**'
+      - 'web-tests/**'
+      - 'api/**'
+      - 'server/**'
+      - 'index.html'
+      - 'vercel.json'
+      - 'gradle/**'
+      - '*.gradle.kts'
+      - '.github/workflows/android-preview.yml'
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test
+      - run: npm run build
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+      - run: gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain
+      - name: Record public APK installation metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_tools="${ANDROID_HOME}/build-tools/36.0.0"
+          report="app/build/outputs/apk/preview/installation-report.txt"
+          apk_files=(app/build/outputs/apk/preview/*.apk)
+          if [[ ${#apk_files[@]} -ne 1 || ! -f "${apk_files[0]}" ]]; then
+            echo "Expected exactly one preview APK" >&2
+            exit 1
+          fi
+          {
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "APK SHA-256:"
+            sha256sum "${apk_files[0]}"
+            echo "Public signing certificate (no private key):"
+            "${sdk_tools}/apksigner" verify --verbose --print-certs "${apk_files[0]}"
+            echo "Package, version and minimum Android SDK:"
+            "${sdk_tools}/aapt2" dump badging "${apk_files[0]}" | sed -n '/^package:/p; /^sdkVersion:/p; /^targetSdkVersion:/p'
+            echo "This report does not verify compatibility with an installed app."
+            echo "Do not uninstall or clear app data to resolve an update failure."
+          } | tee "${report}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: salary-android-preview
+          path: |
+            app/build/outputs/apk/preview/*.apk
+            app/build/outputs/apk/preview/installation-report.txt
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-test-results
+          path: app/build/reports/tests/

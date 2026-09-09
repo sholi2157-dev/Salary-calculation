@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -82,8 +81,15 @@ object AuthManager {
     }
 
     fun getGoogleSignInClient(context: Context): GoogleSignInClient? {
+        if (!com.example.BuildConfig.CLOUD_SYNC_ENABLED) return null
+        if (getFirebaseAuthSafely() == null) return null
         return try {
+            val resourceId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+            if (resourceId == 0) return null
+            val webClientId = context.getString(resourceId)
+            if (webClientId.isBlank()) return null
             val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(webClientId)
                 .requestEmail()
                 .build()
             GoogleSignIn.getClient(context, gso)
@@ -108,44 +114,22 @@ object AuthManager {
                                 updateUserFromFirebase(auth.currentUser)
                                 onComplete(true, null)
                             } else {
-                                fallbackMockLogin(account)
-                                onComplete(true, null)
+                                onComplete(false, "ההתחברות נכשלה. הנתונים נשארו במכשיר.")
                             }
                         }
                 } else {
-                    fallbackMockLogin(account)
-                    onComplete(true, null)
+                    onComplete(false, "החיבור לחשבון עדיין לא הוגדר.")
                 }
             } else {
                 onComplete(false, "לא התקבל חשבון Google")
             }
         } catch (e: ApiException) {
             Log.w(TAG, "Google Sign-In API code: ${e.statusCode} (${e.localizedMessage})")
-            performSafeFallbackSignIn()
-            onComplete(true, null)
+            onComplete(false, "ההתחברות בוטלה או נכשלה.")
         } catch (t: Throwable) {
             Log.w(TAG, "Google Sign-In exception: ${t.localizedMessage}", t)
-            performSafeFallbackSignIn()
-            onComplete(true, null)
+            onComplete(false, "לא ניתן להתחבר כעת.")
         }
-    }
-
-    private fun fallbackMockLogin(account: GoogleSignInAccount) {
-        _currentUser.value = UserSession(
-            uid = account.id ?: "google_user_${System.currentTimeMillis()}",
-            displayName = account.displayName ?: account.email ?: "משתמש Google",
-            email = account.email,
-            photoUrl = account.photoUrl?.toString()
-        )
-    }
-
-    fun performSafeFallbackSignIn() {
-        _currentUser.value = UserSession(
-            uid = "google_authenticated_user",
-            displayName = "משתמש Google",
-            email = "user@gmail.com",
-            photoUrl = null
-        )
     }
 
     fun signOut(context: Context, onComplete: () -> Unit = {}) {

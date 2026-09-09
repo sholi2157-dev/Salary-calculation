@@ -240,7 +240,7 @@ fun copyWhatsAppToClipboard(context: Context, filteredEntries: List<WorkEntry>, 
 }
 
 fun copyExcelToClipboard(context: Context, filteredEntries: List<WorkEntry>, selectedCategoryFilter: String) {
-    val headers = listOf("קטגוריה", "תאריך", "שעות", "תעריף שעתי", "שכר לתשלום", "סטטוס", "הערות")
+    val headers = listOf("קטגוריה", "תאריך", "שעות", "תעריף שעתי", "שכר לתשלום", "סטטוס", "הערות", "מטבע")
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("he", "IL"))
     val rows = filteredEntries.map { entry ->
         val dateStr = sdf.format(Date(entry.date))
@@ -252,8 +252,11 @@ fun copyExcelToClipboard(context: Context, filteredEntries: List<WorkEntry>, sel
             String.format(Locale.US, "%.2f", entry.hourlyRate),
             String.format(Locale.US, "%.2f", entry.totalEarnings),
             statusStr,
-            entry.notes
-        ).joinToString("\t")
+            entry.notes,
+            entry.currency
+        ).joinToString("\t") { cell ->
+            if (cell.any { it == '\t' || it == '\n' || it == '\r' || it == '"' }) "\"" + cell.replace("\"", "\"\"") + "\"" else cell
+        }
     }
     val tsvContent = (listOf(headers.joinToString("\t")) + rows).joinToString("\n")
     
@@ -363,8 +366,6 @@ fun MainAppContent(
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     
-    val authUser by viewModel.currentUserSession.collectAsStateWithLifecycle()
-
     val googleSignInLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -377,9 +378,7 @@ fun MainAppContent(
         }
     }
 
-    if (authUser == null) {
-        LoginOverlay(
-            onGoogleSignInClick = {
+    val signInForSync: () -> Unit = {
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                 if (com.example.api.WebPlatformBridge.isWebTarget) {
                     com.example.api.WebPlatformBridge.signInWithWebOAuthPopup(context) { success, errorMsg ->
@@ -389,24 +388,16 @@ fun MainAppContent(
                             Toast.makeText(context, errorMsg ?: "ההתחברות בוטלה", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    return@LoginOverlay
-                }
-                try {
+                } else try {
                     val client = com.example.api.AuthManager.getGoogleSignInClient(context)
                     if (client != null) {
                         googleSignInLauncher.launch(client.signInIntent)
                     } else {
-                        com.example.api.AuthManager.performSafeFallbackSignIn()
-                        Toast.makeText(context, "התחברת בהצלחה למערכת", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "החיבור לחשבון עדיין לא הוגדר. אפשר להמשיך להשתמש באפליקציה.", Toast.LENGTH_LONG).show()
                     }
                 } catch (t: Throwable) {
-                    com.example.api.AuthManager.performSafeFallbackSignIn()
-                    Toast.makeText(context, "התחברת בהצלחה למערכת", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "לא ניתן להתחבר כעת. אפשר להמשיך להשתמש באפליקציה.", Toast.LENGTH_LONG).show()
                 }
-            },
-            modifier = modifier
-        )
-        return
     }
 
     // Runtime permission launcher for POST_NOTIFICATIONS
@@ -423,7 +414,31 @@ fun MainAppContent(
     val distinctCategories = remember(categories) { categories.distinctBy { it.name.trim() } }
     val stats by viewModel.stats.collectAsStateWithLifecycle()
 
-    var selectedTab by androidx.compose.runtime.saveable.rememberSaveable { mutableIntStateOf(0) }
+    // Pager is the single navigation state: tab presses and RTL swipes stay in sync.
+    val mainPagerState = rememberPagerState(pageCount = { 2 })
+    val navigationScope = rememberCoroutineScope()
+    val selectedTab = mainPagerState.currentPage
+    val navigateToTab: (Int) -> Unit = { page ->
+        navigationScope.launch { mainPagerState.animateScrollToPage(page) }
+    }
+    val accountSession by viewModel.currentUserSession.collectAsStateWithLifecycle()
+    val keySetupPreferences = remember(context) {
+        context.getSharedPreferences("personal_ai_setup", Context.MODE_PRIVATE)
+    }
+    var showPersonalKeySetup by remember { mutableStateOf(false) }
+    val setupScope = accountSession?.uid ?: "local_device"
+    LaunchedEffect(setupScope) {
+        val hasKey = runCatching { com.example.api.PersonalAiKey.read(context).isNotBlank() }.getOrDefault(false)
+        showPersonalKeySetup = !hasKey && !keySetupPreferences.getBoolean("offered_$setupScope", false)
+    }
+    if (showPersonalKeySetup) {
+        key(setupScope) {
+            PersonalAiKeyDialog(onDismiss = {
+                keySetupPreferences.edit().putBoolean("offered_$setupScope", true).apply()
+                showPersonalKeySetup = false
+            })
+        }
+    }
     var showSettings by remember { mutableStateOf(false) }
     var entryToEdit by remember { mutableStateOf<WorkEntry?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -435,7 +450,7 @@ fun MainAppContent(
     var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
     var isFocusedMode by remember { mutableStateOf(false) }
 
-    LaunchedEffect(activeShiftStartTime, lastInteractionTime) {
+    LaunchedEffect(activeShiftStartTime, lastInteractionTime, selectedTab) {
         if (activeShiftStartTime != null && selectedTab == 0) {
             isFocusedMode = false
             kotlinx.coroutines.delay(7000)
@@ -459,7 +474,7 @@ fun MainAppContent(
         if (showSettings) {
             showSettings = false
         } else {
-            selectedTab = 0
+            navigateToTab(0)
         }
     }
 
@@ -556,7 +571,7 @@ fun MainAppContent(
                             selected = selectedTab == 0,
                             onClick = { 
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                selectedTab = 0 
+                                navigateToTab(0)
                             },
                             icon = { Icon(imageVector = Icons.Outlined.GridView, contentDescription = "ראשי", modifier = Modifier.size(20.dp)) },
                             label = { Text("ראשי", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
@@ -573,7 +588,7 @@ fun MainAppContent(
                             selected = selectedTab == 1,
                             onClick = { 
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                selectedTab = 1 
+                                navigateToTab(1)
                             },
                             icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = "היסטוריה", modifier = Modifier.size(20.dp)) },
                             label = { Text("היסטוריה", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
@@ -600,10 +615,11 @@ fun MainAppContent(
                         .fillMaxSize()
                         .weight(1f)
                 ) {
-                    Crossfade(
-                        targetState = selectedTab,
-                        label = "tab_crossfade",
-                        animationSpec = tween(durationMillis = 200)
+                    HorizontalPager(
+                        state = mainPagerState,
+                        modifier = Modifier.fillMaxSize().testTag("main_screen_pager"),
+                        beyondViewportPageCount = 1,
+                        key = { page -> if (page == 0) "dashboard" else "history" }
                     ) { currentTab ->
                         when (currentTab) {
                             0 -> {
@@ -650,7 +666,7 @@ fun MainAppContent(
                                         triggerHapticFeedback(context, isDestructive = false)
                                         viewModel.togglePaymentStatus(entry)
                                     },
-                                    onViewAll = { selectedTab = 1 },
+                                    onViewAll = { navigateToTab(1) },
                                     onAddEntry = { category, date, isRange, start, end, hours, rate, notes, isGroupShift, empRate, workerRate, groupJson, currency ->
                                         viewModel.addEntry(category, date, isRange, start, end, hours, rate, notes, false, isGroupShift, empRate, workerRate, groupJson, currency)
                                     },
@@ -723,7 +739,8 @@ fun MainAppContent(
                         isGroupShift = isGroup,
                         employerRate = empRate,
                         workerRate = workerRate,
-                        groupWorkersJson = groupJson
+                        groupWorkersJson = groupJson,
+                        currency = old.currency
                     )
                 }
                 entryToEdit = null
@@ -771,7 +788,8 @@ fun MainAppContent(
                     ManagementScreen(
                         viewModel = viewModel,
                         categories = distinctCategories,
-                        onNavigateBack = { showSettings = false }
+                        onNavigateBack = { showSettings = false },
+                        onSignIn = signInForSync
                     )
                 }
             }
@@ -986,6 +1004,10 @@ fun DashboardScreen(
 
     var hourlyRateStr by remember { mutableStateOf("40") }
     var selectedCategory by remember { mutableStateOf("עצמאי") }
+    val selectedDefaultRate = categories.firstOrNull { it.name == selectedCategory }?.defaultRate
+    LaunchedEffect(selectedCategory, selectedDefaultRate) {
+        selectedDefaultRate?.let { hourlyRateStr = it.toString() }
+    }
     var isReportCardExpanded by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
@@ -1084,26 +1106,18 @@ fun DashboardScreen(
             isAiParsing = true
             try {
                 val cats = viewModel.categories.value.map { it.name }
-                val currentModel = viewModel.geminiModel.value
-                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, currentModel)
+                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, viewModel.categories.value.associate { it.name to it.defaultRate }, com.example.api.PersonalAiKey.read(context))
                 if (!results.isNullOrEmpty()) {
-                    viewModel.addShifts(results)
+                    android.app.AlertDialog.Builder(context)
+                        .setTitle("אישור המשמרות שפוענחו")
+                        .setMessage(results.joinToString("\n\n") { "${it.category} | ${SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(it.date))}\n${it.hours} שעות × ${it.hourlyRate} ${it.currency}\n${it.notes}" })
+                        .setNegativeButton("ביטול", null)
+                        .setPositiveButton("הוספת המשמרות") { _, _ ->
+                            viewModel.addShifts(results)
+                            aiInputText = ""
+                            Toast.makeText(context, "המשמרות הועברו לשמירה", Toast.LENGTH_SHORT).show()
+                        }.show()
 
-                    aiInputText = ""
-                    triggerHapticFeedback(context, isDestructive = false)
-
-                    val msg = if (results.size > 1) "נוספו ${results.size} משמרות בהצלחה!" else "המשמרת נוספה!"
-                    scope.launch {
-                        val snackbarResult = snackbarHostState.showSnackbar(
-                            message = msg,
-                            actionLabel = "בטל",
-                            duration = SnackbarDuration.Long
-                        )
-                        if (snackbarResult == SnackbarResult.ActionPerformed) {
-                            viewModel.undoLastAddedEntry()
-                            Toast.makeText(context, "הוספת המשמרות בוטלה", Toast.LENGTH_SHORT).show()
-                        }
-                    }
                 } else {
                     isManualMode = true
                     isAiMode = false
@@ -1499,7 +1513,7 @@ fun DashboardScreen(
                                     val rVal = newCatRate.toDoubleOrNull() ?: 40.0
                                     onAddCategory(newCatName, rVal)
                                     selectedCategory = newCatName
-                                    hourlyRateStr = rVal.toInt().toString()
+                                    hourlyRateStr = rVal.toString()
                                     showAddCategoryDialog = false
                                 }
                             },
@@ -1851,16 +1865,8 @@ fun DashboardScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            val savedGeminiModel by viewModel.geminiModel.collectAsStateWithLifecycle()
-                            val normalizedSavedGeminiModel = remember(savedGeminiModel) {
-                                when (savedGeminiModel) {
-                                    "gemini-1.5-flash" -> "Gemini 3.5 Flash"
-                                    "gemini-1.5-flash-8b", "gemini-1.5-flash-lite" -> "Gemini 3.1 Flash-Lite"
-                                    else -> if (savedGeminiModel.isBlank()) "Gemini 3.5 Flash" else savedGeminiModel
-                                }
-                            }
                             Text(
-                                text = "מודל פעיל: $normalizedSavedGeminiModel",
+                                text = "פענוח באמצעות ג׳מיני",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.5f),
                                 fontFamily = com.example.ui.theme.AssistantFontFamily,
@@ -2762,9 +2768,9 @@ fun DashboardScreen(
     }
 
     var dialogCategory by remember { mutableStateOf("עצמאי") }
-    var dialogRateStr by remember(dialogCategory) { 
-        val recentRate = recentEntries.firstOrNull { it.category == dialogCategory }?.hourlyRate ?: 40.0
-        mutableStateOf(recentRate.toString()) 
+    val dialogDefaultRate = categories.firstOrNull { it.name == dialogCategory }?.defaultRate ?: 40.0
+    var dialogRateStr by remember(dialogCategory, dialogDefaultRate, showQuickShiftDialog) {
+        mutableStateOf(dialogDefaultRate.toString())
     }
     var expanded by remember { mutableStateOf(false) }
 
@@ -4650,14 +4656,93 @@ fun WorkEntryRowCard(
     }
 }
 
+/** The secret is only entered here; never restored into a visible field or saved UI state. */
+@Composable
+private fun PersonalAiKeyDialog(onDismiss: () -> Unit, isFirstSetup: Boolean = true) {
+    val context = LocalContext.current
+    var draft by remember { mutableStateOf("") }
+    var showExplanation by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf<String?>(null) }
+    var hasKey by remember {
+        mutableStateOf(runCatching { com.example.api.PersonalAiKey.read(context).isNotBlank() }.getOrDefault(false))
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("שמירת משמרות בעזרת ג׳מיני", modifier = Modifier.weight(1f))
+                IconButton(onClick = { showExplanation = !showExplanation }) {
+                    Icon(Icons.Outlined.Info, contentDescription = "הסבר על המפתח האישי")
+                }
+            }
+        },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(if (hasKey) "מפתח אישי כבר שמור. אפשר להחליף או להסיר אותו כאן." else "אפשר להוסיף מפתח אישי עכשיו, או לדלג ולהוסיף בהגדרות בהמשך.")
+                AnimatedVisibility(visible = showExplanation) {
+                    Text("מפתח אישי מאפשר לתאר עבודה במילים ולקבל משמרות לבדיקה לפני שמירה. בלי מפתח אפשר להשתמש בכל הפעולות הרגילות. המפתח נשמר מוצפן במכשיר הזה, אינו מוצג במסכים ואינו נכלל בגיבוי המשמרות. הוא לא מסתנכרן למכשירים אחרים. הפענוח נשלח לגוגל ומשתמש במכסת הפרויקט שאליו שייך המפתח.")
+                }
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it; status = null },
+                    label = { Text(if (hasKey) "מפתח אישי חדש" else "מפתח אישי (לא חובה)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+                )
+                status?.let { Text(it) }
+                if (hasKey) {
+                    TextButton(onClick = {
+                        try {
+                            com.example.api.PersonalAiKey.remove(context)
+                            draft = ""
+                            hasKey = false
+                            status = "המפתח הוסר. המשמרות וכל שאר הנתונים נשמרו."
+                        } catch (_: Exception) {
+                            status = "הסרת המפתח לא הצליחה. אפשר לנסות שוב."
+                        }
+                    }) { Text("הסרת המפתח האישי") }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = draft.isNotBlank(),
+                onClick = {
+                    try {
+                        com.example.api.PersonalAiKey.save(context, draft)
+                        draft = ""
+                        Toast.makeText(context, "המפתח נשמר במכשיר. החיבור ייבדק בזמן הפענוח.", Toast.LENGTH_LONG).show()
+                        onDismiss()
+                    } catch (_: Exception) {
+                        status = "שמירת המפתח לא הצליחה. יש לבדוק את המפתח ולנסות שוב."
+                    }
+                }
+            ) { Text("שמירת המפתח") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(if (isFirstSetup) "לא עכשיו" else "סגירה") }
+        }
+    )
+}
+
 // ================= MANAGEMENT & BACKUP SCREEN =================
 @Composable
 fun ManagementScreen(
     viewModel: WorkViewModel,
     categories: List<WorkCategory>,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onSignIn: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val accountSession by viewModel.currentUserSession.collectAsStateWithLifecycle()
+    var showPersonalKeySettings by remember { mutableStateOf(false) }
+    if (showPersonalKeySettings) {
+        key(accountSession?.uid) {
+            PersonalAiKeyDialog(onDismiss = { showPersonalKeySettings = false }, isFirstSetup = false)
+        }
+    }
     var newCategoryText by remember { mutableStateOf("") }
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
     var categoryToEditByRate by remember { mutableStateOf<WorkCategory?>(null) }
@@ -4665,18 +4750,8 @@ fun ManagementScreen(
     var importText by remember { mutableStateOf("") }
 
     val savedNotificationEnabled by viewModel.serviceNotificationEnabled.collectAsStateWithLifecycle()
-    val savedGeminiModel by viewModel.geminiModel.collectAsStateWithLifecycle()
     val savedDefaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
-    val normalizedSavedGeminiModel = remember(savedGeminiModel) {
-        when (savedGeminiModel) {
-            "gemini-1.5-flash" -> "Gemini 3.5 Flash"
-            "gemini-1.5-flash-8b", "gemini-1.5-flash-lite" -> "Gemini 3.1 Flash-Lite"
-            else -> savedGeminiModel
-        }
-    }
-
     var draftNotificationEnabled by remember(savedNotificationEnabled) { mutableStateOf(savedNotificationEnabled) }
-    var draftGeminiModel by remember(normalizedSavedGeminiModel) { mutableStateOf(normalizedSavedGeminiModel) }
     var draftDefaultCurrency by remember(savedDefaultCurrency) { mutableStateOf(savedDefaultCurrency) }
 
     // Accordion state - default to all closed (-1)
@@ -4699,6 +4774,17 @@ fun ManagementScreen(
                     color = Color.White,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
+            }
+
+            Card(colors = CardDefaults.cardColors(containerColor = Color(0x331E293B))) {
+                Row(
+                    Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("שמירת משמרות בעזרת ג׳מיני", color = Color.White, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { showPersonalKeySettings = true }) { Text("מפתח אישי") }
+                }
             }
 
             // Category 1: ניהול עבודה וקטגוריות
@@ -4852,7 +4938,7 @@ fun ManagementScreen(
                                                     modifier = Modifier.clickable {
                                                         triggerHapticFeedback(context, isDestructive = false)
                                                         categoryToEditByRate = cat
-                                                        editRateText = String.format(Locale.US, "%.0f", cat.defaultRate)
+                                                        editRateText = cat.defaultRate.toString()
                                                     }
                                                 ) {
                                                     Icon(
@@ -4862,7 +4948,7 @@ fun ManagementScreen(
                                                         modifier = Modifier.size(12.dp)
                                                     )
                                                     Text(
-                                                        text = "${cat.name} (₪${String.format(Locale.US, "%.0f", cat.defaultRate)})",
+                                                        text = "${cat.name} (₪${cat.defaultRate.toString()})",
                                                         fontSize = 12.sp,
                                                         color = Color.White
                                                     )
@@ -4992,98 +5078,6 @@ fun ManagementScreen(
                                             text = "יחול אוטומטית בהוספת משמרות",
                                             color = Color(0xFF8E8E93),
                                             fontSize = 11.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Category 3: הגדרות בינה מלאכותית
-            Box(modifier = Modifier.fillMaxWidth()) {
-                val isExpanded = expandedSection == 2
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
-                    border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 2
-                        }
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (isExpanded) "צמצם" else "הרחב",
-                                tint = if (isExpanded) Color(0xFF6366F1) else Color(0xFF8E8E93)
-                            )
-                            Text(
-                                text = "הגדרות בינה מלאכותית",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isExpanded) Color(0xFF818CF8) else Color.White
-                            )
-                        }
-
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = isExpanded,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut()
-                        ) {
-                            Column(modifier = Modifier.padding(top = 16.dp)) {
-                                Text(
-                                    text = "בחר את מודל ה-AI שישמש לפענוח שעות העבודה והמשמרות שלך מטקסט חופשי או מהקלטה קולית.",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF8E8E93),
-                                    textAlign = TextAlign.End,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                val models = listOf(
-                                    "Gemini 3.5 Flash" to "Gemini 3.5 Flash",
-                                    "Gemini 3.1 Flash-Lite" to "Gemini 3.1 Flash-Lite"
-                                )
-
-                                models.forEach { (modelId, modelName) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                draftGeminiModel = modelId
-                                            }
-                                            .padding(vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        RadioButton(
-                                            selected = (draftGeminiModel == modelId),
-                                            onClick = {
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                draftGeminiModel = modelId
-                                            },
-                                            colors = RadioButtonDefaults.colors(
-                                                selectedColor = Color(0xFF6366F1),
-                                                unselectedColor = Color(0xFF8E8E93)
-                                            )
-                                        )
-                                        Text(
-                                            text = modelName,
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .padding(start = 8.dp),
-                                            textAlign = TextAlign.End
                                         )
                                     }
                                 }
@@ -5285,9 +5279,7 @@ fun ManagementScreen(
                                             if (success) {
                                                 importText = ""
                                                 triggerHapticFeedback(context, isDestructive = false)
-                                                Toast.makeText(context, "הנתונים יובאו בהצלחה!", Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                Toast.makeText(context, "שגיאה: טקסט הגיבוי או שורות האקסל אינם תקינים!", Toast.LENGTH_LONG).show()
+                                                // The confirmation dialog owns the actual import.
                                             }
                                         }
                                     },
@@ -5369,16 +5361,20 @@ fun ManagementScreen(
                         Button(
                             onClick = {
                                 triggerHapticFeedback(context, isDestructive = true)
-                                viewModel.signOut(context)
-                                onNavigateBack()
-                                Toast.makeText(context, "התנתקת מהמערכת בהצלחה", Toast.LENGTH_SHORT).show()
+                                if (accountSession == null) {
+                                    onSignIn()
+                                } else {
+                                    viewModel.signOut(context)
+                                    onNavigateBack()
+                                    Toast.makeText(context, "התנתקת מהמערכת בהצלחה", Toast.LENGTH_SHORT).show()
+                                }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.testTag("settings_sign_out_btn")
                         ) {
                             Text(
-                                text = "התנתק",
+                                text = if (accountSession == null) "התחברות" else "התנתק",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp
@@ -5396,7 +5392,7 @@ fun ManagementScreen(
                             Spacer(modifier = Modifier.height(2.dp))
                             val sessionUser by viewModel.currentUserSession.collectAsStateWithLifecycle()
                             Text(
-                                text = sessionUser?.email ?: sessionUser?.displayName ?: "משתמש מחובר",
+                                text = sessionUser?.email ?: sessionUser?.displayName ?: "שימוש מקומי — ללא סנכרון",
                                 fontSize = 12.sp,
                                 color = Color(0xFF8E8E93),
                                 textAlign = TextAlign.End
@@ -5447,7 +5443,6 @@ fun ManagementScreen(
             Button(
                 onClick = {
                     viewModel.updateServiceNotificationEnabled(draftNotificationEnabled)
-                    viewModel.updateGeminiModel(draftGeminiModel)
                     viewModel.updateDefaultCurrency(draftDefaultCurrency)
                     Toast.makeText(context, "ההגדרות נשמרו בהצלחה!", Toast.LENGTH_SHORT).show()
                     onNavigateBack()
@@ -7022,5 +7017,3 @@ fun LoginOverlay(
         }
     }
 }
-
-

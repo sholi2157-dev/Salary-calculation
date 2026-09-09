@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="שכר עבודות אישי - מעקב משמרות ושעות עבודה">
     <meta name="theme-color" content="#0a0f1d">
     <title>שכר עבודות אישי</title>
@@ -17,511 +17,105 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <style>
-        :root {
-            --bg-base: #0a0f1d;
-            --bg-card: rgba(18, 26, 47, 0.75);
-            --bg-card-hover: rgba(28, 40, 72, 0.85);
-            --primary: #38bdf8;
-            --primary-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-            --accent-green: #34d399;
-            --accent-amber: #fbbf24;
-            --accent-red: #f87171;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border-glass: rgba(255, 255, 255, 0.08);
-            --border-glow: rgba(56, 189, 248, 0.25);
-            --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Assistant', 'Rubik', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background-color: var(--bg-base);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            position: relative;
-            overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(129, 140, 248, 0.12) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.8) 0%, transparent 100%);
-            background-attachment: fixed;
-        }
-
-        /* Desktop Container */
-        .app-container {
-            width: 100%;
-            max-width: 680px;
-            min-height: 100vh;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            position: relative;
-            z-index: 10;
-        }
-
-        /* Header Bar */
-        .header-bar {
-            background: var(--bg-card);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border-glass);
-            border-radius: 20px;
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: var(--shadow-glass);
-        }
-
-        .header-title-group h1 {
-            font-size: 1.35rem;
-            font-weight: 700;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .header-title-group p {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .auth-btn {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid var(--border-glass);
-            color: var(--text-main);
-            padding: 8px 16px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .auth-btn:hover {
-            background: rgba(56, 189, 248, 0.15);
-            border-color: var(--border-glow);
-        }
-
-        /* Summary Stats Cards Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-glass);
-            border-radius: 16px;
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .stat-card.featured {
-            grid-column: span 2;
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(129, 140, 248, 0.1) 100%);
-            border-color: var(--border-glow);
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .stat-value {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-
-        .stat-value.highlight {
-            font-size: 1.5rem;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Action Buttons Row */
-        .action-row {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: var(--primary-gradient);
-            color: #050b14;
-            border: none;
-            padding: 12px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.2s;
-        }
-
-        .btn-primary:hover {
-            opacity: 0.92;
-        }
-
-        .btn-secondary {
-            background: var(--bg-card);
-            border: 1px solid var(--border-glass);
-            color: var(--text-main);
-            padding: 12px;
-            border-radius: 14px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s;
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--border-glow);
-            background: var(--bg-card-hover);
-        }
-
-        /* Filter & Search Bar */
-        .filter-section {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .search-input {
-            width: 100%;
-            background: var(--bg-card);
-            border: 1px solid var(--border-glass);
-            border-radius: 12px;
-            padding: 10px 14px;
-            color: var(--text-main);
-            font-size: 0.9rem;
-            outline: none;
-        }
-
-        .search-input:focus {
-            border-color: var(--primary);
-        }
-
-        .category-chips {
-            display: flex;
-            gap: 6px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-            scrollbar-width: none;
-        }
-
-        .category-chips::-webkit-scrollbar {
-            display: none;
-        }
-
-        .chip {
-            background: var(--bg-card);
-            border: 1px solid var(--border-glass);
-            color: var(--text-muted);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.2s;
-        }
-
-        .chip.active {
-            background: rgba(56, 189, 248, 0.18);
-            color: var(--primary);
-            border-color: var(--primary);
-        }
-
-        /* Shift List Section */
-        .shifts-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            flex-grow: 1;
-        }
-
-        .shift-item {
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-glass);
-            border-radius: 16px;
-            padding: 14px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.2s ease;
-        }
-
-        .shift-item:hover {
-            border-color: var(--border-glow);
-            transform: translateY(-1px);
-        }
-
-        .shift-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .shift-title {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-
-        .shift-meta {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .shift-pills {
-            display: flex;
-            gap: 6px;
-            margin-top: 4px;
-        }
-
-        .badge {
-            font-size: 0.75rem;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-weight: 600;
-        }
-
-        .badge-paid {
-            background: rgba(52, 211, 153, 0.15);
-            color: var(--accent-green);
-            border: 1px solid rgba(52, 211, 153, 0.3);
-        }
-
-        .badge-unpaid {
-            background: rgba(248, 113, 113, 0.15);
-            color: var(--accent-red);
-            border: 1px solid rgba(248, 113, 113, 0.3);
-        }
-
-        .shift-amount-group {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 6px;
-        }
-
-        .shift-total {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .shift-actions {
-            display: flex;
-            gap: 6px;
-        }
-
-        .btn-mini {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-glass);
-            color: var(--text-muted);
-            padding: 4px 8px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            cursor: pointer;
-        }
-
-        .btn-mini:hover {
-            color: var(--text-main);
-            border-color: var(--border-glow);
-        }
-
-        /* Modal Overlay */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 16px;
-        }
-
-        .modal-card {
-            background: #0d1527;
-            border: 1px solid var(--border-glass);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 480px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .modal-card h2 {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .form-group label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .form-input {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-glass);
-            border-radius: 10px;
-            padding: 10px;
-            color: var(--text-main);
-            font-size: 0.9rem;
-            outline: none;
-        }
-
-        .modal-btn-row {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-    </style>
+    <link rel="stylesheet" href="web/app.css">
 </head>
 <body>
 
 <div class="app-container">
-    <!-- Header -->
-    <header class="header-bar">
-        <div class="header-title-group">
-            <h1>שכר עבודות אישי</h1>
-            <p id="user-status-text">מצב מקומי שמור</p>
-        </div>
-        <button id="auth-btn" class="auth-btn" onclick="handleAuthClick()">התחברות לחשבון</button>
-    </header>
-
-    <!-- Overview Stats -->
-    <section class="stats-grid">
-        <div class="stat-card featured">
-            <span class="stat-label">סך הכל הכנסות</span>
-            <span id="stat-total" class="stat-value highlight">₪ 0.00</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-label">החודש הנוכחי</span>
-            <span id="stat-month" class="stat-value">₪ 0.00</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-label">השבוע הנוכחי</span>
-            <span id="stat-week" class="stat-value">₪ 0.00</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-label">יתרה לתשלום (לא שולם)</span>
-            <span id="stat-unpaid" class="stat-value" style="color: var(--accent-amber);">₪ 0.00</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-label">סך שעות עבודה</span>
-            <span id="stat-hours" class="stat-value">0.0 שעות</span>
-        </div>
+  <header class="header-bar"><h1><span class="clock-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16m-1 3v6l5 3 1-1.7-4-2.3V7z"/></svg></span> שכר עבודות אישי</h1><div class="header-actions"><button class="icon-btn" aria-label="חיפוש בהיסטוריה" onclick="openHistorySearch()"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 3a6.5 6.5 0 1 0 4 11.6L20 21l1-1-6.4-6.5A6.5 6.5 0 0 0 9.5 3m0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9"/></svg></button><button class="icon-btn" aria-label="ניהול וקטגוריות" onclick="openWebSettings()"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19.4 13a7 7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3H9l-.4 3a8 8 0 0 0-1.7 1L4.5 6l-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a8 8 0 0 0 1.7 1l.4 3h6l.4-3a8 8 0 0 0 1.7-1l2.4 1 2-3.4zM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8"/></svg></button></div></header>
+  <main id="app-pages">
+    <section id="page-home" class="app-page" aria-label="ראשי">
+      <div class="summary-carousel" aria-label="סיכומי שכר" tabindex="0">
+        <article class="summary-card"><h2>השבוע והחודש</h2><div class="summary-pair"><div><span class="indigo">שבוע</span><strong class="indigo" id="stat-week">0.00 ₪</strong><small id="week-hours">0 שעות</small></div><div><span class="green">חודש</span><strong class="green" id="stat-month">0.00 ₪</strong><small id="month-hours">0 שעות</small></div></div><div class="progress-track"><span id="month-progress"></span></div></article>
+        <article class="summary-card"><h2>סיכום כל הזמנים</h2><div class="summary-pair"><div><span>סה״כ הכנסות</span><strong class="green" id="stat-total">0.00 ₪</strong><small>סה״כ שעות עבודה</small><b class="green" id="stat-hours">0 שעות</b></div><div><span>שולם</span><strong class="indigo" id="stat-paid">0.00 ₪</strong><small>ממתין לתשלום</small><b class="amber" id="stat-unpaid">0.00 ₪</b></div></div></article>
+        <article class="summary-card" id="today-card"><h2>היום</h2><div class="summary-pair"><div><span id="today-label">הכנסות היום</span><strong class="green" id="stat-today">0.00 ₪</strong></div><div><span id="today-hours-label">סה״כ שעות היום</span><strong class="green" id="today-hours">0 שעות</strong></div></div></article>
+      </div>
+      <div class="pager-dots" aria-label="בחירת כרטיס סיכום"><button class="active" aria-label="השבוע והחודש" onclick="summaryPage(0)"></button><button aria-label="סיכום כל הזמנים" onclick="summaryPage(1)"></button><button aria-label="היום" onclick="summaryPage(2)"></button></div>
+      <section class="glass-card report-card"><button class="card-heading" aria-expanded="true" onclick="toggleReport(this)"><span>דיווח חדש</span><span class="report-chevron" data-icon="down" aria-hidden="true"></span></button><div id="report-content"><div class="mode-switch" role="tablist" aria-label="אופן דיווח"><button role="tab" aria-selected="true" onclick="setReportMode('clock')">שעון</button><button role="tab" aria-selected="false" onclick="setReportMode('manual')">ידני</button><button role="tab" aria-selected="false" onclick="setReportMode('group')">קבוצה</button></div><div id="report-slot"></div></div></section>
+      <section class="glass-card recent-section"><div class="section-heading"><h2>משמרות אחרונות שנוספו</h2><button class="text-button" onclick="showPage(1)">לכל ההיסטוריה</button></div><div id="recent-list"></div></section>
     </section>
-
-    <!-- Quick Actions -->
-    <section class="action-row">
-        <button class="btn-primary" onclick="openAddModal()">הוספת משמרת חדשה</button>
-        <button class="btn-secondary" onclick="exportCsv()">ייצוא CSV</button>
-        <button class="btn-secondary" onclick="document.getElementById('csv-file-input').click()">ייבוא CSV</button>
-    </section>
-    <input type="file" id="csv-file-input" accept=".csv" style="display: none;" onchange="handleCsvImport(event)">
-
-    <!-- Filter & Search -->
-    <section class="filter-section">
-        <input type="text" id="search-box" class="search-input" placeholder="חיפוש לפי עבודה, תאריך או הערה..." oninput="renderShifts()">
-        <div class="category-chips" id="category-chips">
-            <button class="chip active" onclick="setCategoryFilter('הכל')">הכל</button>
-            <button class="chip" onclick="setCategoryFilter('כללי')">כללי</button>
-            <button class="chip" onclick="setCategoryFilter('שמירה')">שמירה</button>
-            <button class="chip" onclick="setCategoryFilter('מלצרות')">מלצרות</button>
-            <button class="chip" onclick="setCategoryFilter('הדרכה')">הדרכה</button>
-        </div>
-    </section>
-
-    <!-- Shifts List -->
-    <main class="shifts-container" id="shifts-list">
-        <!-- Rendered dynamically -->
-    </main>
+    <section id="page-history" class="app-page" hidden aria-label="היסטוריה">
+      <div class="journal-toolbar"><h2 id="journal-title">יומן עבודה</h2><div class="journal-actions"><button class="micro-button" aria-label="בחירת משמרות" onclick="enterSelection()" data-icon="check"></button><button class="micro-button" aria-label="שתף דוח" onclick="document.getElementById('report-dialog').showModal()" data-icon="copy"></button><button class="micro-button" aria-label="מיון" onclick="document.getElementById('sort-dialog').showModal()" data-icon="sort"></button><button id="currency-filter" class="micro-button" onclick="cycleCurrency()" aria-label="סינון מטבע">הכל</button></div></div>
+      <div id="history-search" hidden><label class="sr-only" for="search-box">חיפוש משמרות</label><input id="search-box" type="search" class="form-input" placeholder="חיפוש משמרת (קטגוריה, הערה)..." oninput="renderShifts()"></div>
+      <div class="history-filters"><div class="date-modes"><button class="selected" data-period="all" onclick="setPeriod('all')">הכל תאריכים</button><button data-period="month" onclick="setPeriod('month')">סינון חודשי</button><button data-period="range" onclick="setPeriod('range')">טווח מותאם</button></div><label class="sr-only" for="category-filter">קטגוריה</label><select id="category-filter" onchange="setCategoryFilter(this.value)"><option value="הכל">כל הקטגוריות</option></select></div>
+      <div id="period-inputs" class="form-columns" hidden><label id="month-label" hidden>חודש<input type="month" id="month-filter" class="form-input" onchange="renderShifts()"></label><label id="from-label" hidden>מתאריך<input type="date" id="date-from" class="form-input" onchange="renderShifts()"></label><label id="to-label" hidden>עד תאריך<input type="date" id="date-to" class="form-input" onchange="renderShifts()"></label></div>
+      <div class="payment-segments" aria-label="סינון תשלום"><button class="selected" data-payment="all" onclick="setPayment('all')">הכל</button><button data-payment="unpaid" onclick="setPayment('unpaid')">ממתין</button><button data-payment="paid" onclick="setPayment('paid')">שולם</button></div>
+      <select id="payment-filter" hidden><option value="all">הכל</option><option value="paid">שולם</option><option value="unpaid">ממתין</option></select><div id="category-chips" hidden></div>
+      <div class="journal-total"><span>סה״כ מוצג:</span><strong id="displayed-total"></strong></div><div id="history-summary" class="sr-only" aria-live="polite"></div><div id="selection-toolbar" class="selection-toolbar" hidden><button class="text-button" onclick="exitSelection()">סיום בחירה</button><strong id="selection-count" role="status"></strong><button class="text-button" onclick="selectAllVisible()">בחר הכל</button><button class="text-button" onclick="clearSelection()">נקה הכל</button><button class="micro-button" aria-label="העתקת משמרות נבחרות" onclick="document.getElementById('report-dialog').showModal()" data-icon="copy"></button></div><div class="shifts-container" id="shifts-list"></div>
+    <div id="selection-actions" class="selection-actions" hidden><button class="btn-danger-outline" onclick="applySelection('delete')">מחיקה</button><button class="btn-secondary" onclick="applySelection('unpaid')">סמן כממתין</button><button class="btn-primary" onclick="applySelection('paid')">סמן כשולם</button></div></section>
+  </main>
+  <nav class="bottom-nav" aria-label="ניווט ראשי"><button id="nav-home" aria-current="page" onclick="showPage(0)"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm8-2h8v8h-8zm2 2v4h4v-4z"/></svg></span>ראשי</button><button id="nav-history" onclick="showPage(1)"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13 3a9 9 0 1 1-8.4 12.2l1.9-.7A7 7 0 1 0 7 8.4L10 11H2V3l3.5 3.5A9 9 0 0 1 13 3m-1 4h2v5l4 2.4-1 1.6-5-3z"/></svg></span>היסטוריה</button></nav>
 </div>
-
+<dialog id="settings-dialog"><h2>הגדרות מערכת</h2><details><summary>ניהול עבודה וקטגוריות</summary><div id="settings-categories"></div><button class="btn-secondary" onclick="openCategoryDialog()">הוספת קטגוריה</button></details><details><summary><span>הגדרת מטבע ראשי <span id="settings-currency-icon" class="indigo">₪</span></span></summary><label for="default-currency">מטבע לדיווחים חדשים</label><select id="default-currency" class="form-input"><option>₪</option><option>$</option></select></details><details><summary>תחזוקה וגיבוי נתונים</summary><div class="settings-actions"><button class="btn-secondary" onclick="exportJson()">גיבוי מלא</button><button class="btn-secondary" onclick="exportCsv()">ייצוא CSV</button><button class="btn-secondary" onclick="document.getElementById('csv-file-input').click()">ייבוא קובץ</button><button class="btn-secondary" onclick="document.getElementById('settings-dialog').close();openTransfer()">הדבקת נתונים</button></div></details><div class="account-row"><div><h3>חשבון משתמש</h3><p id="user-status-text">שימוש מקומי — ללא סנכרון</p></div><button id="auth-btn" class="btn-secondary" onclick="handleAuthClick()">התחברות</button></div><div class="settings-footer"><button class="btn-danger-outline" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveWebSettings()">שמור</button></div></dialog>
+<dialog id="sort-dialog"><h2>מיון</h2><button class="menu-option" onclick="setSort('newest')">תאריך: מהחדש לישן</button><button class="menu-option" onclick="setSort('oldest')">תאריך: מהישן לחדש</button><button class="menu-option" onclick="setSort('latest_added')">נוסף לאחרונה</button><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
+<dialog id="report-dialog"><h2>העתקת הדוח המוצג</h2><button class="menu-option" onclick="copyDisplayed('table')">העתקת טבלה לאקסל</button><button class="menu-option" onclick="copyDisplayed('message')">העתקת סיכום להודעה</button><p>הדוח כולל את המשמרות המוצגות, או רק את המשמרות שסימנת במצב בחירה.</p><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
+<input type="file" id="csv-file-input" accept=".csv,.tsv,.txt,.json" hidden onchange="handleCsvImport(event)">
+<dialog id="category-dialog"><h2>קטגוריה ותעריף</h2><label for="category-name">שם מעסיק / קטגוריה</label><input id="category-name" class="form-input"><label for="category-rate">תעריף שעתי לברירת מחדל</label><input id="category-rate" type="number" min="0" step="0.01" value="40" class="form-input"><p id="category-error" role="status"></p><div class="modal-btn-row"><button class="btn-secondary" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveCategoryDialog()">שמירה</button></div></dialog>
+<datalist id="category-options"></datalist>
+<p id="app-message" role="status" class="toast" hidden></p>
+<dialog id="transfer-dialog" style="background:#17172b;color:white;border:1px solid #6366f1;border-radius:18px;width:min(90vw,720px)">
+  <h2>בדיקת נתונים לפני ייבוא</h2>
+  <label for="transfer-text">הדבק גיבוי או טבלה, כולל כותרות העמודות</label>
+  <textarea id="transfer-text" class="form-input" rows="7" style="width:100%;margin:12px 0" oninput="invalidateTransfer()"></textarea>
+  <button class="btn-primary" onclick="previewTransfer()">בדיקת הנתונים</button>
+  <p id="transfer-summary" role="status" style="white-space:pre-wrap"></p>
+  <div id="transfer-rows" style="max-height:35vh;overflow:auto"></div>
+  <button id="transfer-save" class="btn-primary" disabled onclick="commitTransfer()">שמירת המשמרות</button>
+  <button class="btn-secondary" onclick="document.getElementById('transfer-dialog').close()">ביטול</button>
+</dialog>
 <!-- Modal for Adding Shift -->
-<div class="modal-overlay" id="add-modal">
-    <div class="modal-card">
-        <h2>הוספת משמרת</h2>
+<dialog id="add-modal"><div id="edit-form-slot">
+    <div class="modal-card" id="report-fields">
+        <h2 class="edit-only">עריכת משמרת</h2>
         <div class="form-group">
-            <label>סוג עבודה / קטגוריה</label>
-            <input type="text" id="modal-category" class="form-input" value="כללי">
+            <label for="modal-category">מעסיק / קטגוריה</label>
+            <input type="text" id="modal-category" list="category-options" onchange="applyCategoryRate()" class="form-input" value="כללי">
         </div>
         <div class="form-group">
-            <label>תאריך</label>
+            <label for="modal-date">תאריך</label>
             <input type="date" id="modal-date" class="form-input">
         </div>
         <div class="form-group">
-            <label>שעות עבודה</label>
+            <label class="range-option"><input id="modal-range" type="checkbox" onchange="toggleRange()"> לפי שעת התחלה וסיום</label>
+            <div id="range-fields" hidden><label for="modal-start">התחלה</label><input id="modal-start" type="time" class="form-input" value="08:00" onchange="updateRangeHours()"><label for="modal-end">סיום</label><input id="modal-end" type="time" class="form-input" value="16:00" onchange="updateRangeHours()"><small>שעת סיום מוקדמת מההתחלה מחושבת ביום הבא</small></div>
+            <label class="hours-label" for="modal-hours">שעות העבודה שלי</label>
             <input type="number" step="0.25" id="modal-hours" class="form-input" placeholder="למשל: 8.0" value="8">
         </div>
-        <div class="form-group">
-            <label>תעריף לשעה (₪)</label>
+        <div class="form-group break-field"><label for="modal-break">הפסקה (דקות)</label><input id="modal-break" type="number" min="0" step="1" value="0" class="form-input" oninput="updateRangeHours()"></div>
+        <div class="form-group rate-field">
+            <div class="rate-heading"><label for="modal-rate">תעריף לשעה</label><label class="currency-picker"><span class="sr-only">מטבע</span><select id="modal-currency" aria-label="מטבע"><option>₪</option><option>$</option></select></label></div>
             <input type="number" step="0.5" id="modal-rate" class="form-input" placeholder="למשל: 40" value="40">
         </div>
         <div class="form-group">
-            <label>הערות</label>
+            <label for="modal-notes">הערות</label>
             <input type="text" id="modal-notes" class="form-input" placeholder="הערות או פירוט נוסף">
         </div>
+        <div class="form-group">
+          <label><input id="modal-group" type="checkbox" onchange="document.getElementById('group-fields').hidden=!this.checked"> עבודה קבוצתית</label>
+          <div id="group-fields" hidden>
+            <label for="group-employer-rate">תעריף המעסיק לכל שעת עובד</label><input id="group-employer-rate" type="number" min="0" step="0.01" class="form-input" value="50">
+            <label for="group-worker-rate">תעריף לתשלום לכל שעת עובד</label><input id="group-worker-rate" type="number" min="0" step="0.01" class="form-input" value="40">
+            <div id="group-rows"></div><button class="btn-secondary" onclick="addGroupRow()">הוספת עובד</button>
+          </div>
+        </div>
         <div class="modal-btn-row">
-            <button class="btn-secondary" onclick="closeAddModal()">ביטול</button>
+            <button class="btn-secondary edit-only" onclick="closeAddModal()">ביטול</button>
             <button class="btn-primary" onclick="saveNewShift()">שמירה</button>
         </div>
     </div>
-</div>
+</div></dialog>
+
+<script src="web/transfer.js"></script>
+<script src="web/history.js"></script>
+<script src="web/selection.js"></script>
+<script src="web/parity.js"></script>
 
 <script>
     // State management
     let shifts = [];
     let currentUserId = null;
+    let categories = [], workers = [], pendingTransfer = null, editingShiftId = null;
+    try { const meta=JSON.parse(localStorage.getItem('work_transfer_meta')||'{}');categories=meta.categories||[];workers=meta.workers||[]; } catch {}
     let selectedCategory = 'הכל';
 
     // Set today as default in date picker
@@ -539,46 +133,56 @@
         }
     }
 
-    function saveLocalShifts() {
+    function saveLocalShifts(){persistAll(shifts);}
+
+    // Cloud sync remains disabled until account isolation is verified.
+    async function handleAuthClick() {
         try {
-            localStorage.setItem('user_work_shifts', JSON.stringify(shifts));
-        } catch (e) {
-            console.warn('Error saving to local storage:', e);
-        }
+            if(typeof firebase==='undefined')throw Error('לא ניתן לטעון את שירות ההתחברות');
+            if(!firebase.apps.length){const response=await fetch('/api/config');if(!response.ok)throw Error('שירות החשבון עדיין לא הוגדר');const config=await response.json();if(!config.firebase)throw Error('חיבור החשבון עדיין לא הוגדר בשרת');firebase.initializeApp(config.firebase);}
+            if(firebase.auth().currentUser){await firebase.auth().signOut();currentUserId=null;}else{const result=await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());currentUserId=result.user.uid;}
+            document.getElementById('auth-btn').textContent=currentUserId?'התנתקות':'התחברות לחשבון';
+            document.getElementById('user-status-text').textContent=currentUserId?'מחובר לחשבון · הנתונים מקומיים':'מצב מקומי שמור';
+        }catch(e){alert(e.message);}
     }
-
-    // Auth handling
-    function handleAuthClick() {
-        if (currentUserId) {
-            currentUserId = null;
-            document.getElementById('auth-btn').innerText = 'התחברות לחשבון';
-            document.getElementById('user-status-text').innerText = 'מצב מקומי שמור';
-            renderShifts();
-            return;
-        }
-
-        // Trigger simulation or Firebase web OAuth
-        currentUserId = 'web_user_' + Math.random().toString(36).substring(2, 9);
-        document.getElementById('auth-btn').innerText = 'התנתקות';
-        document.getElementById('user-status-text').innerText = 'מחובר ומסונכרן לענן';
-        syncToCloud();
-        renderShifts();
+    function syncToCloud() {}
+    function download(name, text, type) {
+        const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
-
-    function syncToCloud() {
-        // Real-time Firestore sync hook
-        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && currentUserId) {
-            try {
-                const db = firebase.firestore();
-                shifts.forEach(shift => {
-                    db.collection('users').doc(currentUserId).collection('shifts').doc(String(shift.id)).set(shift, { merge: true });
-                });
-            } catch (e) {
-                console.warn('Firestore cloud sync safeguard:', e);
+    function exportJson(){download('work-backup.json',JSON.stringify({formatVersion:2,entries:shifts.map(WorkTransfer.normalize),categories,workers},null,2),'application/json');}
+    function persistAll(next, cats=categories, people=workers){
+        // The complete backup is the authoritative atomic snapshot, including category rates.
+        localStorage.setItem('work_complete_backup',JSON.stringify({entries:next,categories:cats,workers:people}));
+        shifts=next;categories=cats;workers=people;
+    }
+    function invalidateTransfer(){pendingTransfer=null;document.getElementById('transfer-save').disabled=true;}
+    function openTransfer(text=''){document.getElementById('transfer-text').value=text;invalidateTransfer();document.getElementById('transfer-summary').textContent='';document.getElementById('transfer-rows').replaceChildren();document.getElementById('transfer-dialog').showModal();if(text)previewTransfer();}
+    function previewTransfer(){
+        invalidateTransfer();document.getElementById('transfer-rows').replaceChildren();
+        try {
+            pendingTransfer=WorkTransfer.decode(document.getElementById('transfer-text').value);
+            const incoming=pendingTransfer.entries,added=WorkTransfer.missing(shifts,incoming);
+            document.getElementById('transfer-summary').textContent=`נקראו ${incoming.length} משמרות. חדשות: ${added.length}. קיימות: ${incoming.length-added.length}.\nסכומי הקובץ: ${formatTotals(WorkTransfer.totals(incoming))}\nסכום שיתווסף: ${formatTotals(WorkTransfer.totals(added))}`;
+            const table=document.createElement('table');table.style.width='100%';
+            for(const cells of [['קטגוריה','תאריך','שעות','תעריף','סכום','הערות'],...incoming.map(e=>[e.category,new Date(e.date).toLocaleDateString('he-IL'),e.hours,e.hourlyRate+' '+e.currency,e.totalEarnings+' '+e.currency,e.notes])]){
+                const tr=document.createElement('tr');for(const value of cells){const td=document.createElement('td');td.textContent=value;td.style.padding='8px';tr.appendChild(td);}table.appendChild(tr);
             }
-        }
+            document.getElementById('transfer-rows').appendChild(table);document.getElementById('transfer-save').disabled=false;
+        } catch(e){pendingTransfer=null;document.getElementById('transfer-summary').textContent=e.message;}
     }
-
+    function commitTransfer(){if(!pendingTransfer)return;try{
+        const added=WorkTransfer.missing(shifts,pendingTransfer.entries).map(e=>({...e,id:crypto.randomUUID()}));
+        const cats=[...categories,...pendingTransfer.categories.filter(c=>!categories.some(x=>x.name===c.name))];
+        const people=[...workers,...pendingTransfer.workers.filter(w=>!workers.some(x=>x.name===w.name))];
+        persistAll([...shifts,...added],cats,people);invalidateTransfer();document.getElementById('transfer-dialog').close();renderShifts();
+    }catch(e){document.getElementById('transfer-summary').textContent='השמירה נכשלה. הנתונים הקיימים נשמרו. '+e.message;}}
+    function editCategoryRate(){
+        const name=prompt('שם הקטגוריה');if(!name?.trim())return;
+        const old=categories.find(c=>c.name===name.trim());const input=prompt('תעריף ברירת מחדל לשעה',String(old?.defaultRate??40));if(input===null)return;
+        try{const rate=WorkTransfer.number(input);persistAll(shifts,[...categories.filter(c=>c.name!==name.trim()),{name:name.trim(),defaultRate:rate}]);applyCategoryRate();}catch(e){alert(e.message);}
+    }
+    function applyCategoryRate(){const c=categories.find(c=>c.name===document.getElementById('modal-category').value.trim());document.getElementById('modal-rate').value=c?.defaultRate??40;}
+    function formatTotals(t){return Object.entries(t).map(([c,n])=>c+' '+n.toFixed(2)).join(' · ')||(localStorage.getItem('work_default_currency')||'₪')+' 0.00';}
     function setCategoryFilter(category) {
         selectedCategory = category;
         document.querySelectorAll('.chip').forEach(btn => {
@@ -587,25 +191,63 @@
         renderShifts();
     }
 
+    let homeReportDraft=null;
     function openAddModal() {
-        document.getElementById('add-modal').style.display = 'flex';
+        const dialog=document.getElementById('add-modal');
+        if(dialog.open)return;
+        // Keep the original row nodes: worker metadata and removal handlers belong to the draft.
+        const form=document.getElementById('report-fields');
+        homeReportDraft={
+            controls:[...form.querySelectorAll('input,select,textarea')].map(control=>({control,value:control.value,checked:control.checked,readOnly:control.readOnly})),
+            groupRows:[...document.getElementById('group-rows').childNodes],
+            rangeHidden:document.getElementById('range-fields').hidden,
+            groupHidden:document.getElementById('group-fields').hidden
+        };
+        editingShiftId=null;
+        document.getElementById('modal-break').value=0;document.getElementById('modal-hours').value=8;document.getElementById('modal-notes').value='';
+        const today=new Date();document.getElementById('modal-date').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+        document.getElementById('modal-range').checked=false;toggleRange();
+        document.getElementById('modal-group').checked=false;document.getElementById('group-fields').hidden=true;document.getElementById('group-rows').replaceChildren();
+        document.getElementById('edit-form-slot').append(document.getElementById('report-fields'));document.getElementById('add-modal').showModal();
+        applyCategoryRate();
     }
 
     function closeAddModal() {
-        document.getElementById('add-modal').style.display = 'none';
+        document.getElementById('add-modal').close();
+        if(homeReportDraft){
+            document.getElementById('group-rows').replaceChildren(...homeReportDraft.groupRows);
+            for(const {control,value,checked,readOnly} of homeReportDraft.controls){
+                control.value=value;
+                if(checked!==undefined)control.checked=checked;
+                if(readOnly!==undefined)control.readOnly=readOnly;
+            }
+            document.getElementById('range-fields').hidden=homeReportDraft.rangeHidden;
+            document.getElementById('group-fields').hidden=homeReportDraft.groupHidden;
+            homeReportDraft=null;
+        }
+        document.getElementById('report-slot').append(document.getElementById('report-fields'));editingShiftId=null;
     }
 
     function saveNewShift() {
         const category = document.getElementById('modal-category').value.trim() || 'כללי';
         const dateVal = document.getElementById('modal-date').value;
-        const date = dateVal ? new Date(dateVal).getTime() : Date.now();
-        const hours = parseFloat(document.getElementById('modal-hours').value) || 0;
-        const hourlyRate = parseFloat(document.getElementById('modal-rate').value) || 40;
+        const date = dateVal ? new Date(dateVal+'T00:00:00').getTime() : Date.now();
+        const original=shifts.find(e=>e.id===editingShiftId);
+        if(document.getElementById('modal-range').checked){try{document.getElementById('modal-hours').value=WorkTransfer.rangeHours(document.getElementById('modal-start').value,document.getElementById('modal-end').value,document.getElementById('modal-break').value,original);}catch(e){alert(e.message);return;}}
+        const hours = Number(document.getElementById('modal-hours').value);
+        const hourlyRate = Number(document.getElementById('modal-rate').value);
+        if(!Number.isFinite(hours)||hours<=0||!Number.isFinite(hourlyRate)||hourlyRate<0){alert('יש להזין שעות ותעריף תקינים');return;}
         const notes = document.getElementById('modal-notes').value.trim();
-        const totalEarnings = hours * hourlyRate;
+        const isGroup=document.getElementById('modal-group').checked;let groupMembers=[],employerRate=null,workerRate=null;
+        if(isGroup){try{
+            employerRate=WorkTransfer.number(document.getElementById('group-employer-rate').value);workerRate=WorkTransfer.number(document.getElementById('group-worker-rate').value);
+            groupMembers=[...document.querySelectorAll('#group-rows > div')].map(row=>{const name=row.querySelector('[data-field="name"]').value.trim();if(!name)throw Error('חסר שם עובד');return {...row.workerData,name,hours:WorkTransfer.number(row.querySelector('[data-field="hours"]').value),isPaid:row.querySelector('[data-field="paid"]').checked};});
+            if(!groupMembers.length)throw Error('יש להוסיף לפחות עובד אחד לקבוצה');
+        }catch(e){alert(e.message);return;}}
+        const totalEarnings = Math.round(hours * hourlyRate * 100) / 100;
 
         const newShift = {
-            id: Date.now(),
+            id: crypto.randomUUID(),
             category: category,
             date: date,
             hours: hours,
@@ -613,103 +255,54 @@
             totalEarnings: totalEarnings,
             isPaid: false,
             notes: notes,
-            currency: '₪',
-            isGroupShift: false,
-            groupWorkersJson: '',
+            currency: document.getElementById('modal-currency').value,
+            isTimeRange:document.getElementById('modal-range').checked,
+            startTime:document.getElementById('modal-range').checked?document.getElementById('modal-start').value:null,
+            endTime:document.getElementById('modal-range').checked?document.getElementById('modal-end').value:null,
+            isGroupShift:isGroup,employerRate,workerRate,
+            groupWorkersJson:isGroup?JSON.stringify(groupMembers):'',
             createdAt: Date.now()
         };
 
-        shifts.unshift(newShift);
-        saveLocalShifts();
+        try {persistAll(editingShiftId===null?[newShift,...shifts]:shifts.map(e=>e.id===editingShiftId?{...e,...newShift,id:e.id,createdAt:e.createdAt,isPaid:e.isPaid,totalEarnings:e.hours===hours&&e.hourlyRate===hourlyRate?e.totalEarnings:totalEarnings}:e));}
+        catch(e){alert('השמירה נכשלה: '+e.message);return;}
         syncToCloud();
         closeAddModal();
-        renderShifts();
+        renderShifts();showMessage('הדיווח נשמר בהצלחה');
     }
 
-    function togglePaid(id) {
-        const item = shifts.find(s => s.id === id);
-        if (item) {
-            item.isPaid = !item.isPaid;
-            saveLocalShifts();
-            syncToCloud();
-            renderShifts();
-        }
+    function togglePaid(id){try{persistAll(shifts.map(s=>s.id===id?{...s,isPaid:!s.isPaid}:s));renderShifts();}catch(e){alert('השמירה נכשלה: '+e.message);}}
+    function deleteShift(id){if(confirm('האם למחוק משמרת זו?')){try{persistAll(shifts.filter(s=>s.id!==id));renderShifts();}catch(e){alert('המחיקה לא נשמרה: '+e.message);}}}
+    function editShift(id){const e=shifts.find(s=>s.id===id);if(!e)return;openAddModal();editingShiftId=id;document.getElementById('modal-category').value=e.category;const d=new Date(e.date);document.getElementById('modal-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');document.getElementById('modal-hours').value=e.hours;document.getElementById('modal-rate').value=e.hourlyRate;document.getElementById('modal-currency').value=e.currency;document.getElementById('modal-notes').value=e.notes;document.getElementById('modal-break').value=WorkTransfer.inferredBreak(e);
+        document.getElementById('modal-range').checked=e.isTimeRange||false;document.getElementById('range-fields').hidden=!e.isTimeRange;document.getElementById('modal-hours').readOnly=Boolean(e.isTimeRange);if(e.startTime)document.getElementById('modal-start').value=e.startTime;if(e.endTime)document.getElementById('modal-end').value=e.endTime;
+        document.getElementById('modal-group').checked=e.isGroupShift||false;document.getElementById('group-fields').hidden=!e.isGroupShift;document.getElementById('group-employer-rate').value=e.employerRate??e.hourlyRate;document.getElementById('group-worker-rate').value=e.workerRate??e.hourlyRate;
+        for(const worker of JSON.parse(e.groupWorkersJson||'[]'))addGroupRow(worker);
     }
-
-    function deleteShift(id) {
-        if (confirm('האם למחוק משמרת זו?')) {
-            shifts = shifts.filter(s => s.id !== id);
-            saveLocalShifts();
-            syncToCloud();
-            renderShifts();
-        }
+    function addGroupRow(worker={name:'',hours:0,isPaid:false}){
+        const row=document.createElement('div');row.workerData=worker;row.style.cssText='padding:10px 0;display:flex;gap:6px;flex-wrap:wrap';
+        const name=document.createElement('input');name.dataset.field='name';name.value=worker.name;name.placeholder='שם עובד';name.setAttribute('aria-label','שם עובד');name.className='form-input';
+        const hours=document.createElement('input');hours.type='number';hours.min=0;hours.step=0.25;hours.dataset.field='hours';hours.value=worker.hours;hours.setAttribute('aria-label','שעות העובד');hours.className='form-input';
+        const label=document.createElement('label'),paid=document.createElement('input');paid.type='checkbox';paid.dataset.field='paid';paid.checked=worker.isPaid;label.append(paid,document.createTextNode('שולם לעובד'));
+        const remove=document.createElement('button');remove.textContent='הסרת עובד';remove.className='btn-secondary';remove.onclick=()=>row.remove();row.append(name,hours,label,remove);document.getElementById('group-rows').append(row);
     }
+    function toggleRange(){const on=document.getElementById('modal-range').checked;document.getElementById('range-fields').hidden=!on;document.getElementById('modal-hours').readOnly=on;if(on)updateRangeHours();}
+    function updateRangeHours(){try{document.getElementById('modal-hours').value=WorkTransfer.rangeHours(document.getElementById('modal-start').value,document.getElementById('modal-end').value,document.getElementById('modal-break').value);}catch{document.getElementById('modal-hours').value='';}}
 
-    function exportCsv() {
-        if (shifts.length === 0) {
-            alert('אין משמרות לייצוא');
-            return;
-        }
-        let csvContent = 'data:text/csv;charset=utf-8,תאריך,קטגוריה,שעות,תעריף,סך הכל,סטטוס,הערות\n';
-        shifts.forEach(s => {
-            const dateStr = new Date(s.date).toLocaleDateString('he-IL');
-            const status = s.isPaid ? 'שולם' : 'לא שולם';
-            csvContent += `"${dateStr}","${s.category}","${s.hours}","${s.hourlyRate}","${s.totalEarnings}","${status}","${s.notes || ''}"\n`;
-        });
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement('a');
-        link.setAttribute('href', encodedUri);
-        link.setAttribute('download', 'shifts_backup.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
 
-    function handleCsvImport(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const text = e.target.result;
-            const lines = text.split('\n');
-            let added = 0;
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                const cols = line.split(',').map(c => c.replace(/"/g, '').trim());
-                if (cols.length >= 5) {
-                    const hours = parseFloat(cols[2]) || 0;
-                    const rate = parseFloat(cols[3]) || 40;
-                    shifts.push({
-                        id: Date.now() + i,
-                        category: cols[1] || 'כללי',
-                        date: Date.now(),
-                        hours: hours,
-                        hourlyRate: rate,
-                        totalEarnings: hours * rate,
-                        isPaid: cols[5] === 'שולם',
-                        notes: cols[6] || '',
-                        currency: '₪',
-                        createdAt: Date.now()
-                    });
-                    added++;
-                }
-            }
-            saveLocalShifts();
-            renderShifts();
-            alert(`יובאו ${added} משמרות בהצלחה`);
-        };
-        reader.readAsText(file);
-    }
+    function exportCsv(){download('shifts.csv',WorkTransfer.csv(shifts),'text/csv;charset=utf-8');}
+    function handleCsvImport(event){const file=event.target.files[0];if(file)file.text().then(openTransfer).catch(e=>alert(e.message));event.target.value='';}
 
+    function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
     function renderShifts() {
+        const chips=document.getElementById('category-chips');chips.replaceChildren();
+        for(const name of ['הכל',...new Set([...categories.map(c=>c.name),...shifts.map(s=>s.category)])]){const button=document.createElement('button');button.className='chip'+(name===selectedCategory?' active':'');button.textContent=name;button.onclick=()=>setCategoryFilter(name);chips.appendChild(button);}
         const search = document.getElementById('search-box').value.trim().toLowerCase();
         const list = document.getElementById('shifts-list');
         list.innerHTML = '';
 
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())).getTime();
+        const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).getTime();
 
         let totalEarnings = 0;
         let monthEarnings = 0;
@@ -717,13 +310,9 @@
         let unpaidEarnings = 0;
         let totalHours = 0;
 
-        const filtered = shifts.filter(s => {
-            const matchesCategory = selectedCategory === 'הכל' || s.category === selectedCategory;
-            const matchesSearch = !search || 
-                (s.category && s.category.toLowerCase().includes(search)) ||
-                (s.notes && s.notes.toLowerCase().includes(search));
-            return matchesCategory && matchesSearch;
-        });
+        const filtered = WorkHistory.select(shifts,{category:selectedCategory,search,payment:document.getElementById('payment-filter').value,period:historyPeriod,month:document.getElementById('month-filter').value,from:document.getElementById('date-from').value,to:document.getElementById('date-to').value,currency:historyCurrency,sort:historySort});
+        displayedEntries=filtered;
+
 
         // Calculate stats on all shifts
         shifts.forEach(s => {
@@ -736,55 +325,49 @@
             if (!s.isPaid) unpaidEarnings += earned;
         });
 
-        document.getElementById('stat-total').innerText = '₪ ' + totalEarnings.toFixed(2);
-        document.getElementById('stat-month').innerText = '₪ ' + monthEarnings.toFixed(2);
-        document.getElementById('stat-week').innerText = '₪ ' + weekEarnings.toFixed(2);
-        document.getElementById('stat-unpaid').innerText = '₪ ' + unpaidEarnings.toFixed(2);
-        document.getElementById('stat-hours').innerText = totalHours.toFixed(1) + ' שעות';
+        document.getElementById('stat-total').innerText=formatTotals(WorkTransfer.totals(shifts));
+        document.getElementById('stat-month').innerText=formatTotals(WorkTransfer.totals(shifts.filter(s=>s.date>=startOfMonth&&s.date<new Date(new Date().getFullYear(),new Date().getMonth()+1,1).getTime())));
+        document.getElementById('stat-week').innerText=formatTotals(WorkTransfer.totals(shifts.filter(s=>s.date>=startOfWeek&&s.date<startOfWeek+7*86400000)));
+        document.getElementById('stat-unpaid').innerText=formatTotals(WorkTransfer.totals(shifts.filter(s=>!s.isPaid)));
+        document.getElementById('stat-hours').innerText=totalHours.toFixed(1)+' שעות';
 
+        renderCompanionViews(filtered);renderHistoryControls(filtered);renderSelectionControls();
         if (filtered.length === 0) {
             list.innerHTML = '<div class="empty-state">אין משמרות להצגה בקטגוריה זו</div>';
             return;
         }
 
-        filtered.forEach(s => {
-            const dateStr = new Date(s.date).toLocaleDateString('he-IL');
-            const item = document.createElement('div');
-            item.className = 'shift-item';
-            item.innerHTML = `
-                <div class="shift-info">
-                    <span class="shift-title">${s.category}</span>
-                    <span class="shift-meta">${dateStr} | ${s.hours} שעות @ ₪${s.hourlyRate}/שעה</span>
-                    ${s.notes ? `<span class="shift-meta" style="color: var(--text-muted); font-size: 0.75rem;">${s.notes}</span>` : ''}
-                    <div class="shift-pills">
-                        <span class="badge ${s.isPaid ? 'badge-paid' : 'badge-unpaid'}">
-                            ${s.isPaid ? 'שולם' : 'לא שולם'}
-                        </span>
-                    </div>
-                </div>
-                <div class="shift-amount-group">
-                    <span class="shift-total">₪ ${Number(s.totalEarnings).toFixed(2)}</span>
-                    <div class="shift-actions">
-                        <button class="btn-mini" onclick="togglePaid(${s.id})">${s.isPaid ? 'סמן כלא שולם' : 'סמן כשולם'}</button>
-                        <button class="btn-mini" onclick="deleteShift(${s.id})">מחיקה</button>
-                    </div>
-                </div>
-            `;
-            list.appendChild(item);
-        });
+        for(const entry of filtered) list.append(createShiftCard(entry));
     }
+
+    let currentPage=0,reportMode='clock';const pageScroll=[0,0];
+    function showMessage(text){const el=document.getElementById('app-message');el.textContent=text;el.hidden=false;setTimeout(()=>{el.hidden=true;},3000);}
+    function showPage(page){if(page===currentPage)return;pageScroll[currentPage]=window.scrollY;const old=currentPage;currentPage=page;document.getElementById('page-home').hidden=page!==0;document.getElementById('page-history').hidden=page!==1;for(const [i,id] of ['nav-home','nav-history'].entries()){const b=document.getElementById(id);if(i===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}const panel=document.getElementById(page?'page-history':'page-home');panel.classList.remove('slide-forward','slide-back');void panel.offsetWidth;panel.classList.add(page>old?'slide-forward':'slide-back');window.scrollTo({top:pageScroll[page],behavior:'instant'});document.querySelector('.live-control').hidden=page!==0;}
+    function summaryPage(page){const el=document.querySelector('.summary-carousel');el.children[page].scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'nearest',inline:'start'});}
+    function toggleReport(button){const content=document.getElementById('report-content');content.hidden=!content.hidden;button.setAttribute('aria-expanded',String(!content.hidden));}
+    function setReportMode(mode){reportMode=mode;editingShiftId=null;document.getElementById('modal-range').checked=mode==='clock';toggleRange();document.getElementById('modal-group').checked=mode==='group';document.getElementById('group-fields').hidden=mode!=='group';document.querySelectorAll('.mode-switch button').forEach((b,i)=>b.setAttribute('aria-selected',String(['clock','manual','group'][i]===mode)));}
+    function openCategoryDialog(name=''){document.getElementById('category-name').value=name;document.getElementById('category-name').readOnly=Boolean(name);document.getElementById('category-rate').value=categories.find(c=>c.name===name)?.defaultRate??40;document.getElementById('category-error').textContent='';document.getElementById('category-dialog').showModal();}
+    function saveCategoryDialog(){try{const name=document.getElementById('category-name').value.trim();if(!name)throw Error('יש להזין שם קטגוריה');const rate=WorkTransfer.number(document.getElementById('category-rate').value);persistAll(shifts,[...categories.filter(c=>c.name!==name),{name,defaultRate:rate}]);document.getElementById('category-dialog').close();if(editingShiftId===null)applyCategoryRate();renderShifts();}catch(e){document.getElementById('category-error').textContent=e.message;}}
+    function renderToday(){const now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(),end=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1).getTime(),today=shifts.filter(s=>s.date>=start&&s.date<end);document.getElementById('stat-today').textContent=formatTotals(WorkTransfer.totals(today));document.getElementById('today-hours').textContent=today.reduce((n,e)=>n+e.hours,0).toFixed(1)+' שעות';}
+    function renderCompanionViews(filtered){
+        const now=new Date(),monthStart=new Date(now.getFullYear(),now.getMonth(),1).getTime(),monthEnd=new Date(now.getFullYear(),now.getMonth()+1,1).getTime(),weekStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()-now.getDay()).getTime(),weekEnd=weekStart+7*86400000;
+        document.getElementById('stat-paid').textContent=formatTotals(WorkTransfer.totals(shifts.filter(s=>s.isPaid)));
+        document.getElementById('week-hours').textContent=shifts.filter(s=>s.date>=weekStart&&s.date<weekEnd).reduce((n,e)=>n+e.hours,0).toFixed(1)+' שעות';document.getElementById('month-hours').textContent=shifts.filter(s=>s.date>=monthStart&&s.date<monthEnd).reduce((n,e)=>n+e.hours,0).toFixed(1)+' שעות';
+        const monthCurrency=localStorage.getItem('work_default_currency')||'₪'; const monthEarnings=shifts.filter(e=>e.currency===monthCurrency&&new Date(e.date).getFullYear()===now.getFullYear()&&new Date(e.date).getMonth()===now.getMonth()).reduce((sum,e)=>sum+e.totalEarnings,0); document.getElementById('month-progress').style.width=Math.min(100,Math.max(0,monthEarnings/10000*100))+'%';
+        document.getElementById('history-summary').textContent=filtered.length+' משמרות · '+filtered.reduce((n,e)=>n+e.hours,0).toFixed(1)+' שעות · '+formatTotals(WorkTransfer.totals(filtered));
+        const recent=document.getElementById('recent-list');recent.replaceChildren();const latest=[...shifts].sort((a,b)=>(b.createdAt??b.date)-(a.createdAt??a.date)).slice(0,3);
+        if(!latest.length){const p=document.createElement('p');p.className='empty-state';p.textContent='המשמרת הראשונה שלך תופיע כאן';recent.append(p);}
+        for(const entry of latest)recent.append(createShiftCard(entry,true));
+        const catBox=document.getElementById('settings-categories'),options=document.getElementById('category-options');catBox.replaceChildren();options.replaceChildren();for(const cat of categories){const row=document.createElement('button');row.className='category-setting';const name=document.createElement('span'),rate=document.createElement('b');name.textContent=cat.name;rate.textContent=cat.defaultRate+' / שעה';row.append(name,rate);row.onclick=()=>openCategoryDialog(cat.name);catBox.append(row);const opt=document.createElement('option');opt.value=cat.name;options.append(opt);}
+        renderToday();
+    }
+    function initAppViews(){document.getElementById('report-slot').append(document.getElementById('report-fields'));setReportMode('clock');const dialog=document.getElementById('add-modal');dialog.addEventListener('cancel',e=>{e.preventDefault();closeAddModal();});const carousel=document.querySelector('.summary-carousel');carousel.addEventListener('scroll',()=>{const left=carousel.getBoundingClientRect();let nearest=0,distance=Infinity;[...carousel.children].forEach((el,i)=>{const d=Math.abs(el.getBoundingClientRect().right-left.right);if(d<distance){distance=d;nearest=i;}});document.querySelectorAll('.pager-dots button').forEach((b,i)=>b.classList.toggle('active',i===nearest));},{passive:true});carousel.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();const current=[...document.querySelectorAll('.pager-dots button')].findIndex(b=>b.classList.contains('active'));summaryPage(Math.max(0,Math.min(2,current+(e.key==='ArrowLeft'?1:-1))));});let start=null;const pages=document.getElementById('app-pages');pages.addEventListener('pointerdown',e=>{if(e.target.closest('input,textarea,select,button,summary,a,.summary-carousel,.category-chips,dialog'))return;start={x:e.clientX,y:e.clientY};});pages.addEventListener('pointerup',e=>{if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;start=null;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.5)showPage(dx>0?1:0);});pages.addEventListener('pointercancel',()=>{start=null;});}
 
     // Initial load
     loadLocalShifts();
-    if (shifts.length === 0) {
-        // Initial sample shifts if empty
-        shifts = [
-            { id: 1, category: 'כללי', date: Date.now() - 86400000 * 2, hours: 7.5, hourlyRate: 45, totalEarnings: 337.5, isPaid: true, notes: 'משמרת בוקר', currency: '₪', createdAt: Date.now() },
-            { id: 2, category: 'שמירה', date: Date.now() - 86400000, hours: 8.0, hourlyRate: 40, totalEarnings: 320.0, isPaid: false, notes: 'עמדה ראשית', currency: '₪', createdAt: Date.now() }
-        ];
-        saveLocalShifts();
-    }
-    renderShifts();
+    try {const saved=JSON.parse(localStorage.getItem('work_complete_backup')||'null');if(saved){shifts=saved.entries;categories=saved.categories;workers=saved.workers;}} catch(e){alert('לא ניתן לקרוא את הגיבוי המקומי. אין להזין נתונים לפני שחזור.');throw e;}
+
+    initParity();initAppViews();renderShifts();
 </script>
 
 </body>

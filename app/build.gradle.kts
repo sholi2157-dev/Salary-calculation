@@ -14,8 +14,12 @@ android {
     applicationId = "com.aistudio.worktracker.qztvdw"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = 2
+    versionName = "1.1"
+    buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+    // Remains false until the existing Firebase project and user isolation are verified.
+    buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
+    buildConfigField("String", "AI_SERVICE_URL", "\"${System.getenv("AI_SERVICE_URL") ?: ""}\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -28,23 +32,22 @@ android {
       keyAlias = "upload"
       keyPassword = System.getenv("KEY_PASSWORD")
     }
-    create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
-    }
+
   }
 
   buildTypes {
+    create("preview") {
+      initWith(getByName("debug"))
+      applicationIdSuffix = ".preview"
+      versionNameSuffix = "-preview"
+      signingConfig = signingConfigs.getByName("debug")
+      matchingFallbacks += listOf("debug")
+    }
     release {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
-    }
-    debug {
-      signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
   compileOptions {
@@ -63,6 +66,8 @@ android {
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
+  // Server .env secrets must never be exported into Android BuildConfig/manifest.
+  ignoreList.add(".*")
 }
 
 // Some unused dependencies are commented out below instead of being removed.
