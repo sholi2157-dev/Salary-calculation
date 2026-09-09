@@ -11,3 +11,8 @@ body{font-family:Assistant,sans-serif;font-size:16px;background:#090b10}body:bef
 #settings-dialog summary{flex-direction:row}.settings-footer{flex-direction:row}
 
 .report-chevron{display:flex;transition:transform .2s}.card-heading[aria-expanded="true"] .report-chevron{transform:rotate(180deg)}.live-control button{display:flex;align-items:center;gap:12px}.live-control [data-icon]{display:flex}#settings-dialog summary>span{display:flex;flex-direction:row-reverse;gap:10px;align-items:center}
+
+/* Web has no active/background shift; keep the content close to bottom navigation. */
+.app-container{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+
+.selection-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}.selection-toolbar strong{flex:1;font-size:14px}.selection-actions{position:sticky;bottom:68px;background:#202033ee;backdrop-filter:blur(12px);display:flex;gap:8px;padding:10px;border:1px solid #818cf855;border-radius:18px;z-index:3;margin-top:16px}.selection-actions button{flex:1;padding:12px 6px}.journal-card.selected{background:#818cf830;border-color:#818cf8}.journal-card>summary input[type=checkbox]{grid-column:4;width:18px;height:18px}.journal-card.selected .chevron{display:none}

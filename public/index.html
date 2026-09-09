@@ -28,31 +28,29 @@
       <div class="summary-carousel" aria-label="סיכומי שכר" tabindex="0">
         <article class="summary-card"><h2>השבוע והחודש</h2><div class="summary-pair"><div><span class="indigo">שבוע</span><strong class="indigo" id="stat-week">0.00 ₪</strong><small id="week-hours">0 שעות</small></div><div><span class="green">חודש</span><strong class="green" id="stat-month">0.00 ₪</strong><small id="month-hours">0 שעות</small></div></div><div class="progress-track"><span id="month-progress"></span></div></article>
         <article class="summary-card"><h2>סיכום כל הזמנים</h2><div class="summary-pair"><div><span>סה״כ הכנסות</span><strong class="green" id="stat-total">0.00 ₪</strong><small>סה״כ שעות עבודה</small><b class="green" id="stat-hours">0 שעות</b></div><div><span>שולם</span><strong class="indigo" id="stat-paid">0.00 ₪</strong><small>ממתין לתשלום</small><b class="amber" id="stat-unpaid">0.00 ₪</b></div></div></article>
-        <article class="summary-card" id="today-card"><h2>היום <span id="live-badge" hidden>● עובד כעת</span></h2><div class="summary-pair"><div><span id="today-label">הכנסות היום</span><strong class="green" id="stat-today">0.00 ₪</strong></div><div><span id="today-hours-label">סה״כ שעות היום</span><strong class="green" id="today-hours">0 שעות</strong></div></div><p id="timer-status" role="status"></p></article>
+        <article class="summary-card" id="today-card"><h2>היום</h2><div class="summary-pair"><div><span id="today-label">הכנסות היום</span><strong class="green" id="stat-today">0.00 ₪</strong></div><div><span id="today-hours-label">סה״כ שעות היום</span><strong class="green" id="today-hours">0 שעות</strong></div></div></article>
       </div>
       <div class="pager-dots" aria-label="בחירת כרטיס סיכום"><button class="active" aria-label="השבוע והחודש" onclick="summaryPage(0)"></button><button aria-label="סיכום כל הזמנים" onclick="summaryPage(1)"></button><button aria-label="היום" onclick="summaryPage(2)"></button></div>
       <section class="glass-card report-card"><button class="card-heading" aria-expanded="true" onclick="toggleReport(this)"><span>דיווח חדש</span><span class="report-chevron" data-icon="down" aria-hidden="true"></span></button><div id="report-content"><div class="mode-switch" role="tablist" aria-label="אופן דיווח"><button role="tab" aria-selected="true" onclick="setReportMode('clock')">שעון</button><button role="tab" aria-selected="false" onclick="setReportMode('manual')">ידני</button><button role="tab" aria-selected="false" onclick="setReportMode('group')">קבוצה</button></div><div id="report-slot"></div></div></section>
       <section class="glass-card recent-section"><div class="section-heading"><h2>משמרות אחרונות שנוספו</h2><button class="text-button" onclick="showPage(1)">לכל ההיסטוריה</button></div><div id="recent-list"></div></section>
     </section>
     <section id="page-history" class="app-page" hidden aria-label="היסטוריה">
-      <div class="journal-toolbar"><h2 id="journal-title">יומן עבודה</h2><div class="journal-actions"><button class="micro-button" aria-label="שתף דוח" onclick="document.getElementById('report-dialog').showModal()" data-icon="copy"></button><button class="micro-button" aria-label="מיון" onclick="document.getElementById('sort-dialog').showModal()" data-icon="sort"></button><button id="currency-filter" class="micro-button" onclick="cycleCurrency()" aria-label="סינון מטבע">הכל</button></div></div>
+      <div class="journal-toolbar"><h2 id="journal-title">יומן עבודה</h2><div class="journal-actions"><button class="micro-button" aria-label="בחירת משמרות" onclick="enterSelection()" data-icon="check"></button><button class="micro-button" aria-label="שתף דוח" onclick="document.getElementById('report-dialog').showModal()" data-icon="copy"></button><button class="micro-button" aria-label="מיון" onclick="document.getElementById('sort-dialog').showModal()" data-icon="sort"></button><button id="currency-filter" class="micro-button" onclick="cycleCurrency()" aria-label="סינון מטבע">הכל</button></div></div>
       <div id="history-search" hidden><label class="sr-only" for="search-box">חיפוש משמרות</label><input id="search-box" type="search" class="form-input" placeholder="חיפוש משמרת (קטגוריה, הערה)..." oninput="renderShifts()"></div>
       <div class="history-filters"><div class="date-modes"><button class="selected" data-period="all" onclick="setPeriod('all')">הכל תאריכים</button><button data-period="month" onclick="setPeriod('month')">סינון חודשי</button><button data-period="range" onclick="setPeriod('range')">טווח מותאם</button></div><label class="sr-only" for="category-filter">קטגוריה</label><select id="category-filter" onchange="setCategoryFilter(this.value)"><option value="הכל">כל הקטגוריות</option></select></div>
       <div id="period-inputs" class="form-columns" hidden><label id="month-label" hidden>חודש<input type="month" id="month-filter" class="form-input" onchange="renderShifts()"></label><label id="from-label" hidden>מתאריך<input type="date" id="date-from" class="form-input" onchange="renderShifts()"></label><label id="to-label" hidden>עד תאריך<input type="date" id="date-to" class="form-input" onchange="renderShifts()"></label></div>
       <div class="payment-segments" aria-label="סינון תשלום"><button class="selected" data-payment="all" onclick="setPayment('all')">הכל</button><button data-payment="unpaid" onclick="setPayment('unpaid')">ממתין</button><button data-payment="paid" onclick="setPayment('paid')">שולם</button></div>
       <select id="payment-filter" hidden><option value="all">הכל</option><option value="paid">שולם</option><option value="unpaid">ממתין</option></select><div id="category-chips" hidden></div>
-      <div class="journal-total"><span>סה״כ מוצג:</span><strong id="displayed-total"></strong></div><div id="history-summary" class="sr-only" aria-live="polite"></div><div class="shifts-container" id="shifts-list"></div>
-    </section>
+      <div class="journal-total"><span>סה״כ מוצג:</span><strong id="displayed-total"></strong></div><div id="history-summary" class="sr-only" aria-live="polite"></div><div id="selection-toolbar" class="selection-toolbar" hidden><button class="text-button" onclick="exitSelection()">סיום בחירה</button><strong id="selection-count" role="status"></strong><button class="text-button" onclick="selectAllVisible()">בחר הכל</button><button class="text-button" onclick="clearSelection()">נקה הכל</button><button class="micro-button" aria-label="העתקת משמרות נבחרות" onclick="document.getElementById('report-dialog').showModal()" data-icon="copy"></button></div><div class="shifts-container" id="shifts-list"></div>
+    <div id="selection-actions" class="selection-actions" hidden><button class="btn-danger-outline" onclick="applySelection('delete')">מחיקה</button><button class="btn-secondary" onclick="applySelection('unpaid')">סמן כממתין</button><button class="btn-primary" onclick="applySelection('paid')">סמן כשולם</button></div></section>
   </main>
-  <div class="live-control"><button id="timer-start" onclick="openTimerDialog()"><span data-icon="play" aria-hidden="true"></span> התחל משמרת פעילה</button><button id="timer-stop" hidden onclick="stopTimer()"><span data-icon="stop" aria-hidden="true"></span> סיים משמרת פעילה</button></div>
   <nav class="bottom-nav" aria-label="ניווט ראשי"><button id="nav-home" aria-current="page" onclick="showPage(0)"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm8-2h8v8h-8zm2 2v4h4v-4z"/></svg></span>ראשי</button><button id="nav-history" onclick="showPage(1)"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13 3a9 9 0 1 1-8.4 12.2l1.9-.7A7 7 0 1 0 7 8.4L10 11H2V3l3.5 3.5A9 9 0 0 1 13 3m-1 4h2v5l4 2.4-1 1.6-5-3z"/></svg></span>היסטוריה</button></nav>
 </div>
-<dialog id="settings-dialog"><h2>הגדרות מערכת</h2><details><summary>ניהול עבודה וקטגוריות</summary><div id="settings-categories"></div><button class="btn-secondary" onclick="openCategoryDialog()">הוספת קטגוריה</button></details><details><summary><span>הגדרת מטבע ראשי <span id="settings-currency-icon" class="indigo">₪</span></span></summary><label for="default-currency">מטבע לדיווחים חדשים</label><select id="default-currency" class="form-input"><option>₪</option><option>$</option></select></details><details><summary>התראות מערכת</summary><p>הטיימר מוצג באתר בזמן שהדף פתוח. התראת רקע קבועה זמינה באפליקציה.</p></details><details><summary>תחזוקה וגיבוי נתונים</summary><div class="settings-actions"><button class="btn-secondary" onclick="exportJson()">גיבוי מלא</button><button class="btn-secondary" onclick="exportCsv()">ייצוא CSV</button><button class="btn-secondary" onclick="document.getElementById('csv-file-input').click()">ייבוא קובץ</button><button class="btn-secondary" onclick="document.getElementById('settings-dialog').close();openTransfer()">הדבקת נתונים</button></div></details><div class="account-row"><div><h3>חשבון משתמש</h3><p id="user-status-text">שימוש מקומי — ללא סנכרון</p></div><button id="auth-btn" class="btn-secondary" onclick="handleAuthClick()">התחברות</button></div><div class="settings-footer"><button class="btn-danger-outline" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveWebSettings()">שמור</button></div></dialog>
+<dialog id="settings-dialog"><h2>הגדרות מערכת</h2><details><summary>ניהול עבודה וקטגוריות</summary><div id="settings-categories"></div><button class="btn-secondary" onclick="openCategoryDialog()">הוספת קטגוריה</button></details><details><summary><span>הגדרת מטבע ראשי <span id="settings-currency-icon" class="indigo">₪</span></span></summary><label for="default-currency">מטבע לדיווחים חדשים</label><select id="default-currency" class="form-input"><option>₪</option><option>$</option></select></details><details><summary>תחזוקה וגיבוי נתונים</summary><div class="settings-actions"><button class="btn-secondary" onclick="exportJson()">גיבוי מלא</button><button class="btn-secondary" onclick="exportCsv()">ייצוא CSV</button><button class="btn-secondary" onclick="document.getElementById('csv-file-input').click()">ייבוא קובץ</button><button class="btn-secondary" onclick="document.getElementById('settings-dialog').close();openTransfer()">הדבקת נתונים</button></div></details><div class="account-row"><div><h3>חשבון משתמש</h3><p id="user-status-text">שימוש מקומי — ללא סנכרון</p></div><button id="auth-btn" class="btn-secondary" onclick="handleAuthClick()">התחברות</button></div><div class="settings-footer"><button class="btn-danger-outline" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveWebSettings()">שמור</button></div></dialog>
 <dialog id="sort-dialog"><h2>מיון</h2><button class="menu-option" onclick="setSort('newest')">תאריך: מהחדש לישן</button><button class="menu-option" onclick="setSort('oldest')">תאריך: מהישן לחדש</button><button class="menu-option" onclick="setSort('latest_added')">נוסף לאחרונה</button><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
-<dialog id="report-dialog"><h2>העתקת הדוח המוצג</h2><button class="menu-option" onclick="copyDisplayed('table')">העתקת טבלה לאקסל</button><button class="menu-option" onclick="copyDisplayed('message')">העתקת סיכום להודעה</button><p>הדוח כולל רק משמרות שתואמות לסינון הנוכחי.</p><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
+<dialog id="report-dialog"><h2>העתקת הדוח המוצג</h2><button class="menu-option" onclick="copyDisplayed('table')">העתקת טבלה לאקסל</button><button class="menu-option" onclick="copyDisplayed('message')">העתקת סיכום להודעה</button><p>הדוח כולל את המשמרות המוצגות, או רק את המשמרות שסימנת במצב בחירה.</p><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
 <input type="file" id="csv-file-input" accept=".csv,.tsv,.txt,.json" hidden onchange="handleCsvImport(event)">
 <dialog id="category-dialog"><h2>קטגוריה ותעריף</h2><label for="category-name">שם מעסיק / קטגוריה</label><input id="category-name" class="form-input"><label for="category-rate">תעריף שעתי לברירת מחדל</label><input id="category-rate" type="number" min="0" step="0.01" value="40" class="form-input"><p id="category-error" role="status"></p><div class="modal-btn-row"><button class="btn-secondary" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveCategoryDialog()">שמירה</button></div></dialog>
-<dialog id="timer-dialog"><h2>משמרת פעילה</h2><label for="timer-category">מעסיק / קטגוריה</label><input id="timer-category" class="form-input" list="category-options" onchange="document.getElementById('timer-rate').value=categories.find(c=>c.name===this.value.trim())?.defaultRate??40"><label for="timer-rate">תעריף לשעה</label><input id="timer-rate" type="number" min="0" step="0.01" class="form-input" value="40"><label for="timer-currency">מטבע</label><select id="timer-currency" class="form-input"><option>₪</option><option>$</option></select><p id="timer-error" role="status"></p><div class="modal-btn-row"><button class="btn-secondary" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="startTimer()">התחלת משמרת</button></div></dialog>
 <datalist id="category-options"></datalist>
 <p id="app-message" role="status" class="toast" hidden></p>
 <dialog id="transfer-dialog" style="background:#17172b;color:white;border:1px solid #6366f1;border-radius:18px;width:min(90vw,720px)">
@@ -109,13 +107,14 @@
 
 <script src="web/transfer.js"></script>
 <script src="web/history.js"></script>
+<script src="web/selection.js"></script>
 <script src="web/parity.js"></script>
 
 <script>
     // State management
     let shifts = [];
     let currentUserId = null;
-    let categories = [], workers = [], pendingTransfer = null, editingShiftId = null, timerToSave = false;
+    let categories = [], workers = [], pendingTransfer = null, editingShiftId = null;
     try { const meta=JSON.parse(localStorage.getItem('work_transfer_meta')||'{}');categories=meta.categories||[];workers=meta.workers||[]; } catch {}
     let selectedCategory = 'הכל';
 
@@ -204,7 +203,7 @@
             rangeHidden:document.getElementById('range-fields').hidden,
             groupHidden:document.getElementById('group-fields').hidden
         };
-        editingShiftId=null;timerToSave=false;
+        editingShiftId=null;
         document.getElementById('modal-break').value=0;document.getElementById('modal-hours').value=8;document.getElementById('modal-notes').value='';
         const today=new Date();document.getElementById('modal-date').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
         document.getElementById('modal-range').checked=false;toggleRange();
@@ -226,7 +225,7 @@
             document.getElementById('group-fields').hidden=homeReportDraft.groupHidden;
             homeReportDraft=null;
         }
-        document.getElementById('report-slot').append(document.getElementById('report-fields'));editingShiftId=null;timerToSave=false;
+        document.getElementById('report-slot').append(document.getElementById('report-fields'));editingShiftId=null;
     }
 
     function saveNewShift() {
@@ -267,7 +266,6 @@
 
         try {persistAll(editingShiftId===null?[newShift,...shifts]:shifts.map(e=>e.id===editingShiftId?{...e,...newShift,id:e.id,createdAt:e.createdAt,isPaid:e.isPaid,totalEarnings:e.hours===hours&&e.hourlyRate===hourlyRate?e.totalEarnings:totalEarnings}:e));}
         catch(e){alert('השמירה נכשלה: '+e.message);return;}
-        if(timerToSave){localStorage.removeItem('work_active_timer');timerToSave=false;renderTimer();}
         syncToCloud();
         closeAddModal();
         renderShifts();showMessage('הדיווח נשמר בהצלחה');
@@ -289,10 +287,6 @@
     }
     function toggleRange(){const on=document.getElementById('modal-range').checked;document.getElementById('range-fields').hidden=!on;document.getElementById('modal-hours').readOnly=on;if(on)updateRangeHours();}
     function updateRangeHours(){try{document.getElementById('modal-hours').value=WorkTransfer.rangeHours(document.getElementById('modal-start').value,document.getElementById('modal-end').value,document.getElementById('modal-break').value);}catch{document.getElementById('modal-hours').value='';}}
-    function activeTimer(){try{return JSON.parse(localStorage.getItem('work_active_timer')||'null');}catch{return null;}}
-    function startTimer(){if(activeTimer())return;try{const category=document.getElementById('timer-category').value.trim();if(!category)throw Error('יש לבחור מעסיק / קטגוריה');const rate=WorkTransfer.number(document.getElementById('timer-rate').value);localStorage.setItem('work_active_timer',JSON.stringify({category,rate,start:Date.now(),currency:document.getElementById('timer-currency').value}));document.getElementById('timer-dialog').close();renderTimer();summaryPage(2);}catch(e){document.getElementById('timer-error').textContent=e.message;}}
-    function renderTimer(){const timer=activeTimer();document.getElementById('timer-start').hidden=Boolean(timer);document.getElementById('timer-stop').hidden=!timer;document.getElementById('live-badge').hidden=!timer;document.getElementById('today-card').classList.toggle('running',!!timer);const seconds=timer?Math.max(0,Math.floor((Date.now()-timer.start)/1000)):0;document.getElementById('timer-status').textContent=timer?timer.category:'';if(timer){document.getElementById('today-label').textContent='נצבר';document.getElementById('today-hours-label').textContent='זמן';document.getElementById('stat-today').textContent=timer.currency+' '+(seconds*timer.rate/3600).toFixed(2);document.getElementById('today-hours').textContent=String(Math.floor(seconds/3600)).padStart(2,'0')+':'+String(Math.floor(seconds/60)%60).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');}else{document.getElementById('today-label').textContent='הכנסות היום';document.getElementById('today-hours-label').textContent='סה״כ שעות היום';renderToday();}}
-    function stopTimer(){const timer=activeTimer();if(!timer)return;openAddModal();timerToSave=true;document.getElementById('modal-category').value=timer.category;document.getElementById('modal-rate').value=timer.rate;document.getElementById('modal-currency').value=timer.currency;document.getElementById('modal-hours').value=(Date.now()-timer.start)/3600000;const d=new Date(timer.start);document.getElementById('modal-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 
 
     function exportCsv(){download('shifts.csv',WorkTransfer.csv(shifts),'text/csv;charset=utf-8');}
@@ -337,7 +331,7 @@
         document.getElementById('stat-unpaid').innerText=formatTotals(WorkTransfer.totals(shifts.filter(s=>!s.isPaid)));
         document.getElementById('stat-hours').innerText=totalHours.toFixed(1)+' שעות';
 
-        renderCompanionViews(filtered);renderHistoryControls(filtered);
+        renderCompanionViews(filtered);renderHistoryControls(filtered);renderSelectionControls();
         if (filtered.length === 0) {
             list.innerHTML = '<div class="empty-state">אין משמרות להצגה בקטגוריה זו</div>';
             return;
@@ -354,7 +348,6 @@
     function setReportMode(mode){reportMode=mode;editingShiftId=null;document.getElementById('modal-range').checked=mode==='clock';toggleRange();document.getElementById('modal-group').checked=mode==='group';document.getElementById('group-fields').hidden=mode!=='group';document.querySelectorAll('.mode-switch button').forEach((b,i)=>b.setAttribute('aria-selected',String(['clock','manual','group'][i]===mode)));}
     function openCategoryDialog(name=''){document.getElementById('category-name').value=name;document.getElementById('category-name').readOnly=Boolean(name);document.getElementById('category-rate').value=categories.find(c=>c.name===name)?.defaultRate??40;document.getElementById('category-error').textContent='';document.getElementById('category-dialog').showModal();}
     function saveCategoryDialog(){try{const name=document.getElementById('category-name').value.trim();if(!name)throw Error('יש להזין שם קטגוריה');const rate=WorkTransfer.number(document.getElementById('category-rate').value);persistAll(shifts,[...categories.filter(c=>c.name!==name),{name,defaultRate:rate}]);document.getElementById('category-dialog').close();if(editingShiftId===null)applyCategoryRate();renderShifts();}catch(e){document.getElementById('category-error').textContent=e.message;}}
-    function openTimerDialog(){document.getElementById('timer-category').value=document.getElementById('modal-category').value;document.getElementById('timer-rate').value=categories.find(c=>c.name===document.getElementById('timer-category').value.trim())?.defaultRate??40;document.getElementById('timer-error').textContent='';document.getElementById('timer-dialog').showModal();}
     function renderToday(){const now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(),end=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1).getTime(),today=shifts.filter(s=>s.date>=start&&s.date<end);document.getElementById('stat-today').textContent=formatTotals(WorkTransfer.totals(today));document.getElementById('today-hours').textContent=today.reduce((n,e)=>n+e.hours,0).toFixed(1)+' שעות';}
     function renderCompanionViews(filtered){
         const now=new Date(),monthStart=new Date(now.getFullYear(),now.getMonth(),1).getTime(),monthEnd=new Date(now.getFullYear(),now.getMonth()+1,1).getTime(),weekStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()-now.getDay()).getTime(),weekEnd=weekStart+7*86400000;
@@ -366,7 +359,7 @@
         if(!latest.length){const p=document.createElement('p');p.className='empty-state';p.textContent='המשמרת הראשונה שלך תופיע כאן';recent.append(p);}
         for(const entry of latest)recent.append(createShiftCard(entry,true));
         const catBox=document.getElementById('settings-categories'),options=document.getElementById('category-options');catBox.replaceChildren();options.replaceChildren();for(const cat of categories){const row=document.createElement('button');row.className='category-setting';const name=document.createElement('span'),rate=document.createElement('b');name.textContent=cat.name;rate.textContent=cat.defaultRate+' / שעה';row.append(name,rate);row.onclick=()=>openCategoryDialog(cat.name);catBox.append(row);const opt=document.createElement('option');opt.value=cat.name;options.append(opt);}
-        if(!activeTimer())renderToday();
+        renderToday();
     }
     function initAppViews(){document.getElementById('report-slot').append(document.getElementById('report-fields'));setReportMode('clock');const dialog=document.getElementById('add-modal');dialog.addEventListener('cancel',e=>{e.preventDefault();closeAddModal();});const carousel=document.querySelector('.summary-carousel');carousel.addEventListener('scroll',()=>{const left=carousel.getBoundingClientRect();let nearest=0,distance=Infinity;[...carousel.children].forEach((el,i)=>{const d=Math.abs(el.getBoundingClientRect().right-left.right);if(d<distance){distance=d;nearest=i;}});document.querySelectorAll('.pager-dots button').forEach((b,i)=>b.classList.toggle('active',i===nearest));},{passive:true});carousel.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();const current=[...document.querySelectorAll('.pager-dots button')].findIndex(b=>b.classList.contains('active'));summaryPage(Math.max(0,Math.min(2,current+(e.key==='ArrowLeft'?1:-1))));});let start=null;const pages=document.getElementById('app-pages');pages.addEventListener('pointerdown',e=>{if(e.target.closest('input,textarea,select,button,summary,a,.summary-carousel,.category-chips,dialog'))return;start={x:e.clientX,y:e.clientY};});pages.addEventListener('pointerup',e=>{if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;start=null;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.5)showPage(dx>0?1:0);});pages.addEventListener('pointercancel',()=>{start=null;});}
 
@@ -374,7 +367,7 @@
     loadLocalShifts();
     try {const saved=JSON.parse(localStorage.getItem('work_complete_backup')||'null');if(saved){shifts=saved.entries;categories=saved.categories;workers=saved.workers;}} catch(e){alert('לא ניתן לקרוא את הגיבוי המקומי. אין להזין נתונים לפני שחזור.');throw e;}
 
-    initParity();initAppViews();renderShifts();renderTimer();setInterval(renderTimer,1000);
+    initParity();initAppViews();renderShifts();
 </script>
 
 </body>

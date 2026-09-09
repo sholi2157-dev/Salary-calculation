@@ -13,3 +13,5 @@
 - Current design requirement: web must follow Android source theme/layout/components and navigation, not a generic dashboard. No claim of pixel parity without original-reference comparison. Keep Android main/history horizontal swipe and tab clicks, preserving nested summary carousel.
 - Current AI scope: temporarily omit web AI completely, as user authorized, until a verified protected account credential vault exists. Android optional first-use/first-sign-in setup with info icon and skip; settings add/replace/remove. Persist encrypted keys per local account UID (guest legacy slot stays separate); do not claim cross-device account sync.
 - Repeated APK installation failure is a release blocker: publish public certificate/package/version diagnostics, never suggest another blind update or uninstall, and never upload private signing material.
+
+- Website scope: omit AI and active/background shift timers, their start/stop controls and notification settings. These remain Android-only by user request. Preserve completed shifts and do not erase legacy timer storage while removing the feature. Keep manual clock-range entry and the daily summary.
