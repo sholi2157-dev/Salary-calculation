@@ -281,6 +281,13 @@ class WorkViewModel(
     val activeShiftCategory: StateFlow<String> = ShiftStateManager.activeShiftCategory
     val activeShiftRate: StateFlow<Double> = ShiftStateManager.activeShiftRate
 
+    fun startActiveShiftWithSavedRate(category: String) {
+        viewModelScope.launch {
+            val rate = repository.getCategoryByName(category)?.defaultRate ?: DEFAULT_RATE
+            startActiveShift(category, rate)
+        }
+    }
+
     fun startActiveShift(category: String, rate: Double) {
         val startTime = System.currentTimeMillis()
         ShiftStateManager.start(getApplication(), category, rate, startTime)
@@ -448,21 +455,18 @@ class WorkViewModel(
         currency: String = "₪"
     ) {
         viewModelScope.launch {
-            val finalHours = if (isTimeRange) {
-                calculateHoursDiff(startTime ?: "00:00", endTime ?: "00:00")
-            } else {
-                hours
-            }
-            val entry = WorkEntry(
-                id = id,
+            if (!hours.isFinite() || hours <= 0.0 || !rate.isFinite() || rate < 0.0 ||
+                (employerRate != null && (!employerRate.isFinite() || employerRate < 0.0)) ||
+                (workerRate != null && (!workerRate.isFinite() || workerRate < 0.0))) return@launch
+            val original = repository.getEntryById(id) ?: return@launch
+            val proposed = original.copy(
                 category = category,
                 date = dateMillis,
                 isTimeRange = isTimeRange,
                 startTime = startTime,
                 endTime = endTime,
-                hours = finalHours,
+                hours = hours,
                 hourlyRate = rate,
-                totalEarnings = Math.round((finalHours * rate) * 100.0) / 100.0,
                 isPaid = isPaid,
                 notes = notes,
                 isGroupShift = isGroupShift,
@@ -472,7 +476,7 @@ class WorkViewModel(
                 currency = currency
             )
             val uid = getActiveUserId()
-            repository.updateEntry(entry, uid)
+            repository.updateEntry(com.example.data.WorkEntryEdits.apply(original, proposed), uid)
             
             performAutoBackup()
         }
@@ -736,10 +740,12 @@ class WorkViewModel(
             Toast.makeText(context, e.message ?: "לא ניתן לקרוא את הנתונים", Toast.LENGTH_LONG).show()
             return false
         }
+        fun amount(value: Double) = String.format(Locale.US, "%.2f", value)
         val totals = backup.entries.groupBy { it.currency }.map { (currency, rows) ->
-            "$currency ${String.format(Locale.US, "%.2f", rows.sumOf { it.totalEarnings })}"
-        }.joinToString(" • ")
-        val summary = "נקראו ${backup.entries.size} משמרות.\nסכומי הקובץ: $totals\nרשומות שכבר קיימות לא יתווספו שוב.\n\n" +
+            "$currency: סך הכול ${amount(rows.sumOf { it.totalEarnings })}, שולם ${amount(rows.filter { it.isPaid }.sumOf { it.totalEarnings })}, לא שולם ${amount(rows.filter { !it.isPaid }.sumOf { it.totalEarnings })}"
+        }.joinToString("\n")
+        val categoryCount = (backup.categories.map { it.name } + backup.entries.map { it.category }).distinct().size
+        val summary = "נקראו ${backup.entries.size} משמרות ו־$categoryCount קטגוריות.\nסך שעות: ${amount(backup.entries.sumOf { it.hours })}\nסכומי הקובץ לפי מצב תשלום המשמרת:\n$totals\nהשווה לסיכום המקורי לפני האישור.\nרשומות שכבר קיימות לא יתווספו שוב.\n\n" +
             backup.entries.take(20).joinToString("\n") { entry ->
                 "${entry.category} | ${SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(entry.date))} | ${entry.hours} שעות | ${entry.totalEarnings} ${entry.currency}"
             } + if (backup.entries.size > 20) "\nועוד ${backup.entries.size - 20} משמרות" else ""

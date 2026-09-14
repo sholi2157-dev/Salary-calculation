@@ -18,6 +18,8 @@ class WorkRepository(private val workDao: WorkDao) {
         return insertedId
     }
 
+    suspend fun getEntryById(id: Int): WorkEntry? = workDao.getEntryById(id)
+
     suspend fun updateEntry(entry: WorkEntry, userId: String? = null) {
         workDao.updateEntry(entry)
         if (!userId.isNullOrBlank()) {

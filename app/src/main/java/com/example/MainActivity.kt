@@ -350,8 +350,7 @@ class MainActivity : ComponentActivity() {
         intentActionFlow.value = intent?.action
         if (intent?.action == "com.example.ACTION_START_SHIFT") {
             // Need to retrieve default rate for "עצמאי" if it exists, otherwise use 40.0
-            val rate = viewModel.categories.value.find { it.name == "עצמאי" }?.defaultRate ?: 40.0
-            viewModel.startActiveShift("עצמאי", rate)
+            viewModel.startActiveShiftWithSavedRate("עצמאי")
             intentActionFlow.value = null
         }
     }
@@ -2850,7 +2849,7 @@ fun DashboardScreen(
                             onClick = {
                                 val lastEntry = recentEntries.firstOrNull()
                                 val cat = lastEntry?.category ?: "עצמאי"
-                                val rate = lastEntry?.hourlyRate ?: 40.0
+                                val rate = categories.firstOrNull { it.name == cat }?.defaultRate ?: WorkViewModel.DEFAULT_RATE
                                 onStartShift(cat, rate)
                                 showQuickShiftDialog = false
                             }
@@ -5625,10 +5624,10 @@ fun ShiftFormDialog(
     var startTime by remember { mutableStateOf(entry?.startTime ?: "09:00") }
     var endTime by remember { mutableStateOf(entry?.endTime ?: "17:00") }
     var manualHoursText by remember {
-        mutableStateOf(entry?.let { if (!it.isTimeRange) String.format(Locale.US, "%.1f", it.hours) else "" } ?: "")
+        mutableStateOf(entry?.let { it.hours.toString() } ?: "")
     }
     var rateText by remember {
-        mutableStateOf(String.format(Locale.US, "%.0f", entry?.hourlyRate ?: WorkViewModel.DEFAULT_RATE))
+        mutableStateOf((entry?.hourlyRate ?: WorkViewModel.DEFAULT_RATE).toString())
     }
     var notesText by remember { mutableStateOf(entry?.notes ?: "") }
     var isDropdownExpanded by remember { mutableStateOf(false) }
@@ -5911,6 +5910,11 @@ fun ShiftFormDialog(
                         }
                     }
 
+                    if (isTimeRange) {
+                        hours = if (entry != null && entry.isTimeRange && startTime == entry.startTime && endTime == entry.endTime) {
+                            entry.hours
+                        } else com.example.data.WorkEntryEdits.rangeHours(startTime, endTime)
+                    }
                     // Save shift
                     onSave(
                         selectedCategory,
@@ -5975,15 +5979,15 @@ fun EditShiftBottomSheet(
     var selectedDateMillis by remember { mutableStateOf(entry.date) }
     var startTimeStr by remember { mutableStateOf(entry.startTime ?: "09:00") }
     var endTimeStr by remember { mutableStateOf(entry.endTime ?: "17:00") }
-    var breakMinutesStr by remember { mutableStateOf("0") }
-    var hourlyRateStr by remember { mutableStateOf(String.format(Locale.US, "%.0f", entry.hourlyRate)) }
+    var breakMinutesStr by remember { mutableStateOf(com.example.data.WorkEntryEdits.breakMinutes(entry).toString()) }
+    var hourlyRateStr by remember { mutableStateOf(entry.hourlyRate.toString()) }
     var selectedCategory by remember { mutableStateOf(entry.category) }
     var notesText by remember { mutableStateOf(entry.notes) }
-    var manualHoursStr by remember { mutableStateOf(if (!entry.isTimeRange) String.format(Locale.US, "%.1f", entry.hours) else "8.0") }
+    var manualHoursStr by remember { mutableStateOf(entry.hours.toString()) }
     
     var isGroupShift by remember { mutableStateOf(entry.isGroupShift) }
-    var employerRateStr by remember { mutableStateOf(entry.employerRate?.let { String.format(Locale.US, "%.0f", it) } ?: "") }
-    var workerRateStr by remember { mutableStateOf(entry.workerRate?.let { String.format(Locale.US, "%.0f", it) } ?: "") }
+    var employerRateStr by remember { mutableStateOf(entry.employerRate?.toString() ?: "") }
+    var workerRateStr by remember { mutableStateOf(entry.workerRate?.toString() ?: "") }
     var showSeparateRates by remember { mutableStateOf(entry.employerRate != null || entry.workerRate != null) }
     
     val groupWorkers = remember { 
@@ -6710,8 +6714,8 @@ fun EditShiftBottomSheet(
                     val testHours = if (isManualMode) manualHoursStr.toDoubleOrNull() ?: 0.0 else 1.0
                     val testRate = hourlyRateStr.toDoubleOrNull() ?: 0.0
                     
-                    showErrorHours = isManualMode && (manualHoursStr.isBlank() || testHours <= 0.0)
-                    showErrorRate = hourlyRateStr.isBlank() || testRate <= 0.0
+                    showErrorHours = isManualMode && (manualHoursStr.isBlank() || !testHours.isFinite() || testHours <= 0.0)
+                    showErrorRate = hourlyRateStr.isBlank() || !testRate.isFinite() || testRate <= 0.0
                     
                     if (showErrorHours || showErrorRate) {
                         triggerHapticFeedback(context, isDestructive = true)
@@ -6722,17 +6726,24 @@ fun EditShiftBottomSheet(
                     val finalHours = if (isManualMode) {
                         manualHoursStr.toDoubleOrNull() ?: 8.0
                     } else {
-                        val sParts = startTimeStr.split(":")
-                        val sMin = (sParts.getOrNull(0)?.toIntOrNull() ?: 9) * 60 + (sParts.getOrNull(1)?.toIntOrNull() ?: 0)
-                        val eParts = endTimeStr.split(":")
-                        val eMin = (eParts.getOrNull(0)?.toIntOrNull() ?: 17) * 60 + (eParts.getOrNull(1)?.toIntOrNull() ?: 0)
-                        val bMins = breakMinutesStr.toDoubleOrNull() ?: 0.0
-                        val durationVal = eMin - sMin - bMins
-                        maxOf(0.0, durationVal / 60.0)
+                        com.example.data.WorkEntryEdits.netHours(
+                            entry, startTimeStr, endTimeStr, breakMinutesStr.toDoubleOrNull() ?: 0.0
+                        )
                     }
                     val finalRate = hourlyRateStr.toDoubleOrNull() ?: 40.0
-                    val eRate = if (isGroupShift && showSeparateRates) employerRateStr.toDoubleOrNull() ?: finalRate else finalRate
-                    val wRate = if (isGroupShift && showSeparateRates) workerRateStr.toDoubleOrNull() ?: finalRate else finalRate
+                    val separateSettingsUnchanged = isGroupShift == entry.isGroupShift &&
+                        showSeparateRates == (entry.employerRate != null || entry.workerRate != null)
+                    val eRate = if (separateSettingsUnchanged && employerRateStr == (entry.employerRate?.toString() ?: "")) entry.employerRate
+                        else if (isGroupShift && showSeparateRates) employerRateStr.toDoubleOrNull() ?: finalRate else null
+                    val wRate = if (separateSettingsUnchanged && workerRateStr == (entry.workerRate?.toString() ?: "")) entry.workerRate
+                        else if (isGroupShift && showSeparateRates) workerRateStr.toDoubleOrNull() ?: finalRate else null
+                    if (!finalHours.isFinite() || finalHours <= 0.0 ||
+                        (eRate != null && (!eRate.isFinite() || eRate < 0.0)) ||
+                        (wRate != null && (!wRate.isFinite() || wRate < 0.0)) ||
+                        (breakMinutesStr.toDoubleOrNull()?.let { !it.isFinite() || it < 0.0 } == true)) {
+                        Toast.makeText(context, "נא להזין שעות ותעריפים תקינים", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
                     val gJson = if (isGroupShift && groupWorkers.isNotEmpty()) {
                         val arr = org.json.JSONArray()
                         groupWorkers.forEach { w ->

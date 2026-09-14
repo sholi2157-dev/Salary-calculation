@@ -29,6 +29,9 @@ interface WorkDao {
     @Query("SELECT * FROM work_entries ORDER BY date DESC, createdAt DESC")
     fun getAllEntries(): Flow<List<WorkEntry>>
 
+    @Query("SELECT * FROM work_entries WHERE id = :id LIMIT 1")
+    suspend fun getEntryById(id: Int): WorkEntry?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEntry(entry: WorkEntry): Long
 

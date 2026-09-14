@@ -162,8 +162,8 @@ class ShiftForegroundService : Service() {
                 val insertedId = db.workDao().insertEntry(entry)
                 
                 try {
-                    val uid = com.example.api.AuthManager.currentUser.value?.uid
-                        ?: com.example.api.FirebaseSafeInitializer.currentUser.value?.uid
+                    val uid = if (com.example.BuildConfig.CLOUD_SYNC_ENABLED)
+                        com.example.api.AuthManager.getFirebaseAuthSafely()?.currentUser?.uid else null
                     if (!uid.isNullOrBlank()) {
                         com.example.api.FirestoreSyncManager.saveShift(
                             userId = uid,
