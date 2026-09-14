@@ -16,7 +16,7 @@ import javax.crypto.spec.GCMParameterSpec
 object PersonalAiKey {
     private const val ALIAS = "personal_gemini_v1"
     private fun file(context: Context): AtomicFile {
-        val uid = AuthManager.getFirebaseAuthSafely()?.currentUser?.uid
+        val uid = AuthManager.currentUser.value?.uid
         val name = if (uid == null) "personal-gemini.enc" else {
             val digest = MessageDigest.getInstance("SHA-256").digest(uid.toByteArray(Charsets.UTF_8))
             "personal-gemini-" + digest.joinToString("") { "%02x".format(it) } + ".enc"

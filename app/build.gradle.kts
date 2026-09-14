@@ -6,6 +6,13 @@ plugins {
   alias(libs.plugins.secrets)
 }
 
+// Keep offline builds available when no client configuration is supplied.
+// When supplied, the official plugin validates each variant's exact package name.
+if (file("google-services.json").exists() ||
+    listOf("debug", "preview", "release").any { file("src/$it/google-services.json").exists() }) {
+  apply(plugin = "com.google.gms.google-services")
+}
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -19,6 +26,8 @@ android {
     buildConfigField("String", "GEMINI_API_KEY", "\"\"")
     // Remains false until the existing Firebase project and user isolation are verified.
     buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
+    // Independent gate: never enable the legacy cloud writer to enable sign-in.
+    buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
     buildConfigField("String", "AI_SERVICE_URL", "\"${System.getenv("AI_SERVICE_URL") ?: ""}\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

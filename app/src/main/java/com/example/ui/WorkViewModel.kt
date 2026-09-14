@@ -38,12 +38,13 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.example.ShiftStateManager
 import com.example.ShiftForegroundService
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_settings")
-
 class WorkViewModel(
     application: Application,
-    private val repository: WorkRepository
+    private val repository: WorkRepository,
+    val owner: com.example.data.WorkAccountScope = com.example.data.WorkAccountScope(null)
 ) : AndroidViewModel(application) {
+    private val settings = com.example.data.WorkAccountPreferences.get(application, owner)
+    private val shiftState = ShiftStateManager.forAccount(application, owner)
 
     companion object {
         const val DEFAULT_RATE = 40.0
@@ -53,7 +54,7 @@ class WorkViewModel(
     private val SERVICE_NOTIFICATION_ENABLED_KEY = booleanPreferencesKey("service_notification_enabled")
     private val DEFAULT_CURRENCY_KEY = stringPreferencesKey("default_currency")
 
-    val defaultCurrency: StateFlow<String> = application.dataStore.data
+    val defaultCurrency: StateFlow<String> = settings.data
         .map { preferences ->
             preferences[DEFAULT_CURRENCY_KEY] ?: "₪"
         }
@@ -63,7 +64,7 @@ class WorkViewModel(
             initialValue = "₪"
         )
 
-    val serviceNotificationEnabled: StateFlow<Boolean> = application.dataStore.data
+    val serviceNotificationEnabled: StateFlow<Boolean> = settings.data
         .map { preferences ->
             preferences[SERVICE_NOTIFICATION_ENABLED_KEY] ?: true // Default ON
         }
@@ -79,7 +80,7 @@ class WorkViewModel(
     private fun getActiveUserId(): String? {
         // Enable cloud writes only after account isolation and migration are verified.
         if (!com.example.BuildConfig.CLOUD_SYNC_ENABLED) return null
-        return com.example.api.AuthManager.getFirebaseAuthSafely()?.currentUser?.uid
+        return owner.uid?.takeIf { it == com.example.api.AuthManager.currentUser.value?.uid }
     }
 
     fun undoLastAddedEntry() {
@@ -102,7 +103,7 @@ class WorkViewModel(
 
     fun setDefaultCurrency(currency: String) {
         viewModelScope.launch {
-            getApplication<Application>().dataStore.edit { preferences ->
+            settings.edit { preferences ->
                 preferences[DEFAULT_CURRENCY_KEY] = currency
             }
         }
@@ -110,7 +111,7 @@ class WorkViewModel(
 
     fun updateServiceNotificationEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            getApplication<Application>().dataStore.edit { preferences ->
+            settings.edit { preferences ->
                 preferences[SERVICE_NOTIFICATION_ENABLED_KEY] = enabled
             }
             if (!enabled) {
@@ -125,6 +126,7 @@ class WorkViewModel(
                 if (activeStart != null) {
                     val intent = Intent(getApplication(), ShiftForegroundService::class.java).apply {
                         action = "START"
+                        putExtra(ShiftForegroundService.EXTRA_OWNER_UID, owner.uid)
                     }
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                         getApplication<Application>().startForegroundService(intent)
@@ -138,7 +140,7 @@ class WorkViewModel(
 
     fun updateDefaultCurrency(currency: String) {
         viewModelScope.launch {
-            getApplication<Application>().dataStore.edit { preferences ->
+            settings.edit { preferences ->
                 preferences[DEFAULT_CURRENCY_KEY] = currency
             }
         }
@@ -147,18 +149,19 @@ class WorkViewModel(
     fun performAutoBackup() {
         viewModelScope.launch {
             try {
-                val json = exportDataToString()
+                val json = repository.exportSnapshot()
                 if (json.isEmpty()) return@launch
                 
                 val context = getApplication<Application>()
-                val backupDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOCUMENTS) 
+                val root = context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOCUMENTS)
                     ?: File(context.filesDir, "Documents")
+                val backupDir = if (owner.uid == null) root else File(root, owner.storageKey)
                 if (!backupDir.exists()) {
                     backupDir.mkdirs()
                 }
                 
                 val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-                val backupFile = File(backupDir, "backup_work_entries_$timeStamp.json")
+                val backupFile = File(backupDir, "backup_work_entries_${timeStamp}_${java.util.UUID.randomUUID()}.json")
                 backupFile.writeText(json)
                 android.util.Log.d("WorkViewModel", "Auto-backup saved successfully to: ${backupFile.absolutePath}")
             } catch (e: Exception) {
@@ -172,8 +175,13 @@ class WorkViewModel(
     val currentUserSession: StateFlow<com.example.api.AuthManager.UserSession?> = com.example.api.AuthManager.currentUser
     private var cloudListener: com.google.firebase.firestore.ListenerRegistration? = null
 
-    fun signOut(context: Context) {
+    fun signOut(context: Context): Boolean {
+        if (ShiftStateManager.hasActiveShift(context)) {
+            Toast.makeText(context, "יש לסיים את המשמרת הפעילה לפני החלפת חשבון", Toast.LENGTH_LONG).show()
+            return false
+        }
         com.example.api.AuthManager.signOut(context)
+        return true
     }
 
     init {
@@ -184,7 +192,6 @@ class WorkViewModel(
         } catch (e: Throwable) {
             android.util.Log.w("WorkViewModel", "FirebaseSafeInitializer / AuthManager / FirestoreSyncManager failed: ${e.localizedMessage}")
         }
-        ShiftStateManager.init(application)
         runCountAnimationTrigger.value = runCountAnimationTrigger.value + 1
 
         // Subscribe to real-time Firestore snapshots for user
@@ -192,7 +199,7 @@ class WorkViewModel(
             currentUserSession.collect { session ->
                 cloudListener?.remove()
                 cloudListener = null
-                val uid = if (com.example.BuildConfig.CLOUD_SYNC_ENABLED) session?.uid else null
+                val uid = if (com.example.BuildConfig.CLOUD_SYNC_ENABLED && session?.uid == owner.uid) owner.uid else null
                 if (!uid.isNullOrBlank()) {
                     cloudListener = com.example.api.FirestoreSyncManager.listenToUserShifts(
                         userId = uid,
@@ -277,9 +284,9 @@ class WorkViewModel(
     }
 
     // Active Shift Tracker Properties - routed to persistent state manager
-    val activeShiftStartTime: StateFlow<Long?> = ShiftStateManager.activeShiftStartTime
-    val activeShiftCategory: StateFlow<String> = ShiftStateManager.activeShiftCategory
-    val activeShiftRate: StateFlow<Double> = ShiftStateManager.activeShiftRate
+    val activeShiftStartTime: StateFlow<Long?> = shiftState.activeShiftStartTime
+    val activeShiftCategory: StateFlow<String> = shiftState.activeShiftCategory
+    val activeShiftRate: StateFlow<Double> = shiftState.activeShiftRate
 
     fun startActiveShiftWithSavedRate(category: String) {
         viewModelScope.launch {
@@ -290,12 +297,16 @@ class WorkViewModel(
 
     fun startActiveShift(category: String, rate: Double) {
         val startTime = System.currentTimeMillis()
-        ShiftStateManager.start(getApplication(), category, rate, startTime)
+        if (!shiftState.start(category, rate, startTime, defaultCurrency.value)) {
+            Toast.makeText(getApplication(), "כבר קיימת משמרת פעילה. יש לסיים אותה תחילה", Toast.LENGTH_LONG).show()
+            return
+        }
         
         // Start Foreground Service only if enabled
         if (serviceNotificationEnabled.value) {
             val intent = Intent(getApplication(), ShiftForegroundService::class.java).apply {
                 action = "START"
+                putExtra(ShiftForegroundService.EXTRA_OWNER_UID, owner.uid)
             }
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 getApplication<Application>().startForegroundService(intent)
@@ -306,12 +317,61 @@ class WorkViewModel(
     }
 
     fun stopActiveShift() {
-        val context = getApplication<Application>()
-        ShiftStateManager.clear(context)
-        
-        // Stop Foreground Service
-        val intent = Intent(context, ShiftForegroundService::class.java)
-        context.stopService(intent)
+        finishActiveShift(save = false)
+    }
+
+    fun finishActiveShift(save: Boolean = true) {
+        val start = activeShiftStartTime.value ?: return
+        val rate = activeShiftRate.value
+        val category = activeShiftCategory.value
+        val currency = shiftState.activeShiftCurrency.value
+        val elapsed = ((System.currentTimeMillis() / 1000L) - (start / 1000L)).coerceAtLeast(0L)
+        viewModelScope.launch {
+            try {
+                val entry = if (save) WorkEntry(category = category, date = start, isTimeRange = false,
+                    hours = elapsed / 3600.0, hourlyRate = rate,
+                    totalEarnings = Math.round(elapsed * rate / 3600.0 * 100.0) / 100.0,
+                    notes = "משמרת פעילה (טיימר החישוב)", currency = currency) else null
+                val id = owner.database(getApplication()).workDao().finishTimer(start, entry)
+                if (id > 0) lastAddedEntryId = id.toInt()
+                if (shiftState.clear(start)) getApplication<Application>().stopService(
+                    Intent(getApplication(), ShiftForegroundService::class.java))
+                performAutoBackup()
+            } catch (_: Exception) {
+                Toast.makeText(getApplication(), "המשמרת לא נשמרה. הטיימר נשאר פעיל; אפשר לנסות שוב", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    fun reviewLegacyData(context: Context) {
+        if (owner.uid == null) return
+        viewModelScope.launch {
+            val target = owner.database(context)
+            if (target.workDao().receipt("legacy-guest-v1") != null) {
+                Toast.makeText(context, "הנתונים המקומיים כבר הועתקו לחשבון זה", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            val reviewed = com.example.data.WorkLegacyAdoption.snapshot(com.example.data.WorkAccountScope(null).database(context))
+            val totals = reviewed.entries.groupBy { it.currency }.map { (currency, rows) ->
+                "$currency: ${String.format(Locale.US, "%.2f", rows.sumOf { it.totalEarnings })}"
+            }.joinToString("\n")
+            android.app.AlertDialog.Builder(context)
+                .setTitle("העתקת נתונים מקומיים לחשבון")
+                .setMessage("${reviewed.entries.size} משמרות, ${reviewed.categories.size} קטגוריות\n$totals\nהמקור המקומי יישאר ללא שינוי. זהו עותק חד־פעמי לחשבון זה בלבד; אין סנכרון ענן פעיל.")
+                .setNegativeButton("ביטול", null)
+                .setPositiveButton("אישור העתקה") { _, _ ->
+                    if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return@setPositiveButton
+                    viewModelScope.launch {
+                        try {
+                            val added = com.example.data.WorkLegacyAdoption.confirm(target, reviewed)
+                            Toast.makeText(context, "הועתקו $added משמרות", Toast.LENGTH_LONG).show()
+                            performAutoBackup()
+                        } catch (_: Exception) {
+                            Toast.makeText(context, "ההעתקה לא הושלמה. נתוני המקור נשמרו", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }.show()
+        }
     }
 
     // Data structure for UI financial statistics
@@ -846,13 +906,16 @@ class WorkViewModel(
 }
 
 // ViewModel factory for initializing the Room Database Context
-class WorkViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
+class WorkViewModelFactory(
+    private val application: Application,
+    private val owner: com.example.data.WorkAccountScope = com.example.data.WorkAccountScope(null)
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(WorkViewModel::class.java)) {
-            val db = WorkDatabase.getDatabase(application, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO))
+            val db = owner.database(application)
             val repository = WorkRepository(db.workDao())
             @Suppress("UNCHECKED_CAST")
-            return WorkViewModel(application, repository) as T
+            return WorkViewModel(application, repository, owner) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

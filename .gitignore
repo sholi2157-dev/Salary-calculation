@@ -16,3 +16,5 @@
 local.properties
 .env
 debug.keystore
+# Supplied Firebase client configuration is reviewed before any publication.
+google-services.json

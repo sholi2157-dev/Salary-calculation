@@ -5,6 +5,7 @@ import com.example.api.FirestoreSyncManager
 import kotlinx.coroutines.flow.Flow
 
 class WorkRepository(private val workDao: WorkDao) {
+    suspend fun exportSnapshot(): String = workDao.exportSnapshot()
     suspend fun importBackup(backup: WorkBackup.Contents): Int = workDao.importBackup(backup)
     val allEntries: Flow<List<WorkEntry>> = workDao.getAllEntries()
     val allCategories: Flow<List<WorkCategory>> = workDao.getAllCategories()

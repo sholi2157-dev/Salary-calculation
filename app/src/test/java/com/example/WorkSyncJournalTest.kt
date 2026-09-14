@@ -143,15 +143,15 @@ class WorkSyncJournalTest {
                 employerRate REAL, workerRate REAL, groupWorkersJson TEXT NOT NULL, currency TEXT NOT NULL)""")
             old.execSQL("CREATE TABLE work_categories (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, defaultRate REAL NOT NULL)")
             old.execSQL("CREATE TABLE worker_directory (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL)")
-            repeat(8) { old.execSQL("INSERT INTO work_categories VALUES (?, ?, ?)", arrayOf(it + 1, "category $it", 50.25)) }
+            repeat(8) { old.execSQL("INSERT INTO work_categories VALUES (?, ?, ?)", arrayOf<Any>(it + 1, "category $it", 50.25)) }
             repeat(22) {
                 old.execSQL("""INSERT INTO work_entries VALUES (?, ?, 1000, 0, NULL, NULL, 7.5, 50.25, 376.87,
-                    0, 'kept', 1234, 1, 50.25, 20.125, '[]', '₪')""", arrayOf(it + 1, "category ${it % 8}"))
+                    0, 'kept', 1234, 1, 50.25, 20.125, '[]', '₪')""", arrayOf<Any>(it + 1, "category ${it % 8}"))
             }
             old.version = 5
         }
         fun open(): WorkDatabase = Room.databaseBuilder(context, WorkDatabase::class.java, name)
-            .addMigrations(WorkDatabase.MIGRATION_5_6)
+            .addMigrations(WorkDatabase.MIGRATION_5_6, WorkDatabase.MIGRATION_6_7)
             .addCallback(WorkDatabase.DatabaseCallback()).build().also { opened.add(it) }
         val db = open()
         val rows = db.workDao().getEntriesList()

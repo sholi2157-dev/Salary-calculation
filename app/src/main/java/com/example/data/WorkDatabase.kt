@@ -8,7 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 
-@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class], version = 6, exportSchema = false)
+@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class, WorkLocalReceipt::class], version = 7, exportSchema = false)
 abstract class WorkDatabase : RoomDatabase() {
     abstract fun workDao(): WorkDao
     abstract fun syncDao(): WorkSyncDao
@@ -52,6 +52,12 @@ abstract class WorkDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS work_local_receipts (operation TEXT NOT NULL PRIMARY KEY, result INTEGER NOT NULL)")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): WorkDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: build(context, WorkAccountStorage.GUEST_DATABASE).also { INSTANCE = it }
@@ -68,7 +74,7 @@ abstract class WorkDatabase : RoomDatabase() {
 
         private fun build(context: Context, name: String): WorkDatabase =
             Room.databaseBuilder(context.applicationContext, WorkDatabase::class.java, name)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .addCallback(DatabaseCallback())
                 .build()
     }

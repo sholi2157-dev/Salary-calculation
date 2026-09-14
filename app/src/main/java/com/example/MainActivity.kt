@@ -273,9 +273,13 @@ fun formatSelectedShiftsForWhatsApp(selectedEntries: List<WorkEntry>): String {
 }
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: WorkViewModel by viewModels {
-        WorkViewModelFactory(application)
+    private fun modelFor(uid: String?): WorkViewModel {
+        val owner = com.example.data.WorkAccountScope(uid)
+        return androidx.lifecycle.ViewModelProvider(this, WorkViewModelFactory(application, owner))
+            .get(owner.storageKey, WorkViewModel::class.java)
     }
+    private val viewModel: WorkViewModel
+        get() = modelFor(com.example.api.AuthManager.currentUser.value?.uid)
 
     val intentActionFlow = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 
@@ -322,12 +326,14 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.TopCenter
                         ) {
-                            MainAppContent(
-                                viewModel = viewModel,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .widthIn(max = 680.dp)
-                            )
+                            val session by com.example.api.AuthManager.currentUser.collectAsStateWithLifecycle()
+                            // All remembered form/selection/AI review state is confined to this owner.
+                            androidx.compose.runtime.key(session?.uid) {
+                                MainAppContent(
+                                    viewModel = modelFor(session?.uid),
+                                    modifier = Modifier.fillMaxSize().widthIn(max = 680.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -377,7 +383,7 @@ fun MainAppContent(
         }
     }
 
-    val signInForSync: () -> Unit = {
+    val signInWithGoogle: () -> Unit = {
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                 if (com.example.api.WebPlatformBridge.isWebTarget) {
                     com.example.api.WebPlatformBridge.signInWithWebOAuthPopup(context) { success, errorMsg ->
@@ -398,6 +404,12 @@ fun MainAppContent(
                     Toast.makeText(context, "לא ניתן להתחבר כעת. אפשר להמשיך להשתמש באפליקציה.", Toast.LENGTH_LONG).show()
                 }
     }
+
+    var showAccountDialog by remember { mutableStateOf(false) }
+    val signInForSync: () -> Unit = { showAccountDialog = true }
+    if (showAccountDialog) com.example.ui.WorkAccountDialog(
+        onDismiss = { showAccountDialog = false }, onGoogle = signInWithGoogle
+    )
 
     // Runtime permission launcher for POST_NOTIFICATIONS
     val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -648,17 +660,7 @@ fun MainAppContent(
                                     },
                                     onStopShift = { viewModel.stopActiveShift() },
                                     onSaveShift = { cat, hrs, rate ->
-                                        viewModel.addEntry(
-                                            category = cat,
-                                            dateMillis = System.currentTimeMillis(),
-                                            isTimeRange = false,
-                                            startTime = null,
-                                            endTime = null,
-                                            hours = hrs,
-                                            rate = rate,
-                                            notes = "משמרת פעילה (טיימר החישוב)"
-                                        )
-                                        viewModel.stopActiveShift()
+                                        viewModel.finishActiveShift()
                                     },
                                     recentEntries = entries,
                                     onTogglePaid = { entry ->
@@ -5342,6 +5344,11 @@ fun ManagementScreen(
                 }
             }
 
+            if (viewModel.owner.uid != null) {
+                TextButton(onClick = { viewModel.reviewLegacyData(context) }) {
+                    Text("העתקה חד־פעמית של הנתונים המקומיים לחשבון")
+                }
+            }
             // Sign Out row option
             Box(modifier = Modifier.fillMaxWidth()) {
                 Card(
@@ -5363,9 +5370,16 @@ fun ManagementScreen(
                                 if (accountSession == null) {
                                     onSignIn()
                                 } else {
-                                    viewModel.signOut(context)
-                                    onNavigateBack()
-                                    Toast.makeText(context, "התנתקת מהמערכת בהצלחה", Toast.LENGTH_SHORT).show()
+                                    android.app.AlertDialog.Builder(context)
+                                        .setTitle("התנתקות מהחשבון")
+                                        .setMessage("הנתונים השמורים יישארו בחשבון במכשיר. טפסים שלא נשמרו ייסגרו. לאחר ההתנתקות יוצגו נתוני השימוש המקומי.")
+                                        .setNegativeButton("ביטול", null)
+                                        .setPositiveButton("התנתקות") { _, _ ->
+                                            if (viewModel.signOut(context)) {
+                                                onNavigateBack()
+                                                Toast.makeText(context, "התנתקת מהמערכת בהצלחה", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }.show()
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),

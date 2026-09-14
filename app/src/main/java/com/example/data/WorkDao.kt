@@ -5,6 +5,33 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WorkDao {
+    @Query("SELECT * FROM work_local_receipts WHERE operation = :operation")
+    suspend fun receipt(operation: String): WorkLocalReceipt?
+
+    @Insert
+    suspend fun insertReceipt(receipt: WorkLocalReceipt)
+
+    @Transaction
+    suspend fun finishTimer(startTime: Long, entry: WorkEntry?): Long {
+        val key = "timer:$startTime"
+        receipt(key)?.let { return it.result }
+        val id = entry?.let { insertEntry(it) } ?: 0L
+        insertReceipt(WorkLocalReceipt(key, id))
+        return id
+    }
+
+    @Transaction
+    suspend fun adoptLegacy(backup: WorkBackup.Contents): Int {
+        val key = "legacy-guest-v1"
+        if (receipt(key) != null) return 0
+        val added = importBackup(backup)
+        insertReceipt(WorkLocalReceipt(key, added.toLong()))
+        return added
+    }
+
+    @Transaction
+    suspend fun exportSnapshot(): String = WorkBackup.encode(getCategoriesList(), getEntriesList(), getWorkersList())
+
     @Query("SELECT * FROM work_entries ORDER BY date DESC, createdAt DESC")
     suspend fun getEntriesList(): List<WorkEntry>
 
