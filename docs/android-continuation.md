@@ -66,3 +66,8 @@ The pasted historical request mentioned Gemini/GPT model selection, but the late
 repository decision is personal Gemini-only credentials. No model/provider changes
 were made here. Optional encrypted local key setup and swipe navigation already
 exist; neither has been newly device-verified in this continuation.
+
+
+## Publication block resolved
+
+User explicitly approved publication on 2026-09-14. Published commit `7cb9ac293ff513d89a795550bb18496733d4a2eb` contains the same code and checkpoint tree. Android Work* tests and assemblePreview passed in run 34814354694; actual logs inspected. The historical blocked status and next steps 1–3 above are superseded. See preservation-and-sync.md for verified results and remaining device/account gates.
