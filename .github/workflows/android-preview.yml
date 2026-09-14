@@ -1,5 +1,7 @@
 name: Android preview
 on:
+  push:
+    branches: ['codex/preserve-app-sync']
   workflow_dispatch:
   pull_request:
     paths:
@@ -13,6 +15,9 @@ on:
       - 'gradle/**'
       - '*.gradle.kts'
       - '.github/workflows/android-preview.yml'
+concurrency:
+  group: android-preview-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
