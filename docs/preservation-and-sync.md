@@ -154,3 +154,28 @@ Tested source commit: `f1a98447e08c996fe40514f27c25dfb77640c6cd`.
 Desktop main/history/settings screenshots were inspected against the supplied app references. Phone-width and physical-device visual comparison is still required before claiming pixel identity; this browser did not expose a supported viewport-resize capability. This is a reviewed website preview, not a completed production release or certification of every Android feature. Advanced history/bulk actions and report behavior still require a complete source-based parity inventory beyond the three supplied screen states.
 
 Firebase/cloud sync remains disabled and unverified. Android installation and account/credential gates above remain owned by the other conversation. No production change or PR merge. Preserve the real 22-shift/8-category backup and all existing work.
+
+## Video and website-only timer removal checkpoint
+
+Verified source: `519d5b75457664b45390a7fa01bb7d909784e042`. Resumption on 2026-09-14 confirmed this remained PR #1's head; existing code was preserved, not rebuilt. This section supersedes historical website timer/notification requirements above.
+
+- Reviewed sampled frames every ten seconds across the supplied 338-second `1000339699.mp4`: main/report modes, history filters and bulk selection, settings and the Android timer. This was a sampled visual review, not an exhaustive motion/audio or pixel-parity certification.
+- Removed website active/background shift start/stop controls, timer dialog, running status, polling and notification settings. Manual clock-range reports and daily summaries remain. Legacy timer storage is neither read nor erased; completed shifts are preserved. Android source is unchanged.
+- Added history selection mode, select-all/clear, selected-record copy, paid/unpaid bulk actions and deletion with confirmation. Filters constrain selection. Immutable updates preserve saved earnings, currencies and group metadata; deletion targets explicit selected IDs only.
+- Root AGENTS.md records the website-only omissions. Website AI remains omitted.
+
+### Verified checks
+
+- `npm test`: 21/21 passed locally and in Actions, including selection isolation, immutable payment changes, deletion boundaries and transfer regressions.
+- `npm run build`: passed locally and in Actions. Inline JavaScript syntax and `git diff --check` passed.
+- `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`: BUILD SUCCESSFUL in 5m. Completed job 102676570437 and logs were inspected again on resumption.
+- GitHub Actions: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34414609694 — success.
+- Vercel: https://vercel.com/sholi/salary-calculation/7rgUcfXxBDdEtLVEL2XeYYScDAar — success for the tested source SHA, reconfirmed on resumption.
+- Live browser preview: https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/ — opened and interacted with. Main/settings no longer expose the timer or notifications. Selection, select-all and copying exactly three selected TSV rows were verified.
+- A separate synthetic three-record import totaled 6 hours / 300 ILS. Selecting two records in one category and marking paid changed only those two (4 hours / 200 ILS). The third remained pending (2 hours / 100 ILS), including after refresh. No real user data or credentials were used.
+
+### Remaining verification limits
+
+The browser automation timed out at the native bulk-delete confirmation. Its final acceptance/cancellation flow is not marked passed; deletion logic passed unit tests and no live user record was deleted. Do not repeat a destructive operation on user data to resolve this automation limitation.
+
+Phone-width/physical-device comparison, continuous animation parity and the complete advanced report/history feature inventory remain open. The sampled video and screenshots establish reference points, not exact identity of every screen. Firebase/cloud sync remains disabled and unverified. Android device installation, signing and account work remain in the separate conversation. No production change, merge, storage reset or signing-material upload was performed.
