@@ -179,3 +179,35 @@ Verified source: `519d5b75457664b45390a7fa01bb7d909784e042`. Resumption on 2026-
 The browser automation timed out at the native bulk-delete confirmation. Its final acceptance/cancellation flow is not marked passed; deletion logic passed unit tests and no live user record was deleted. Do not repeat a destructive operation on user data to resolve this automation limitation.
 
 Phone-width/physical-device comparison, continuous animation parity and the complete advanced report/history feature inventory remain open. The sampled video and screenshots establish reference points, not exact identity of every screen. Firebase/cloud sync remains disabled and unverified. Android device installation, signing and account work remain in the separate conversation. No production change, merge, storage reset or signing-material upload was performed.
+
+
+## Verified Android continuation — 2026-09-14
+
+Published and tested commit: `7cb9ac293ff513d89a795550bb18496733d4a2eb`.
+The user explicitly approved publication to the existing branch. Git CLI lacked
+credentials; the authenticated GitHub connector published the identical reviewed
+local tree. The earlier publication block is resolved.
+
+- Android import, decimal rate/edit preservation, saved category timer defaults,
+  import comparison summary, and cloud access gate fixes are now in the branch.
+- `npm test`: 21 passed locally and in CI; `npm run build`: passed.
+- `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`:
+  BUILD SUCCESSFUL in 5m 13s. Actual job logs inspected; both tasks completed.
+- CI: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34814354694
+- Test reports: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34814354694/artifacts/10336082861
+- Preview package and public installation report: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34814354694/artifacts/10336187543
+- Vercel commit status: success, https://vercel.com/sholi/salary-calculation/3ECyiob44R16tQV2yjWFW3HPFgRk
+  No new browser test was performed in this Android-only continuation.
+
+Package `com.aistudio.worktracker.qztvdw.preview`, versionCode `2`, versionName
+`1.1-preview`; public certificate SHA-256
+`c9d515b2079db058df46e9fbbdc6c296e42adabbf11806edef5464c4de4f8978`.
+This differs from earlier preview certificates and does not establish compatibility
+with the installed phone. Do not present the APK as a proven in-place update.
+
+Remaining: physical-device swipe/edit/credential persistence and installation;
+email/password account implementation; user-scoped local data, stable cloud IDs,
+offline mutation queue, deletion/conflict handling; verified Firebase configuration,
+Google OAuth, provider enablement and rules. Cloud sync remains disabled. No real
+user records or private signing material were accessed. No production merge.
+See android-continuation.md for the detailed implementation checkpoint.
