@@ -4,7 +4,8 @@
   "description": "Hebrew work and hours tracker with cloud sync and local persistence",
   "private": true,
   "scripts": {
-    "build": "mkdir -p public && cp index.html public/ 2>/dev/null || true",
-    "start": "npx serve public"
+    "build": "node scripts/build-web.cjs",
+    "start": "npx serve public",
+    "test": "node --test web-tests/*.test.cjs"
   }
 }

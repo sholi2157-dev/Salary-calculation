@@ -49,14 +49,12 @@ object WebPlatformBridge {
             }
 
             // In Web target mode, simulate or trigger browser OAuth popup with Google Provider
-            AuthManager.performSafeFallbackSignIn()
             _isWebAuthActive.value = false
-            onComplete(true, null)
+            onComplete(false, "יש להתחבר מתוך האתר באמצעות Google.")
         } catch (t: Throwable) {
             _isWebAuthActive.value = false
             Log.w(TAG, "Web OAuth popup authentication failed: ${t.localizedMessage}", t)
-            AuthManager.performSafeFallbackSignIn()
-            onComplete(true, null)
+            onComplete(false, "לא ניתן להתחבר כעת.")
         }
     }
 }

@@ -6,6 +6,18 @@ plugins {
   alias(libs.plugins.secrets)
 }
 
+// Keep offline builds available when no client configuration is supplied.
+// When supplied, the official plugin validates each variant's exact package name.
+if (file("google-services.json").exists() ||
+    listOf("debug", "preview", "release").any { file("src/$it/google-services.json").exists() }) {
+  apply(plugin = "com.google.gms.google-services")
+}
+
+// Preview is deliberately offline until its distinct package is registered.
+tasks.matching { it.name == "processPreviewGoogleServices" }.configureEach {
+  enabled = file("src/preview/google-services.json").exists()
+}
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -14,8 +26,17 @@ android {
     applicationId = "com.aistudio.worktracker.qztvdw"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = 4
+    versionName = "1.3"
+    buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+    // Remains false until the existing Firebase project and user isolation are verified.
+    buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
+    buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", "false")
+    // Independent gate: never enable the legacy cloud writer to enable sign-in.
+    buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
+    // Uploaded configuration has no Android OAuth client/fingerprint yet.
+    buildConfigField("boolean", "GOOGLE_SIGN_IN_ENABLED", "false")
+    buildConfigField("String", "AI_SERVICE_URL", "\"${System.getenv("AI_SERVICE_URL") ?: ""}\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -28,23 +49,28 @@ android {
       keyAlias = "upload"
       keyPassword = System.getenv("KEY_PASSWORD")
     }
-    create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
-    }
+
   }
 
   buildTypes {
+    getByName("debug") {
+      buildConfigField("boolean", "ACCOUNTS_ENABLED", file("src/debug/google-services.json").exists().toString())
+      buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", file("src/debug/google-services.json").exists().toString())
+    }
+    create("preview") {
+      initWith(getByName("debug"))
+      applicationIdSuffix = ".preview"
+      versionNameSuffix = "-preview"
+      signingConfig = signingConfigs.getByName("debug")
+      matchingFallbacks += listOf("debug")
+      buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
+      buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", "false")
+    }
     release {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
-    }
-    debug {
-      signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
   compileOptions {
@@ -63,6 +89,8 @@ android {
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
+  // Server .env secrets must never be exported into Android BuildConfig/manifest.
+  ignoreList.add(".*")
 }
 
 // Some unused dependencies are commented out below instead of being removed.

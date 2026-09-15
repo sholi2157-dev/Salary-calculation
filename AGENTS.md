@@ -1,0 +1,17 @@
+# Salary-calculation maintenance rules
+
+- Read `docs/preservation-and-sync.md` before changing this repository. Current user instructions override older historical notes there.
+- Work on `codex/preserve-app-sync` and PR #1. Preserve the existing Vercel project and production branch.
+- Preserve all user data and existing behavior. The user's reported backup contains 22 shifts and 8 categories. Never reset storage, replace a database, discard records, or recommend uninstalling as a shortcut. Use synthetic records for tests; do not modify the user's live records.
+- Never commit or upload secrets, credentials, keystores, signing keys, or encoded signing material. Use standard Android Gradle Plugin debug signing for debug/preview; no root debug.keystore dependency. Do not claim this solves existing-device signature mismatches.
+- Run `npm test`, `npm run build`, and `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`. If local Android dependencies are inaccessible, execute that command in GitHub Actions and inspect the actual result/logs.
+- Check GitHub Actions and the Vercel preview for the pushed code before finishing. If the preview is available, verify the site in the browser with synthetic data. Fix failures and rerun the relevant checks. Never infer success from a push alone.
+- Update `docs/preservation-and-sync.md` with the tested commit SHA and verified CI/Vercel results only after the required tests pass. Report blocked checks honestly rather than marking them passed.
+- Firebase and cloud sync are NOT verified. Do not present them as active until end-to-end tests cover user permissions, separate accounts, edits, deletion, offline/reconnect and conflict handling.
+- Use a single Gemini 3.5 Flash model and a user-supplied personal API key only. Never embed owner credentials in any build, including debug/preview. Never fall back to a server/owner key. Android stores personal keys encrypted in noBackupFilesDir with Android Keystore; web AI is temporarily omitted until protected persistent account credentials are verified. Keys never enter shift backups, logs or account sync. Requests go directly to Google. Separate quotas require keys belonging to separate provider projects. Changing the model requires explicit user intent.
+
+- Current design requirement: web must follow Android source theme/layout/components and navigation, not a generic dashboard. No claim of pixel parity without original-reference comparison. Keep Android main/history horizontal swipe and tab clicks, preserving nested summary carousel.
+- Current AI scope: temporarily omit web AI completely, as user authorized, until a verified protected account credential vault exists. Android optional first-use/first-sign-in setup with info icon and skip; settings add/replace/remove. Persist encrypted keys per local account UID (guest legacy slot stays separate); do not claim cross-device account sync.
+- Repeated APK installation failure is a release blocker: publish public certificate/package/version diagnostics, never suggest another blind update or uninstall, and never upload private signing material.
+
+- Website scope: omit AI and active/background shift timers, their start/stop controls and notification settings. These remain Android-only by user request. Preserve completed shifts and do not erase legacy timer storage while removing the feature. Keep manual clock-range entry and the daily summary.
