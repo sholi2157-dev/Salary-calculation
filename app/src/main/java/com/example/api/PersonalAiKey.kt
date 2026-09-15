@@ -15,8 +15,7 @@ import javax.crypto.spec.GCMParameterSpec
 /** Device-only encrypted credential, excluded from Android backup and shift exports. */
 object PersonalAiKey {
     private const val ALIAS = "personal_gemini_v1"
-    private fun file(context: Context): AtomicFile {
-        val uid = AuthManager.currentUser.value?.uid
+    private fun file(context: Context, uid: String?): AtomicFile {
         val name = if (uid == null) "personal-gemini.enc" else {
             val digest = MessageDigest.getInstance("SHA-256").digest(uid.toByteArray(Charsets.UTF_8))
             "personal-gemini-" + digest.joinToString("") { "%02x".format(it) } + ".enc"
@@ -31,8 +30,8 @@ object PersonalAiKey {
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build())
         }.generateKey()
     }
-    fun read(context: Context): String {
-        val target = file(context)
+    fun read(context: Context, uid: String? = AuthManager.currentUser.value?.uid): String {
+        val target = file(context, uid)
         if (!target.baseFile.exists()) return ""
         return try {
             val bytes = target.readFully()
@@ -42,16 +41,16 @@ object PersonalAiKey {
             String(cipher.doFinal(bytes.copyOfRange(12,bytes.size)), Charsets.UTF_8)
         } catch (_: Exception) { throw IllegalStateException("לא ניתן לקרוא את המפתח האישי. יש להזין אותו מחדש בהגדרות") }
     }
-    fun save(context: Context, value: String) {
+    fun save(context: Context, value: String, uid: String? = AuthManager.currentUser.value?.uid) {
         val cleaned = value.trim()
         require(cleaned.isNotEmpty() && cleaned.length <= 512 && cleaned.none { it.isWhitespace() }) { "יש להזין מפתח אישי תקין" }
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key())
         val encrypted = cipher.iv + cipher.doFinal(cleaned.toByteArray(Charsets.UTF_8))
-        val target = file(context)
+        val target = file(context, uid)
         val stream = target.startWrite()
         try { stream.write(encrypted); target.finishWrite(stream) }
         catch (error: Exception) { target.failWrite(stream); throw error }
     }
-    fun remove(context: Context) { file(context).delete() }
+    fun remove(context: Context, uid: String? = AuthManager.currentUser.value?.uid) { file(context, uid).delete() }
 }

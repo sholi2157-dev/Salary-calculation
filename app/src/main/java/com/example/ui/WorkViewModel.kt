@@ -114,6 +114,7 @@ class WorkViewModel(
             settings.edit { preferences ->
                 preferences[SERVICE_NOTIFICATION_ENABLED_KEY] = enabled
             }
+            if (ShiftStateManager.activeOwner(getApplication()) != owner) return@launch
             if (!enabled) {
                 // Immediately stop foreground service if active
                 val intent = Intent(getApplication(), ShiftForegroundService::class.java)
@@ -176,6 +177,7 @@ class WorkViewModel(
     private var cloudListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     fun signOut(context: Context): Boolean {
+        if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return false
         if (ShiftStateManager.hasActiveShift(context)) {
             Toast.makeText(context, "יש לסיים את המשמרת הפעילה לפני החלפת חשבון", Toast.LENGTH_LONG).show()
             return false
@@ -296,6 +298,7 @@ class WorkViewModel(
     }
 
     fun startActiveShift(category: String, rate: Double) {
+        if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return
         val startTime = System.currentTimeMillis()
         if (!shiftState.start(category, rate, startTime, defaultCurrency.value)) {
             Toast.makeText(getApplication(), "כבר קיימת משמרת פעילה. יש לסיים אותה תחילה", Toast.LENGTH_LONG).show()

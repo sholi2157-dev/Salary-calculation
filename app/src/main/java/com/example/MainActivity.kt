@@ -439,12 +439,12 @@ fun MainAppContent(
     var showPersonalKeySetup by remember { mutableStateOf(false) }
     val setupScope = accountSession?.uid ?: "local_device"
     LaunchedEffect(setupScope) {
-        val hasKey = runCatching { com.example.api.PersonalAiKey.read(context).isNotBlank() }.getOrDefault(false)
+        val hasKey = runCatching { com.example.api.PersonalAiKey.read(context, viewModel.owner.uid).isNotBlank() }.getOrDefault(false)
         showPersonalKeySetup = !hasKey && !keySetupPreferences.getBoolean("offered_$setupScope", false)
     }
     if (showPersonalKeySetup) {
         key(setupScope) {
-            PersonalAiKeyDialog(onDismiss = {
+            PersonalAiKeyDialog(ownerUid = viewModel.owner.uid, onDismiss = {
                 keySetupPreferences.edit().putBoolean("offered_$setupScope", true).apply()
                 showPersonalKeySetup = false
             })
@@ -1107,7 +1107,7 @@ fun DashboardScreen(
             isAiParsing = true
             try {
                 val cats = viewModel.categories.value.map { it.name }
-                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, viewModel.categories.value.associate { it.name to it.defaultRate }, com.example.api.PersonalAiKey.read(context))
+                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, viewModel.categories.value.associate { it.name to it.defaultRate }, com.example.api.PersonalAiKey.read(context, viewModel.owner.uid))
                 if (!results.isNullOrEmpty()) {
                     android.app.AlertDialog.Builder(context)
                         .setTitle("אישור המשמרות שפוענחו")
@@ -4659,13 +4659,13 @@ fun WorkEntryRowCard(
 
 /** The secret is only entered here; never restored into a visible field or saved UI state. */
 @Composable
-private fun PersonalAiKeyDialog(onDismiss: () -> Unit, isFirstSetup: Boolean = true) {
+private fun PersonalAiKeyDialog(onDismiss: () -> Unit, isFirstSetup: Boolean = true, ownerUid: String?) {
     val context = LocalContext.current
     var draft by remember { mutableStateOf("") }
     var showExplanation by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
     var hasKey by remember {
-        mutableStateOf(runCatching { com.example.api.PersonalAiKey.read(context).isNotBlank() }.getOrDefault(false))
+        mutableStateOf(runCatching { com.example.api.PersonalAiKey.read(context, ownerUid).isNotBlank() }.getOrDefault(false))
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -4696,7 +4696,7 @@ private fun PersonalAiKeyDialog(onDismiss: () -> Unit, isFirstSetup: Boolean = t
                 if (hasKey) {
                     TextButton(onClick = {
                         try {
-                            com.example.api.PersonalAiKey.remove(context)
+                            com.example.api.PersonalAiKey.remove(context, ownerUid)
                             draft = ""
                             hasKey = false
                             status = "המפתח הוסר. המשמרות וכל שאר הנתונים נשמרו."
@@ -4712,7 +4712,7 @@ private fun PersonalAiKeyDialog(onDismiss: () -> Unit, isFirstSetup: Boolean = t
                 enabled = draft.isNotBlank(),
                 onClick = {
                     try {
-                        com.example.api.PersonalAiKey.save(context, draft)
+                        com.example.api.PersonalAiKey.save(context, draft, ownerUid)
                         draft = ""
                         Toast.makeText(context, "המפתח נשמר במכשיר. החיבור ייבדק בזמן הפענוח.", Toast.LENGTH_LONG).show()
                         onDismiss()
@@ -4741,7 +4741,7 @@ fun ManagementScreen(
     var showPersonalKeySettings by remember { mutableStateOf(false) }
     if (showPersonalKeySettings) {
         key(accountSession?.uid) {
-            PersonalAiKeyDialog(onDismiss = { showPersonalKeySettings = false }, isFirstSetup = false)
+            PersonalAiKeyDialog(onDismiss = { showPersonalKeySettings = false }, isFirstSetup = false, ownerUid = viewModel.owner.uid)
         }
     }
     var newCategoryText by remember { mutableStateOf("") }
