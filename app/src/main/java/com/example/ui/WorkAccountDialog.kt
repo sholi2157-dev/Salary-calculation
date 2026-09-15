@@ -41,7 +41,13 @@ fun WorkAccountDialog(onDismiss: () -> Unit, onGoogle: () -> Unit) {
                 TextButton(enabled = !busy, onClick = { register = !register; message = null; password = ""; confirmation = "" }) {
                     Text(if (register) "כבר יש לי חשבון" else "יצירת חשבון חדש")
                 }
-                TextButton(enabled = !busy && blocked == null, onClick = onGoogle) { Text("התחברות עם Google") }
+                if (!register) TextButton(enabled = !busy && blocked == null, onClick = {
+                    busy = true
+                    AuthManager.resetPassword(email) { message = it; busy = false }
+                }) { Text("שכחתי סיסמה") }
+                if (com.example.BuildConfig.GOOGLE_SIGN_IN_ENABLED) {
+                    TextButton(enabled = !busy && blocked == null, onClick = onGoogle) { Text("התחברות עם Google") }
+                } else Text("התחברות עם Google עדיין אינה זמינה בגרסה זו.")
             }
         },
         confirmButton = {

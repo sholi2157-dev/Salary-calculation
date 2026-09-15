@@ -88,6 +88,7 @@ object AuthManager {
     }
 
     fun getGoogleSignInClient(context: Context): GoogleSignInClient? {
+        if (!com.example.BuildConfig.GOOGLE_SIGN_IN_ENABLED) return null
         if (!com.example.BuildConfig.ACCOUNTS_ENABLED) return null
         if (getFirebaseAuthSafely() == null) return null
         return try {
@@ -107,6 +108,10 @@ object AuthManager {
     }
 
     fun handleGoogleSignInResult(data: Intent?, onComplete: (Boolean, String?) -> Unit) {
+        if (!com.example.BuildConfig.GOOGLE_SIGN_IN_ENABLED) {
+            onComplete(false, "התחברות Google ממתינה להתאמת חתימת האפליקציה. אפשר להתחבר בדוא״ל וסיסמה.")
+            return
+        }
         accountBlockReason()?.let { onComplete(false, it); return }
         try {
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
@@ -190,5 +195,20 @@ object AuthManager {
             emailRequestRunning = false
             onComplete(false, "לא ניתן להתחבר כעת. הנתונים הקיימים נשמרו.")
         }
+    }
+
+    fun resetPassword(email: String, onComplete: (String) -> Unit) {
+        accountBlockReason()?.let { onComplete(it); return }
+        val cleanEmail = email.trim()
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()) {
+            onComplete("יש להזין כתובת דוא״ל תקינה"); return
+        }
+        val auth = getFirebaseAuthSafely() ?: run { onComplete("ההתחברות אינה זמינה"); return }
+        try {
+            auth.sendPasswordResetEmail(cleanEmail).addOnCompleteListener {
+                onComplete(if (it.isSuccessful) "אם ניתן לאפס סיסמה לכתובת הזו, יישלח אליה קישור. בדוק גם בדואר הזבל."
+                    else "שליחת בקשת האיפוס לא הושלמה. אפשר לנסות שוב מאוחר יותר.")
+            }
+        } catch (_: Exception) { onComplete("לא ניתן לשלוח בקשת איפוס כעת") }
     }
 }

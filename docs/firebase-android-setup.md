@@ -1,7 +1,7 @@
 # Android Firebase handoff
 
 Project: `workshiftsapp`. Do not create a replacement project, remove registrations,
-or modify live shift records. Auth and sync gates remain false until validation.
+or modify live shift records. Cloud sync remains gated until end-to-end validation.
 
 ## User-reported console configuration, 2026-09-14
 
@@ -9,9 +9,12 @@ or modify live shift records. Auth and sync gates remain false until validation.
 - Google and Email/Password providers enabled (screenshots).
 - User reported publishing the owner-only rules now recorded in `firestore.rules`.
   Live deployment and permission tests have NOT been independently verified.
-- Uploaded google-services.json could not be recovered: original scratch copy is
-  absent; attachment materialization returned HTTP 502 twice. Its contents have
-  NOT been read, checked, installed or committed. Obtain another accessible copy.
+- Replacement google-services.json was successfully read on 2026-09-15. The genuine
+  client for the original package was retained in app/src/debug/google-services.json;
+  the unrelated AndroidManifest.xml registration was omitted from this build copy.
+  This is Firebase client configuration, not an administrative credential. It is
+  retained locally only: automatic approval review rejected publishing it to this
+  public repository without explicit publication approval. CI remains offline.
 
 ## Configuring a build
 
@@ -24,12 +27,16 @@ find an exact client package match; do not edit the JSON to counterfeit a match.
   still unverified). Use `app/src/preview/google-services.json` for this variant,
   and `app/src/debug/google-services.json` for debug, or a module-level file
   containing genuine registrations for both packages.
-- Configuration files are ignored by git pending inspection. Never upload a service
+- Configuration files remain ignored. Never upload a service
   account private key, signing material, passwords or personal Gemini credentials.
 - Google sign-in additionally needs the matching signing certificate fingerprints
   and OAuth configuration. Preview signing currently changes between CI builds.
-- `ACCOUNTS_ENABLED` is independent of `CLOUD_SYNC_ENABLED`; neither is enabled by
-  merely adding the config. Do not enable the old Int-ID Firestore writer.
+- Debug enables `ACCOUNTS_ENABLED` with its reviewed configuration. Preview remains
+  offline with its separate package; release remains gated. `CLOUD_SYNC_ENABLED`
+  and `GOOGLE_SIGN_IN_ENABLED` remain false. Do not enable the old Int-ID writer.
+- Version 1.2 (code 3) adds an original-package debug APK artifact alongside preview,
+  email password reset, and packaged-resource configuration checks. Authentication
+  with a real provider and installation over the user's signed app remain unverified.
 
 The Android account UI now offers explicit email sign-in/registration, immutable
 account-scoped local stores and reviewed guest copying. Passwords are not saved

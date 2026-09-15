@@ -13,6 +13,11 @@ if (file("google-services.json").exists() ||
   apply(plugin = "com.google.gms.google-services")
 }
 
+// Preview is deliberately offline until its distinct package is registered.
+tasks.matching { it.name == "processPreviewGoogleServices" }.configureEach {
+  onlyIf { file("src/preview/google-services.json").exists() }
+}
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -21,13 +26,15 @@ android {
     applicationId = "com.aistudio.worktracker.qztvdw"
     minSdk = 24
     targetSdk = 36
-    versionCode = 2
-    versionName = "1.1"
+    versionCode = 3
+    versionName = "1.2"
     buildConfigField("String", "GEMINI_API_KEY", "\"\"")
     // Remains false until the existing Firebase project and user isolation are verified.
     buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
     // Independent gate: never enable the legacy cloud writer to enable sign-in.
     buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
+    // Uploaded configuration has no Android OAuth client/fingerprint yet.
+    buildConfigField("boolean", "GOOGLE_SIGN_IN_ENABLED", "false")
     buildConfigField("String", "AI_SERVICE_URL", "\"${System.getenv("AI_SERVICE_URL") ?: ""}\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -45,12 +52,16 @@ android {
   }
 
   buildTypes {
+    getByName("debug") {
+      buildConfigField("boolean", "ACCOUNTS_ENABLED", file("src/debug/google-services.json").exists().toString())
+    }
     create("preview") {
       initWith(getByName("debug"))
       applicationIdSuffix = ".preview"
       versionNameSuffix = "-preview"
       signingConfig = signingConfigs.getByName("debug")
       matchingFallbacks += listOf("debug")
+      buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
     }
     release {
       isCrunchPngs = false
