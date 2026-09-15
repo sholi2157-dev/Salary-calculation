@@ -151,3 +151,87 @@ name 1.1-preview. Public signing certificate SHA-256:
 `9599ba27e3b207ded718ca85f4bbe9722b19a342577c73b6775120ec825d5e0d`.
 It differs from the previous build; this is not proof of in-place phone update
 compatibility. No APK installation is requested or claimed fixed.
+
+## Android runtime accounts checkpoint — 2026-09-15
+
+This section supersedes earlier statements that runtime account binding and email
+screens are absent. It does NOT enable or certify live authentication/cloud sync.
+
+- MainActivity selects a ViewModel by immutable account owner; each owner uses its
+  own Room database, preferences and backup directory. Guest filenames/storage
+  remain unchanged. Remembered form/selection state is recreated on owner changes;
+  sign-in/sign-out explains that unsaved forms close. Undo and asynchronous writes
+  retain their original repository. Auto-backup now reads a transactional DAO
+  snapshot instead of possibly stale/unsubscribed StateFlow values.
+- Personal-key reads/dialog writes/removal capture the originating UID. Credentials
+  remain encrypted locally, excluded from backups, journals and remote payloads.
+  Delayed timer/settings/sign-out operations are guarded against another session.
+- Timers persist owner, full-precision rate and currency. Notifications write to the
+  captured owner's database. Room v6-to-v7 adds completion receipts: repeated UI/
+  notification completion and retry after process death cannot duplicate a saved
+  timer or resurrect a discarded/deleted one. Saving failure retains the timer.
+  Normal account switches are blocked while any timer is active.
+- Explicit reviewed guest copying preserves the source and uses a fixed snapshot.
+  Rows plus completion receipt commit together. The operation is once PER TARGET
+  ACCOUNT, not a global ownership claim; repeating it cannot resurrect deleted
+  rows. Genuine duplicate shifts are retained. Nothing is adopted on sign-in.
+- Email/password sign-in and explicit registration UI/methods are implemented.
+  Passwords are neither logged nor saved in preferences/saved instance state.
+  ACCOUNTS_ENABLED and CLOUD_SYNC_ENABLED both remain false.
+- Conditional official Google Services plugin supports supplied configuration.
+  Exact debug/release and preview registrations must match their package IDs.
+  Firebase configuration/rules status and setup are in firebase-android-setup.md.
+- Six new account/timer/adoption regression tests supplement the existing journal
+  and synthetic 22-row/8-category migration tests. They exercise factory isolation,
+  colliding local IDs, delayed undo/import, settings, timer restart/precision/stale
+  clear, completion deduplication and transaction rollback.
+- Fixed CI setup requesting the now-unavailable legacy SDK 'tools' package by
+  explicitly installing platform-tools. Also fixed an existing website navigation
+  exception referencing the removed .live-control element; added a regression test.
+
+### Open gates
+
+The uploaded google-services.json still cannot be read: scratch copy is absent;
+two attachment downloads returned HTTP 502. It was not installed or committed.
+A new accessible copy is required. The user reported publishing owner-only
+Firestore rules and screenshots show both Google and Email/Password enabled;
+this is not independent live verification. No Firebase admin change or real user
+record access was performed.
+
+The network sender, remote-apply path, stable cross-device protocol/category-worker
+references, conflict review/resolution and reconnect scheduling remain unfinished.
+Do not enable the legacy Firestore Int-ID writer. Cross-device Android/web tests,
+permission-denial tests, real sign-in/registration and physical-device
+timer/credential/UI behavior remain unverified. This is tested local account
+infrastructure, not completed production synchronization. Preview signing is still
+runner-generated; no in-place phone update compatibility is claimed.
+
+### Verified checks for this checkpoint
+
+Tested source: `8d6aab0b204b5fedeaf057345eb25da2cbe5116c`.
+- Actions https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34924753456:
+  success; actual completed job 104240331127 logs inspected.
+- Required Android command: BUILD SUCCESSFUL in 5m 3s; testDebugUnitTest and
+  assemblePreview both completed.
+- npm test and npm run build passed in CI. Local web checks passed 22 tests,
+  including the new navigation regression. Local Android remains blocked by a
+  corrupt pre-existing Gradle distribution; no local Android pass is claimed.
+- Preview/installation report:
+  https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34924753456/artifacts/10379273071
+- Test reports:
+  https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34924753456/artifacts/10379382652
+- Vercel status: success for tested source:
+  https://vercel.com/sholi/salary-calculation/5eMP4mHjkGHQRusdPimHW6QESfv8
+- Live browser: https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/
+  Synthetic 1.5-hour shift at 40.25 ILS retained 60.38 ILS after reload. Navigation
+  home -> history -> home succeeded with no application-origin console error.
+  Extension metadata errors are excluded. No user records were used.
+- Public preview certificate SHA-256:
+  `34892c5dc546f15161064eb3e7477fd7f85d98678443395870c29be6767bedfc`.
+  Package/version remain preview suffix, code 2, 1.1-preview. This does not prove
+  in-place update compatibility; do not ask the user to uninstall.
+- Prior source f75ee559fc18dfdf19154758a874c872b35273a5 also passed run34901286692.
+  Final continuation preserved that work and published the remaining three
+  account-binding files. Automatic review initially rejected Git CLI publication;
+  repository/PR destination and code-only diff were then independently checked,
+  and authenticated publication succeeded. No production merge.
