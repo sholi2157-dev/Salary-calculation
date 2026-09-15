@@ -31,6 +31,7 @@ android {
     buildConfigField("String", "GEMINI_API_KEY", "\"\"")
     // Remains false until the existing Firebase project and user isolation are verified.
     buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
+    buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", "false")
     // Independent gate: never enable the legacy cloud writer to enable sign-in.
     buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
     // Uploaded configuration has no Android OAuth client/fingerprint yet.

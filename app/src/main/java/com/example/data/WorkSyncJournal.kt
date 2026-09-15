@@ -31,6 +31,12 @@ data class WorkSyncMutation(val record: WorkSyncRecord, val payload: String?) {
 
 @Dao
 interface WorkSyncDao {
+    @Query("SELECT * FROM work_sync_journal WHERE syncId = :syncId")
+    suspend fun bySyncId(syncId: String): WorkSyncRecord?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun put(record: WorkSyncRecord)
+
     @Query("SELECT * FROM work_sync_journal WHERE revision > acknowledgedRevision AND conflictPayload IS NULL ORDER BY entityType, localId")
     suspend fun pending(): List<WorkSyncRecord>
 

@@ -5345,6 +5345,12 @@ fun ManagementScreen(
             }
 
             if (viewModel.owner.uid != null) {
+                val syncStatus by viewModel.cloudStatus.collectAsStateWithLifecycle()
+                Text(syncStatus)
+                if (BuildConfig.VERSIONED_SYNC_ENABLED) {
+                    TextButton(onClick = { viewModel.syncNow() }) { Text("סנכרון עכשיו") }
+                    TextButton(onClick = { viewModel.reviewSyncConflicts(context) }) { Text("סקירת שינויים מתנגשים") }
+                }
                 TextButton(onClick = { viewModel.reviewLegacyData(context) }) {
                     Text("העתקה חד־פעמית של הנתונים המקומיים לחשבון")
                 }

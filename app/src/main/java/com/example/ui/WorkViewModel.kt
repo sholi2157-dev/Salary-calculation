@@ -175,6 +175,57 @@ class WorkViewModel(
 
     val currentUserSession: StateFlow<com.example.api.AuthManager.UserSession?> = com.example.api.AuthManager.currentUser
     private var cloudListener: com.google.firebase.firestore.ListenerRegistration? = null
+    val cloudStatus = kotlinx.coroutines.flow.MutableStateFlow("סנכרון הענן עדיין אינו פעיל")
+    private val versionedSync by lazy {
+        val uid = owner.uid ?: return@lazy null
+        val auth = com.example.api.AuthManager.getFirebaseAuthSafely() ?: return@lazy null
+        val firestore = com.example.api.FirestoreSyncManager.getFirestoreSafely() ?: return@lazy null
+        val prefs = application.getSharedPreferences("sync_device_identity", Context.MODE_PRIVATE)
+        val deviceId = prefs.getString("id", null) ?: java.util.UUID.randomUUID().toString().also {
+            check(prefs.edit().putString("id", it).commit())
+        }
+        com.example.data.WorkSyncEngine(owner.database(application), uid, deviceId,
+            com.example.api.WorkFirestoreTransport(firestore, auth)) { auth.currentUser?.uid }
+    }
+
+    fun syncNow() {
+        if (!com.example.BuildConfig.VERSIONED_SYNC_ENABLED || owner.uid == null) return
+        viewModelScope.launch { performSync() }
+    }
+
+    private suspend fun performSync() {
+        if (currentUserSession.value?.uid != owner.uid || owner.uid == null) return
+        try {
+            cloudStatus.value = "מסנכרן…"
+            val count = versionedSync?.synchronize() ?: return
+            cloudStatus.value = if (count == 0) "הסנכרון הושלם" else "$count שינויים דורשים בחירה"
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (_: Exception) { cloudStatus.value = "ממתין לחיבור. השינויים נשמרו במכשיר" }
+    }
+
+    fun reviewSyncConflicts(context: Context) {
+        if (!com.example.BuildConfig.VERSIONED_SYNC_ENABLED || currentUserSession.value?.uid != owner.uid) return
+        viewModelScope.launch {
+            val row = owner.database(getApplication()).syncDao().conflicts().firstOrNull()
+            if (row == null) { Toast.makeText(context, "אין שינויים מתנגשים", Toast.LENGTH_SHORT).show(); return@launch }
+            val remote = com.example.data.WorkRemoteRecord.decode(checkNotNull(row.conflictPayload))
+            val localDescription = when (row.entityType) {
+                "entry" -> owner.database(getApplication()).workDao().getEntryById(row.localId)?.let {
+                    "${it.category} · ${it.totalEarnings} ${it.currency}\n${it.notes}"
+                } ?: "נמחק במכשיר"
+                else -> "${row.entityType} #${row.localId}"
+            }
+            android.app.AlertDialog.Builder(context).setTitle("בחירת גרסה לשמירה")
+                .setMessage("במכשיר:\n$localDescription\n\nבענן:\n${if (remote.deleted) "הרשומה נמחקה" else remote.payload}")
+                .setNeutralButton("מאוחר יותר", null)
+                .setNegativeButton("שמור מהמכשיר") { _, _ -> viewModelScope.launch {
+                    versionedSync?.resolve(row.syncId, true); performSync()
+                } }
+                .setPositiveButton("קבל מהענן") { _, _ -> viewModelScope.launch {
+                    versionedSync?.resolve(row.syncId, false); performSync()
+                } }.show()
+        }
+    }
 
     fun signOut(context: Context): Boolean {
         if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return false
@@ -195,6 +246,15 @@ class WorkViewModel(
             android.util.Log.w("WorkViewModel", "FirebaseSafeInitializer / AuthManager / FirestoreSyncManager failed: ${e.localizedMessage}")
         }
         runCountAnimationTrigger.value = runCountAnimationTrigger.value + 1
+
+        if (com.example.BuildConfig.VERSIONED_SYNC_ENABLED && owner.uid != null) {
+            viewModelScope.launch {
+                while (true) {
+                    performSync()
+                    kotlinx.coroutines.delay(15_000)
+                }
+            }
+        }
 
         // Subscribe to real-time Firestore snapshots for user
         viewModelScope.launch {

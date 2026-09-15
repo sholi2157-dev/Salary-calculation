@@ -99,4 +99,10 @@ interface WorkDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertWorker(worker: WorkerDirectory): Long
+
+    @Query("DELETE FROM worker_directory WHERE id = :id")
+    suspend fun deleteWorkerById(id: Int)
+
+    @Query("UPDATE worker_directory SET name = :name WHERE id = :id")
+    suspend fun updateWorkerName(id: Int, name: String)
 }
