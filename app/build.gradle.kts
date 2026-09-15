@@ -15,7 +15,7 @@ if (file("google-services.json").exists() ||
 
 // Preview is deliberately offline until its distinct package is registered.
 tasks.matching { it.name == "processPreviewGoogleServices" }.configureEach {
-  onlyIf { file("src/preview/google-services.json").exists() }
+  enabled = file("src/preview/google-services.json").exists()
 }
 
 android {
@@ -55,6 +55,7 @@ android {
   buildTypes {
     getByName("debug") {
       buildConfigField("boolean", "ACCOUNTS_ENABLED", file("src/debug/google-services.json").exists().toString())
+      buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", file("src/debug/google-services.json").exists().toString())
     }
     create("preview") {
       initWith(getByName("debug"))
@@ -63,6 +64,7 @@ android {
       signingConfig = signingConfigs.getByName("debug")
       matchingFallbacks += listOf("debug")
       buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
+      buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", "false")
     }
     release {
       isCrunchPngs = false

@@ -7,5 +7,5 @@ module.exports = function handler(req, res) {
   const apiKey=process.env.FIREBASE_WEB_API_KEY || client.client[0].api_key[0].current_key;
   const authDomain=process.env.FIREBASE_AUTH_DOMAIN;
   const appId=process.env.FIREBASE_WEB_APP_ID;
-  res.status(200).json({ firebase: projectId&&apiKey ? {projectId,apiKey,...(authDomain?{authDomain}:{}),...(appId?{appId}:{})} : null, cloudSyncEnabled:false });
+  res.status(200).json({ firebase: projectId&&apiKey ? {projectId,apiKey,...(authDomain?{authDomain}:{}),...(appId?{appId}:{})} : null, cloudSyncEnabled:true });
 };

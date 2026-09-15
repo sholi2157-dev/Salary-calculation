@@ -62,12 +62,14 @@ window.WorkAccounts={open,sync,store:()=>account};
   for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
   form.reset();document.getElementById('confirm-password-label').hidden=true;
   document.getElementById('modal-notes').value='';document.getElementById('transfer-text').value='';
+  document.getElementById('group-rows').replaceChildren();selectedCategory='הכל';
   display(account?account.data():guestData);actions.hidden=!account;
+  document.getElementById('modal-category').value=categories[0]?.name||'כללי';applyCategoryRate();
   document.getElementById('auth-btn').textContent=account?'התנתקות':'התחברות';
   status(account?(cloudEnabled?'מחובר · ממתין לסנכרון':'מחובר · סנכרון הענן עדיין אינו פעיל'):'שימוש מקומי — ללא סנכרון');
   ready=true;sync();
  });
  }catch{status('שימוש מקומי · שירות החשבון אינו זמין כעת');}
 })();
-window.addEventListener('online',sync);setInterval(sync,15000);
+window.addEventListener('online',sync);setInterval(sync,60000);
 })();

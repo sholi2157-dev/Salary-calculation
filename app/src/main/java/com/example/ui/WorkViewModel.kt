@@ -251,7 +251,7 @@ class WorkViewModel(
             viewModelScope.launch {
                 while (true) {
                     performSync()
-                    kotlinx.coroutines.delay(15_000)
+                    kotlinx.coroutines.delay(60_000)
                 }
             }
         }

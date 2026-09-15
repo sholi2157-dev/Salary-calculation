@@ -27,7 +27,9 @@ fun WorkAccountDialog(onDismiss: () -> Unit, onGoogle: () -> Unit) {
         title = { Text(if (register) "יצירת חשבון" else "התחברות לחשבון") },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("נתוני השימוש המקומי נשארים במכשיר ולא מועברים לחשבון אוטומטית. טפסים שלא נשמרו ייסגרו בעת ההתחברות. סנכרון הענן עדיין לא הופעל.")
+                Text("נתוני השימוש המקומי נשארים במכשיר ולא מועברים לחשבון אוטומטית. טפסים שלא נשמרו ייסגרו בעת ההתחברות." +
+                    if (com.example.BuildConfig.VERSIONED_SYNC_ENABLED) " נתוני החשבון מסתנכרנים עם מכשירים המחוברים לאותו חשבון."
+                    else " סנכרון הענן עדיין לא הופעל.")
                 OutlinedTextField(email, { email = it }, label = { Text("דוא״ל") }, singleLine = true,
                     enabled = !busy, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
                 OutlinedTextField(password, { password = it }, label = { Text("סיסמה") }, singleLine = true,
