@@ -108,6 +108,7 @@
 <script src="web/transfer.js"></script>
 <script src="web/history.js"></script>
 <script src="web/selection.js"></script>
+<script src="web/cloud-sync.js"></script>
 <script src="web/parity.js"></script>
 
 <script>
@@ -136,24 +137,22 @@
     function saveLocalShifts(){persistAll(shifts);}
 
     // Cloud sync remains disabled until account isolation is verified.
-    async function handleAuthClick() {
-        try {
-            if(typeof firebase==='undefined')throw Error('לא ניתן לטעון את שירות ההתחברות');
-            if(!firebase.apps.length){const response=await fetch('/api/config');if(!response.ok)throw Error('שירות החשבון עדיין לא הוגדר');const config=await response.json();if(!config.firebase)throw Error('חיבור החשבון עדיין לא הוגדר בשרת');firebase.initializeApp(config.firebase);}
-            if(firebase.auth().currentUser){await firebase.auth().signOut();currentUserId=null;}else{const result=await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());currentUserId=result.user.uid;}
-            document.getElementById('auth-btn').textContent=currentUserId?'התנתקות':'התחברות לחשבון';
-            document.getElementById('user-status-text').textContent=currentUserId?'מחובר לחשבון · הנתונים מקומיים':'מצב מקומי שמור';
-        }catch(e){alert(e.message);}
-    }
-    function syncToCloud() {}
+    function handleAuthClick() { return window.WorkAccounts.open(); }
+    function syncToCloud() { window.WorkAccounts?.sync(); }
     function download(name, text, type) {
         const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
     function exportJson(){download('work-backup.json',JSON.stringify({formatVersion:2,entries:shifts.map(WorkTransfer.normalize),categories,workers},null,2),'application/json');}
     function persistAll(next, cats=categories, people=workers){
         // The complete backup is the authoritative atomic snapshot, including category rates.
-        localStorage.setItem('work_complete_backup',JSON.stringify({entries:next,categories:cats,workers:people}));
-        shifts=next;categories=cats;workers=people;
+        if(currentUserId){
+            if(!window.WorkAccounts?.store())throw Error('החשבון עדיין בטעינה');
+            const account=window.WorkAccounts.store();account.edit({entries:next,categories:cats,workers:people});
+            const saved=account.data();shifts=saved.entries;categories=saved.categories;workers=saved.workers;
+        }else{
+            localStorage.setItem('work_complete_backup',JSON.stringify({entries:next,categories:cats,workers:people}));
+            shifts=next;categories=cats;workers=people;
+        }
     }
     function invalidateTransfer(){pendingTransfer=null;document.getElementById('transfer-save').disabled=true;}
     function openTransfer(text=''){document.getElementById('transfer-text').value=text;invalidateTransfer();document.getElementById('transfer-summary').textContent='';document.getElementById('transfer-rows').replaceChildren();document.getElementById('transfer-dialog').showModal();if(text)previewTransfer();}
@@ -369,6 +368,7 @@
 
     initParity();initAppViews();renderShifts();
 </script>
+<script src="web/accounts.js"></script>
 
 </body>
 </html>

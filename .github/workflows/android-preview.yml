@@ -35,6 +35,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Verify account sync against Firebase emulators
+        run: |
+          npm install --no-save --package-lock=false firebase@10.8.0 firebase-tools@13.35.1
+          npx firebase emulators:exec --project demo-salary-sync --only auth,firestore --config firebase.test.json "node --test integration-tests/firestore.test.cjs"
       - uses: android-actions/setup-android@v3
         with:
           packages: 'platform-tools'
