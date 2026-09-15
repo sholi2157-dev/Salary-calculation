@@ -375,3 +375,35 @@ Tested source: `8d6aab0b204b5fedeaf057345eb25da2cbe5116c`.
   account-binding files. Automatic review initially rejected Git CLI publication;
   repository/PR destination and code-only diff were then independently checked,
   and authenticated publication succeeded. No production merge.
+
+## 2026-09-15 — Version 1.2 APK checkpoint
+
+Tested source: `a3719077173d6a4fc3408b2cfee570e5cec49895`.
+Preserved all preceding account/timer/journal work. Added original-package debug
+APK output, optional configured email accounts, reset-password UI, separate Google
+gate and a packaged configuration test. Version code 3 / name 1.2.
+
+- Actions run 34932609677 succeeded; actual job 104264815529 logs inspected.
+  Required Android tests/assemblePreview passed (4m 6s), assembleDebug passed (14s).
+  npm tests: 22 passed, 0 failed; npm build passed locally and in CI.
+- Original-package APK and public installation report:
+  https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34932609677/artifacts/10382261874
+- Preview artifact 10382890085; test reports 10382611277.
+- Vercel success: https://vercel.com/sholi/salary-calculation/GjkBxem6xT9NuhALNx6wJiqTYvpP
+  Live preview browser verified synthetic 1.5h * 40.25 ILS = 60.38 ILS,
+  retained after reload and home/history navigation. No real records accessed.
+- Public certificate SHA-256:
+  `e1918793b1edcd3431263ff494c5bb9ee67b67ffe949ca2cfdc9c726af16d1d9`.
+  Installation over the user's existing signed app is NOT verified. Never uninstall
+  or clear data to fix a signature mismatch.
+
+The replacement Firebase client JSON was successfully read and the genuine base
+package client retained locally in ignored app/src/debug/google-services.json.
+Automatic approval review rejected publishing the attachment-derived client config
+(API key and project identifiers) to the public repository without explicit public
+publication approval. Only code was published; CI APK is OFFLINE, with accounts,
+Google and cloud gates false. Configured-build/provider tests remain blocked.
+The journal still needs a network sender/consumer, conflict resolution and full
+Android/web offline/reconnect E2E verification. This is not completed cloud sync.
+Artifact retrieval succeeded through GitHub; placing bytes in scratch failed with
+HTTP 403 and materialization HTTP 502. Use the verified Actions artifact link.
