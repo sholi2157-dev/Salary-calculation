@@ -1,51 +1,41 @@
-# Android Firebase handoff
+# Android Firebase handoff — version 1.3
 
-Project: `workshiftsapp`. Do not create a replacement project, remove registrations,
-or modify live shift records. Cloud sync remains gated until end-to-end validation.
+Project: workshiftsapp. Preserve registrations and all real shift records.
 
-## User-reported console configuration, 2026-09-14
+The user explicitly approved publication of the supplied Firebase client config
+after the prior approval block. app/src/debug/google-services.json contains the
+genuine com.aistudio.worktracker.qztvdw client. This is public client configuration,
+not an administrative credential. Other configuration paths remain ignored. Never
+upload service-account private keys, signing keys, passwords or personal AI keys.
 
-- Android registration added for `com.aistudio.worktracker.qztvdw`.
-- Google and Email/Password providers enabled (screenshots).
-- User reported publishing the owner-only rules now recorded in `firestore.rules`.
-  Live deployment and permission tests have NOT been independently verified.
-- Replacement google-services.json was successfully read on 2026-09-15. The genuine
-  client for the original package was retained in app/src/debug/google-services.json;
-  the unrelated AndroidManifest.xml registration was omitted from this build copy.
-  This is Firebase client configuration, not an administrative credential. It is
-  retained locally only: automatic approval review rejected publishing it to this
-  public repository without explicit publication approval. CI remains offline.
+Debug version 1.3 (code 4) enables ACCOUNTS_ENABLED and VERSIONED_SYNC_ENABLED.
+Email/password registration, login and reset are available. Google sign-in remains
+disabled pending matching Android OAuth/signing fingerprints. Preview has the
+separate .preview package and remains offline without genuine registration;
+release is gated. CLOUD_SYNC_ENABLED stays false: the old integer-ID writer must
+never be re-enabled. The new transport uses users/{uid}/records_v1/{syncId}.
 
-## Configuring a build
+The official Google Services plugin finds exact package matches. The preview
+processing task is disabled at configuration time when its config is absent; this
+avoids capturing Gradle script objects in configuration-cache execution closures.
 
-The official Google Services Gradle plugin is configured conditionally. Without a
-client config, debug/preview still build offline. With a config, the plugin must
-find an exact client package match; do not edit the JSON to counterfeit a match.
+Owner-only firestore.rules are recorded locally. The user reported publishing
+them and enabling Email/Password and Google providers. No administrative Firebase
+deployment or inspection of real records was performed. firebase.test.json uses
+only demo-salary-sync emulators. CI tests verified permissions across separate
+accounts, edits, deletion, offline retry, lost acknowledgements and conflicts.
+Android unit tests verify journal/transport orchestration and packaged options;
+this does not replace native-device/live-provider end-to-end verification.
 
-- Debug/release: `com.aistudio.worktracker.qztvdw`.
-- Preview: `com.aistudio.worktracker.qztvdw.preview` (separate Firebase registration
-  still unverified). Use `app/src/preview/google-services.json` for this variant,
-  and `app/src/debug/google-services.json` for debug, or a module-level file
-  containing genuine registrations for both packages.
-- Configuration files remain ignored. Never upload a service
-  account private key, signing material, passwords or personal Gemini credentials.
-- Google sign-in additionally needs the matching signing certificate fingerprints
-  and OAuth configuration. Preview signing currently changes between CI builds.
-- Debug enables `ACCOUNTS_ENABLED` with its reviewed configuration. Preview remains
-  offline with its separate package; release remains gated. `CLOUD_SYNC_ENABLED`
-  and `GOOGLE_SIGN_IN_ENABLED` remain false. Do not enable the old Int-ID writer.
-- Version 1.2 (code 3) adds an original-package debug APK artifact alongside preview,
-  email password reset, and packaged-resource configuration checks. Authentication
-  with a real provider and installation over the user's signed app remain unverified.
+Verified source 205a84e958ae55d429260299a63e737244b15ead, Actions run 35032047175:
+51 Android tests, 26 web tests and one multi-scenario Firebase emulator integration
+test passed; both APKs built successfully. See preservation-and-sync.md for
+artifact URLs and public package/version/certificate diagnostics.
 
-The Android account UI now offers explicit email sign-in/registration, immutable
-account-scoped local stores and reviewed guest copying. Passwords are not saved
-or logged. This is not a claim of successful provider authentication or cloud sync.
-
-`firebase.json` records only Firestore rules; it does not deploy automatically.
-No Firebase deployment was performed in this continuation. Existing rules allow
-all document types within each owner's subtree; schema validation and full
-permission-denial/emulator tests remain required for the versioned sync protocol.
+Standard runner debug signing is used, and differs between CI builds. Existing
+phone update compatibility remains unverified. User permits fresh installation
+and reports backed-up data; preserve that external backup before uninstalling.
+Neither live sign-in nor installation on the user's phone has been performed.
 
 References: [Android setup](https://firebase.google.com/docs/android/setup),
 [email/password](https://firebase.google.com/docs/auth/android/password-auth).

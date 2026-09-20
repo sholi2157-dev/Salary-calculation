@@ -407,3 +407,51 @@ The journal still needs a network sender/consumer, conflict resolution and full
 Android/web offline/reconnect E2E verification. This is not completed cloud sync.
 Artifact retrieval succeeded through GitHub; placing bytes in scratch failed with
 HTTP 403 and materialization HTTP 502. Use the verified Actions artifact link.
+
+
+## 2026-09-20 — Verified version 1.3 delivery checkpoint
+
+Tested source: `205a84e958ae55d429260299a63e737244b15ead`.
+Continuation inspected the existing work without rewriting it. User explicitly
+approved publishing the Firebase client configuration after the earlier block.
+The approved original-package client is tracked in app/src/debug/google-services.json.
+No admin credentials, private signing material or personal Gemini key were published.
+
+- Version 1.3 / code 4 debug enables email accounts and VERSIONED_SYNC_ENABLED.
+  Preview and release remain offline; Google sign-in and the legacy Int-ID writer
+  remain disabled. The new protocol uses users/{uid}/records_v1/{syncId}.
+- Android and web now persist stable record IDs, revisions and tombstones, retry
+  offline changes, handle lost acknowledgements idempotently and offer explicit
+  conflict resolution. Entries, categories and workers sync; personal API keys
+  and preferences do not. Guest data stays separate until explicit reviewed copy.
+- Actions run 35032047175 succeeded; completed job 104592543684 logs inspected.
+  Required Android tests/assemblePreview: BUILD SUCCESSFUL, 5m 4s.
+  assembleDebug: BUILD SUCCESSFUL, 21s. Android XML: 51 tests, zero failures,
+  errors or skipped. Web: 26 tests passed; npm build passed.
+- Firebase Auth/Firestore emulator integration passed (one multi-scenario test):
+  separate accounts/unauthenticated denials, edits, deletion, offline retry, lost
+  acknowledgement and conflict resolution, using synthetic data only.
+- Vercel status success:
+  https://vercel.com/sholi/salary-calculation/5smdzbsG3b6iHGWZGAJSwPah7kFZ
+  Previous continuation browser verification on this source retained synthetic
+  1.5h * 40.25 ILS = 60.38 after reload/history navigation.
+- Connected original-package APK plus public installation report:
+  https://github.com/sholi2157-dev/Salary-calculation/actions/runs/35032047175/artifacts/10421963263
+  Offline preview artifact: 10421619513; test reports: 10421649386.
+- Debug APK SHA-256:
+  c026b99907cd316d64020e39983184ea2ef18e16b28c76f18acd30da4bccaf09
+  Public certificate SHA-256:
+  93fb3df501c74333981296b15bd9bb2ceea4e7abb7717c0f464ba245fecf1a6c
+
+Delivery limitations: live provider login and physical Android installation have
+not been verified. The debug certificate differs from the earlier CI build;
+in-place update compatibility is not claimed. User explicitly authorized fresh
+installation and reports externally backed-up shifts; still retain the external
+backup before any uninstall. No phone data was erased or installed remotely.
+Google sign-in still requires matching Android OAuth certificate configuration.
+Emulator coverage does not constitute native-device/live Firebase end-to-end proof.
+Live Firestore rules publication remains user-reported.
+
+Direct artifact materialization was attempted again: download returned HTTP 403
+and supported materialization HTTP 502. No local APK was fabricated; provide the
+verified GitHub artifact download, extract app-debug.apk from its ZIP.
