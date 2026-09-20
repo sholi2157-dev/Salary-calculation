@@ -20,3 +20,12 @@ test('conflicts preserve both versions and require a choice',async()=>{
 test('account switch rejects delayed work and keeps account stores separate',async()=>{
  const local=storage();let current='A';const a=new Store(local,'A',()=>current);a.edit(data('A'));current='B';assert.throws(()=>a.edit(data('late')));const b=new Store(local,'B',()=>current);assert.equal(b.data().entries.length,0);
 });
+test('renaming category retains syncId; local preferences survive Android-style metadata round trip and account isolation',async()=>{
+ const local=storage(),a=new Store(local,'owner',()=> 'owner'),b=new Store(storage(),'owner',()=> 'owner'),s=server();
+ a.edit({...data('base'),categories:[{name:'test',defaultRate:40}],webPreferences:{defaultCategory:'test',categoryCurrencies:{test:'$'}}});await a.sync(s);await b.sync(s);
+ const before=a.data().categories[0]._syncId,changed=a.data();changed.categories[0].name='renamed';changed.entries[0].category='renamed';a.edit(changed);await a.sync(s);await b.sync(s);
+ assert.equal(a.data().categories[0]._syncId,before);assert.equal(b.data().categories[0]._syncId,before);assert.equal((await s.readAll('owner')).filter(r=>r.type==='category').length,1);
+ const android=b.data();android.categories[0].defaultRate=55;b.edit(android);await b.sync(s);await a.sync(s);
+ assert.equal(a.data().webPreferences.categoryCurrencies.test,'$');assert.ok(!JSON.parse((await s.readAll('owner')).find(r=>r.type==='category').payload).webPreferences);
+ assert.deepEqual(new Store(local,'other',()=> 'other').data().webPreferences,{});
+});

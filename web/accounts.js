@@ -6,7 +6,7 @@ const guest=()=>JSON.parse(localStorage.getItem('work_complete_backup')||JSON.st
 let guestData=guest();
 const panel=document.createElement('dialog');panel.id='account-dialog';
 panel.innerHTML='<form><h2>חשבון משתמש</h2><p>הנתונים המקומיים נשארים בנפרד. בכניסה לחשבון טפסים שלא נשמרו ייסגרו.</p><label>דוא״ל<input name="email" type="email" autocomplete="username" required class="form-input"></label><label>סיסמה<input name="password" type="password" autocomplete="current-password" required class="form-input"></label><label><input name="register" type="checkbox">יצירת חשבון חדש</label><label id="confirm-password-label" hidden>אישור סיסמה<input name="confirmation" type="password" autocomplete="new-password" class="form-input"></label><p role="status"></p><button class="btn-primary" type="submit">המשך</button><button type="button" data-action="reset" class="btn-secondary">שכחתי סיסמה</button><button type="button" data-action="close" class="btn-secondary">סגור</button></form>';
-document.body.append(panel);const form=panel.querySelector('form'),message=panel.querySelector('[role="status"]');
+document.body.append(panel);installDismiss(panel);const form=panel.querySelector('form'),message=panel.querySelector('[role="status"]');
 form.elements.register.onchange=()=>{const on=form.elements.register.checked;document.getElementById('confirm-password-label').hidden=!on;form.elements.confirmation.required=on;};
 function lock(on){for(const control of form.elements)control.disabled=on;}
 form.onsubmit=async event=>{
@@ -28,7 +28,7 @@ const actions=document.createElement('div');actions.hidden=true;
 for(const [label,action] of [['סנכרון עכשיו',()=>sync()],['סקירת שינויים מתנגשים',review],['העתקת הנתונים המקומיים לחשבון',adopt]]){const button=document.createElement('button');button.className='btn-secondary';button.textContent=label;button.onclick=action;actions.append(button);}
 document.querySelector('.account-row').after(actions);
 function status(text){document.getElementById('user-status-text').textContent=text;}
-function display(data){shifts=data.entries;categories=data.categories;workers=data.workers;renderShifts();}
+function display(data){shifts=data.entries;categories=data.categories;workers=data.workers;webPreferences=WorkCategories.preferences(data.webPreferences);ensureCategoryCatalog();renderShifts();}
 async function sync(){
  const source=account;if(!cloudEnabled||!source||source.busy||editingShiftId!==null)return;
  try{status('מסנכרן…');const conflicts=await source.sync(transport);if(account!==source)return;display(source.data());status(conflicts?conflicts+' שינויים דורשים בחירה':'הסנכרון הושלם');}
@@ -58,13 +58,13 @@ window.WorkAccounts={open,sync,store:()=>account};
  firebase.auth().onAuthStateChanged(user=>{
   if(!currentUserId)guestData=guest();
   currentUserId=user?.uid||null;account=currentUserId?new WorkCloud.Store(localStorage,currentUserId,()=>firebase.auth().currentUser?.uid):null;
-  pendingTransfer=null;editingShiftId=null;if(typeof exitSelection==='function')exitSelection();
+  pendingTransfer=null;closeAddModal();homeReportDraft=null;editingShiftId=null;if(typeof exitSelection==='function')exitSelection();
   for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
   form.reset();document.getElementById('confirm-password-label').hidden=true;
   document.getElementById('modal-notes').value='';document.getElementById('transfer-text').value='';
   document.getElementById('group-rows').replaceChildren();selectedCategory='הכל';
   display(account?account.data():guestData);actions.hidden=!account;
-  document.getElementById('modal-category').value=categories[0]?.name||'כללי';applyCategoryRate();
+  document.getElementById('modal-category').value=WorkCategories.defaultName(categories,webPreferences);applyCategoryRate();
   document.getElementById('auth-btn').textContent=account?'התנתקות':'התחברות';
   status(account?(cloudEnabled?'מחובר · ממתין לסנכרון':'מחובר · סנכרון הענן עדיין אינו פעיל'):'שימוש מקומי — ללא סנכרון');
   ready=true;sync();

@@ -26,15 +26,16 @@ class Store{
  }
  guard(){if(this.activeUid()!==this.uid)throw Error('Account changed');}
  save(state){this.guard();this.storage.setItem(this.key,JSON.stringify(state));this.state=state;}
- data(){return copy({entries:this.state.entries,categories:this.state.categories,workers:this.state.workers});}
+ data(){return copy({entries:this.state.entries,categories:this.state.categories,workers:this.state.workers,webPreferences:this.state.webPreferences||{}});}
  edit(data){
   this.guard();const state=copy(this.state);
+  if(data.webPreferences!==undefined)state.webPreferences=copy(data.webPreferences);
   for(const [type,key] of Object.entries(types)){
    const seen=new Set();
    state[key]=data[key].map(input=>{
     const row=copy(input);
     // Existing web metadata editors identify categories/workers by name.
-    const old=this.state[key].find(x=>type==='entry'?x.id===row.id&&row.id!=null:x.name===row.name);
+    const old=this.state[key].find(x=>row._syncId ? x._syncId===row._syncId : type==='entry'?x.id===row.id&&row.id!=null:x.name===row.name);
     const id=old?old._syncId:uuid();row._syncId=id;
     if(type==='entry'&&row.id==null)row.id=id;
     seen.add(id);

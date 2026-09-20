@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <meta name="description" content="שכר עבודות אישי - מעקב משמרות ושעות עבודה">
     <meta name="theme-color" content="#0a0f1d">
     <title>שכר עבודות אישי</title>
@@ -10,7 +10,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Firebase App & Services -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -36,22 +36,24 @@
     </section>
     <section id="page-history" class="app-page" hidden aria-label="היסטוריה">
       <div class="journal-toolbar"><h2 id="journal-title">יומן עבודה</h2><div class="journal-actions"><button class="micro-button" aria-label="בחירת משמרות" onclick="enterSelection()" data-icon="check"></button><button class="micro-button" aria-label="שתף דוח" onclick="document.getElementById('report-dialog').showModal()" data-icon="copy"></button><button class="micro-button" aria-label="מיון" onclick="document.getElementById('sort-dialog').showModal()" data-icon="sort"></button><button id="currency-filter" class="micro-button" onclick="cycleCurrency()" aria-label="סינון מטבע">הכל</button></div></div>
-      <div id="history-search" hidden><label class="sr-only" for="search-box">חיפוש משמרות</label><input id="search-box" type="search" class="form-input" placeholder="חיפוש משמרת (קטגוריה, הערה)..." oninput="renderShifts()"></div>
+      <div id="history-search" hidden><button class="text-button" onclick="closeHistorySearch()">סיום חיפוש</button><div class="search-input-wrap"><label class="sr-only" for="search-box">חיפוש משמרות</label><input id="search-box" type="search" class="form-input" placeholder="חיפוש משמרת (קטגוריה, הערה)..." oninput="renderShifts()"><button class="icon-btn" aria-label="ניקוי החיפוש" onclick="clearHistorySearch()" data-icon="close"></button></div></div>
       <div class="history-filters"><div class="date-modes"><button class="selected" data-period="all" onclick="setPeriod('all')">הכל תאריכים</button><button data-period="month" onclick="setPeriod('month')">סינון חודשי</button><button data-period="range" onclick="setPeriod('range')">טווח מותאם</button></div><label class="sr-only" for="category-filter">קטגוריה</label><select id="category-filter" onchange="setCategoryFilter(this.value)"><option value="הכל">כל הקטגוריות</option></select></div>
       <div id="period-inputs" class="form-columns" hidden><label id="month-label" hidden>חודש<input type="month" id="month-filter" class="form-input" onchange="renderShifts()"></label><label id="from-label" hidden>מתאריך<input type="date" id="date-from" class="form-input" onchange="renderShifts()"></label><label id="to-label" hidden>עד תאריך<input type="date" id="date-to" class="form-input" onchange="renderShifts()"></label></div>
       <div class="payment-segments" aria-label="סינון תשלום"><button class="selected" data-payment="all" onclick="setPayment('all')">הכל</button><button data-payment="unpaid" onclick="setPayment('unpaid')">ממתין</button><button data-payment="paid" onclick="setPayment('paid')">שולם</button></div>
       <select id="payment-filter" hidden><option value="all">הכל</option><option value="paid">שולם</option><option value="unpaid">ממתין</option></select><div id="category-chips" hidden></div>
-      <div class="journal-total"><span>סה״כ מוצג:</span><strong id="displayed-total"></strong></div><div id="history-summary" class="sr-only" aria-live="polite"></div><div id="selection-toolbar" class="selection-toolbar" hidden><button class="text-button" onclick="exitSelection()">סיום בחירה</button><strong id="selection-count" role="status"></strong><button class="text-button" onclick="selectAllVisible()">בחר הכל</button><button class="text-button" onclick="clearSelection()">נקה הכל</button><button class="micro-button" aria-label="העתקת משמרות נבחרות" onclick="document.getElementById('report-dialog').showModal()" data-icon="copy"></button></div><div class="shifts-container" id="shifts-list"></div>
-    <div id="selection-actions" class="selection-actions" hidden><button class="btn-danger-outline" onclick="applySelection('delete')">מחיקה</button><button class="btn-secondary" onclick="applySelection('unpaid')">סמן כממתין</button><button class="btn-primary" onclick="applySelection('paid')">סמן כשולם</button></div></section>
+      <div class="journal-total"><span>סה״כ מוצג:</span><strong id="displayed-total"></strong></div><div id="history-summary" class="sr-only" aria-live="polite"></div><div id="selection-toolbar" class="selection-toolbar" hidden><button class="text-button" onclick="exitSelection()">סיום בחירה</button><strong id="selection-count" role="status"></strong><button class="text-button" onclick="selectAllVisible()">בחר הכל</button><button class="text-button" onclick="clearSelection()">בטל הכל</button></div><div class="shifts-container" id="shifts-list"></div>
+    <div id="selection-actions" class="selection-actions" hidden><button class="btn-danger-outline" onclick="applySelection('delete')">מחיקה</button><button class="btn-secondary" onclick="applySelection('unpaid')">סמן כלא שולם</button><button class="btn-primary" onclick="applySelection('paid')">סמן כשולם</button></div></section>
   </main>
   <nav class="bottom-nav" aria-label="ניווט ראשי"><button id="nav-home" aria-current="page" onclick="showPage(0)"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm8-2h8v8h-8zm2 2v4h4v-4z"/></svg></span>ראשי</button><button id="nav-history" onclick="showPage(1)"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13 3a9 9 0 1 1-8.4 12.2l1.9-.7A7 7 0 1 0 7 8.4L10 11H2V3l3.5 3.5A9 9 0 0 1 13 3m-1 4h2v5l4 2.4-1 1.6-5-3z"/></svg></span>היסטוריה</button></nav>
 </div>
-<dialog id="settings-dialog"><h2>הגדרות מערכת</h2><details><summary>ניהול עבודה וקטגוריות</summary><div id="settings-categories"></div><button class="btn-secondary" onclick="openCategoryDialog()">הוספת קטגוריה</button></details><details><summary><span>הגדרת מטבע ראשי <span id="settings-currency-icon" class="indigo">₪</span></span></summary><label for="default-currency">מטבע לדיווחים חדשים</label><select id="default-currency" class="form-input"><option>₪</option><option>$</option></select></details><details><summary>תחזוקה וגיבוי נתונים</summary><div class="settings-actions"><button class="btn-secondary" onclick="exportJson()">גיבוי מלא</button><button class="btn-secondary" onclick="exportCsv()">ייצוא CSV</button><button class="btn-secondary" onclick="document.getElementById('csv-file-input').click()">ייבוא קובץ</button><button class="btn-secondary" onclick="document.getElementById('settings-dialog').close();openTransfer()">הדבקת נתונים</button></div></details><div class="account-row"><div><h3>חשבון משתמש</h3><p id="user-status-text">שימוש מקומי — ללא סנכרון</p></div><button id="auth-btn" class="btn-secondary" onclick="handleAuthClick()">התחברות</button></div><div class="settings-footer"><button class="btn-danger-outline" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveWebSettings()">שמור</button></div></dialog>
+<dialog id="settings-dialog"><h2>הגדרות מערכת</h2><details><summary>ניהול עבודה וקטגוריות</summary><div id="settings-categories"></div><button class="btn-secondary" onclick="openCategoryDialog()">הוספת קטגוריה</button></details><details><summary><span>הגדרת מטבע ראשי <span id="settings-currency-icon" class="indigo">₪</span></span></summary><label for="default-currency">מטבע ראשי לסיכומים (התעריף נלקח מהקטגוריה)</label><select id="default-currency" class="form-input"><option>₪</option><option>$</option></select></details><details><summary>תחזוקה וגיבוי נתונים</summary><div class="settings-actions"><button class="btn-secondary" onclick="exportJson()">גיבוי מלא</button><button class="btn-secondary" onclick="exportCsv()">ייצוא CSV</button><button class="btn-secondary" onclick="document.getElementById('csv-file-input').click()">ייבוא קובץ</button><button class="btn-secondary" onclick="document.getElementById('settings-dialog').close();openTransfer()">הדבקת נתונים</button></div></details><details id="account-section"><summary>חשבון משתמש</summary><div class="account-row"><div><h3>חשבון משתמש</h3><p id="user-status-text">שימוש מקומי — ללא סנכרון</p></div><button id="auth-btn" class="btn-secondary" onclick="handleAuthClick()">התחברות</button></div></details><div class="settings-footer"><button class="btn-danger-outline" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveWebSettings()">שמור</button></div></dialog>
 <dialog id="sort-dialog"><h2>מיון</h2><button class="menu-option" onclick="setSort('newest')">תאריך: מהחדש לישן</button><button class="menu-option" onclick="setSort('oldest')">תאריך: מהישן לחדש</button><button class="menu-option" onclick="setSort('latest_added')">נוסף לאחרונה</button><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
-<dialog id="report-dialog"><h2>העתקת הדוח המוצג</h2><button class="menu-option" onclick="copyDisplayed('table')">העתקת טבלה לאקסל</button><button class="menu-option" onclick="copyDisplayed('message')">העתקת סיכום להודעה</button><p>הדוח כולל את המשמרות המוצגות, או רק את המשמרות שסימנת במצב בחירה.</p><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
+<dialog id="report-dialog"><h2>העתקת הדוח המוצג</h2><button class="menu-option" onclick="copyDisplayed('table')">העתקת טבלה לאקסל</button><button class="menu-option" onclick="copyDisplayed('message')">העתקת סיכום להודעה</button><button class="menu-option" onclick="shareDisplayed()">שיתוף סיכום</button><button class="menu-option" onclick="exportDisplayed()">ייצוא המוצג לאקסל (CSV)</button><p>הדוח כולל את המשמרות המוצגות לאחר הסינון, עם סכום נפרד לכל מטבע.</p><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
 <input type="file" id="csv-file-input" accept=".csv,.tsv,.txt,.json" hidden onchange="handleCsvImport(event)">
-<dialog id="category-dialog"><h2>קטגוריה ותעריף</h2><label for="category-name">שם מעסיק / קטגוריה</label><input id="category-name" class="form-input"><label for="category-rate">תעריף שעתי לברירת מחדל</label><input id="category-rate" type="number" min="0" step="0.01" value="40" class="form-input"><p id="category-error" role="status"></p><div class="modal-btn-row"><button class="btn-secondary" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveCategoryDialog()">שמירה</button></div></dialog>
-<datalist id="category-options"></datalist>
+<dialog id="category-dialog"><h2>קטגוריה ותעריף</h2><label for="category-name">שם מעסיק / קטגוריה</label><input id="category-name" class="form-input"><label for="category-rate">תעריף שעתי לברירת מחדל</label><input id="category-rate" type="number" min="0" step="0.01" value="40" class="form-input"><label for="category-currency">מטבע התעריף</label><select id="category-currency" class="form-input"><option>₪</option><option>$</option></select><label class="default-category-choice"><input type="checkbox" id="category-default"> קטגוריית ברירת המחדל</label><p id="category-error" role="status"></p><div class="modal-btn-row"><button class="btn-secondary" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveCategoryDialog()">שמירה</button></div></dialog>
+
+<dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text"><h2 id="confirm-title"></h2><p id="confirm-text"></p><form method="dialog" class="modal-btn-row"><button id="confirm-cancel" class="btn-secondary" value="cancel">ביטול</button><button class="btn-danger-outline" value="confirm">מחיקה</button></form></dialog>
+<dialog id="share-dialog"><h2>טקסט לשיתוף</h2><p>אפשר לסמן ולהעתיק את הטקסט.</p><textarea id="share-text" readonly class="form-input" rows="8"></textarea><button class="btn-secondary" onclick="this.closest('dialog').close()">סגירה</button></dialog>
 <p id="app-message" role="status" class="toast" hidden></p>
 <dialog id="transfer-dialog" style="background:#17172b;color:white;border:1px solid #6366f1;border-radius:18px;width:min(90vw,720px)">
   <h2>בדיקת נתונים לפני ייבוא</h2>
@@ -60,6 +62,7 @@
   <button class="btn-primary" onclick="previewTransfer()">בדיקת הנתונים</button>
   <p id="transfer-summary" role="status" style="white-space:pre-wrap"></p>
   <div id="transfer-rows" style="max-height:35vh;overflow:auto"></div>
+  <label><input type="checkbox" id="transfer-preferences"> שחזור העדפות אתר מהגיבוי (קטגוריית ברירת מחדל ומטבעות)</label>
   <button id="transfer-save" class="btn-primary" disabled onclick="commitTransfer()">שמירת המשמרות</button>
   <button class="btn-secondary" onclick="document.getElementById('transfer-dialog').close()">ביטול</button>
 </dialog>
@@ -69,7 +72,7 @@
         <h2 class="edit-only">עריכת משמרת</h2>
         <div class="form-group">
             <label for="modal-category">מעסיק / קטגוריה</label>
-            <input type="text" id="modal-category" list="category-options" onchange="applyCategoryRate()" class="form-input" value="כללי">
+            <select id="modal-category" onchange="applyCategoryRate()" class="form-input" aria-label="מעסיק / קטגוריה"></select>
         </div>
         <div class="form-group">
             <label for="modal-date">תאריך</label>
@@ -95,7 +98,7 @@
           <div id="group-fields" hidden>
             <label for="group-employer-rate">תעריף המעסיק לכל שעת עובד</label><input id="group-employer-rate" type="number" min="0" step="0.01" class="form-input" value="50">
             <label for="group-worker-rate">תעריף לתשלום לכל שעת עובד</label><input id="group-worker-rate" type="number" min="0" step="0.01" class="form-input" value="40">
-            <div id="group-rows"></div><button class="btn-secondary" onclick="addGroupRow()">הוספת עובד</button>
+            <div id="group-rows"></div><div class="group-footer"><button class="btn-secondary" onclick="addGroupRow()"><span data-icon="plus"></span> הוספת עובד</button><output id="group-total-hours" aria-live="polite"></output></div>
           </div>
         </div>
         <div class="modal-btn-row">
@@ -109,13 +112,15 @@
 <script src="web/history.js"></script>
 <script src="web/selection.js"></script>
 <script src="web/cloud-sync.js"></script>
+<script src="web/categories.js"></script>
+<script src="web/sharing.js"></script>
 <script src="web/parity.js"></script>
 
 <script>
     // State management
     let shifts = [];
     let currentUserId = null;
-    let categories = [], workers = [], pendingTransfer = null, editingShiftId = null;
+    let webPreferences=WorkCategories.preferences(), categories = [], workers = [], pendingTransfer = null, editingShiftId = null;
     try { const meta=JSON.parse(localStorage.getItem('work_transfer_meta')||'{}');categories=meta.categories||[];workers=meta.workers||[]; } catch {}
     let selectedCategory = 'הכל';
 
@@ -136,26 +141,26 @@
 
     function saveLocalShifts(){persistAll(shifts);}
 
-    // Cloud sync remains disabled until account isolation is verified.
+    // Versioned sync is configured by WorkAccounts; live device E2E remains a release gate.
     function handleAuthClick() { return window.WorkAccounts.open(); }
     function syncToCloud() { window.WorkAccounts?.sync(); }
     function download(name, text, type) {
         const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
-    function exportJson(){download('work-backup.json',JSON.stringify({formatVersion:2,entries:shifts.map(WorkTransfer.normalize),categories,workers},null,2),'application/json');}
-    function persistAll(next, cats=categories, people=workers){
+    function exportJson(){download('work-backup.json',JSON.stringify({formatVersion:2,entries:shifts.map(WorkTransfer.normalize),categories:categories.map(({name,defaultRate})=>({name,defaultRate})),workers:workers.map(({name})=>({name})),webPreferences},null,2),'application/json');}
+    function persistAll(next, cats=categories, people=workers, prefs=webPreferences){
         // The complete backup is the authoritative atomic snapshot, including category rates.
         if(currentUserId){
             if(!window.WorkAccounts?.store())throw Error('החשבון עדיין בטעינה');
-            const account=window.WorkAccounts.store();account.edit({entries:next,categories:cats,workers:people});
-            const saved=account.data();shifts=saved.entries;categories=saved.categories;workers=saved.workers;
+            const account=window.WorkAccounts.store();account.edit({entries:next,categories:cats,workers:people,webPreferences:prefs});
+            const saved=account.data();shifts=saved.entries;categories=saved.categories;workers=saved.workers;webPreferences=WorkCategories.preferences(saved.webPreferences);
         }else{
-            localStorage.setItem('work_complete_backup',JSON.stringify({entries:next,categories:cats,workers:people}));
-            shifts=next;categories=cats;workers=people;
+            localStorage.setItem('work_complete_backup',JSON.stringify({entries:next,categories:cats,workers:people,webPreferences:prefs}));
+            shifts=next;categories=cats;workers=people;webPreferences=WorkCategories.preferences(prefs);
         }
     }
     function invalidateTransfer(){pendingTransfer=null;document.getElementById('transfer-save').disabled=true;}
-    function openTransfer(text=''){document.getElementById('transfer-text').value=text;invalidateTransfer();document.getElementById('transfer-summary').textContent='';document.getElementById('transfer-rows').replaceChildren();document.getElementById('transfer-dialog').showModal();if(text)previewTransfer();}
+    function openTransfer(text=''){document.getElementById('transfer-text').value=text;invalidateTransfer();document.getElementById('transfer-preferences').checked=false;document.getElementById('transfer-summary').textContent='';document.getElementById('transfer-rows').replaceChildren();document.getElementById('transfer-dialog').showModal();if(text)previewTransfer();}
     function previewTransfer(){
         invalidateTransfer();document.getElementById('transfer-rows').replaceChildren();
         try {
@@ -171,17 +176,14 @@
     }
     function commitTransfer(){if(!pendingTransfer)return;try{
         const added=WorkTransfer.missing(shifts,pendingTransfer.entries).map(e=>({...e,id:crypto.randomUUID()}));
-        const cats=[...categories,...pendingTransfer.categories.filter(c=>!categories.some(x=>x.name===c.name))];
+        const importedCats=[...pendingTransfer.categories];for(const e of pendingTransfer.entries)if(!importedCats.some(c=>c.name===e.category))importedCats.push({name:e.category,defaultRate:e.hourlyRate});
+        const cats=[...categories,...importedCats.filter(c=>!categories.some(x=>x.name===c.name))];
         const people=[...workers,...pendingTransfer.workers.filter(w=>!workers.some(x=>x.name===w.name))];
-        persistAll([...shifts,...added],cats,people);invalidateTransfer();document.getElementById('transfer-dialog').close();renderShifts();
+        const prefs=document.getElementById('transfer-preferences').checked&&pendingTransfer.webPreferences?WorkCategories.preferences(pendingTransfer.webPreferences):webPreferences;
+        persistAll([...shifts,...added],cats,people,prefs);invalidateTransfer();document.getElementById('transfer-dialog').close();renderShifts();
     }catch(e){document.getElementById('transfer-summary').textContent='השמירה נכשלה. הנתונים הקיימים נשמרו. '+e.message;}}
-    function editCategoryRate(){
-        const name=prompt('שם הקטגוריה');if(!name?.trim())return;
-        const old=categories.find(c=>c.name===name.trim());const input=prompt('תעריף ברירת מחדל לשעה',String(old?.defaultRate??40));if(input===null)return;
-        try{const rate=WorkTransfer.number(input);persistAll(shifts,[...categories.filter(c=>c.name!==name.trim()),{name:name.trim(),defaultRate:rate}]);applyCategoryRate();}catch(e){alert(e.message);}
-    }
-    function applyCategoryRate(){const c=categories.find(c=>c.name===document.getElementById('modal-category').value.trim());document.getElementById('modal-rate').value=c?.defaultRate??40;}
-    function formatTotals(t){return Object.entries(t).map(([c,n])=>c+' '+n.toFixed(2)).join(' · ')||(localStorage.getItem('work_default_currency')||'₪')+' 0.00';}
+    function applyCategoryRate(){const c=categories.find(c=>c.name===document.getElementById('modal-category').value);document.getElementById('modal-rate').value=c?.defaultRate??40;document.getElementById('modal-currency').value=WorkCategories.currency(c?.name||'עצמאי',webPreferences);}
+    function formatTotals(t){return Object.entries(t).map(([c,n])=>c+' '+n.toFixed(2)).join('\n')||(webPreferences.mainCurrency||localStorage.getItem('work_default_currency')||'₪')+' 0.00';}
     function setCategoryFilter(category) {
         selectedCategory = category;
         document.querySelectorAll('.chip').forEach(btn => {
@@ -224,18 +226,19 @@
             document.getElementById('group-fields').hidden=homeReportDraft.groupHidden;
             homeReportDraft=null;
         }
-        document.getElementById('report-slot').append(document.getElementById('report-fields'));editingShiftId=null;
+        document.getElementById('report-slot').append(document.getElementById('report-fields'));editingShiftId=null;updateGroupHours();
     }
 
     function saveNewShift() {
-        const category = document.getElementById('modal-category').value.trim() || 'כללי';
+        const category = document.getElementById('modal-category').value;
+        if(!categories.some(c=>c.name===category)){showMessage('יש לבחור קטגוריה קיימת');return;}
         const dateVal = document.getElementById('modal-date').value;
-        const date = dateVal ? new Date(dateVal+'T00:00:00').getTime() : Date.now();
+        const date = dateVal ? new Date(dateVal+'T00:00:00').getTime() : NaN;
+        if(!Number.isFinite(date)){showMessage('יש לבחור תאריך תקין');return;}
         const original=shifts.find(e=>e.id===editingShiftId);
         if(document.getElementById('modal-range').checked){try{document.getElementById('modal-hours').value=WorkTransfer.rangeHours(document.getElementById('modal-start').value,document.getElementById('modal-end').value,document.getElementById('modal-break').value,original);}catch(e){alert(e.message);return;}}
-        const hours = Number(document.getElementById('modal-hours').value);
-        const hourlyRate = Number(document.getElementById('modal-rate').value);
-        if(!Number.isFinite(hours)||hours<=0||!Number.isFinite(hourlyRate)||hourlyRate<0){alert('יש להזין שעות ותעריף תקינים');return;}
+        let hours,hourlyRate;try{hours=WorkTransfer.number(document.getElementById('modal-hours').value);hourlyRate=WorkTransfer.number(document.getElementById('modal-rate').value);}catch(e){showMessage(e.message);return;}
+        if(!Number.isFinite(hours)||hours<=0||!Number.isFinite(hourlyRate)||hourlyRate<0||!Number.isFinite(hours*hourlyRate)){alert('יש להזין שעות ותעריף תקינים');return;}
         const notes = document.getElementById('modal-notes').value.trim();
         const isGroup=document.getElementById('modal-group').checked;let groupMembers=[],employerRate=null,workerRate=null;
         if(isGroup){try{
@@ -243,7 +246,7 @@
             groupMembers=[...document.querySelectorAll('#group-rows > div')].map(row=>{const name=row.querySelector('[data-field="name"]').value.trim();if(!name)throw Error('חסר שם עובד');return {...row.workerData,name,hours:WorkTransfer.number(row.querySelector('[data-field="hours"]').value),isPaid:row.querySelector('[data-field="paid"]').checked};});
             if(!groupMembers.length)throw Error('יש להוסיף לפחות עובד אחד לקבוצה');
         }catch(e){alert(e.message);return;}}
-        const totalEarnings = Math.round(hours * hourlyRate * 100) / 100;
+        const totalEarnings = Math.round((hours * hourlyRate + Number.EPSILON) * 100) / 100;
 
         const newShift = {
             id: crypto.randomUUID(),
@@ -265,24 +268,23 @@
 
         try {persistAll(editingShiftId===null?[newShift,...shifts]:shifts.map(e=>e.id===editingShiftId?{...e,...newShift,id:e.id,createdAt:e.createdAt,isPaid:e.isPaid,totalEarnings:e.hours===hours&&e.hourlyRate===hourlyRate?e.totalEarnings:totalEarnings}:e));}
         catch(e){alert('השמירה נכשלה: '+e.message);return;}
-        syncToCloud();
-        closeAddModal();
-        renderShifts();showMessage('הדיווח נשמר בהצלחה');
+        const wasEdit=editingShiftId!==null;closeAddModal();syncToCloud();
+        renderShifts();showMessage(wasEdit?'הדיווח עודכן בהצלחה':'הדיווח נשמר בהצלחה');
     }
 
-    function togglePaid(id){try{persistAll(shifts.map(s=>s.id===id?{...s,isPaid:!s.isPaid}:s));renderShifts();}catch(e){alert('השמירה נכשלה: '+e.message);}}
-    function deleteShift(id){if(confirm('האם למחוק משמרת זו?')){try{persistAll(shifts.filter(s=>s.id!==id));renderShifts();}catch(e){alert('המחיקה לא נשמרה: '+e.message);}}}
+    function togglePaid(id){try{persistAll(shifts.map(s=>s.id===id?{...s,isPaid:!s.isPaid}:s));renderShifts();syncToCloud();}catch(e){alert('השמירה נכשלה: '+e.message);}}
+    async function deleteShift(id){const owner=currentUserId;if(await confirmAction('מחיקת משמרת','למחוק את המשמרת? פעולה זו אינה ניתנת לביטול.')){if(owner!==currentUserId)return;try{persistAll(shifts.filter(s=>s.id!==id));renderShifts();syncToCloud();showMessage('המשמרת נמחקה');}catch(e){showMessage('המחיקה לא נשמרה: '+e.message);}}}
     function editShift(id){const e=shifts.find(s=>s.id===id);if(!e)return;openAddModal();editingShiftId=id;document.getElementById('modal-category').value=e.category;const d=new Date(e.date);document.getElementById('modal-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');document.getElementById('modal-hours').value=e.hours;document.getElementById('modal-rate').value=e.hourlyRate;document.getElementById('modal-currency').value=e.currency;document.getElementById('modal-notes').value=e.notes;document.getElementById('modal-break').value=WorkTransfer.inferredBreak(e);
         document.getElementById('modal-range').checked=e.isTimeRange||false;document.getElementById('range-fields').hidden=!e.isTimeRange;document.getElementById('modal-hours').readOnly=Boolean(e.isTimeRange);if(e.startTime)document.getElementById('modal-start').value=e.startTime;if(e.endTime)document.getElementById('modal-end').value=e.endTime;
         document.getElementById('modal-group').checked=e.isGroupShift||false;document.getElementById('group-fields').hidden=!e.isGroupShift;document.getElementById('group-employer-rate').value=e.employerRate??e.hourlyRate;document.getElementById('group-worker-rate').value=e.workerRate??e.hourlyRate;
         for(const worker of JSON.parse(e.groupWorkersJson||'[]'))addGroupRow(worker);
     }
     function addGroupRow(worker={name:'',hours:0,isPaid:false}){
-        const row=document.createElement('div');row.workerData=worker;row.style.cssText='padding:10px 0;display:flex;gap:6px;flex-wrap:wrap';
+        const row=document.createElement('div');row.workerData=worker;row.className='group-worker-row';
         const name=document.createElement('input');name.dataset.field='name';name.value=worker.name;name.placeholder='שם עובד';name.setAttribute('aria-label','שם עובד');name.className='form-input';
         const hours=document.createElement('input');hours.type='number';hours.min=0;hours.step=0.25;hours.dataset.field='hours';hours.value=worker.hours;hours.setAttribute('aria-label','שעות העובד');hours.className='form-input';
         const label=document.createElement('label'),paid=document.createElement('input');paid.type='checkbox';paid.dataset.field='paid';paid.checked=worker.isPaid;label.append(paid,document.createTextNode('שולם לעובד'));
-        const remove=document.createElement('button');remove.textContent='הסרת עובד';remove.className='btn-secondary';remove.onclick=()=>row.remove();row.append(name,hours,label,remove);document.getElementById('group-rows').append(row);
+        const remove=document.createElement('button');remove.innerHTML=uiIcon('trash');remove.setAttribute('aria-label','הסרת עובד');remove.className='icon-btn';remove.onclick=()=>{row.remove();updateGroupHours();};hours.oninput=updateGroupHours;row.append(name,hours,label,remove);document.getElementById('group-rows').append(row);updateGroupHours();
     }
     function toggleRange(){const on=document.getElementById('modal-range').checked;document.getElementById('range-fields').hidden=!on;document.getElementById('modal-hours').readOnly=on;if(on)updateRangeHours();}
     function updateRangeHours(){try{document.getElementById('modal-hours').value=WorkTransfer.rangeHours(document.getElementById('modal-start').value,document.getElementById('modal-end').value,document.getElementById('modal-break').value);}catch{document.getElementById('modal-hours').value='';}}
@@ -297,6 +299,7 @@
         for(const name of ['הכל',...new Set([...categories.map(c=>c.name),...shifts.map(s=>s.category)])]){const button=document.createElement('button');button.className='chip'+(name===selectedCategory?' active':'');button.textContent=name;button.onclick=()=>setCategoryFilter(name);chips.appendChild(button);}
         const search = document.getElementById('search-box').value.trim().toLowerCase();
         const list = document.getElementById('shifts-list');
+        const expanded=new Set([...list.querySelectorAll('details[open]')].map(el=>el.dataset.shiftId));
         list.innerHTML = '';
 
         const now = new Date();
@@ -336,37 +339,35 @@
             return;
         }
 
-        for(const entry of filtered) list.append(createShiftCard(entry));
+        for(const entry of filtered){const card=createShiftCard(entry);card.open=!selectionMode&&expanded.has(String(entry.id));list.append(card);}
     }
 
     let currentPage=0,reportMode='clock';const pageScroll=[0,0];
-    function showMessage(text){const el=document.getElementById('app-message');el.textContent=text;el.hidden=false;setTimeout(()=>{el.hidden=true;},3000);}
+    let messageTimer;function showMessage(text){const el=document.getElementById('app-message');const host=[...document.querySelectorAll('dialog[open]')].at(-1)||document.body;host.append(el);el.replaceChildren();const icon=document.querySelector('.clock-icon svg').cloneNode(true);el.append(icon,document.createTextNode(text));el.hidden=false;clearTimeout(messageTimer);messageTimer=setTimeout(()=>{el.hidden=true;},3500);}
     function showPage(page){if(page===currentPage)return;pageScroll[currentPage]=window.scrollY;const old=currentPage;currentPage=page;document.getElementById('page-home').hidden=page!==0;document.getElementById('page-history').hidden=page!==1;for(const [i,id] of ['nav-home','nav-history'].entries()){const b=document.getElementById(id);if(i===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}const panel=document.getElementById(page?'page-history':'page-home');panel.classList.remove('slide-forward','slide-back');void panel.offsetWidth;panel.classList.add(page>old?'slide-forward':'slide-back');window.scrollTo({top:pageScroll[page],behavior:'instant'});}
     function summaryPage(page){const el=document.querySelector('.summary-carousel');el.children[page].scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'nearest',inline:'start'});}
     function toggleReport(button){const content=document.getElementById('report-content');content.hidden=!content.hidden;button.setAttribute('aria-expanded',String(!content.hidden));}
     function setReportMode(mode){reportMode=mode;editingShiftId=null;document.getElementById('modal-range').checked=mode==='clock';toggleRange();document.getElementById('modal-group').checked=mode==='group';document.getElementById('group-fields').hidden=mode!=='group';document.querySelectorAll('.mode-switch button').forEach((b,i)=>b.setAttribute('aria-selected',String(['clock','manual','group'][i]===mode)));}
-    function openCategoryDialog(name=''){document.getElementById('category-name').value=name;document.getElementById('category-name').readOnly=Boolean(name);document.getElementById('category-rate').value=categories.find(c=>c.name===name)?.defaultRate??40;document.getElementById('category-error').textContent='';document.getElementById('category-dialog').showModal();}
-    function saveCategoryDialog(){try{const name=document.getElementById('category-name').value.trim();if(!name)throw Error('יש להזין שם קטגוריה');const rate=WorkTransfer.number(document.getElementById('category-rate').value);persistAll(shifts,[...categories.filter(c=>c.name!==name),{name,defaultRate:rate}]);document.getElementById('category-dialog').close();if(editingShiftId===null)applyCategoryRate();renderShifts();}catch(e){document.getElementById('category-error').textContent=e.message;}}
     function renderToday(){const now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(),end=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1).getTime(),today=shifts.filter(s=>s.date>=start&&s.date<end);document.getElementById('stat-today').textContent=formatTotals(WorkTransfer.totals(today));document.getElementById('today-hours').textContent=today.reduce((n,e)=>n+e.hours,0).toFixed(1)+' שעות';}
     function renderCompanionViews(filtered){
         const now=new Date(),monthStart=new Date(now.getFullYear(),now.getMonth(),1).getTime(),monthEnd=new Date(now.getFullYear(),now.getMonth()+1,1).getTime(),weekStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()-now.getDay()).getTime(),weekEnd=weekStart+7*86400000;
         document.getElementById('stat-paid').textContent=formatTotals(WorkTransfer.totals(shifts.filter(s=>s.isPaid)));
         document.getElementById('week-hours').textContent=shifts.filter(s=>s.date>=weekStart&&s.date<weekEnd).reduce((n,e)=>n+e.hours,0).toFixed(1)+' שעות';document.getElementById('month-hours').textContent=shifts.filter(s=>s.date>=monthStart&&s.date<monthEnd).reduce((n,e)=>n+e.hours,0).toFixed(1)+' שעות';
-        const monthCurrency=localStorage.getItem('work_default_currency')||'₪'; const monthEarnings=shifts.filter(e=>e.currency===monthCurrency&&new Date(e.date).getFullYear()===now.getFullYear()&&new Date(e.date).getMonth()===now.getMonth()).reduce((sum,e)=>sum+e.totalEarnings,0); document.getElementById('month-progress').style.width=Math.min(100,Math.max(0,monthEarnings/10000*100))+'%';
+        const monthCurrency=webPreferences.mainCurrency||localStorage.getItem('work_default_currency')||'₪'; const monthEarnings=shifts.filter(e=>e.currency===monthCurrency&&new Date(e.date).getFullYear()===now.getFullYear()&&new Date(e.date).getMonth()===now.getMonth()).reduce((sum,e)=>sum+e.totalEarnings,0); document.getElementById('month-progress').style.width=Math.min(100,Math.max(0,monthEarnings/10000*100))+'%';
         document.getElementById('history-summary').textContent=filtered.length+' משמרות · '+filtered.reduce((n,e)=>n+e.hours,0).toFixed(1)+' שעות · '+formatTotals(WorkTransfer.totals(filtered));
         const recent=document.getElementById('recent-list');recent.replaceChildren();const latest=[...shifts].sort((a,b)=>(b.createdAt??b.date)-(a.createdAt??a.date)).slice(0,3);
         if(!latest.length){const p=document.createElement('p');p.className='empty-state';p.textContent='המשמרת הראשונה שלך תופיע כאן';recent.append(p);}
         for(const entry of latest)recent.append(createShiftCard(entry,true));
-        const catBox=document.getElementById('settings-categories'),options=document.getElementById('category-options');catBox.replaceChildren();options.replaceChildren();for(const cat of categories){const row=document.createElement('button');row.className='category-setting';const name=document.createElement('span'),rate=document.createElement('b');name.textContent=cat.name;rate.textContent=cat.defaultRate+' / שעה';row.append(name,rate);row.onclick=()=>openCategoryDialog(cat.name);catBox.append(row);const opt=document.createElement('option');opt.value=cat.name;options.append(opt);}
+        renderCategoryOptions();
         renderToday();
     }
     function initAppViews(){document.getElementById('report-slot').append(document.getElementById('report-fields'));setReportMode('clock');const dialog=document.getElementById('add-modal');dialog.addEventListener('cancel',e=>{e.preventDefault();closeAddModal();});const carousel=document.querySelector('.summary-carousel');carousel.addEventListener('scroll',()=>{const left=carousel.getBoundingClientRect();let nearest=0,distance=Infinity;[...carousel.children].forEach((el,i)=>{const d=Math.abs(el.getBoundingClientRect().right-left.right);if(d<distance){distance=d;nearest=i;}});document.querySelectorAll('.pager-dots button').forEach((b,i)=>b.classList.toggle('active',i===nearest));},{passive:true});carousel.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();const current=[...document.querySelectorAll('.pager-dots button')].findIndex(b=>b.classList.contains('active'));summaryPage(Math.max(0,Math.min(2,current+(e.key==='ArrowLeft'?1:-1))));});let start=null;const pages=document.getElementById('app-pages');pages.addEventListener('pointerdown',e=>{if(e.target.closest('input,textarea,select,button,summary,a,.summary-carousel,.category-chips,dialog'))return;start={x:e.clientX,y:e.clientY};});pages.addEventListener('pointerup',e=>{if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;start=null;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.5)showPage(dx>0?1:0);});pages.addEventListener('pointercancel',()=>{start=null;});}
 
     // Initial load
     loadLocalShifts();
-    try {const saved=JSON.parse(localStorage.getItem('work_complete_backup')||'null');if(saved){shifts=saved.entries;categories=saved.categories;workers=saved.workers;}} catch(e){alert('לא ניתן לקרוא את הגיבוי המקומי. אין להזין נתונים לפני שחזור.');throw e;}
+    try {const saved=JSON.parse(localStorage.getItem('work_complete_backup')||'null');if(saved){shifts=saved.entries;categories=saved.categories;workers=saved.workers;webPreferences=WorkCategories.preferences(saved.webPreferences);}} catch(e){alert('לא ניתן לקרוא את הגיבוי המקומי. אין להזין נתונים לפני שחזור.');throw e;}
 
-    initParity();initAppViews();renderShifts();
+    ensureCategoryCatalog();initParity();initAppViews();renderShifts();applyCategoryRate();
 </script>
 <script src="web/accounts.js"></script>
 

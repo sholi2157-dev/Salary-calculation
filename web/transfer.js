@@ -69,7 +69,7 @@ function normalize(e) {
  check(e&&typeof e.category==='string'&&e.category.trim(),'חסרה קטגוריה');
  for(const k of ['date','hours','hourlyRate','totalEarnings'])check(typeof e[k]==='number'&&Number.isFinite(e[k])&&e[k]>=0,'ערך לא תקין: '+k);
  check(typeof e.isPaid==='boolean','סטטוס תשלום לא תקין');check(['₪','$'].includes(e.currency??'₪'),'מטבע לא מזוהה');
- const group=e.groupWorkersJson||'';if(group)check(Array.isArray(JSON.parse(group)),'רשימת עובדים לא תקינה');
+ const group=e.groupWorkersJson||'';if(group){const members=JSON.parse(group);check(Array.isArray(members),'רשימת עובדים לא תקינה');for(const w of members)check(w&&typeof w.name==='string'&&w.name.trim()&&typeof w.hours==='number'&&Number.isFinite(w.hours)&&w.hours>=0&&(w.isPaid===undefined||typeof w.isPaid==='boolean'),'פרטי עובד בקבוצה לא תקינים');}
  for(const k of ['employerRate','workerRate'])check(e[k]==null||(typeof e[k]==='number'&&Number.isFinite(e[k])&&e[k]>=0),'תעריף קבוצה לא תקין');
  return {category:e.category,date:e.date,createdAt:e.createdAt??e.date,isTimeRange:e.isTimeRange??false,startTime:e.startTime??null,endTime:e.endTime??null,hours:e.hours,hourlyRate:e.hourlyRate,totalEarnings:e.totalEarnings,isPaid:e.isPaid,notes:String(e.notes??''),currency:e.currency??'₪',isGroupShift:e.isGroupShift??false,employerRate:e.employerRate??null,workerRate:e.workerRate??null,groupWorkersJson:group};
 }
@@ -79,7 +79,7 @@ function decode(text){
  check([1,2].includes(root.formatVersion??1),'גרסת גיבוי לא נתמכת');check(Array.isArray(root.entries),'לא נמצאו משמרות בגיבוי');
  const categories=(root.categories||[]).map(c=>{check(typeof c.name==='string'&&c.name.trim(),'קטגוריה לא תקינה');return {name:c.name,defaultRate:number(c.defaultRate??40)};});
  const workers=(root.workers||[]).map(w=>{check(typeof w.name==='string','עובד לא תקין');return {name:w.name};});
- return {formatVersion:2,entries:root.entries.map(normalize),categories,workers};
+ return {formatVersion:2,entries:root.entries.map(normalize),categories,workers,...(root.webPreferences?{webPreferences:root.webPreferences}:{})};
 }
 function missing(existing,incoming){
  const signature=e=>JSON.stringify({...normalize(e),createdAt:0});const counts=new Map();
