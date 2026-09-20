@@ -14,7 +14,7 @@ from the session. No administrative credential or signing key is included.
 Version 1.4 / code 5 enables email accounts and versioned sync for configured
 preview builds. Google sign-in and the retired integer-ID cloud writer remain
 disabled. Existing account-isolation and sync code is retained.
-Preview resource tests check its exact Firebase app ID to avoid shipping the
+CI inspects the built preview APK for its exact Firebase app ID to avoid shipping the
 original-package registration accidentally.
 
 Signing remains runner-generated debug signing. The package now targets the

@@ -455,3 +455,42 @@ Live Firestore rules publication remains user-reported.
 Direct artifact materialization was attempted again: download returned HTTP 403
 and supported materialization HTTP 502. No local APK was fabricated; provide the
 verified GitHub artifact download, extract app-debug.apk from its ZIP.
+
+
+## 2026-09-20 — Connected TRIAL 1.4 verified
+
+User clarified that two apps must coexist: keep the original AI Studio app and
+deliver updates only for the separate trial package. The prior original-package
+1.3 artifact was the wrong delivery target. AGENTS.md now records this distinction.
+
+The supplied google-services (1).json includes a genuine registration for
+com.aistudio.worktracker.qztvdw.preview. Its filtered client is committed under
+app/src/preview/google-services.json; no package or app IDs were fabricated.
+Preview now enables email accounts and versioned sync. Existing data/sync logic
+was preserved; version is 1.4-preview, code 5, Hebrew label includes ניסיון.
+
+Verified source: a91bf9c46c1f5344e5feb812b01db9138a7d8e50.
+Actions run 35489336972 succeeded; actual completed job 106021429645 logs inspected.
+Required Android tests/assemblePreview succeeded (5m 58s); 51 tests, zero failures,
+errors or skipped. Web tests: 26 passed; web build and Firebase emulator integration
+passed. Additional APK inspection verified exact preview package, Hebrew trial
+label, genuine preview Firebase app ID/project and enabled account/sync flags.
+The earlier run 35488935221 built the APK but failed on a nonexistent
+testPreviewUnitTest task; that check was replaced by direct packaged inspection.
+
+DELIVER THIS ARTIFACT ONLY:
+https://github.com/sholi2157-dev/Salary-calculation/actions/runs/35489336972/artifacts/10598741192
+Name: salary-trial-1.4. ZIP contains app-preview.apk and installation-report.txt.
+APK SHA-256: e8ae77cb1d759d7444201c14813c2b97e783baaa2982bc0c2491785a6828f52b
+Public certificate SHA-256: 3a5e3cc36ed38f96498bca949c8d1b77ef14f70b56df4a21207cc35f18e39180
+
+Vercel success for final source:
+https://vercel.com/sholi/salary-calculation/BDDqtmZpZovW5ujLTyQdFfNqt7HU
+Browser verified unchanged web code during this continuation: synthetic 1.5h at
+40.25 ILS retained 60.38 after reload and history navigation; no real records used.
+
+Physical phone installation and real-account sync remain unverified. The new APK
+targets the trial package, but runner signing is still different from prior builds;
+do not promise in-place updates. User permits fresh installation after retaining
+an external backup: remove ONLY an old trial app if needed, never the original.
+Google sign-in remains disabled; use email/password. No original app was removed.
