@@ -15,3 +15,5 @@
 - Repeated APK installation failure is a release blocker: publish public certificate/package/version diagnostics, never suggest another blind update or uninstall, and never upload private signing material.
 
 - Website scope: omit AI and active/background shift timers, their start/stop controls and notification settings. These remain Android-only by user request. Preserve completed shifts and do not erase legacy timer storage while removing the feature. Keep manual clock-range entry and the daily summary.
+
+- Delivery target clarified by the user on 2026-09-20: preserve the original AI Studio app and update ONLY the separate trial app, package `com.aistudio.worktracker.qztvdw.preview`, label `שכר עבודות אישי — ניסיון`. Deliver the connected preview artifact, never the original-package debug artifact as a trial update. The genuine preview Firebase client is now provided. Runner debug certificates still vary: do not promise in-place update compatibility.
