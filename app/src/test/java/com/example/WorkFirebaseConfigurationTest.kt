@@ -15,7 +15,9 @@ import org.robolectric.annotation.Config
 class WorkFirebaseConfigurationTest {
     @Test fun configuredAccountsDoNotEnableUnverifiedCloudOrGoogle() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        assertEquals("com.aistudio.worktracker.qztvdw", BuildConfig.APPLICATION_ID)
+        val expectedPackage = if (BuildConfig.BUILD_TYPE == "preview")
+            "com.aistudio.worktracker.qztvdw.preview" else "com.aistudio.worktracker.qztvdw"
+        assertEquals(expectedPackage, BuildConfig.APPLICATION_ID)
         assertFalse(BuildConfig.CLOUD_SYNC_ENABLED)
         assertFalse(BuildConfig.GOOGLE_SIGN_IN_ENABLED)
         val options = FirebaseOptions.fromResource(context)
@@ -24,8 +26,12 @@ class WorkFirebaseConfigurationTest {
             return
         }
         assertNotNull(options)
+        assertTrue(BuildConfig.VERSIONED_SYNC_ENABLED)
         assertEquals("workshiftsapp", options!!.projectId)
         assertFalse(options.apiKey.isBlank())
         assertTrue(options.applicationId.startsWith("1:998899976228:android:"))
+        if (BuildConfig.BUILD_TYPE == "preview") {
+            assertEquals("1:998899976228:android:3b5406564d6a5db6ffb0b1", options.applicationId)
+        }
     }
 }

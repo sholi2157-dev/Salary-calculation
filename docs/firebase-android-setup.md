@@ -1,41 +1,25 @@
-# Android Firebase handoff — version 1.3
+# Current delivery target: separate trial application
 
-Project: workshiftsapp. Preserve registrations and all real shift records.
+User clarified on 2026-09-20 that the original AI Studio app must coexist with
+the maintained trial app. Deliver ONLY the preview variant with package
+com.aistudio.worktracker.qztvdw.preview and Hebrew trial label.
+The base-package debug artifact is NOT a trial update and must not be delivered
+as such. The previous version 1.3 download targeted the wrong installed app.
 
-The user explicitly approved publication of the supplied Firebase client config
-after the prior approval block. app/src/debug/google-services.json contains the
-genuine com.aistudio.worktracker.qztvdw client. This is public client configuration,
-not an administrative credential. Other configuration paths remain ignored. Never
-upload service-account private keys, signing keys, passwords or personal AI keys.
+The newly supplied genuine Firebase client registers this preview package in
+workshiftsapp. Its filtered config is in app/src/preview/google-services.json.
+User authorization to integrate/publish Firebase client configuration continues
+from the session. No administrative credential or signing key is included.
 
-Debug version 1.3 (code 4) enables ACCOUNTS_ENABLED and VERSIONED_SYNC_ENABLED.
-Email/password registration, login and reset are available. Google sign-in remains
-disabled pending matching Android OAuth/signing fingerprints. Preview has the
-separate .preview package and remains offline without genuine registration;
-release is gated. CLOUD_SYNC_ENABLED stays false: the old integer-ID writer must
-never be re-enabled. The new transport uses users/{uid}/records_v1/{syncId}.
+Version 1.4 / code 5 enables email accounts and versioned sync for configured
+preview builds. Google sign-in and the retired integer-ID cloud writer remain
+disabled. Existing account-isolation and sync code is retained.
+Preview resource tests check its exact Firebase app ID to avoid shipping the
+original-package registration accidentally.
 
-The official Google Services plugin finds exact package matches. The preview
-processing task is disabled at configuration time when its config is absent; this
-avoids capturing Gradle script objects in configuration-cache execution closures.
-
-Owner-only firestore.rules are recorded locally. The user reported publishing
-them and enabling Email/Password and Google providers. No administrative Firebase
-deployment or inspection of real records was performed. firebase.test.json uses
-only demo-salary-sync emulators. CI tests verified permissions across separate
-accounts, edits, deletion, offline retry, lost acknowledgements and conflicts.
-Android unit tests verify journal/transport orchestration and packaged options;
-this does not replace native-device/live-provider end-to-end verification.
-
-Verified source 205a84e958ae55d429260299a63e737244b15ead, Actions run 35032047175:
-51 Android tests, 26 web tests and one multi-scenario Firebase emulator integration
-test passed; both APKs built successfully. See preservation-and-sync.md for
-artifact URLs and public package/version/certificate diagnostics.
-
-Standard runner debug signing is used, and differs between CI builds. Existing
-phone update compatibility remains unverified. User permits fresh installation
-and reports backed-up data; preserve that external backup before uninstalling.
-Neither live sign-in nor installation on the user's phone has been performed.
-
-References: [Android setup](https://firebase.google.com/docs/android/setup),
-[email/password](https://firebase.google.com/docs/auth/android/password-auth).
+Signing remains runner-generated debug signing. The package now targets the
+correct separate trial app, but updating an older trial APK still requires
+matching certificates. Do not claim this fixes in-place updates or remove the
+original app. User allows a fresh trial installation after an external backup.
+Live account and physical-device installation testing remain outstanding.
+See preservation-and-sync.md for the last completed checks.

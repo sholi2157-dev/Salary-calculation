@@ -13,7 +13,7 @@ if (file("google-services.json").exists() ||
   apply(plugin = "com.google.gms.google-services")
 }
 
-// Preview is deliberately offline until its distinct package is registered.
+// Process only the genuine configuration for the separate trial package.
 tasks.matching { it.name == "processPreviewGoogleServices" }.configureEach {
   enabled = file("src/preview/google-services.json").exists()
 }
@@ -26,8 +26,8 @@ android {
     applicationId = "com.aistudio.worktracker.qztvdw"
     minSdk = 24
     targetSdk = 36
-    versionCode = 4
-    versionName = "1.3"
+    versionCode = 5
+    versionName = "1.4"
     buildConfigField("String", "GEMINI_API_KEY", "\"\"")
     // Remains false until the existing Firebase project and user isolation are verified.
     buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
@@ -63,8 +63,8 @@ android {
       versionNameSuffix = "-preview"
       signingConfig = signingConfigs.getByName("debug")
       matchingFallbacks += listOf("debug")
-      buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
-      buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", "false")
+      buildConfigField("boolean", "ACCOUNTS_ENABLED", file("src/preview/google-services.json").exists().toString())
+      buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", file("src/preview/google-services.json").exists().toString())
     }
     release {
       isCrunchPngs = false
