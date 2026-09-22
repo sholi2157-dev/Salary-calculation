@@ -556,3 +556,41 @@ performed), native Share Sheet and full live account/Android sync including
 offline/reconnect/conflicts. No production-readiness claim. Read
 docs/website-android-handoff.md for exact Android currency/report findings and
 the coordinated additive schema work needed before syncing category preferences.
+
+## 2026-09-22 — verified website visual follow-up
+
+Tested source: b270256895afe78b65561e6f09afa5713118ed18.
+Exact non-production deployment: https://salary-calculation-9h69o7gbj-sholi.vercel.app/
+GitHub deployment metadata confirmed this source SHA and production=false;
+Vercel status succeeded (DazxzzsTf7FfpUqq4Fip182mDh8g).
+
+Compared supplied Android video frames and Theme.kt with actual website views.
+Replaced competing oversized background rules with one moving purple/navy
+18-second gradient using the native palette, retaining reduced-motion support.
+Corrected legacy CSS overriding accordion alignment, card heading direction,
+translucent inputs, phone filter spacing and card proportions. Moved category
+below rate in the form. Versioned the CSS URL to invalidate stale styles.
+Generated public/index.html matches source; no service-worker cache found.
+
+Build now emits a commit/CSS-digest manifest and, on Vercel Preview only, a
+preview-check.html page with visible source SHA and a real 390x844 app iframe.
+Local production-mode build excludes this inspection page. No production deploy.
+Live browser inspected this exact Preview's home, history and settings inside
+the phone-width iframe: width and scrollWidth both 390; one current background
+rule and native2 CSS URL confirmed. Time-separated screenshots/computed gradient
+positions confirmed movement. Synthetic USD 2h x 45.75 = 91.50 saved and survived
+reload. Group form inspected without saving. Local 360px/390px screenshots and
+reduced-motion behavior checked; mobile UI regression suite passed.
+
+Verification completed before this documentation update:
+- Local npm test: 31/31; npm run build and diff checks passed.
+- Actions run 35695270651, completed job 106640990220: success. Actual logs
+  inspected: web 31/31; build passed; Firebase emulator integration 1/1.
+- Required Work* unit-test/assemblePreview command: BUILD SUCCESSFUL in 5m10s;
+  Android reports 51 tests, zero failures/errors/skipped. Existing workflow's
+  additional debug build passed in 23s. No Android development or installation.
+
+This follow-up changes website presentation/build diagnostics only. No shared
+sync contract, account/offline/conflict code, Android source or user data changes.
+PR #1 remains Draft/open. Physical phone keyboard/native Share Sheet and full
+live phone-to-web sync remain unverified; no pixel-perfect/production claim.
