@@ -1,0 +1,596 @@
+# Preservation baseline and integration status
+
+## Mandatory preservation rules
+
+Read this document and root AGENTS.md before changes. Work on `codex/preserve-app-sync` and PR #1 in the existing `sholi2157-dev/Salary-calculation` repository and existing Vercel project `salary-calculation`. Do not merge or change production as though sync is complete.
+
+The installed Android app is the primary product. Preserve its screens, animated indigo/violet background, navigation, manual/group/AI entry, history, filters and foreground timer. Reference: user recording reviewed 2026-09-07; original source baseline `20c6022e3d35e8eea9beda3380c442208a18515a`. The user installed the earlier preview, imported their original data successfully and reported matching appearance; this is useful feedback, not proof of complete parity.
+
+The user's reported backup contains **22 shifts and 8 categories**. Never reset, delete or replace user storage, discard shifts, enable destructive Room migrations, or recommend uninstalling to fix an update. Do not upload signing keys or secrets. Use synthetic records for tests. No live user database was accessed or modified in this continuation.
+
+## Implemented
+
+- Optional sign-in; no simulated successful authentication.
+- Currency preserved when editing shifts.
+- Versioned JSON transfer retains saved amounts, dates, currency, group/category/worker metadata and decimal rates. Legacy missing currency means shekels.
+- Atomic validation/import and multiset deduplication retain genuine repeated shifts without duplicating repeated imports. This is transfer deduplication, not live-sync conflict resolution.
+- Header-based Hebrew/English table import handles reordered CSV/TSV/semicolon/pipe columns, the original clipboard export, Excel dates/decimal commas and quoted multiline notes. Invalid or ambiguous input requires correction; no claim that every possible format is supported.
+- Review before saving imports and AI proposals.
+- Saved category defaults feed manual, timer and AI entry.
+- Web local atomic snapshot, JSON/CSV export, currency-separated totals, overnight ranges, timer drafts, group workers/rates/payment editing, month/payment filters.
+- Vercel configuration removed only the unsupported `public: true` property; other settings and headers retained.
+- Android debug and preview use standard AGP debug signing; preview has a separate package suffix/launcher label.
+
+## Personal Gemini keys — current user decision
+
+The user explicitly replaced the previous model-selection/shared-key design. Use **Gemini 3.5 Flash only**, with a key the user enters personally.
+
+- No owner Gemini key is embedded in any build, including debug/preview. No model selector or GPT route.
+- Android encrypts the entered key with AES-GCM and an Android Keystore key, writing atomically to `noBackupFilesDir`. It is outside Android backups and shift exports. Removal only removes this credential.
+- Web AI is temporarily omitted using the user-authorized fallback. There is no web key input or refresh-dependent key flow. Android offers optional first-use/first-sign-in setup with an info icon and skip, and add/replace/remove in settings. Encrypted key files are scoped to the local account UID; the legacy guest file is separate. No cross-device credential sync is claimed.
+- Requests send the personal key in an HTTPS header directly to Google's fixed Gemini endpoint. Our shared AI server endpoint returns 410 and never falls back to an owner/server credential.
+- Without a personal key, AI stops with a clear message. Ordinary entry/import/export continues.
+- Each key uses its Google project's quota. Separate users need keys from their own separate projects to separate quota/billing; new keys in the owner's same project do not achieve this.
+- This prevents distributing the owner's key; it does not make a personal client-held credential immune to compromised devices, browser extensions or injected scripts. Real keys must never be pasted into chat or test fixtures.
+- No real-key/provider call or physical-device Keystore round-trip has been verified this session. UI confirmation means a key was saved/activated locally, not that Google accepted it.
+- Earlier installed APKs may still contain an old build-time key. Removing this from new code does not revoke an old key or erase old binaries. If previously distributed, the owner should rotate it privately after validating the replacement.
+
+Official references:
+- https://ai.google.dev/gemini-api/docs/api-key
+- https://ai.google.dev/gemini-api/docs/rate-limits
+- https://developer.android.com/privacy-and-security/keystore
+
+## Earlier verified baseline, 2026-09-08
+
+Tested code commit: `d10d5f1de057494519029919df4a4dce9dd422e1`.
+
+Web checks passed locally and in GitHub Actions; Android passed in GitHub Actions:
+- `npm test`: 13/13 transfer and personal-key tests.
+- `npm run build`.
+- `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`: BUILD SUCCESSFUL; testDebugUnitTest, assemblePreview and validateSigningPreview completed.
+- Actions: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34218243894
+- APK: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34218243894/artifacts/10052833666
+
+Android ran in GitHub Actions. The earlier local Gradle installation had a corrupt distribution JAR and could not compile the project locally.
+
+Vercel reported successful deployment for that commit:
+https://vercel.com/sholi/salary-calculation/ETgBu1xU5yGPETV11udUe7tdGzpu
+
+Browser opened the authenticated preview successfully:
+https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/
+
+Browser checks passed with **synthetic** data:
+- Imported 22 shifts across 8 categories: 44 hours and 2,200 shekels.
+- Reload retained entries; repeated import proposed 0 new / 22 existing records.
+- Selecting an imported category after reload supplied its saved hourly rate of 50.
+- Missing personal key prevents AI; synthetic key activation does not claim provider success; refresh forgets that key.
+- Desktop layout visually inspected. This is not full Android/web parity or mobile-device certification.
+- Browser-extension metadata errors were observed; they were not application errors.
+
+The synthetic fixture is not the user's actual backup; its successful test must not be described as verification of the real 22/8 backup.
+
+## Signing and installation limitations
+
+No fixed test keystore was published. Historical notes claiming otherwise were incorrect: automatic approval review rejected that proposal. The missing root debug.keystore configuration was removed.
+
+Runner-generated debug certificates may differ between APK builds. Successful assembly/validateSigning does not prove in-place update compatibility with an installed preview. The earlier phone screenshot only says installation failed; it does not establish the precise cause. Do not uninstall/reset to work around this, do not request signing-key uploads, and do not claim the phone update is fixed.
+
+## Firebase and cloud-sync gates
+
+`CLOUD_SYNC_ENABLED` remains false. Firebase/cloud sync is not enabled or verified. The existing Firebase project was reported as `workshiftsapp`; prior screenshots showed an Android registration named `AndroidManifest.xml`, which does not match the app package. Do not delete registrations or cloud records. Correct project registrations, OAuth fingerprints, domains and deployed rules still require verification.
+
+Before enabling sync, implement stable cross-device IDs, user-scoped local storage, queued offline operations, deletion propagation, conflict handling and one-time legacy import. Current Room Int IDs are local to an installation.
+
+Required end-to-end tests: Android-to-web and web-to-Android edits, payment status, deletion, offline/reconnect, separate accounts, permission denials and repeated imports. No production/sync release until these pass. Vercel tool access to team sholi previously returned 403; deployment success was checked through the GitHub Vercel status and the actual browser preview.
+
+Previous verified baseline: commit `658b8be7c66d7162d05d2a0fb36eea1ccf64faa9`, Android run 34189434959. This document supersedes earlier instructions to use GPT/catalog selection, shared owner-key AI or reinstall a preview.
+
+## Web parity continuation — 2026-09-09
+
+Current conversation scope: adapt the website to Android. Inspect actual branch code first; do not repeat completed swipe/key/configuration work. The prior remote checkpoint was `940b4f0bfcd9edb7eacf0542d0b782b0cc564735` (Actions 34256199895 passed). This continuation compared the existing website to MainActivity.kt and ui/theme/Theme.kt. Context lookup found no additional decisions.
+
+### Completed and retained
+
+- Android-based header, animated indigo/violet background, glass cards, Assistant/Rubik fonts, summary carousel/dots, inline report modes, recent cards and bottom main/history navigation.
+- Existing Android main/history HorizontalPager and personal-key onboarding/settings retained. Android was not edited again in this continuation.
+- Website now has mode-specific report inputs, clock break minutes, compact currency selection and consistent vector navigation icons.
+- Notes-only edits preserve imported net hours and stored earnings. Breaks are inferred from interval minus saved hours, without changing the transfer schema or database. Changing times/break recalculates hours. Existing web overnight support remains; identical Android overnight behavior is not claimed.
+- Unfinished home report survives opening/cancelling/saving history edits, including worker row metadata.
+- Web AI remains omitted as explicitly authorized; no refresh-dependent key prompt.
+
+### Verified checkpoint
+
+Tested source commit: `bd69f0f1545a48b64ca7053c227aca79465b822f`.
+
+- `npm test`: 16/16 passed locally and in Actions, including range/break and imported-hours preservation regressions.
+- `npm run build`: passed locally and in Actions.
+- `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`: BUILD SUCCESSFUL in 4m27s, verified in completed job102301964470.
+- Actions: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34299083542
+- Vercel: success https://vercel.com/sholi/salary-calculation/8aXLwtjtAXjZhBPXv1BUC851ZAkY
+- Browser preview opened: https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/
+- Synthetic22 shifts/8 categories:49.5 hours/2475 ILS retained after editing an imported note and reloading. First clock shift stayed7.5 hours/375 ILS with inferred30-minute break. Changing break to60 minutes produced7 hours/350 ILS; restoring30 minutes restored totals.
+- Manual mode hides break inputs and shows manual hours. Horizontal pointer navigation reached history. Desktop screenshot inspected; no app-origin error in inspected console logs (extension errors excluded).
+- Prior checkpoint browser verification covered repeat-import0 new/22 existing, saved category rate50, summary navigation and home/group draft restoration. The user's real backup was not used or changed.
+
+### Remaining gates — not a completed release
+
+- Full visual parity needs side-by-side original main/history/settings references at phone and desktop widths. Original videos1000329135.mp4 and1000329333.mp4 were found, but authenticated downloads returned502; scratch copies were corrupt. Do not claim pixel identity from source comparison or a desktop screenshot. Advanced history/report interactions still need a complete parity inventory against accessible references.
+- Android physical-device swipe and in-place installation remain unverified. Runs34255538565 and34256199895 produced different public certificate SHA-256 fingerprints: `7bd7c854a661b4a5236bc68846d9cb0a9455d4f9425917a6d7db58df1446a384` and `c73690066b090302908a1129cf2ccbc202a8d31709fca2d4c36e5cc1d57b0511`. Both package com.aistudio.worktracker.qztvdw.preview, versionCode2. This proves unstable signing between those builds, not the installed phone's exact certificate. Do not offer another APK as a proven update fix, uninstall, or upload private signing material.
+- Personal keys persist encrypted per account on a device, not across devices. Real provider calls and physical-device Keystore persistence remain unverified.
+- Firebase sync, separate-account data permissions and offline/reconnect remain disabled/unverified. No production change or PR merge.
+
+
+## Screenshot-based website checkpoint — 2026-09-09
+
+This conversation owns **website parity only**. Android implementation, installation/signing, accounts and Firebase sync belong to the separate Android conversation. No Android source was changed in this checkpoint. Read actual remote branch status before continuing; do not repeat the completed changes below.
+
+The user supplied accessible screenshots of main, history and settings (1000338850.png, 1000338852.png, 1000338854.png). These now supplement the Android source and supersede the earlier lack of static visual references. Kotlin Compose itself is not browser code; the website implements its layout and behavior in HTML/CSS/JavaScript.
+
+### Implemented from those references
+
+- Dark rounded expandable history cards with category avatars, label/payment/stopwatch/chevron vector icons, Hebrew long dates, payment dots, and compact recent cards. Existing edit, payment, notes and group details remain accessible inside expanded cards.
+- History toolbar, category selection, all/month/custom inclusive dates, payment pills, currency filter, newest/oldest/recently-added sorting and search. Combined filters drive the displayed count, currency-separated totals and copied report.
+- Clipboard table uses quoted TSV for direct Excel columns; file export remains CSV. A separate copy action creates a message summary; it does not send messages.
+- Settings accordion layout, account row and save/cancel placement follow the screenshot, with web AI intentionally omitted. Currency preference persists locally, affects new reports and updates the summary display immediately. Notifications text describes actual web limitations.
+- Assistant/Rubik typography retained and sizes/weights refined; stronger indigo/violet animated background, glass borders, glowing totals, spacing, rounded controls and vector report/timer icons aligned with the references. Reduced-motion support retained.
+- Monthly progress now follows the native 10,000 earnings target, using the selected currency rather than combining currencies; it no longer measures elapsed calendar days.
+
+### Verified result
+
+Tested source commit: `f1a98447e08c996fe40514f27c25dfb77640c6cd`.
+
+- `npm test`: **19/19 passed** locally and in Actions; includes combined history filters, immutable sorting and Excel TSV round-trip with multiline notes.
+- `npm run build`: passed locally and in Actions. `git diff --check` passed.
+- `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`: **BUILD SUCCESSFUL in 5m 21s**, verified from completed job 102505005116 and its logs.
+- Actions: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34363149842 — success.
+- Vercel: https://vercel.com/sholi/salary-calculation/EKaf5B3QDv9qpXYsRoyevoUrZhRJ — successful status for the tested source SHA.
+- Actual browser preview: https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/ — loaded and interacted with successfully.
+- Browser used synthetic 22 shifts / 8 categories, totaling 44 hours / 2,200 ILS. Payment filter yielded 11 records; category plus payment yielded 3 records / 300 ILS; adding a one-day range yielded 1 record / 100 ILS. August yielded 22 and September 0; USD filter excluded the ILS records. Oldest sort and card expansion/edit were exercised. Notes edit and refresh retained all 22 records and totals.
+- Saved currency survived refresh; cancel did not apply a changed selection. The final display refresh and currency heading were checked in the live preview.
+- After resuming the interrupted run, the final live site's Excel-copy action was verified from the clipboard: exactly 3 selected-category rows with tab-separated columns. No user records or personal keys were used. Inspected console errors were browser-extension metadata errors, not application-origin errors.
+
+### Honest remaining limits
+
+Desktop main/history/settings screenshots were inspected against the supplied app references. Phone-width and physical-device visual comparison is still required before claiming pixel identity; this browser did not expose a supported viewport-resize capability. This is a reviewed website preview, not a completed production release or certification of every Android feature. Advanced history/bulk actions and report behavior still require a complete source-based parity inventory beyond the three supplied screen states.
+
+Firebase/cloud sync remains disabled and unverified. Android installation and account/credential gates above remain owned by the other conversation. No production change or PR merge. Preserve the real 22-shift/8-category backup and all existing work.
+
+## Video and website-only timer removal checkpoint
+
+Verified source: `519d5b75457664b45390a7fa01bb7d909784e042`. Resumption on 2026-09-14 confirmed this remained PR #1's head; existing code was preserved, not rebuilt. This section supersedes historical website timer/notification requirements above.
+
+- Reviewed sampled frames every ten seconds across the supplied 338-second `1000339699.mp4`: main/report modes, history filters and bulk selection, settings and the Android timer. This was a sampled visual review, not an exhaustive motion/audio or pixel-parity certification.
+- Removed website active/background shift start/stop controls, timer dialog, running status, polling and notification settings. Manual clock-range reports and daily summaries remain. Legacy timer storage is neither read nor erased; completed shifts are preserved. Android source is unchanged.
+- Added history selection mode, select-all/clear, selected-record copy, paid/unpaid bulk actions and deletion with confirmation. Filters constrain selection. Immutable updates preserve saved earnings, currencies and group metadata; deletion targets explicit selected IDs only.
+- Root AGENTS.md records the website-only omissions. Website AI remains omitted.
+
+### Verified checks
+
+- `npm test`: 21/21 passed locally and in Actions, including selection isolation, immutable payment changes, deletion boundaries and transfer regressions.
+- `npm run build`: passed locally and in Actions. Inline JavaScript syntax and `git diff --check` passed.
+- `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`: BUILD SUCCESSFUL in 5m. Completed job 102676570437 and logs were inspected again on resumption.
+- GitHub Actions: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34414609694 — success.
+- Vercel: https://vercel.com/sholi/salary-calculation/7rgUcfXxBDdEtLVEL2XeYYScDAar — success for the tested source SHA, reconfirmed on resumption.
+- Live browser preview: https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/ — opened and interacted with. Main/settings no longer expose the timer or notifications. Selection, select-all and copying exactly three selected TSV rows were verified.
+- A separate synthetic three-record import totaled 6 hours / 300 ILS. Selecting two records in one category and marking paid changed only those two (4 hours / 200 ILS). The third remained pending (2 hours / 100 ILS), including after refresh. No real user data or credentials were used.
+
+### Remaining verification limits
+
+The browser automation timed out at the native bulk-delete confirmation. Its final acceptance/cancellation flow is not marked passed; deletion logic passed unit tests and no live user record was deleted. Do not repeat a destructive operation on user data to resolve this automation limitation.
+
+Phone-width/physical-device comparison, continuous animation parity and the complete advanced report/history feature inventory remain open. The sampled video and screenshots establish reference points, not exact identity of every screen. Firebase/cloud sync remains disabled and unverified. Android device installation, signing and account work remain in the separate conversation. No production change, merge, storage reset or signing-material upload was performed.
+
+
+## Verified Android continuation — 2026-09-14
+
+Published and tested commit: `7cb9ac293ff513d89a795550bb18496733d4a2eb`.
+The user explicitly approved publication to the existing branch. Git CLI lacked
+credentials; the authenticated GitHub connector published the identical reviewed
+local tree. The earlier publication block is resolved.
+
+- Android import, decimal rate/edit preservation, saved category timer defaults,
+  import comparison summary, and cloud access gate fixes are now in the branch.
+- `npm test`: 21 passed locally and in CI; `npm run build`: passed.
+- `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`:
+  BUILD SUCCESSFUL in 5m 13s. Actual job logs inspected; both tasks completed.
+- CI: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34814354694
+- Test reports: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34814354694/artifacts/10336082861
+- Preview package and public installation report: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34814354694/artifacts/10336187543
+- Vercel commit status: success, https://vercel.com/sholi/salary-calculation/3ECyiob44R16tQV2yjWFW3HPFgRk
+  No new browser test was performed in this Android-only continuation.
+
+Package `com.aistudio.worktracker.qztvdw.preview`, versionCode `2`, versionName
+`1.1-preview`; public certificate SHA-256
+`c9d515b2079db058df46e9fbbdc6c296e42adabbf11806edef5464c4de4f8978`.
+This differs from earlier preview certificates and does not establish compatibility
+with the installed phone. Do not present the APK as a proven in-place update.
+
+Remaining: physical-device swipe/edit/credential persistence and installation;
+email/password account implementation; user-scoped local data, stable cloud IDs,
+offline mutation queue, deletion/conflict handling; verified Firebase configuration,
+Google OAuth, provider enablement and rules. Cloud sync remains disabled. No real
+user records or private signing material were accessed. No production merge.
+See android-continuation.md for the detailed implementation checkpoint.
+
+
+## Android account-storage and offline journal continuation — 2026-09-14
+
+Resumed from remote `04a7c39f18ed4ec8d2c896e8dce01d7b3d43033f`. Confirmed the
+previous Android fixes were already published and tested; did not repeat them.
+
+Implementation commit: `6c7b7eb9757b449d34d85e8ed3fcc29e500d01e0`.
+CI configuration commit: `9a076bbd3e94824af66528f8cf7cf2ea2ce164f2`.
+
+### Implemented
+
+- Room v5-to-v6 additive migration creates a local sync journal and backfills stable,
+  random 128-bit IDs for existing shifts, categories and workers. The business tables
+  and their IDs/amounts/metadata are not rewritten or replaced.
+- SQLite triggers journal every local insert/update/delete in the same transaction,
+  including direct DAO writes by the foreground service and atomic backup imports.
+  Replacement of a row retains its stable identity. Deletion retains a tombstone.
+- Pending mutations read the payload and revision in a single Room transaction.
+  Acknowledgement uses revision/remote-version checks, so an old response cannot clear
+  a newer edit/deletion. A conflict stores the remote candidate separately and pauses
+  that record; no automatic overwriting or completed conflict-resolution UI is claimed.
+- Added a separate account-database factory using SHA-256-derived filenames.
+  Opening an account does not copy, claim or remove guest data. Default categories are
+  seeded synchronously into the correct database instead of using the guest singleton.
+- Seven Robolectric regression tests cover 22-shift/8-category synthetic migration and
+  reopen, rollback atomicity, stable IDs through replacement, bulk category changes,
+  worker writes, repeated imports with genuine duplicates, late acknowledgements,
+  tombstones, conflict preservation and separate account databases.
+- The first connector branch update did not produce an Actions run. Added a push
+  trigger limited to the existing working branch, retaining PR/manual triggers and
+  concurrency control. No permissions expansion or secret/signing changes.
+
+### Remaining implementation — do not enable cloud sync yet
+
+The UI/ViewModel still uses the original guest database. The new account factory is
+a tested storage primitive, not completed runtime account isolation. Before enabling
+accounts, bind repository/observers, settings, exports, drafts, undo, AI proposals and
+active timers to the originating account; prevent delayed operations crossing a switch.
+Implement reviewed one-time legacy adoption with a durable completion marker.
+
+The journal has no network sender or remote-apply consumer yet. The old
+FirestoreSyncManager still uses installation-local Int IDs and MUST NOT be enabled
+against this journal. Implement a versioned stable-ID protocol, idempotent delivery,
+remote tombstones, restart/reconnect scheduling, conflict review/resolution and
+cross-device category/worker references. Keep local Int IDs out of remote identity.
+
+Email/password screens/authentication remain absent; Google sign-in and
+CLOUD_SYNC_ENABLED remain gated off. Firebase registration/OAuth fingerprints,
+providers and deployed per-account rules are unverified. No Firebase administrative
+connector, local Android runtime, physical device or browser automation was available
+in this turn. End-to-end Android/web tests remain outstanding. Personal AI keys must
+stay outside this journal and cloud payloads.
+
+The seven tests use only synthetic data, not the user's backup. No device update,
+production merge, real data access, credential upload or Firebase configuration change.
+
+### Verified checks
+
+Tested source: `9a076bbd3e94824af66528f8cf7cf2ea2ce164f2`.
+- Actions run https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34870187633:
+  success. Actual job 104064413424 logs inspected.
+- `npm test`: 21 passed, 0 failed; `npm run build`: passed.
+- `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`:
+  BUILD SUCCESSFUL in 4m 26s; both tasks completed. This includes WorkSyncJournalTest.
+- Test reports artifact: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34870187633/artifacts/10358494455
+- Preview and installation metadata artifact: https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34870187633/artifacts/10359425298
+- Vercel commit status: success, https://vercel.com/sholi/salary-calculation/E5ZRL86L7EiMRs9tGhu1DYtL8L5e
+- No browser or physical-device tests in this turn. No local Gradle/npm execution:
+  only the GitHub Actions results above are claimed.
+- Kotlin emitted two non-blocking inferred intersection-type warnings in the synthetic
+  migration fixture's mixed-type arrayOf arguments; future cleanup can specify arrayOf<Any>.
+- The duplicate push run 34870181723 was cancelled by concurrency control when the
+  PR run started. Only the completed successful PR run is used as verification.
+
+Preview package/version remain `com.aistudio.worktracker.qztvdw.preview`, code 2,
+name 1.1-preview. Public signing certificate SHA-256:
+`9599ba27e3b207ded718ca85f4bbe9722b19a342577c73b6775120ec825d5e0d`.
+It differs from the previous build; this is not proof of in-place phone update
+compatibility. No APK installation is requested or claimed fixed.
+
+## Android runtime accounts checkpoint — 2026-09-15
+
+This section supersedes earlier statements that runtime account binding and email
+screens are absent. It does NOT enable or certify live authentication/cloud sync.
+
+- MainActivity selects a ViewModel by immutable account owner; each owner uses its
+  own Room database, preferences and backup directory. Guest filenames/storage
+  remain unchanged. Remembered form/selection state is recreated on owner changes;
+  sign-in/sign-out explains that unsaved forms close. Undo and asynchronous writes
+  retain their original repository. Auto-backup now reads a transactional DAO
+  snapshot instead of possibly stale/unsubscribed StateFlow values.
+- Personal-key reads/dialog writes/removal capture the originating UID. Credentials
+  remain encrypted locally, excluded from backups, journals and remote payloads.
+  Delayed timer/settings/sign-out operations are guarded against another session.
+- Timers persist owner, full-precision rate and currency. Notifications write to the
+  captured owner's database. Room v6-to-v7 adds completion receipts: repeated UI/
+  notification completion and retry after process death cannot duplicate a saved
+  timer or resurrect a discarded/deleted one. Saving failure retains the timer.
+  Normal account switches are blocked while any timer is active.
+- Explicit reviewed guest copying preserves the source and uses a fixed snapshot.
+  Rows plus completion receipt commit together. The operation is once PER TARGET
+  ACCOUNT, not a global ownership claim; repeating it cannot resurrect deleted
+  rows. Genuine duplicate shifts are retained. Nothing is adopted on sign-in.
+- Email/password sign-in and explicit registration UI/methods are implemented.
+  Passwords are neither logged nor saved in preferences/saved instance state.
+  ACCOUNTS_ENABLED and CLOUD_SYNC_ENABLED both remain false.
+- Conditional official Google Services plugin supports supplied configuration.
+  Exact debug/release and preview registrations must match their package IDs.
+  Firebase configuration/rules status and setup are in firebase-android-setup.md.
+- Six new account/timer/adoption regression tests supplement the existing journal
+  and synthetic 22-row/8-category migration tests. They exercise factory isolation,
+  colliding local IDs, delayed undo/import, settings, timer restart/precision/stale
+  clear, completion deduplication and transaction rollback.
+- Fixed CI setup requesting the now-unavailable legacy SDK 'tools' package by
+  explicitly installing platform-tools. Also fixed an existing website navigation
+  exception referencing the removed .live-control element; added a regression test.
+
+### Open gates
+
+The uploaded google-services.json still cannot be read: scratch copy is absent;
+two attachment downloads returned HTTP 502. It was not installed or committed.
+A new accessible copy is required. The user reported publishing owner-only
+Firestore rules and screenshots show both Google and Email/Password enabled;
+this is not independent live verification. No Firebase admin change or real user
+record access was performed.
+
+The network sender, remote-apply path, stable cross-device protocol/category-worker
+references, conflict review/resolution and reconnect scheduling remain unfinished.
+Do not enable the legacy Firestore Int-ID writer. Cross-device Android/web tests,
+permission-denial tests, real sign-in/registration and physical-device
+timer/credential/UI behavior remain unverified. This is tested local account
+infrastructure, not completed production synchronization. Preview signing is still
+runner-generated; no in-place phone update compatibility is claimed.
+
+### Verified checks for this checkpoint
+
+Tested source: `8d6aab0b204b5fedeaf057345eb25da2cbe5116c`.
+- Actions https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34924753456:
+  success; actual completed job 104240331127 logs inspected.
+- Required Android command: BUILD SUCCESSFUL in 5m 3s; testDebugUnitTest and
+  assemblePreview both completed.
+- npm test and npm run build passed in CI. Local web checks passed 22 tests,
+  including the new navigation regression. Local Android remains blocked by a
+  corrupt pre-existing Gradle distribution; no local Android pass is claimed.
+- Preview/installation report:
+  https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34924753456/artifacts/10379273071
+- Test reports:
+  https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34924753456/artifacts/10379382652
+- Vercel status: success for tested source:
+  https://vercel.com/sholi/salary-calculation/5eMP4mHjkGHQRusdPimHW6QESfv8
+- Live browser: https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/
+  Synthetic 1.5-hour shift at 40.25 ILS retained 60.38 ILS after reload. Navigation
+  home -> history -> home succeeded with no application-origin console error.
+  Extension metadata errors are excluded. No user records were used.
+- Public preview certificate SHA-256:
+  `34892c5dc546f15161064eb3e7477fd7f85d98678443395870c29be6767bedfc`.
+  Package/version remain preview suffix, code 2, 1.1-preview. This does not prove
+  in-place update compatibility; do not ask the user to uninstall.
+- Prior source f75ee559fc18dfdf19154758a874c872b35273a5 also passed run34901286692.
+  Final continuation preserved that work and published the remaining three
+  account-binding files. Automatic review initially rejected Git CLI publication;
+  repository/PR destination and code-only diff were then independently checked,
+  and authenticated publication succeeded. No production merge.
+
+## 2026-09-15 — Version 1.2 APK checkpoint
+
+Tested source: `a3719077173d6a4fc3408b2cfee570e5cec49895`.
+Preserved all preceding account/timer/journal work. Added original-package debug
+APK output, optional configured email accounts, reset-password UI, separate Google
+gate and a packaged configuration test. Version code 3 / name 1.2.
+
+- Actions run 34932609677 succeeded; actual job 104264815529 logs inspected.
+  Required Android tests/assemblePreview passed (4m 6s), assembleDebug passed (14s).
+  npm tests: 22 passed, 0 failed; npm build passed locally and in CI.
+- Original-package APK and public installation report:
+  https://github.com/sholi2157-dev/Salary-calculation/actions/runs/34932609677/artifacts/10382261874
+- Preview artifact 10382890085; test reports 10382611277.
+- Vercel success: https://vercel.com/sholi/salary-calculation/GjkBxem6xT9NuhALNx6wJiqTYvpP
+  Live preview browser verified synthetic 1.5h * 40.25 ILS = 60.38 ILS,
+  retained after reload and home/history navigation. No real records accessed.
+- Public certificate SHA-256:
+  `e1918793b1edcd3431263ff494c5bb9ee67b67ffe949ca2cfdc9c726af16d1d9`.
+  Installation over the user's existing signed app is NOT verified. Never uninstall
+  or clear data to fix a signature mismatch.
+
+The replacement Firebase client JSON was successfully read and the genuine base
+package client retained locally in ignored app/src/debug/google-services.json.
+Automatic approval review rejected publishing the attachment-derived client config
+(API key and project identifiers) to the public repository without explicit public
+publication approval. Only code was published; CI APK is OFFLINE, with accounts,
+Google and cloud gates false. Configured-build/provider tests remain blocked.
+The journal still needs a network sender/consumer, conflict resolution and full
+Android/web offline/reconnect E2E verification. This is not completed cloud sync.
+Artifact retrieval succeeded through GitHub; placing bytes in scratch failed with
+HTTP 403 and materialization HTTP 502. Use the verified Actions artifact link.
+
+
+## 2026-09-20 — Verified version 1.3 delivery checkpoint
+
+Tested source: `205a84e958ae55d429260299a63e737244b15ead`.
+Continuation inspected the existing work without rewriting it. User explicitly
+approved publishing the Firebase client configuration after the earlier block.
+The approved original-package client is tracked in app/src/debug/google-services.json.
+No admin credentials, private signing material or personal Gemini key were published.
+
+- Version 1.3 / code 4 debug enables email accounts and VERSIONED_SYNC_ENABLED.
+  Preview and release remain offline; Google sign-in and the legacy Int-ID writer
+  remain disabled. The new protocol uses users/{uid}/records_v1/{syncId}.
+- Android and web now persist stable record IDs, revisions and tombstones, retry
+  offline changes, handle lost acknowledgements idempotently and offer explicit
+  conflict resolution. Entries, categories and workers sync; personal API keys
+  and preferences do not. Guest data stays separate until explicit reviewed copy.
+- Actions run 35032047175 succeeded; completed job 104592543684 logs inspected.
+  Required Android tests/assemblePreview: BUILD SUCCESSFUL, 5m 4s.
+  assembleDebug: BUILD SUCCESSFUL, 21s. Android XML: 51 tests, zero failures,
+  errors or skipped. Web: 26 tests passed; npm build passed.
+- Firebase Auth/Firestore emulator integration passed (one multi-scenario test):
+  separate accounts/unauthenticated denials, edits, deletion, offline retry, lost
+  acknowledgement and conflict resolution, using synthetic data only.
+- Vercel status success:
+  https://vercel.com/sholi/salary-calculation/5smdzbsG3b6iHGWZGAJSwPah7kFZ
+  Previous continuation browser verification on this source retained synthetic
+  1.5h * 40.25 ILS = 60.38 after reload/history navigation.
+- Connected original-package APK plus public installation report:
+  https://github.com/sholi2157-dev/Salary-calculation/actions/runs/35032047175/artifacts/10421963263
+  Offline preview artifact: 10421619513; test reports: 10421649386.
+- Debug APK SHA-256:
+  c026b99907cd316d64020e39983184ea2ef18e16b28c76f18acd30da4bccaf09
+  Public certificate SHA-256:
+  93fb3df501c74333981296b15bd9bb2ceea4e7abb7717c0f464ba245fecf1a6c
+
+Delivery limitations: live provider login and physical Android installation have
+not been verified. The debug certificate differs from the earlier CI build;
+in-place update compatibility is not claimed. User explicitly authorized fresh
+installation and reports externally backed-up shifts; still retain the external
+backup before any uninstall. No phone data was erased or installed remotely.
+Google sign-in still requires matching Android OAuth certificate configuration.
+Emulator coverage does not constitute native-device/live Firebase end-to-end proof.
+Live Firestore rules publication remains user-reported.
+
+Direct artifact materialization was attempted again: download returned HTTP 403
+and supported materialization HTTP 502. No local APK was fabricated; provide the
+verified GitHub artifact download, extract app-debug.apk from its ZIP.
+
+
+## 2026-09-20 — Connected TRIAL 1.4 verified
+
+User clarified that two apps must coexist: keep the original AI Studio app and
+deliver updates only for the separate trial package. The prior original-package
+1.3 artifact was the wrong delivery target. AGENTS.md now records this distinction.
+
+The supplied google-services (1).json includes a genuine registration for
+com.aistudio.worktracker.qztvdw.preview. Its filtered client is committed under
+app/src/preview/google-services.json; no package or app IDs were fabricated.
+Preview now enables email accounts and versioned sync. Existing data/sync logic
+was preserved; version is 1.4-preview, code 5, Hebrew label includes ניסיון.
+
+Verified source: a91bf9c46c1f5344e5feb812b01db9138a7d8e50.
+Actions run 35489336972 succeeded; actual completed job 106021429645 logs inspected.
+Required Android tests/assemblePreview succeeded (5m 58s); 51 tests, zero failures,
+errors or skipped. Web tests: 26 passed; web build and Firebase emulator integration
+passed. Additional APK inspection verified exact preview package, Hebrew trial
+label, genuine preview Firebase app ID/project and enabled account/sync flags.
+The earlier run 35488935221 built the APK but failed on a nonexistent
+testPreviewUnitTest task; that check was replaced by direct packaged inspection.
+
+DELIVER THIS ARTIFACT ONLY:
+https://github.com/sholi2157-dev/Salary-calculation/actions/runs/35489336972/artifacts/10598741192
+Name: salary-trial-1.4. ZIP contains app-preview.apk and installation-report.txt.
+APK SHA-256: e8ae77cb1d759d7444201c14813c2b97e783baaa2982bc0c2491785a6828f52b
+Public certificate SHA-256: 3a5e3cc36ed38f96498bca949c8d1b77ef14f70b56df4a21207cc35f18e39180
+
+Vercel success for final source:
+https://vercel.com/sholi/salary-calculation/BDDqtmZpZovW5ujLTyQdFfNqt7HU
+Browser verified unchanged web code during this continuation: synthetic 1.5h at
+40.25 ILS retained 60.38 after reload and history navigation; no real records used.
+
+Physical phone installation and real-account sync remain unverified. The new APK
+targets the trial package, but runner signing is still different from prior builds;
+do not promise in-place updates. User permits fresh installation after retaining
+an external backup: remove ONLY an old trial app if needed, never the original.
+Google sign-in remains disabled; use email/password. No original app was removed.
+
+## 2026-09-22 — Website parity, currencies and mobile QA verified
+
+This section supersedes older website UI/sync status summaries. Accounts and the
+new versioned sync are implemented and enabled; the legacy numeric-ID mechanism
+must not be restored. Live physical Android↔website sync is still not verified.
+
+Website-only source: 1b1fea017d62136a5575fc17362fe091a6105c41, following
+d3934cc30ee118bfc6b8642cce023b84002c2a66 on codex/preserve-app-sync / draft PR #1.
+No Android source, production project, real user records, database or secrets
+were changed. Existing Vercel/Firebase projects and production were preserved.
+
+Changes: Heebo, SVG actions, cleaner purple cards/toasts, mobile spacing,
+collapsed settings/account accordions, category-only shift selection and staged
+settings. Categories support default/rate/currency, safe rename and confirmed
+reassignment on deletion, preserving all historical financial/group fields.
+Shift currencies remain separate throughout summaries, history, sharing, copy
+and transfer. Group forms show employees and combined hours. Web Share has
+clipboard/text fallbacks. Search clear/close and touch selection are distinct;
+bulk deletion uses an explicit UI confirmation. Existing import preview,
+validation, duplicate prevention, JSON/CSV/TSV and account/sync UI remain.
+
+Additional fixes: category rename retains its stable syncId; mobile overflow and
+clipped toast corrected; group default rates initialized from category; local
+calendar date avoids UTC rollover; account changes discard unsaved form values;
+legacy main-currency preference preserved; invalid import metadata rejected.
+
+Verification on the source above:
+- Local npm test: 31/31; npm run build and git diff --check passed.
+- Actions https://github.com/sholi2157-dev/Salary-calculation/actions/runs/35671230815
+  succeeded. Completed job 106567916562 logs inspected: web 31/31, build passed,
+  Firebase Auth/Firestore emulator multi-scenario integration passed. Added
+  category rename identity and USD history checks, with local preferences absent
+  from shared payloads. All data synthetic.
+- Exact AGENTS Android command succeeded in 4m 39s; XML reports: 51 tests,
+  zero failures/errors/skipped. Existing workflow's additional debug build passed
+  in 18s. This is CI verification, not Android development or phone installation.
+- Vercel success for the exact source:
+  https://vercel.com/sholi/salary-calculation/k8bhcwaGvZJaTLJtD5AVdiAda4pj
+- Live browser Preview:
+  https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/
+  Created synthetic ILS 1.5h × 40.25 = 60.38 and USD 2h × 25.5 = 51.00,
+  reloaded, verified separate totals, category/default persistence, currency and
+  category filtering, sort control and copied USD category summary. Computed
+  Heebo and overflow fix confirmed in the deployed UI.
+- Disposable Chromium mobile UI suite browser-tests/mobile.cjs passed at 390px
+  and 360px: both currencies/reload, group/share, edit/save/backdrop cancellation,
+  category rename/delete/default protection, real long touch, bulk pay and
+  delete accept/cancel, overnight clock range, backup download, invalid import,
+  duplicate preview, TSV and search focus/clear/close. No page errors.
+
+Shared wire schema and syncId meaning are unchanged. Account-scoped website
+preferences are local and an optional JSON-backup extension only: mainCurrency,
+defaultCategory and categoryCurrencies. Category defaults/currencies do not yet
+sync to another device; current Android metadata encoding would drop them.
+Do not claim this limitation is resolved by the emulator tests.
+
+Remaining physical checks: real phone keyboard (only reduced-viewport simulation
+performed), native Share Sheet and full live account/Android sync including
+offline/reconnect/conflicts. No production-readiness claim. Read
+docs/website-android-handoff.md for exact Android currency/report findings and
+the coordinated additive schema work needed before syncing category preferences.
+
+## 2026-09-22 — verified website visual follow-up
+
+Tested source: b270256895afe78b65561e6f09afa5713118ed18.
+Exact non-production deployment: https://salary-calculation-9h69o7gbj-sholi.vercel.app/
+GitHub deployment metadata confirmed this source SHA and production=false;
+Vercel status succeeded (DazxzzsTf7FfpUqq4Fip182mDh8g).
+
+Compared supplied Android video frames and Theme.kt with actual website views.
+Replaced competing oversized background rules with one moving purple/navy
+18-second gradient using the native palette, retaining reduced-motion support.
+Corrected legacy CSS overriding accordion alignment, card heading direction,
+translucent inputs, phone filter spacing and card proportions. Moved category
+below rate in the form. Versioned the CSS URL to invalidate stale styles.
+Generated public/index.html matches source; no service-worker cache found.
+
+Build now emits a commit/CSS-digest manifest and, on Vercel Preview only, a
+preview-check.html page with visible source SHA and a real 390x844 app iframe.
+Local production-mode build excludes this inspection page. No production deploy.
+Live browser inspected this exact Preview's home, history and settings inside
+the phone-width iframe: width and scrollWidth both 390; one current background
+rule and native2 CSS URL confirmed. Time-separated screenshots/computed gradient
+positions confirmed movement. Synthetic USD 2h x 45.75 = 91.50 saved and survived
+reload. Group form inspected without saving. Local 360px/390px screenshots and
+reduced-motion behavior checked; mobile UI regression suite passed.
+
+Verification completed before this documentation update:
+- Local npm test: 31/31; npm run build and diff checks passed.
+- Actions run 35695270651, completed job 106640990220: success. Actual logs
+  inspected: web 31/31; build passed; Firebase emulator integration 1/1.
+- Required Work* unit-test/assemblePreview command: BUILD SUCCESSFUL in 5m10s;
+  Android reports 51 tests, zero failures/errors/skipped. Existing workflow's
+  additional debug build passed in 23s. No Android development or installation.
+
+This follow-up changes website presentation/build diagnostics only. No shared
+sync contract, account/offline/conflict code, Android source or user data changes.
+PR #1 remains Draft/open. Physical phone keyboard/native Share Sheet and full
+live phone-to-web sync remain unverified; no pixel-perfect/production claim.
