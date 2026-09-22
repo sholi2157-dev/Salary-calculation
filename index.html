@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <link rel="stylesheet" href="web/app.css">
+    <link rel="stylesheet" href="web/app.css?v=20260922-native2">
 </head>
 <body>
 
@@ -37,7 +37,7 @@
     <section id="page-history" class="app-page" hidden aria-label="היסטוריה">
       <div class="journal-toolbar"><h2 id="journal-title">יומן עבודה</h2><div class="journal-actions"><button class="micro-button" aria-label="בחירת משמרות" onclick="enterSelection()" data-icon="check"></button><button class="micro-button" aria-label="שתף דוח" onclick="document.getElementById('report-dialog').showModal()" data-icon="copy"></button><button class="micro-button" aria-label="מיון" onclick="document.getElementById('sort-dialog').showModal()" data-icon="sort"></button><button id="currency-filter" class="micro-button" onclick="cycleCurrency()" aria-label="סינון מטבע">הכל</button></div></div>
       <div id="history-search" hidden><button class="text-button" onclick="closeHistorySearch()">סיום חיפוש</button><div class="search-input-wrap"><label class="sr-only" for="search-box">חיפוש משמרות</label><input id="search-box" type="search" class="form-input" placeholder="חיפוש משמרת (קטגוריה, הערה)..." oninput="renderShifts()"><button class="icon-btn" aria-label="ניקוי החיפוש" onclick="clearHistorySearch()" data-icon="close"></button></div></div>
-      <div class="history-filters"><div class="date-modes"><button class="selected" data-period="all" onclick="setPeriod('all')">הכל תאריכים</button><button data-period="month" onclick="setPeriod('month')">סינון חודשי</button><button data-period="range" onclick="setPeriod('range')">טווח מותאם</button></div><label class="sr-only" for="category-filter">קטגוריה</label><select id="category-filter" onchange="setCategoryFilter(this.value)"><option value="הכל">כל הקטגוריות</option></select></div>
+      <div class="history-filters"><div class="date-modes"><button class="selected" data-period="all" onclick="setPeriod('all')">כל התאריכים</button><button data-period="month" onclick="setPeriod('month')" aria-label="סינון חודשי">חודשי</button><button data-period="range" onclick="setPeriod('range')" aria-label="טווח מותאם">טווח</button></div><label class="sr-only" for="category-filter">קטגוריה</label><select id="category-filter" onchange="setCategoryFilter(this.value)"><option value="הכל">כל הקטגוריות</option></select></div>
       <div id="period-inputs" class="form-columns" hidden><label id="month-label" hidden>חודש<input type="month" id="month-filter" class="form-input" onchange="renderShifts()"></label><label id="from-label" hidden>מתאריך<input type="date" id="date-from" class="form-input" onchange="renderShifts()"></label><label id="to-label" hidden>עד תאריך<input type="date" id="date-to" class="form-input" onchange="renderShifts()"></label></div>
       <div class="payment-segments" aria-label="סינון תשלום"><button class="selected" data-payment="all" onclick="setPayment('all')">הכל</button><button data-payment="unpaid" onclick="setPayment('unpaid')">ממתין</button><button data-payment="paid" onclick="setPayment('paid')">שולם</button></div>
       <select id="payment-filter" hidden><option value="all">הכל</option><option value="paid">שולם</option><option value="unpaid">ממתין</option></select><div id="category-chips" hidden></div>
@@ -71,10 +71,6 @@
     <div class="modal-card" id="report-fields">
         <h2 class="edit-only">עריכת משמרת</h2>
         <div class="form-group">
-            <label for="modal-category">מעסיק / קטגוריה</label>
-            <select id="modal-category" onchange="applyCategoryRate()" class="form-input" aria-label="מעסיק / קטגוריה"></select>
-        </div>
-        <div class="form-group">
             <label for="modal-date">תאריך</label>
             <input type="date" id="modal-date" class="form-input">
         </div>
@@ -88,6 +84,10 @@
         <div class="form-group rate-field">
             <div class="rate-heading"><label for="modal-rate">תעריף לשעה</label><label class="currency-picker"><span class="sr-only">מטבע</span><select id="modal-currency" aria-label="מטבע"><option>₪</option><option>$</option></select></label></div>
             <input type="number" step="0.5" id="modal-rate" class="form-input" placeholder="למשל: 40" value="40">
+        </div>
+        <div class="form-group">
+            <label for="modal-category">מעסיק / קטגוריה</label>
+            <select id="modal-category" onchange="applyCategoryRate()" class="form-input" aria-label="מעסיק / קטגוריה"></select>
         </div>
         <div class="form-group">
             <label for="modal-notes">הערות</label>
