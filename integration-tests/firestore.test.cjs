@@ -35,5 +35,12 @@ test('Firebase emulator: owner rules, two devices, offline retry, edits, conflic
  await sa.sync(ta);await sb.sync(tb);assert.equal(sb.data().entries[0].isPaid,true);
  assert.equal((await ta.readAll(owner)).length,1);
  sb.edit({entries:[],categories:[],workers:[]});await sb.sync(tb);await sa.sync(ta);assert.equal(sa.data().entries.length,0);
+ // Category rename keeps the shared ID and dollar history; preferences never enter the wire.
+ sa.edit({entries:[{...entry,currency:'$',category:'Dollar',totalEarnings:63.17}],categories:[{name:'Dollar',defaultRate:40.25}],workers:[],webPreferences:{defaultCategory:'Dollar',categoryCurrencies:{Dollar:'$'}}});
+ await sa.sync(ta);await sb.sync(tb);const categoryId=sa.data().categories[0]._syncId;
+ const renamed=sa.data();renamed.categories[0].name='Renamed';renamed.entries[0].category='Renamed';sa.edit(renamed);
+ await sa.sync(ta);await sb.sync(tb);assert.equal(sb.data().categories[0]._syncId,categoryId);assert.equal(sb.data().entries[0].currency,'$');assert.equal(sb.data().entries[0].totalEarnings,63.17);
+ const wire=(await ta.readAll(owner)).filter(r=>r.type==='category');assert.equal(wire.length,1);assert.equal(wire[0].deleted,false);assert.equal(JSON.parse(wire[0].payload).webPreferences,undefined);
+ assert.equal(sa.data().webPreferences.categoryCurrencies.Dollar,'$');
  }finally{await Promise.all(apps.map(a=>a.delete()));}
 });

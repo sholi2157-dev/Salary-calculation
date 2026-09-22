@@ -2,7 +2,7 @@
 'use strict';
 let account=null,transport=null,ready=false,cloudEnabled=false;
 // Use the reviewed guest state already loaded by the existing app; never adopt implicitly.
-const guest=()=>JSON.parse(localStorage.getItem('work_complete_backup')||JSON.stringify({entries:shifts,categories,workers}));
+const guest=()=>JSON.parse(localStorage.getItem('work_complete_backup')||JSON.stringify({entries:shifts,categories,workers,webPreferences}));
 let guestData=guest();
 const panel=document.createElement('dialog');panel.id='account-dialog';
 panel.innerHTML='<form><h2>חשבון משתמש</h2><p>הנתונים המקומיים נשארים בנפרד. בכניסה לחשבון טפסים שלא נשמרו ייסגרו.</p><label>דוא״ל<input name="email" type="email" autocomplete="username" required class="form-input"></label><label>סיסמה<input name="password" type="password" autocomplete="current-password" required class="form-input"></label><label><input name="register" type="checkbox">יצירת חשבון חדש</label><label id="confirm-password-label" hidden>אישור סיסמה<input name="confirmation" type="password" autocomplete="new-password" class="form-input"></label><p role="status"></p><button class="btn-primary" type="submit">המשך</button><button type="button" data-action="reset" class="btn-secondary">שכחתי סיסמה</button><button type="button" data-action="close" class="btn-secondary">סגור</button></form>';
@@ -28,7 +28,7 @@ const actions=document.createElement('div');actions.hidden=true;
 for(const [label,action] of [['סנכרון עכשיו',()=>sync()],['סקירת שינויים מתנגשים',review],['העתקת הנתונים המקומיים לחשבון',adopt]]){const button=document.createElement('button');button.className='btn-secondary';button.textContent=label;button.onclick=action;actions.append(button);}
 document.querySelector('.account-row').after(actions);
 function status(text){document.getElementById('user-status-text').textContent=text;}
-function display(data){shifts=data.entries;categories=data.categories;workers=data.workers;webPreferences=WorkCategories.preferences(data.webPreferences);ensureCategoryCatalog();renderShifts();}
+function display(data){shifts=data.entries;categories=data.categories;workers=data.workers;webPreferences=WorkCategories.preferences(data.webPreferences||(!currentUserId?{mainCurrency:localStorage.getItem('work_default_currency')}:{}));ensureCategoryCatalog();renderShifts();}
 async function sync(){
  const source=account;if(!cloudEnabled||!source||source.busy||editingShiftId!==null)return;
  try{status('מסנכרן…');const conflicts=await source.sync(transport);if(account!==source)return;display(source.data());status(conflicts?conflicts+' שינויים דורשים בחירה':'הסנכרון הושלם');}
@@ -63,6 +63,9 @@ window.WorkAccounts={open,sync,store:()=>account};
   form.reset();document.getElementById('confirm-password-label').hidden=true;
   document.getElementById('modal-notes').value='';document.getElementById('transfer-text').value='';
   document.getElementById('group-rows').replaceChildren();selectedCategory='הכל';
+  document.getElementById('modal-hours').value=8;document.getElementById('modal-break').value=0;document.getElementById('modal-start').value='08:00';document.getElementById('modal-end').value='16:00';
+  const today=new Date();document.getElementById('modal-date').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');setReportMode('clock');updateGroupHours();
+  document.getElementById('search-box').value='';document.getElementById('history-search').hidden=true;
   display(account?account.data():guestData);actions.hidden=!account;
   document.getElementById('modal-category').value=WorkCategories.defaultName(categories,webPreferences);applyCategoryRate();
   document.getElementById('auth-btn').textContent=account?'התנתקות':'התחברות';

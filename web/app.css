@@ -63,3 +63,7 @@ dialog{padding:22px;max-height:calc(100dvh - 32px);overscroll-behavior:contain}d
 @media(max-width:480px){.app-container{padding-inline:14px}.header-bar{height:62px}.header-bar h1{font-size:16px}.header-actions{gap:0}.icon-btn{width:40px;height:40px}.glass-card{padding:16px}.summary-pair strong{font-size:22px}.journal-card>summary{gap:7px}.category-avatar{width:28px;height:30px}.journal-info b{font-size:13px}.journal-info small{font-size:9px}.journal-amount b{font-size:14px}.journal-details .ui-icon{width:19px;height:19px}dialog{width:calc(100% - 24px);padding:18px}.journal-toolbar h2{font-size:15px}.journal-actions{gap:3px}.journal-actions .micro-button{min-width:32px}.date-modes button{padding:8px 5px;font-size:11px}.form-input{font-size:16px}#settings-dialog summary{font-size:13px}.settings-actions button{font-size:12px}}
 
 #settings-dialog>h2,.summary-card h2,.summary-pair strong{font-family:Heebo,sans-serif}#settings-dialog summary{display:flex;flex-direction:row-reverse}#settings-dialog summary:before{flex-shrink:0}.account-row button{background:#373057}.journal-info small{white-space:normal}.summary-pair strong{white-space:pre-line}.journal-total strong{white-space:pre-line;text-align:end}
+
+.toast{transform:none;left:16px;right:16px}#report-fields .modal-btn-row>button{min-height:50px}#history-search .text-button{white-space:nowrap}
+/* Clip tab transitions so they cannot enlarge the mobile layout viewport. */
+#app-pages{overflow-x:clip}

@@ -68,6 +68,7 @@ function decodeTable(input) {
 function normalize(e) {
  check(e&&typeof e.category==='string'&&e.category.trim(),'חסרה קטגוריה');
  for(const k of ['date','hours','hourlyRate','totalEarnings'])check(typeof e[k]==='number'&&Number.isFinite(e[k])&&e[k]>=0,'ערך לא תקין: '+k);
+ check(e.createdAt==null||(typeof e.createdAt==='number'&&Number.isFinite(e.createdAt)&&e.createdAt>=0),'זמן יצירה לא תקין');for(const field of ['isTimeRange','isGroupShift'])check(e[field]==null||typeof e[field]==='boolean','סוג דיווח לא תקין');
  check(typeof e.isPaid==='boolean','סטטוס תשלום לא תקין');check(['₪','$'].includes(e.currency??'₪'),'מטבע לא מזוהה');
  const group=e.groupWorkersJson||'';if(group){const members=JSON.parse(group);check(Array.isArray(members),'רשימת עובדים לא תקינה');for(const w of members)check(w&&typeof w.name==='string'&&w.name.trim()&&typeof w.hours==='number'&&Number.isFinite(w.hours)&&w.hours>=0&&(w.isPaid===undefined||typeof w.isPaid==='boolean'),'פרטי עובד בקבוצה לא תקינים');}
  for(const k of ['employerRate','workerRate'])check(e[k]==null||(typeof e[k]==='number'&&Number.isFinite(e[k])&&e[k]>=0),'תעריף קבוצה לא תקין');
