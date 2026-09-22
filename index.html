@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <link rel="stylesheet" href="web/app.css?v=20260922-native2">
+    <link rel="stylesheet" href="web/app.css?v=20260922-parity3">
 </head>
 <body>
 
@@ -46,7 +46,39 @@
   </main>
   <nav class="bottom-nav" aria-label="ניווט ראשי"><button id="nav-home" aria-current="page" onclick="showPage(0)"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm8-2h8v8h-8zm2 2v4h4v-4z"/></svg></span>ראשי</button><button id="nav-history" onclick="showPage(1)"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13 3a9 9 0 1 1-8.4 12.2l1.9-.7A7 7 0 1 0 7 8.4L10 11H2V3l3.5 3.5A9 9 0 0 1 13 3m-1 4h2v5l4 2.4-1 1.6-5-3z"/></svg></span>היסטוריה</button></nav>
 </div>
-<dialog id="settings-dialog"><h2>הגדרות מערכת</h2><details><summary>ניהול עבודה וקטגוריות</summary><div id="settings-categories"></div><button class="btn-secondary" onclick="openCategoryDialog()">הוספת קטגוריה</button></details><details><summary><span>הגדרת מטבע ראשי <span id="settings-currency-icon" class="indigo">₪</span></span></summary><label for="default-currency">מטבע ראשי לסיכומים (התעריף נלקח מהקטגוריה)</label><select id="default-currency" class="form-input"><option>₪</option><option>$</option></select></details><details><summary>תחזוקה וגיבוי נתונים</summary><div class="settings-actions"><button class="btn-secondary" onclick="exportJson()">גיבוי מלא</button><button class="btn-secondary" onclick="exportCsv()">ייצוא CSV</button><button class="btn-secondary" onclick="document.getElementById('csv-file-input').click()">ייבוא קובץ</button><button class="btn-secondary" onclick="document.getElementById('settings-dialog').close();openTransfer()">הדבקת נתונים</button></div></details><details id="account-section"><summary>חשבון משתמש</summary><div class="account-row"><div><h3>חשבון משתמש</h3><p id="user-status-text">שימוש מקומי — ללא סנכרון</p></div><button id="auth-btn" class="btn-secondary" onclick="handleAuthClick()">התחברות</button></div></details><div class="settings-footer"><button class="btn-danger-outline" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveWebSettings()">שמור</button></div></dialog>
+<dialog id="settings-dialog">
+<h2>הגדרות מערכת</h2>
+<details id="category-settings"><summary>ניהול עבודה וקטגוריות</summary>
+<p class="settings-help">קטגוריות לארגון המשמרות ולשמירת תעריף ברירת מחדל. עריכה ומחיקה נעשות כאן בלבד.</p>
+<div class="category-create-row">
+<label>שם קטגוריה<input id="new-category-name" class="form-input" placeholder="קטגוריה חדשה"></label>
+<label>תעריף לשעה<input id="new-category-rate" type="number" min="0" step="0.01" value="40" class="form-input"></label>
+<label>מטבע<select id="new-category-currency" class="form-input"><option>₪</option><option>$</option></select></label>
+</div>
+<button class="btn-secondary category-add" onclick="addCategoryInline()"><span data-icon="plus"></span>הוספת קטגוריה</button>
+<p id="new-category-error" role="status"></p>
+<h3 class="settings-subheading">קטגוריות קיימות</h3><p class="settings-help">עיפרון לעריכה ולבחירת ברירת מחדל. מחיקה משאירה את המשמרות והסכומים שלהן.</p>
+<div id="settings-categories"></div>
+</details>
+<details><summary><span>הגדרת מטבע ראשי <span id="settings-currency-icon" class="indigo">₪</span></span></summary>
+<p class="settings-help">המטבע הראשי אינו משנה מטבע או סכום של משמרות שכבר נשמרו.</p>
+<div class="currency-setting-row"><div><strong>מטבע ברירת מחדל</strong><small>לסיכומים ללא משמרות</small></div><div class="currency-segments" role="group" aria-label="מטבע ראשי"><button type="button" data-main-currency="₪" onclick="selectMainCurrency('₪')" aria-label="מטבע ראשי שקל">₪</button><button type="button" data-main-currency="$" onclick="selectMainCurrency('$')" aria-label="מטבע ראשי דולר">$</button></div></div>
+<select id="default-currency" hidden><option>₪</option><option>$</option></select>
+</details>
+<details id="maintenance-section"><summary>תחזוקה וגיבוי נתונים</summary>
+<p class="settings-help">ייבוא וייצוא נתונים לצורך גיבוי ושחזור.</p>
+<section class="maintenance-import" aria-labelledby="import-heading"><h3 id="import-heading" class="settings-subheading">ייבוא נתונים (אקסל או JSON)</h3>
+<label for="settings-import-text" class="settings-help">הדבק שורות מאקסל, טבלת CSV/TSV עם כותרות, או טקסט גיבוי JSON:</label>
+<textarea id="settings-import-text" rows="3" class="form-input" placeholder="הדבק נתונים כאן..."></textarea>
+<button class="import-action" onclick="reviewSettingsImport()"><span data-icon="upload"></span>ייבא נתונים כעת</button>
+<button class="text-button file-import" onclick="chooseImportFile()"><span data-icon="document"></span>ייבוא מקובץ JSON / CSV / TSV</button>
+<p class="settings-help">הנתונים יוצגו לבדיקה לפני השמירה. משמרות קיימות לא יימחקו וכפילויות לא יתווספו.</p></section>
+<section class="maintenance-export" aria-labelledby="export-heading"><h3 id="export-heading" class="settings-subheading">גיבוי וייצוא נתונים</h3>
+<div class="backup-actions"><button class="btn-secondary" onclick="copyBackup()"><span data-icon="copy"></span>העתק ללוח</button><button class="btn-primary" onclick="shareText(backupText())"><span data-icon="share"></span>שתף גיבוי</button></div>
+<div class="backup-downloads"><button class="text-button" onclick="exportJson()" aria-label="גיבוי מלא"><span data-icon="download"></span>הורדת גיבוי JSON</button><button class="text-button" onclick="exportCsv()" aria-label="ייצוא CSV"><span data-icon="document"></span>ייצוא CSV לאקסל</button></div>
+</section></details>
+<details id="account-section"><summary>חשבון משתמש</summary><div class="account-row"><div><h3>חשבון משתמש</h3><p id="user-status-text">שימוש מקומי — ללא סנכרון</p></div><button id="auth-btn" class="btn-secondary" onclick="handleAuthClick()">התחברות</button></div></details>
+<div class="settings-footer"><button class="btn-danger-outline" onclick="this.closest('dialog').close()">ביטול</button><button class="btn-primary" onclick="saveWebSettings()">שמור</button></div></dialog>
 <dialog id="sort-dialog"><h2>מיון</h2><button class="menu-option" onclick="setSort('newest')">תאריך: מהחדש לישן</button><button class="menu-option" onclick="setSort('oldest')">תאריך: מהישן לחדש</button><button class="menu-option" onclick="setSort('latest_added')">נוסף לאחרונה</button><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
 <dialog id="report-dialog"><h2>העתקת הדוח המוצג</h2><button class="menu-option" onclick="copyDisplayed('table')">העתקת טבלה לאקסל</button><button class="menu-option" onclick="copyDisplayed('message')">העתקת סיכום להודעה</button><button class="menu-option" onclick="shareDisplayed()">שיתוף סיכום</button><button class="menu-option" onclick="exportDisplayed()">ייצוא המוצג לאקסל (CSV)</button><p>הדוח כולל את המשמרות המוצגות לאחר הסינון, עם סכום נפרד לכל מטבע.</p><button class="text-button" onclick="this.closest('dialog').close()">סגירה</button></dialog>
 <input type="file" id="csv-file-input" accept=".csv,.tsv,.txt,.json" hidden onchange="handleCsvImport(event)">
@@ -55,7 +87,7 @@
 <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text"><h2 id="confirm-title"></h2><p id="confirm-text"></p><form method="dialog" class="modal-btn-row"><button id="confirm-cancel" class="btn-secondary" value="cancel">ביטול</button><button class="btn-danger-outline" value="confirm">מחיקה</button></form></dialog>
 <dialog id="share-dialog"><h2>טקסט לשיתוף</h2><p>אפשר לסמן ולהעתיק את הטקסט.</p><textarea id="share-text" readonly class="form-input" rows="8"></textarea><button class="btn-secondary" onclick="this.closest('dialog').close()">סגירה</button></dialog>
 <p id="app-message" role="status" class="toast" hidden></p>
-<dialog id="transfer-dialog" style="background:#17172b;color:white;border:1px solid #6366f1;border-radius:18px;width:min(90vw,720px)">
+<dialog id="transfer-dialog">
   <h2>בדיקת נתונים לפני ייבוא</h2>
   <label for="transfer-text">הדבק גיבוי או טבלה, כולל כותרות העמודות</label>
   <textarea id="transfer-text" class="form-input" rows="7" style="width:100%;margin:12px 0" oninput="invalidateTransfer()"></textarea>
@@ -63,8 +95,8 @@
   <p id="transfer-summary" role="status" style="white-space:pre-wrap"></p>
   <div id="transfer-rows" style="max-height:35vh;overflow:auto"></div>
   <label><input type="checkbox" id="transfer-preferences"> שחזור העדפות אתר מהגיבוי (קטגוריית ברירת מחדל ומטבעות)</label>
-  <button id="transfer-save" class="btn-primary" disabled onclick="commitTransfer()">שמירת המשמרות</button>
-  <button class="btn-secondary" onclick="document.getElementById('transfer-dialog').close()">ביטול</button>
+  <div class="modal-btn-row"><button id="transfer-save" class="btn-primary" disabled onclick="commitTransfer()">שמירת המשמרות</button>
+  <button class="btn-secondary" onclick="document.getElementById('transfer-dialog').close()">ביטול</button></div>
 </dialog>
 <!-- Modal for Adding Shift -->
 <dialog id="add-modal"><div id="edit-form-slot">
@@ -96,9 +128,9 @@
         <div class="form-group">
           <label><input id="modal-group" type="checkbox" onchange="document.getElementById('group-fields').hidden=!this.checked"> עבודה קבוצתית</label>
           <div id="group-fields" hidden>
-            <label for="group-employer-rate">תעריף המעסיק לכל שעת עובד</label><input id="group-employer-rate" type="number" min="0" step="0.01" class="form-input" value="50">
+            <details class="group-rates"><summary>תעריפים נפרדים למעסיק ולעובדים</summary><label for="group-employer-rate">תעריף המעסיק לכל שעת עובד</label><input id="group-employer-rate" type="number" min="0" step="0.01" class="form-input" value="50">
             <label for="group-worker-rate">תעריף לתשלום לכל שעת עובד</label><input id="group-worker-rate" type="number" min="0" step="0.01" class="form-input" value="40">
-            <div id="group-rows"></div><div class="group-footer"><button class="btn-secondary" onclick="addGroupRow()"><span data-icon="plus"></span> הוספת עובד</button><output id="group-total-hours" aria-live="polite"></output></div>
+            </details><div class="group-footer"><div><strong>עובדים</strong><output id="group-total-hours" aria-live="polite"></output></div><button class="icon-btn" onclick="addGroupRow()" aria-label="הוספת עובד"><span data-icon="plus"></span></button></div><div class="worker-column-labels" aria-hidden="true"><span>שם העובד</span><span>שעות</span></div><div id="group-rows"></div>
           </div>
         </div>
         <div class="modal-btn-row">
@@ -114,7 +146,7 @@
 <script src="web/cloud-sync.js"></script>
 <script src="web/categories.js"></script>
 <script src="web/sharing.js"></script>
-<script src="web/parity.js"></script>
+<script src="web/parity.js?v=20260922-parity3"></script>
 
 <script>
     // State management
@@ -147,7 +179,8 @@
     function download(name, text, type) {
         const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
-    function exportJson(){download('work-backup.json',JSON.stringify({formatVersion:2,entries:shifts.map(WorkTransfer.normalize),categories:categories.map(({name,defaultRate})=>({name,defaultRate})),workers:workers.map(({name})=>({name})),webPreferences},null,2),'application/json');}
+    function backupText(){return JSON.stringify({formatVersion:2,entries:shifts.map(WorkTransfer.normalize),categories:categories.map(({name,defaultRate})=>({name,defaultRate})),workers:workers.map(({name})=>({name})),webPreferences},null,2);}
+    function exportJson(){download('work-backup.json',backupText(),'application/json');}
     function persistAll(next, cats=categories, people=workers, prefs=webPreferences){
         // The complete backup is the authoritative atomic snapshot, including category rates.
         if(currentUserId){
@@ -180,7 +213,7 @@
         const cats=[...categories,...importedCats.filter(c=>!categories.some(x=>x.name===c.name))];
         const people=[...workers,...pendingTransfer.workers.filter(w=>!workers.some(x=>x.name===w.name))];
         const prefs=document.getElementById('transfer-preferences').checked&&pendingTransfer.webPreferences?WorkCategories.preferences(pendingTransfer.webPreferences):webPreferences;
-        persistAll([...shifts,...added],cats,people,prefs);invalidateTransfer();document.getElementById('transfer-dialog').close();renderShifts();
+        persistAll([...shifts,...added],cats,people,prefs);invalidateTransfer();document.getElementById('transfer-dialog').close();if(document.getElementById('settings-dialog').open)document.getElementById('settings-dialog').close();renderShifts();syncToCloud();showMessage('הנתונים יובאו בהצלחה');
     }catch(e){document.getElementById('transfer-summary').textContent='השמירה נכשלה. הנתונים הקיימים נשמרו. '+e.message;}}
     function applyCategoryRate(){const c=categories.find(c=>c.name===document.getElementById('modal-category').value);document.getElementById('modal-rate').value=c?.defaultRate??40;document.getElementById('group-employer-rate').value=c?.defaultRate??40;document.getElementById('group-worker-rate').value=c?.defaultRate??40;document.getElementById('modal-currency').value=WorkCategories.currency(c?.name||'עצמאי',webPreferences);}
     function formatTotals(t){return Object.entries(t).map(([c,n])=>c+' '+n.toFixed(2)).join('\n')||(webPreferences.mainCurrency||localStorage.getItem('work_default_currency')||'₪')+' 0.00';}
@@ -277,7 +310,7 @@
     function editShift(id){const e=shifts.find(s=>s.id===id);if(!e)return;openAddModal();editingShiftId=id;document.getElementById('modal-category').value=e.category;const d=new Date(e.date);document.getElementById('modal-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');document.getElementById('modal-hours').value=e.hours;document.getElementById('modal-rate').value=e.hourlyRate;document.getElementById('modal-currency').value=e.currency;document.getElementById('modal-notes').value=e.notes;document.getElementById('modal-break').value=WorkTransfer.inferredBreak(e);
         document.getElementById('modal-range').checked=e.isTimeRange||false;document.getElementById('range-fields').hidden=!e.isTimeRange;document.getElementById('modal-hours').readOnly=Boolean(e.isTimeRange);if(e.startTime)document.getElementById('modal-start').value=e.startTime;if(e.endTime)document.getElementById('modal-end').value=e.endTime;
         document.getElementById('modal-group').checked=e.isGroupShift||false;document.getElementById('group-fields').hidden=!e.isGroupShift;document.getElementById('group-employer-rate').value=e.employerRate??e.hourlyRate;document.getElementById('group-worker-rate').value=e.workerRate??e.hourlyRate;
-        for(const worker of JSON.parse(e.groupWorkersJson||'[]'))addGroupRow(worker);
+        document.querySelector('.group-rates').open=Boolean(e.isGroupShift);for(const worker of JSON.parse(e.groupWorkersJson||'[]'))addGroupRow(worker);updateGroupHours();
     }
     function addGroupRow(worker={name:'',hours:0,isPaid:false}){
         const row=document.createElement('div');row.workerData=worker;row.className='group-worker-row';
@@ -320,7 +353,7 @@
 
         renderCompanionViews(filtered);renderHistoryControls(filtered);renderSelectionControls();
         if (filtered.length === 0) {
-            list.innerHTML = '<div class="empty-state">אין משמרות להצגה בקטגוריה זו</div>';
+            list.innerHTML = '<div class="empty-state">'+uiIcon('document')+'<strong>אין משמרות להצגה</strong><span>נסה לשנות את הסינון או להוסיף דיווח חדש</span></div>';
             return;
         }
 

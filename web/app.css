@@ -82,3 +82,46 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .payment-segments{gap:6px;margin-bottom:14px}.payment-segments button{padding:6px;font-size:12px}
 @media(max-width:480px){.app-container{padding-inline:12px}.summary-card{min-height:172px;padding:16px}.glass-card{padding:14px;border-radius:16px}.journal-toolbar{margin-bottom:14px}.date-modes button{font-size:10px;padding-inline:5px}.history-filters{margin-bottom:10px}.journal-info b{font-size:14px}.journal-info small{font-size:10px}.journal-amount b{font-size:15px}.journal-total{margin-bottom:14px}.bottom-nav{background:#090b10b3}.form-group{margin-bottom:12px}.mode-switch{margin-bottom:14px}}
 @media(prefers-reduced-motion:reduce){body::before{animation:none;background-position:50% 50%}}
+
+/* Video parity: structured import/export, compact category controls and worker rows. */
+#settings-dialog{padding:18px 14px;border-radius:20px;max-height:calc(100dvh - 24px)}
+#settings-dialog>h2{font-size:20px;margin-bottom:18px}
+#settings-dialog details{padding:12px;margin:10px 0;border-radius:10px;background:#14171c80}
+#settings-dialog details[open]{border-color:#818cf873}
+#settings-dialog details[open]>summary{color:#a5a3ef;margin-bottom:14px}
+#settings-dialog .settings-help{font-size:11px;font-weight:400;line-height:1.65;color:#9999a3;margin:8px 0 12px}
+#settings-dialog .settings-subheading{font-size:13px;font-weight:650;margin:14px 0 8px}
+#settings-dialog .settings-footer{position:sticky;bottom:-18px;padding:14px 0 2px;margin-top:12px;background:#111111f5;z-index:2}
+#settings-dialog .settings-footer button{min-height:44px;border-radius:9px}
+.category-create-row{display:grid;grid-template-columns:minmax(0,1fr) 75px 55px;gap:7px;margin-top:12px}
+.category-create-row label{min-width:0;font-size:10px;margin:0}
+.category-create-row .form-input{min-height:42px;padding:8px 6px;border-radius:6px}
+.category-add{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;border:0;border-radius:22px;background:#5c6bc0;margin:10px 0 16px;min-height:40px;padding:8px}
+.category-add .ui-icon{width:18px;height:18px}
+#new-category-error{color:#f39ba5;font-size:12px}
+#settings-categories{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+#settings-categories .category-setting{display:flex;flex:1 1 130px;border:1px solid #3f3f46;background:#1c1c1e;border-radius:7px;padding:5px 7px;gap:2px;max-width:100%}
+.category-setting strong{font-size:12px}.category-setting small{font-size:10px;margin-top:2px;line-height:1.35}
+#settings-categories .icon-btn{width:30px;height:36px;border-radius:6px}.category-setting .ui-icon{width:16px;height:16px}
+.currency-setting-row{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:16px 0 4px}.currency-setting-row strong{font-size:13px}.currency-setting-row small{display:block;font-size:10px;margin-top:4px}
+.currency-segments{display:flex;gap:6px}.currency-segments button{width:44px;height:36px;border:1px solid #ffffff22;border-radius:8px;background:#272b35;color:#9ca3af}.currency-segments button[aria-pressed=true]{background:#7462ec;color:white;border-color:#a294ff}
+#settings-import-text{height:88px;resize:vertical;font-size:12px;border-radius:6px;background:#1c1c1e;padding:10px;direction:rtl}
+.import-action{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;border:0;background:#e5344e;border-radius:9px;min-height:40px;margin-top:8px;font-size:13px;font-weight:600;color:#fff}
+.import-action .ui-icon,.backup-actions .ui-icon,.backup-downloads .ui-icon,.file-import .ui-icon{width:18px;height:18px;flex-shrink:0}
+.file-import{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:36px;margin-top:5px;font-size:11px}
+.maintenance-export{border-top:1px solid #ffffff20;margin-top:16px;padding-top:2px}.backup-actions{display:flex;gap:8px}.backup-actions button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:22px;padding:8px;min-height:40px;font-size:12px;white-space:nowrap}.backup-actions .btn-secondary{background:#3f3f46}.backup-actions .btn-primary{background:#5c6bc0}
+.backup-downloads{display:flex;flex-wrap:wrap;justify-content:space-between;gap:5px;margin-top:10px}.backup-downloads button{display:flex;align-items:center;gap:5px;font-size:10px;min-height:36px}
+#transfer-dialog{background:#15151b;color:#eee;border:1px solid #6366f1;border-radius:18px;width:min(94vw,720px)}
+#transfer-dialog .modal-btn-row{flex-direction:row-reverse;position:sticky;bottom:-18px;background:#15151b;padding-top:10px}
+.group-footer{border-bottom:1px solid #ffffff1c;margin-top:14px;padding-bottom:5px}.group-footer>div{display:flex;align-items:center;gap:8px}.group-footer strong{font-size:13px}.group-footer output{font-size:11px}.group-footer .icon-btn{background:#262536;color:#a5a3ef;width:34px;height:34px;border-radius:9px}
+.group-rates{margin:8px 0;border:1px solid #ffffff20;border-radius:9px;padding:10px;font-size:12px}.group-rates summary{cursor:pointer;color:#a4a1c7}.group-rates label{margin-top:10px}
+#report-slot label:has(>#modal-group){display:none}
+.worker-column-labels{display:grid;grid-template-columns:minmax(0,1fr) 72px 30px;gap:8px;font-size:10px;color:#9999a3;margin-top:10px}
+.group-worker-row{grid-template-columns:minmax(0,1fr) 72px 30px;gap:6px;padding:6px 0 10px}.group-worker-row .form-input{min-height:40px!important;padding:8px}.group-worker-row label{font-size:10px}.group-worker-row>button{width:30px;grid-row:1}.group-worker-row .ui-icon{width:18px;height:18px}
+.journal-details{margin:0 10px;padding:10px 0}.journal-details .shift-work-facts{font-size:11px;color:#a0a0ad;margin:0 0 8px}.journal-details .shift-note{background:#1c1c1e;border:1px solid #ffffff18;border-radius:7px;padding:7px 9px;font-size:11px;line-height:1.5}
+.group-card-totals{display:flex;flex-direction:column;gap:5px;margin:14px 0 10px;font-size:13px}.group-card-totals small{font-size:11px;color:#ccc}
+.group-card-workers{display:grid;gap:7px}.group-card-worker{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#1c1c1e;border:1px solid #ffffff22;border-radius:8px;padding:9px}.group-card-worker strong{display:block;font-size:12px}.group-card-worker small{display:block;font-size:10px;margin-top:4px}.group-card-worker.is-paid{border-color:#34d39944}.worker-payment{display:flex;align-items:center;gap:4px;margin:0;font-size:10px}
+.journal-card-actions{gap:5px;margin-top:12px}.journal-card-actions .btn-mini{border-radius:7px;min-height:36px;min-width:36px;padding:7px}.journal-card-actions .payment-action{font-size:11px}.journal-card-actions .is-unpaid{background:#78350f44;border-color:#f59e0b55;color:#fbbf24!important}.journal-card-actions .is-paid{background:#064e3b55;border-color:#34d39944}.journal-card-actions [aria-label="מחיקה"]{background:#471c2966}.journal-card-actions [aria-label="עריכה"]{background:#272e4a}.journal-card-actions [aria-label*="שיתוף"],.journal-card-actions [aria-label="דוח הקבוצה"]{background:#065f4644}
+.empty-state{display:flex;align-items:center;flex-direction:column;gap:10px;padding:60px 12px;color:#93909f;font-size:12px}.empty-state>.ui-icon{width:42px;height:42px;opacity:.5}.empty-state strong{color:#ddd;font-size:14px}.empty-state span{font-size:11px}
+.selection-toolbar{border:1px solid #818cf850;background:#1c1e2dcc;border-radius:10px;padding:8px;gap:8px}.selection-toolbar strong{flex-basis:55%;font-size:13px}.selection-toolbar button{padding:4px 7px;font-size:11px;min-height:32px}.selection-actions{border-radius:12px;padding:8px}.selection-actions button{border-radius:8px}
+@media(max-width:480px){.summary-card{min-height:156px}.summary-card h2{font-size:13px;margin-bottom:15px}.summary-pair span,.summary-pair small{font-size:11px}.summary-pair strong{font-size:21px}.card-heading{font-size:16px}.mode-switch{height:38px}.form-group{margin-bottom:10px}#report-fields .form-input{min-height:42px;padding:8px 10px}#report-fields .modal-btn-row>button{min-height:44px}.journal-card>summary{min-height:62px;padding:10px 9px}.journal-info{gap:6px}.journal-info small{font-size:9px}.journal-amount{gap:6px}.journal-amount b{font-size:14px}.journal-card{margin-bottom:8px}.recent-section h2{font-size:13px}#history-search{gap:6px}.search-input-wrap .form-input{min-height:42px}.search-input-wrap button{top:0}#history-search .text-button{font-size:11px}}

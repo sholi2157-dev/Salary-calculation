@@ -1,5 +1,7 @@
 let historyPeriod='all',historyCurrency='הכל',historySort='newest',displayedEntries=[];
 const iconPaths={
+ upload:'M11 16h2V7l3 3 1.4-1.4L12 3 6.6 8.6 8 10l3-3zM4 17v4h16v-4h-2v2H6v-2z',
+ download:'M11 3h2v9l3-3 1.4 1.4L12 16l-5.4-5.6L8 9l3 3zM4 17v4h16v-4h-2v2H6v-2z',
  close:'m6 4 6 6 6-6 2 2-6 6 6 6-2 2-6-6-6 6-2-2 6-6-6-6z',
  plus:'M11 3h2v8h8v2h-8v8h-2v-8H3v-2h8z',
  share:'M18 2a3 3 0 1 1-2.7 4.3L8.7 10a3 3 0 0 1 0 4l6.6 3.7a3 3 0 1 1-1 1.7L7.7 15a3 3 0 1 1 0-6l6.6-4.4A3 3 0 0 1 18 2z',
@@ -18,9 +20,12 @@ const iconPaths={
 };
 function uiIcon(name){return '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="'+iconPaths[name]+'"/></svg>';}
 function initParity(){document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=uiIcon(el.dataset.icon));document.querySelectorAll('#settings-dialog details').forEach(el=>el.addEventListener('toggle',()=>{if(el.open)document.querySelectorAll('#settings-dialog details').forEach(other=>{if(other!==el)other.open=false;});}));
+ // A long touch can move the toolbar under the finger. Block its release click
+ // even when the original summary node has been replaced by selection rendering.
+ document.addEventListener('click',event=>{if(Date.now()<ignoreSelectionClickUntil&&event.pointerType!=='mouse'&&event.detail!==0){event.preventDefault();event.stopImmediatePropagation();}},true);
  for(const dialog of document.querySelectorAll('dialog'))installDismiss(dialog);
  document.getElementById('modal-hours').addEventListener('input',updateGroupHours);
- document.getElementById('settings-dialog').addEventListener('close',()=>{settingsDraft=null;});
+ document.getElementById('settings-dialog').addEventListener('close',()=>{settingsDraft=null;document.getElementById('settings-import-text').value='';});
  if(window.visualViewport){const resize=()=>document.body.classList.toggle('keyboard-open',window.visualViewport.height<window.innerHeight*.78);window.visualViewport.addEventListener('resize',resize);}
 }
 function openHistorySearch(){showPage(1);document.getElementById('history-search').hidden=false;document.getElementById('search-box').focus();}
@@ -33,12 +38,25 @@ async function copyDisplayed(kind){const reportEntries=displayedEntries;if(!repo
 function createShiftCard(entry,compact=false){
  const card=document.createElement('details');card.className='journal-card'+(compact?' compact':'');card.dataset.shiftId=entry.id;
  const summary=document.createElement('summary');const date=new Date(entry.date).toLocaleDateString('he-IL',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
- summary.innerHTML='<span class="category-avatar">'+escapeHtml(entry.category.slice(0,1))+'</span><span class="journal-info"><b>'+(!compact?uiIcon('label'):'')+escapeHtml(entry.category)+'</b><small>'+date+'</small></span><span class="journal-amount"><b>'+(!compact?uiIcon('cash'):'')+'<bdi>'+escapeHtml(entry.currency)+Number(entry.totalEarnings).toFixed(compact?1:2)+'</bdi></b><small>'+(!compact?uiIcon('timer'):'')+Number(entry.hours).toFixed(1)+' ש׳ <i class="status-dot '+(entry.isPaid?'paid':'')+'" title="'+(entry.isPaid?'שולם':'ממתין')+'"></i></small></span><span class="chevron">'+uiIcon('down')+'</span>';
+ summary.innerHTML='<span class="category-avatar">'+escapeHtml(entry.category.slice(0,1))+'</span><span class="journal-info"><b>'+(!compact?uiIcon('label'):'')+escapeHtml(entry.category)+'</b><small>'+date+'</small></span><span class="journal-amount"><b>'+(!compact?uiIcon('cash'):'')+'<bdi>'+escapeHtml(entry.currency)+Number(entry.totalEarnings).toFixed(2)+'</bdi></b><small>'+(!compact?uiIcon('timer'):'')+Number(entry.hours).toFixed(1)+' ש׳ <i class="status-dot '+(entry.isPaid?'paid':'')+'" title="'+(entry.isPaid?'שולם':'ממתין')+'"></i></small></span><span class="chevron">'+uiIcon('down')+'</span>';
  if(!compact){installLongPress(summary,entry.id);}
  if(!compact&&selectionMode){card.classList.toggle('selected',selectedShiftIds.has(entry.id));const mark=document.createElement('input');mark.type='checkbox';mark.checked=selectedShiftIds.has(entry.id);mark.setAttribute('aria-label','בחירת '+entry.category+' '+date);mark.onclick=event=>event.stopPropagation();mark.onchange=()=>toggleSelection(entry.id);summary.append(mark);summary.onclick=event=>{event.preventDefault();if(Date.now()>=ignoreSelectionClickUntil)toggleSelection(entry.id);};}
- const body=document.createElement('div');body.className='journal-details';const p=document.createElement('p');p.textContent=(entry.isTimeRange?entry.startTime+' – '+entry.endTime+' · ':'')+entry.hours+' שעות · '+entry.hourlyRate+' '+entry.currency+' לשעה';body.append(p);if(entry.notes){const notes=document.createElement('p');notes.textContent=entry.notes;body.append(notes);}
- if(entry.isGroupShift){try{const members=JSON.parse(entry.groupWorkersJson||'[]');const heading=document.createElement('h3');heading.textContent='עבודה קבוצתית';body.append(heading);let hours=0;for(const worker of members){hours+=Number(worker.hours);const line=document.createElement('p');line.textContent=worker.name+' · '+worker.hours+' שעות · '+entry.currency+Number(worker.hours*(entry.workerRate??entry.hourlyRate)).toFixed(2)+' · '+(worker.isPaid?'שולם':'ממתין');body.append(line);}const total=document.createElement('p');total.textContent='כולל עובדים לתשלום: '+entry.currency+' '+(entry.totalEarnings+hours*(entry.employerRate??entry.hourlyRate)).toFixed(2)+' · השכר שלי כולל הפרש תעריפים: '+entry.currency+' '+(entry.totalEarnings+hours*((entry.employerRate??entry.hourlyRate)-(entry.workerRate??entry.hourlyRate))).toFixed(2);body.append(total);}catch{const p=document.createElement('p');p.textContent='לא ניתן להציג את פרטי הקבוצה. הנתונים נשמרו ללא שינוי.';body.append(p);}}
- const actions=document.createElement('div');actions.className='journal-card-actions';for(const [name,label,action] of [['check',entry.isPaid?'סמן כממתין':'סמן כשולם',()=>togglePaid(entry.id)],['share','שיתוף החלק שלי',()=>shareText(WorkSharing.personal(entry))],...(entry.isGroupShift?[['document','דוח הקבוצה',()=>shareText(WorkSharing.group(entry))]]:[]),['edit','עריכה',()=>editShift(entry.id)],['trash','מחיקה',()=>deleteShift(entry.id)]]){const button=document.createElement('button');button.className='btn-mini';button.innerHTML=uiIcon(name)+'<span>'+label+'</span>';button.setAttribute('aria-label',label);button.title=label;button.onclick=action;actions.append(button);}body.append(actions);card.append(summary,body);return card;
+ const body=document.createElement('div');body.className='journal-details';const p=document.createElement('p');p.className='shift-work-facts';p.textContent=(entry.isTimeRange?entry.startTime+' – '+entry.endTime+' · ':'')+entry.hours+' שעות · '+entry.hourlyRate+' '+entry.currency+' לשעה';body.append(p);if(entry.notes){const notes=document.createElement('p');notes.className='shift-note';notes.textContent='הערות: '+entry.notes;body.append(notes);}
+ if(entry.isGroupShift){try{
+  const members=JSON.parse(entry.groupWorkersJson||'[]'),hours=members.reduce((n,w)=>n+Number(w.hours),0);
+  const totals=document.createElement('div');totals.className='group-card-totals';
+  const total=document.createElement('strong');total.textContent='סה״כ לתשלום (כולל כולם): '+entry.currency+(entry.totalEarnings+hours*(entry.employerRate??entry.hourlyRate)).toFixed(2);
+  const mine=document.createElement('small');mine.textContent='החלק שלי (כולל הפרש תעריפים): '+entry.currency+(entry.totalEarnings+hours*((entry.employerRate??entry.hourlyRate)-(entry.workerRate??entry.hourlyRate))).toFixed(2);
+  totals.append(total,mine);body.append(totals);
+  const roster=document.createElement('div');roster.className='group-card-workers';
+  for(const [index,worker] of members.entries()){
+   const row=document.createElement('div');row.className='group-card-worker'+(worker.isPaid?' is-paid':'');
+   const info=document.createElement('div'),name=document.createElement('strong'),detail=document.createElement('small');name.textContent=worker.name;detail.textContent=worker.hours+' שעות · '+entry.currency+Number(worker.hours*(entry.workerRate??entry.hourlyRate)).toFixed(2);info.append(name,detail);
+   const status=document.createElement('label');status.className='worker-payment';const check=document.createElement('input');check.type='checkbox';check.checked=Boolean(worker.isPaid);check.setAttribute('aria-label','שולם ל'+worker.name);check.onchange=()=>setWorkerPaid(entry.id,index,check.checked);status.append(check,document.createTextNode(worker.isPaid?'שולם':'ממתין'));
+   row.append(info,status);roster.append(row);
+  }body.append(roster);
+ }catch{const p=document.createElement('p');p.textContent='לא ניתן להציג את פרטי הקבוצה. הנתונים נשמרו ללא שינוי.';body.append(p);}}
+ const actions=document.createElement('div');actions.className='journal-card-actions';for(const [name,label,action] of [['check',entry.isPaid?'סמן כממתין':'סמן כשולם',()=>togglePaid(entry.id)],['share','שיתוף החלק שלי',()=>shareText(WorkSharing.personal(entry))],...(entry.isGroupShift?[['document','דוח הקבוצה',()=>shareText(WorkSharing.group(entry))]]:[]),['edit','עריכה',()=>editShift(entry.id)],['trash','מחיקה',()=>deleteShift(entry.id)]]){const button=document.createElement('button');button.className='btn-mini'+(name==='check'?' payment-action '+(entry.isPaid?'is-paid':'is-unpaid'):'');button.innerHTML=uiIcon(name)+'<span>'+label+'</span>';button.setAttribute('aria-label',label);button.title=label;button.onclick=action;actions.append(button);}body.append(actions);card.append(summary,body);return card;
 }
 
 let selectionMode=false,selectedShiftIds=new Set(),ignoreSelectionClickUntil=0;
@@ -77,7 +95,8 @@ function openWebSettings(){
  ensureCategoryCatalog();settingsOwner=currentUserId;settingsBase=JSON.stringify({categories,webPreferences});
  settingsDraft=JSON.parse(JSON.stringify({entries:shifts,categories,webPreferences}));settingsOriginalCategories=new Map(shifts.map(e=>[e.id,e.category]));
  document.getElementById('default-currency').value=webPreferences.mainCurrency||localStorage.getItem('work_default_currency')||'₪';
- document.getElementById('settings-currency-icon').textContent=document.getElementById('default-currency').value;
+ selectMainCurrency(document.getElementById('default-currency').value);
+ document.getElementById('new-category-name').value='';document.getElementById('new-category-error').textContent='';
  document.querySelectorAll('#settings-dialog details').forEach(d=>d.open=false);renderCategorySettings();document.getElementById('settings-dialog').showModal();
 }
 function saveWebSettings(){
@@ -158,3 +177,36 @@ async function shareText(text){
 }
 function shareDisplayed(){if(displayedEntries.length)shareText(WorkSharing.summary(displayedEntries,selectedCategory));else showMessage('אין משמרות לשיתוף');}
 function exportDisplayed(){download('filtered-shifts.csv',WorkTransfer.csv(displayedEntries),'text/csv;charset=utf-8');}
+
+function selectMainCurrency(currency){
+ document.getElementById('default-currency').value=currency;
+ document.getElementById('settings-currency-icon').textContent=currency;
+ document.querySelectorAll('[data-main-currency]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mainCurrency===currency)));
+}
+function addCategoryInline(){
+ if(!settingsDraft)return;
+ try{const name=document.getElementById('new-category-name').value.trim();
+ settingsDraft=WorkCategories.rename(settingsDraft,'',name,WorkTransfer.number(document.getElementById('new-category-rate').value),document.getElementById('new-category-currency').value);
+ document.getElementById('new-category-name').value='';document.getElementById('new-category-error').textContent='';renderCategorySettings();
+ }catch(e){document.getElementById('new-category-error').textContent=e.message;}
+}
+function canImportFromSettings(){
+ if(settingsDraft&&(JSON.stringify({categories:settingsDraft.categories,webPreferences:settingsDraft.webPreferences})!==settingsBase||document.getElementById('default-currency').value!==(webPreferences.mainCurrency||'₪'))){showMessage('יש לשמור או לבטל את שינויי ההגדרות לפני ייבוא נתונים');return false;}
+ return true;
+}
+function reviewSettingsImport(){
+ if(!canImportFromSettings())return;
+ const text=document.getElementById('settings-import-text').value.trim();
+ if(!text){showMessage('נא להדביק נתונים לפני הייבוא');document.getElementById('settings-import-text').focus();return;}
+ openTransfer(text);
+}
+function chooseImportFile(){if(canImportFromSettings())document.getElementById('csv-file-input').click();}
+async function copyBackup(){
+ const text=backupText();
+ try{await navigator.clipboard.writeText(text);showMessage('הגיבוי הועתק ללוח');}
+ catch{document.getElementById('share-text').value=text;document.getElementById('share-dialog').showModal();}
+}
+function setWorkerPaid(id,index,paid){
+ try{const next=shifts.map(entry=>{if(entry.id!==id)return entry;const members=JSON.parse(entry.groupWorkersJson||'[]');if(!members[index])throw Error('עובד לא נמצא');members[index]={...members[index],isPaid:paid};return {...entry,groupWorkersJson:JSON.stringify(members)};});persistAll(next);renderShifts();syncToCloud();showMessage('מצב התשלום לעובד עודכן');}
+ catch{renderShifts();showMessage('השינוי לא נשמר. נסה שוב');}
+}
