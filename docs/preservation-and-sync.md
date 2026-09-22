@@ -494,3 +494,65 @@ targets the trial package, but runner signing is still different from prior buil
 do not promise in-place updates. User permits fresh installation after retaining
 an external backup: remove ONLY an old trial app if needed, never the original.
 Google sign-in remains disabled; use email/password. No original app was removed.
+
+## 2026-09-22 — Website parity, currencies and mobile QA verified
+
+This section supersedes older website UI/sync status summaries. Accounts and the
+new versioned sync are implemented and enabled; the legacy numeric-ID mechanism
+must not be restored. Live physical Android↔website sync is still not verified.
+
+Website-only source: 1b1fea017d62136a5575fc17362fe091a6105c41, following
+d3934cc30ee118bfc6b8642cce023b84002c2a66 on codex/preserve-app-sync / draft PR #1.
+No Android source, production project, real user records, database or secrets
+were changed. Existing Vercel/Firebase projects and production were preserved.
+
+Changes: Heebo, SVG actions, cleaner purple cards/toasts, mobile spacing,
+collapsed settings/account accordions, category-only shift selection and staged
+settings. Categories support default/rate/currency, safe rename and confirmed
+reassignment on deletion, preserving all historical financial/group fields.
+Shift currencies remain separate throughout summaries, history, sharing, copy
+and transfer. Group forms show employees and combined hours. Web Share has
+clipboard/text fallbacks. Search clear/close and touch selection are distinct;
+bulk deletion uses an explicit UI confirmation. Existing import preview,
+validation, duplicate prevention, JSON/CSV/TSV and account/sync UI remain.
+
+Additional fixes: category rename retains its stable syncId; mobile overflow and
+clipped toast corrected; group default rates initialized from category; local
+calendar date avoids UTC rollover; account changes discard unsaved form values;
+legacy main-currency preference preserved; invalid import metadata rejected.
+
+Verification on the source above:
+- Local npm test: 31/31; npm run build and git diff --check passed.
+- Actions https://github.com/sholi2157-dev/Salary-calculation/actions/runs/35671230815
+  succeeded. Completed job 106567916562 logs inspected: web 31/31, build passed,
+  Firebase Auth/Firestore emulator multi-scenario integration passed. Added
+  category rename identity and USD history checks, with local preferences absent
+  from shared payloads. All data synthetic.
+- Exact AGENTS Android command succeeded in 4m 39s; XML reports: 51 tests,
+  zero failures/errors/skipped. Existing workflow's additional debug build passed
+  in 18s. This is CI verification, not Android development or phone installation.
+- Vercel success for the exact source:
+  https://vercel.com/sholi/salary-calculation/k8bhcwaGvZJaTLJtD5AVdiAda4pj
+- Live browser Preview:
+  https://salary-calculation-git-codex-preserve-app-sync-sholi.vercel.app/
+  Created synthetic ILS 1.5h × 40.25 = 60.38 and USD 2h × 25.5 = 51.00,
+  reloaded, verified separate totals, category/default persistence, currency and
+  category filtering, sort control and copied USD category summary. Computed
+  Heebo and overflow fix confirmed in the deployed UI.
+- Disposable Chromium mobile UI suite browser-tests/mobile.cjs passed at 390px
+  and 360px: both currencies/reload, group/share, edit/save/backdrop cancellation,
+  category rename/delete/default protection, real long touch, bulk pay and
+  delete accept/cancel, overnight clock range, backup download, invalid import,
+  duplicate preview, TSV and search focus/clear/close. No page errors.
+
+Shared wire schema and syncId meaning are unchanged. Account-scoped website
+preferences are local and an optional JSON-backup extension only: mainCurrency,
+defaultCategory and categoryCurrencies. Category defaults/currencies do not yet
+sync to another device; current Android metadata encoding would drop them.
+Do not claim this limitation is resolved by the emulator tests.
+
+Remaining physical checks: real phone keyboard (only reduced-viewport simulation
+performed), native Share Sheet and full live account/Android sync including
+offline/reconnect/conflicts. No production-readiness claim. Read
+docs/website-android-handoff.md for exact Android currency/report findings and
+the coordinated additive schema work needed before syncing category preferences.
