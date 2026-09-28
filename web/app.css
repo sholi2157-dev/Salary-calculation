@@ -268,7 +268,7 @@ dialog p { margin: 10px 0; color: var(--muted); font-size: 13px; line-height: 1.
 .category-add .ui-icon { width: 18px; height: 18px; }
 #new-category-error, #category-error { color: var(--danger); font-size: 12px; }
 #settings-categories { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
-.category-setting { display: flex; flex: 1 1 130px; align-items: center; gap: 2px; max-width: 100%; padding: 5px 7px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--field); }
+.category-setting { display: flex; flex: 1 1 auto; width: max-content; align-items: center; gap: 2px; max-width: 100%; padding: 5px 7px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--field); }
 .category-setting > div { flex: 1; min-width: 0; }
 .category-setting strong { display: block; font-size: 12px; overflow-wrap: anywhere; }
 .category-setting small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.35; overflow-wrap: anywhere; }
