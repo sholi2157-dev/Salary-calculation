@@ -151,7 +151,7 @@ class WorkSyncJournalTest {
             old.version = 5
         }
         fun open(): WorkDatabase = Room.databaseBuilder(context, WorkDatabase::class.java, name)
-            .addMigrations(WorkDatabase.MIGRATION_5_6, WorkDatabase.MIGRATION_6_7)
+            .addMigrations(WorkDatabase.MIGRATION_5_6, WorkDatabase.MIGRATION_6_7, WorkDatabase.MIGRATION_7_8)
             .addCallback(WorkDatabase.DatabaseCallback()).build().also { opened.add(it) }
         val db = open()
         val rows = db.workDao().getEntriesList()

@@ -43,6 +43,17 @@ class WorkViewModel(
     private val repository: WorkRepository,
     val owner: com.example.data.WorkAccountScope = com.example.data.WorkAccountScope(null)
 ) : AndroidViewModel(application) {
+    private val localDao = owner.database(application).workDao()
+    val localPreferences = localDao.observeLocalPreferences().map { rows -> rows.associate { it.name to it.value } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+    fun setDefaultCategory(name: String) { viewModelScope.launch {
+        if (repository.getCategoryByName(name) != null) localDao.setLocalPreference(com.example.data.WorkLocalPreference("defaultCategory", name))
+    } }
+    fun categoryCurrency(name: String): String = localPreferences.value["categoryCurrency:$name"] ?: "₪"
+    fun editCategory(category: WorkCategory, name: String, rate: Double, currency: String) { viewModelScope.launch {
+        try { localDao.editCategorySafely(category, name, rate, currency); performAutoBackup() }
+        catch (_: IllegalArgumentException) { Toast.makeText(getApplication(), "שם כפול או ערכים לא תקינים", Toast.LENGTH_LONG).show() }
+    } }
     private val settings = com.example.data.WorkAccountPreferences.get(application, owner)
     private val shiftState = ShiftStateManager.forAccount(application, owner)
 
@@ -54,9 +65,8 @@ class WorkViewModel(
     private val SERVICE_NOTIFICATION_ENABLED_KEY = booleanPreferencesKey("service_notification_enabled")
     private val DEFAULT_CURRENCY_KEY = stringPreferencesKey("default_currency")
 
-    val defaultCurrency: StateFlow<String> = settings.data
-        .map { preferences ->
-            preferences[DEFAULT_CURRENCY_KEY] ?: "₪"
+    val defaultCurrency: StateFlow<String> = kotlinx.coroutines.flow.combine(settings.data, localPreferences) { preferences, local ->
+            local["default_currency"] ?: preferences[DEFAULT_CURRENCY_KEY] ?: "₪"
         }
         .stateIn(
             scope = viewModelScope,
@@ -103,9 +113,9 @@ class WorkViewModel(
 
     fun setDefaultCurrency(currency: String) {
         viewModelScope.launch {
-            settings.edit { preferences ->
-                preferences[DEFAULT_CURRENCY_KEY] = currency
-            }
+            require(currency in listOf("₪", "$"))
+            localDao.setLocalPreference(com.example.data.WorkLocalPreference("default_currency", currency))
+            settings.edit { preferences -> preferences[DEFAULT_CURRENCY_KEY] = currency }
         }
     }
 
@@ -141,9 +151,9 @@ class WorkViewModel(
 
     fun updateDefaultCurrency(currency: String) {
         viewModelScope.launch {
-            settings.edit { preferences ->
-                preferences[DEFAULT_CURRENCY_KEY] = currency
-            }
+            require(currency in listOf("₪", "$"))
+            localDao.setLocalPreference(com.example.data.WorkLocalPreference("default_currency", currency))
+            settings.edit { preferences -> preferences[DEFAULT_CURRENCY_KEY] = currency }
         }
     }
 
@@ -357,10 +367,10 @@ class WorkViewModel(
         }
     }
 
-    fun startActiveShift(category: String, rate: Double) {
+    fun startActiveShift(category: String, rate: Double, currency: String = categoryCurrency(category)) {
         if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return
         val startTime = System.currentTimeMillis()
-        if (!shiftState.start(category, rate, startTime, defaultCurrency.value)) {
+        if (!shiftState.start(category, rate, startTime, currency)) {
             Toast.makeText(getApplication(), "כבר קיימת משמרת פעילה. יש לסיים אותה תחילה", Toast.LENGTH_LONG).show()
             return
         }
@@ -445,7 +455,10 @@ class WorkViewModel(
         val paidHours: Double,
         val paidEarnings: Double,
         val unpaidHours: Double,
-        val unpaidEarnings: Double
+        val unpaidEarnings: Double,
+        val money: Map<String, Double> = emptyMap(),
+        val paidMoney: Map<String, Double> = emptyMap(),
+        val unpaidMoney: Map<String, Double> = emptyMap()
     )
 
     // Reactive stats calculation covering: Today, This Week, This Month, and Total
@@ -482,11 +495,8 @@ class WorkViewModel(
         currency: String = defaultCurrency.value
     ) {
         viewModelScope.launch {
-            val finalHours = if (isTimeRange) {
-                calculateHoursDiff(startTime ?: "00:00", endTime ?: "00:00")
-            } else {
-                hours
-            }
+            if (!hours.isFinite() || hours <= 0 || !rate.isFinite() || rate < 0 || currency !in listOf("₪", "$")) return@launch
+            val finalHours = hours
             val entry = WorkEntry(
                 category = category,
                 date = dateMillis,
@@ -644,33 +654,21 @@ class WorkViewModel(
             val exists = currentList.any { it.name.trim().lowercase() == name.trim().lowercase() }
             if (!exists) {
                 repository.insertCategory(WorkCategory(name = name.trim(), defaultRate = defaultRate))
+                localDao.setLocalPreference(com.example.data.WorkLocalPreference("categoryCurrency:${name.trim()}", defaultCurrency.value))
             }
         }
     }
 
     fun deleteCategory(category: WorkCategory) {
         viewModelScope.launch {
-            // First check if 'עצמאי' exists, if not, create it
-            val currentList = categories.value
-            val fallbackName = "עצמאי"
-            val fallbackExists = currentList.any { it.name.trim().lowercase() == fallbackName.lowercase() }
-            if (!fallbackExists) {
-                repository.insertCategory(WorkCategory(name = fallbackName, defaultRate = 40.0))
-            }
-            
-            // Re-assign orphaned shifts to fallback category
-            if (category.name != fallbackName) {
-                repository.updateCategoryForEntries(oldName = category.name, newName = fallbackName)
-            }
-            
-            // Now delete the category
-            repository.deleteCategoryById(category.id)
+            if (!localDao.removeCategorySafely(category)) Toast.makeText(getApplication(), "יש להשאיר לפחות קטגוריה אחת", Toast.LENGTH_LONG).show()
+            performAutoBackup()
         }
     }
 
     fun updateCategoryRate(category: WorkCategory, newRate: Double) {
         viewModelScope.launch {
-            repository.insertCategory(category.copy(defaultRate = newRate))
+            localDao.updateCategory(category.copy(defaultRate = newRate))
         }
     }
 
@@ -693,136 +691,52 @@ class WorkViewModel(
     }
 
     private fun calculateStats(entryList: List<WorkEntry>): StatsSummary {
-        val now = Calendar.getInstance()
-        val todayYear = now.get(Calendar.YEAR)
-        val todayMonth = now.get(Calendar.MONTH)
-        val todayDay = now.get(Calendar.DAY_OF_MONTH)
-
-        // Set start of the current week (Sunday)
-        val startOfWeek = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+        val today = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
+        val week = (today.clone() as Calendar).apply { set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY) }
+        val month = (today.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, 1) }
+        val tomorrow = (today.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }.timeInMillis
+        fun period(label: String, rows: List<WorkEntry>): PeriodStats {
+            val paid = rows.filter { it.isPaid }; val unpaid = rows.filter { !it.isPaid }
+            // Legacy scalar money is meaningful only for a single currency. UI uses the maps.
+            fun single(list: List<WorkEntry>) = com.example.data.WorkMoney.totals(list).values.singleOrNull() ?: 0.0
+            return PeriodStats(label, rows.sumOf { it.hours }, single(rows), paid.sumOf { it.hours }, single(paid),
+                unpaid.sumOf { it.hours }, single(unpaid), com.example.data.WorkMoney.totals(rows),
+                com.example.data.WorkMoney.totals(paid), com.example.data.WorkMoney.totals(unpaid))
         }
-        val endOfWeek = Calendar.getInstance().apply {
-            time = startOfWeek.time
-            add(Calendar.DAY_OF_WEEK, 7)
-            add(Calendar.MILLISECOND, -1)
-        }
-
-        var todayH = 0.0; var todayE = 0.0; var todayPaidH = 0.0; var todayPaidE = 0.0; var todayUnpaidH = 0.0; var todayUnpaidE = 0.0
-        var weekH = 0.0; var weekE = 0.0; var weekPaidH = 0.0; var weekPaidE = 0.0; var weekUnpaidH = 0.0; var weekUnpaidE = 0.0
-        var monthH = 0.0; var monthE = 0.0; var monthPaidH = 0.0; var monthPaidE = 0.0; var monthUnpaidH = 0.0; var monthUnpaidE = 0.0
-        var totalH = 0.0; var totalE = 0.0; var totalPaidH = 0.0; var totalPaidE = 0.0; var totalUnpaidH = 0.0; var totalUnpaidE = 0.0
-
-        for (entry in entryList) {
-            val itemCal = Calendar.getInstance().apply { timeInMillis = entry.date }
-            val itemYear = itemCal.get(Calendar.YEAR)
-            val itemMonth = itemCal.get(Calendar.MONTH)
-            val itemDay = itemCal.get(Calendar.DAY_OF_MONTH)
-
-            val hours = entry.hours
-            val earnings = entry.totalEarnings
-            val isPaid = entry.isPaid
-
-            // Total Stats
-            totalH += hours
-            totalE += earnings
-            if (isPaid) {
-                totalPaidH += hours
-                totalPaidE += earnings
-            } else {
-                totalUnpaidH += hours
-                totalUnpaidE += earnings
-            }
-
-            // Today Stats
-            if (itemYear == todayYear && itemMonth == todayMonth && itemDay == todayDay) {
-                todayH += hours
-                todayE += earnings
-                if (isPaid) {
-                    todayPaidH += hours
-                    todayPaidE += earnings
-                } else {
-                    todayUnpaidH += hours
-                    todayUnpaidE += earnings
-                }
-            }
-
-            // This Week Stats (Sunday to Saturday)
-            if (entry.date >= startOfWeek.timeInMillis && entry.date <= endOfWeek.timeInMillis) {
-                weekH += hours
-                weekE += earnings
-                if (isPaid) {
-                    weekPaidH += hours
-                    weekPaidE += earnings
-                } else {
-                    weekUnpaidH += hours
-                    weekUnpaidE += earnings
-                }
-            }
-
-            // This Month Stats
-            if (itemYear == todayYear && itemMonth == todayMonth) {
-                monthH += hours
-                monthE += earnings
-                if (isPaid) {
-                    monthPaidH += hours
-                    monthPaidE += earnings
-                } else {
-                    monthUnpaidH += hours
-                    monthUnpaidE += earnings
-                }
-            }
-        }
-
-        return StatsSummary(
-            today = PeriodStats("היום", todayH, todayE, todayPaidH, todayPaidE, todayUnpaidH, todayUnpaidE),
-            thisWeek = PeriodStats("השבוע", weekH, weekE, weekPaidH, weekPaidE, weekUnpaidH, weekUnpaidE),
-            thisMonth = PeriodStats("החודש", monthH, monthE, monthPaidH, monthPaidE, monthUnpaidH, monthUnpaidE),
-            total = PeriodStats("סה\"כ", totalH, totalE, totalPaidH, totalPaidE, totalUnpaidH, totalUnpaidE)
-        )
+        return StatsSummary(period("היום", entryList.filter { it.date >= today.timeInMillis && it.date < tomorrow }),
+            period("השבוע", entryList.filter { it.date >= week.timeInMillis && it.date < tomorrow }),
+            period("החודש", entryList.filter { it.date >= month.timeInMillis && it.date < tomorrow }), period("סה״כ", entryList))
     }
 
-    // Export Data (JSON structure string)
-    fun exportDataToString(): String {
-        return try {
-            com.example.data.WorkBackup.encode(categories.value, entries.value, workersDirectory.value)
-        } catch (e: Exception) {
-            ""
-        }
-    }
-
-    // Export & Copy to clipboard
-    fun copyExportToClipboard(context: Context) {
-        val json = exportDataToString()
-        if (json.isEmpty()) {
-            Toast.makeText(context, "שגיאה בייצוא הנתונים", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("Sholi Work Tracker Data", json)
-        clipboard.setPrimaryClip(clip)
-        Toast.makeText(context, "הנתונים הועתקו ללוח בהצלחה!", Toast.LENGTH_SHORT).show()
-    }
-
-    // Share JSON file / text adaptively
-    fun shareExportData(context: Context) {
-        val json = exportDataToString()
-        if (json.isEmpty()) {
-            Toast.makeText(context, "שגיאה בייצוא הנתונים לשיתוף", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Sholi Gratzman - גיבוי מעקב שעות")
-            putExtra(Intent.EXTRA_TEXT, json)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(Intent.createChooser(intent, "שיתוף קובץ גיבוי"))
-    }
+    // Atomic DB snapshots also include local category preferences. Never export uncollected UI state.
+    fun copyExportToClipboard(context: Context) { viewModelScope.launch {
+        try {
+            val json = repository.exportSnapshot()
+            (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Work Tracker Data", json))
+            Toast.makeText(context, "הגיבוי הועתק", Toast.LENGTH_SHORT).show()
+        } catch (_: Exception) { Toast.makeText(context, "הגיבוי נכשל", Toast.LENGTH_LONG).show() }
+    } }
+    fun saveBackup(context: Context, uri: android.net.Uri) { viewModelScope.launch {
+        try {
+            val json = repository.exportSnapshot()
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                checkNotNull(context.contentResolver.openOutputStream(uri, "wt")).use { it.write(json.toByteArray(Charsets.UTF_8)) }
+            }
+            Toast.makeText(context, "הגיבוי נשמר", Toast.LENGTH_LONG).show()
+        } catch (_: Exception) { Toast.makeText(context, "הגיבוי לא נשמר", Toast.LENGTH_LONG).show() }
+    } }
+    fun shareExportData(context: Context) { viewModelScope.launch {
+        try {
+            val json = repository.exportSnapshot()
+            val file = File(context.cacheDir, "work-backup-${System.currentTimeMillis()}.json")
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { file.writeText(json) }
+            val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                type = "application/json"; putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }, "שמירת גיבוי מחוץ לאפליקציה"))
+        } catch (_: Exception) { Toast.makeText(context, "הגיבוי נכשל", Toast.LENGTH_LONG).show() }
+    } }
 
     private fun isValidDate(str: String): Boolean {
         val s = str.trim()
@@ -942,7 +856,7 @@ class WorkViewModel(
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/csv"
                 putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, "מעקב שעות עבודה - Sholi Gratzman")
+                putExtra(Intent.EXTRA_SUBJECT, "מעקב שעות עבודה")
                 putExtra(Intent.EXTRA_TEXT, "מצורף קובץ CSV של שעות מעקב העבודה שלי.")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

@@ -38,3 +38,7 @@ data class WorkCategory(
     val name: String,
     val defaultRate: Double = 40.0
 )
+
+/** Local preferences deliberately excluded from records_v1 until sync supports them. */
+@Entity(tableName = "work_local_preferences")
+data class WorkLocalPreference(@PrimaryKey val name: String, val value: String)

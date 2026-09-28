@@ -5,11 +5,12 @@ import org.json.JSONObject
 
 /** Versioned transfer format shared with the website; legacy exports remain readable. */
 object WorkBackup {
-    data class Contents(val categories: List<WorkCategory>, val entries: List<WorkEntry>, val workers: List<WorkerDirectory>)
+    data class Contents(val categories: List<WorkCategory>, val entries: List<WorkEntry>, val workers: List<WorkerDirectory>, val localPreferences: Map<String, String> = emptyMap())
 
-    fun encode(categories: List<WorkCategory>, entries: List<WorkEntry>, workers: List<WorkerDirectory>): String {
+    fun encode(categories: List<WorkCategory>, entries: List<WorkEntry>, workers: List<WorkerDirectory>, localPreferences: Map<String, String> = emptyMap()): String {
         return JSONObject().apply {
             put("formatVersion", 2)
+            put("androidLocalPreferences", JSONObject(localPreferences))
             put("categories", JSONArray().apply {
                 categories.forEach { put(JSONObject().put("name", it.name).put("defaultRate", it.defaultRate)) }
             })
@@ -53,7 +54,16 @@ object WorkBackup {
             val earnings = e.getDouble("totalEarnings")
             require(listOf(hours, rate, earnings).all { it.isFinite() && it >= 0 }) { "Invalid amounts" }
             val groupJson = e.optString("groupWorkersJson", "")
-            if (groupJson.isNotBlank()) JSONArray(groupJson)
+            if (groupJson.isNotBlank()) {
+                val group = JSONArray(groupJson)
+                for (i in 0 until group.length()) {
+                    val worker = group.getJSONObject(i)
+                    require(worker.getString("name").isNotBlank()) { "Missing worker name" }
+                    require(worker.getDouble("hours").let { it.isFinite() && it >= 0 }) { "Invalid worker hours" }
+                    worker.nullableRate("workerRate"); worker.nullableRate("employerRate")
+                }
+            }
+            require(e.getString("category").isNotBlank()) { "Missing category" }
             WorkEntry(
                 // Source IDs belong to the exporting installation; never overwrite by ID.
                 category = e.getString("category"), date = date,
@@ -76,9 +86,16 @@ object WorkBackup {
             WorkCategory(name = c.getString("name"), defaultRate = rate)
         }
         val workers = root.optJSONArray("workers") ?: JSONArray()
+        val local = root.optJSONObject("androidLocalPreferences") ?: JSONObject()
+        val preferences = local.keys().asSequence().associateWith { local.getString(it) }
+        for ((key, value) in preferences) {
+            require(key == "defaultCategory" || key == "default_currency" || key.startsWith("categoryCurrency:")) { "Unknown local preference" }
+            if (key == "defaultCategory") require(value.isNotBlank())
+            else require(value in listOf("₪", "$")) { "Invalid preference currency" }
+        }
         return Contents(categories, entries, (0 until workers.length()).map {
             WorkerDirectory(name = workers.getJSONObject(it).getString("name"))
-        })
+        }, preferences)
     }
 
     private fun JSONObject.nullableRate(key: String): Double? {

@@ -16,6 +16,14 @@
 local.properties
 .env
 debug.keystore
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+*.b64
+/signing-private/
+/app/build/
 # Supplied Firebase client configuration is reviewed before any publication.
 google-services.json
 !app/src/debug/google-services.json

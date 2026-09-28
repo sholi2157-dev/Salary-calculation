@@ -18,6 +18,8 @@ tasks.matching { it.name == "processPreviewGoogleServices" }.configureEach {
   enabled = file("src/preview/google-services.json").exists()
 }
 
+tasks.matching { it.name == "processReleaseGoogleServices" }.configureEach { enabled = false }
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -26,9 +28,10 @@ android {
     applicationId = "com.aistudio.worktracker.qztvdw"
     minSdk = 24
     targetSdk = 36
-    versionCode = 5
-    versionName = "1.4"
+    versionCode = providers.gradleProperty("distributionVersionCode").orNull?.toInt() ?: 6
+    versionName = providers.gradleProperty("distributionVersionName").orNull ?: "1.5-rc1"
     buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+    buildConfigField("boolean", "LOCAL_DISTRIBUTION", "false")
     // Remains false until the existing Firebase project and user isolation are verified.
     buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
     buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", "false")
@@ -43,10 +46,9 @@ android {
 
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
+      System.getenv("KEYSTORE_PATH")?.let { storeFile = file(it) }
       storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
+      keyAlias = "salary-distribution"
       keyPassword = System.getenv("KEY_PASSWORD")
     }
 
@@ -67,10 +69,16 @@ android {
       buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", file("src/preview/google-services.json").exists().toString())
     }
     release {
+      applicationIdSuffix = ".distribution"
+      buildConfigField("boolean", "LOCAL_DISTRIBUTION", "true")
+      buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
+      buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", "false")
+      buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      // Unsigned compilation is allowed for CI validation only. No debug fallback.
+      if (System.getenv("KEYSTORE_PATH") != null) signingConfig = signingConfigs.getByName("release")
     }
   }
   compileOptions {

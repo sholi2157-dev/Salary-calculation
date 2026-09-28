@@ -35,6 +35,7 @@ object AuthManager {
     private var emailRequestRunning = false
 
     fun init(context: Context) {
+        if (com.example.BuildConfig.LOCAL_DISTRIBUTION) return
         appContext = context.applicationContext
         if (isInitialized) return
         isInitialized = true

@@ -9,23 +9,9 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-val provider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs
-)
-
-val RubikFontFamily = FontFamily(
-    Font(googleFont = GoogleFont("Rubik"), fontProvider = provider, weight = FontWeight.Bold),
-    Font(googleFont = GoogleFont("Rubik"), fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = GoogleFont("Rubik"), fontProvider = provider, weight = FontWeight.Normal)
-)
-
-val AssistantFontFamily = FontFamily(
-    Font(googleFont = GoogleFont("Assistant"), fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = GoogleFont("Assistant"), fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = GoogleFont("Assistant"), fontProvider = provider, weight = FontWeight.Bold)
-)
+val HeeboFontFamily = FontFamily(androidx.compose.ui.text.font.Font(R.font.heebo))
+val RubikFontFamily = HeeboFontFamily
+val AssistantFontFamily = HeeboFontFamily
 
 val Typography = Typography(
     headlineLarge = TextStyle(

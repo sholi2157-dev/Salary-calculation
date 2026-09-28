@@ -32,6 +32,7 @@ object FirestoreSyncManager {
     )
 
     fun init(context: Context) {
+        if (com.example.BuildConfig.LOCAL_DISTRIBUTION) return
         if (isInitialized) return
         isInitialized = true
 

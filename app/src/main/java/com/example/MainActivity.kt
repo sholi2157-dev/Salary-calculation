@@ -179,56 +179,9 @@ fun getWorkerNamesFromEntry(json: String): List<String> {
 }
 
 fun generateWhatsAppReportText(filteredEntries: List<WorkEntry>, selectedCategoryFilter: String, searchQuery: String): String {
-    if (filteredEntries.isEmpty()) return ""
-    val uniqueCategories = filteredEntries.map { it.category }.distinct()
-    val allWorkers = filteredEntries.flatMap { getWorkerNamesFromEntry(it.groupWorkersJson) }.distinct()
-    
-    val isSingleCategory = selectedCategoryFilter != "הכל" || uniqueCategories.size == 1
-    val isSingleWorker = allWorkers.size == 1
-    
-    val isWorkerQuery = isSingleWorker || (searchQuery.isNotBlank() && allWorkers.any { it.contains(searchQuery, ignoreCase = true) })
-    
-    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("he", "IL"))
-    val totalHours = filteredEntries.sumOf { it.hours }
-    val totalPay = filteredEntries.sumOf { it.totalEarnings }
-    
-    val minDate = filteredEntries.minOfOrNull { it.date } ?: System.currentTimeMillis()
-    val dateStr = sdf.format(Date(minDate))
-    
-    val hasUnpaid = filteredEntries.any { !it.isPaid }
-    val statusStr = if (hasUnpaid) "לא שולם" else "שולם"
-    
-    return if (isWorkerQuery) {
-        val workerName = when {
-            isSingleWorker -> allWorkers.first()
-            searchQuery.isNotBlank() && allWorkers.any { it.contains(searchQuery, ignoreCase = true) } -> allWorkers.first { it.contains(searchQuery, ignoreCase = true) }
-            else -> allWorkers.firstOrNull() ?: searchQuery
-        }
-        
-        val grouped = filteredEntries.groupBy { it.category }
-        val categoriesText = if (grouped.size > 1) {
-            val catsStr = grouped.map { "${it.key}: ${String.format(Locale.US, "%.1f", it.value.sumOf { entry -> entry.hours })} שעות" }.joinToString("... ") + "..."
-            " ($catsStr)"
-        } else {
-            ""
-        }
-        
-        val endSentence = if (hasUnpaid) "\nאיך אתה מעדיף שאשלם לך?" else ""
-        
-        "היי $workerName, להלן פירוט שעות עבודה שלך מיום $dateStr:\n" +
-                "עבדת ${String.format(Locale.US, "%.1f", totalHours)} שעות$categoriesText. מגיע לך: ₪${String.format(Locale.US, "%,.2f", totalPay)}.\n" +
-                "סטטוס תשלום: $statusStr.$endSentence"
-    } else {
-        // Employer (Category Report)
-        val grouped = filteredEntries.groupBy { it.category }
-        val invoiceLines = grouped.map { (catName, catEntries) ->
-            val catHours = catEntries.sumOf { it.hours }
-            val catPay = catEntries.sumOf { it.totalEarnings }
-            "קטגוריה: $catName | סך שעות: ${String.format(Locale.US, "%.1f", catHours)} | סה\"כ לתשלום: ₪${String.format(Locale.US, "%,.2f", catPay)}."
-        }.joinToString("\n")
-        
-        invoiceLines
-    }
+    val names = filteredEntries.flatMap { getWorkerNamesFromEntry(it.groupWorkersJson) }.distinct()
+    val worker = names.singleOrNull { searchQuery.isNotBlank() && it.equals(searchQuery.trim(), ignoreCase = true) }
+    return com.example.data.WorkMoney.report(filteredEntries, worker)
 }
 
 fun copyWhatsAppToClipboard(context: Context, filteredEntries: List<WorkEntry>, selectedCategoryFilter: String, searchQuery: String) {
@@ -369,6 +322,7 @@ fun MainAppContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    com.example.ui.WorkUpdateSettings(automatic = true)
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     
     val googleSignInLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -407,7 +361,7 @@ fun MainAppContent(
 
     var showAccountDialog by remember { mutableStateOf(false) }
     val signInForSync: () -> Unit = { showAccountDialog = true }
-    if (showAccountDialog) com.example.ui.WorkAccountDialog(
+    if (showAccountDialog && BuildConfig.ACCOUNTS_ENABLED) com.example.ui.WorkAccountDialog(
         onDismiss = { showAccountDialog = false }, onGoogle = signInWithGoogle
     )
 
@@ -799,7 +753,7 @@ fun MainAppContent(
 
     if (isSearchDialogOpen) {
         Dialog(
-            onDismissRequest = { isSearchDialogOpen = false }
+            onDismissRequest = { isSearchDialogOpen = false; searchQuery = "" }
         ) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
@@ -852,7 +806,7 @@ fun MainAppContent(
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(
-                            onClick = { isSearchDialogOpen = false }
+                            onClick = { isSearchDialogOpen = false; searchQuery = "" }
                         ) {
                             Text("אישור", color = Color(0xFF5C6BC0), fontWeight = FontWeight.Bold)
                         }
@@ -917,13 +871,6 @@ fun AnimatedGlowingEarnings(
         fontSize = fontSize,
         fontWeight = FontWeight.Bold,
         color = Color.White,
-        style = androidx.compose.ui.text.TextStyle(
-            shadow = androidx.compose.ui.graphics.Shadow(
-                color = glowColor.copy(alpha = 0.8f),
-                offset = androidx.compose.ui.geometry.Offset(0f, 0f),
-                blurRadius = 10f
-            )
-        ),
         modifier = modifier
     )
 }
@@ -1004,8 +951,14 @@ fun DashboardScreen(
     var selectedCurrency by remember(defaultCurr) { mutableStateOf(defaultCurr) }
 
     var hourlyRateStr by remember { mutableStateOf("40") }
-    var selectedCategory by remember { mutableStateOf("עצמאי") }
+    val localPreferences by viewModel.localPreferences.collectAsStateWithLifecycle()
+    val defaultCategory = localPreferences["defaultCategory"] ?: categories.firstOrNull()?.name ?: "עצמאי"
+    var selectedCategory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(defaultCategory) }
+    LaunchedEffect(defaultCategory, categories) {
+        if (categories.none { it.name == selectedCategory }) selectedCategory = defaultCategory
+    }
     val selectedDefaultRate = categories.firstOrNull { it.name == selectedCategory }?.defaultRate
+    LaunchedEffect(selectedCategory, localPreferences["categoryCurrency:$selectedCategory"]) { selectedCurrency = viewModel.categoryCurrency(selectedCategory) }
     LaunchedEffect(selectedCategory, selectedDefaultRate) {
         selectedDefaultRate?.let { hourlyRateStr = it.toString() }
     }
@@ -1264,19 +1217,20 @@ fun DashboardScreen(
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text("שבוע", color = Color(0xFF818CF8), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = stats.thisWeek.totalEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 22.sp, glowColor = Color(0xFF818CF8))
+                                                MoneySummary(stats.thisWeek.money, fontSize = 22.sp)
                                                 Spacer(modifier = Modifier.height(4.dp))
                                                 AnimatedGlowingEarnings(targetValue = stats.thisWeek.totalHours, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 13.sp, glowColor = Color(0xFF818CF8), isCurrency = false, isHours = true)
                                             }
                                             Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
                                                 Text("חודש", color = Color(0xFF34D399), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = stats.thisMonth.totalEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 22.sp, glowColor = Color(0xFF34D399))
+                                                MoneySummary(stats.thisMonth.money, fontSize = 22.sp)
                                                 Spacer(modifier = Modifier.height(4.dp))
                                                 AnimatedGlowingEarnings(targetValue = stats.thisMonth.totalHours, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 13.sp, glowColor = Color(0xFF34D399), isCurrency = false, isHours = true)
                                             }
                                         }
                                         Spacer(modifier = Modifier.height(16.dp))
-                                        val currentMonthEarnings = stats.thisMonth.totalEarnings.toFloat()
+                                        val currentMonthEarnings = (stats.thisMonth.money[defaultCurr] ?: 0.0).toFloat()
+                                        Text("יעד חודשי: ${defaultCurr}10,000", color = Color(0xFF8E8E93), fontSize = 11.sp)
                                         val monthlyTarget = 10000f
                                         val progress = if (monthlyTarget > 0) (currentMonthEarnings / monthlyTarget).coerceIn(0f, 1f) else 0f
 
@@ -1332,11 +1286,11 @@ fun DashboardScreen(
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                             Column {
                                                 Text("סה\"כ הכנסות", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = totalEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 24.sp, glowColor = Color(0xFF34D399))
+                                                MoneySummary(stats.total.money, fontSize = 24.sp)
                                             }
                                             Column(horizontalAlignment = Alignment.End) {
                                                 Text("שולם", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = paidEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 20.sp, glowColor = Color(0xFF6366F1))
+                                                MoneySummary(stats.total.paidMoney, fontSize = 20.sp)
                                             }
                                         }
                                         Spacer(modifier = Modifier.height(6.dp))
@@ -1347,7 +1301,7 @@ fun DashboardScreen(
                                             }
                                             Column(horizontalAlignment = Alignment.End) {
                                                 Text("ממתין לתשלום", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = stats.total.unpaidEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 18.sp, glowColor = Color(0xFFF59E0B))
+                                                MoneySummary(stats.total.unpaidMoney, fontSize = 18.sp)
                                             }
                                         }
                                         
@@ -1431,7 +1385,7 @@ fun DashboardScreen(
                                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                                 Column {
                                                     Text("הכנסות היום", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                    AnimatedGlowingEarnings(targetValue = stats.today.totalEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 28.sp, glowColor = Color(0xFF34D399))
+                                                    MoneySummary(stats.today.money, fontSize = 28.sp)
                                                 }
                                                 Column(horizontalAlignment = Alignment.End) {
                                                     Text("סה\"כ שעות היום", color = Color(0xFF8E8E93), fontSize = 12.sp)
@@ -2893,7 +2847,7 @@ fun DashboardScreen(
                             onDeleteCategory(it)
                             Toast.makeText(context, "מעסיק נמחק בהצלחה", Toast.LENGTH_SHORT).show()
                             if (categories.isNotEmpty()) {
-                                selectedCategory = "עצמאי"
+                                selectedCategory = defaultCategory
                             }
                         }
                         categoryToDelete = null
@@ -2998,7 +2952,7 @@ fun RecentShiftCompactCard(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = String.format(Locale.US, "₪%,.1f", entry.totalEarnings),
+                            text = com.example.data.WorkMoney.format(entry.totalEarnings, entry.currency),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFE5E5EA)
@@ -3062,7 +3016,7 @@ fun RecentShiftCompactCard(
                             }
 
                             Text(
-                                text = "תעריף שעתי: ₪${entry.hourlyRate}",
+                                text = "תעריף שעתי: ${entry.currency}${entry.hourlyRate}",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Light,
                                 color = Color(0xFF8E8E93),
@@ -3146,7 +3100,7 @@ fun StatsCard(
             Spacer(modifier = Modifier.height(4.dp))
             
             Text(
-                text = String.format(Locale.US, "₪%,.2f", stats.totalEarnings),
+                text = stats.money.entries.joinToString("\n") { com.example.data.WorkMoney.format(it.value, it.key) },
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Start,
@@ -3243,7 +3197,7 @@ fun RecentShiftItemRow(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = String.format(Locale.US, "₪%,.0f", entry.totalEarnings),
+                    text = com.example.data.WorkMoney.format(entry.totalEarnings, entry.currency),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White
@@ -3401,9 +3355,7 @@ fun ShiftsScreen(
         }
     }
 
-    val totalFilteredSum = remember(filteredEntries) {
-        filteredEntries.sumOf { it.totalEarnings }
-    }
+
 
     Box(
         modifier = Modifier
@@ -3801,13 +3753,7 @@ fun ShiftsScreen(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            AnimatedGlowingEarnings(
-                                targetValue = totalFilteredSum,
-                                runCountAnimationTrigger = viewModel.runCountAnimationTrigger.value,
-                                fontSize = 16.sp,
-                                glowColor = Color(0xFF34D399),
-                                currencySymbol = if (currencyFilter == "$") "$" else "₪"
-                            )
+                            Text(com.example.data.WorkMoney.summary(filteredEntries), color = Color.White, fontSize = 16.sp)
                         }
 
                         // Month Selector
@@ -4425,8 +4371,8 @@ fun WorkEntryRowCard(
 
                         for (i in 0 until workersArray.length()) {
                             val h = workersArray.getJSONObject(i).optDouble("hours", 0.0)
-                            contractorProfit += h * (employerRate - workerRate)
-                            totalWorkersBossPay += h * employerRate
+                            contractorProfit += h * (com.example.data.WorkMoney.employerRate(workersArray.getJSONObject(i), entry) - com.example.data.WorkMoney.workerRate(workersArray.getJSONObject(i), entry))
+                            totalWorkersBossPay += h * com.example.data.WorkMoney.employerRate(workersArray.getJSONObject(i), entry)
                         }
 
                         val grandTotalBoss = sholiOwnPay + totalWorkersBossPay
@@ -4434,7 +4380,7 @@ fun WorkEntryRowCard(
 
                         Text("סה\"כ לתשלום (כולל כולם): ${entry.currency}${String.format(Locale.US, "%.2f", grandTotalBoss)}", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("שולי (המשתמש): ${entry.currency}${String.format(Locale.US, "%.2f", sholiNetTotal)}", color = Color(0xFFE2E8F0), fontSize = 13.sp)
+                        Text("ההכנסה שלי (כולל עמלה): ${entry.currency}${String.format(Locale.US, "%.2f", sholiNetTotal)}", color = Color(0xFFE2E8F0), fontSize = 13.sp)
                         Spacer(modifier = Modifier.height(8.dp))
                         
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -4443,7 +4389,7 @@ fun WorkEntryRowCard(
                                 val wName = obj.optString("name", "")
                                 val wHours = obj.optDouble("hours", 0.0)
                                 val wPaid = obj.optBoolean("isPaid", false)
-                                val wPay = wHours * (entry.workerRate ?: 0.0)
+                                val wPay = wHours * com.example.data.WorkMoney.workerRate(obj, entry)
                                 
                                 Row(
                                     modifier = Modifier
@@ -4549,8 +4495,8 @@ fun WorkEntryRowCard(
                                     val textToSend = "היי, להלן פרטי המשמרת שלי מיום $dateStr:\n" +
                                             "קטגוריה: ${entry.category}\n" +
                                             "שעות עבודה: ${entry.hours} שעות\n" +
-                                            "תעריף שעתי: ₪${String.format(Locale.US, "%.2f", entry.hourlyRate)}\n" +
-                                            "סה\"כ לתשלום: ₪${String.format(Locale.US, "%.2f", entry.totalEarnings)}"
+                                            "תעריף שעתי: ${entry.currency}${String.format(Locale.US, "%.2f", entry.hourlyRate)}\n" +
+                                            "סה\"כ לתשלום: ${entry.currency}${String.format(Locale.US, "%.2f", entry.totalEarnings)}"
                                             
                                     val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                         type = "text/plain"
@@ -4580,19 +4526,19 @@ fun WorkEntryRowCard(
                                         val empRate = entry.employerRate ?: 0.0
                                         val sholiBossPay = entry.totalEarnings
                                         var totalPay = sholiBossPay
-                                        var workersLines = "שולי: ${entry.hours} שעות (₪${String.format(Locale.US, "%.2f", sholiBossPay)})\n"
+                                        var workersLines = "החלק שלי: ${entry.hours} שעות (${entry.currency}${String.format(Locale.US, "%.2f", sholiBossPay)})\n"
                                         
                                         for (i in 0 until workersArray.length()) {
                                             val obj = workersArray.getJSONObject(i)
                                             val wName = obj.optString("name", "")
                                             val wHours = obj.optDouble("hours", 0.0)
-                                            val wPay = wHours * empRate
+                                            val wPay = wHours * com.example.data.WorkMoney.employerRate(obj, entry)
                                             totalPay += wPay
-                                            workersLines += "${wName}: ${wHours} שעות (₪${String.format(Locale.US, "%.2f", wPay)})\n"
+                                            workersLines += "${wName}: ${wHours} שעות (${entry.currency}${String.format(Locale.US, "%.2f", wPay)})\n"
                                         }
                                         
                                         val textToSend = "היי, להלן סיכום שעות עבודה ליום ${dateStr}:\n" +
-                                                "**סה\"כ לתשלום (כולל כולם): ₪${String.format(Locale.US, "%.2f", totalPay)}**\n" +
+                                                "**סה\"כ לתשלום (כולל כולם): ${entry.currency}${String.format(Locale.US, "%.2f", totalPay)}**\n" +
                                                 "---\n" +
                                                 "פירוט:\n" +
                                                 workersLines +
@@ -4750,6 +4696,10 @@ fun ManagementScreen(
     var editRateText by remember { mutableStateOf("") }
     var importText by remember { mutableStateOf("") }
 
+    val localPreferences by viewModel.localPreferences.collectAsStateWithLifecycle()
+    val saveBackupLauncher = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri?.let { viewModel.saveBackup(context, it) }
+    }
     val savedNotificationEnabled by viewModel.serviceNotificationEnabled.collectAsStateWithLifecycle()
     val savedDefaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
     var draftNotificationEnabled by remember(savedNotificationEnabled) { mutableStateOf(savedNotificationEnabled) }
@@ -4788,6 +4738,19 @@ fun ManagementScreen(
                 }
             }
 
+            Text("הנתונים נשמרים במכשיר. מומלץ לשמור גיבוי מחוץ לאפליקציה באופן קבוע.", color = Color.White)
+            Button(onClick = { saveBackupLauncher.launch("salary-backup.json") }) { Text("שמור קובץ גיבוי") }
+            com.example.ui.WorkUpdateSettings()
+            Text("מטבע ברירת מחדל", color = Color.White)
+            Row { listOf("₪", "$").forEach { currency ->
+                TextButton(onClick = { draftDefaultCurrency = currency }) { Text(if (draftDefaultCurrency == currency) "✓ $currency" else currency) }
+            } }
+            Text("קטגוריית ברירת מחדל", color = Color.White)
+            LazyRow { items(categories) { cat ->
+                TextButton(onClick = { viewModel.setDefaultCategory(cat.name) }) {
+                    Text(if ((localPreferences["defaultCategory"] ?: categories.firstOrNull()?.name) == cat.name) "✓ ${cat.name}" else cat.name)
+                }
+            } }
             // Category 1: ניהול עבודה וקטגוריות
             Box(modifier = Modifier.fillMaxWidth()) {
                 val isExpanded = expandedSection == 0
@@ -4949,7 +4912,7 @@ fun ManagementScreen(
                                                         modifier = Modifier.size(12.dp)
                                                     )
                                                     Text(
-                                                        text = "${cat.name} (₪${cat.defaultRate.toString()})",
+                                                        text = "${cat.name} (${viewModel.categoryCurrency(cat.name)}${cat.defaultRate})",
                                                         fontSize = 12.sp,
                                                         color = Color.White
                                                     )
@@ -5356,7 +5319,7 @@ fun ManagementScreen(
                 }
             }
             // Sign Out row option
-            Box(modifier = Modifier.fillMaxWidth()) {
+            if (BuildConfig.ACCOUNTS_ENABLED) Box(modifier = Modifier.fillMaxWidth()) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
                     border = BorderStroke(1.dp, Color(0x26FFFFFF)),
@@ -5513,6 +5476,8 @@ fun ManagementScreen(
 
     if (categoryToEditByRate != null) {
         var errorEditRate by remember { mutableStateOf(false) }
+        var editName by remember(categoryToEditByRate) { mutableStateOf(categoryToEditByRate?.name ?: "") }
+        var editCurrency by remember(categoryToEditByRate) { mutableStateOf(viewModel.categoryCurrency(categoryToEditByRate?.name ?: "")) }
         AlertDialog(
             onDismissRequest = { categoryToEditByRate = null },
             title = { Text("עדכון תעריף שעתי ברירת מחדל", color = Color.White, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth()) },
@@ -5529,6 +5494,10 @@ fun ManagementScreen(
                         textAlign = TextAlign.End,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    OutlinedTextField(value = editName, onValueChange = { editName = it }, label = { Text("שם קטגוריה") })
+                    Row { listOf("₪", "$").forEach { currency ->
+                        TextButton(onClick = { editCurrency = currency }) { Text(if (currency == editCurrency) "✓ $currency" else currency) }
+                    } }
                     OutlinedTextField(
                         value = editRateText,
                         onValueChange = {
@@ -5560,7 +5529,7 @@ fun ManagementScreen(
                         val parsedRate = editRateText.toDoubleOrNull()
                         if (parsedRate != null && parsedRate > 0.0) {
                             categoryToEditByRate?.let { cat ->
-                                viewModel.updateCategoryRate(cat, parsedRate)
+                                viewModel.editCategory(cat, editName, parsedRate, editCurrency)
                             }
                             categoryToEditByRate = null
                             Toast.makeText(context, "תעריף שעתי עודכן בהצלחה", Toast.LENGTH_SHORT).show()
@@ -5894,7 +5863,7 @@ fun ShiftFormDialog(
                 OutlinedTextField(
                     value = rateText,
                     onValueChange = { rateText = it },
-                    label = { Text("תעריף שעתי (₪)") },
+                    label = { Text("תעריף שעתי (${entry?.currency ?: "₪"})") },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Next
@@ -7047,4 +7016,10 @@ fun LoginOverlay(
             }
         }
     }
+}
+
+@Composable
+fun MoneySummary(values: Map<String, Double>, fontSize: androidx.compose.ui.unit.TextUnit) {
+    Text(values.entries.joinToString("\n") { com.example.data.WorkMoney.format(it.value, it.key) }.ifEmpty { "0.00" },
+        color = Color.White, fontWeight = FontWeight.Bold, fontSize = fontSize)
 }
