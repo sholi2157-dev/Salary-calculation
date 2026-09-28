@@ -594,3 +594,50 @@ This follow-up changes website presentation/build diagnostics only. No shared
 sync contract, account/offline/conflict code, Android source or user data changes.
 PR #1 remains Draft/open. Physical phone keyboard/native Share Sheet and full
 live phone-to-web sync remain unverified; no pixel-perfect/production claim.
+
+## 2026-09-28 — completed native layout comparison checkpoint
+
+Verified source: 9f9914daa78f6bc5903d47ee6439b5f53f2ef3d5.
+Source Preview: https://salary-calculation-bdzq5a9wj-sholi.vercel.app/
+The previous 1cdfa289 Preview was current, with native2 CSS: the four-button
+maintenance layout was an unfinished UI change, not stale deployment/cache.
+
+Compared actual 390x844 live Preview views with the supplied Android recording
+(main/form/history/group, and settings around 04:25–04:55) and native source.
+Changes now include:
+- Maintenance: inline paste area, import action and validation preview, separate
+  backup area with copy/share, plus retained JSON download, CSV and file import.
+- Categories: inline name/rate/currency creation, compact edit/delete cards,
+  configurable default; staged saving and historical preservation retained.
+- Main currency: direct two-button selector; historical currencies unchanged.
+- Group form: compact worker columns, add/remove controls and total hours;
+  separate rates remain available in an expandable section.
+- Expanded history: notes surface, group totals followed by worker cards,
+  worker payment controls and native-style colored action buttons.
+- More compact home/form/history spacing and clearer selection toolbar.
+- Recent amounts now display two decimal places (previously hid cents).
+- Fixed long-touch release activating a newly moved Select All control.
+
+Verification (no real user records):
+- Local npm run build, npm test 31/31 and diff check passed. Source/public HTML
+  equality is tested; generated CSS/JS are copied by the existing build.
+- Updated browser-tests/mobile.cjs passed at 390px and 360px, including both
+  currencies/reload, category create/default/edit/delete, group worker payment,
+  backup copy/share/download, invalid import/dedup, edit cancel, search focus,
+  reduced-height keyboard simulation, long-touch and bulk delete accept/cancel.
+- Live source Preview's visible SHA and parity3 CSS verified at width390.
+  Inspected maintenance, categories, currency, home, group history, edit,
+  search, selection and local account accordion. Imported synthetic ILS320 and
+  USD91.50, refreshed; created group own80/total200 and toggled worker payment.
+  Cancellation preserved entries. Screenshots compared to native video frames.
+- Actions run35787813782/job106949255376 completed successfully. Actual logs
+  checked on resumption: web31/31, emulator1/1, required Android Work* tests and
+  assemblePreview BUILD SUCCESSFUL in5m33s; 51 tests, zero failures/errors/skips.
+  Existing additional debug build passed in16s. No Android source edits.
+
+No shared schema, account isolation, syncId, offline/conflict or tombstone
+changes. Import and worker-payment UI use existing persistence/sync paths.
+No production deployment or merge; PR1 remains Draft. Physical keyboard/share
+sheet and live Android-to-web account sync remain unverified. Search stability
+and explicit import preview are intentional Web improvements to retain and
+consider for Android. Existing docs/website-android-handoff.md remains applicable.
