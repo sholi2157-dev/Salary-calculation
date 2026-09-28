@@ -1,0 +1,4 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const {apply}=require('../web/selection.js');
+const entries=[{id:1,totalEarnings:233.33,hours:5.8,currency:'₪',isPaid:false,groupWorkersJson:'[{"name":"A","isPaid":false}]'},{id:2,totalEarnings:100,currency:'$',isPaid:false}];
+test('bulk payment changes only selected entry status and preserves saved amounts and workers',()=>{const result=apply(entries,[1],'paid');assert.deepEqual(result,[{...entries[0],isPaid:true},entries[1]]);assert.equal(entries[0].isPaid,false);assert.equal(result[1],entries[1]);assert.deepEqual(apply(result,[1],'unpaid'),entries);});
+test('bulk deletion is restricted to explicit IDs without mutating original records',()=>{assert.deepEqual(apply(entries,[1,999],'delete'),[entries[1]]);assert.equal(entries.length,2);assert.deepEqual(apply(entries,[],'delete'),entries);assert.throws(()=>apply(entries,[1],'unknown'));});

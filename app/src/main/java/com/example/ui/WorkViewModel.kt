@@ -38,12 +38,13 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.example.ShiftStateManager
 import com.example.ShiftForegroundService
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_settings")
-
 class WorkViewModel(
     application: Application,
-    private val repository: WorkRepository
+    private val repository: WorkRepository,
+    val owner: com.example.data.WorkAccountScope = com.example.data.WorkAccountScope(null)
 ) : AndroidViewModel(application) {
+    private val settings = com.example.data.WorkAccountPreferences.get(application, owner)
+    private val shiftState = ShiftStateManager.forAccount(application, owner)
 
     companion object {
         const val DEFAULT_RATE = 40.0
@@ -51,10 +52,9 @@ class WorkViewModel(
     }
 
     private val SERVICE_NOTIFICATION_ENABLED_KEY = booleanPreferencesKey("service_notification_enabled")
-    private val GEMINI_MODEL_KEY = stringPreferencesKey("gemini_model")
     private val DEFAULT_CURRENCY_KEY = stringPreferencesKey("default_currency")
 
-    val defaultCurrency: StateFlow<String> = application.dataStore.data
+    val defaultCurrency: StateFlow<String> = settings.data
         .map { preferences ->
             preferences[DEFAULT_CURRENCY_KEY] ?: "₪"
         }
@@ -64,17 +64,7 @@ class WorkViewModel(
             initialValue = "₪"
         )
 
-    val geminiModel: StateFlow<String> = application.dataStore.data
-        .map { preferences ->
-            preferences[GEMINI_MODEL_KEY] ?: "Gemini 3.5 Flash"
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "Gemini 3.5 Flash"
-        )
-
-    val serviceNotificationEnabled: StateFlow<Boolean> = application.dataStore.data
+    val serviceNotificationEnabled: StateFlow<Boolean> = settings.data
         .map { preferences ->
             preferences[SERVICE_NOTIFICATION_ENABLED_KEY] ?: true // Default ON
         }
@@ -88,8 +78,9 @@ class WorkViewModel(
     var lastAddedEntryId: Int? = null
 
     private fun getActiveUserId(): String? {
-        return currentUserSession.value?.uid
-            ?: com.example.api.FirebaseSafeInitializer.currentUser.value?.uid
+        // Enable cloud writes only after account isolation and migration are verified.
+        if (!com.example.BuildConfig.CLOUD_SYNC_ENABLED) return null
+        return owner.uid?.takeIf { it == com.example.api.AuthManager.currentUser.value?.uid }
     }
 
     fun undoLastAddedEntry() {
@@ -112,7 +103,7 @@ class WorkViewModel(
 
     fun setDefaultCurrency(currency: String) {
         viewModelScope.launch {
-            getApplication<Application>().dataStore.edit { preferences ->
+            settings.edit { preferences ->
                 preferences[DEFAULT_CURRENCY_KEY] = currency
             }
         }
@@ -120,9 +111,10 @@ class WorkViewModel(
 
     fun updateServiceNotificationEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            getApplication<Application>().dataStore.edit { preferences ->
+            settings.edit { preferences ->
                 preferences[SERVICE_NOTIFICATION_ENABLED_KEY] = enabled
             }
+            if (ShiftStateManager.activeOwner(getApplication()) != owner) return@launch
             if (!enabled) {
                 // Immediately stop foreground service if active
                 val intent = Intent(getApplication(), ShiftForegroundService::class.java)
@@ -135,6 +127,7 @@ class WorkViewModel(
                 if (activeStart != null) {
                     val intent = Intent(getApplication(), ShiftForegroundService::class.java).apply {
                         action = "START"
+                        putExtra(ShiftForegroundService.EXTRA_OWNER_UID, owner.uid)
                     }
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                         getApplication<Application>().startForegroundService(intent)
@@ -146,17 +139,9 @@ class WorkViewModel(
         }
     }
 
-    fun updateGeminiModel(model: String) {
-        viewModelScope.launch {
-            getApplication<Application>().dataStore.edit { preferences ->
-                preferences[GEMINI_MODEL_KEY] = model
-            }
-        }
-    }
-
     fun updateDefaultCurrency(currency: String) {
         viewModelScope.launch {
-            getApplication<Application>().dataStore.edit { preferences ->
+            settings.edit { preferences ->
                 preferences[DEFAULT_CURRENCY_KEY] = currency
             }
         }
@@ -165,18 +150,19 @@ class WorkViewModel(
     fun performAutoBackup() {
         viewModelScope.launch {
             try {
-                val json = exportDataToString()
+                val json = repository.exportSnapshot()
                 if (json.isEmpty()) return@launch
                 
                 val context = getApplication<Application>()
-                val backupDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOCUMENTS) 
+                val root = context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOCUMENTS)
                     ?: File(context.filesDir, "Documents")
+                val backupDir = if (owner.uid == null) root else File(root, owner.storageKey)
                 if (!backupDir.exists()) {
                     backupDir.mkdirs()
                 }
                 
                 val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-                val backupFile = File(backupDir, "backup_work_entries_$timeStamp.json")
+                val backupFile = File(backupDir, "backup_work_entries_${timeStamp}_${java.util.UUID.randomUUID()}.json")
                 backupFile.writeText(json)
                 android.util.Log.d("WorkViewModel", "Auto-backup saved successfully to: ${backupFile.absolutePath}")
             } catch (e: Exception) {
@@ -188,9 +174,67 @@ class WorkViewModel(
     val runCountAnimationTrigger = androidx.compose.runtime.mutableStateOf(0)
 
     val currentUserSession: StateFlow<com.example.api.AuthManager.UserSession?> = com.example.api.AuthManager.currentUser
+    private var cloudListener: com.google.firebase.firestore.ListenerRegistration? = null
+    val cloudStatus = kotlinx.coroutines.flow.MutableStateFlow("סנכרון הענן עדיין אינו פעיל")
+    private val versionedSync by lazy {
+        val uid = owner.uid ?: return@lazy null
+        val auth = com.example.api.AuthManager.getFirebaseAuthSafely() ?: return@lazy null
+        val firestore = com.example.api.FirestoreSyncManager.getFirestoreSafely() ?: return@lazy null
+        val prefs = application.getSharedPreferences("sync_device_identity", Context.MODE_PRIVATE)
+        val deviceId = prefs.getString("id", null) ?: java.util.UUID.randomUUID().toString().also {
+            check(prefs.edit().putString("id", it).commit())
+        }
+        com.example.data.WorkSyncEngine(owner.database(application), uid, deviceId,
+            com.example.api.WorkFirestoreTransport(firestore, auth)) { auth.currentUser?.uid }
+    }
 
-    fun signOut(context: Context) {
+    fun syncNow() {
+        if (!com.example.BuildConfig.VERSIONED_SYNC_ENABLED || owner.uid == null) return
+        viewModelScope.launch { performSync() }
+    }
+
+    private suspend fun performSync() {
+        if (currentUserSession.value?.uid != owner.uid || owner.uid == null) return
+        try {
+            cloudStatus.value = "מסנכרן…"
+            val count = versionedSync?.synchronize() ?: return
+            cloudStatus.value = if (count == 0) "הסנכרון הושלם" else "$count שינויים דורשים בחירה"
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (_: Exception) { cloudStatus.value = "ממתין לחיבור. השינויים נשמרו במכשיר" }
+    }
+
+    fun reviewSyncConflicts(context: Context) {
+        if (!com.example.BuildConfig.VERSIONED_SYNC_ENABLED || currentUserSession.value?.uid != owner.uid) return
+        viewModelScope.launch {
+            val row = owner.database(getApplication()).syncDao().conflicts().firstOrNull()
+            if (row == null) { Toast.makeText(context, "אין שינויים מתנגשים", Toast.LENGTH_SHORT).show(); return@launch }
+            val remote = com.example.data.WorkRemoteRecord.decode(checkNotNull(row.conflictPayload))
+            val localDescription = when (row.entityType) {
+                "entry" -> owner.database(getApplication()).workDao().getEntryById(row.localId)?.let {
+                    "${it.category} · ${it.totalEarnings} ${it.currency}\n${it.notes}"
+                } ?: "נמחק במכשיר"
+                else -> "${row.entityType} #${row.localId}"
+            }
+            android.app.AlertDialog.Builder(context).setTitle("בחירת גרסה לשמירה")
+                .setMessage("במכשיר:\n$localDescription\n\nבענן:\n${if (remote.deleted) "הרשומה נמחקה" else remote.payload}")
+                .setNeutralButton("מאוחר יותר", null)
+                .setNegativeButton("שמור מהמכשיר") { _, _ -> viewModelScope.launch {
+                    versionedSync?.resolve(row.syncId, true); performSync()
+                } }
+                .setPositiveButton("קבל מהענן") { _, _ -> viewModelScope.launch {
+                    versionedSync?.resolve(row.syncId, false); performSync()
+                } }.show()
+        }
+    }
+
+    fun signOut(context: Context): Boolean {
+        if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return false
+        if (ShiftStateManager.hasActiveShift(context)) {
+            Toast.makeText(context, "יש לסיים את המשמרת הפעילה לפני החלפת חשבון", Toast.LENGTH_LONG).show()
+            return false
+        }
         com.example.api.AuthManager.signOut(context)
+        return true
     }
 
     init {
@@ -201,20 +245,30 @@ class WorkViewModel(
         } catch (e: Throwable) {
             android.util.Log.w("WorkViewModel", "FirebaseSafeInitializer / AuthManager / FirestoreSyncManager failed: ${e.localizedMessage}")
         }
-        ShiftStateManager.init(application)
         runCountAnimationTrigger.value = runCountAnimationTrigger.value + 1
+
+        if (com.example.BuildConfig.VERSIONED_SYNC_ENABLED && owner.uid != null) {
+            viewModelScope.launch {
+                while (true) {
+                    performSync()
+                    kotlinx.coroutines.delay(60_000)
+                }
+            }
+        }
 
         // Subscribe to real-time Firestore snapshots for user
         viewModelScope.launch {
             currentUserSession.collect { session ->
-                val uid = session?.uid ?: com.example.api.FirebaseSafeInitializer.currentUser.value?.uid
+                cloudListener?.remove()
+                cloudListener = null
+                val uid = if (com.example.BuildConfig.CLOUD_SYNC_ENABLED && session?.uid == owner.uid) owner.uid else null
                 if (!uid.isNullOrBlank()) {
-                    com.example.api.FirestoreSyncManager.listenToUserShifts(
+                    cloudListener = com.example.api.FirestoreSyncManager.listenToUserShifts(
                         userId = uid,
                         onShiftsChanged = { remoteList ->
                             if (remoteList.isNotEmpty()) {
                                 viewModelScope.launch {
-                                    repository.syncRemoteEntries(remoteList)
+                                    if (getActiveUserId() == uid) repository.syncRemoteEntries(remoteList)
                                 }
                             }
                         }
@@ -222,6 +276,12 @@ class WorkViewModel(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        cloudListener?.remove()
+        cloudListener = null
+        super.onCleared()
     }
 
     // Observe Room DB entities
@@ -286,18 +346,30 @@ class WorkViewModel(
     }
 
     // Active Shift Tracker Properties - routed to persistent state manager
-    val activeShiftStartTime: StateFlow<Long?> = ShiftStateManager.activeShiftStartTime
-    val activeShiftCategory: StateFlow<String> = ShiftStateManager.activeShiftCategory
-    val activeShiftRate: StateFlow<Double> = ShiftStateManager.activeShiftRate
+    val activeShiftStartTime: StateFlow<Long?> = shiftState.activeShiftStartTime
+    val activeShiftCategory: StateFlow<String> = shiftState.activeShiftCategory
+    val activeShiftRate: StateFlow<Double> = shiftState.activeShiftRate
+
+    fun startActiveShiftWithSavedRate(category: String) {
+        viewModelScope.launch {
+            val rate = repository.getCategoryByName(category)?.defaultRate ?: DEFAULT_RATE
+            startActiveShift(category, rate)
+        }
+    }
 
     fun startActiveShift(category: String, rate: Double) {
+        if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return
         val startTime = System.currentTimeMillis()
-        ShiftStateManager.start(getApplication(), category, rate, startTime)
+        if (!shiftState.start(category, rate, startTime, defaultCurrency.value)) {
+            Toast.makeText(getApplication(), "כבר קיימת משמרת פעילה. יש לסיים אותה תחילה", Toast.LENGTH_LONG).show()
+            return
+        }
         
         // Start Foreground Service only if enabled
         if (serviceNotificationEnabled.value) {
             val intent = Intent(getApplication(), ShiftForegroundService::class.java).apply {
                 action = "START"
+                putExtra(ShiftForegroundService.EXTRA_OWNER_UID, owner.uid)
             }
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 getApplication<Application>().startForegroundService(intent)
@@ -308,12 +380,61 @@ class WorkViewModel(
     }
 
     fun stopActiveShift() {
-        val context = getApplication<Application>()
-        ShiftStateManager.clear(context)
-        
-        // Stop Foreground Service
-        val intent = Intent(context, ShiftForegroundService::class.java)
-        context.stopService(intent)
+        finishActiveShift(save = false)
+    }
+
+    fun finishActiveShift(save: Boolean = true) {
+        val start = activeShiftStartTime.value ?: return
+        val rate = activeShiftRate.value
+        val category = activeShiftCategory.value
+        val currency = shiftState.activeShiftCurrency.value
+        val elapsed = ((System.currentTimeMillis() / 1000L) - (start / 1000L)).coerceAtLeast(0L)
+        viewModelScope.launch {
+            try {
+                val entry = if (save) WorkEntry(category = category, date = start, isTimeRange = false,
+                    hours = elapsed / 3600.0, hourlyRate = rate,
+                    totalEarnings = Math.round(elapsed * rate / 3600.0 * 100.0) / 100.0,
+                    notes = "משמרת פעילה (טיימר החישוב)", currency = currency) else null
+                val id = owner.database(getApplication()).workDao().finishTimer(start, entry)
+                if (id > 0) lastAddedEntryId = id.toInt()
+                if (shiftState.clear(start)) getApplication<Application>().stopService(
+                    Intent(getApplication(), ShiftForegroundService::class.java))
+                performAutoBackup()
+            } catch (_: Exception) {
+                Toast.makeText(getApplication(), "המשמרת לא נשמרה. הטיימר נשאר פעיל; אפשר לנסות שוב", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    fun reviewLegacyData(context: Context) {
+        if (owner.uid == null) return
+        viewModelScope.launch {
+            val target = owner.database(context)
+            if (target.workDao().receipt("legacy-guest-v1") != null) {
+                Toast.makeText(context, "הנתונים המקומיים כבר הועתקו לחשבון זה", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            val reviewed = com.example.data.WorkLegacyAdoption.snapshot(com.example.data.WorkAccountScope(null).database(context))
+            val totals = reviewed.entries.groupBy { it.currency }.map { (currency, rows) ->
+                "$currency: ${String.format(Locale.US, "%.2f", rows.sumOf { it.totalEarnings })}"
+            }.joinToString("\n")
+            android.app.AlertDialog.Builder(context)
+                .setTitle("העתקת נתונים מקומיים לחשבון")
+                .setMessage("${reviewed.entries.size} משמרות, ${reviewed.categories.size} קטגוריות\n$totals\nהמקור המקומי יישאר ללא שינוי. זהו עותק חד־פעמי לחשבון זה בלבד; אין סנכרון ענן פעיל.")
+                .setNegativeButton("ביטול", null)
+                .setPositiveButton("אישור העתקה") { _, _ ->
+                    if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return@setPositiveButton
+                    viewModelScope.launch {
+                        try {
+                            val added = com.example.data.WorkLegacyAdoption.confirm(target, reviewed)
+                            Toast.makeText(context, "הועתקו $added משמרות", Toast.LENGTH_LONG).show()
+                            performAutoBackup()
+                        } catch (_: Exception) {
+                            Toast.makeText(context, "ההעתקה לא הושלמה. נתוני המקור נשמרו", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }.show()
+        }
     }
 
     // Data structure for UI financial statistics
@@ -457,21 +578,18 @@ class WorkViewModel(
         currency: String = "₪"
     ) {
         viewModelScope.launch {
-            val finalHours = if (isTimeRange) {
-                calculateHoursDiff(startTime ?: "00:00", endTime ?: "00:00")
-            } else {
-                hours
-            }
-            val entry = WorkEntry(
-                id = id,
+            if (!hours.isFinite() || hours <= 0.0 || !rate.isFinite() || rate < 0.0 ||
+                (employerRate != null && (!employerRate.isFinite() || employerRate < 0.0)) ||
+                (workerRate != null && (!workerRate.isFinite() || workerRate < 0.0))) return@launch
+            val original = repository.getEntryById(id) ?: return@launch
+            val proposed = original.copy(
                 category = category,
                 date = dateMillis,
                 isTimeRange = isTimeRange,
                 startTime = startTime,
                 endTime = endTime,
-                hours = finalHours,
+                hours = hours,
                 hourlyRate = rate,
-                totalEarnings = Math.round((finalHours * rate) * 100.0) / 100.0,
                 isPaid = isPaid,
                 notes = notes,
                 isGroupShift = isGroupShift,
@@ -481,7 +599,7 @@ class WorkViewModel(
                 currency = currency
             )
             val uid = getActiveUserId()
-            repository.updateEntry(entry, uid)
+            repository.updateEntry(com.example.data.WorkEntryEdits.apply(original, proposed), uid)
             
             performAutoBackup()
         }
@@ -671,36 +789,7 @@ class WorkViewModel(
     // Export Data (JSON structure string)
     fun exportDataToString(): String {
         return try {
-            val root = JSONObject()
-
-            // Map categories to list
-            val catsJson = JSONArray()
-            for (cat in categories.value) {
-                catsJson.put(JSONObject().apply {
-                    put("name", cat.name)
-                })
-            }
-            root.put("categories", catsJson)
-
-            // Map work entries to list
-            val entriesJson = JSONArray()
-            for (entry in entries.value) {
-                entriesJson.put(JSONObject().apply {
-                    put("category", entry.category)
-                    put("date", entry.date)
-                    put("isTimeRange", entry.isTimeRange)
-                    put("startTime", entry.startTime)
-                    put("endTime", entry.endTime)
-                    put("hours", entry.hours)
-                    put("hourlyRate", entry.hourlyRate)
-                    put("totalEarnings", entry.totalEarnings)
-                    put("isPaid", entry.isPaid)
-                    put("notes", entry.notes)
-                })
-            }
-            root.put("entries", entriesJson)
-
-            root.toString(2)
+            com.example.data.WorkBackup.encode(categories.value, entries.value, workersDirectory.value)
         } catch (e: Exception) {
             ""
         }
@@ -766,159 +855,40 @@ class WorkViewModel(
         val trimmed = jsonStr.trim()
         if (trimmed.isEmpty()) return false
         
-        return if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-            try {
-                val root = JSONObject(trimmed)
-
-                viewModelScope.launch {
-                    // 1. Process categories
-                    if (root.has("categories")) {
-                        val catsArray = root.getJSONArray("categories")
-                        for (i in 0 until catsArray.length()) {
-                            val catObj = catsArray.getJSONObject(i)
-                            val name = catObj.optString("name", "").trim()
-                            if (name.isNotEmpty()) {
-                                // Deduplicate before insert
-                                val currentList = categories.value
-                                val exists = currentList.any { it.name.trim().lowercase() == name.lowercase() }
-                                if (!exists) {
-                                    repository.insertCategory(WorkCategory(name = name))
-                                }
-                            }
-                        }
-                    }
-
-                    // 2. Process entries
-                    if (root.has("entries")) {
-                        val entriesArray = root.getJSONArray("entries")
-                        for (i in 0 until entriesArray.length()) {
-                            val entryObj = entriesArray.getJSONObject(i)
-                            val category = entryObj.optString("category", "כללי")
-                            val date = entryObj.optLong("date", System.currentTimeMillis())
-                            val isTimeRange = entryObj.optBoolean("isTimeRange", false)
-                            val startTime = if (entryObj.has("startTime")) entryObj.optString("startTime") else null
-                            val endTime = if (entryObj.has("endTime")) entryObj.optString("endTime") else null
-                            val hours = entryObj.optDouble("hours", 0.0)
-                            val rate = entryObj.optDouble("hourlyRate", DEFAULT_RATE)
-                            val earnings = entryObj.optDouble("totalEarnings", hours * rate)
-                            val isPaid = entryObj.optBoolean("isPaid", false)
-                            val notes = entryObj.optString("notes", "")
-
-                            val uid = getActiveUserId()
-                            val entry = WorkEntry(
-                                category = category,
-                                date = date,
-                                isTimeRange = isTimeRange,
-                                startTime = startTime,
-                                endTime = endTime,
-                                hours = hours,
-                                hourlyRate = rate,
-                                totalEarnings = earnings,
-                                isPaid = isPaid,
-                                notes = notes
-                            )
-                            repository.insertEntry(entry, uid)
-                        }
-                    }
-                }
-                true
-            } catch (e: Exception) {
-                false
-            }
-        } else {
-            // Excel/CSV import
-            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                val lines = trimmed.split("\n")
-                var successCount = 0
-                var totalAttempted = 0
-                
-                for (line in lines) {
-                    val cleanLine = line.trim()
-                    if (cleanLine.isBlank()) continue
-                    
-                    // Check for headers
-                    if (cleanLine.contains("קטגוריה") || cleanLine.contains("תאריך")) {
-                        continue
-                    }
-                    totalAttempted++
-                    
-                    try {
-                        val delimiter = if (cleanLine.contains("\t")) "\t" else if (cleanLine.contains("|")) "|" else ","
-                        val rawCells = cleanLine.split(delimiter)
-                        val cells = rawCells.map { it.trim() }
-                        
-                        if (cells.size < 9) { // At least need up to Total/PaidStatus
-                            throw IllegalArgumentException("Not enough columns in row")
-                        }
-                        
-                        // a) Map Column 0 to Date
-                        val dateStr = cells[0]
-                        val parsedDate = parseDateStr(dateStr)
-                        
-                        // Column 1: Category
-                        val categoryStr = cells[1].ifBlank { "כללי" }
-                        
-                        // Column 2: Type
-                        val shiftType = cells[2]
-                        val isTimeRange = shiftType != "ידני"
-                        
-                        // b) Map Column 3 & 4 to Start/End Times
-                        var startTimeStr: String? = null
-                        var endTimeStr: String? = null
-                        if (isTimeRange) {
-                            startTimeStr = cells[3].takeIf { it.isNotBlank() }
-                            endTimeStr = cells[4].takeIf { it.isNotBlank() }
-                        }
-                        
-                        // c) Map Column 6 (Duration), Column 7 (Rate), and Column 8 (Total) to Double, handling comma-to-dot
-                        val durationStr = cells.getOrNull(6)?.replace(",", ".") ?: "0"
-                        val duration = durationStr.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: throw IllegalArgumentException("Invalid Duration")
-                        
-                        val rateStr = cells.getOrNull(7)?.replace(",", ".") ?: "0"
-                        val rate = rateStr.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: DEFAULT_RATE
-                        
-                        val totalStr = cells.getOrNull(8)?.replace(",", ".") ?: "0"
-                        val totalEarnings = totalStr.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: (duration * rate)
-                        
-                        // d) Map Column 9 (PaidStatus)
-                        val paidStr = cells.getOrNull(9)?.trim() ?: ""
-                        val isPaid = !(paidStr == "לא" || paidStr.isEmpty())
-                        
-                        // e) Map Column 10 to Notes
-                        val notesStr = cells.getOrNull(10)?.trim() ?: ""
-                        
-                        val cleanCategory = categoryStr.trim()
-                        val existingCategory = repository.getCategoryByName(cleanCategory)
-                        if (existingCategory == null) {
-                            repository.insertCategory(WorkCategory(name = cleanCategory, defaultRate = rate))
-                        }
-                        
-                        val uid = getActiveUserId()
-                        val entry = WorkEntry(
-                            category = cleanCategory,
-                            date = parsedDate,
-                            isTimeRange = isTimeRange,
-                            startTime = startTimeStr,
-                            endTime = endTimeStr,
-                            hours = duration,
-                            hourlyRate = rate,
-                            totalEarnings = totalEarnings,
-                            isPaid = isPaid,
-                            notes = notesStr
-                        )
-                        repository.insertEntry(entry, uid)
-                        successCount++
-                    } catch (e: Exception) {
-                        android.util.Log.w("Import", "Skipping malformed row: $cleanLine", e)
-                    }
-                }
-                
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    android.widget.Toast.makeText(context, "יובאו $successCount מתוך $totalAttempted שורות בהצלחה!", android.widget.Toast.LENGTH_LONG).show()
-                }
-            }
-            return true
+        val backup = try {
+            if (trimmed.startsWith("{")) com.example.data.WorkBackup.decode(trimmed)
+            else if (trimmed.startsWith("[")) com.example.data.WorkBackup.decode("{\"entries\":" + trimmed + "}")
+            else com.example.data.WorkTableImport.decode(jsonStr)
+        } catch (e: Exception) {
+            Toast.makeText(context, e.message ?: "לא ניתן לקרוא את הנתונים", Toast.LENGTH_LONG).show()
+            return false
         }
+        fun amount(value: Double) = String.format(Locale.US, "%.2f", value)
+        val totals = backup.entries.groupBy { it.currency }.map { (currency, rows) ->
+            "$currency: סך הכול ${amount(rows.sumOf { it.totalEarnings })}, שולם ${amount(rows.filter { it.isPaid }.sumOf { it.totalEarnings })}, לא שולם ${amount(rows.filter { !it.isPaid }.sumOf { it.totalEarnings })}"
+        }.joinToString("\n")
+        val categoryCount = (backup.categories.map { it.name } + backup.entries.map { it.category }).distinct().size
+        val summary = "נקראו ${backup.entries.size} משמרות ו־$categoryCount קטגוריות.\nסך שעות: ${amount(backup.entries.sumOf { it.hours })}\nסכומי הקובץ לפי מצב תשלום המשמרת:\n$totals\nהשווה לסיכום המקורי לפני האישור.\nרשומות שכבר קיימות לא יתווספו שוב.\n\n" +
+            backup.entries.take(20).joinToString("\n") { entry ->
+                "${entry.category} | ${SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(entry.date))} | ${entry.hours} שעות | ${entry.totalEarnings} ${entry.currency}"
+            } + if (backup.entries.size > 20) "\nועוד ${backup.entries.size - 20} משמרות" else ""
+        android.app.AlertDialog.Builder(context)
+            .setTitle("בדיקת נתונים לפני ייבוא")
+            .setMessage(summary)
+            .setNegativeButton("ביטול", null)
+            .setPositiveButton("שמירת הנתונים") { _, _ ->
+                viewModelScope.launch {
+                    try {
+                        val added = repository.importBackup(backup)
+                        performAutoBackup()
+                        Toast.makeText(context, "נוספו $added משמרות", Toast.LENGTH_LONG).show()
+                    } catch (e: Exception) {
+                        android.util.Log.e("WorkViewModel", "Import failed", e)
+                        Toast.makeText(context, "הייבוא לא הושלם. הנתונים הקיימים נשמרו.", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }.show()
+        return true
     }
 
     // Export Work History to CSV and Share
@@ -935,7 +905,7 @@ class WorkViewModel(
             csvBuilder.append('\ufeff')
             
             // CSV Headers
-            csvBuilder.append("מזהה,מעסיק/קטגוריה,תאריך,שעות,תעריף שעתי,סה\"כ רווח,סטטוס תשלום,סוג דיווח,שעת כניסה,שעת יציאה,הערות\n")
+            csvBuilder.append("מזהה,מעסיק/קטגוריה,תאריך,שעות,תעריף שעתי,סה\"כ רווח,סטטוס תשלום,סוג דיווח,שעת כניסה,שעת יציאה,הערות,מטבע\n")
             
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.US)
             for (entry in entryList) {
@@ -950,7 +920,7 @@ class WorkViewModel(
                 val endTimeStr = entry.endTime ?: ""
                 val escapedNotes = escapeCsvField(entry.notes)
                 
-                csvBuilder.append("${entry.id},$escapedCategory,$formattedDate,$hoursStr,$rateStr,$earningsStr,$statusStr,$reportTypeStr,$startTimeStr,$endTimeStr,$escapedNotes\n")
+                csvBuilder.append("${entry.id},$escapedCategory,$formattedDate,$hoursStr,$rateStr,$earningsStr,$statusStr,$reportTypeStr,$startTimeStr,$endTimeStr,$escapedNotes,${entry.currency}\n")
             }
 
             // Write to local cache file
@@ -999,13 +969,16 @@ class WorkViewModel(
 }
 
 // ViewModel factory for initializing the Room Database Context
-class WorkViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
+class WorkViewModelFactory(
+    private val application: Application,
+    private val owner: com.example.data.WorkAccountScope = com.example.data.WorkAccountScope(null)
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(WorkViewModel::class.java)) {
-            val db = WorkDatabase.getDatabase(application, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO))
+            val db = owner.database(application)
             val repository = WorkRepository(db.workDao())
             @Suppress("UNCHECKED_CAST")
-            return WorkViewModel(application, repository) as T
+            return WorkViewModel(application, repository, owner) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

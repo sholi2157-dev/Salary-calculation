@@ -7,16 +7,16 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
-@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class], version = 5, exportSchema = false)
+@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class, WorkLocalReceipt::class], version = 7, exportSchema = false)
 abstract class WorkDatabase : RoomDatabase() {
     abstract fun workDao(): WorkDao
+    abstract fun syncDao(): WorkSyncDao
 
     companion object {
         @Volatile
         private var INSTANCE: WorkDatabase? = null
+        private val accountInstances = mutableMapOf<String, WorkDatabase>()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -46,38 +46,45 @@ abstract class WorkDatabase : RoomDatabase() {
             }
         }
 
-        fun getDatabase(context: Context, scope: CoroutineScope): WorkDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    WorkDatabase::class.java,
-                    "sholi_work_tracker_db"
-                )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
-                .fallbackToDestructiveMigration(true)
-                .addCallback(DatabaseCallback(scope))
-                .build()
-                INSTANCE = instance
-                instance
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                WorkSyncSchema.create(db)
             }
         }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS work_local_receipts (operation TEXT NOT NULL PRIMARY KEY, result INTEGER NOT NULL)")
+            }
+        }
+
+        fun getDatabase(context: Context, scope: CoroutineScope): WorkDatabase =
+            INSTANCE ?: synchronized(this) {
+                INSTANCE ?: build(context, WorkAccountStorage.GUEST_DATABASE).also { INSTANCE = it }
+            }
+
+        /**
+         * Explicit account store. Opening it never moves/copies guest data.
+         * UI account switching remains gated until all session-bound state is isolated.
+         */
+        fun getAccountDatabase(context: Context, uid: String): WorkDatabase = synchronized(this) {
+            val name = WorkAccountStorage.databaseName(uid)
+            accountInstances.getOrPut(name) { build(context, name) }
+        }
+
+        private fun build(context: Context, name: String): WorkDatabase =
+            Room.databaseBuilder(context.applicationContext, WorkDatabase::class.java, name)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addCallback(DatabaseCallback())
+                .build()
     }
 
-    private class DatabaseCallback(
-        private val scope: CoroutineScope
-    ) : RoomDatabase.Callback() {
+    internal class DatabaseCallback : RoomDatabase.Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
-            INSTANCE?.let { database ->
-                scope.launch(Dispatchers.IO) {
-                    populateDatabase(database.workDao())
-                }
-            }
-        }
-
-        suspend fun populateDatabase(workDao: WorkDao) {
-            // Seed default categories
-            workDao.insertCategory(WorkCategory(name = "עצמאי"))
+            WorkSyncSchema.installTriggers(db)
+            // Seed synchronously in this database, not through the guest singleton.
+            db.execSQL("INSERT INTO work_categories (name, defaultRate) VALUES ('עצמאי', 40.0)")
         }
     }
 }
