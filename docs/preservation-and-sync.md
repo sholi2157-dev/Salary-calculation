@@ -696,3 +696,14 @@ supports a coordinated additive sync extension. See website-android-handoff.md.
 Physical phone keyboard/native share sheet and full live Android/account sync
 remain unverified; browser simulation and emulators do not prove those gates.
 No production, merge, user-data operations, Android source or sync-contract changes.
+
+## 2026-09-28 — release-readiness audit
+
+Application HEAD1feeee6cc15391b47fd9bafabe01678a49310f12 remains unchanged.
+See docs/release-readiness.md for the NOT READY decision and exact live/Android
+handoff. Local web31/31, build and mobile regression rerun passed. Current-HEAD
+CI run36454558048/job109038053143 logs verified: emulator1/1, Android51/51,
+required Gradle build6m23s. Targeted offline guest save/reconnect persisted data,
+but offline reload could not open the app. Live email/password attempt returned
+a generic failure; registration/reset/logout and two-user/live Android sync
+remain unverified. No credentials captured, real data used or production changed.
