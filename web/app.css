@@ -105,7 +105,7 @@ select.form-input { cursor: pointer; }
 .summary-pair > div + div { align-items: flex-end; text-align: end; }
 .summary-pair span, .summary-pair small { font-size: 11px; }
 .summary-pair small { color: var(--text); font-weight: 600; }
-.summary-pair strong { color: var(--text); font-size: 23px; line-height: 1.3; font-weight: 700; font-variant-numeric: tabular-nums; white-space: pre-line; overflow-wrap: anywhere; }
+.summary-pair strong { color: var(--text); font-size: 23px; line-height: 1.3; font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; white-space: pre-line; overflow-wrap: anywhere; }
 .summary-pair b { font-size: 15px; white-space: pre-line; }
 .progress-track { height: 3px; margin-top: 20px; border-radius: 4px; background: #2c2c2e; overflow: hidden; }
 .progress-track > span { display: block; height: 100%; max-width: 100%; background: var(--green); }
@@ -172,7 +172,7 @@ select.form-input { cursor: pointer; }
 .payment-segments button { flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 25px; background: #121212; color: var(--muted); font-size: 12px; }
 .payment-segments .selected { background: #5c6bc0; border-color: #5c6bc0; color: white; }
 .journal-total { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 4px 14px; color: var(--muted); font-size: 11px; }
-.journal-total strong { color: #d1fae5; font-size: 16px; white-space: pre-line; text-align: end; }
+.journal-total strong { color: #d1fae5; font-size: 16px; direction: ltr; unicode-bidi: isolate; white-space: pre-line; text-align: end; }
 .journal-card { margin-bottom: 8px; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: #090b10d9; transition: border-color .2s; }
 .journal-card > summary { display: flex; align-items: center; gap: 8px; min-height: 66px; padding: 10px; cursor: pointer; list-style: none; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
 .journal-card > summary::-webkit-details-marker { display: none; }
@@ -206,6 +206,9 @@ select.form-input { cursor: pointer; }
 .group-card-worker strong { display: block; font-size: 12px; }
 .group-card-worker small { display: block; margin-top: 4px; font-size: 10px; }
 .group-card-worker.is-paid { border-color: #34d39944; }
+.worker-card-actions { display: flex; align-items: center; gap: 6px; }
+.worker-card-actions .icon-btn { width: 32px; height: 36px; color: var(--green); }
+.worker-card-actions .ui-icon { width: 17px; height: 17px; }
 .worker-payment { display: flex; align-items: center; gap: 4px; margin: 0; font-size: 11px; }
 .journal-card-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .btn-mini { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 38px; min-height: 38px; padding: 7px; border: 1px solid var(--border); border-radius: 7px; background: #272e4a; font-size: 11px; }
@@ -254,7 +257,7 @@ dialog p { margin: 10px 0; color: var(--muted); font-size: 13px; line-height: 1.
 #settings-dialog details[open] > summary::before { transform: rotate(225deg); }
 #settings-dialog .settings-help { margin: 8px 0 12px; color: var(--muted); font-size: 11px; font-weight: 400; line-height: 1.65; }
 .settings-subheading { margin: 14px 0 8px; font-size: 13px; font-weight: 600; }
-.settings-footer { position: sticky; bottom: -18px; z-index: 2; margin-top: 12px; padding: 14px 0 2px; background: var(--dialog); }
+.settings-footer { position: sticky; bottom: -18px; z-index: 2; margin-top: 12px; padding: 14px 0 2px; background: #111214; }
 #category-dialog { max-width: 390px; }
 #category-dialog > label { margin-top: 12px; }
 .default-category-choice { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
