@@ -5,6 +5,7 @@ fs.copyFileSync('web/transfer.js', 'public/web/transfer.js');
 fs.copyFileSync('web/app.css', 'public/web/app.css');
 fs.copyFileSync('web/history.js', 'public/web/history.js');
 fs.copyFileSync('web/parity.js', 'public/web/parity.js');
+fs.copyFileSync('web/presentation.js', 'public/web/presentation.js');
 
 fs.copyFileSync('web/selection.js', 'public/web/selection.js');
 fs.copyFileSync('web/cloud-sync.js', 'public/web/cloud-sync.js');

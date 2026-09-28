@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <link rel="stylesheet" href="web/app.css?v=20260922-parity3">
+    <link rel="stylesheet" href="web/app.css?v=20260928-design-system">
 </head>
 <body>
 
@@ -90,10 +90,10 @@
 <dialog id="transfer-dialog">
   <h2>בדיקת נתונים לפני ייבוא</h2>
   <label for="transfer-text">הדבק גיבוי או טבלה, כולל כותרות העמודות</label>
-  <textarea id="transfer-text" class="form-input" rows="7" style="width:100%;margin:12px 0" oninput="invalidateTransfer()"></textarea>
+  <textarea id="transfer-text" class="form-input" rows="7" oninput="invalidateTransfer()"></textarea>
   <button class="btn-primary" onclick="previewTransfer()">בדיקת הנתונים</button>
-  <p id="transfer-summary" role="status" style="white-space:pre-wrap"></p>
-  <div id="transfer-rows" style="max-height:35vh;overflow:auto"></div>
+  <p id="transfer-summary" role="status"></p>
+  <div id="transfer-rows"></div>
   <label><input type="checkbox" id="transfer-preferences"> שחזור העדפות אתר מהגיבוי (קטגוריית ברירת מחדל ומטבעות)</label>
   <div class="modal-btn-row"><button id="transfer-save" class="btn-primary" disabled onclick="commitTransfer()">שמירת המשמרות</button>
   <button class="btn-secondary" onclick="document.getElementById('transfer-dialog').close()">ביטול</button></div>
@@ -146,7 +146,8 @@
 <script src="web/cloud-sync.js"></script>
 <script src="web/categories.js"></script>
 <script src="web/sharing.js"></script>
-<script src="web/parity.js?v=20260922-parity3"></script>
+<script src="web/presentation.js?v=20260928-design-system"></script>
+<script src="web/parity.js?v=20260928-design-system"></script>
 
 <script>
     // State management
@@ -200,9 +201,9 @@
             pendingTransfer=WorkTransfer.decode(document.getElementById('transfer-text').value);
             const incoming=pendingTransfer.entries,added=WorkTransfer.missing(shifts,incoming);
             document.getElementById('transfer-summary').textContent=`נקראו ${incoming.length} משמרות. חדשות: ${added.length}. קיימות: ${incoming.length-added.length}.\nסכומי הקובץ: ${formatTotals(WorkTransfer.totals(incoming))}\nסכום שיתווסף: ${formatTotals(WorkTransfer.totals(added))}`;
-            const table=document.createElement('table');table.style.width='100%';
+            const table=document.createElement('table');
             for(const cells of [['קטגוריה','תאריך','שעות','תעריף','סכום','הערות'],...incoming.map(e=>[e.category,new Date(e.date).toLocaleDateString('he-IL'),e.hours,e.hourlyRate+' '+e.currency,e.totalEarnings+' '+e.currency,e.notes])]){
-                const tr=document.createElement('tr');for(const value of cells){const td=document.createElement('td');td.textContent=value;td.style.padding='8px';tr.appendChild(td);}table.appendChild(tr);
+                const tr=document.createElement('tr');for(const value of cells){const td=document.createElement('td');td.textContent=value;tr.appendChild(td);}table.appendChild(tr);
             }
             document.getElementById('transfer-rows').appendChild(table);document.getElementById('transfer-save').disabled=false;
         } catch(e){pendingTransfer=null;document.getElementById('transfer-summary').textContent=e.message;}
