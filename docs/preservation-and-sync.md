@@ -641,3 +641,58 @@ No production deployment or merge; PR1 remains Draft. Physical keyboard/share
 sheet and live Android-to-web account sync remain unverified. Search stability
 and explicit import preview are intentional Web improvements to retain and
 consider for Android. Existing docs/website-android-handoff.md remains applicable.
+
+## 2026-09-28 — presentation consolidation verified
+
+Tested source: aa4ad6ff36f9489258c27d292cac896a11e3d4b9.
+Verified source Preview: https://salary-calculation-c3mc9g18v-sholi.vercel.app/
+GitHub deployment metadata: this exact SHA, production=false, success.
+
+Replaced the accumulated stylesheet generations with one mobile-first stylesheet
+organized into tokens, shared controls, shell, reports, group editor, history,
+search/selection, dialogs/settings, maintenance and motion/viewport sections.
+Removed old timer/obsolete-card selectors and text-glow declarations rather than
+masking them with another override. Preserved every HTML ID and input/click hook.
+Moved icon, category-row and shift-card DOM rendering into web/presentation.js;
+parity.js retains interaction orchestration and existing persistence callbacks.
+Removed inline transfer-table styling and included the renderer in the existing
+public build. See docs/web-presentation.md for source ownership.
+
+Compared actual 390x844 Preview screens with the supplied Android video montage
+and MainActivity/Theme source. Inspected home/manual/clock/group forms, edit,
+history/expanded group, search, settings/categories/currency/account/maintenance.
+Corrected visible issues after the first deployed render: separate hours/rate
+lines, per-worker Share action via existing Web Share/clipboard fallback,
+opaque settings footer, isolated mixed-currency totals and category chip widths.
+The native palette remains animated, with reduced-motion support and no glow.
+The live browser loaded Heebo and design-system CSS/presentation URLs. No horizontal
+page overflow observed (390px iframe; 375px content with desktop scrollbar).
+
+Verification:
+- npm test: 31/31; npm run build and git diff --check passed.
+- browser-tests/mobile.cjs passed at 390/360px with disposable synthetic guest
+  records; rerun after resumption confirmed final source. Covers currencies and
+  reload, group/share/payment, drafts/backdrop, category/default preservation,
+  selection/delete accept/cancel, search/420px keyboard-space simulation,
+  import validation/dedup/TSV, backup and export. Added worker-share assertion
+  for saved USD worker rate ($76.50), distinct from employer/group amounts.
+- Source HTML equals public HTML; DOM IDs and onclick/onchange/oninput hooks
+  compared before/after and unchanged. Business modules and shared wire unchanged.
+- Actions run 36382840895, job 108802085700: success. Actual logs inspected:
+  web31/31, emulator1/1; required Gradle Work* tests/assemblePreview successful
+  in5m22s, 51 tests zero failures/errors/skips. Additional debug build passed38s.
+- Live synthetic group showed own80, employer total230, net110 and worker120 ILS.
+  Worker share clipboard contained ILS120 and pending status; USD91.50 stayed
+  separately displayed. Search/clear/close and earlier save/reload checks passed.
+- Latest resumption rechecked exact Preview, current HEAD, maintenance and
+  multi-category layout after cancel/reopen; no stale stylesheet detected.
+
+Intentional Web differences: native browser date/time/select controls, larger
+keyboard/touch targets, explicit selection entry, inline search, file/download
+and validated import controls. No web AI or active timer. Heebo, search clear vs
+close, no-glow typography and currency-safe summaries should inform Android.
+Category default/currency preferences remain local/optional backup until Android
+supports a coordinated additive sync extension. See website-android-handoff.md.
+Physical phone keyboard/native share sheet and full live Android/account sync
+remain unverified; browser simulation and emulators do not prove those gates.
+No production, merge, user-data operations, Android source or sync-contract changes.
