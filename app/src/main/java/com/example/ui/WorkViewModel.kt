@@ -359,6 +359,13 @@ class WorkViewModel(
     val activeShiftStartTime: StateFlow<Long?> = shiftState.activeShiftStartTime
     val activeShiftCategory: StateFlow<String> = shiftState.activeShiftCategory
     val activeShiftRate: StateFlow<Double> = shiftState.activeShiftRate
+    val activeShiftCurrency: StateFlow<String> = shiftState.activeShiftCurrency
+    fun startDefaultActiveShift() { viewModelScope.launch {
+        val all = repository.getCategoriesList()
+        val selected = localDao.getLocalPreferences().firstOrNull { it.name == "defaultCategory" }?.value
+        val category = all.firstOrNull { it.name == selected } ?: all.firstOrNull() ?: return@launch
+        startActiveShift(category.name, category.defaultRate)
+    } }
 
     fun startActiveShiftWithSavedRate(category: String) {
         viewModelScope.launch {

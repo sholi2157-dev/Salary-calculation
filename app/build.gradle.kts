@@ -89,6 +89,7 @@ android {
     compose = true
     buildConfig = true
   }
+  if (providers.gradleProperty("distributionInstrumentation").orNull == "true") testBuildType = "release"
   testOptions { unitTests { isIncludeAndroidResources = true } }
 }
 

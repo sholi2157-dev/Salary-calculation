@@ -309,7 +309,7 @@ class MainActivity : ComponentActivity() {
         intentActionFlow.value = intent?.action
         if (intent?.action == "com.example.ACTION_START_SHIFT") {
             // Need to retrieve default rate for "עצמאי" if it exists, otherwise use 40.0
-            viewModel.startActiveShiftWithSavedRate("עצמאי")
+            viewModel.startDefaultActiveShift()
             intentActionFlow.value = null
         }
     }
@@ -953,7 +953,7 @@ fun DashboardScreen(
     var hourlyRateStr by remember { mutableStateOf("40") }
     val localPreferences by viewModel.localPreferences.collectAsStateWithLifecycle()
     val defaultCategory = localPreferences["defaultCategory"] ?: categories.firstOrNull()?.name ?: "עצמאי"
-    var selectedCategory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(defaultCategory) }
+    var selectedCategory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     LaunchedEffect(defaultCategory, categories) {
         if (categories.none { it.name == selectedCategory }) selectedCategory = defaultCategory
     }
@@ -1374,7 +1374,7 @@ fun DashboardScreen(
                                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                                                 Column {
                                                     Text("נצבר", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                    AnimatedGlowingEarnings(targetValue = accumulatedEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 28.sp, glowColor = Color(0xFF10B981))
+                                                    AnimatedGlowingEarnings(currencySymbol = viewModel.activeShiftCurrency.collectAsStateWithLifecycle().value, targetValue = accumulatedEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 28.sp, glowColor = Color(0xFF10B981))
                                                 }
                                                 Column(horizontalAlignment = Alignment.End) {
                                                     Text("זמן", color = Color(0xFF8E8E93), fontSize = 12.sp)
@@ -2516,7 +2516,7 @@ fun DashboardScreen(
                                 val eParts = endTimeStr.split(":")
                                 val eMin = (eParts.getOrNull(0)?.toIntOrNull() ?: 17) * 60 + (eParts.getOrNull(1)?.toIntOrNull() ?: 0)
                                 val bMins = breakMinutesStr.toDoubleOrNull() ?: 0.0
-                                val durationVal = eMin - sMin - bMins
+                                val durationVal = (if (eMin < sMin) eMin + 1440 - sMin else eMin - sMin) - bMins
                                 maxOf(0.0, durationVal / 60.0)
                             }
                             val finalRate = hourlyRateStr.toDoubleOrNull() ?: 40.0
@@ -4790,7 +4790,7 @@ fun ManagementScreen(
                         ) {
                             Column(modifier = Modifier.padding(top = 16.dp)) {
                                 Text(
-                                    text = "קטגוריות אלו משמשות סיווג לכל משמרת. קטגוריות ברירת המחדל הן: קריאייטיב, עצמאי, צאח.",
+                                    text = "קטגוריות מסווגות את המשמרות. שינוי ברירת מחדל אינו משנה סכומים שנשמרו.",
                                     fontSize = 12.sp,
                                     color = Color(0xFF8E8E93),
                                     textAlign = TextAlign.End,

@@ -29,7 +29,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
-      - run: gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease --console=plain
+          cache-read-only: false
+      - run: gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true --console=plain
       - name: Verify release identity and local gates
         run: |
           set -euo pipefail
@@ -52,3 +53,60 @@ jobs:
           if [ -z "$SIGNING_READY" ]; then
             echo 'BLOCKED: owner must preserve permanent signing key and configure Actions secrets. No installable Release Candidate or A-to-B proof exists.' >> "$GITHUB_STEP_SUMMARY"
           fi
+      - name: Load permanent signing material
+        id: signing
+        env:
+          KEY_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          if [ -z "$KEY_BASE64" ]; then echo 'ready=false' >> "$GITHUB_OUTPUT"; exit 0; fi
+          test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$CERT_SHA256"
+          umask 077
+          printf '%s' "$KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/salary-distribution.p12"
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+      - name: Build signed candidates A and B
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/salary-distribution.p12
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        run: bash scripts/build-release-candidates.sh
+      - name: Enable KVM for disposable emulator
+        if: steps.signing.outputs.ready == 'true'
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Real release A to B update without clearing data
+        if: steps.signing.outputs.ready == 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: bash scripts/verify-release-update.sh
+      - name: Candidate for owner review only; never publish a Release
+        if: steps.signing.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: salary-local-release-candidate
+          path: |
+            candidate-b.apk
+            release-evidence/
+          if-no-files-found: error
+      - name: Upload update failure evidence
+        if: failure() && steps.signing.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-update-failure-evidence
+          path: release-evidence/
+      - name: Remove runner signing files
+        if: always()
+        run: rm -f "$RUNNER_TEMP/salary-distribution.p12"

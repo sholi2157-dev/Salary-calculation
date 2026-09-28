@@ -15,7 +15,7 @@ import org.robolectric.annotation.Config
 class WorkFirebaseConfigurationTest {
     @Test fun configuredAccountsDoNotEnableUnverifiedCloudOrGoogle() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val expectedPackage = if (BuildConfig.BUILD_TYPE == "preview")
+        val expectedPackage = if (BuildConfig.LOCAL_DISTRIBUTION) "com.aistudio.worktracker.qztvdw.distribution" else if (BuildConfig.BUILD_TYPE == "preview")
             "com.aistudio.worktracker.qztvdw.preview" else "com.aistudio.worktracker.qztvdw"
         assertEquals(expectedPackage, BuildConfig.APPLICATION_ID)
         assertFalse(BuildConfig.CLOUD_SYNC_ENABLED)
