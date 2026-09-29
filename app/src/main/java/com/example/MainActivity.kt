@@ -2423,12 +2423,8 @@ fun DashboardScreen(
         modifier = Modifier
             .align(Alignment.BottomStart)
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Color(0xE60B1020))
-                )
-            )
-            .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 16.dp)
+            .background(Color(0xF20B1020))
+            .padding(start = 16.dp, top = 20.dp, end = 16.dp, bottom = 16.dp)
             .onSizeChanged { liveControlHeight = it.height }
     ) {
         val isRunning = activeShiftStartTime != null
