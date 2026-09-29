@@ -2486,19 +2486,39 @@ fun DashboardScreen(
     var expanded by remember { mutableStateOf(false) }
 
     if (showQuickShiftDialog) {
-        androidx.compose.ui.window.Dialog(onDismissRequest = { showQuickShiftDialog = false }) {
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
-                border = BorderStroke(1.dp, Color(0xFF2D2D2D)),
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showQuickShiftDialog = false },
+            properties = androidx.compose.ui.window.DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .pointerInput(Unit) { /* intercept touches */ }
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) { showQuickShiftDialog = false },
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
+                    border = BorderStroke(1.dp, Color(0xFF2D2D2D)),
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .widthIn(max = 520.dp)
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) { /* consume card taps so only the outside scrim dismisses */ }
                 ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
                     Text("הגדרת משמרת פעילה", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
 
                     ExposedDropdownMenuBox(
@@ -2566,6 +2586,7 @@ fun DashboardScreen(
                         ) {
                             Text("אישור", color = Color.White)
                         }
+                    }
                     }
                 }
             }
