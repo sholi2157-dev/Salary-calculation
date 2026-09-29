@@ -36,16 +36,29 @@ class DistributionUiTest {
         Espresso.pressBack()
         ui.onNodeWithText("הגדרת משמרת פעילה").assertDoesNotExist()
         ui.onNodeWithTag("live_shift_fab").performClick()
-        // A real outside touch at the corner of the dialog window.
-        val down=android.os.SystemClock.uptimeMillis()
-        device.injectInputEvent(android.view.MotionEvent.obtain(down,down,android.view.MotionEvent.ACTION_DOWN,2f,ui.activity.resources.displayMetrics.heightPixels / 2f,0),true)
-        device.injectInputEvent(android.view.MotionEvent.obtain(down,down+50,android.view.MotionEvent.ACTION_UP,2f,ui.activity.resources.displayMetrics.heightPixels / 2f,0),true)
+        // Inject a touchscreen event (SOURCE_UNKNOWN is not dispatched as a touch).
+        val down = android.os.SystemClock.uptimeMillis()
+        for (action in listOf(android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_UP)) {
+            val event = android.view.MotionEvent.obtain(down, down + if (action == android.view.MotionEvent.ACTION_UP) 50 else 0,
+                action, 2f, ui.activity.resources.displayMetrics.heightPixels / 2f, 0)
+            event.source = android.view.InputDevice.SOURCE_TOUCHSCREEN
+            assertTrue(device.injectInputEvent(event, true))
+            event.recycle()
+        }
         ui.waitForIdle()
         ui.onNodeWithText("הגדרת משמרת פעילה").assertDoesNotExist()
         ui.onNodeWithText("התחל משמרת פעילה").assertExists()
         ui.onNodeWithText("דיווח חדש").performScrollTo().performClick()
+        for (mode in listOf("שעון", "ידני")) {
+            ui.onNodeWithText(mode, useUnmergedTree = true).performScrollTo().performClick()
+            ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
+        }
+        ui.onNodeWithText("Ai", useUnmergedTree = true).performScrollTo().performClick()
+        ui.onNodeWithTag("ai_free_text_input").performScrollTo().assertIsDisplayed()
         ui.onNodeWithText("קבוצה", useUnmergedTree = true).performScrollTo().performClick()
-        ui.onNodeWithTag("add_rate_input").performScrollTo().performTextReplacement("73.25")
+        ui.onNodeWithTag("add_rate_input").performScrollTo().performClick().performTextReplacement("73.25")
+        ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
+        snap("rc2-keyboard")
         Espresso.closeSoftKeyboard()
         ui.activityRule.scenario.recreate()
         ui.waitForIdle()
@@ -82,5 +95,10 @@ class DistributionUiTest {
         ui.onNodeWithText("משוב ודיווח על תקלה").performClick()
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("Synthetic feedback draft")
         ui.onNodeWithTag("feedback_message").assertTextContains("Synthetic feedback draft")
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        kotlinx.coroutines.runBlocking {
+            val db = com.example.data.WorkDatabase.getDatabase(target, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO))
+            assertEquals(java.io.File(target.getExternalFilesDir(null), "verify-after-edit.json").readText(), db.workDao().exportSnapshot())
+        }
     }
 }

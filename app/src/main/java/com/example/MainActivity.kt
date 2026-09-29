@@ -779,7 +779,7 @@ fun MainAppContent(
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = Color.White,
-                        textAlign = TextAlign.Right,
+                        textAlign = TextAlign.Start,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
@@ -1446,7 +1446,7 @@ fun DashboardScreen(
                                         text = "לדוגמה: אתמול עבדתי עצמאי 8 שעות בתעריף 50 ש\"ח, הערה: הדרכה וישיבת צוות",
                                         color = Color(0xFF64748B),
                                         fontSize = 13.sp,
-                                        textAlign = TextAlign.Right,
+                                        textAlign = TextAlign.Start,
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 },
@@ -1455,7 +1455,7 @@ fun DashboardScreen(
                                     .height(110.dp)
                                     .testTag("ai_free_text_input"),
                                 shape = RoundedCornerShape(12.dp),
-                                textStyle = TextStyle(textAlign = TextAlign.Right, color = Color.White, fontSize = 14.sp),
+                                textStyle = TextStyle(textAlign = TextAlign.Start, color = Color.White, fontSize = 14.sp),
                                 trailingIcon = {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
@@ -2384,7 +2384,7 @@ fun DashboardScreen(
                             color = Color.White,
                             fontFamily = com.example.ui.theme.AssistantFontFamily,
                             modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Right
+                            textAlign = TextAlign.Start
                         )
 
                         Column(
@@ -3097,20 +3097,20 @@ fun ShiftsScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.ArrowDropDown,
-                                            contentDescription = null,
-                                            tint = Color(0xFF8E8E93),
-                                            modifier = Modifier.size(16.dp)
-                                        )
                                         Text(
                                             text = if (selectedCategoryFilter == "הכל") "כל הקטגוריות" else selectedCategoryFilter,
                                             color = Color.White,
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
-                                            textAlign = TextAlign.Right,
+                                            textAlign = TextAlign.Start,
                                             maxLines = 1,
                                             modifier = Modifier.weight(1f)
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Outlined.ArrowDropDown,
+                                            contentDescription = null,
+                                            tint = Color(0xFF8E8E93),
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 }
@@ -4699,6 +4699,20 @@ fun ManagementScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    Column(horizontalAlignment = Alignment.Start) {
+                                        Text(
+                                            text = "מטבע ברירת מחדל",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = "יחול אוטומטית בהוספת משמרות",
+                                            color = Color(0xFF8E8E93),
+                                            fontSize = 11.sp
+                                        )
+                                    }
+
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         listOf("₪", "$").forEach { curr ->
                                             val isSelected = draftDefaultCurrency == curr
@@ -4726,20 +4740,6 @@ fun ManagementScreen(
                                                 )
                                             }
                                         }
-                                    }
-
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text(
-                                            text = "מטבע ברירת מחדל",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 14.sp
-                                        )
-                                        Text(
-                                            text = "יחול אוטומטית בהוספת משמרות",
-                                            color = Color(0xFF8E8E93),
-                                            fontSize = 11.sp
-                                        )
                                     }
                                 }
                             }
@@ -4786,26 +4786,11 @@ fun ManagementScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Switch(
-                                        checked = draftNotificationEnabled,
-                                        onCheckedChange = { newValue ->
-                                            triggerHapticFeedback(context, isDestructive = false)
-                                            draftNotificationEnabled = newValue
-                                        },
-                                        colors = SwitchDefaults.colors(
-                                            checkedThumbColor = Color.White,
-                                            checkedTrackColor = Color(0xFF6366F1),
-                                            uncheckedThumbColor = Color(0xFF8E8E93),
-                                            uncheckedTrackColor = com.example.ui.theme.FormSurface
-                                        ),
-                                        modifier = Modifier.testTag("service_notification_switch")
-                                    )
-
                                     Column(
                                         modifier = Modifier
                                             .weight(1f)
-                                            .padding(start = 16.dp),
-                                        horizontalAlignment = Alignment.End
+                                            .padding(end = 16.dp),
+                                        horizontalAlignment = Alignment.Start
                                     ) {
                                         Text(
                                             text = "התראת משמרת פעילה",
@@ -4822,6 +4807,20 @@ fun ManagementScreen(
                                             textAlign = TextAlign.Start
                                         )
                                     }
+                                    Switch(
+                                        checked = draftNotificationEnabled,
+                                        onCheckedChange = { newValue ->
+                                            triggerHapticFeedback(context, isDestructive = false)
+                                            draftNotificationEnabled = newValue
+                                        },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = Color(0xFF6366F1),
+                                            uncheckedThumbColor = Color(0xFF8E8E93),
+                                            uncheckedTrackColor = com.example.ui.theme.FormSurface
+                                        ),
+                                        modifier = Modifier.testTag("service_notification_switch")
+                                    )
                                 }
                             }
                         }
