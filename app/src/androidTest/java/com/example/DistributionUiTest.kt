@@ -73,15 +73,20 @@ class DistributionUiTest {
         snap("rc2-group")
         ui.onNodeWithTag("tab_1").performClick()
         ui.waitForIdle()
-        ui.onNodeWithTag("history_search_button", useUnmergedTree = true).performClick()
+        fun openHistorySearch() {
+            ui.activity.intentActionFlow.value = "com.example.ACTION_OPEN_HISTORY_SEARCH"
+            ui.waitForIdle()
+            ui.onNodeWithTag("history_search_input").assertExists()
+        }
+        openHistorySearch()
         ui.onNodeWithTag("history_search_input").performTextInput("USD category")
         ui.onNodeWithTag("history_search_input").performImeAction()
         ui.onNodeWithTag("history_search_input").assertDoesNotExist()
-        ui.onNodeWithTag("history_search_button", useUnmergedTree = true).performClick()
+        openHistorySearch()
         ui.onNodeWithTag("history_search_input").assertTextContains("USD category")
         ui.onNodeWithText("הצג תוצאות").performClick()
         ui.onNodeWithTag("history_search_input").assertDoesNotExist()
-        ui.onNodeWithTag("history_search_button", useUnmergedTree = true).performClick()
+        openHistorySearch()
         ui.onNodeWithTag("history_search_input").assertTextContains("USD category")
         ui.onNodeWithContentDescription("נקה").performClick()
         ui.onNodeWithText("הצג תוצאות").performClick()
