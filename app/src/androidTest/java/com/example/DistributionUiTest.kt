@@ -80,8 +80,9 @@ class DistributionUiTest {
         snap("rc2-history")
         ui.onNodeWithContentDescription("מיון").performClick()
         ui.onNodeWithText("תאריך: מהישן לחדש").performClick()
-        ui.onNodeWithContentDescription("ניהול וקטגוריות").performClick()
+        ui.onNodeWithTag("settings_button", useUnmergedTree = true).assertHasClickAction().performClick()
         ui.waitForIdle()
+        ui.onNodeWithTag("settings_root", useUnmergedTree = true).assertExists()
         ui.onNodeWithTag("settings_section_עדכונים", useUnmergedTree = true).assertExists()
         val titleBounds = ui.onNodeWithTag("settings_title_עדכונים", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         val arrowBounds = ui.onNodeWithTag("settings_chevron_עדכונים", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
