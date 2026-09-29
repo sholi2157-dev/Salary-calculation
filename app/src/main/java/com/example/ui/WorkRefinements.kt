@@ -42,7 +42,12 @@ object SummaryPages {
     }
 }
 @Composable fun SettingsSection(title: String, expanded: Boolean, toggle: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
-    Card(onClick = toggle, colors = CardDefaults.cardColors(containerColor = FormSurface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
+    Card(
+        onClick = toggle,
+        modifier = Modifier.testTag("settings_section_$title"),
+        colors = CardDefaults.cardColors(containerColor = FormSurface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SettingsSectionHeader(title, expanded)
             if (expanded) content()
