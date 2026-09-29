@@ -26,10 +26,17 @@ class DistributionUiTest {
         ui.waitForIdle()
         assertEquals(Configuration.ORIENTATION_PORTRAIT,ui.activity.resources.configuration.orientation)
         device.setRotation(android.app.UiAutomation.ROTATION_UNFREEZE)
+        val generalHeight = ui.onNodeWithTag("summary_page_0", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.height
+        ui.onNodeWithText("יעד חודשי").assertDoesNotExist()
         ui.onNodeWithTag("summary_pager").performTouchInput { swipeRight() }
         ui.onNodeWithText("סיכום בשקלים").assertIsDisplayed()
+        val ilsHeight = ui.onNodeWithTag("summary_page_1", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.height
+        assertEquals(generalHeight, ilsHeight, 1f)
         ui.onNodeWithTag("summary_pager").performTouchInput { swipeRight() }
         ui.onNodeWithText("סיכום בדולרים").assertIsDisplayed()
+        val usdHeight = ui.onNodeWithTag("summary_page_2", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.height
+        assertEquals(generalHeight, usdHeight, 1f)
+        ui.onNodeWithText("יעד חודשי").assertDoesNotExist()
         snap("rc2-currency")
         ui.onNodeWithTag("live_shift_fab").performClick()
         ui.onNodeWithText("הגדרת משמרת פעילה").assertIsDisplayed()
@@ -66,6 +73,18 @@ class DistributionUiTest {
         snap("rc2-group")
         ui.onNodeWithTag("tab_1").performClick()
         ui.waitForIdle()
+        ui.onNodeWithTag("history_search_button", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("history_search_input").performTextInput("USD category")
+        ui.onNodeWithTag("history_search_input").performImeAction()
+        ui.onNodeWithTag("history_search_input").assertDoesNotExist()
+        ui.onNodeWithTag("history_search_button", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("history_search_input").assertTextContains("USD category")
+        ui.onNodeWithText("הצג תוצאות").performClick()
+        ui.onNodeWithTag("history_search_input").assertDoesNotExist()
+        ui.onNodeWithTag("history_search_button", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("history_search_input").assertTextContains("USD category")
+        ui.onNodeWithContentDescription("נקה").performClick()
+        ui.onNodeWithText("הצג תוצאות").performClick()
         fun select() { ui.onNodeWithTag("work_entry_card_3").performScrollTo().performTouchInput { longClick() };ui.onNodeWithText("נבחרו 1 משמרות").assertExists() }
         select();Espresso.pressBack();ui.onNodeWithText("נבחרו 1 משמרות").assertDoesNotExist()
         select();ui.onNodeWithTag("tab_0").performClick();ui.onNodeWithTag("tab_1").performClick();ui.onNodeWithText("נבחרו 1 משמרות").assertDoesNotExist()
@@ -86,14 +105,19 @@ class DistributionUiTest {
         ui.activity.intentActionFlow.value = "com.example.ACTION_IMPORT_EXCEL"
         ui.waitForIdle()
         ui.onNodeWithTag("settings_root", useUnmergedTree = true).assertExists()
-        ui.onNodeWithTag("settings_section_עדכונים", useUnmergedTree = true).assertExists()
-        val titleBounds = ui.onNodeWithTag("settings_title_עדכונים", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        val arrowBounds = ui.onNodeWithTag("settings_chevron_עדכונים", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        for (section in listOf("עבודה וקטגוריות", "מטבע וברירות מחדל", "מערכת ומשוב", "גיבוי ונתונים")) {
+            ui.onNodeWithTag("settings_section_$section", useUnmergedTree = true).assertExists()
+        }
+        ui.onNodeWithTag("settings_section_עדכונים", useUnmergedTree = true).assertDoesNotExist()
+        ui.onNodeWithTag("settings_section_משוב ודיווח על תקלה", useUnmergedTree = true).assertDoesNotExist()
+        val titleBounds = ui.onNodeWithTag("settings_title_מערכת ומשוב", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val arrowBounds = ui.onNodeWithTag("settings_chevron_מערכת ומשוב", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         assertTrue("Hebrew label must be to the right of its trailing chevron", titleBounds.right > arrowBounds.right)
-        ui.onNodeWithTag("settings_section_משוב ודיווח על תקלה", useUnmergedTree = true).assertExists()
         ui.onNodeWithText("שמור קובץ גיבוי").assertDoesNotExist()
         snap("rc2-settings")
-        ui.onNodeWithTag("settings_section_משוב ודיווח על תקלה", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("settings_section_מערכת ומשוב", useUnmergedTree = true).performClick()
+        ui.onNodeWithText("עדכונים").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithText("משוב ודיווח על תקלה").performScrollTo().assertIsDisplayed()
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("Synthetic feedback draft")
         ui.onNodeWithTag("feedback_message").assertTextContains("Synthetic feedback draft")
         val target = InstrumentationRegistry.getInstrumentation().targetContext
