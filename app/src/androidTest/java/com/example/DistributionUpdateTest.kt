@@ -62,9 +62,13 @@ class DistributionUpdateTest {
             assertEquals(0, dao.importBackup(old))
             assertEquals(evidence.getString("snapshot", null), dao.exportSnapshot())
             if (stage == "updater") {
-                val bytes = File(context.getExternalFilesDir(null), "candidate-b.apk").readBytes()
+                val candidateFile = File(context.getExternalFilesDir(null), "candidate-b.apk")
+                val bytes = candidateFile.readBytes()
                 val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
-                val nextCode = installedCode + 1L
+                @Suppress("DEPRECATION")
+                val candidateInfo = checkNotNull(context.packageManager.getPackageArchiveInfo(candidateFile.path, 0))
+                val nextCode = if (android.os.Build.VERSION.SDK_INT >= 28) candidateInfo.longVersionCode else candidateInfo.versionCode.toLong()
+                assertTrue("Candidate B must be newer than installed A", nextCode > installedCode)
                 val manifest = """{"versionCode":$nextCode,"versionName":"test B","apkUrl":"${WorkUpdates.BASE}download/private-test/candidate-b.apk","sha256":"$hash"}"""
                 var status = 200
                 var manifestBody = manifest
