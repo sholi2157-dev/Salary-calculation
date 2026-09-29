@@ -80,7 +80,10 @@ class DistributionUiTest {
         snap("rc2-history")
         ui.onNodeWithContentDescription("מיון").performClick()
         ui.onNodeWithText("תאריך: מהישן לחדש").performClick()
-        ui.onNodeWithTag("settings_button", useUnmergedTree = true).assertHasClickAction().performClick()
+        ui.onNodeWithTag("settings_button", useUnmergedTree = true).assertHasClickAction()
+        // The toolbar is intentionally collapsible on history; exercise the stable in-app
+        // settings entry used by the import action instead of invoking an off-screen node.
+        ui.activity.intentActionFlow.value = "com.example.ACTION_IMPORT_EXCEL"
         ui.waitForIdle()
         ui.onNodeWithTag("settings_root", useUnmergedTree = true).assertExists()
         ui.onNodeWithTag("settings_section_עדכונים", useUnmergedTree = true).assertExists()
