@@ -722,6 +722,7 @@ fun MainAppContent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .testTag("quick_shift_scrim")
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
