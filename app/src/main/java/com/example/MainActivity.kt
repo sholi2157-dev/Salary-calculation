@@ -510,7 +510,8 @@ fun MainAppContent(
                                 onClick = {
                                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                     showSettings = true
-                                }
+                                },
+                                modifier = Modifier.testTag("settings_button")
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Settings,
@@ -722,6 +723,7 @@ fun MainAppContent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .testTag("settings_root")
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
