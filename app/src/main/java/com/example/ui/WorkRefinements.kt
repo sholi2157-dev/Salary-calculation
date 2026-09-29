@@ -57,43 +57,89 @@ object SummaryPages {
 @Composable fun CompactHistoryTotal(entries: List<WorkEntry>) {
     Text("סה\"כ מוצג:  ${SummaryPages.compact(entries)}", Modifier.fillMaxWidth().testTag("history_total"), style = MaterialTheme.typography.bodyMedium)
 }
-@Composable private fun NumberLine(label: String, value: String) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Ltr))
+@Composable
+private fun SummaryMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
+        Text(
+            value,
+            style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Ltr),
+            color = Color.White,
+            maxLines = 1
+        )
     }
 }
+
+@Suppress("UNUSED_PARAMETER")
 @Composable fun WorkSummaryCarousel(entries: List<WorkEntry>, defaultCurrency: String) {
     val currencies = SummaryPages.currencies(entries)
     val pager = rememberPagerState(pageCount = { 1 + currencies.size })
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        HorizontalPager(state = pager, modifier = Modifier.fillMaxWidth().testTag("summary_pager")) { page ->
-            Card(Modifier.fillMaxWidth().padding(horizontal = 2.dp), colors = CardDefaults.cardColors(containerColor = FormSurface), shape = RoundedCornerShape(16.dp)) {
-                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        HorizontalPager(
+            state = pager,
+            pageSize = androidx.compose.foundation.pager.PageSize.Fill,
+            modifier = Modifier.fillMaxWidth().testTag("summary_pager")
+        ) { page ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp)
+                    .height(208.dp)
+                    .testTag("summary_page_$page"),
+                colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                border = BorderStroke(1.dp, Color(0x26FFFFFF)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     if (page == 0) {
-                        Text("סיכום כללי", style = MaterialTheme.typography.titleLarge)
-                        NumberLine("משמרות", entries.size.toString())
-                        NumberLine("שעות עבודה", String.format(Locale.US, "%.2f", entries.sumOf { it.hours }))
+                        Text("סיכום כללי", style = MaterialTheme.typography.titleLarge, color = Color.White)
                         val now = Calendar.getInstance()
-                        val today = entries.filter { Calendar.getInstance().apply { timeInMillis = it.date }.let { it.get(Calendar.YEAR) == now.get(Calendar.YEAR) && it.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR) } }
-                        NumberLine("שעות היום", String.format(Locale.US, "%.2f", today.sumOf { it.hours }))
+                        val today = entries.filter {
+                            Calendar.getInstance().apply { timeInMillis = it.date }.let {
+                                it.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+                                    it.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR)
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            SummaryMetric("משמרות", entries.size.toString(), Modifier.weight(1f))
+                            SummaryMetric("שעות עבודה", String.format(Locale.US, "%.2f", entries.sumOf { it.hours }), Modifier.weight(1f))
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            SummaryMetric("משמרות היום", today.size.toString(), Modifier.weight(1f))
+                            SummaryMetric("שעות היום", String.format(Locale.US, "%.2f", today.sumOf { it.hours }), Modifier.weight(1f))
+                        }
                     } else {
                         val currency = currencies[page - 1]
                         val rows = entries.filter { it.currency == currency }
                         fun money(selected: List<WorkEntry>) = WorkMoney.format(selected.sumOf { it.totalEarnings }, currency)
-                        Text(if (currency == "₪") "סיכום בשקלים" else "סיכום בדולרים", style = MaterialTheme.typography.titleLarge)
-                        NumberLine("הכנסות", money(rows))
-                        NumberLine("שולם", money(rows.filter { it.isPaid }))
-                        NumberLine("ממתין", money(rows.filterNot { it.isPaid }))
-                        NumberLine("שעות עבודה", String.format(Locale.US, "%.2f", rows.sumOf { it.hours }))
                         val now = Calendar.getInstance()
-                        val month = rows.filter { Calendar.getInstance().apply { timeInMillis = it.date }.let { it.get(Calendar.YEAR) == now.get(Calendar.YEAR) && it.get(Calendar.MONTH) == now.get(Calendar.MONTH) } }
-                        val week = rows.filter { Calendar.getInstance().apply { timeInMillis = it.date }.let { it.get(Calendar.YEAR) == now.get(Calendar.YEAR) && it.get(Calendar.WEEK_OF_YEAR) == now.get(Calendar.WEEK_OF_YEAR) } }
-                        NumberLine("השבוע", money(week))
-                        NumberLine("החודש", money(month))
-                        if (currency == defaultCurrency) {
-                            NumberLine("יעד חודשי", WorkMoney.format(10000.0, currency))
-                            LinearProgressIndicator(progress = { (month.sumOf { it.totalEarnings } / 10000).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
+                        val month = rows.filter {
+                            Calendar.getInstance().apply { timeInMillis = it.date }.let {
+                                it.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+                                    it.get(Calendar.MONTH) == now.get(Calendar.MONTH)
+                            }
+                        }
+                        val week = rows.filter {
+                            Calendar.getInstance().apply { timeInMillis = it.date }.let {
+                                it.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+                                    it.get(Calendar.WEEK_OF_YEAR) == now.get(Calendar.WEEK_OF_YEAR)
+                            }
+                        }
+                        Text(if (currency == "₪") "סיכום בשקלים" else "סיכום בדולרים", style = MaterialTheme.typography.titleLarge, color = Color.White)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            SummaryMetric("סה״כ הכנסות", money(rows), Modifier.weight(1f))
+                            SummaryMetric("שולם", money(rows.filter { it.isPaid }), Modifier.weight(1f))
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            SummaryMetric("ממתין לתשלום", money(rows.filterNot { it.isPaid }), Modifier.weight(1f))
+                            SummaryMetric("שעות עבודה", String.format(Locale.US, "%.2f", rows.sumOf { it.hours }), Modifier.weight(1f))
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            SummaryMetric("השבוע", money(week), Modifier.weight(1f))
+                            SummaryMetric("החודש", money(month), Modifier.weight(1f))
                         }
                     }
                 }
@@ -101,7 +147,12 @@ object SummaryPages {
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             repeat(1 + currencies.size) { index ->
-                TextButton(onClick = {}, enabled = false, contentPadding = PaddingValues(4.dp), modifier = Modifier.size(28.dp)) {
+                TextButton(
+                    onClick = {},
+                    enabled = false,
+                    contentPadding = PaddingValues(4.dp),
+                    modifier = Modifier.size(28.dp)
+                ) {
                     Text(if (index == pager.currentPage) "●" else "○", color = MaterialTheme.colorScheme.secondary)
                 }
             }
