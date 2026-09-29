@@ -181,4 +181,18 @@ this does not constitute device testing. No candidate APK was delivered.
 Local changes retained from the interrupted run include independent distribution
 version numbers, worker JSON preservation, overnight validation, draft persistence,
 Room7→8/legacy-backup tests, stronger update version checks, and this release guide.
-They must pass a new run before being called verified.
+These changes are committed in b9053e399ab14492824654c2b3b760ee79069e8d.
+Run 36515233428/job109235914771 completed successfully on that exact source;
+actual logs inspected 2026-09-29 UTC. Debug58/58 and Release58/58 passed with zero
+failures, errors or skips. Web31/31 and build passed. Required Preview, unsigned
+Release and release instrumentation APK compilation passed (Gradle2m45s), as did
+release package/local-only/Firebase initialization gates. Evidence artifact:
+android-distribution-test-evidence. This is compilation/unit evidence only.
+
+Permanent signing secrets are still absent. Signed A/B builds, emulator update
+stages and candidate upload were explicitly skipped. No installable RC exists;
+no user device was accessed and no public release was created. Next action is
+the owner signing procedure above, followed by a rerun and inspection of the
+signed candidate/update gate. Do not repeat implemented work or generate a
+replacement/temporary identity. Physical UI, preview migration with the actual
+backup and complete updater download/installer behavior still require review.

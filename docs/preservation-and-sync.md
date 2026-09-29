@@ -707,3 +707,32 @@ required Gradle build6m23s. Targeted offline guest save/reconnect persisted data
 but offline reload could not open the app. Live email/password attempt returned
 a generic failure; registration/reset/logout and two-user/live Android sync
 remain unverified. No credentials captured, real data used or production changed.
+
+
+## 2026-09-29 — separate Android local distribution checkpoint
+
+Branch `codex/android-local-distribution` preserves PR #1/website/sync branch.
+Tested application commit: `b9053e399ab14492824654c2b3b760ee79069e8d`.
+See `docs/android-local-distribution.md` for audit, implementation, phone signing
+instructions, permanent package and explicit remaining gates.
+
+Actions run36515233428/job109235914771 SUCCESS; actual logs inspected:
+- Debug Work*58/58 and Release Work*58/58, zero failures/errors/skips.
+- Required Preview, unsigned Release and Release instrumentation compiled;
+  Gradle BUILD SUCCESSFUL2m45s; package/local-only/Firebase-init gate passed.
+- Web31/31 and npm build passed; no website implementation changes or browser
+  verification in this Android-only scope, as explicitly authorized.
+- Permanent signing missing: signed A/B, emulator update and candidate upload
+  SKIPPED. These are NOT successful install/update tests. No signed RC delivered.
+
+Permanent package is `com.aistudio.worktracker.qztvdw.distribution`, separate from
+original and debug-signed preview. Room8 adds local preferences without destructive
+migration. Currency-separated money/reports, safe category operations, validated
+snapshot backups and GitHub release updater are implemented; runtime review gates
+remain. No signing identity generated, public distribution, merge, account/sync
+activation, user device operation or live data mutation occurred.
+
+Owner must privately create/preserve the permanent key using the documented
+script before the signed A→B CI gate can run. After signing: verify all actual
+results, fix failures without data reset, deliver candidate B for owner review;
+then verify preview backup migration and updater flow before public release.
