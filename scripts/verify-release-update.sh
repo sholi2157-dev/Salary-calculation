@@ -17,9 +17,17 @@ run_stage() {
 }
 run_stage seed
 adb shell am start -W -n "$pkg/com.example.MainActivity" | tee release-evidence/offline-start.txt
+grep -F "Status: ok" release-evidence/offline-start.txt
 run_stage restart
+adb push candidate-b.apk "/sdcard/Android/data/$pkg/files/candidate-b.apk"
+run_stage updater
 adb install -r candidate-b.apk | tee release-evidence/install-update.txt
 run_stage verify
+for evidence_file in restart-before.json updater-before.json verify-before.json verify-after-edit.json; do
+  adb pull "/sdcard/Android/data/$pkg/files/$evidence_file" "release-evidence/$evidence_file"
+done
+cmp release-evidence/restart-before.json release-evidence/verify-before.json
 adb shell am start -W -n "$pkg/com.example.MainActivity" | tee release-evidence/offline-start-after-update.txt
+grep -F "Status: ok" release-evidence/offline-start-after-update.txt
 adb logcat -d -b crash > release-evidence/crash-log.txt
 ! grep -F "$pkg" release-evidence/crash-log.txt

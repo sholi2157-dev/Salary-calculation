@@ -47,8 +47,9 @@ object WorkUpdates {
         val info = context.packageManager.getPackageInfo(context.packageName, 0)
         return if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
     }
-    suspend fun check(context: Context): Release? = withContext(Dispatchers.IO) {
-        client.newCall(Request.Builder().url(MANIFEST).build()).execute().use { response ->
+    suspend fun check(context: Context): Release? = checkWithClient(context, client)
+    internal suspend fun checkWithClient(context: Context, transport: OkHttpClient): Release? = withContext(Dispatchers.IO) {
+        transport.newCall(Request.Builder().url(MANIFEST).build()).execute().use { response ->
             if (response.code == 404) return@withContext null // No approved first release yet.
             check(response.isSuccessful)
             val bytes = checkNotNull(response.body).byteStream().use { it.readBytesLimited() }
@@ -66,12 +67,13 @@ object WorkUpdates {
         if (Build.VERSION.SDK_INT >= 28) info.signingInfo?.apkContentsSigners?.map { hash(it.toByteArray()) }?.toSet() ?: emptySet()
         else info.signatures?.map { hash(it.toByteArray()) }?.toSet() ?: emptySet()
     @Suppress("DEPRECATION")
-    suspend fun download(context: Context, release: Release): File = withContext(Dispatchers.IO) {
+    suspend fun download(context: Context, release: Release): File = downloadWithClient(context, release, client)
+    internal suspend fun downloadWithClient(context: Context, release: Release, transport: OkHttpClient): File = withContext(Dispatchers.IO) {
         val file = File(context.cacheDir, "salary-update-${release.code}.apk")
         val partial = File(context.cacheDir, "salary-update-${release.code}.pending.apk")
         try {
             val digest = MessageDigest.getInstance("SHA-256")
-            client.newCall(Request.Builder().url(release.apk).build()).execute().use { response ->
+            transport.newCall(Request.Builder().url(release.apk).build()).execute().use { response ->
                 check(response.isSuccessful)
                 checkNotNull(response.body).byteStream().use { input -> partial.outputStream().use { output ->
                     val buffer = ByteArray(65536); var total = 0L
@@ -95,9 +97,12 @@ object WorkUpdates {
         } finally { partial.delete() }
     }
     fun install(context: Context, file: File) {
+        context.startActivity(installerIntent(context, file))
+    }
+    internal fun installerIntent(context: Context, file: File): Intent {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-        context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+        return Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 }
 
