@@ -722,7 +722,6 @@ fun MainAppContent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .testTag("quick_shift_scrim")
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -2498,6 +2497,7 @@ fun DashboardScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .testTag("quick_shift_scrim")
                     .clickable(
                         interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                         indication = null
