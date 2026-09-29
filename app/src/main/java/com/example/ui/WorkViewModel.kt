@@ -173,7 +173,13 @@ class WorkViewModel(
                 
                 val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
                 val backupFile = File(backupDir, "backup_work_entries_${timeStamp}_${java.util.UUID.randomUUID()}.json")
-                backupFile.writeText(json)
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val temporary = File(backupDir, backupFile.name + ".tmp")
+                    temporary.writeText(json)
+                    check(temporary.renameTo(backupFile))
+                    backupDir.listFiles { file -> file.name.startsWith("backup_work_entries_") && file.extension == "json" }
+                        ?.sortedByDescending { it.lastModified() }?.drop(20)?.forEach { it.delete() }
+                }
                 android.util.Log.d("WorkViewModel", "Auto-backup saved successfully to: ${backupFile.absolutePath}")
             } catch (e: Exception) {
                 android.util.Log.e("WorkViewModel", "Auto-backup failed: ${e.localizedMessage}")
@@ -319,7 +325,8 @@ class WorkViewModel(
     data class GroupWorkerState(
         val name: String = "",
         val hours: Double = 0.0,
-        val isPaid: Boolean = false
+        val isPaid: Boolean = false,
+        val sourceJson: String = ""
     )
 
     fun parseGroupWorkers(json: String): List<GroupWorkerState> {
@@ -333,7 +340,8 @@ class WorkViewModel(
                     GroupWorkerState(
                         name = obj.optString("name", ""),
                         hours = obj.optDouble("hours", 0.0),
-                        isPaid = obj.optBoolean("isPaid", false)
+                        isPaid = obj.optBoolean("isPaid", false),
+                        sourceJson = obj.toString()
                     )
                 )
             }
@@ -346,7 +354,7 @@ class WorkViewModel(
     fun stringifyGroupWorkers(workers: List<GroupWorkerState>): String {
         val arr = JSONArray()
         for (w in workers) {
-            val obj = JSONObject()
+            val obj = if (w.sourceJson.isBlank()) JSONObject() else JSONObject(w.sourceJson)
             obj.put("name", w.name)
             obj.put("hours", w.hours)
             obj.put("isPaid", w.isPaid)

@@ -42,13 +42,18 @@ object WorkUpdates {
         require(hash.matches(Regex("[0-9a-f]{64}")))
         return Release(code, name, apk, hash, obj.optString("releaseNotes", "").take(8000))
     }
-    suspend fun check(): Release? = withContext(Dispatchers.IO) {
+    @Suppress("DEPRECATION")
+    private fun installedVersion(context: Context): Long {
+        val info = context.packageManager.getPackageInfo(context.packageName, 0)
+        return if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
+    }
+    suspend fun check(context: Context): Release? = withContext(Dispatchers.IO) {
         client.newCall(Request.Builder().url(MANIFEST).build()).execute().use { response ->
             if (response.code == 404) return@withContext null // No approved first release yet.
             check(response.isSuccessful)
             val bytes = checkNotNull(response.body).byteStream().use { it.readBytesLimited() }
             val body = bytes.toString(Charsets.UTF_8)
-            parse(body).takeIf { it.code > BuildConfig.VERSION_CODE }
+            parse(body).takeIf { it.code > installedVersion(context) }
         }
     }
     private fun java.io.InputStream.readBytesLimited(): ByteArray {
@@ -63,7 +68,7 @@ object WorkUpdates {
     @Suppress("DEPRECATION")
     suspend fun download(context: Context, release: Release): File = withContext(Dispatchers.IO) {
         val file = File(context.cacheDir, "salary-update-${release.code}.apk")
-        val partial = File(context.cacheDir, "salary-update-${release.code}.part")
+        val partial = File(context.cacheDir, "salary-update-${release.code}.pending.apk")
         try {
             val digest = MessageDigest.getInstance("SHA-256")
             client.newCall(Request.Builder().url(release.apk).build()).execute().use { response ->
@@ -82,7 +87,7 @@ object WorkUpdates {
             val installed = context.packageManager.getPackageInfo(context.packageName, flags)
             check(archive.packageName == context.packageName)
             val version = if (Build.VERSION.SDK_INT >= 28) archive.longVersionCode else archive.versionCode.toLong()
-            check(version == release.code && version > BuildConfig.VERSION_CODE)
+            check(version == release.code && version > installedVersion(context))
             val currentSigners = certificates(installed)
             check(currentSigners.isNotEmpty() && certificates(archive) == currentSigners) { "Signing identity mismatch" }
             check(partial.renameTo(file))
@@ -112,7 +117,7 @@ fun WorkUpdateSettings(automatic: Boolean = false) {
         busy = true
         scope.launch {
             try {
-                val update = WorkUpdates.check()
+                val update = WorkUpdates.check(context)
                 if (manual || update?.code != preferences.getLong("dismissed", -1)) candidate = update
                 if (manual && update == null) Toast.makeText(context, "אין עדכון יציב חדש", Toast.LENGTH_LONG).show()
             } catch (_: Exception) {

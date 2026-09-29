@@ -28,8 +28,8 @@ android {
     applicationId = "com.aistudio.worktracker.qztvdw"
     minSdk = 24
     targetSdk = 36
-    versionCode = providers.gradleProperty("distributionVersionCode").orNull?.toInt() ?: 6
-    versionName = providers.gradleProperty("distributionVersionName").orNull ?: "1.5-rc1"
+    versionCode = 5
+    versionName = "1.4"
     buildConfigField("String", "GEMINI_API_KEY", "\"\"")
     buildConfigField("boolean", "LOCAL_DISTRIBUTION", "false")
     // Remains false until the existing Firebase project and user isolation are verified.
@@ -159,4 +159,14 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
+}
+
+// Distribution versions are independent of the historical original/preview identity.
+androidComponents {
+  onVariants(selector().withBuildType("release")) { variant ->
+    variant.outputs.forEach { output ->
+      output.versionCode.set(providers.gradleProperty("distributionVersionCode").orNull?.toInt() ?: 6)
+      output.versionName.set(providers.gradleProperty("distributionVersionName").orNull ?: "1.5-rc1")
+    }
+  }
 }

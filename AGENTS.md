@@ -1,5 +1,10 @@
 # Salary-calculation maintenance rules
 
+## Android local distribution track (2026-09-28)
+
+Current user authorization: work on `codex/android-local-distribution`; do not modify the ongoing website/sync branch or PR #1. Read `docs/android-local-distribution.md`. Build a local-only permanent `.distribution` Release alongside the unchanged `.preview` identity. External owner-controlled permanent signing via Actions secrets is authorized; never commit/upload signing material as source or artifacts or ask for it in chat. Public distribution and merging are NOT authorized. Run required existing tests plus release tests and real A→B gate; report signing blockers honestly. No website browser/Firebase detour is required for this Android-only work. Historical instructions below apply where consistent with this scope.
+
+
 - Read `docs/preservation-and-sync.md` before changing this repository. Current user instructions override older historical notes there.
 - Work on `codex/preserve-app-sync` and PR #1. Preserve the existing Vercel project and production branch.
 - Preserve all user data and existing behavior. The user's reported backup contains 22 shifts and 8 categories. Never reset storage, replace a database, discard records, or recommend uninstalling as a shortcut. Use synthetic records for tests; do not modify the user's live records.

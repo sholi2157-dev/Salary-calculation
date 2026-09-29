@@ -4,7 +4,8 @@ set -euo pipefail
 set +x
 umask 077
 repo='sholi2157-dev/Salary-calculation'
-signing_dir="$HOME/salary-signing-private"
+signing_dir="$(git rev-parse --show-toplevel)/signing-private"
+git check-ignore "$signing_dir/salary-distribution.p12" >/dev/null || { echo "Private directory must be gitignored"; exit 1; }
 mkdir -p "$signing_dir"
 keyfile="$signing_dir/salary-distribution.p12"
 command -v keytool >/dev/null
@@ -30,7 +31,7 @@ if ! test -f "$keyfile"; then
     -keyalg RSA -keysize 3072 -validity 36500 -dname 'CN=Salary Calculation, OU=Android Distribution' \
     -storepass:env SALARY_SIGNING_PASSWORD -keypass:env SALARY_SIGNING_PASSWORD
 fi
-keytool -list -v -keystore "$keyfile" -storepass:env SALARY_SIGNING_PASSWORD -alias salary-distribution > "$signing_dir/public-certificate.txt"
+keytool -J-Duser.language=en -list -v -keystore "$keyfile" -storepass:env SALARY_SIGNING_PASSWORD -alias salary-distribution > "$signing_dir/public-certificate.txt"
 echo "Before continuing, download $keyfile from Codespaces Explorer and keep two protected copies."
 echo 'Keep its password separately in your password manager. Never upload this file to chat or commit it.'
 read -r -p 'Type BACKED-UP only after downloading and preserving your key: ' confirmation

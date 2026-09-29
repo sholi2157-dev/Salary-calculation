@@ -60,6 +60,33 @@ class WorkDistributionTest {
             assertEquals(30.0, WorkEntryEdits.breakMinutes(expected.first()), 0.0)
         } finally { db.close(); context.deleteDatabase(name) }
     }
+    @Test fun versionSevenUpgradePreservesRowsAndIdentities() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val name = "migration-seven-${java.util.UUID.randomUUID()}"
+        var db = Room.databaseBuilder(context, WorkDatabase::class.java, name).addCallback(WorkDatabase.DatabaseCallback()).build()
+        try {
+            db.workDao().insertEntry(row("$"))
+            val rows = db.workDao().getEntriesList()
+            val identities = db.syncDao().pending()
+            db.close()
+            android.database.sqlite.SQLiteDatabase.openDatabase(context.getDatabasePath(name).path, null, 0).use {
+                it.execSQL("DROP TABLE work_local_preferences")
+                it.version = 7
+            }
+            db = Room.databaseBuilder(context, WorkDatabase::class.java, name).addMigrations(WorkDatabase.MIGRATION_7_8).build()
+            assertEquals(rows, db.workDao().getEntriesList())
+            assertEquals(identities, db.syncDao().pending())
+            assertTrue(db.workDao().getLocalPreferences().isEmpty())
+        } finally { db.close(); context.deleteDatabase(name) }
+    }
+    @Test fun oldBackupRoundTripsIntoNewSnapshotWithoutRecalculation() {
+        val legacy = """{"formatVersion":2,"categories":[{"name":"old","defaultRate":40}],"entries":[{"category":"old","date":1234567890000,"createdAt":100,"isTimeRange":true,"startTime":"22:00","endTime":"06:00","hours":7.5,"hourlyRate":40,"totalEarnings":299.97,"currency":"$","isPaid":false,"notes":"saved"}]}"""
+        val decoded = WorkBackup.decode(legacy)
+        assertEquals(row("$"), decoded.entries.single())
+        val next = WorkBackup.decode(WorkBackup.encode(decoded.categories, decoded.entries, decoded.workers))
+        assertEquals(decoded, next)
+        assertEquals(30.0, WorkEntryEdits.breakMinutes(next.entries.single()), 0.0)
+    }
     @Test(expected = IllegalArgumentException::class)
     fun invalidGroupBackupRejectedBeforeImport() {
         WorkBackup.decode(WorkBackup.encode(emptyList(), listOf(row("$").copy(groupWorkersJson = """[{"name":"x","hours":-2}]""")), emptyList()))

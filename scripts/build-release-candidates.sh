@@ -8,7 +8,7 @@ version_b=$((version_a + 1))
 gradle :app:assembleRelease -PdistributionVersionCode="$version_a" --no-configuration-cache --console=plain
 cp app/build/outputs/apk/release/app-release.apk candidate-a.apk
 gradle :app:assembleRelease :app:assembleReleaseAndroidTest :app:testReleaseUnitTest --tests 'com.example.Work*Test' \
-  -PdistributionInstrumentation=true -PdistributionVersionCode="$version_b" -PdistributionVersionName=1.5-rc2 \
+  -PdistributionInstrumentation=true -PdistributionVersionCode="$version_b"  \
   --no-configuration-cache --console=plain
 cp app/build/outputs/apk/release/app-release.apk candidate-b.apk
 for apk in candidate-a.apk candidate-b.apk app/build/outputs/apk/androidTest/release/app-release-androidTest.apk; do

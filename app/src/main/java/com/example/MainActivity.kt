@@ -220,9 +220,7 @@ fun copyExcelToClipboard(context: Context, filteredEntries: List<WorkEntry>, sel
 }
 
 fun formatSelectedShiftsForWhatsApp(selectedEntries: List<WorkEntry>): String {
-    val allWorkers = selectedEntries.flatMap { getWorkerNamesFromEntry(it.groupWorkersJson) }.distinct()
-    val isWorker = allWorkers.isNotEmpty()
-    return generateWhatsAppReportText(selectedEntries, if (isWorker) "הכל" else "קטגוריה", if (isWorker) allWorkers.first() else "")
+    return com.example.data.WorkMoney.report(selectedEntries)
 }
 
 class MainActivity : ComponentActivity() {
@@ -950,7 +948,7 @@ fun DashboardScreen(
     val defaultCurr by viewModel.defaultCurrency.collectAsStateWithLifecycle()
     var selectedCurrency by remember(defaultCurr) { mutableStateOf(defaultCurr) }
 
-    var hourlyRateStr by remember { mutableStateOf("40") }
+    var hourlyRateStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("40") }
     val localPreferences by viewModel.localPreferences.collectAsStateWithLifecycle()
     val defaultCategory = localPreferences["defaultCategory"] ?: categories.firstOrNull()?.name ?: "עצמאי"
     var selectedCategory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
@@ -962,33 +960,38 @@ fun DashboardScreen(
     LaunchedEffect(selectedCategory, selectedDefaultRate) {
         selectedDefaultRate?.let { hourlyRateStr = it.toString() }
     }
-    var isReportCardExpanded by remember { mutableStateOf(false) }
+    var isReportCardExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
-    var showQuickShiftDialog by remember { mutableStateOf(false) }
+    var showQuickShiftDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
 
-    var isManualMode by remember { mutableStateOf(false) } // false = שעון, true = ידני
-    var isAiMode by remember { mutableStateOf(false) }
-    var aiInputText by remember { mutableStateOf("") }
+    var isManualMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) } // false = שעון, true = ידני
+    var isAiMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var aiInputText by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var isAiParsing by remember { mutableStateOf(false) }
-    var selectedDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
-    var startTimeStr by remember { mutableStateOf("09:00") }
-    var endTimeStr by remember { mutableStateOf("17:00") }
-    var breakMinutesStr by remember { mutableStateOf("0") }
-    var notesText by remember { mutableStateOf("") }
-    var manualHoursStr by remember { mutableStateOf("8.0") }
+    var selectedDateMillis by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
+    var startTimeStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("09:00") }
+    var endTimeStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("17:00") }
+    var breakMinutesStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("0") }
+    var notesText by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var manualHoursStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("8.0") }
 
-    var showErrorHours by remember { mutableStateOf(false) }
-    var showErrorRate by remember { mutableStateOf(false) }
+    var showErrorHours by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var showErrorRate by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
-    var isGroupShift by remember { mutableStateOf(false) }
-    var employerRateStr by remember { mutableStateOf("") }
-    var workerRateStr by remember { mutableStateOf("") }
-    var showSeparateRates by remember { mutableStateOf(false) }
+    var isGroupShift by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var employerRateStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var workerRateStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var showSeparateRates by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
-    val groupWorkers = remember { mutableStateListOf<WorkViewModel.GroupWorkerState>() }
+    val groupWorkers = androidx.compose.runtime.saveable.rememberSaveable(
+        saver = androidx.compose.runtime.saveable.Saver<androidx.compose.runtime.snapshots.SnapshotStateList<WorkViewModel.GroupWorkerState>, String>(
+            save = { viewModel.stringifyGroupWorkers(it) },
+            restore = { mutableStateListOf(*viewModel.parseGroupWorkers(it).toTypedArray()) }
+        )
+    ) { mutableStateListOf<WorkViewModel.GroupWorkerState>() }
     var currentWorkerName by remember { mutableStateOf("") }
     var currentWorkerHours by remember { mutableStateOf("0.0") }
     var showWorkerAutocomplete by remember { mutableStateOf(false) }
@@ -2522,11 +2525,17 @@ fun DashboardScreen(
                             val finalRate = hourlyRateStr.toDoubleOrNull() ?: 40.0
                             val eRate = if (isGroupShift && showSeparateRates) employerRateStr.toDoubleOrNull() ?: finalRate else finalRate
                             val wRate = if (isGroupShift && showSeparateRates) workerRateStr.toDoubleOrNull() ?: finalRate else finalRate
+                            if (!finalHours.isFinite() || finalHours <= 0 || !finalRate.isFinite() || finalRate < 0 ||
+                                !eRate.isFinite() || eRate < 0 || !wRate.isFinite() || wRate < 0 ||
+                                (breakMinutesStr.toDoubleOrNull()?.let { !it.isFinite() || it < 0 } != false)) {
+                                Toast.makeText(context, "נא להזין שעות, הפסקה ותעריפים תקינים", Toast.LENGTH_LONG).show()
+                                return@Button
+                            }
                             val gJson = if (isGroupShift && groupWorkers.isNotEmpty()) {
                                 // Simple JSON Array construction for Workers
                                 val arr = org.json.JSONArray()
                                 groupWorkers.forEach { w ->
-                                    val obj = org.json.JSONObject()
+                                    val obj = if (w.sourceJson.isBlank()) org.json.JSONObject() else org.json.JSONObject(w.sourceJson)
                                     obj.put("name", w.name)
                                     obj.put("hours", w.hours)
                                     obj.put("isPaid", w.isPaid)
@@ -2722,7 +2731,7 @@ fun DashboardScreen(
         }
     }
 
-    var dialogCategory by remember { mutableStateOf("עצמאי") }
+    var dialogCategory by remember(defaultCategory) { mutableStateOf(defaultCategory) }
     val dialogDefaultRate = categories.firstOrNull { it.name == dialogCategory }?.defaultRate ?: 40.0
     var dialogRateStr by remember(dialogCategory, dialogDefaultRate, showQuickShiftDialog) {
         mutableStateOf(dialogDefaultRate.toString())
@@ -2804,7 +2813,7 @@ fun DashboardScreen(
                         TextButton(
                             onClick = {
                                 val lastEntry = recentEntries.firstOrNull()
-                                val cat = lastEntry?.category ?: "עצמאי"
+                                val cat = lastEntry?.category ?: defaultCategory
                                 val rate = categories.firstOrNull { it.name == cat }?.defaultRate ?: WorkViewModel.DEFAULT_RATE
                                 onStartShift(cat, rate)
                                 showQuickShiftDialog = false
@@ -6736,7 +6745,7 @@ fun EditShiftBottomSheet(
                     val gJson = if (isGroupShift && groupWorkers.isNotEmpty()) {
                         val arr = org.json.JSONArray()
                         groupWorkers.forEach { w ->
-                            val obj = org.json.JSONObject()
+                            val obj = if (w.sourceJson.isBlank()) org.json.JSONObject() else org.json.JSONObject(w.sourceJson)
                             obj.put("name", w.name)
                             obj.put("hours", w.hours)
                             obj.put("isPaid", w.isPaid)

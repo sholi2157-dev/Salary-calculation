@@ -31,6 +31,8 @@ jobs:
           gradle-version: '9.3.1'
           cache-read-only: false
       - run: gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true --console=plain
+      - name: Count actual Android test results
+        run: python3 scripts/summarize-android-tests.py
       - name: Verify release identity and local gates
         run: |
           set -euo pipefail
@@ -46,6 +48,7 @@ jobs:
             app/build/reports/tests/
             app/build/test-results/
             /tmp/release-identity.txt
+            release-evidence/unit-tests.json
       - name: Signing checkpoint
         env:
           SIGNING_READY: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

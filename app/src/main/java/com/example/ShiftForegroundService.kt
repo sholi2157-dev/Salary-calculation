@@ -166,7 +166,7 @@ class ShiftForegroundService : Service() {
         }
     }
 
-    private fun buildNotification(timeString: String = "00:00:00", earningsString: String = "₪0.00"): Notification {
+    private fun buildNotification(timeString: String = "00:00:00", earningsString: String = shiftState.activeShiftCurrency.value + "0.00"): Notification {
         val category = shiftState.activeShiftCategory.value
         val notificationText = "זמן: $timeString | שכר נצבר: $earningsString"
 

@@ -10,7 +10,7 @@ object WorkBackup {
     fun encode(categories: List<WorkCategory>, entries: List<WorkEntry>, workers: List<WorkerDirectory>, localPreferences: Map<String, String> = emptyMap()): String {
         return JSONObject().apply {
             put("formatVersion", 2)
-            put("androidLocalPreferences", JSONObject(localPreferences))
+            if (localPreferences.isNotEmpty()) put("androidLocalPreferences", JSONObject(localPreferences))
             put("categories", JSONArray().apply {
                 categories.forEach { put(JSONObject().put("name", it.name).put("defaultRate", it.defaultRate)) }
             })
