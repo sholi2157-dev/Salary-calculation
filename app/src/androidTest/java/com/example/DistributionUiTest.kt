@@ -88,7 +88,8 @@ class DistributionUiTest {
         ui.onNodeWithTag("history_search_input").assertDoesNotExist()
         openHistorySearch()
         ui.onNodeWithTag("history_search_input").assertTextContains("USD category")
-        ui.onNodeWithContentDescription("נקה").performClick()
+        ui.onNodeWithTag("history_search_clear", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("history_search_input").assertTextEquals("")
         ui.onNodeWithText("הצג תוצאות").performClick()
         fun select() { ui.onNodeWithTag("work_entry_card_3").performScrollTo().performTouchInput { longClick() };ui.onNodeWithText("נבחרו 1 משמרות").assertExists() }
         select();Espresso.pressBack();ui.onNodeWithText("נבחרו 1 משמרות").assertDoesNotExist()
