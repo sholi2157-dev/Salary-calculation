@@ -1239,7 +1239,7 @@ fun DashboardScreen(
             }
 
             Card(
-                colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
+                colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
                 border = BorderStroke(1.dp, Color(0x26FFFFFF)),
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier
@@ -4775,7 +4775,7 @@ fun ManagementScreen(
             Box(modifier = Modifier.fillMaxWidth()) {
                 val isExpanded = expandedSection == 3
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                    colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                     border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
@@ -4872,7 +4872,7 @@ fun ManagementScreen(
             Box(modifier = Modifier.fillMaxWidth()) {
                 val isExpanded = expandedSection == 4
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                    colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                     border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
