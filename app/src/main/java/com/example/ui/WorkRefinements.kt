@@ -84,7 +84,7 @@ private fun SummaryMetric(label: String, value: String, modifier: Modifier = Mod
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp)
-                    .height(208.dp)
+                    .height(232.dp)
                     .testTag("summary_page_$page"),
                 colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
                 border = BorderStroke(1.dp, Color(0x26FFFFFF)),
