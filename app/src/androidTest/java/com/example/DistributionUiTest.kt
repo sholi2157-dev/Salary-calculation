@@ -36,14 +36,10 @@ class DistributionUiTest {
         Espresso.pressBack()
         ui.onNodeWithText("הגדרת משמרת פעילה").assertDoesNotExist()
         ui.onNodeWithTag("live_shift_fab").performClick()
-        // Inject a touchscreen event (SOURCE_UNKNOWN is not dispatched as a touch).
-        val down = android.os.SystemClock.uptimeMillis()
-        for (action in listOf(android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_UP)) {
-            val event = android.view.MotionEvent.obtain(down, down + if (action == android.view.MotionEvent.ACTION_UP) 50 else 0,
-                action, 2f, ui.activity.resources.displayMetrics.heightPixels / 2f, 0)
-            event.source = android.view.InputDevice.SOURCE_TOUCHSCREEN
-            assertTrue(device.injectInputEvent(event, true))
-            event.recycle()
+        // Exercise a real pointer tap on the dialog scrim, above the centered card.
+        // This avoids the system-gesture edge where emulator-injected touches can be swallowed.
+        ui.onNodeWithTag("quick_shift_scrim", useUnmergedTree = true).performTouchInput {
+            click(androidx.compose.ui.geometry.Offset(center.x, 20f))
         }
         ui.waitForIdle()
         ui.onNodeWithText("הגדרת משמרת פעילה").assertDoesNotExist()
