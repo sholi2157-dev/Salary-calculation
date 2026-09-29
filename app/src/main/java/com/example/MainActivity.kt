@@ -432,9 +432,15 @@ fun MainAppContent(
 
     val intentAction by (context as MainActivity).intentActionFlow.collectAsStateWithLifecycle()
     LaunchedEffect(intentAction) {
-        if (intentAction == "com.example.ACTION_IMPORT_EXCEL") {
-            showSettings = true
-            (context as MainActivity).intentActionFlow.value = null
+        when (intentAction) {
+            "com.example.ACTION_IMPORT_EXCEL" -> {
+                showSettings = true
+                (context as MainActivity).intentActionFlow.value = null
+            }
+            "com.example.ACTION_OPEN_HISTORY_SEARCH" -> {
+                if (selectedTab == 1) isSearchDialogOpen = true
+                (context as MainActivity).intentActionFlow.value = null
+            }
         }
     }
 
