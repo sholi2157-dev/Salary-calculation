@@ -498,7 +498,8 @@ fun MainAppContent(
                                     onClick = {
                                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                         isSearchDialogOpen = true
-                                    }
+                                    },
+                                    modifier = Modifier.testTag("history_search_button")
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Search,
@@ -4516,6 +4517,7 @@ fun ManagementScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag("settings_section_עבודה וקטגוריות")
                         .clickable {
                             expandedSection = if (isExpanded) -1 else 0
                         }
@@ -4688,6 +4690,7 @@ fun ManagementScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag("settings_section_מטבע וברירות מחדל")
                         .clickable {
                             expandedSection = if (isExpanded) -1 else 1
                         }
@@ -4780,6 +4783,7 @@ fun ManagementScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag("settings_section_מערכת ומשוב")
                         .clickable {
                             expandedSection = if (isExpanded) -1 else 3
                         }
@@ -4877,6 +4881,7 @@ fun ManagementScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag("settings_section_גיבוי ונתונים")
                         .clickable {
                             expandedSection = if (isExpanded) -1 else 4
                         }
