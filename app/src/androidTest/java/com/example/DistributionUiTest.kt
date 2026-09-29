@@ -81,14 +81,15 @@ class DistributionUiTest {
         ui.onNodeWithContentDescription("מיון").performClick()
         ui.onNodeWithText("תאריך: מהישן לחדש").performClick()
         ui.onNodeWithContentDescription("ניהול וקטגוריות").performClick()
-        ui.onNodeWithText("עדכונים").assertExists()
+        ui.waitForIdle()
+        ui.onNodeWithTag("settings_section_עדכונים", useUnmergedTree = true).assertExists()
         val titleBounds = ui.onNodeWithTag("settings_title_עדכונים", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         val arrowBounds = ui.onNodeWithTag("settings_chevron_עדכונים", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         assertTrue("Hebrew label must be to the right of its trailing chevron", titleBounds.right > arrowBounds.right)
-        ui.onNodeWithText("משוב ודיווח על תקלה").assertExists()
+        ui.onNodeWithTag("settings_section_משוב ודיווח על תקלה", useUnmergedTree = true).assertExists()
         ui.onNodeWithText("שמור קובץ גיבוי").assertDoesNotExist()
         snap("rc2-settings")
-        ui.onNodeWithText("משוב ודיווח על תקלה").performClick()
+        ui.onNodeWithTag("settings_section_משוב ודיווח על תקלה", useUnmergedTree = true).performClick()
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("Synthetic feedback draft")
         ui.onNodeWithTag("feedback_message").assertTextContains("Synthetic feedback draft")
         val target = InstrumentationRegistry.getInstrumentation().targetContext
