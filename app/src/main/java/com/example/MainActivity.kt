@@ -7,6 +7,8 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.example.ui.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -951,19 +953,23 @@ fun DashboardScreen(
     }
 
     val defaultCurr by viewModel.defaultCurrency.collectAsStateWithLifecycle()
-    var selectedCurrency by remember(defaultCurr) { mutableStateOf(defaultCurr) }
+    var selectedCurrency by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(defaultCurr) }
 
     var hourlyRateStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("40") }
     val localPreferences by viewModel.localPreferences.collectAsStateWithLifecycle()
     val defaultCategory = localPreferences["defaultCategory"] ?: categories.firstOrNull()?.name ?: "עצמאי"
     var selectedCategory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     LaunchedEffect(defaultCategory, categories) {
-        if (categories.none { it.name == selectedCategory }) selectedCategory = defaultCategory
+        if (categories.isNotEmpty() && categories.none { it.name == selectedCategory }) selectedCategory = defaultCategory
     }
     val selectedDefaultRate = categories.firstOrNull { it.name == selectedCategory }?.defaultRate
-    LaunchedEffect(selectedCategory, localPreferences["categoryCurrency:$selectedCategory"]) { selectedCurrency = viewModel.categoryCurrency(selectedCategory) }
+    var appliedCategoryDefaults by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     LaunchedEffect(selectedCategory, selectedDefaultRate) {
-        selectedDefaultRate?.let { hourlyRateStr = it.toString() }
+        if (selectedDefaultRate != null && appliedCategoryDefaults != selectedCategory) {
+            selectedCurrency = viewModel.categoryCurrency(selectedCategory)
+            hourlyRateStr = selectedDefaultRate.toString()
+            appliedCategoryDefaults = selectedCategory
+        }
     }
     var isReportCardExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
@@ -997,25 +1003,10 @@ fun DashboardScreen(
             restore = { mutableStateListOf(*viewModel.parseGroupWorkers(it).toTypedArray()) }
         )
     ) { mutableStateListOf<WorkViewModel.GroupWorkerState>() }
-    var currentWorkerName by remember { mutableStateOf("") }
-    var currentWorkerHours by remember { mutableStateOf("0.0") }
+    var currentWorkerName by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var currentWorkerHours by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("0.0") }
     var showWorkerAutocomplete by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(isGroupShift) {
-        if (isGroupShift) {
-            groupWorkers.clear()
-            currentWorkerName = ""
-            val hDouble = manualHoursStr.toDoubleOrNull() ?: 0.0
-            currentWorkerHours = if (hDouble > 0) String.format(Locale.US, "%.2f", hDouble) else "0.0"
-            showWorkerAutocomplete = false
-        } else {
-            groupWorkers.clear()
-            currentWorkerName = ""
-            currentWorkerHours = "0.0"
-            showWorkerAutocomplete = false
-        }
-    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     var isListening by remember { mutableStateOf(false) }
@@ -1161,9 +1152,10 @@ fun DashboardScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(bottom = liveControlPadding)
                 .verticalScroll(scrollState)
                 .testTag("dashboard_scroll_container")
-                .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = liveControlPadding),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
@@ -1267,14 +1259,6 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Left item: expand/collapse icon
-                        Icon(
-                            imageVector = if (isReportCardExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = if (isReportCardExpanded) "כווץ" else "הרחב",
-                            tint = Color(0xFF5C6BC0),
-                            modifier = Modifier.size(28.dp)
-                        )
-
                         // Right item: "דיווח חדש"
                         Text(
                             text = "דיווח חדש",
@@ -1283,6 +1267,15 @@ fun DashboardScreen(
                             color = Color.White,
                             fontFamily = com.example.ui.theme.AssistantFontFamily
                         )
+                        // Left item: expand/collapse icon
+                        Icon(
+                            imageVector = if (isReportCardExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = if (isReportCardExpanded) "כווץ" else "הרחב",
+                            tint = Color(0xFF5C6BC0),
+                            modifier = Modifier.size(28.dp)
+                        )
+
+
                     }
 
                     AnimatedVisibility(
@@ -3043,12 +3036,11 @@ fun ShiftsScreen(
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("סינון היסטוריה", style = MaterialTheme.typography.titleLarge)
                         // Compact Filter Row: Date selection chips & Category Dropdown Filter
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -3171,7 +3163,7 @@ fun ShiftsScreen(
                                         .clickable {
                                             triggerHapticFeedback(context, isDestructive = false)
                                             statusFilter = statusVal
-                                        },
+                                        }.testTag("history_status_$statusVal"),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -3211,7 +3203,7 @@ fun ShiftsScreen(
                                         modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Outlined.ArrowBack,
+                                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                             contentDescription = "חודש הבא",
                                             tint = Color.White,
                                             modifier = Modifier.size(16.dp)
@@ -3236,7 +3228,7 @@ fun ShiftsScreen(
                                         modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Outlined.ArrowForward,
+                                            imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
                                             contentDescription = "חודש קודם",
                                             tint = Color.White,
                                             modifier = Modifier.size(16.dp)

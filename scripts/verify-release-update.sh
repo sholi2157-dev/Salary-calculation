@@ -4,6 +4,12 @@ pkg=com.aistudio.worktracker.qztvdw.distribution
 # Runner must provide a fresh disposable emulator. Never uninstall/reset as a workaround.
 if adb shell pm list packages | grep -Fx "package:$pkg"; then echo 'Expected fresh emulator; refusing to overwrite existing data'; exit 1; fi
 mkdir -p release-evidence
+collect_ui_evidence() {
+  for name in rc2-home rc2-currency rc2-group rc2-history rc2-settings; do
+    adb pull "/sdcard/Android/data/$pkg/files/$name.png" "release-evidence/$name.png" >/dev/null 2>&1 || true
+  done
+}
+trap collect_ui_evidence EXIT
 adb install candidate-a.apk
 adb install app/build/outputs/apk/androidTest/release/app-release-androidTest.apk
 adb shell svc wifi disable

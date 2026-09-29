@@ -37,8 +37,8 @@ object SummaryPages {
 
 @Composable fun SettingsSectionHeader(title: String, expanded: Boolean) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = Color.White)
-        Icon(if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, if (expanded) "צמצם" else "הרחב", tint = MaterialTheme.colorScheme.secondary)
+        Text(title, Modifier.weight(1f).testTag("settings_title_$title"), style = MaterialTheme.typography.titleMedium, color = Color.White)
+        Icon(if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, if (expanded) "צמצם" else "הרחב", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.testTag("settings_chevron_$title"))
     }
 }
 @Composable fun SettingsSection(title: String, expanded: Boolean, toggle: () -> Unit, content: @Composable ColumnScope.() -> Unit) {

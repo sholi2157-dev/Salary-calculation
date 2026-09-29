@@ -15,7 +15,9 @@ cp app/build/outputs/apk/release/app-release.apk candidate-b.apk
 for apk in candidate-a.apk candidate-b.apk app/build/outputs/apk/androidTest/release/app-release-androidTest.apk; do
   report="release-evidence/$(basename "$apk").txt"
   {
-    echo "Source commit: $GITHUB_SHA"
+    if [ "$apk" = candidate-a.apk ]; then
+      echo "Source commit: 2d6a3f9e3d24a04a3d5777253e225096b0dd9c93 (original RC1 artifact)"
+    else echo "Source commit: $GITHUB_SHA"; fi
     "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
     sha256sum "$apk"
     "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$apk" | sed -n '/^package:/p; /^sdkVersion:/p; /^targetSdkVersion:/p'
