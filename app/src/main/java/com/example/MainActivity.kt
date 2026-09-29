@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -531,7 +532,7 @@ fun MainAppContent(
             bottomBar = {
                 Box(modifier = Modifier.graphicsLayer { alpha = focusAlpha }) {
                     NavigationBar(
-                        containerColor = Color.Transparent,
+                        containerColor = Color(0xF20B1020),
                         tonalElevation = 0.dp,
                         modifier = Modifier.heightIn(min = 58.dp),
                         windowInsets = WindowInsets.navigationBars
@@ -760,7 +761,7 @@ fun MainAppContent(
 
     if (isSearchDialogOpen) {
         Dialog(
-            onDismissRequest = { isSearchDialogOpen = false; searchQuery = "" }
+            onDismissRequest = { isSearchDialogOpen = false }
         ) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
@@ -800,6 +801,8 @@ fun MainAppContent(
                             }
                         },
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { isSearchDialogOpen = false }),
                         colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                             focusedBorderColor = Color(0xFF5C6BC0),
                             unfocusedBorderColor = Color(0x33FFFFFF),
@@ -813,9 +816,9 @@ fun MainAppContent(
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(
-                            onClick = { isSearchDialogOpen = false; searchQuery = "" }
+                            onClick = { isSearchDialogOpen = false }
                         ) {
-                            Text("אישור", color = Color(0xFF5C6BC0), fontWeight = FontWeight.Bold)
+                            Text("הצג תוצאות", color = Color(0xFF5C6BC0), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1149,7 +1152,7 @@ fun DashboardScreen(
     }
 
     var liveControlHeight by remember { mutableIntStateOf(0) }
-    val liveControlPadding = with(androidx.compose.ui.platform.LocalDensity.current) { liveControlHeight.toDp() }
+    val liveControlPadding = with(androidx.compose.ui.platform.LocalDensity.current) { liveControlHeight.toDp() } + 24.dp
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -1236,7 +1239,7 @@ fun DashboardScreen(
             }
 
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                 border = BorderStroke(1.dp, Color(0x26FFFFFF)),
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier
@@ -2409,8 +2412,14 @@ fun DashboardScreen(
     Box(
         modifier = Modifier
             .align(Alignment.BottomStart)
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, Color(0xE60B1020))
+                )
+            )
+            .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 16.dp)
             .onSizeChanged { liveControlHeight = it.height }
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
     ) {
         val isRunning = activeShiftStartTime != null
         var showStopConfirmationDialog by remember { mutableStateOf(false) }
@@ -4498,21 +4507,11 @@ fun ManagementScreen(
                 )
             }
 
-            SettingsSection("עדכונים", expandedSection == 6, { expandedSection = if (expandedSection == 6) -1 else 6 }) {
-                WorkUpdateSettings()
-            }
-            SettingsSection("בינה מלאכותית · מפתח אישי", expandedSection == 7, { expandedSection = if (expandedSection == 7) -1 else 7 }) {
-                Text("שימוש אופציונלי בג׳מיני באמצעות המפתח האישי שלך")
-                TextButton(onClick = { showPersonalKeySettings = true }) { Text("מפתח אישי") }
-            }
-            SettingsSection("משוב ודיווח על תקלה", expandedSection == 8, { expandedSection = if (expandedSection == 8) -1 else 8 }) {
-                FeedbackForm()
-            }
             // Category 1: ניהול עבודה וקטגוריות
             Box(modifier = Modifier.fillMaxWidth()) {
                 val isExpanded = expandedSection == 0
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                    colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                     border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
@@ -4684,7 +4683,7 @@ fun ManagementScreen(
             Box(modifier = Modifier.fillMaxWidth()) {
                 val isExpanded = expandedSection == 1
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                    colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                     border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
@@ -4786,14 +4785,22 @@ fun ManagementScreen(
                         }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsSectionHeader("התראות משמרת", isExpanded)
+                        SettingsSectionHeader("מערכת ומשוב", isExpanded)
 
                         androidx.compose.animation.AnimatedVisibility(
                             visible = isExpanded,
                             enter = expandVertically() + fadeIn(),
                             exit = shrinkVertically() + fadeOut()
                         ) {
-                            Column(modifier = Modifier.padding(top = 16.dp)) {
+                            Column(
+                                modifier = Modifier.padding(top = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text("עדכונים", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                WorkUpdateSettings()
+                                HorizontalDivider(color = Color(0xFF334155))
+
+                                Text("התראות משמרת", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                                 Text(
                                     text = "ניהול הגדרות התראה, טיימר פעיל במכשיר, ושומר מסך כהה.",
                                     fontSize = 12.sp,
@@ -4846,6 +4853,15 @@ fun ManagementScreen(
                                         modifier = Modifier.testTag("service_notification_switch")
                                     )
                                 }
+
+                                HorizontalDivider(color = Color(0xFF334155))
+                                Text("בינה מלאכותית", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                Text("שימוש אופציונלי בג׳מיני באמצעות המפתח האישי שלך")
+                                TextButton(onClick = { showPersonalKeySettings = true }) { Text("מפתח אישי") }
+
+                                HorizontalDivider(color = Color(0xFF334155))
+                                Text("משוב ודיווח על תקלה", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                FeedbackForm()
                             }
                         }
                     }
