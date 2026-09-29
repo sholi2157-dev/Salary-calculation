@@ -1,0 +1,7 @@
+Starting: Intent { cmp=com.aistudio.worktracker.qztvdw.distribution/com.example.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.android.permissioncontroller/.permission.ui.GrantPermissionsActivity
+TotalTime: 910
+WaitTime: 948
+Complete

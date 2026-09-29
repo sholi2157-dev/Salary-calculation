@@ -1,0 +1,21 @@
+Source commit: 2d6a3f9e3d24a04a3d5777253e225096b0dd9c93
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+Signer #1 certificate DN: CN=Salary Calculation, OU=Android Distribution
+Signer #1 certificate SHA-256 digest: ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220
+Signer #1 certificate SHA-1 digest: 44959dcafd3764ae38482c07018a903faddefdb5
+Signer #1 certificate MD5 digest: 8ac71ed070719893ea1b3cca1036f83a
+Signer #1 key algorithm: RSA
+Signer #1 key size (bits): 3072
+Signer #1 public key SHA-256 digest: a381594cc24ca20e32aeff518832320283fde735f20cc37384bcc5097ee75a5c
+Signer #1 public key SHA-1 digest: 3848ec4d6633c90aa316079ce74befccbda1415f
+Signer #1 public key MD5 digest: 7208a0f9131c6eadae0696e4938f710a
+35e078511b64d47a36977e1dffb5de374f9d1e8452b0fd20735ba3bd1a278910  candidate-b.apk
+package: name='com.aistudio.worktracker.qztvdw.distribution' versionCode='7' versionName='1.5-rc1' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
+targetSdkVersion:'36'

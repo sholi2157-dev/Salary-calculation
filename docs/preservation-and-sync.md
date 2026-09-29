@@ -736,3 +736,23 @@ Owner must privately create/preserve the permanent key using the documented
 script before the signed A→B CI gate can run. After signing: verify all actual
 results, fix failures without data reset, deliver candidate B for owner review;
 then verify preview backup migration and updater flow before public release.
+
+
+## 2026-09-29 — signed Android RC and actual package-update proof
+
+Owner completed permanent signing and confirmed two key backups; no replacement
+key generated. Branch `codex/android-local-distribution`; tested source
+`2d6a3f9e3d24a04a3d5777253e225096b0dd9c93`.
+Actions36519639666/job109249463729 SUCCESS, logs/artifacts inspected.
+Debug58/58, Release58/58, JS31/31 and required builds passed.
+Signed A6→B7 on fresh API35 emulator passed seed/restart/updater/verify;
+exact backups match before/after, no duplicates/recalculation, edit/export works.
+Runtime updater accepts real signed B, rejects wrong hash/version, resolves
+installer content URI, and handles404/503 with synthetic transport. No claim
+of live release hosting or physical-device installer confirmation.
+
+See docs/android-signed-rc-evidence.md and docs/release-evidence/rc1 for public
+certificate/hash, exact synthetic snapshots and logs. Candidate B is for owner
+review only. Preview app/data untouched. No public Release/merge/accounts/sync.
+Next: owner visual/function review and preview backup migration; address findings,
+then complete hosting/download/installer flow before an authorized public release.

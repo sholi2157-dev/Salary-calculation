@@ -1,4 +1,9 @@
-# Local Android distribution — owner signing checkpoint
+# Local Android distribution — signed RC for owner review
+
+Current checkpoint: owner signing completed; signed A6→B7 and updater validation
+passed. See [signed RC evidence](android-signed-rc-evidence.md) for exact source,
+APK hash, public certificate, runtime results and remaining manual gates.
+The signing setup below is for recovery/documentation only: do not create a new key.
 
 Scope authorized 2026-09-28: Android local distribution only. No website/Firebase
 release, sync completion, production deploy, public APK release or PR merge.
@@ -163,9 +168,10 @@ verification remains a gate after private candidate testing and before publicati
 - Save backup outside app; import old backup and reopen; repeated import adds zero.
 - Unknown-source permission and update cancel/failure keep existing app usable.
 
-Status: signed RC, actual A→B installation, physical UI review and public updater
-round-trip are pending until the owner's permanent signing checkpoint. Do not
-label compilation or unit tests as those runtime results.
+Status: signed RC and actual A→B installation passed on API35. Updater validation
+passed with synthetic HTTP transport and a real signed APK. Owner physical UI,
+actual preview migration and public updater hosting/installer round-trip remain.
+See android-signed-rc-evidence.md; no public distribution authorized.
 
 ## Resumption audit, 2026-09-29 UTC
 
