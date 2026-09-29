@@ -3,10 +3,11 @@ set -euo pipefail
 set +x
 : "${KEYSTORE_PATH:?Permanent key required}" "${STORE_PASSWORD:?}" "${KEY_PASSWORD:?}" "${CERT_SHA256:?}"
 mkdir -p release-evidence
-version_a=$(python3 -c 'import re;print(re.search(r"orNull\?\.toInt\(\) \?: (\d+)",open("app/build.gradle.kts").read())[1])')
-version_b=$((version_a + 1))
-gradle :app:assembleRelease -PdistributionVersionCode="$version_a" --no-configuration-cache --console=plain
-cp app/build/outputs/apk/release/app-release.apk candidate-a.apk
+# Upgrade from the exact owner-tested RC1 binary, never a reconstruction.
+: "${RC1_APK:?Original RC1 artifact required}"
+echo "35e078511b64d47a36977e1dffb5de374f9d1e8452b0fd20735ba3bd1a278910  $RC1_APK" | sha256sum -c -
+cp "$RC1_APK" candidate-a.apk
+version_b=$(python3 -c 'import re;print(re.search(r"orNull\?\.toInt\(\) \?: (\d+)",open("app/build.gradle.kts").read())[1])')
 gradle :app:assembleRelease :app:assembleReleaseAndroidTest :app:testReleaseUnitTest --tests 'com.example.Work*Test' \
   -PdistributionInstrumentation=true -PdistributionVersionCode="$version_b"  \
   --no-configuration-cache --console=plain

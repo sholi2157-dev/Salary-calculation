@@ -15,6 +15,7 @@ run_stage() {
   grep -F 'OK (1 test)' "release-evidence/$1.txt"
   ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' "release-evidence/$1.txt"
 }
+adb shell pm grant "$pkg" android.permission.POST_NOTIFICATIONS
 run_stage seed
 adb shell am start -W -n "$pkg/com.example.MainActivity" | tee release-evidence/offline-start.txt
 grep -F "Status: ok" release-evidence/offline-start.txt
@@ -29,5 +30,10 @@ done
 cmp release-evidence/restart-before.json release-evidence/verify-before.json
 adb shell am start -W -n "$pkg/com.example.MainActivity" | tee release-evidence/offline-start-after-update.txt
 grep -F "Status: ok" release-evidence/offline-start-after-update.txt
+adb shell am force-stop "$pkg"
+adb shell am instrument -w -e class com.example.DistributionUiTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/ui.txt
+grep -F 'OK (1 test)' release-evidence/ui.txt
+! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/ui.txt
+adb exec-out screencap -p > release-evidence/rc2-screen.png
 adb logcat -d -b crash > release-evidence/crash-log.txt
 ! grep -F "$pkg" release-evidence/crash-log.txt
