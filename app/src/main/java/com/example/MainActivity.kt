@@ -802,7 +802,10 @@ fun MainAppContent(
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "חיפוש", tint = Color.Gray, modifier = Modifier.size(18.dp)) },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
+                                IconButton(
+                                    onClick = { searchQuery = "" },
+                                    modifier = Modifier.testTag("history_search_clear")
+                                ) {
                                     Icon(Icons.Default.Close, contentDescription = "נקה", tint = Color.Gray, modifier = Modifier.size(18.dp))
                                 }
                             }
