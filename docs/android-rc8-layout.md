@@ -65,3 +65,29 @@ new versionCode, repeated release gates, same package/certificate, update metada
 and existing GitHub distribution, download/updater checks and a permanent link.
 Do not ask for that authorization again; do not mark an RC as stable. Test that
 future stable build over the delivered RC8 binary as well. No launch-video work.
+
+## Final delivered RC8 verification — 2026-09-30 UTC
+
+- Tested source `912acceca3ee9d62ae4ebd91596196950bcd33a6`.
+- Run `36666569653`, job `109732388175`: SUCCESS. Actual logs and downloaded
+  artifact `11075559765` inspected; source/hash/package/certificate checked locally.
+- Version `1.5-rc8`, code `16`; intermediate signed code15 was never delivered.
+- APK SHA-256 `f0fccf4325203502543f7143eb7f773854c2959d24b16c4f466d203e3b57d7a7`.
+- Package and permanent certificate equal the RC7 values above.
+- Debug60/60 and Release60/60: zero failures/errors/skips. Preview/release and
+  release-instrumentation compilation passed. Existing CI also ran its unchanged
+  JS31/build gates; no website files or implementation were changed.
+- API35 disposable emulator: RC7 code14 installed, synthetic data seeded,
+  force-stop/restart/updater validation, actual `adb install -r` code16, exact
+  before/after snapshot equality, edit/export and unchanged identities passed.
+  No uninstall, clear/reset, destructive migration or real user data operation.
+- DistributionUiTest and ReportKeyboardTest passed. Real IME visibility and focus
+  across scrolling, six keyboard open/Done cycles, clock/manual/group fields,
+  AI draft/Done, Android Settings round trip, direct one-tap save with IME,
+  clock/group rapid double taps producing exactly one entry each, report
+  close/reopen, history mid-drag reclaim/return, main/history navigation,
+  starting a live shift and cancelling stop were all exercised.
+- Crash log empty. Actual screenshots inspected: Save entirely above the IME;
+  live/navigation hidden as one group and returned below Save when IME closed.
+- No public release, stable update manifest, merge, website deployment, account
+  activation or video work. Await owner's physical APK review.
