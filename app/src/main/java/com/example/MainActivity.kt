@@ -2449,7 +2449,7 @@ fun DashboardScreen(
         val isRunning = activeShiftStartTime != null
         var showStopConfirmationDialog by remember { mutableStateOf(false) }
 
-        AnimatedVisibility(
+        androidx.compose.animation.AnimatedVisibility(
             visible = !showQuickShiftDialog,
             enter = scaleIn(initialScale = 0.8f) + fadeIn(),
             exit = scaleOut(targetScale = 0.8f) + fadeOut()
