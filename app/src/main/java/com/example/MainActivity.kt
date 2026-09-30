@@ -3074,7 +3074,7 @@ fun RecentShiftItemRow(
 }
 
 // ================= SHIFTS SCREEN =================
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun ShiftsScreen(
     isVisible: Boolean = true,
@@ -3094,8 +3094,6 @@ fun ShiftsScreen(
     var currencyFilter by remember { mutableStateOf("הכל") } // "הכל", "₪", "$"
 
     var categoryDropdownExpanded by remember { mutableStateOf(false) }
-    var showCopyMenu by remember { mutableStateOf(false) }
-    var showSortDropdown by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
     val historyIsScrolling = lazyListState.isScrollInProgress
@@ -3552,16 +3550,18 @@ fun ShiftsScreen(
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             if (isMultiSelectMode) {
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.Center
                 ) {
+                    Box(Modifier.height(48.dp), contentAlignment = Alignment.Center) {
+                        Text("נבחרו ${selectedShiftIds.size} משמרות", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
                     Row {
                         TextButton(onClick = { selectedShiftIds = emptySet() }) { Text("בטל הכל", color = Color(0xFFC7D2FE)) }
                         TextButton(onClick = { selectedShiftIds = filteredEntries.map { it.id }.toSet() }) { Text("בחר הכל", color = Color(0xFFC7D2FE)) }
                     }
-                    Text("נבחרו ${selectedShiftIds.size} משמרות", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             onClick = {
@@ -3639,155 +3639,16 @@ fun ShiftsScreen(
                                     }
                                 }
                             }
-                        // Title / Action Row
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "יומן עבודה (${filteredEntries.size})",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 15.sp,
-                                color = Color.White
+                            HistoryToolbar(
+                                entries = filteredEntries,
+                                currencyFilter = currencyFilter,
+                                activeFilterCount = listOf(filterType != "הכל", statusFilter != "הכל", selectedCategoryFilter != "הכל", currencyFilter != "הכל").count { it },
+                                onFilters = { showFilters = true },
+                                onCurrencyFilterChange = { triggerHapticFeedback(context, isDestructive = false); currencyFilter = it },
+                                onSort = { sortOption = it },
+                                onCopyExcel = { triggerHapticFeedback(context, isDestructive = false); copyExcelToClipboard(context, filteredEntries, selectedCategoryFilter) },
+                                onCopyWhatsApp = { triggerHapticFeedback(context, isDestructive = false); copyWhatsAppToClipboard(context, filteredEntries, selectedCategoryFilter, searchQuery) }
                             )
-
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Copy menu
-                                Box {
-                                    var showCopyMenuLocal by remember { mutableStateOf(false) }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(10.dp))
-                                            .border(1.dp, Color(0x22FFFFFF), shape = RoundedCornerShape(10.dp))
-                                            .clickable {
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                showCopyMenuLocal = true
-                                            }
-                                            .testTag("copy_menu_btn"),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.ContentCopy,
-                                            contentDescription = "שתף דוח",
-                                            tint = Color(0xFFC7D2FE),
-                                            modifier = Modifier.size(15.dp)
-                                        )
-                                    }
-                                    DropdownMenu(
-                                        expanded = showCopyMenuLocal,
-                                        onDismissRequest = { showCopyMenuLocal = false },
-                                        modifier = Modifier.background(com.example.ui.theme.FormSurface)
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text("Excel (ייצוא)", color = Color.White, fontSize = 12.sp) },
-                                            onClick = {
-                                                showCopyMenuLocal = false
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                copyExcelToClipboard(context, filteredEntries, selectedCategoryFilter)
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("WhatsApp", color = Color.White, fontSize = 12.sp) },
-                                            onClick = {
-                                                showCopyMenuLocal = false
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                copyWhatsAppToClipboard(context, filteredEntries, selectedCategoryFilter, searchQuery)
-                                            }
-                                        )
-                                    }
-                                }
-
-                                // Sort Dropdown button
-                                Box {
-                                    var showSortDropdownLocal by remember { mutableStateOf(false) }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(10.dp))
-                                            .border(1.dp, Color(0x22FFFFFF), shape = RoundedCornerShape(10.dp))
-                                            .clickable { showSortDropdownLocal = true },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.Sort,
-                                            contentDescription = "מיון",
-                                            tint = Color(0xFFC7D2FE),
-                                            modifier = Modifier.size(15.dp)
-                                        )
-                                    }
-
-                                    DropdownMenu(
-                                        expanded = showSortDropdownLocal,
-                                        onDismissRequest = { showSortDropdownLocal = false },
-                                        modifier = Modifier.background(com.example.ui.theme.FormSurface)
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text("תאריך: מהחדש לישן", color = Color.White, fontSize = 12.sp) },
-                                            onClick = {
-                                                sortOption = "newest"
-                                                showSortDropdownLocal = false
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("תאריך: מהישן לחדש", color = Color.White, fontSize = 12.sp) },
-                                            onClick = {
-                                                sortOption = "oldest"
-                                                showSortDropdownLocal = false
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("נוסף לאחרונה", color = Color.White, fontSize = 12.sp) },
-                                            onClick = {
-                                                sortOption = "latest_added"
-                                                showSortDropdownLocal = false
-                                            }
-                                        )
-                                    }
-                                }
-
-                                // Cyclic Filter Button: Place a single compact Micro-Button next to the Sort/Copy action icons. Tapping cycles through states: "הכל" -> "₪" -> "$" -> "הכל".
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(10.dp))
-                                        .border(1.dp, Color(0x22FFFFFF), shape = RoundedCornerShape(10.dp))
-                                        .clickable {
-                                            triggerHapticFeedback(context, isDestructive = false)
-                                            currencyFilter = when (currencyFilter) {
-                                                "הכל" -> "₪"
-                                                "₪" -> "$"
-                                                else -> "הכל"
-                                            }
-                                        }
-                                        .testTag("currency_filter_btn"),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = currencyFilter,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = when (currencyFilter) {
-                                            "$" -> Color(0xFF60A5FA)
-                                            "₪" -> Color(0xFF34D399)
-                                            else -> Color(0xFFC7D2FE)
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        TextButton(onClick = { showFilters = true }, modifier = Modifier.testTag("history_filters")) {
-                            val count = listOf(filterType != "הכל", statusFilter != "הכל", selectedCategoryFilter != "הכל", currencyFilter != "הכל").count { it }
-                            Text(if (count == 0) "סינון" else "סינון · $count פעילים")
-                        }
-                        CompactHistoryTotal(filteredEntries)
                     }
                 }
             }
@@ -4084,10 +3945,24 @@ fun WorkEntryRowCard(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = entry.category,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = Color(0xFFE5E5EA)
                         )
+                        if (isMultiSelectMode) {
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = com.example.data.WorkMoney.format(entry.totalEarnings, entry.currency),
+                                modifier = Modifier.testTag("selection_amount_${entry.id}"),
+                                style = MaterialTheme.typography.bodyMedium.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr),
+                                maxLines = 1,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFE5E5EA)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -4123,7 +3998,7 @@ fun WorkEntryRowCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = String.format(Locale.US, "%s%,.2f", entry.currency, entry.totalEarnings),
+                                text = com.example.data.WorkMoney.format(entry.totalEarnings, entry.currency),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color(0xFFE5E5EA)

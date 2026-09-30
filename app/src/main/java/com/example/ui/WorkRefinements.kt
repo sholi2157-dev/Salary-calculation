@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.data.WorkEntry
 import com.example.data.WorkMoney
 import com.example.ui.theme.FormSurface
@@ -30,7 +31,7 @@ import java.util.Locale
 
 object SummaryPages {
     fun currencies(entries: List<WorkEntry>) = listOf("₪", "$").filter { c -> entries.any { it.currency == c } }
-    fun compact(entries: List<WorkEntry>) = WorkMoney.totals(entries).entries.joinToString("   |   ") {
+    fun compact(entries: List<WorkEntry>, separator: String = "   |   ") = WorkMoney.totals(entries).entries.joinToString(separator) {
         "\u2066${WorkMoney.format(it.value, it.key)}\u2069"
     }.ifEmpty { "0.00" }
 }
@@ -54,8 +55,14 @@ object SummaryPages {
         }
     }
 }
-@Composable fun CompactHistoryTotal(entries: List<WorkEntry>) {
-    Text("סה\"כ מוצג:  ${SummaryPages.compact(entries)}", Modifier.fillMaxWidth().testTag("history_total"), style = MaterialTheme.typography.bodyMedium)
+@Composable fun CompactHistoryTotal(entries: List<WorkEntry>, modifier: Modifier = Modifier) {
+    Text(
+        text = "סה\"כ מוצג:\n${SummaryPages.compact(entries, separator = "\n")}",
+        color = Color.White,
+        modifier = modifier.testTag("history_total"),
+        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp, lineHeight = 16.sp),
+        textAlign = androidx.compose.ui.text.style.TextAlign.Start
+    )
 }
 @Composable
 private fun SummaryMetric(label: String, value: String, modifier: Modifier = Modifier) {

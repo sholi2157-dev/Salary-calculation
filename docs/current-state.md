@@ -33,6 +33,38 @@ Verified RC8 evidence includes Debug 60/60, Release 60/60, signed RC7→RC8 upda
 
 See `docs/android-rc8-layout.md` for detail.
 
+## Stage A History checkpoint — 2026-09-30
+
+The owner requested a small Android-only checkpoint covering sections 2 and 4 of
+`docs/android-final-uiux-task.md`, with no release build or version changes.
+
+Implemented:
+- Removed `יומן עבודה (N)` and combined the displayed total, filter badge,
+  copy/export menu, sort menu and existing currency cycle into a compact RTL toolbar.
+- Kept the selection count and all selection actions; narrow widths wrap the
+  controls rather than crowding them.
+- Selection rows show `WorkMoney.format(entry.totalEarnings, entry.currency)`.
+  Group shifts use the same stored amount as the normal History card. No historical
+  amount recalculation or financial/persistence changes were made.
+- Removed two unused History menu-state variables and reused the existing money formatter.
+
+Targeted verification:
+- `:app:testDebugUnitTest --tests com.example.HistoryCompactUiTest`: 2 tests passed,
+  covering 360dp/390dp RTL layout, toolbar bounds/height, ILS/USD totals, stored
+  selection amounts (including a group shift with deliberately different rates),
+  row selection, filters, currency cycling, all sort options and both copy actions.
+- Debug app/test compilation passed as prerequisites of those two tests.
+- Rendered both widths with Roborazzi and visually inspected contrast, RTL and amount readability.
+- `git diff --check` passed.
+
+RC8/code16 remains the delivered baseline. No new APK was built or signed, no
+release gates were run, and release identity/configuration was left unchanged.
+The checkpoint commit uses `[skip ci]` to avoid triggering the existing broad
+build/signing workflow for this small UI chunk.
+
+Do not redo these two changes in the next chunk. The other Stage A sections remain
+open. Physical-device approval remains part of the later consolidated RC review.
+
 ## Immediate next task
 RC8 is the baseline, not the final physical-approval candidate.
 
