@@ -45,7 +45,7 @@ class StageALayoutTest {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 MyApplicationTheme {
                     DashboardScreen(vm, WorkViewModel.StatsSummary(), listOf(WorkCategory(name = "עצמאי", defaultRate = 40.0)), emptyList(), null, "", 40.0, 1f,
-                        { _, _ -> }, {}, { _, _, _ -> }, entries.take(3), {}, {}, { _, _, _, _, _, _, _, _, _, _, _, _, _ -> }, { _, _ -> }, {},
+                        { _, _ -> }, { _, _, _ -> }, entries.take(3), {}, {}, { _, _, _, _, _, _, _, _, _, _, _, _, _ -> }, { _, _ -> }, {},
                         bottomNavigation = { Box(Modifier.fillMaxWidth().height(64.dp).testTag("test_navigation")) { Text("ראשי / היסטוריה", color = Color.White) } })
                 }
             }
@@ -75,6 +75,18 @@ class StageALayoutTest {
             if (mode == "קבוצה") ui.onNodeWithTag("worker_hours_input").performScrollTo().assertIsDisplayed()
             ui.onRoot().captureRoboImage(filePath = "/tmp/stage-a-$mode-${nav.right.value.toInt()}.png")
         }
+        ui.onNodeWithTag("add_rate_input").performScrollTo().performTextReplacement("25.5")
+        ui.onNodeWithTag("add_rate_input").assertIsFocused()
+        ui.onNodeWithText("Ai", useUnmergedTree = true).performScrollTo().performClick()
+        ui.onNodeWithTag("ai_free_text_input").performScrollTo().performTextReplacement("טקסט לפענוח בלי מפתח — נשאר לעריכה")
+        ui.onNodeWithTag("ai_parse_button").performScrollTo().performClick()
+        ui.waitUntil(5_000) { ui.onAllNodesWithTag("ai_inline_error").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithTag("ai_free_text_input").assertTextContains("טקסט לפענוח בלי מפתח — נשאר לעריכה")
+        ui.onNodeWithText("ידני", useUnmergedTree = true).performScrollTo().performClick()
+        ui.onNodeWithTag("notes_input").performScrollTo().assertTextContains("טיוטה שנשמרת במעבר")
+        ui.onNodeWithText("Ai", useUnmergedTree = true).performScrollTo().performClick()
+        ui.onNodeWithTag("ai_free_text_input").performScrollTo().assertTextContains("טקסט לפענוח בלי מפתח — נשאר לעריכה")
+        ui.onRoot().captureRoboImage(filePath = "/tmp/stage-ai-dashboard-${nav.right.value.toInt()}.png")
     }
     @Test fun historyTopOverscrollAndFinalCard() {
         val vm = model()

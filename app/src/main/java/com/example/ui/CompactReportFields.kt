@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import com.example.data.WorkCategory
 import com.example.ui.theme.FormSurface
 import java.text.SimpleDateFormat
@@ -36,18 +38,19 @@ private fun FieldLabel(text: String) {
 }
 
 @Composable
-fun CompactNumberField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier, error: Boolean = false) {
+fun CompactNumberField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier, error: Boolean = false, inputTag: String? = null) {
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         FieldLabel(label)
         BasicTextField(
             value = value, onValueChange = onChange, singleLine = true,
-            textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White, textDirection = TextDirection.Ltr, textAlign = TextAlign.Start),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White, textDirection = TextDirection.Ltr, textAlign = TextAlign.Center),
             cursorBrush = SolidColor(Color(0xFF818CF8)),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); focus.clearFocus() }),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { contentDescription = label }
+                .then(if (inputTag != null) Modifier.testTag(inputTag) else Modifier),
             decorationBox = { inner ->
                 Box(Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .background(FormSurface, RoundedCornerShape(10.dp))
@@ -68,7 +71,7 @@ private fun PickerField(label: String, value: String, tag: String, modifier: Mod
             .border(1.dp, Color(0xFF3F3F46), RoundedCornerShape(10.dp))
             .clickable(onClick = onClick).padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            Text(value, Modifier.weight(1f), color = Color.White, style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr), maxLines = 1)
+            Text(value, Modifier.weight(1f), color = Color.White, style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.ContentOrRtl, textAlign = TextAlign.Center), maxLines = 1)
             Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
         }
     }
@@ -124,7 +127,7 @@ fun CompactReportFields(
             PickerField("הפסקה", "$mins דק׳", "report_break", Modifier.weight(1f)) {
                 TimePickerDialog(context, { _, h, m -> onBreak((h * 60 + m).toString()) }, mins / 60, mins % 60, true).show()
             }
-            CompactNumberField("תעריף לשעה", values.rate, onRate, Modifier.weight(1f).testTag("add_rate_input"), values.rateError)
+            CompactNumberField("תעריף לשעה", values.rate, onRate, Modifier.weight(1f), values.rateError, inputTag = "add_rate_input")
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 FieldLabel("מטבע")
                 var expanded by remember { mutableStateOf(false) }

@@ -636,7 +636,6 @@ fun MainAppContent(
                                         }
                                         viewModel.startActiveShift(cat, rate)
                                     },
-                                    onStopShift = { viewModel.stopActiveShift() },
                                     onSaveShift = { cat, hrs, rate ->
                                         viewModel.finishActiveShift()
                                     },
@@ -962,7 +961,6 @@ fun DashboardScreen(
     activeShiftRate: Double,
     focusAlpha: Float,
     onStartShift: (String, Double) -> Unit,
-    onStopShift: () -> Unit,
     onSaveShift: (String, Double, Double) -> Unit,
     recentEntries: List<WorkEntry>,
     onTogglePaid: (WorkEntry) -> Unit,
@@ -1039,6 +1037,8 @@ fun DashboardScreen(
     var isAiMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var aiInputText by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var isAiParsing by remember { mutableStateOf(false) }
+    var aiError by remember { mutableStateOf<String?>(null) }
+    var aiProposal by remember { mutableStateOf<List<com.example.api.GeminiParser.ParsedShift>?>(null) }
     var selectedDateMillis by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
     var startTimeStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("09:00") }
     var endTimeStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("17:00") }
@@ -1062,11 +1062,14 @@ fun DashboardScreen(
     ) { mutableStateListOf<WorkViewModel.GroupWorkerState>() }
     var currentWorkerName by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var currentWorkerHours by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("0.0") }
-    var showWorkerAutocomplete by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    var isListening by remember { mutableStateOf(false) }
+    val voiceSession = remember {
+        com.example.ui.VoiceTranscriptSession({ aiInputText = it; aiError = null }, { aiError = it })
+    }
+    val aiScreenActive by rememberUpdatedState(isAiMode && isReportCardExpanded && selectedTab == 0)
+
 
     val speechRecognizer = remember { android.speech.SpeechRecognizer.createSpeechRecognizer(context) }
     val speechRecognizerIntent = remember {
@@ -1075,132 +1078,77 @@ fun DashboardScreen(
             putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "he-IL")
             putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "he-IL")
             putExtra(android.speech.RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "he-IL")
+            putExtra(android.speech.RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         }
     }
 
+    fun startVoice() {
+        if (!aiScreenActive || isAiParsing) return
+        if (!android.speech.SpeechRecognizer.isRecognitionAvailable(context)) {
+            aiError = "זיהוי קולי אינו זמין במכשיר הזה. אפשר להקליד את התיאור."
+            return
+        }
+        aiError = null
+        voiceSession.begin(aiInputText)
+        try { speechRecognizer.startListening(speechRecognizerIntent) }
+        catch (_: Exception) { voiceSession.interrupt(); aiError = "לא ניתן להתחיל הקלטה כרגע. אפשר לנסות שוב או להקליד." }
+    }
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            try {
-                speechRecognizer.startListening(speechRecognizerIntent)
-                isListening = true
-            } catch (e: Exception) {
-                Toast.makeText(context, "שגיאה בהפעלת הקלטה: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            scope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = "הקלטה קולית דורשת אישור הרשאה",
-                    actionLabel = "הגדרות",
-                    duration = SnackbarDuration.Long
-                )
-                if (result == SnackbarResult.ActionPerformed) {
-                    try {
-                        val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = android.net.Uri.fromParts("package", context.packageName, null)
-                        }
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "לא ניתן לפתוח הגדרות", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        }
+    ) { granted ->
+        if (granted) startVoice()
+        else aiError = "הקלטה דורשת הרשאת מיקרופון. אפשר לאשר בהגדרות המכשיר או להקליד."
     }
-
     val processAIInput: suspend (String) -> Unit = { text ->
-        if (text.isBlank()) {
-            Toast.makeText(context, "נא להזין או להקליט טקסט לפענוח", Toast.LENGTH_SHORT).show()
-        } else if (!isAiParsing) {
+        if (text.isNotBlank() && !isAiParsing && !voiceSession.active) {
             isAiParsing = true
+            aiError = null
             try {
-                val cats = viewModel.categories.value.map { it.name }
-                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, viewModel.categories.value.associate { it.name to it.defaultRate }, com.example.api.PersonalAiKey.read(context, viewModel.owner.uid))
-                if (!results.isNullOrEmpty()) {
-                    android.app.AlertDialog.Builder(context)
-                        .setTitle("אישור המשמרות שפוענחו")
-                        .setMessage(results.joinToString("\n\n") { "${it.category} | ${SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(it.date))}\n${it.hours} שעות × ${it.hourlyRate} ${it.currency}\n${it.notes}" })
-                        .setNegativeButton("ביטול", null)
-                        .setPositiveButton("הוספת המשמרות") { _, _ ->
-                            viewModel.addShifts(results)
-                            aiInputText = ""
-                            Toast.makeText(context, "המשמרות הועברו לשמירה", Toast.LENGTH_SHORT).show()
-                        }.show()
-
-                } else {
-                    isManualMode = true
-                    isAiMode = false
-                    isGroupShift = false
-                    Toast.makeText(context, "לא הצלחנו לפענח את המשמרת אוטומטית. אנא הזן ידנית.", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                isManualMode = true
-                isAiMode = false
-                isGroupShift = false
-                Toast.makeText(context, "AI Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-            } finally {
-                isAiParsing = false
-            }
+                val categoriesNow = viewModel.categories.value
+                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, categoriesNow.map { it.name }, categoriesNow.associate { it.name to it.defaultRate }, com.example.api.PersonalAiKey.read(context, viewModel.owner.uid))
+                if (results.isNotEmpty()) aiProposal = results
+                else aiError = "לא הצלחנו להבין את פרטי המשמרת. נסה להוסיף תאריך, שעות ותעריף ולפענח שוב."
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                aiError = "הפענוח לא הושלם. בדוק את החיבור ואת המפתח האישי בהגדרות, או תקן את התיאור ונסה שוב."
+            } finally { isAiParsing = false }
         }
     }
-
-    val recognitionListener = remember {
-        object : android.speech.RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {
-                isListening = true
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(speechRecognizer, lifecycleOwner) {
+        speechRecognizer.setRecognitionListener(voiceSession)
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP && voiceSession.active) {
+                voiceSession.interrupt()
+                speechRecognizer.cancel()
             }
-            override fun onBeginningOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {}
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {
-                isListening = false
-            }
-            override fun onError(error: Int) {
-                isListening = false
-                val errorMsg = when (error) {
-                    android.speech.SpeechRecognizer.ERROR_AUDIO -> "שגיאת שמע"
-                    android.speech.SpeechRecognizer.ERROR_CLIENT -> "שגיאת לקוח"
-                    android.speech.SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "חוסר הרשאות"
-                    android.speech.SpeechRecognizer.ERROR_NETWORK -> "שגיאת רשת"
-                    android.speech.SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "פסק זמן לרשת"
-                    android.speech.SpeechRecognizer.ERROR_NO_MATCH -> "לא נמצאה התאמה"
-                    android.speech.SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "מזהה קולי עסוק"
-                    android.speech.SpeechRecognizer.ERROR_SERVER -> "שגיאת שרת"
-                    android.speech.SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "לא זוהה דיבור"
-                    else -> "שגיאה לא ידועה"
-                }
-                Toast.makeText(context, "שגיאת זיהוי: $errorMsg", Toast.LENGTH_SHORT).show()
-            }
-            override fun onResults(results: Bundle?) {
-                val matches = results?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    val text = matches[0]
-                    aiInputText = text
-                    scope.launch {
-                        processAIInput(text)
-                    }
-                } else if (aiInputText.isNotBlank()) {
-                    scope.launch {
-                        processAIInput(aiInputText)
-                    }
-                }
-            }
-            override fun onPartialResults(partialResults: Bundle?) {
-                val matches = partialResults?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    aiInputText = matches[0]
-                }
-            }
-            override fun onEvent(eventType: Int, params: Bundle?) {}
         }
-    }
-
-    DisposableEffect(Unit) {
-        speechRecognizer.setRecognitionListener(recognitionListener)
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            voiceSession.interrupt()
             speechRecognizer.destroy()
         }
+    }
+    LaunchedEffect(isAiMode, isReportCardExpanded, selectedTab) {
+        if (!aiScreenActive && voiceSession.active) {
+            voiceSession.interrupt()
+            speechRecognizer.cancel()
+        }
+    }
+    if (aiScreenActive) aiProposal?.let { proposal ->
+        com.example.ui.AiShiftReview(proposal,
+            onEdit = { aiProposal = null },
+            onSave = {
+                // Consume before dispatch to prevent a second tap from adding it twice.
+                if (aiProposal != null) {
+                    aiProposal = null
+                    viewModel.addShifts(proposal)
+                    aiInputText = ""
+                    Toast.makeText(context, "המשמרות הועברו לשמירה", Toast.LENGTH_SHORT).show()
+                }
+            })
     }
 
     val saveReport: @Composable () -> Unit = {
@@ -1483,7 +1431,7 @@ fun DashboardScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(44.dp)
+                            .height(56.dp)
                             .background(Color(0xFF161922), shape = RoundedCornerShape(22.dp))
                             .border(1.dp, Color(0x1FFFFFFF), shape = RoundedCornerShape(22.dp))
                             .padding(4.dp),
@@ -1618,193 +1566,20 @@ fun DashboardScreen(
                     }
 
                     if (isAiMode) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(
-                                text = "הקלד את פרטי המשמרת שלך בטקסט חופשי (עברית או אנגלית):",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF8E8E93),
-                                modifier = Modifier.align(Alignment.End)
-                            )
-
-                            OutlinedTextField(
-                                value = aiInputText,
-                                onValueChange = { aiInputText = it },
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(onDone = {
-                                    keyboardController?.hide()
-                                    focusManager.clearFocus(force = true)
-                                }),
-                                placeholder = {
-                                    Text(
-                                        text = "לדוגמה: אתמול עבדתי עצמאי 8 שעות בתעריף 50 ש\"ח, הערה: הדרכה וישיבת צוות",
-                                        color = Color(0xFF64748B),
-                                        fontSize = 13.sp,
-                                        textAlign = TextAlign.Start,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(110.dp)
-                                    .testTag("ai_free_text_input"),
-                                shape = RoundedCornerShape(12.dp),
-                                textStyle = TextStyle(textAlign = TextAlign.Start, color = Color.White, fontSize = 14.sp),
-                                trailingIcon = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(end = 4.dp)
-                                    ) {
-                                        if (isListening) {
-                                            Text(
-                                                text = "מקשיב...",
-                                                color = Color(0xFFEF4444),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(end = 4.dp)
-                                            )
-                                            IconButton(
-                                                onClick = {
-                                                    speechRecognizer.stopListening()
-                                                    isListening = false
-                                                },
-                                                modifier = Modifier.testTag("ai_mic_btn")
-                                            ) {
-                                                Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.Filled.Stop,
-                                                    contentDescription = "עצור הקלטה",
-                                                    tint = Color(0xFFEF4444)
-                                                )
-                                            }
-                                        } else {
-                                            IconButton(
-                                                onClick = {
-                                                    val permission = android.Manifest.permission.RECORD_AUDIO
-                                                    val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
-                                                        context,
-                                                        permission
-                                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-
-                                                    if (isGranted) {
-                                                        speechRecognizer.startListening(speechRecognizerIntent)
-                                                        isListening = true
-                                                    } else {
-                                                        requestPermissionLauncher.launch(permission)
-                                                    }
-                                                },
-                                                modifier = Modifier.testTag("ai_mic_btn")
-                                            ) {
-                                                Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.Outlined.Mic,
-                                                    contentDescription = "הקלטה קולית",
-                                                    tint = Color(0xFF8E8E93)
-                                                )
-                                            }
-                                        }
-                                    }
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                    focusedBorderColor = Color(0xFF5C6BC0),
-                                    unfocusedBorderColor = Color(0xFF3F3F46),
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                )
-                            )
-
-                            if (isListening) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                                    horizontalArrangement = Arrangement.End,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "מקשיב... דבר כעת",
-                                        color = Color(0xFFEF4444),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .background(Color(0xFFEF4444), shape = CircleShape)
-                                    )
-                                }
-                            }
-
-                            // Quick examples suggestion row
-                            Text(
-                                text = "הצעות מהירות (לחץ לבדיקה):",
-                                fontSize = 11.sp,
-                                color = Color(0xFF8E8E93),
-                                modifier = Modifier.align(Alignment.End)
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
-                            ) {
-                                val examples = listOf(
-                                    "אתמול עבדתי 6.5 שעות עצמאי",
-                                    "היום עבדתי 8 שעות בתעריף 60",
-                                    "יום ראשון שעבר 7 שעות, הערה: בדיקות"
-                                )
-                                examples.forEach { example ->
-                                    SuggestionChip(
-                                        onClick = { aiInputText = example },
-                                        label = { Text(example, fontSize = 11.sp, color = Color.White) },
-                                        border = BorderStroke(1.dp, Color(0xFF3F3F46)),
-                                        colors = SuggestionChipDefaults.suggestionChipColors(
-                                            containerColor = com.example.ui.theme.FormSurface
-                                        )
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = "פענוח באמצעות ג׳מיני",
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.5f),
-                                fontFamily = com.example.ui.theme.AssistantFontFamily,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 6.dp)
-                            )
-
-                            Button(
-                                onClick = {
-                                    if (aiInputText.isBlank()) {
-                                        Toast.makeText(context, "נא להזין טקסט לפענוח", Toast.LENGTH_SHORT).show()
-                                        return@Button
-                                    }
-                                    scope.launch {
-                                        processAIInput(aiInputText)
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth().height(48.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C6BC0)),
-                                enabled = !isAiParsing
-                            ) {
-                                if (isAiParsing) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("מפענח משמרת...", fontWeight = FontWeight.Bold, color = Color.White)
-                                } else {
-                                    Text("שמור משמרת עם AI", fontWeight = FontWeight.Bold, color = Color.White)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Icon(imageVector = Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                                }
-                            }
-                        }
+                        com.example.ui.AiShiftInput(
+                            text = aiInputText, onText = { aiInputText = it; aiError = null },
+                            capturing = voiceSession.active, listening = voiceSession.listening,
+                            processing = isAiParsing, error = aiError,
+                            onRecord = {
+                                val permission = android.Manifest.permission.RECORD_AUDIO
+                                if (androidx.core.content.ContextCompat.checkSelfPermission(context, permission) == android.content.pm.PackageManager.PERMISSION_GRANTED) startVoice()
+                                else requestPermissionLauncher.launch(permission)
+                            },
+                            onStop = { voiceSession.stop(); speechRecognizer.stopListening() },
+                            onCancel = { voiceSession.cancel(); speechRecognizer.cancel() },
+                            onParse = { scope.launch { processAIInput(aiInputText) } }
+                        )
                     } else {
-                        // 3. "תאריך" Box Selection
                     CompactReportFields(
                         ReportFieldValues(selectedDateMillis, isManualMode, isGroupShift, startTimeStr, endTimeStr,
                             manualHoursStr, breakMinutesStr, hourlyRateStr, selectedCurrency, selectedCategory, notesText,
@@ -1895,7 +1670,7 @@ fun DashboardScreen(
                                             )
                                         )
                                         IconButton(onClick = { groupWorkers.removeAt(index) }) {
-                                            Icon(Icons.Outlined.Delete, contentDescription = "Remove", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
+                                            Icon(Icons.Outlined.Delete, contentDescription = "הסר עובד", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
                                         }
                                     }
                                 }
@@ -1945,12 +1720,11 @@ fun DashboardScreen(
                                                 currentWorkerName = ""
                                                 val hDouble = manualHoursStr.toDoubleOrNull() ?: 0.0
                                                 currentWorkerHours = if (hDouble > 0) String.format(Locale.US, "%.2f", hDouble) else "0.0"
-                                                showWorkerAutocomplete = false
                                             }
                                         },
                                         modifier = Modifier.background(Color(0xFF5C6BC0), CircleShape)
                                     ) {
-                                        Icon(Icons.Outlined.Add, contentDescription = "Add", tint = Color.White)
+                                        Icon(Icons.Outlined.Add, contentDescription = "הוסף עובד", tint = Color.White)
                                     }
                                 }
                             }

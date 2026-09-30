@@ -62,10 +62,13 @@ release gates were run, and release identity/configuration was left unchanged.
 The checkpoint commit uses `[skip ci]` to avoid triggering the existing broad
 build/signing workflow for this small UI chunk.
 
-Do not redo these two changes in the next chunk. The other Stage A sections remain
-open. Physical-device approval remains part of the later consolidated RC review.
+History checkpoint: `86268d40568d8b00c109fc5232f860a9402eabec`.
+Do not redo these changes. The remaining Stage A work is recorded below.
+Physical-device approval remains part of the later consolidated RC review.
 
 ## Stage A checkpoint A — 2026-09-30
+
+Commit: `0aa82083ad3848f07a6787603c997e1169e74a5d` (pushed).
 
 Home live-shift action now scrolls with the content and is hidden while the report
 is expanded. Save retains its own measured space below the scroll viewport.
@@ -82,28 +85,44 @@ Verification: `:app:testDebugUnitTest --tests com.example.StageALayoutTest`
 passed 3 tests (360dp/390dp forms, draft mode switching, reachable Save/last recent
 card, genuine History movement/top overscroll/final-card long press). Debug app
 and test compilation passed. Six Roborazzi renders were inspected. `git diff --check`
-passed. AI redesign and final Stage A polish remain pending checkpoint B.
+passed. At checkpoint A, AI redesign and final polish remained pending checkpoint B.
 No release gates, signed build or version changes were performed.
 
-## Immediate next task
-RC8 is the baseline, not the final physical-approval candidate.
+## Stage A completed — 2026-09-30
 
-Before stable release, perform the final focused Android UI/UX + targeted code-quality task defined in:
-`docs/android-final-uiux-task.md`
+The remaining Android UI/UX implementation is complete. Checkpoint B includes:
+- Deliberate AI typing/voice → editable transcript → explicit parse → processing →
+  review → explicit save. Speech callbacks cannot parse/save. Cancel restores the
+  pre-recording draft; interruptions preserve received text and ignore late results.
+- Inline AI errors retain the text and mode, with correction/retry. The existing
+  provider/model/personal-key mechanism and `addShifts` financial behavior are unchanged.
+- Hebrew RTL polish, readable numeric fields/currency isolation, comfortable mode
+  targets, and focused cleanup of duplicated form/AI UI and dead group state/unused stop callback.
+- No change to the delivered RC8 version, signing/release configuration, storage,
+  backup/import/export, updater, backend or website.
 
-That task must:
-- use RC8/code16 as the baseline,
-- review the current attached screenshots/videos before visual changes,
-- improve only the requested Android areas,
-- include a targeted quality cleanup of the relevant touched Android code,
-- avoid repository-wide refactoring,
-- follow the lean testing discipline in `AGENTS.md`,
-- produce a new RC with versionCode >16,
-- use the same permanent signing identity,
-- verify an actual RC8 → new RC update without data loss,
-- stop after delivering the signed APK for owner physical review.
+Final focused validation: 8/8 tests passed across `StageALayoutTest`,
+`AiShiftExperienceTest`, `StageAInsetsTest`. This includes real Compose pointer/list
+movement and platform-dispatched IME/gesture insets at 360dp/390dp, preserved drafts,
+reachable Save/AI parse, speech callback simulation, errors/retry and explicit
+review/save. App and test Debug compilation passed; generated form, AI and inset
+renders were visually inspected. `git diff --check` passed. Details and limits:
+`docs/android-stage-a-uiux.md`.
 
-Do not promote RC8 directly to stable.
+Both Stage A checkpoint messages use `[skip ci]`; no heavy release gate was run.
+Checkpoint A was verified to have no Actions runs. Checkpoint B is the commit
+containing this completion note (do not embed its own hash into its tree).
+
+## Next stage — deferred, requires the owner's instruction
+
+Stop after Stage A. Stage B has not started. The delivered baseline remains RC8/code16.
+
+Stage B will cover the new RC version/build/signing, release gates, actual signed
+RC8 → new RC update/data preservation, crash evidence and owner physical review.
+Physical keyboard animation/flicker, microphone/service recognition and live AI
+with the owner's personal key are not established by Robolectric/inset simulation.
+No emulator/hardware microphone or live provider request was used in Stage A.
+Do not promote RC8 directly to stable or start Stage B automatically.
 
 ## After the new RC is physically approved
 Only after the owner explicitly says the new RC is satisfactory:
@@ -123,7 +142,8 @@ After stable release:
 
 ## Relevant documents
 - `AGENTS.md` — durable operating rules and lean testing discipline
-- `docs/android-final-uiux-task.md` — active next implementation task
+- `docs/android-final-uiux-task.md` — completed Stage A scope; deferred Stage B delivery
+- `docs/android-stage-a-uiux.md` — focused Stage A implementation/evidence and limits
 - `docs/android-rc8-layout.md` — RC8 implementation/evidence
 - `docs/android-local-distribution.md` — signing, update and distribution architecture
 - `docs/android-signed-rc-evidence.md` — signed RC history/evidence

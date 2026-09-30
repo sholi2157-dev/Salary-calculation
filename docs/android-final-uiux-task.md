@@ -1,9 +1,14 @@
 # Final Android UI/UX and targeted quality pass
 
-Status: ACTIVE NEXT TASK
+Status: STAGE A IMPLEMENTATION COMPLETE; STAGE B RELEASE VALIDATION DEFERRED
 Baseline: RC8, versionName `1.5-rc8`, versionCode `16`
 Branch: `codex/android-local-distribution`
 Scope: Android only
+
+Stage A completion/evidence: `docs/android-stage-a-uiux.md`. The owner explicitly
+split implementation from release delivery: no version changes, signed RC, release
+gates or public release during Stage A. The delivery requirements below belong to
+Stage B and must not start automatically.
 
 ## Required preparation
 Before changing code:
@@ -164,7 +169,9 @@ The new RC must install over RC8 and preserve data.
 Follow `AGENTS.md` testing discipline.
 
 Do not run giant suites after every edit.
-Use targeted checks during implementation, then one consolidated release pass at the end.
+Use targeted checks during Stage A implementation. Its final focused validation
+is recorded in `docs/android-stage-a-uiux.md`; the consolidated release pass below
+belongs to Stage B.
 
 At minimum, the final release-candidate validation must cover the changed behavior:
 - Home: bottom-space behavior, recent shifts, report open/close, scroll, active shift, keyboard open/closed.
@@ -177,8 +184,8 @@ At minimum, the final release-candidate validation must cover the changed behavi
 
 Add automated tests only where existing coverage does not protect the new/reproduced behavior. Prefer a few strong regression tests over many redundant tests.
 
-## 11. Delivery
-After all requested changes are complete:
+## 11. Stage B delivery — deferred
+Only after the owner authorizes Stage B:
 1. Increase versionCode above 16.
 2. Use a new RC versionName, not Stable.
 3. Keep the same permanent signing identity.
