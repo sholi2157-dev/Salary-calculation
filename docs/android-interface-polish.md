@@ -102,3 +102,13 @@ an expanded PNG before assertions for reliable failure evidence. The final app
 source changed, so run the normal consolidated Debug/Release + signed update
 gates again. Remove the now-obsolete focused-continuation workflow/script; previous
 results remain historical evidence, not a replacement for final-source checks.
+
+Run36785707286 / source4efb99809528add251fdc4ba5f4979386fe1b744 produced
+expanded360/390dp screenshots before assertions. These exposed the remaining
+root cause: MainActivity declares a legacy `fun FlowRow` which actually renders
+one horizontally scrolling LazyRow item. Unqualified calls resolve to that helper,
+not Compose FlowRow, so delete was offscreen. Explicitly use
+`androidx.compose.foundation.layout.FlowRow`, matching the existing selection
+bar's successful native implementation. Leave the unrelated category-badge legacy
+helper unchanged. The previous nested-strip correction remains appropriate for
+native wrapping. Final consolidated checks rerun for this production-code fix.

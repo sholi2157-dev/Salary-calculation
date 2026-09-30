@@ -3441,7 +3441,7 @@ fun WorkEntryRowCard(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Buttons/Actions Row in expanded view
-                    FlowRow(
+                    androidx.compose.foundation.layout.FlowRow(
                         modifier = Modifier.fillMaxWidth().testTag("entry_actions_${entry.id}"),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
