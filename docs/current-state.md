@@ -14,6 +14,18 @@ The website/sync work is intentionally paused on:
 
 Do not resume or modify website, Firebase, accounts or cloud sync until the user explicitly switches the project back to that phase.
 
+## Interface polish RC10 in progress — 2026-09-30
+
+Owner authorized all eight proposed interface refinements without experiment toggles,
+with a recovery checkpoint and a new APK for private review. RC9 source HEAD
+`3910e9689dcafa0a2dcf2fb90dff3eb46f6a076f` is preserved on
+`backup/android-rc9-before-interface-polish-20260930` (verified exact SHA).
+
+RC10 is planned as `1.5-rc10`, versionCode18, same permanent package and signer.
+Changes/evidence/rollback plan: `docs/android-interface-polish.md`.
+Until the new Actions run succeeds and artifacts are inspected, RC9 below remains
+latest verified/delivered. No Stable/public release or website/cloud work authorized.
+
 ## Latest verified Android owner-review candidate
 
 - Version: `1.5-rc9`, versionCode `17`
@@ -159,3 +171,4 @@ A new Codex task should not rely on chat memory. It should derive project contex
 `AGENTS.md` → `docs/current-state.md` → `docs/android-final-uiux-task.md` → relevant evidence docs.
 
 Before edits, always verify that those documents still match the actual branch HEAD, current code and relevant CI.
+

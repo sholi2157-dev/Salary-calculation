@@ -60,7 +60,7 @@ object SummaryPages {
         text = "סה\"כ מוצג:\n${SummaryPages.compact(entries, separator = "\n")}",
         color = Color.White,
         modifier = modifier.testTag("history_total"),
-        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp, lineHeight = 16.sp),
+        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp, lineHeight = 16.sp, fontFeatureSettings = "tnum"),
         textAlign = androidx.compose.ui.text.style.TextAlign.Start
     )
 }
@@ -70,7 +70,7 @@ private fun SummaryMetric(label: String, value: String, modifier: Modifier = Mod
         Text(label, style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
         Text(
             value,
-            style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Ltr),
+            style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum"),
             color = Color.White,
             maxLines = 1
         )
@@ -206,3 +206,4 @@ object SalaryFeedback {
         }
     }
 }
+

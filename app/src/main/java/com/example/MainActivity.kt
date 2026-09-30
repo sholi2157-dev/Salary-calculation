@@ -123,9 +123,9 @@ fun Modifier.pressScale(
 ): Modifier {
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled) 0.94f else 1f,
+        targetValue = if (isPressed && enabled) 0.96f else 1f,
         animationSpec = spring(
-            dampingRatio = 0.5f,
+            dampingRatio = 1f,
             stiffness = 300f
         ),
         label = "pressScale"
@@ -422,20 +422,8 @@ fun MainAppContent(
 
     val activeShiftStartTime by viewModel.activeShiftStartTime.collectAsStateWithLifecycle()
 
-    var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
-    var isFocusedMode by remember { mutableStateOf(false) }
-
-    LaunchedEffect(activeShiftStartTime, lastInteractionTime, selectedTab) {
-        if (activeShiftStartTime != null && selectedTab == 0) {
-            isFocusedMode = false
-            kotlinx.coroutines.delay(7000)
-            isFocusedMode = true
-        } else {
-            isFocusedMode = false
-        }
-    }
-
-    val focusAlpha by animateFloatAsState(targetValue = if (isFocusedMode) 0.15f else 1f, label = "focusAlpha")
+    // Keep every interactive control readable during an active shift.
+    val focusAlpha = 1f
 
     val intentAction by (context as MainActivity).intentActionFlow.collectAsStateWithLifecycle()
     LaunchedEffect(intentAction) {
@@ -486,7 +474,7 @@ fun MainAppContent(
                     unselectedTextColor = Color(0xFF8E8E93),
                     indicatorColor = com.example.ui.theme.FormSurface
                 ),
-                modifier = Modifier.testTag("tab_0").pressScale()
+                modifier = Modifier.testTag("tab_0")
             )
             NavigationBarItem(
                 selected = selectedTab == 1,
@@ -503,7 +491,7 @@ fun MainAppContent(
                     unselectedTextColor = Color(0xFF8E8E93),
                     indicatorColor = com.example.ui.theme.FormSurface
                 ),
-                modifier = Modifier.testTag("tab_1").pressScale()
+                modifier = Modifier.testTag("tab_1")
             )
         }
     }
@@ -512,14 +500,6 @@ fun MainAppContent(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Transparent)
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
-                        lastInteractionTime = System.currentTimeMillis()
-                    }
-                }
-            }
     ) {
         Scaffold(
             modifier = Modifier
@@ -1151,8 +1131,10 @@ fun DashboardScreen(
             })
     }
 
+    val saveInteractionSource = remember { MutableInteractionSource() }
     val saveReport: @Composable () -> Unit = {
         Button(
+            interactionSource = saveInteractionSource,
             onClick = {
                 if (reportSubmitted) return@Button
                 val testHours = if (isManualMode) manualHoursStr.toDoubleOrNull() ?: 0.0 else 1.0
@@ -1238,7 +1220,7 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
-                .pressScale()
+                .pressScale(interactionSource = saveInteractionSource)
                 .background(
                     brush = Brush.linearGradient(
                         colors = listOf(Color(0xFF4F46E5), Color(0xFF6366F1))
@@ -1285,8 +1267,10 @@ fun DashboardScreen(
                     Column(Modifier.fillMaxWidth().padding(16.dp)) {
                         Text("משמרת פעילה · $activeShiftCategory", color = Color(0xFF34D399))
                         val time = String.format(Locale.US, "%02d:%02d:%02d", tickerSeconds / 3600, (tickerSeconds % 3600) / 60, tickerSeconds % 60)
-                        Text(time, fontSize = 28.sp, style = LocalTextStyle.current.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
-                        Text(com.example.data.WorkMoney.format(tickerSeconds * activeShiftRate / 3600.0, viewModel.activeShiftCurrency.collectAsStateWithLifecycle().value))
+                        Text(time, fontSize = 28.sp, modifier = Modifier.widthIn(min = 148.dp).testTag("active_shift_timer"),
+                            style = LocalTextStyle.current.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr, fontFeatureSettings = "tnum"))
+                        Text(com.example.data.WorkMoney.format(tickerSeconds * activeShiftRate / 3600.0, viewModel.activeShiftCurrency.collectAsStateWithLifecycle().value),
+                            modifier = Modifier.widthIn(min = 120.dp), style = LocalTextStyle.current.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr, fontFeatureSettings = "tnum"))
                     }
                 }
             }
@@ -1374,7 +1358,6 @@ fun DashboardScreen(
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .animateContentSize()
                     .testTag("add_shift_form_card")
                     .graphicsLayer { alpha = focusAlpha }
             ) {
@@ -1420,8 +1403,8 @@ fun DashboardScreen(
 
                     AnimatedVisibility(
                         visible = isReportCardExpanded,
-                        enter = expandVertically(),
-                        exit = shrinkVertically()
+                        enter = expandVertically(animationSpec = tween(180)),
+                        exit = shrinkVertically(animationSpec = tween(120))
                     ) {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -2038,8 +2021,8 @@ fun RecentShiftCompactCard(
                     )
                     Text(
                         text = formattedDate,
-                        fontWeight = FontWeight.Light,
-                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 12.sp,
                         color = Color(0xFF8E8E93),
                         fontFamily = com.example.ui.theme.AssistantFontFamily
                     )
@@ -2067,15 +2050,12 @@ fun RecentShiftCompactCard(
                     ) {
                         Text(
                             text = String.format(Locale.US, "%.1f ש'", entry.hours),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Light,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Normal,
                             color = Color(0xFF8E8E93)
                         )
-                        Box(
-                            modifier = Modifier
-                                .size(5.dp)
-                                .background(statusColor, shape = CircleShape)
-                        )
+                        Text(if (entry.isPaid) "שולם" else "ממתין", color = statusColor, fontSize = 12.sp,
+                            modifier = Modifier.testTag("recent_payment_status_${entry.id}"), maxLines = 1)
                     }
                 }
 
@@ -2102,16 +2082,16 @@ fun RecentShiftCompactCard(
                             if (entry.isTimeRange && entry.startTime != null && entry.endTime != null) {
                                 Text(
                                     text = "שעות עבודה: ${entry.startTime} - ${entry.endTime} (${String.format(Locale.US, "%.1f", entry.hours)} שעות)",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Light,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Normal,
                                     color = Color(0xFF8E8E93),
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
                                 )
                             } else {
                                 Text(
                                     text = "שעות שהוזנו ידנית: ${String.format(Locale.US, "%.1f", entry.hours)} שעות",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Light,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Normal,
                                     color = Color(0xFF8E8E93),
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
                                 )
@@ -2119,8 +2099,8 @@ fun RecentShiftCompactCard(
 
                             Text(
                                 text = "תעריף שעתי: ${entry.currency}${entry.hourlyRate}",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Light,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Normal,
                                 color = Color(0xFF8E8E93),
                                 fontFamily = com.example.ui.theme.AssistantFontFamily
                             )
@@ -2128,8 +2108,8 @@ fun RecentShiftCompactCard(
                             if (entry.notes.isNotBlank()) {
                                 Text(
                                     text = "הערות: ${entry.notes}",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Light,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Normal,
                                     color = Color(0xFF8E8E93),
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
                                 )
@@ -2141,6 +2121,7 @@ fun RecentShiftCompactCard(
                             shape = RoundedCornerShape(6.dp),
                             border = BorderStroke(1.dp, statusColor.copy(alpha = 0.3f)),
                             modifier = Modifier
+                                .heightIn(min = 48.dp)
                                 .clickable {
                                     triggerHapticFeedback(context, isDestructive = false)
                                     onTogglePaid()
@@ -2160,7 +2141,7 @@ fun RecentShiftCompactCard(
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = if (entry.isPaid) "שולם" else "חוב (שנה)",
-                                    fontSize = 9.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = statusColor,
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
@@ -3290,11 +3271,8 @@ fun WorkEntryRowCard(
                                 fontWeight = FontWeight.Light,
                                 color = Color(0xFF8E8E93)
                             )
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .background(statusColor, shape = CircleShape)
-                            )
+                            Text(if (entry.isPaid) "שולם" else "ממתין", color = statusColor, fontSize = 12.sp,
+                                modifier = Modifier.testTag("payment_status_${entry.id}"), maxLines = 1)
                         }
                     }
                 }
@@ -3419,7 +3397,7 @@ fun WorkEntryRowCard(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Column {
+                                    Column(Modifier.weight(1f)) {
                                         Text(wName, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                                         Text("${wHours} שעות • ${entry.currency}${String.format(Locale.US, "%.2f", wPay)}", color = Color(0xFF8E8E93), fontSize = 11.sp)
                                     }
@@ -3439,9 +3417,9 @@ fun WorkEntryRowCard(
                                                 }
                                                 context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת לעובד"))
                                             },
-                                            modifier = Modifier.size(28.dp)
+                                            modifier = Modifier.size(48.dp)
                                         ) {
-                                            Icon(Icons.Outlined.Share, contentDescription = "Share WhatsApp", tint = Color(0xFF34D399), modifier = Modifier.size(14.dp))
+                                            Icon(Icons.Outlined.Share, contentDescription = "שתף פרטי משמרת לעובד", tint = Color(0xFF34D399), modifier = Modifier.size(14.dp))
                                         }
 
                                         // Checkbox for payment
@@ -3463,10 +3441,10 @@ fun WorkEntryRowCard(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Buttons/Actions Row in expanded view
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth().testTag("entry_actions_${entry.id}"),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         // Payment status toggle badge
                         Surface(
@@ -3474,6 +3452,7 @@ fun WorkEntryRowCard(
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, statusColor.copy(alpha = 0.3f)),
                             modifier = Modifier
+                                .heightIn(min = 48.dp)
                                 .clickable { onTogglePaid() }
                                 .testTag("toggle_payment_badge_${entry.id}")
                         ) {
@@ -3490,7 +3469,7 @@ fun WorkEntryRowCard(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = if (entry.isPaid) "שולם" else "חוב (לחץ לשינוי)",
-                                    fontSize = 10.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = statusColor
                                 )
@@ -3515,13 +3494,13 @@ fun WorkEntryRowCard(
                                     context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת"))
                                 },
                                 modifier = Modifier
-                                    .size(34.dp)
+                                    .size(48.dp)
                                     .background(Color(0xFF064E3B), shape = RoundedCornerShape(8.dp))
                                     .testTag("global_share_btn_${entry.id}")
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Share,
-                                    contentDescription = "שתף פרטי משמרת ב-WhatsApp",
+                                    contentDescription = "שתף פרטי משמרת",
                                     tint = Color(0xFF34D399),
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -3561,7 +3540,7 @@ fun WorkEntryRowCard(
                                         context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף חשבונית לקבלן"))
                                     },
                                     modifier = Modifier
-                                        .size(34.dp)
+                                        .size(48.dp)
                                         .background(Color(0xFF1E293B), shape = RoundedCornerShape(8.dp))
                                 ) {
                                     Icon(
@@ -3576,7 +3555,7 @@ fun WorkEntryRowCard(
                             IconButton(
                                 onClick = onEdit,
                                 modifier = Modifier
-                                    .size(34.dp)
+                                    .size(48.dp)
                                     .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(8.dp))
                                     .testTag("edit_entry_btn_${entry.id}")
                             ) {
@@ -3594,7 +3573,7 @@ fun WorkEntryRowCard(
                                     onDelete()
                                 },
                                 modifier = Modifier
-                                    .size(34.dp)
+                                    .size(48.dp)
                                     .background(Color(0xFF451A1A), shape = RoundedCornerShape(8.dp))
                                     .testTag("delete_entry_btn_${entry.id}")
                             ) {
@@ -5577,7 +5556,7 @@ fun EditShiftBottomSheet(
                                     )
                                 )
                                 IconButton(onClick = { groupWorkers.removeAt(index) }) {
-                                    Icon(Icons.Outlined.Delete, contentDescription = "Remove", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
+                                    Icon(Icons.Outlined.Delete, contentDescription = "הסר עובד", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
                                 }
                             }
                         }
@@ -5629,7 +5608,7 @@ fun EditShiftBottomSheet(
                                 },
                                 modifier = Modifier.background(Color(0xFF5C6BC0), CircleShape)
                             ) {
-                                Icon(Icons.Outlined.Add, contentDescription = "Add", tint = Color.White)
+                                Icon(Icons.Outlined.Add, contentDescription = "הוסף עובד", tint = Color.White)
                             }
                         }
                     }
