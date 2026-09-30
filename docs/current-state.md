@@ -14,39 +14,32 @@ The website/sync work is intentionally paused on:
 
 Do not resume or modify website, Firebase, accounts or cloud sync until the user explicitly switches the project back to that phase.
 
-## Interface polish RC10 in progress — 2026-09-30
-
-Owner authorized all eight proposed interface refinements without experiment toggles,
-with a recovery checkpoint and a new APK for private review. RC9 source HEAD
-`3910e9689dcafa0a2dcf2fb90dff3eb46f6a076f` is preserved on
-`backup/android-rc9-before-interface-polish-20260930` (verified exact SHA).
-
-RC10 is planned as `1.5-rc10`, versionCode18, same permanent package and signer.
-Changes/evidence/rollback plan: `docs/android-interface-polish.md`.
-Until the new Actions run succeeds and artifacts are inspected, RC9 below remains
-latest verified/delivered. No Stable/public release or website/cloud work authorized.
-
 ## Latest verified Android owner-review candidate
 
-- Version: `1.5-rc9`, versionCode `17`
-- Tested/signed source: `87c288cd3f18c44669a550a0d9b5a944dd5902e3`
+- Version: `1.5-rc10`, versionCode `18`
+- Tested/signed source: `068c7fada2dad09c59c0b240c4ddb4e5bad18d20`
 - Package: `com.aistudio.worktracker.qztvdw.distribution`
-- APK SHA-256: `c63dd258bc328e25204498f593b9704399723e9166c5169839e5bc4e9d751734`
+- APK SHA-256: `93d696b1324a8460e41a998afb52f01d174a23483ae33263ab03c5d4ebc788ee`
 - Permanent certificate SHA-256: `ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220`
-- Final run `36779054455` / job `110104223678`: SUCCESS
-- Signed artifact `11126034909`; owner APK `Salary-Calculation-1.5-rc9-v17.apk`
+- Final run `36786550537` / job `110129210875`: SUCCESS
+- Signed artifact `11130291390`; owner APK `SalaryRC10.apk`
 
-Consolidated Debug70/70, Release60/60, then focused rendering10/10; compilation,
-same permanent signer, actual RC8/code16→RC9/code17 update and exact synthetic
-state preservation, existing UI/real IME/save/duplicate-save/navigation tests passed.
-Crash log empty. Actual physical speech/live personal-key AI not exercised.
-Details, first test-fixture failure, exact gates/artifact links and limitations:
-`docs/android-signed-rc-evidence.md`, RC9 section.
+All eight reviewed interface refinements implemented with a recovery checkpoint.
+Consolidated Debug72/72 and Release60/60; signed real original RC9/code17 to
+RC10/code18 update, exact synthetic-state preservation, updater, real IME/Save,
+duplicate-save and UI checks passed. Crash log empty. Independently verified
+downloaded APK bytes/signature/package/version; inspected rendered/emulator PNGs.
+Owner physical review remains, including animation timing and real speech/live AI.
 
-Previous delivered baseline was RC8/code16, source
-`912acceca3ee9d62ae4ebd91596196950bcd33a6`; its original artifact `11075559765`
-was used for the actual upgrade. Stage A implementation and its evidence below
-remain unchanged. RC9 awaits owner physical-phone review; no Stable promotion.
+Recovery branch: `backup/android-rc9-before-interface-polish-20260930`, exact
+pre-change HEAD `3910e9689dcafa0a2dcf2fb90dff3eb46f6a076f`. Revert individual
+UI changes or restore the RC9 UI through a new higher-code signed update.
+Details: `docs/android-interface-polish.md`, `docs/android-signed-rc-evidence.md`
+and `docs/release-evidence/rc10/`. No Stable/public release or cloud work.
+
+Previous delivered baseline: RC9/code17, signed source
+`87c288cd3f18c44669a550a0d9b5a944dd5902e3`, run36779054455, artifact11126034909,
+APK SHA256 `c63dd258bc328e25204498f593b9704399723e9166c5169839e5bc4e9d751734`.
 
 ## Stage A History checkpoint — 2026-09-30
 

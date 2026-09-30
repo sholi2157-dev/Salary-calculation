@@ -1,5 +1,59 @@
 # Signed local Android RC evidence
 
+## RC10 interface polish completed — 2026-09-30
+
+Owner-review candidate: `1.5-rc10`, versionCode `18`.
+Tested/signed source: `068c7fada2dad09c59c0b240c4ddb4e5bad18d20`.
+[Actions run 36786550537](https://github.com/sholi2157-dev/Salary-calculation/actions/runs/36786550537), job 110129210875: SUCCESS.
+Package: `com.aistudio.worktracker.qztvdw.distribution`.
+APK SHA-256: `93d696b1324a8460e41a998afb52f01d174a23483ae33263ab03c5d4ebc788ee`.
+Certificate SHA-256: `ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220`.
+Permanent owner signing, RSA3072/v2 verified. Downloaded APK bytes, signature,
+certificate fingerprint, package and version independently verified locally.
+
+### Final-source verification
+
+- Debug72/72 (Work* plus existing rendered Stage A/History tests and the two
+  new InterfacePolishTest cases), Release60/60 (Work*), zero failures/errors/skips.
+  Counts independently recomputed from downloaded JUnit XML and matched JSON.
+- Debug/Release compilation, release instrumentation build, local-only gates and
+  permanent signing passed. No website tests or production test-host changes.
+- Two new360dp/390dp RTL rendered tests cover readable paid/pending labels,
+  fully visible/disjoint48dp action targets, pointer callbacks and worker-payment
+  updates preserving stored earnings/currency. Inspected all29 rendered PNGs
+  and13 API35 emulator screenshots, including actual keyboard/Save and live shift.
+- Actual original RC9/code17 APK, pinned SHA
+  `c63dd258bc328e25204498f593b9704399723e9166c5169839e5bc4e9d751734`,
+  upgraded to RC10/code18 with `adb install -r`, without uninstall or clearing data.
+- Seed/restart/updater/verify, DistributionUiTest and ReportKeyboardTest:
+  six instrumentation phases, each OK(1 test). Offline starts before/after passed.
+- Exact synthetic before/after snapshot equality. SHA-256 of both JSON files:
+  `c8605641fbebcf13b217e6c826ea0a563c88e446f759c92e08a3ea580d9a061f`.
+  Three shifts, separate ILS79.97/USD443.12 totals, categories, workers, payment
+  states, preferences and pending-journal identities preserved. Post-update edit,
+  backup/re-import and duplicate-save checks passed. No live user data accessed.
+- Final crash-log.txt is empty (0 bytes).
+
+Raw evidence: [release-evidence/rc10](release-evidence/rc10/).
+[Signed candidate/evidence artifact](https://github.com/sholi2157-dev/Salary-calculation/actions/runs/36786550537/artifacts/11130291390).
+Rendered/unit artifact: 11130665251.
+Owner delivery: `SalaryRC10.apk`, exact candidate-b.apk bytes,19,182,227 bytes.
+
+### Recovery and manual gate
+
+Pre-change source HEAD `3910e9689dcafa0a2dcf2fb90dff3eb46f6a076f` is preserved
+and verified on `backup/android-rc9-before-interface-polish-20260930`.
+Individual UI refinements can be reversed independently; restore the RC9 UI
+through a newly signed higher-code update, preserving package, signer and data.
+Do not downgrade the installed APK or reset/force-push the release branch.
+Implementation scope and disclosed failed intermediate checks:
+[android-interface-polish.md](android-interface-polish.md).
+
+Owner physical-phone review remains: actual OEM keyboard/gestures, scrolling,
+press/expansion timing, live timer, real microphone/speech recognition and live AI
+with the owner's own key. Emulator animations are disabled, so motion quality
+is a physical review item. No Stable/public release, feed update or cloud work.
+
 ## RC9 Stage B completed — 2026-09-30
 
 Owner-review candidate: `1.5-rc9`, versionCode `17`.

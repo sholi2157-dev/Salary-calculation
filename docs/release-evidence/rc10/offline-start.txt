@@ -1,0 +1,7 @@
+Starting: Intent { cmp=com.aistudio.worktracker.qztvdw.distribution/com.example.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.aistudio.worktracker.qztvdw.distribution/com.example.MainActivity
+TotalTime: 901
+WaitTime: 909
+Complete

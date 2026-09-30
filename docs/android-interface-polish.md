@@ -42,73 +42,40 @@ No payroll/amount logic, records, schema, draft/backup format, provider/key,
 timer service, package or signing identity changes. No new font/dependency/style
 system, account/Firebase activation, website edits, Stable/feed publication.
 
-## Validation plan and current status
+## Final verification
 
-Local environment has no full prior Git checkout, SDK or Gradle executable.
-Source was fetched at the pinned remote SHA; modifications are prepared against
-the existing Git tree through the authorized GitHub connector. No stale worktree
-or previous code changes are overwritten.
+Source `068c7fada2dad09c59c0b240c4ddb4e5bad18d20`; Actions run36786550537, job110129210875: SUCCESS.
+Debug72/72 and Release60/60 with zero failures/errors/skips. Full signed original
+RC9/code17→RC10/code18 update, exact synthetic data comparison, updater/offline,
+UI and real keyboard/Save gates passed. Crash log0 bytes. Downloaded APK
+signature, permanent certificate, package, version and SHA independently verified.
+All29 rendered PNGs and13 emulator screenshots inspected.
 
-Shell syntax checks passed for release scripts. Add two focused rendered UI tests
-at360dp/390dp to exercise wrapped group actions, disjoint minimum48dp hit areas,
-paid/pending text, real pointer dispatch and worker-payment updates preserving
-stored earnings/currency. Existing History/form/AI/inset regressions are reused.
+Evidence, identity, raw reports and owner gate: `docs/android-signed-rc-evidence.md`
+and `docs/release-evidence/rc10/`. Final artifact is owner review only.
+Physical-phone motion/keyboard/voice/live personal-key AI review remains; CI
+disables emulator animations and does not access the owner's existing records.
 
-Use one existing consolidated Android Actions run for compilation, Debug/Release
-tests, PNG evidence and permanent signing. Upgrade from the actual RC9/code17
-artifact (pinned hash), not a same-source reconstruction, to RC10/code18; retain
-exact synthetic snapshot/journal comparison and the real IME/UI gates. No website
-tests are added. Inspect actual results, rendered layouts and crash log before
-delivery. Pending: Actions execution and owner physical review.
+The actual RC9 Heebo font already has equal1151 digit advances; no font change
+was needed. Reserved width/LTR numeric presentation provides the layout change.
 
-## Initial run and focused continuation
+## Disclosed intermediate failures
 
-Run36783808081 / source1f142712aca6b0f96853fb28ecf6185ceeaa6f71 compiled
-Debug app/tests and passed all70 pre-existing Debug tests. The two new tests failed
-only because their FlowRow tag is in the unmerged semantics tree of the clickable
-card; no production code failure was observed at that point. Correct the finder
-and rerun only those two Debug tests, then the not-yet-run Release suite/build,
-signing and actual upgrade gates. Do not repeat the successful70 Debug tests.
-All25 generated existing form/AI/History/inset PNGs were visually inspected.
+- Run36783808081/source1f142712: existing Debug70 passed; two new UI tests
+  initially used merged semantics for the action-row tag. Corrected the finder.
+- Run36784485302/source71145bd2: existing Release60 passed; new UI tests were
+  unintentionally selected by Work* in Release without a Compose test host.
+  Renamed to InterfacePolishTest and kept rendered checks in Debug. Production
+  manifest/dependencies unchanged.
+- Run36785104448/source812e983a exposed clipped48dp group actions. Flattened
+  icons into individual wrapping children and checked separation on both axes.
+- Run36785707286/source4efb9980 still exposed clipping. Expanded screenshots
+  revealed the root cause: local legacy `fun FlowRow` renders a horizontal
+  LazyRow rather than wrapping. Qualified native Compose FlowRow explicitly;
+  left the unrelated category helper unchanged.
+- Run36786248719/source44bb4ad4 required ExperimentalLayoutApi opt-in for native
+  FlowRow. Added the local opt-in. The final complete run above passed.
 
-The bundled RC9 Heebo font was inspected from the real APK: all digits already
-have equal advance1151. No typeface change is needed; reserved width/LTR amount
-presentation are the substantive live-number layout refinements. The `tnum`
-feature request is harmless on this font (which has no separate tnum GSUB feature).
-
-The first focused continuation run36784485302 / source71145bd28f4ac2ab8a31b816ed89550ce3d68f3a
-passed all60 existing Release tests and compiled unsigned Release/instrumentation.
-The new UI tests were unintentionally included in the Work* Release selector,
-whose manifest does not register the Compose test host ComponentActivity; both
-failed before rendering. Rename the UI test to InterfacePolishTest, keep it in the
-explicit Debug selection alongside the existing rendered tests, and do not change
-the production manifest/dependencies to accommodate a test host. Gradle scheduled
-Release tests before Debug, so the corrected focused Debug test has not yet run.
-
-Continuation checks prove production/release source equality against the initial
-UI source, download the immutable prior reports and explicitly retain only70
-passed Debug /60 passed Release tests. The two known failed test-harness records
-in each baseline are excluded and disclosed, never counted as passes. The fresh
-focused Debug results must pass2/2 before signing/update continues. This avoids
-rerunning unchanged suites. See scripts/summarize-interface-polish-tests.py.
-
-Run36785104448 / source812e983a1abb36787d07b50c1ac15ad7778e9080 correctly
-reached the focused Debug UI checks. These exposed a real layout problem: a nested
-Row of four48dp icons could be measured into only the remaining width after the
-payment badge, clipping/shrinking controls before FlowRow wrapped. Remove that
-nested fixed strip and let every action be an independent FlowRow child. Extend
-the non-overlap check to both axes because actions now wrap independently; capture
-an expanded PNG before assertions for reliable failure evidence. The final app
-source changed, so run the normal consolidated Debug/Release + signed update
-gates again. Remove the now-obsolete focused-continuation workflow/script; previous
-results remain historical evidence, not a replacement for final-source checks.
-
-Run36785707286 / source4efb99809528add251fdc4ba5f4979386fe1b744 produced
-expanded360/390dp screenshots before assertions. These exposed the remaining
-root cause: MainActivity declares a legacy `fun FlowRow` which actually renders
-one horizontally scrolling LazyRow item. Unqualified calls resolve to that helper,
-not Compose FlowRow, so delete was offscreen. Explicitly use
-`androidx.compose.foundation.layout.FlowRow`, matching the existing selection
-bar's successful native implementation. Leave the unrelated category-badge legacy
-helper unchanged. The previous nested-strip correction remains appropriate for
-native wrapping. Final consolidated checks rerun for this production-code fix.
+Failed intermediate results are not counted as passes. Because production UI
+changed while addressing the reproduced layout bug, final-source consolidated
+checks were run anew. Temporary focused-continuation tooling was removed.
