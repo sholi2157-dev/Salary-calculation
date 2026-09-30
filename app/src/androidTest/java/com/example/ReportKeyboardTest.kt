@@ -137,6 +137,15 @@ class ReportKeyboardTest {
             assertEquals(before + 1, runBlocking { dao.getEntriesList().size })
             assertEquals(1, runBlocking { dao.getEntriesList().count { it.notes == "RC8 single $name" } })
         }
+        // Compact History can fit the six existing fixtures: create real scrollable
+        // content before asserting scroll-driven navigation, only after update preservation.
+        runBlocking {
+            repeat(20) { i ->
+                dao.insertEntry(com.example.data.WorkEntry(category = "ILS category",
+                    date = 1800000000000L + i, isTimeRange = false, hours = 1.0,
+                    hourlyRate = 40.0, totalEarnings = 40.0, notes = "RC9 scroll fixture $i"))
+            }
+        }
         ui.onNodeWithTag("tab_1").performClick()
         ui.onNodeWithTag("bottom_navigation").assertIsDisplayed()
         val list = ui.onNodeWithTag("history_scroll_container")
@@ -153,6 +162,16 @@ class ReportKeyboardTest {
         list.performTouchInput { up() }
         ui.waitForIdle()
         ui.onNodeWithTag("bottom_navigation").assertIsDisplayed()
+        list.performScrollToNode(hasTestTag("work_entry_card_1"))
+        list.performTouchInput { swipeUp() }
+        ui.onNodeWithTag("bottom_navigation").assertIsDisplayed()
+        val finalCard = ui.onNodeWithTag("work_entry_card_1").fetchSemanticsNode().boundsInRoot
+        val returnedNav = ui.onNodeWithTag("bottom_navigation").fetchSemanticsNode().boundsInRoot
+        assertTrue("Full final card stays above returned navigation", finalCard.bottom <= returnedNav.top)
+        snapshot("rc9-history-final")
+        ui.onNodeWithTag("work_entry_card_1").performTouchInput { longClick() }
+        ui.onNodeWithText("נבחרו 1 משמרות").assertIsDisplayed()
+        Espresso.pressBack()
         ui.onNodeWithTag("tab_0").performClick()
         ui.onNodeWithTag("live_shift_fab").performScrollTo().assertIsDisplayed().performClick()
         ui.onNodeWithText("הגדרת משמרת פעילה").assertIsDisplayed()

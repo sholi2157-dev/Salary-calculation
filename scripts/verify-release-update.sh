@@ -6,7 +6,7 @@ if adb shell pm list packages | grep -Fx "package:$pkg"; then echo 'Expected fre
 mkdir -p release-evidence
 collect_ui_evidence() {
   adb exec-out screencap -p > release-evidence/last-ui.png || true
-  for name in rc2-home rc2-currency rc2-group rc2-history rc2-settings rc2-keyboard rc8-שעון-keyboard rc8-ידני-keyboard rc8-save-with-ime rc8-final-home; do
+  for name in rc2-home rc2-currency rc2-group rc2-history rc2-settings rc2-keyboard rc8-שעון-keyboard rc8-ידני-keyboard rc8-save-with-ime rc8-final-home rc9-history-final; do
     adb pull "/sdcard/Android/data/$pkg/files/$name.png" "release-evidence/$name.png" >/dev/null 2>&1 || true
   done
 }
