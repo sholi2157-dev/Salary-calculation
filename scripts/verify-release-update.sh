@@ -5,7 +5,7 @@ pkg=com.aistudio.worktracker.qztvdw.distribution
 if adb shell pm list packages | grep -Fx "package:$pkg"; then echo 'Expected fresh emulator; refusing to overwrite existing data'; exit 1; fi
 mkdir -p release-evidence
 collect_ui_evidence() {
-  for name in rc2-home rc2-currency rc2-group rc2-history rc2-settings rc2-keyboard; do
+  for name in rc2-home rc2-currency rc2-group rc2-history rc2-settings rc2-keyboard rc8-שעון-keyboard rc8-ידני-keyboard rc8-save-with-ime rc8-final-home; do
     adb pull "/sdcard/Android/data/$pkg/files/$name.png" "release-evidence/$name.png" >/dev/null 2>&1 || true
   done
 }
@@ -40,6 +40,10 @@ adb shell am force-stop "$pkg"
 adb shell am instrument -w -e class com.example.DistributionUiTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/ui.txt
 grep -F 'OK (1 test)' release-evidence/ui.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/ui.txt
+adb shell am force-stop "$pkg"
+adb shell am instrument -w -e class com.example.ReportKeyboardTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/keyboard-ui.txt
+grep -F 'OK (1 test)' release-evidence/keyboard-ui.txt
+! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/keyboard-ui.txt
 adb exec-out screencap -p > release-evidence/rc2-screen.png
 adb logcat -d -b crash > release-evidence/crash-log.txt
 ! grep -F "$pkg" release-evidence/crash-log.txt

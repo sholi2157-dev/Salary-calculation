@@ -72,15 +72,15 @@ jobs:
           umask 077
           printf '%s' "$KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/salary-distribution.p12"
           echo 'ready=true' >> "$GITHUB_OUTPUT"
-      - name: Fetch the original verified RC1 for upgrade proof
+      - name: Fetch the original verified RC7 for upgrade proof
         if: steps.signing.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh run download 36519639666 --repo sholi2157-dev/Salary-calculation --name salary-local-release-candidate --dir "$RUNNER_TEMP/rc1"
+        run: gh run download 36659201636 --repo sholi2157-dev/Salary-calculation --name salary-local-release-candidate --dir "$RUNNER_TEMP/rc7"
       - name: Build signed candidates A and B
         if: steps.signing.outputs.ready == 'true'
         env:
-          RC1_APK: ${{ runner.temp }}/rc1/candidate-b.apk
+          PREVIOUS_APK: ${{ runner.temp }}/rc7/candidate-b.apk
           KEYSTORE_PATH: ${{ runner.temp }}/salary-distribution.p12
           STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}

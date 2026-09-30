@@ -459,6 +459,53 @@ fun MainAppContent(
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
+    val bottomNavigation: @Composable () -> Unit = {
+                    NavigationBar(
+                        containerColor = Color.Transparent,
+                        tonalElevation = 0.dp,
+                        modifier = Modifier
+                            .heightIn(min = 58.dp)
+                            .testTag("bottom_navigation")
+                            .graphicsLayer { alpha = focusAlpha },
+                        windowInsets = if (selectedTab == 1) WindowInsets.navigationBars else WindowInsets(0, 0, 0, 0)
+                    ) {
+                        NavigationBarItem(
+                            selected = selectedTab == 0,
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                navigateToTab(0)
+                            },
+                            icon = { Icon(imageVector = Icons.Outlined.GridView, contentDescription = "ראשי", modifier = Modifier.size(20.dp)) },
+                            label = { Text("ראשי", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color(0xFF6366F1),
+                                unselectedIconColor = Color(0xFF8E8E93),
+                                selectedTextColor = Color(0xFF6366F1),
+                                unselectedTextColor = Color(0xFF8E8E93),
+                                indicatorColor = com.example.ui.theme.FormSurface
+                            ),
+                            modifier = Modifier.testTag("tab_0").pressScale()
+                        )
+                        NavigationBarItem(
+                            selected = selectedTab == 1,
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                navigateToTab(1)
+                            },
+                            icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = "היסטוריה", modifier = Modifier.size(20.dp)) },
+                            label = { Text("היסטוריה", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color(0xFF6366F1),
+                                unselectedIconColor = Color(0xFF8E8E93),
+                                selectedTextColor = Color(0xFF6366F1),
+                                unselectedTextColor = Color(0xFF8E8E93),
+                                indicatorColor = com.example.ui.theme.FormSurface
+                            ),
+                            modifier = Modifier.testTag("tab_1").pressScale()
+                        )
+                    }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -478,7 +525,8 @@ fun MainAppContent(
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .imePadding(),
             containerColor = Color.Transparent,
-            contentWindowInsets = WindowInsets.safeDrawing,
+            // IME is owned by the outer imePadding; scaffold owns system bars only.
+            contentWindowInsets = WindowInsets.systemBars,
             topBar = {
                 Box(modifier = Modifier.graphicsLayer { alpha = focusAlpha }) {
                     TopAppBar(
@@ -543,57 +591,13 @@ fun MainAppContent(
             },
             bottomBar = {
                 AnimatedVisibility(
-                    // On history the bar collapses while scrolling so the list can reclaim its space.
-                    // On the dashboard keep it stable while scrolling: collapsing it there makes the
-                    // report form jump under the user's finger. The IME gets the space instead.
-                    visible = !isImeVisible && (selectedTab == 0 || !isContentScrolling),
+                    // History keeps its existing scroll-to-reclaim-space behaviour.
+                    // Dashboard owns its single Save/live/navigation footer.
+                    visible = selectedTab == 1 && !isImeVisible && !isContentScrolling,
                     enter = expandVertically(expandFrom = Alignment.Bottom, animationSpec = tween(140)) + fadeIn(tween(120)),
                     exit = shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = tween(140)) + fadeOut(tween(100))
                 ) {
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        tonalElevation = 0.dp,
-                        modifier = Modifier
-                            .heightIn(min = 58.dp)
-                            .testTag("bottom_navigation")
-                            .graphicsLayer { alpha = focusAlpha },
-                        windowInsets = WindowInsets.navigationBars
-                    ) {
-                        NavigationBarItem(
-                            selected = selectedTab == 0,
-                            onClick = {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                navigateToTab(0)
-                            },
-                            icon = { Icon(imageVector = Icons.Outlined.GridView, contentDescription = "ראשי", modifier = Modifier.size(20.dp)) },
-                            label = { Text("ראשי", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color(0xFF6366F1),
-                                unselectedIconColor = Color(0xFF8E8E93),
-                                selectedTextColor = Color(0xFF6366F1),
-                                unselectedTextColor = Color(0xFF8E8E93),
-                                indicatorColor = com.example.ui.theme.FormSurface
-                            ),
-                            modifier = Modifier.testTag("tab_0").pressScale()
-                        )
-                        NavigationBarItem(
-                            selected = selectedTab == 1,
-                            onClick = {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                navigateToTab(1)
-                            },
-                            icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = "היסטוריה", modifier = Modifier.size(20.dp)) },
-                            label = { Text("היסטוריה", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color(0xFF6366F1),
-                                unselectedIconColor = Color(0xFF8E8E93),
-                                selectedTextColor = Color(0xFF6366F1),
-                                unselectedTextColor = Color(0xFF8E8E93),
-                                indicatorColor = com.example.ui.theme.FormSurface
-                            ),
-                            modifier = Modifier.testTag("tab_1").pressScale()
-                        )
-                    }
+                    if (selectedTab == 1) bottomNavigation()
                 }
             }
         ) { padding ->
@@ -660,6 +664,7 @@ fun MainAppContent(
                                         triggerHapticFeedback(context, isDestructive = true)
                                         viewModel.deleteCategory(category)
                                     },
+                                    bottomNavigation = { if (selectedTab == 0) bottomNavigation() },
                                     selectedTab = selectedTab,
                                     onScrollStateChanged = { scrolling ->
                                         if (selectedTab == 0) isContentScrolling = scrolling
@@ -963,6 +968,7 @@ fun DashboardScreen(
     onAddEntry: (String, Long, Boolean, String?, String?, Double, Double, String, Boolean, Double?, Double?, String, String) -> Unit,
     onAddCategory: (String, Double) -> Unit,
     onDeleteCategory: (WorkCategory) -> Unit,
+    bottomNavigation: @Composable () -> Unit = {},
     selectedTab: Int = 0,
     onScrollStateChanged: (Boolean) -> Unit = {}
 ) {
@@ -1012,6 +1018,7 @@ fun DashboardScreen(
         }
     }
     var isReportCardExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var reportSubmitted by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
     val dashboardIsScrolling = scrollState.isScrollInProgress
@@ -1193,6 +1200,122 @@ fun DashboardScreen(
         }
     }
 
+    val saveReport: @Composable () -> Unit = {
+                    Button(
+                        onClick = {
+                            if (reportSubmitted) return@Button
+                            val testHours = if (isManualMode) manualHoursStr.toDoubleOrNull() ?: 0.0 else 1.0
+                            val testRate = hourlyRateStr.toDoubleOrNull() ?: 0.0
+
+                            showErrorHours = isManualMode && (manualHoursStr.isBlank() || testHours <= 0.0)
+                            showErrorRate = hourlyRateStr.isBlank() || testRate <= 0.0
+
+                            if (showErrorHours || showErrorRate) {
+                                triggerHapticFeedback(context, isDestructive = true)
+                                Toast.makeText(context, "נא לתקן את השדות המסומנים באדום", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            val finalHours = if (isManualMode) {
+                                manualHoursStr.toDoubleOrNull() ?: 8.0
+                            } else {
+                                val sParts = startTimeStr.split(":")
+                                val sMin = (sParts.getOrNull(0)?.toIntOrNull() ?: 9) * 60 + (sParts.getOrNull(1)?.toIntOrNull() ?: 0)
+                                val eParts = endTimeStr.split(":")
+                                val eMin = (eParts.getOrNull(0)?.toIntOrNull() ?: 17) * 60 + (eParts.getOrNull(1)?.toIntOrNull() ?: 0)
+                                val bMins = breakMinutesStr.toDoubleOrNull() ?: 0.0
+                                val durationVal = (if (eMin < sMin) eMin + 1440 - sMin else eMin - sMin) - bMins
+                                maxOf(0.0, durationVal / 60.0)
+                            }
+                            val finalRate = hourlyRateStr.toDoubleOrNull() ?: 40.0
+                            val eRate = if (isGroupShift && showSeparateRates) employerRateStr.toDoubleOrNull() ?: finalRate else finalRate
+                            val wRate = if (isGroupShift && showSeparateRates) workerRateStr.toDoubleOrNull() ?: finalRate else finalRate
+                            if (!finalHours.isFinite() || finalHours <= 0 || !finalRate.isFinite() || finalRate < 0 ||
+                                !eRate.isFinite() || eRate < 0 || !wRate.isFinite() || wRate < 0 ||
+                                (breakMinutesStr.toDoubleOrNull()?.let { !it.isFinite() || it < 0 } != false)) {
+                                Toast.makeText(context, "נא להזין שעות, הפסקה ותעריפים תקינים", Toast.LENGTH_LONG).show()
+                                return@Button
+                            }
+                            val gJson = if (isGroupShift && groupWorkers.isNotEmpty()) {
+                                // Simple JSON Array construction for Workers
+                                val arr = org.json.JSONArray()
+                                groupWorkers.forEach { w ->
+                                    val obj = if (w.sourceJson.isBlank()) org.json.JSONObject() else org.json.JSONObject(w.sourceJson)
+                                    obj.put("name", w.name)
+                                    obj.put("hours", w.hours)
+                                    obj.put("isPaid", w.isPaid)
+                                    arr.put(obj)
+                                }
+                                arr.toString()
+                            } else ""
+
+                            reportSubmitted = true
+                            keyboardController?.hide()
+                            focusManager.clearFocus(force = true)
+                            onAddEntry(
+                                selectedCategory,
+                                selectedDateMillis,
+                                !isManualMode,
+                                if (!isManualMode) startTimeStr else null,
+                                if (!isManualMode) endTimeStr else null,
+                                finalHours,
+                                finalRate,
+                                notesText,
+                                isGroupShift,
+                                eRate,
+                                wRate,
+                                gJson,
+                                selectedCurrency
+                            )
+                            isReportCardExpanded = false
+                            notesText = ""
+                            breakMinutesStr = "0"
+                            if (isGroupShift) {
+                                groupWorkers.clear()
+                                isGroupShift = false
+                                employerRateStr = ""
+                                workerRateStr = ""
+                            }
+                            triggerHapticFeedback(context, isDestructive = false)
+                            Toast.makeText(context, "הדיווח נשמר בהצלחה!", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .pressScale()
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(Color(0xFF4F46E5), Color(0xFF6366F1))
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .testTag("save_shift_button"),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Save,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "שמור",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -1299,6 +1422,11 @@ fun DashboardScreen(
                             .fillMaxWidth()
                             .clickable {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                if (!isReportCardExpanded) reportSubmitted = false
+                                else {
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus(force = true)
+                                }
                                 isReportCardExpanded = !isReportCardExpanded
                             }
                             .padding(vertical = 4.dp),
@@ -1487,6 +1615,11 @@ fun DashboardScreen(
                             OutlinedTextField(
                                 value = aiInputText,
                                 onValueChange = { aiInputText = it },
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = {
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus(force = true)
+                                }),
                                 placeholder = {
                                     Text(
                                         text = "לדוגמה: אתמול עבדתי עצמאי 8 שעות בתעריף 50 ש\"ח, הערה: הדרכה וישיבת צוות",
@@ -2245,7 +2378,7 @@ fun DashboardScreen(
                                                 currentWorkerName = it
                                             },
                                             label = { Text("שם", fontSize = 12.sp) },
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier.fillMaxWidth().testTag("worker_name_input"),
                                             singleLine = true,
                                             shape = RoundedCornerShape(12.dp),
                                             colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
@@ -2261,7 +2394,7 @@ fun DashboardScreen(
                                         onValueChange = { currentWorkerHours = it },
                                         label = { Text("שעות", fontSize = 12.sp) },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        modifier = Modifier.width(80.dp),
+                                        modifier = Modifier.width(80.dp).testTag("worker_hours_input"),
                                         shape = RoundedCornerShape(12.dp),
                                         colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                             focusedBorderColor = Color(0xFF5C6BC0),
@@ -2290,120 +2423,7 @@ fun DashboardScreen(
                         }
                     }
 
-                    // Spacer before save button
-                    Spacer(modifier = Modifier.height(6.dp))
 
-                    // 9. Full width navy-blue "שמור" button
-                    Button(
-                        onClick = {
-                            keyboardController?.hide()
-                            focusManager.clearFocus(force = true)
-                            val testHours = if (isManualMode) manualHoursStr.toDoubleOrNull() ?: 0.0 else 1.0
-                            val testRate = hourlyRateStr.toDoubleOrNull() ?: 0.0
-
-                            showErrorHours = isManualMode && (manualHoursStr.isBlank() || testHours <= 0.0)
-                            showErrorRate = hourlyRateStr.isBlank() || testRate <= 0.0
-
-                            if (showErrorHours || showErrorRate) {
-                                triggerHapticFeedback(context, isDestructive = true)
-                                Toast.makeText(context, "נא לתקן את השדות המסומנים באדום", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-
-                            val finalHours = if (isManualMode) {
-                                manualHoursStr.toDoubleOrNull() ?: 8.0
-                            } else {
-                                val sParts = startTimeStr.split(":")
-                                val sMin = (sParts.getOrNull(0)?.toIntOrNull() ?: 9) * 60 + (sParts.getOrNull(1)?.toIntOrNull() ?: 0)
-                                val eParts = endTimeStr.split(":")
-                                val eMin = (eParts.getOrNull(0)?.toIntOrNull() ?: 17) * 60 + (eParts.getOrNull(1)?.toIntOrNull() ?: 0)
-                                val bMins = breakMinutesStr.toDoubleOrNull() ?: 0.0
-                                val durationVal = (if (eMin < sMin) eMin + 1440 - sMin else eMin - sMin) - bMins
-                                maxOf(0.0, durationVal / 60.0)
-                            }
-                            val finalRate = hourlyRateStr.toDoubleOrNull() ?: 40.0
-                            val eRate = if (isGroupShift && showSeparateRates) employerRateStr.toDoubleOrNull() ?: finalRate else finalRate
-                            val wRate = if (isGroupShift && showSeparateRates) workerRateStr.toDoubleOrNull() ?: finalRate else finalRate
-                            if (!finalHours.isFinite() || finalHours <= 0 || !finalRate.isFinite() || finalRate < 0 ||
-                                !eRate.isFinite() || eRate < 0 || !wRate.isFinite() || wRate < 0 ||
-                                (breakMinutesStr.toDoubleOrNull()?.let { !it.isFinite() || it < 0 } != false)) {
-                                Toast.makeText(context, "נא להזין שעות, הפסקה ותעריפים תקינים", Toast.LENGTH_LONG).show()
-                                return@Button
-                            }
-                            val gJson = if (isGroupShift && groupWorkers.isNotEmpty()) {
-                                // Simple JSON Array construction for Workers
-                                val arr = org.json.JSONArray()
-                                groupWorkers.forEach { w ->
-                                    val obj = if (w.sourceJson.isBlank()) org.json.JSONObject() else org.json.JSONObject(w.sourceJson)
-                                    obj.put("name", w.name)
-                                    obj.put("hours", w.hours)
-                                    obj.put("isPaid", w.isPaid)
-                                    arr.put(obj)
-                                }
-                                arr.toString()
-                            } else ""
-
-                            onAddEntry(
-                                selectedCategory,
-                                selectedDateMillis,
-                                !isManualMode,
-                                if (!isManualMode) startTimeStr else null,
-                                if (!isManualMode) endTimeStr else null,
-                                finalHours,
-                                finalRate,
-                                notesText,
-                                isGroupShift,
-                                eRate,
-                                wRate,
-                                gJson,
-                                selectedCurrency
-                            )
-                            notesText = ""
-                            breakMinutesStr = "0"
-                            if (isGroupShift) {
-                                groupWorkers.clear()
-                                isGroupShift = false
-                                employerRateStr = ""
-                                workerRateStr = ""
-                            }
-                            triggerHapticFeedback(context, isDestructive = false)
-                            Toast.makeText(context, "הדיווח נשמר בהצלחה!", Toast.LENGTH_SHORT).show()
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .pressScale()
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(Color(0xFF4F46E5), Color(0xFF6366F1))
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .testTag("save_shift_button"),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Save,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "שמור",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
                         }
                     }
                 }
@@ -2457,18 +2477,24 @@ fun DashboardScreen(
         }
     }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(
-                        if (isImeVisible) Modifier.height(0.dp)
-                        else Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp)
-                    ),
-                contentAlignment = Alignment.CenterStart
+            // This footer is a sibling of the weighted scroll viewport, never an overlay.
+            if (isReportCardExpanded && !isAiMode) {
+                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    saveReport()
+                }
+            }
+            val isRunning = activeShiftStartTime != null
+            var showStopConfirmationDialog by remember { mutableStateOf(false) }
+            AnimatedVisibility(
+                visible = !isImeVisible,
+                enter = expandVertically(expandFrom = Alignment.Bottom, animationSpec = tween(140)) + fadeIn(tween(120)),
+                exit = shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = tween(140)) + fadeOut(tween(100))
             ) {
-        val isRunning = activeShiftStartTime != null
-        var showStopConfirmationDialog by remember { mutableStateOf(false) }
-
+                Column {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
         androidx.compose.animation.AnimatedVisibility(
             visible = !showQuickShiftDialog,
             enter = scaleIn(initialScale = 0.8f) + fadeIn(),
@@ -2507,6 +2533,11 @@ fun DashboardScreen(
             }
         }
 
+                    }
+                    bottomNavigation()
+                }
+            }
+
         if (showStopConfirmationDialog) {
             AlertDialog(
                 onDismissRequest = { showStopConfirmationDialog = false },
@@ -2532,7 +2563,8 @@ fun DashboardScreen(
                 containerColor = com.example.ui.theme.FormSurface
             )
         }
-        }
+    }
+
     }
 
     var dialogCategory by remember(defaultCategory) { mutableStateOf(defaultCategory) }
@@ -3566,6 +3598,7 @@ fun ShiftsScreen(
                 state = lazyListState,
                 modifier = Modifier
                     .fillMaxSize()
+                    .testTag("history_scroll_container")
                     .weight(1f),
                 contentPadding = PaddingValues(bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)

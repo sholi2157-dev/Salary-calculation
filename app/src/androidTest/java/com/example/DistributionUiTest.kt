@@ -60,25 +60,25 @@ class DistributionUiTest {
         ui.onNodeWithTag("dashboard_scroll_container").performTouchInput { swipeUp() }
         ui.waitForIdle()
         ui.onNodeWithTag("notes_input").assertIsFocused()
-        ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
         ui.onNodeWithTag("notes_input").performScrollTo().performImeAction()
         ui.waitForIdle()
-        ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
         for (mode in listOf("שעון", "ידני")) {
             ui.onNodeWithText(mode, useUnmergedTree = true).performScrollTo().performClick()
-            ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
+            ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
         }
         ui.onNodeWithText("Ai", useUnmergedTree = true).performScrollTo().performClick()
         ui.onNodeWithTag("ai_free_text_input").performScrollTo().assertIsDisplayed()
         ui.onNodeWithText("קבוצה", useUnmergedTree = true).performScrollTo().performClick()
         ui.onNodeWithTag("add_rate_input").performScrollTo().performClick().performTextReplacement("73.25")
-        ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
         snap("rc2-keyboard")
         Espresso.closeSoftKeyboard()
         ui.activityRule.scenario.recreate()
         ui.waitForIdle()
         ui.onNodeWithTag("add_rate_input").performScrollTo().assertTextContains("73.25")
-        ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
         val saveBounds = ui.onNodeWithTag("save_shift_button").fetchSemanticsNode().boundsInRoot
         val liveBounds = ui.onNodeWithTag("live_shift_fab").fetchSemanticsNode().boundsInRoot
         assertTrue("Save action must be above active shift control", saveBounds.bottom <= liveBounds.top)

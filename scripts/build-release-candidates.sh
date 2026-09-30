@@ -3,10 +3,10 @@ set -euo pipefail
 set +x
 : "${KEYSTORE_PATH:?Permanent key required}" "${STORE_PASSWORD:?}" "${KEY_PASSWORD:?}" "${CERT_SHA256:?}"
 mkdir -p release-evidence
-# Upgrade from the exact owner-tested RC1 binary, never a reconstruction.
-: "${RC1_APK:?Original RC1 artifact required}"
-echo "35e078511b64d47a36977e1dffb5de374f9d1e8452b0fd20735ba3bd1a278910  $RC1_APK" | sha256sum -c -
-cp "$RC1_APK" candidate-a.apk
+# Upgrade from the exact owner-tested RC7 binary, never a reconstruction.
+: "${PREVIOUS_APK:?Original RC7 artifact required}"
+echo "8d97b5d79f8e1a585bf7ad9cb9c6acea6c80036ad0593a8080c7bbd7f75d45c7  $PREVIOUS_APK" | sha256sum -c -
+cp "$PREVIOUS_APK" candidate-a.apk
 version_b=$(python3 -c 'import re;print(re.search(r"orNull\?\.toInt\(\) \?: (\d+)",open("app/build.gradle.kts").read())[1])')
 gradle :app:assembleRelease :app:assembleReleaseAndroidTest :app:testReleaseUnitTest --tests 'com.example.Work*Test' \
   -PdistributionInstrumentation=true -PdistributionVersionCode="$version_b"  \
@@ -16,7 +16,7 @@ for apk in candidate-a.apk candidate-b.apk app/build/outputs/apk/androidTest/rel
   report="release-evidence/$(basename "$apk").txt"
   {
     if [ "$apk" = candidate-a.apk ]; then
-      echo "Source commit: 2d6a3f9e3d24a04a3d5777253e225096b0dd9c93 (original RC1 artifact)"
+      echo "Source commit: e7b305cfc25bcc673bbd8e53f80beff6b7033506 (original RC7 artifact)"
     else echo "Source commit: $GITHUB_SHA"; fi
     "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
     sha256sum "$apk"
