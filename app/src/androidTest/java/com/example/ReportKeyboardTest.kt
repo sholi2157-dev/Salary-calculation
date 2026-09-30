@@ -122,6 +122,21 @@ class ReportKeyboardTest {
         saveVisible()
         ui.onNodeWithText("דיווח חדש").performScrollTo().performClick()
         ui.onNodeWithTag("save_shift_button").assertDoesNotExist()
+        // Exercise clock and group saves as well; rapid double tap still means one entry.
+        for (name in listOf("שעון", "קבוצה")) {
+            val before = runBlocking { dao.getEntriesList().size }
+            ui.onNodeWithText("דיווח חדש").performScrollTo().performClick()
+            mode(name)
+            focus("notes_input")
+            ui.onNodeWithTag("notes_input").performTextReplacement("RC8 single $name")
+            saveVisible()
+            ui.onNodeWithTag("save_shift_button").performTouchInput { doubleClick() }
+            awaitIme(false)
+            ui.waitUntil(5_000) { runBlocking { dao.getEntriesList().size } == before + 1 }
+            ui.waitForIdle()
+            assertEquals(before + 1, runBlocking { dao.getEntriesList().size })
+            assertEquals(1, runBlocking { dao.getEntriesList().count { it.notes == "RC8 single $name" } })
+        }
         ui.onNodeWithTag("tab_1").performClick()
         ui.onNodeWithTag("bottom_navigation").assertIsDisplayed()
         val list = ui.onNodeWithTag("history_scroll_container")
@@ -141,7 +156,11 @@ class ReportKeyboardTest {
         ui.onNodeWithTag("tab_0").performClick()
         ui.onNodeWithTag("live_shift_fab").assertIsDisplayed().performClick()
         ui.onNodeWithText("הגדרת משמרת פעילה").assertIsDisplayed()
-        Espresso.pressBack()
+        ui.onNodeWithText("אישור").performClick()
+        ui.onNodeWithText("סיים משמרת פעילה").assertIsDisplayed()
+        ui.onNodeWithTag("live_shift_fab").performClick()
+        ui.onNodeWithText("ביטול").performClick()
+        ui.onNodeWithText("סיים משמרת פעילה").assertIsDisplayed()
         ui.onNodeWithTag("bottom_navigation").assertIsDisplayed()
         snapshot("rc8-final-home")
     }
