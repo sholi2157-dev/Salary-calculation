@@ -412,6 +412,15 @@ fun MainAppContent(
     var showAddDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchDialogOpen by remember { mutableStateOf(false) }
+    var isContentScrolling by remember { mutableStateOf(false) }
+    val bottomNavVisibility by animateFloatAsState(
+        targetValue = if (isContentScrolling) 0f else 1f,
+        animationSpec = tween(durationMillis = 160),
+        label = "bottomNavVisibility"
+    )
+    LaunchedEffect(selectedTab) {
+        isContentScrolling = false
+    }
 
     val activeShiftStartTime by viewModel.activeShiftStartTime.collectAsStateWithLifecycle()
 
@@ -539,13 +548,20 @@ fun MainAppContent(
             bottomBar = {
                 Box(modifier = Modifier.graphicsLayer { alpha = focusAlpha }) {
                     NavigationBar(
-                        containerColor = Color(0xF20B1020),
+                        containerColor = Color.Transparent,
                         tonalElevation = 0.dp,
-                        modifier = Modifier.heightIn(min = 58.dp),
+                        modifier = Modifier
+                            .heightIn(min = 58.dp)
+                            .testTag("bottom_navigation")
+                            .graphicsLayer {
+                                alpha = bottomNavVisibility
+                                translationY = (1f - bottomNavVisibility) * 52.dp.toPx()
+                            },
                         windowInsets = WindowInsets.navigationBars
                     ) {
                         NavigationBarItem(
                             selected = selectedTab == 0,
+                            enabled = !isContentScrolling,
                             onClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 navigateToTab(0)
@@ -557,12 +573,15 @@ fun MainAppContent(
                                 unselectedIconColor = Color(0xFF8E8E93),
                                 selectedTextColor = Color(0xFF6366F1),
                                 unselectedTextColor = Color(0xFF8E8E93),
-                                indicatorColor = com.example.ui.theme.FormSurface
+                                indicatorColor = com.example.ui.theme.FormSurface,
+                                disabledIconColor = Color.Transparent,
+                                disabledTextColor = Color.Transparent
                             ),
                             modifier = Modifier.testTag("tab_0").pressScale()
                         )
                         NavigationBarItem(
                             selected = selectedTab == 1,
+                            enabled = !isContentScrolling,
                             onClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 navigateToTab(1)
@@ -574,7 +593,9 @@ fun MainAppContent(
                                 unselectedIconColor = Color(0xFF8E8E93),
                                 selectedTextColor = Color(0xFF6366F1),
                                 unselectedTextColor = Color(0xFF8E8E93),
-                                indicatorColor = com.example.ui.theme.FormSurface
+                                indicatorColor = com.example.ui.theme.FormSurface,
+                                disabledIconColor = Color.Transparent,
+                                disabledTextColor = Color.Transparent
                             ),
                             modifier = Modifier.testTag("tab_1").pressScale()
                         )
@@ -645,7 +666,10 @@ fun MainAppContent(
                                         triggerHapticFeedback(context, isDestructive = true)
                                         viewModel.deleteCategory(category)
                                     },
-                                    selectedTab = selectedTab
+                                    selectedTab = selectedTab,
+                                    onScrollStateChanged = { scrolling ->
+                                        if (selectedTab == 0) isContentScrolling = scrolling
+                                    }
                                 )
                             }
                             1 -> ShiftsScreen(
@@ -663,6 +687,9 @@ fun MainAppContent(
                                 onDelete = { entry ->
                                     triggerHapticFeedback(context, isDestructive = true)
                                     viewModel.deleteEntry(entry)
+                                },
+                                onScrollStateChanged = { scrolling ->
+                                    if (selectedTab == 1) isContentScrolling = scrolling
                                 }
                             )
                         }
@@ -942,7 +969,8 @@ fun DashboardScreen(
     onAddEntry: (String, Long, Boolean, String?, String?, Double, Double, String, Boolean, Double?, Double?, String, String) -> Unit,
     onAddCategory: (String, Double) -> Unit,
     onDeleteCategory: (WorkCategory) -> Unit,
-    selectedTab: Int = 0
+    selectedTab: Int = 0,
+    onScrollStateChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -989,6 +1017,13 @@ fun DashboardScreen(
     var isReportCardExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
+    LaunchedEffect(scrollState, selectedTab) {
+        if (selectedTab == 0) {
+            snapshotFlow { scrollState.isScrollInProgress }.collect { scrolling ->
+                onScrollStateChanged(scrolling)
+            }
+        }
+    }
     val scope = rememberCoroutineScope()
     var showQuickShiftDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
@@ -2423,8 +2458,7 @@ fun DashboardScreen(
         modifier = Modifier
             .align(Alignment.BottomStart)
             .fillMaxWidth()
-            .background(Color(0xF20B1020))
-            .padding(start = 16.dp, top = 20.dp, end = 16.dp, bottom = 16.dp)
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
             .onSizeChanged { liveControlHeight = it.height }
     ) {
         val isRunning = activeShiftStartTime != null
@@ -3015,7 +3049,8 @@ fun ShiftsScreen(
     onSearchQueryChange: (String) -> Unit,
     onTogglePaid: (WorkEntry) -> Unit,
     onEdit: (WorkEntry) -> Unit,
-    onDelete: (WorkEntry) -> Unit
+    onDelete: (WorkEntry) -> Unit,
+    onScrollStateChanged: (Boolean) -> Unit = {}
 ) {
     var selectedCategoryFilter by remember { mutableStateOf("הכל") }
     var sortOption by remember { mutableStateOf("newest") } // "newest", "oldest", "latest_added"
@@ -3027,6 +3062,14 @@ fun ShiftsScreen(
     var showSortDropdown by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
+
+    LaunchedEffect(lazyListState, isVisible) {
+        if (isVisible) {
+            snapshotFlow { lazyListState.isScrollInProgress }.collect { scrolling ->
+                onScrollStateChanged(scrolling)
+            }
+        }
+    }
 
     LaunchedEffect(sortOption) {
         lazyListState.scrollToItem(0)
@@ -3060,7 +3103,11 @@ fun ShiftsScreen(
         selectedShiftIds = emptySet()
     }
     LaunchedEffect(isVisible) {
-        if (!isVisible) { isMultiSelectMode = false; selectedShiftIds = emptySet() }
+        if (!isVisible) {
+            isMultiSelectMode = false
+            selectedShiftIds = emptySet()
+            onScrollStateChanged(false)
+        }
     }
     var showFilters by remember { mutableStateOf(false) }
 
