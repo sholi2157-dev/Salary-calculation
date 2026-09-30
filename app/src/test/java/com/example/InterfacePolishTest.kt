@@ -55,13 +55,14 @@ class InterfacePolishTest {
         ui.onNodeWithTag("recent_payment_status_72", useUnmergedTree = true).assertTextEquals("שולם").assertIsDisplayed()
         ui.onNodeWithTag("work_entry_card_71").performClick()
         ui.onNodeWithTag("entry_actions_71", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        ui.onRoot().captureRoboImage(filePath = "/tmp/stage-interface-polish-expanded-${ui.onRoot().getUnclippedBoundsInRoot().right.value.toInt()}.png")
         val card = ui.onNodeWithTag("work_entry_card_71").getUnclippedBoundsInRoot()
         val tags = listOf("global_share_btn_71", "edit_entry_btn_71", "delete_entry_btn_71")
         val bounds = tags.map { tag ->
             val node = ui.onNodeWithTag(tag).assertIsDisplayed().assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
             node.getUnclippedBoundsInRoot().also { assertTrue("action stays inside card", it.left >= card.left && it.right <= card.right) }
         }
-        bounds.zipWithNext().forEach { (a, b) -> assertTrue("distinct action hit areas", a.left >= b.right || b.left >= a.right) }
+        bounds.zipWithNext().forEach { (a, b) -> assertTrue("distinct action hit areas", a.left >= b.right || b.left >= a.right || a.top >= b.bottom || b.top >= a.bottom) }
         ui.onNodeWithContentDescription("שתף סיכום לקבלן").assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
         ui.onNodeWithContentDescription("שתף פרטי משמרת לעובד").assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
         ui.onNodeWithTag("toggle_payment_badge_71").assertHeightIsAtLeast(48.dp).performTouchInput { click() }

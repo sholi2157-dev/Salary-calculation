@@ -3476,114 +3476,113 @@ fun WorkEntryRowCard(
                             }
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Every single shift card displays this generic share button when expanded
+                        // Individual actions wrap independently at their full touch size.
+                        // Every single shift card displays this generic share button when expanded
+                        IconButton(
+                            onClick = {
+                                val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(entry.date))
+                                val textToSend = "היי, להלן פרטי המשמרת שלי מיום $dateStr:\n" +
+                                        "קטגוריה: ${entry.category}\n" +
+                                        "שעות עבודה: ${entry.hours} שעות\n" +
+                                        "תעריף שעתי: ${entry.currency}${String.format(Locale.US, "%.2f", entry.hourlyRate)}\n" +
+                                        "סה\"כ לתשלום: ${entry.currency}${String.format(Locale.US, "%.2f", entry.totalEarnings)}"
+
+                                val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(android.content.Intent.EXTRA_TEXT, textToSend)
+                                }
+                                context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת"))
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF064E3B), shape = RoundedCornerShape(8.dp))
+                                .testTag("global_share_btn_${entry.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Share,
+                                contentDescription = "שתף פרטי משמרת",
+                                tint = Color(0xFF34D399),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+
+                        if (entry.isGroupShift) {
                             IconButton(
                                 onClick = {
                                     val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(entry.date))
-                                    val textToSend = "היי, להלן פרטי המשמרת שלי מיום $dateStr:\n" +
-                                            "קטגוריה: ${entry.category}\n" +
-                                            "שעות עבודה: ${entry.hours} שעות\n" +
-                                            "תעריף שעתי: ${entry.currency}${String.format(Locale.US, "%.2f", entry.hourlyRate)}\n" +
-                                            "סה\"כ לתשלום: ${entry.currency}${String.format(Locale.US, "%.2f", entry.totalEarnings)}"
+                                    val workersArray = try { org.json.JSONArray(entry.groupWorkersJson) } catch(e: Exception) { org.json.JSONArray() }
+
+                                    val empRate = entry.employerRate ?: 0.0
+                                    val sholiBossPay = entry.totalEarnings
+                                    var totalPay = sholiBossPay
+                                    var workersLines = "החלק שלי: ${entry.hours} שעות (${entry.currency}${String.format(Locale.US, "%.2f", sholiBossPay)})\n"
+
+                                    for (i in 0 until workersArray.length()) {
+                                        val obj = workersArray.getJSONObject(i)
+                                        val wName = obj.optString("name", "")
+                                        val wHours = obj.optDouble("hours", 0.0)
+                                        val wPay = wHours * com.example.data.WorkMoney.employerRate(obj, entry)
+                                        totalPay += wPay
+                                        workersLines += "${wName}: ${wHours} שעות (${entry.currency}${String.format(Locale.US, "%.2f", wPay)})\n"
+                                    }
+
+                                    val textToSend = "היי, להלן סיכום שעות עבודה ליום ${dateStr}:\n" +
+                                            "**סה\"כ לתשלום (כולל כולם): ${entry.currency}${String.format(Locale.US, "%.2f", totalPay)}**\n" +
+                                            "---\n" +
+                                            "פירוט:\n" +
+                                            workersLines +
+                                            "---"
 
                                     val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                         type = "text/plain"
                                         putExtra(android.content.Intent.EXTRA_TEXT, textToSend)
                                     }
-                                    context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת"))
+                                    context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף חשבונית לקבלן"))
                                 },
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .background(Color(0xFF064E3B), shape = RoundedCornerShape(8.dp))
-                                    .testTag("global_share_btn_${entry.id}")
+                                    .background(Color(0xFF1E293B), shape = RoundedCornerShape(8.dp))
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.Share,
-                                    contentDescription = "שתף פרטי משמרת",
+                                    imageVector = Icons.Outlined.ReceiptLong,
+                                    contentDescription = "שתף סיכום לקבלן",
                                     tint = Color(0xFF34D399),
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
+                        }
 
-                            if (entry.isGroupShift) {
-                                IconButton(
-                                    onClick = {
-                                        val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(entry.date))
-                                        val workersArray = try { org.json.JSONArray(entry.groupWorkersJson) } catch(e: Exception) { org.json.JSONArray() }
+                        IconButton(
+                            onClick = onEdit,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(8.dp))
+                                .testTag("edit_entry_btn_${entry.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = "ערוך משמרת",
+                                tint = Color(0xFF6366F1),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
 
-                                        val empRate = entry.employerRate ?: 0.0
-                                        val sholiBossPay = entry.totalEarnings
-                                        var totalPay = sholiBossPay
-                                        var workersLines = "החלק שלי: ${entry.hours} שעות (${entry.currency}${String.format(Locale.US, "%.2f", sholiBossPay)})\n"
-
-                                        for (i in 0 until workersArray.length()) {
-                                            val obj = workersArray.getJSONObject(i)
-                                            val wName = obj.optString("name", "")
-                                            val wHours = obj.optDouble("hours", 0.0)
-                                            val wPay = wHours * com.example.data.WorkMoney.employerRate(obj, entry)
-                                            totalPay += wPay
-                                            workersLines += "${wName}: ${wHours} שעות (${entry.currency}${String.format(Locale.US, "%.2f", wPay)})\n"
-                                        }
-
-                                        val textToSend = "היי, להלן סיכום שעות עבודה ליום ${dateStr}:\n" +
-                                                "**סה\"כ לתשלום (כולל כולם): ${entry.currency}${String.format(Locale.US, "%.2f", totalPay)}**\n" +
-                                                "---\n" +
-                                                "פירוט:\n" +
-                                                workersLines +
-                                                "---"
-
-                                        val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                            type = "text/plain"
-                                            putExtra(android.content.Intent.EXTRA_TEXT, textToSend)
-                                        }
-                                        context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף חשבונית לקבלן"))
-                                    },
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .background(Color(0xFF1E293B), shape = RoundedCornerShape(8.dp))
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.ReceiptLong,
-                                        contentDescription = "שתף סיכום לקבלן",
-                                        tint = Color(0xFF34D399),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-
-                            IconButton(
-                                onClick = onEdit,
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(8.dp))
-                                    .testTag("edit_entry_btn_${entry.id}")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Edit,
-                                    contentDescription = "ערוך משמרת",
-                                    tint = Color(0xFF6366F1),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-
-                            IconButton(
-                                onClick = {
-                                    triggerHapticFeedback(context, isDestructive = true)
-                                    onDelete()
-                                },
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(Color(0xFF451A1A), shape = RoundedCornerShape(8.dp))
-                                    .testTag("delete_entry_btn_${entry.id}")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Delete,
-                                    contentDescription = "מחק משמרת",
-                                    tint = Color(0xFFF87171),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                        IconButton(
+                            onClick = {
+                                triggerHapticFeedback(context, isDestructive = true)
+                                onDelete()
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF451A1A), shape = RoundedCornerShape(8.dp))
+                                .testTag("delete_entry_btn_${entry.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = "מחק משמרת",
+                                tint = Color(0xFFF87171),
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 }

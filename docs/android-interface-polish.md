@@ -91,3 +91,14 @@ passed Debug /60 passed Release tests. The two known failed test-harness records
 in each baseline are excluded and disclosed, never counted as passes. The fresh
 focused Debug results must pass2/2 before signing/update continues. This avoids
 rerunning unchanged suites. See scripts/summarize-interface-polish-tests.py.
+
+Run36785104448 / source812e983a1abb36787d07b50c1ac15ad7778e9080 correctly
+reached the focused Debug UI checks. These exposed a real layout problem: a nested
+Row of four48dp icons could be measured into only the remaining width after the
+payment badge, clipping/shrinking controls before FlowRow wrapped. Remove that
+nested fixed strip and let every action be an independent FlowRow child. Extend
+the non-overlap check to both axes because actions now wrap independently; capture
+an expanded PNG before assertions for reliable failure evidence. The final app
+source changed, so run the normal consolidated Debug/Release + signed update
+gates again. Remove the now-obsolete focused-continuation workflow/script; previous
+results remain historical evidence, not a replacement for final-source checks.
