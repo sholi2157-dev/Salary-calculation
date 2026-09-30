@@ -1017,12 +1017,9 @@ fun DashboardScreen(
     val dashboardIsScrolling = scrollState.isScrollInProgress
     LaunchedEffect(dashboardIsScrolling, selectedTab) {
         if (selectedTab == 0) onScrollStateChanged(dashboardIsScrolling)
-        // A drag on the report form means the user is trying to reach another field/action.
-        // Dismiss the IME immediately so it cannot trap the lower fields or Save action.
-        if (selectedTab == 0 && dashboardIsScrolling && isImeVisible) {
-            keyboardController?.hide()
-            focusManager.clearFocus(force = true)
-        }
+        // Do not dismiss the IME from scrollState changes. Android may report a brief
+        // scroll while bringing a newly focused field into view, which previously made
+        // the keyboard flash open and immediately close.
     }
     val scope = rememberCoroutineScope()
     var showQuickShiftDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
