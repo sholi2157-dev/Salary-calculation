@@ -148,17 +148,17 @@ class ReportKeyboardTest {
         }
         ui.waitForIdle()
         ui.onNodeWithTag("bottom_navigation").assertDoesNotExist()
-        assertTrue("History must reclaim footer space during scrolling",
-            list.fetchSemanticsNode().boundsInRoot.bottom > restingBottom)
+        assertEquals("History retains its stable viewport while navigation collapses",
+            restingBottom, list.fetchSemanticsNode().boundsInRoot.bottom, 1f)
         list.performTouchInput { up() }
         ui.waitForIdle()
         ui.onNodeWithTag("bottom_navigation").assertIsDisplayed()
         ui.onNodeWithTag("tab_0").performClick()
-        ui.onNodeWithTag("live_shift_fab").assertIsDisplayed().performClick()
+        ui.onNodeWithTag("live_shift_fab").performScrollTo().assertIsDisplayed().performClick()
         ui.onNodeWithText("הגדרת משמרת פעילה").assertIsDisplayed()
         ui.onNodeWithText("אישור").performClick()
         ui.onNodeWithText("סיים משמרת פעילה").assertIsDisplayed()
-        ui.onNodeWithTag("live_shift_fab").performClick()
+        ui.onNodeWithTag("live_shift_fab").performScrollTo().performClick()
         ui.onNodeWithText("ביטול").performClick()
         ui.onNodeWithText("סיים משמרת פעילה").assertIsDisplayed()
         ui.onNodeWithTag("bottom_navigation").assertIsDisplayed()

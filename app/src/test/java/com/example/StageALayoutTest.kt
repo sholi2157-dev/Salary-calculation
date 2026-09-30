@@ -54,6 +54,7 @@ class StageALayoutTest {
         val card = ui.onNodeWithTag("recent_shift_card_1").getUnclippedBoundsInRoot()
         val nav = ui.onNodeWithTag("test_navigation").getUnclippedBoundsInRoot()
         assertTrue("last recent card above navigation", card.bottom <= nav.top)
+        ui.onRoot().captureRoboImage(filePath = "/tmp/stage-home-${nav.right.value.toInt()}.png")
         ui.onNodeWithText("דיווח חדש").performScrollTo().performClick()
         ui.onNodeWithTag("live_shift_fab").assertDoesNotExist()
         ui.onNodeWithTag("report_date").performScrollTo()
@@ -113,6 +114,7 @@ class StageALayoutTest {
         val final = ui.onNodeWithTag("work_entry_card_25").getUnclippedBoundsInRoot()
         val nav = ui.onNodeWithTag("test_navigation").getUnclippedBoundsInRoot()
         assertTrue("complete final card is above returned navigation", final.bottom <= nav.top)
+        ui.onRoot().captureRoboImage(filePath = "/tmp/stage-history-final.png")
         ui.onNodeWithTag("work_entry_card_25").performTouchInput { longClick() }
         ui.onNodeWithText("נבחרו 1 משמרות").assertIsDisplayed()
     }

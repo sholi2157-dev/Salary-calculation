@@ -11,6 +11,8 @@ collect_ui_evidence() {
   done
 }
 trap collect_ui_evidence EXIT
+adb shell wm size 720x1600
+adb shell wm density 320
 adb install candidate-a.apk
 adb install app/build/outputs/apk/androidTest/release/app-release-androidTest.apk
 adb shell svc wifi disable
@@ -47,4 +49,4 @@ grep -F 'OK (1 test)' release-evidence/keyboard-ui.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/keyboard-ui.txt
 adb exec-out screencap -p > release-evidence/rc2-screen.png
 adb logcat -d -b crash > release-evidence/crash-log.txt
-! grep -F "$pkg" release-evidence/crash-log.txt
+! grep -E "FATAL EXCEPTION|AndroidRuntime|Process: $pkg" release-evidence/crash-log.txt

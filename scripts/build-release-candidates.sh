@@ -3,12 +3,12 @@ set -euo pipefail
 set +x
 : "${KEYSTORE_PATH:?Permanent key required}" "${STORE_PASSWORD:?}" "${KEY_PASSWORD:?}" "${CERT_SHA256:?}"
 mkdir -p release-evidence
-# Upgrade from the exact owner-tested RC7 binary, never a reconstruction.
-: "${PREVIOUS_APK:?Original RC7 artifact required}"
-echo "8d97b5d79f8e1a585bf7ad9cb9c6acea6c80036ad0593a8080c7bbd7f75d45c7  $PREVIOUS_APK" | sha256sum -c -
+# Upgrade from the exact owner-tested RC8 binary, never a reconstruction.
+: "${PREVIOUS_APK:?Original RC8 artifact required}"
+echo "f0fccf4325203502543f7143eb7f773854c2959d24b16c4f466d203e3b57d7a7  $PREVIOUS_APK" | sha256sum -c -
 cp "$PREVIOUS_APK" candidate-a.apk
 version_b=$(python3 -c 'import re;print(re.search(r"orNull\?\.toInt\(\) \?: (\d+)",open("app/build.gradle.kts").read())[1])')
-gradle :app:assembleRelease :app:assembleReleaseAndroidTest :app:testReleaseUnitTest --tests 'com.example.Work*Test' \
+gradle :app:assembleRelease :app:assembleReleaseAndroidTest \
   -PdistributionInstrumentation=true -PdistributionVersionCode="$version_b"  \
   --no-configuration-cache --console=plain
 cp app/build/outputs/apk/release/app-release.apk candidate-b.apk
@@ -16,7 +16,7 @@ for apk in candidate-a.apk candidate-b.apk app/build/outputs/apk/androidTest/rel
   report="release-evidence/$(basename "$apk").txt"
   {
     if [ "$apk" = candidate-a.apk ]; then
-      echo "Source commit: e7b305cfc25bcc673bbd8e53f80beff6b7033506 (original RC7 artifact)"
+      echo "Source commit: 912acceca3ee9d62ae4ebd91596196950bcd33a6 (original RC8 artifact)"
     else echo "Source commit: $GITHUB_SHA"; fi
     "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
     sha256sum "$apk"
@@ -27,3 +27,11 @@ for apk in candidate-a.apk candidate-b.apk app/build/outputs/apk/androidTest/rel
   ! grep -F 'CN=Android Debug' "$report"
 done
 python3 scripts/check-local-build.py
+# Pin both real installed identities as well as their shared permanent signer.
+python3 - <<'CHECK'
+from pathlib import Path
+import re
+for name, code, version in [('candidate-a.apk', 16, '1.5-rc8'), ('candidate-b.apk', 17, '1.5-rc9')]:
+    report = Path(f'release-evidence/{name}.txt').read_text()
+    assert re.search(r"name='com.aistudio.worktracker.qztvdw.distribution' versionCode='" + str(code) + r"' versionName='" + re.escape(version) + "'", report), name
+CHECK

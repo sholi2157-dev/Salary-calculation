@@ -113,16 +113,21 @@ Both Stage A checkpoint messages use `[skip ci]`; no heavy release gate was run.
 Checkpoint A was verified to have no Actions runs. Checkpoint B is the commit
 containing this completion note (do not embed its own hash into its tree).
 
-## Next stage — deferred, requires the owner's instruction
+## Stage B in progress — owner authorized 2026-09-30
 
-Stop after Stage A. Stage B has not started. The delivered baseline remains RC8/code16.
+Starting HEAD verified: `a83fa7e2cccac6278ac996f69ffd8a1137083c6d`, clean tree,
+all three Stage A checkpoints present. Latest Actions candidate remains RC8/code16;
+no public releases exist. RC9/code17 is the next unused candidate version.
 
-Stage B will cover the new RC version/build/signing, release gates, actual signed
-RC8 → new RC update/data preservation, crash evidence and owner physical review.
-Physical keyboard animation/flicker, microphone/service recognition and live AI
-with the owner's personal key are not established by Robolectric/inset simulation.
-No emulator/hardware microphone or live provider request was used in Stage A.
-Do not promote RC8 directly to stable or start Stage B automatically.
+RC9 preparation changes only version metadata and release-validation tooling.
+The signing workflow now pins the actual RC8/code16 artifact and SHA-256, runs
+one consolidated Android unit/build pass with existing Stage A coverage, then the
+real permanently signed update/data/crash and existing UI/IME gates. Legacy RC8
+UI assertions are aligned with the completed Stage A structure. No UI redesign.
+
+Validation is pending. Do not treat RC9 as delivered until signed artifact,
+actual RC8 update/data preservation, crash logs and visual evidence are verified.
+Owner physical review remains required. No Stable release/feed or distribution.
 
 ## After the new RC is physically approved
 Only after the owner explicitly says the new RC is satisfactory:

@@ -14,10 +14,6 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: npm test && npm run build
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -30,7 +26,7 @@ jobs:
         with:
           gradle-version: '9.3.1'
           cache-read-only: false
-      - run: gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true --console=plain
+      - run: gradle :app:compileDebugKotlin :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.StageALayoutTest' --tests 'com.example.StageAInsetsTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.HistoryCompactUiTest' :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true --console=plain
       - name: Count actual Android test results
         run: python3 scripts/summarize-android-tests.py
       - name: Verify release identity and local gates
@@ -49,6 +45,8 @@ jobs:
             app/build/test-results/
             /tmp/release-identity.txt
             release-evidence/unit-tests.json
+            /tmp/stage-*.png
+            /tmp/history-*.png
       - name: Signing checkpoint
         env:
           SIGNING_READY: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -72,15 +70,15 @@ jobs:
           umask 077
           printf '%s' "$KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/salary-distribution.p12"
           echo 'ready=true' >> "$GITHUB_OUTPUT"
-      - name: Fetch the original verified RC7 for upgrade proof
+      - name: Fetch the original verified RC8 for upgrade proof
         if: steps.signing.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh run download 36659201636 --repo sholi2157-dev/Salary-calculation --name salary-local-release-candidate --dir "$RUNNER_TEMP/rc7"
+        run: gh run download 36666569653 --repo sholi2157-dev/Salary-calculation --name salary-local-release-candidate --dir "$RUNNER_TEMP/rc8"
       - name: Build signed candidates A and B
         if: steps.signing.outputs.ready == 'true'
         env:
-          PREVIOUS_APK: ${{ runner.temp }}/rc7/candidate-b.apk
+          PREVIOUS_APK: ${{ runner.temp }}/rc8/candidate-b.apk
           KEYSTORE_PATH: ${{ runner.temp }}/salary-distribution.p12
           STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}

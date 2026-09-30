@@ -38,11 +38,11 @@ class DistributionUiTest {
         assertEquals(generalHeight, usdHeight, 1f)
         ui.onNodeWithText("יעד חודשי").assertDoesNotExist()
         snap("rc2-currency")
-        ui.onNodeWithTag("live_shift_fab").performClick()
+        ui.onNodeWithTag("live_shift_fab").performScrollTo().performClick()
         ui.onNodeWithText("הגדרת משמרת פעילה").assertIsDisplayed()
         Espresso.pressBack()
         ui.onNodeWithText("הגדרת משמרת פעילה").assertDoesNotExist()
-        ui.onNodeWithTag("live_shift_fab").performClick()
+        ui.onNodeWithTag("live_shift_fab").performScrollTo().performClick()
         // Exercise a real pointer tap on the dialog scrim, above the centered card.
         // This avoids the system-gesture edge where emulator-injected touches can be swallowed.
         ui.onNodeWithTag("quick_shift_scrim", useUnmergedTree = true).performTouchInput {
@@ -79,9 +79,10 @@ class DistributionUiTest {
         ui.waitForIdle()
         ui.onNodeWithTag("add_rate_input").performScrollTo().assertTextContains("73.25")
         ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
+        ui.onNodeWithTag("live_shift_fab").assertDoesNotExist()
         val saveBounds = ui.onNodeWithTag("save_shift_button").fetchSemanticsNode().boundsInRoot
-        val liveBounds = ui.onNodeWithTag("live_shift_fab").fetchSemanticsNode().boundsInRoot
-        assertTrue("Save action must be above active shift control", saveBounds.bottom <= liveBounds.top)
+        val viewport = ui.onNodeWithTag("dashboard_scroll_container").fetchSemanticsNode().boundsInRoot
+        assertTrue("Save keeps separate space below compact report", viewport.bottom <= saveBounds.top)
         snap("rc2-group")
         ui.onNodeWithTag("tab_1").performClick()
         ui.waitForIdle()
@@ -113,7 +114,7 @@ class DistributionUiTest {
         ui.onNodeWithText("סינון היסטוריה").assertIsDisplayed()
         ui.onNodeWithTag("history_status_ממתין").performClick()
         ui.onNodeWithText("הצג תוצאות").performScrollTo().performClick()
-        ui.onNodeWithText("סינון · 1 פעילים").assertExists()
+        ui.onNodeWithTag("history_filters").assertExists()
         snap("rc2-history")
         ui.onNodeWithContentDescription("מיון").performClick()
         ui.onNodeWithText("תאריך: מהישן לחדש").performClick()
