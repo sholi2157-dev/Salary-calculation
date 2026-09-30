@@ -27,16 +27,27 @@ jobs:
           gradle-version: '9.3.1'
           cache-read-only: false
       - if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') && !contains(github.event.head_commit.message, '[polish-followup]') }}
-        run: gradle :app:compileDebugKotlin :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.StageALayoutTest' --tests 'com.example.StageAInsetsTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.HistoryCompactUiTest' :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true -Proborazzi.test.record=true --console=plain
+        run: gradle :app:compileDebugKotlin :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.StageALayoutTest' --tests 'com.example.StageAInsetsTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.HistoryCompactUiTest' --tests 'com.example.InterfacePolishTest' :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true -Proborazzi.test.record=true --console=plain
       - name: Focused polish retry and remaining Release gates
         if: ${{ contains(github.event.head_commit.message, '[polish-followup]') }}
-        run: gradle :app:testDebugUnitTest --tests 'com.example.WorkInterfacePolishTest' :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true -Proborazzi.test.record=true --console=plain
+        run: gradle :app:testDebugUnitTest --tests 'com.example.InterfacePolishTest' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true -Proborazzi.test.record=true --console=plain
       - name: Targeted missing visual evidence only
         if: ${{ contains(github.event.head_commit.message, '[stage-b-gates]') }}
         run: gradle :app:testDebugUnitTest --tests 'com.example.StageALayoutTest' --tests 'com.example.StageAInsetsTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.HistoryCompactUiTest' -Proborazzi.test.record=true --no-build-cache --console=plain
       - name: Count actual Android test results
-        if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') }}
+        if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') && !contains(github.event.head_commit.message, '[polish-followup]') }}
         run: python3 scripts/summarize-android-tests.py
+      - name: Verify retained tests and focused polish results
+        if: ${{ contains(github.event.head_commit.message, '[polish-followup]') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin 1f142712aca6b0f96853fb28ecf6185ceeaa6f71
+          git diff --exit-code 1f142712aca6b0f96853fb28ecf6185ceeaa6f71 HEAD -- app/src/main app/src/release app/build.gradle.kts
+          gh run download 36783808081 --repo sholi2157-dev/Salary-calculation --name android-distribution-test-evidence --dir "$RUNNER_TEMP/polish-debug-baseline"
+          gh run download 36784485302 --repo sholi2157-dev/Salary-calculation --name android-distribution-test-evidence --dir "$RUNNER_TEMP/polish-release-baseline"
+          python3 scripts/summarize-interface-polish-tests.py "$RUNNER_TEMP/polish-debug-baseline" "$RUNNER_TEMP/polish-release-baseline"
       - name: Verify release identity and local gates
         if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') }}
         run: |

@@ -24,7 +24,7 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [28], qualifiers = "w360dp-h800dp-xhdpi")
-class WorkInterfacePolishTest {
+class InterfacePolishTest {
     @get:Rule val ui = createComposeRule()
     @Test fun groupActionsAndPaymentReadable360() = checkActions()
     @Test @Config(qualifiers = "w390dp-h800dp-xhdpi")

@@ -75,3 +75,19 @@ The bundled RC9 Heebo font was inspected from the real APK: all digits already
 have equal advance1151. No typeface change is needed; reserved width/LTR amount
 presentation are the substantive live-number layout refinements. The `tnum`
 feature request is harmless on this font (which has no separate tnum GSUB feature).
+
+The first focused continuation run36784485302 / source71145bd28f4ac2ab8a31b816ed89550ce3d68f3a
+passed all60 existing Release tests and compiled unsigned Release/instrumentation.
+The new UI tests were unintentionally included in the Work* Release selector,
+whose manifest does not register the Compose test host ComponentActivity; both
+failed before rendering. Rename the UI test to InterfacePolishTest, keep it in the
+explicit Debug selection alongside the existing rendered tests, and do not change
+the production manifest/dependencies to accommodate a test host. Gradle scheduled
+Release tests before Debug, so the corrected focused Debug test has not yet run.
+
+Continuation checks prove production/release source equality against the initial
+UI source, download the immutable prior reports and explicitly retain only70
+passed Debug /60 passed Release tests. The two known failed test-harness records
+in each baseline are excluded and disclosed, never counted as passes. The fresh
+focused Debug results must pass2/2 before signing/update continues. This avoids
+rerunning unchanged suites. See scripts/summarize-interface-polish-tests.py.
