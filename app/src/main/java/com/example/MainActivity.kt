@@ -413,11 +413,6 @@ fun MainAppContent(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchDialogOpen by remember { mutableStateOf(false) }
     var isContentScrolling by remember { mutableStateOf(false) }
-    val bottomNavVisibility by animateFloatAsState(
-        targetValue = if (isContentScrolling) 0f else 1f,
-        animationSpec = tween(durationMillis = 160),
-        label = "bottomNavVisibility"
-    )
     LaunchedEffect(selectedTab) {
         isContentScrolling = false
     }
@@ -546,22 +541,22 @@ fun MainAppContent(
                 }
             },
             bottomBar = {
-                Box(modifier = Modifier.graphicsLayer { alpha = focusAlpha }) {
+                AnimatedVisibility(
+                    visible = !isContentScrolling,
+                    enter = expandVertically(expandFrom = Alignment.Bottom, animationSpec = tween(140)) + fadeIn(tween(120)),
+                    exit = shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = tween(140)) + fadeOut(tween(100))
+                ) {
                     NavigationBar(
                         containerColor = Color.Transparent,
                         tonalElevation = 0.dp,
                         modifier = Modifier
                             .heightIn(min = 58.dp)
                             .testTag("bottom_navigation")
-                            .graphicsLayer {
-                                alpha = bottomNavVisibility
-                                translationY = (1f - bottomNavVisibility) * 52.dp.toPx()
-                            },
+                            .graphicsLayer { alpha = focusAlpha },
                         windowInsets = WindowInsets.navigationBars
                     ) {
                         NavigationBarItem(
                             selected = selectedTab == 0,
-                            enabled = !isContentScrolling,
                             onClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 navigateToTab(0)
@@ -573,15 +568,12 @@ fun MainAppContent(
                                 unselectedIconColor = Color(0xFF8E8E93),
                                 selectedTextColor = Color(0xFF6366F1),
                                 unselectedTextColor = Color(0xFF8E8E93),
-                                indicatorColor = com.example.ui.theme.FormSurface,
-                                disabledIconColor = Color.Transparent,
-                                disabledTextColor = Color.Transparent
+                                indicatorColor = com.example.ui.theme.FormSurface
                             ),
                             modifier = Modifier.testTag("tab_0").pressScale()
                         )
                         NavigationBarItem(
                             selected = selectedTab == 1,
-                            enabled = !isContentScrolling,
                             onClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 navigateToTab(1)
@@ -593,9 +585,7 @@ fun MainAppContent(
                                 unselectedIconColor = Color(0xFF8E8E93),
                                 selectedTextColor = Color(0xFF6366F1),
                                 unselectedTextColor = Color(0xFF8E8E93),
-                                indicatorColor = com.example.ui.theme.FormSurface,
-                                disabledIconColor = Color.Transparent,
-                                disabledTextColor = Color.Transparent
+                                indicatorColor = com.example.ui.theme.FormSurface
                             ),
                             modifier = Modifier.testTag("tab_1").pressScale()
                         )
@@ -1193,18 +1183,17 @@ fun DashboardScreen(
         }
     }
 
-    var liveControlHeight by remember { mutableIntStateOf(0) }
-    val liveControlPadding = with(androidx.compose.ui.platform.LocalDensity.current) { liveControlHeight.toDp() } + 24.dp
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = liveControlPadding)
-                .verticalScroll(scrollState)
-                .testTag("dashboard_scroll_container")
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .testTag("dashboard_scroll_container")
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
 
             WorkSummaryCarousel(recentEntries, defaultCurr)
             if (activeShiftStartTime != null) {
@@ -2451,13 +2440,12 @@ fun DashboardScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .align(Alignment.BottomStart)
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-            .onSizeChanged { liveControlHeight = it.height }
-    ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
         val isRunning = activeShiftStartTime != null
         var showStopConfirmationDialog by remember { mutableStateOf(false) }
 
@@ -2523,6 +2511,7 @@ fun DashboardScreen(
                 },
                 containerColor = com.example.ui.theme.FormSurface
             )
+        }
         }
     }
 
@@ -3558,7 +3547,7 @@ fun ShiftsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f),
-                contentPadding = PaddingValues(bottom = 96.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (!isMultiSelectMode) {
