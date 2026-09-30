@@ -52,6 +52,15 @@ class DistributionUiTest {
         ui.onNodeWithText("הגדרת משמרת פעילה").assertDoesNotExist()
         ui.onNodeWithText("התחל משמרת פעילה").assertExists()
         ui.onNodeWithText("דיווח חדש").performScrollTo().performClick()
+        // Regression for the physical-phone failure where the IME + collapsing bottom
+        // controls made the Save action jump or become unreachable while scrolling.
+        ui.onNodeWithTag("notes_input").performScrollTo().performClick().performTextReplacement("בדיקת מקלדת")
+        ui.onNodeWithTag("dashboard_scroll_container").performTouchInput { swipeUp() }
+        ui.waitForIdle()
+        ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithTag("notes_input").performScrollTo().performClick().performImeAction()
+        ui.waitForIdle()
+        ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
         for (mode in listOf("שעון", "ידני")) {
             ui.onNodeWithText(mode, useUnmergedTree = true).performScrollTo().performClick()
             ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
