@@ -4,7 +4,7 @@
 Before changing anything in this repository:
 1. Read this file.
 2. Read `docs/current-state.md`.
-3. Read the scope document named there for the active track.
+3. Read the active task/scope document named there.
 4. Inspect the actual branch, HEAD, working tree, recent commits and relevant CI. Do not repeat work that is already complete.
 
 Current user instructions always override older historical notes.
@@ -34,8 +34,8 @@ Rules:
 - Never commit, upload, print or expose keystores, private keys, passwords or encoded signing material.
 - Reuse the existing owner-controlled permanent signing identity through the configured GitHub Actions secrets.
 - Every delivered update must have a versionCode greater than every previously delivered build.
-- Verify package, versionCode/versionName, certificate fingerprint and APK SHA-256 on every release candidate.
-- Never claim update compatibility from a successful build alone; exercise a real signed A→B/update gate.
+- Verify package, versionCode/versionName, certificate fingerprint and APK SHA-256 on every delivered release candidate.
+- Never claim update compatibility from a successful build alone; for a delivered RC, exercise the real signed update gate from the previous delivered RC.
 
 ## User data safety
 Preserve all existing user data and behavior.
@@ -59,14 +59,42 @@ Important durable rules include:
 - AI uses the user's own provider key only; never embed owner credentials.
 - Android local distribution remains usable without accounts, Firebase or cloud sync.
 
+## Code quality
+When working in an Android area, inspect the relevant touched code for:
+- duplicated logic/state/layout code,
+- obsolete workarounds left from earlier fixes,
+- dead/unreachable code,
+- brittle hard-coded layout values,
+- inconsistent naming or helpers,
+- unnecessary complexity that makes the touched flow harder to maintain.
+
+Clean these only when the cleanup is low-risk and directly related to the files/flow being changed.
+Do not turn a focused task into a repository-wide rewrite, architecture migration or speculative refactor.
+If unrelated technical debt is found, note it rather than changing it.
+
+## Testing discipline — quality, not test volume
+Do not perform broad repeated audits or run large test suites after every small edit.
+
+Use this order:
+1. Before editing, inspect existing coverage and prior CI so completed checks are not repeated without reason.
+2. During implementation, run the smallest targeted checks needed for the changed area.
+3. Add a new automated test only when it protects a new behavior, a reproduced bug, or a release-critical invariant that is not already covered. Do not add duplicate tests just to increase test count.
+4. After all changes for a release candidate are complete, run one consolidated set of relevant Android regression/release gates.
+5. For a delivered signed RC, include the real previous-RC → new-RC update/data-preservation gate and inspect crash output.
+6. Do not try to replace the owner's physical-phone review with endless emulator permutations.
+
+Avoid redundant reruns when neither code nor relevant environment changed.
+If a check already passed on the exact commit, use that evidence instead of rerunning it.
+The goal is strong evidence with the minimum useful set of tests, not maximum test quantity.
+
 ## How to work
 For each task:
 1. Confirm the requested scope and completion condition.
 2. Inspect the current implementation and existing tests before editing.
-3. Prefer the smallest change that fixes the root cause.
+3. Prefer the smallest coherent change that fixes the root cause.
 4. Keep unrelated good fixes intact.
 5. Use an isolated Codex task/worktree when practical.
-6. Run the relevant unit, build, instrumentation/update and regression gates.
+6. Follow the testing discipline above.
 7. Inspect actual CI logs/results; do not infer success from a push.
 8. If a physical-device check is still required, say so clearly.
 
@@ -77,7 +105,7 @@ At the end of a completed task:
 - Commit and push the finished work to the intended branch.
 - Update `docs/current-state.md` when the project state actually changes.
 - Update the relevant evidence/scope document with verified facts only.
-- Report the exact commit SHA, tests run, CI result, build identity, artifact/release location and any remaining manual gate.
+- Report the exact commit SHA, tests run, CI result, build identity, artifact location and any remaining manual gate.
 - Do not leave important finished work only in an uncommitted Codex workspace.
 
 ## Distribution
@@ -87,9 +115,10 @@ For friend/public distribution, use the repository's stable GitHub Release/updat
 
 ## Current sequencing
 The intended sequence is:
-1. Finish and physically approve the Android app.
-2. Resolve any final Android-only issues.
-3. Promote the approved build to the stable 1.5 release using the existing permanent identity and release/update mechanism.
-4. Create the launch/demo video.
-5. Distribute the app link together with the video.
-6. Only then resume website work on its separate branch.
+1. Complete the final Android UI/UX + targeted code-quality task.
+2. Deliver a new signed RC over RC8 and let the owner test it physically.
+3. Resolve only any issues found in that physical review.
+4. Promote the explicitly approved build to stable 1.5 using the existing permanent identity and release/update mechanism.
+5. Create the launch/demo video.
+6. Distribute the app link together with the video.
+7. Only then resume website work on its separate branch.
