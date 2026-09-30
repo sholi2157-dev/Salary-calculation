@@ -3113,7 +3113,7 @@ fun ShiftsScreen(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun WorkEntryRowCard(
     entry: WorkEntry,
