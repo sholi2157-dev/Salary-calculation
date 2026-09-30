@@ -55,10 +55,13 @@ class DistributionUiTest {
         // Regression for the physical-phone failure where the IME + collapsing bottom
         // controls made the Save action jump or become unreachable while scrolling.
         ui.onNodeWithTag("notes_input").performScrollTo().performClick().performTextReplacement("בדיקת מקלדת")
+        ui.waitForIdle()
+        ui.onNodeWithTag("notes_input").assertIsFocused()
         ui.onNodeWithTag("dashboard_scroll_container").performTouchInput { swipeUp() }
         ui.waitForIdle()
+        ui.onNodeWithTag("notes_input").assertIsFocused()
         ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
-        ui.onNodeWithTag("notes_input").performScrollTo().performClick().performImeAction()
+        ui.onNodeWithTag("notes_input").performScrollTo().performImeAction()
         ui.waitForIdle()
         ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsDisplayed()
         for (mode in listOf("שעון", "ידני")) {
