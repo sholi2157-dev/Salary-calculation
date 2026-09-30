@@ -3,7 +3,6 @@ package com.example
 import android.view.WindowInsets
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.lifecycle.Lifecycle
 import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.data.WorkDatabase
@@ -96,8 +95,14 @@ class ReportKeyboardTest {
         focus("notes_input")
         ui.onNodeWithTag("notes_input").performTextReplacement("RC8 one real save")
         // Send the Activity to background and resume without recreating the form.
-        ui.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
-        ui.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        fun shell(command: String) {
+            automation.executeShellCommand(command).use { descriptor ->
+                android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { it.readBytes() }
+            }
+        }
+        shell("am start -W -a android.settings.SETTINGS")
+        shell("input keyevent KEYCODE_BACK")
         ui.waitForIdle()
         ui.onNodeWithTag("notes_input").assertTextContains("RC8 one real save")
         focus("notes_input")
@@ -119,7 +124,18 @@ class ReportKeyboardTest {
         ui.onNodeWithTag("save_shift_button").assertDoesNotExist()
         ui.onNodeWithTag("tab_1").performClick()
         ui.onNodeWithTag("bottom_navigation").assertIsDisplayed()
-        ui.onNodeWithTag("history_scroll_container").performTouchInput { swipeUp() }
+        val list = ui.onNodeWithTag("history_scroll_container")
+        val restingBottom = list.fetchSemanticsNode().boundsInRoot.bottom
+        // Keep a real drag in progress while observing the collapsed footer.
+        list.performTouchInput {
+            down(center)
+            moveTo(androidx.compose.ui.geometry.Offset(center.x, center.y - 120f), 300)
+        }
+        ui.waitForIdle()
+        ui.onNodeWithTag("bottom_navigation").assertDoesNotExist()
+        assertTrue("History must reclaim footer space during scrolling",
+            list.fetchSemanticsNode().boundsInRoot.bottom > restingBottom)
+        list.performTouchInput { up() }
         ui.waitForIdle()
         ui.onNodeWithTag("bottom_navigation").assertIsDisplayed()
         ui.onNodeWithTag("tab_0").performClick()

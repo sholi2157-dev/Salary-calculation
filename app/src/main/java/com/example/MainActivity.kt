@@ -2565,8 +2565,6 @@ fun DashboardScreen(
         }
     }
 
-    }
-
     var dialogCategory by remember(defaultCategory) { mutableStateOf(defaultCategory) }
     val dialogDefaultRate = categories.firstOrNull { it.name == dialogCategory }?.defaultRate ?: 40.0
     var dialogRateStr by remember(dialogCategory, dialogDefaultRate, showQuickShiftDialog) {
