@@ -413,6 +413,7 @@ fun MainAppContent(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchDialogOpen by remember { mutableStateOf(false) }
     var isContentScrolling by remember { mutableStateOf(false) }
+    val isImeVisible = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
     LaunchedEffect(selectedTab) {
         isContentScrolling = false
     }
@@ -542,7 +543,10 @@ fun MainAppContent(
             },
             bottomBar = {
                 AnimatedVisibility(
-                    visible = !isContentScrolling,
+                    // On history the bar collapses while scrolling so the list can reclaim its space.
+                    // On the dashboard keep it stable while scrolling: collapsing it there makes the
+                    // report form jump under the user's finger. The IME gets the space instead.
+                    visible = !isImeVisible && (selectedTab == 0 || !isContentScrolling),
                     enter = expandVertically(expandFrom = Alignment.Bottom, animationSpec = tween(140)) + fadeIn(tween(120)),
                     exit = shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = tween(140)) + fadeOut(tween(100))
                 ) {
@@ -964,6 +968,9 @@ fun DashboardScreen(
 ) {
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val isImeVisible = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
 
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 3 })
     val runCountAnimationTrigger = viewModel.runCountAnimationTrigger.value
@@ -1010,6 +1017,12 @@ fun DashboardScreen(
     val dashboardIsScrolling = scrollState.isScrollInProgress
     LaunchedEffect(dashboardIsScrolling, selectedTab) {
         if (selectedTab == 0) onScrollStateChanged(dashboardIsScrolling)
+        // A drag on the report form means the user is trying to reach another field/action.
+        // Dismiss the IME immediately so it cannot trap the lower fields or Save action.
+        if (selectedTab == 0 && dashboardIsScrolling && isImeVisible) {
+            keyboardController?.hide()
+            focusManager.clearFocus(force = true)
+        }
     }
     val scope = rememberCoroutineScope()
     var showQuickShiftDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
@@ -2138,8 +2151,13 @@ fun DashboardScreen(
                             onValueChange = { notesText = it },
                             placeholder = { Text("מה עשית במשמרת?", color = Color(0xFF64748B)) },
                             singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = {
+                                keyboardController?.hide()
+                                focusManager.clearFocus(force = true)
+                            }),
                             shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().testTag("notes_input"),
                             colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                 focusedBorderColor = Color(0xFF5C6BC0),
                                 unfocusedBorderColor = Color(0xFF3F3F46),
@@ -2281,6 +2299,8 @@ fun DashboardScreen(
                     // 9. Full width navy-blue "שמור" button
                     Button(
                         onClick = {
+                            keyboardController?.hide()
+                            focusManager.clearFocus(force = true)
                             val testHours = if (isManualMode) manualHoursStr.toDoubleOrNull() ?: 0.0 else 1.0
                             val testRate = hourlyRateStr.toDoubleOrNull() ?: 0.0
 
@@ -2443,7 +2463,10 @@ fun DashboardScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
+                    .then(
+                        if (isImeVisible) Modifier.height(0.dp)
+                        else Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp)
+                    ),
                 contentAlignment = Alignment.CenterStart
             ) {
         val isRunning = activeShiftStartTime != null
