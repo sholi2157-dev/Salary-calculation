@@ -1,24 +1,95 @@
-# Salary-calculation maintenance rules
+# Salary-calculation — agent rules
 
-## Android local distribution track (2026-09-28)
+## Source of truth
+Before changing anything in this repository:
+1. Read this file.
+2. Read `docs/current-state.md`.
+3. Read the scope document named there for the active track.
+4. Inspect the actual branch, HEAD, working tree, recent commits and relevant CI. Do not repeat work that is already complete.
 
-Current user authorization: work on `codex/android-local-distribution`; do not modify the ongoing website/sync branch or PR #1. Read `docs/android-local-distribution.md`. Build a local-only permanent `.distribution` Release alongside the unchanged `.preview` identity. External owner-controlled permanent signing via Actions secrets is authorized; never commit/upload signing material as source or artifacts or ask for it in chat. Public distribution and merging are NOT authorized. Run required existing tests plus release tests and real A→B gate; report signing blockers honestly. No website browser/Firebase detour is required for this Android-only work. Historical instructions below apply where consistent with this scope.
+Current user instructions always override older historical notes.
 
+## Active priority
+Until the user explicitly says otherwise, finish the Android app first.
 
-- Read `docs/preservation-and-sync.md` before changing this repository. Current user instructions override older historical notes there.
-- Work on `codex/preserve-app-sync` and PR #1. Preserve the existing Vercel project and production branch.
-- Preserve all user data and existing behavior. The user's reported backup contains 22 shifts and 8 categories. Never reset storage, replace a database, discard records, or recommend uninstalling as a shortcut. Use synthetic records for tests; do not modify the user's live records.
-- Never commit or upload secrets, credentials, keystores, signing keys, or encoded signing material. Use standard Android Gradle Plugin debug signing for debug/preview; no root debug.keystore dependency. Do not claim this solves existing-device signature mismatches.
-- Run `npm test`, `npm run build`, and `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`. If local Android dependencies are inaccessible, execute that command in GitHub Actions and inspect the actual result/logs.
-- Check GitHub Actions and the Vercel preview for the pushed code before finishing. If the preview is available, verify the site in the browser with synthetic data. Fix failures and rerun the relevant checks. Never infer success from a push alone.
-- Update `docs/preservation-and-sync.md` with the tested commit SHA and verified CI/Vercel results only after the required tests pass. Report blocked checks honestly rather than marking them passed.
-- Firebase and cloud sync are NOT verified. Do not present them as active until end-to-end tests cover user permissions, separate accounts, edits, deletion, offline/reconnect and conflict handling.
-- Use a single Gemini 3.5 Flash model and a user-supplied personal API key only. Never embed owner credentials in any build, including debug/preview. Never fall back to a server/owner key. Android stores personal keys encrypted in noBackupFilesDir with Android Keystore; web AI is temporarily omitted until protected persistent account credentials are verified. Keys never enter shift backups, logs or account sync. Requests go directly to Google. Separate quotas require keys belonging to separate provider projects. Changing the model requires explicit user intent.
+Active Android branch:
+`codex/android-local-distribution`
 
-- Current design requirement: web must follow Android source theme/layout/components and navigation, not a generic dashboard. No claim of pixel parity without original-reference comparison. Keep Android main/history horizontal swipe and tab clicks, preserving nested summary carousel.
-- Current AI scope: temporarily omit web AI completely, as user authorized, until a verified protected account credential vault exists. Android optional first-use/first-sign-in setup with info icon and skip; settings add/replace/remove. Persist encrypted keys per local account UID (guest legacy slot stays separate); do not claim cross-device account sync.
-- Repeated APK installation failure is a release blocker: publish public certificate/package/version diagnostics, never suggest another blind update or uninstall, and never upload private signing material.
+Paused website/sync branch:
+`codex/preserve-app-sync` / PR #1
 
-- Website scope: omit AI and active/background shift timers, their start/stop controls and notification settings. These remain Android-only by user request. Preserve completed shifts and do not erase legacy timer storage while removing the feature. Keep manual clock-range entry and the daily summary.
+While Android finalization is active:
+- Android only.
+- Do not modify the website, Vercel, Firebase, accounts, authentication or cloud sync.
+- Do not mix commits from the website/sync branch into the Android release track.
+- Do not merge branches or publish a public release unless the user explicitly authorizes that step.
 
-- Delivery target clarified by the user on 2026-09-20: preserve the original AI Studio app and update ONLY the separate trial app, package `com.aistudio.worktracker.qztvdw.preview`, label `שכר עבודות אישי — ניסיון`. Deliver the connected preview artifact, never the original-package debug artifact as a trial update. The genuine preview Firebase client is now provided. Runner debug certificates still vary: do not promise in-place update compatibility.
+## Android release identity — never break
+Permanent distribution package:
+`com.aistudio.worktracker.qztvdw.distribution`
+
+Rules:
+- Never change the package/application ID for the distributed app.
+- Never generate or substitute a new signing identity.
+- Never commit, upload, print or expose keystores, private keys, passwords or encoded signing material.
+- Reuse the existing owner-controlled permanent signing identity through the configured GitHub Actions secrets.
+- Every delivered update must have a versionCode greater than every previously delivered build.
+- Verify package, versionCode/versionName, certificate fingerprint and APK SHA-256 on every release candidate.
+- Never claim update compatibility from a successful build alone; exercise a real signed A→B/update gate.
+
+## User data safety
+Preserve all existing user data and behavior.
+- Never uninstall, clear app data, reset storage or use destructive migration as a shortcut.
+- Never recommend uninstalling to solve an update/install problem.
+- Use synthetic data in automated tests; never modify the user's live records.
+- Preserve historical shifts, stored amounts, currencies, categories, worker/group data, payment state, preferences and migration identities.
+- Category deletion must not delete historical shifts; affected shifts move to the configured default category while stored financial data remains unchanged.
+- Do not silently recalculate historical stored amounts when metadata such as category name/rate/default changes.
+
+## Product behavior to preserve
+The detailed product contract lives in `docs/preservation-and-sync.md`.
+Important durable rules include:
+- RTL-first Android UI with Heebo.
+- Main/history navigation behavior must remain intact.
+- Currency is stored per shift; ILS and USD totals stay separated.
+- Configurable default category; `עצמאי` is not mandatory.
+- Search has separate clear and close actions.
+- Long-press multi-select and Android Share Sheet behavior remain native.
+- Drafts must survive expected UI transitions.
+- AI uses the user's own provider key only; never embed owner credentials.
+- Android local distribution remains usable without accounts, Firebase or cloud sync.
+
+## How to work
+For each task:
+1. Confirm the requested scope and completion condition.
+2. Inspect the current implementation and existing tests before editing.
+3. Prefer the smallest change that fixes the root cause.
+4. Keep unrelated good fixes intact.
+5. Use an isolated Codex task/worktree when practical.
+6. Run the relevant unit, build, instrumentation/update and regression gates.
+7. Inspect actual CI logs/results; do not infer success from a push.
+8. If a physical-device check is still required, say so clearly.
+
+For long or risky work, create/update an execution plan before implementation. Keep plans task-specific rather than bloating this file.
+
+## Delivery and documentation
+At the end of a completed task:
+- Commit and push the finished work to the intended branch.
+- Update `docs/current-state.md` when the project state actually changes.
+- Update the relevant evidence/scope document with verified facts only.
+- Report the exact commit SHA, tests run, CI result, build identity, artifact/release location and any remaining manual gate.
+- Do not leave important finished work only in an uncommitted Codex workspace.
+
+## Distribution
+For owner testing, deliver only a verified signed APK from the permanent distribution identity.
+
+For friend/public distribution, use the repository's stable GitHub Release/update path rather than a temporary Codex workspace artifact. Preserve the same package/signing identity so future APKs install as updates. The Android installer remains user-controlled; no silent installation.
+
+## Current sequencing
+The intended sequence is:
+1. Finish and physically approve the Android app.
+2. Resolve any final Android-only issues.
+3. Promote the approved build to the stable 1.5 release using the existing permanent identity and release/update mechanism.
+4. Create the launch/demo video.
+5. Distribute the app link together with the video.
+6. Only then resume website work on its separate branch.
