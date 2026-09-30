@@ -1017,12 +1017,9 @@ fun DashboardScreen(
     var isReportCardExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
-    LaunchedEffect(scrollState, selectedTab) {
-        if (selectedTab == 0) {
-            snapshotFlow { scrollState.isScrollInProgress }.collect { scrolling ->
-                onScrollStateChanged(scrolling)
-            }
-        }
+    val dashboardIsScrolling = scrollState.isScrollInProgress
+    LaunchedEffect(dashboardIsScrolling, selectedTab) {
+        if (selectedTab == 0) onScrollStateChanged(dashboardIsScrolling)
     }
     val scope = rememberCoroutineScope()
     var showQuickShiftDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
@@ -3062,13 +3059,9 @@ fun ShiftsScreen(
     var showSortDropdown by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
-
-    LaunchedEffect(lazyListState, isVisible) {
-        if (isVisible) {
-            snapshotFlow { lazyListState.isScrollInProgress }.collect { scrolling ->
-                onScrollStateChanged(scrolling)
-            }
-        }
+    val historyIsScrolling = lazyListState.isScrollInProgress
+    LaunchedEffect(historyIsScrolling, isVisible) {
+        if (isVisible) onScrollStateChanged(historyIsScrolling)
     }
 
     LaunchedEffect(sortOption) {
