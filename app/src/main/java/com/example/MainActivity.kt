@@ -2438,7 +2438,6 @@ fun DashboardScreen(
                 }
             }
         }
-    }
 
             Box(
                 modifier = Modifier
