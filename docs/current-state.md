@@ -9,16 +9,13 @@ Current active track: Android local distribution only.
 
 Branch: `codex/android-local-distribution`
 
-Current branch HEAD before this documentation update:
-`f3d248233d89eb924b690ad9048c5ad4befa4467`
-
 The website/sync work is intentionally paused on:
 `codex/preserve-app-sync` / PR #1
 
 Do not resume or modify website, Firebase, accounts or cloud sync until the user explicitly switches the project back to that phase.
 
-## Latest Android candidate
-Latest verified candidate:
+## Latest verified Android baseline
+Latest delivered/verified baseline:
 - Version: `1.5-rc8`
 - versionCode: `16`
 - Package: `com.aistudio.worktracker.qztvdw.distribution`
@@ -27,75 +24,62 @@ Latest verified candidate:
 - APK SHA-256: `f0fccf4325203502543f7143eb7f773854c2959d24b16c4f466d203e3b57d7a7`
 - Permanent certificate SHA-256: `ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220`
 
-Latest distribution workflow:
+Latest RC8 distribution workflow:
 - Run: `36666569653`
 - Result: SUCCESS
 - Artifact ID: `11075559765`
 
-Verified gates on RC8 include:
-- Debug unit tests: 60/60
-- Release unit tests: 60/60
-- Preview/release/release-instrumentation compilation
-- Signed RC7 code14 → RC8 code16 in-place update on API 35
-- Exact synthetic data snapshot preservation before/after update
-- Edit/export after update
-- Package and permanent certificate continuity
-- Keyboard/focus/scroll/save regression coverage
-- Duplicate-tap save protection
-- Main/history navigation and history reclaim behavior
-- Live-shift start/cancel-stop coverage
-- Empty crash log
+Verified RC8 evidence includes Debug 60/60, Release 60/60, signed RC7→RC8 update/data-preservation, keyboard/focus/save coverage, duplicate-save protection, navigation/history behavior and empty crash log.
 
-See `docs/android-rc8-layout.md` for the detailed evidence.
+See `docs/android-rc8-layout.md` for detail.
 
-## Immediate next gate
-RC8 still requires the owner's physical-phone review.
+## Immediate next task
+RC8 is the baseline, not the final physical-approval candidate.
 
-The physical review should focus on:
-- keyboard opening/closing
-- typing and focus while scrolling
-- Save visibility and one-tap save
-- bottom navigation/live-shift area
-- clock/manual/group report forms
-- main/history behavior
-- ordinary update/install behavior on the real phone
+Before stable release, perform the final focused Android UI/UX + targeted code-quality task defined in:
+`docs/android-final-uiux-task.md`
 
-Do not mark RC8 stable merely because CI passed.
+That task must:
+- use RC8/code16 as the baseline,
+- review the current attached screenshots/videos before visual changes,
+- improve only the requested Android areas,
+- include a targeted quality cleanup of the relevant touched Android code,
+- avoid repository-wide refactoring,
+- follow the lean testing discipline in `AGENTS.md`,
+- produce a new RC with versionCode >16,
+- use the same permanent signing identity,
+- verify an actual RC8 → new RC update without data loss,
+- stop after delivering the signed APK for owner physical review.
 
-If the owner reports a problem, fix only that Android issue, preserve all prior working behavior, increment versionCode, rerun the release/update gates, and deliver a new signed RC for physical review.
+Do not promote RC8 directly to stable.
 
-## After physical approval
-The user has already authorized the subsequent stable 1.5 promotion once the Android candidate is physically approved.
-
-That promotion must:
-- keep the same permanent package and certificate
-- use a new higher versionCode
-- rerun release/update gates
-- test the stable build over the physically approved RC binary
-- prepare the stable update metadata
-- publish through the existing GitHub Release/update path
-- verify the download/updater/Android installer round trip
-- produce a permanent link suitable for the owner and friends
-
-Do not perform the stable/public release before physical approval.
+## After the new RC is physically approved
+Only after the owner explicitly says the new RC is satisfactory:
+- promote the approved code to stable 1.5,
+- keep the same permanent package and certificate,
+- use a higher versionCode,
+- run the minimum required stable release/update gates,
+- publish through the existing GitHub Release/update path,
+- verify the download/updater/Android installer round trip,
+- produce a permanent link suitable for the owner and friends.
 
 ## Launch sequence
-After the Android stable release is ready:
-1. Create a short launch/demo video showing the main app flows and explaining why/how to use it.
+After stable release:
+1. Create the launch/demo video.
 2. Share the permanent app download link together with the video.
 3. Then return to the website project.
 
 ## Relevant documents
-Read these as needed:
-- `AGENTS.md` — durable operating rules
-- `docs/android-rc8-layout.md` — current RC8 implementation/evidence
+- `AGENTS.md` — durable operating rules and lean testing discipline
+- `docs/android-final-uiux-task.md` — active next implementation task
+- `docs/android-rc8-layout.md` — RC8 implementation/evidence
 - `docs/android-local-distribution.md` — signing, update and distribution architecture
 - `docs/android-signed-rc-evidence.md` — signed RC history/evidence
 - `docs/preservation-and-sync.md` — full historical product/data contract
 - `docs/website-android-handoff.md` — use only when website work resumes
 
 ## Codex handoff rule
-A new Codex task should not rely on chat memory. It should derive project context from the repository:
-`AGENTS.md` → `docs/current-state.md` → the active scope/evidence documents.
+A new Codex task should not rely on chat memory. It should derive project context from:
+`AGENTS.md` → `docs/current-state.md` → `docs/android-final-uiux-task.md` → relevant evidence docs.
 
-Before edits, always verify that those documents still match the actual branch HEAD and CI.
+Before edits, always verify that those documents still match the actual branch HEAD, current code and relevant CI.
