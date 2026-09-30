@@ -1,5 +1,88 @@
 # Signed local Android RC evidence
 
+## RC9 Stage B completed — 2026-09-30
+
+Owner-review candidate: `1.5-rc9`, versionCode `17`.
+Tested/signed source: `87c288cd3f18c44669a550a0d9b5a944dd5902e3`.
+Starting Stage A HEAD: `a83fa7e2cccac6278ac996f69ffd8a1137083c6d`, verified on
+`codex/android-local-distribution` with a clean tree and all Stage A commits present.
+No public releases existed and latest distributed code was 16; code17 was unused.
+
+Package remains `com.aistudio.worktracker.qztvdw.distribution`.
+APK SHA-256: `c63dd258bc328e25204498f593b9704399723e9166c5169839e5bc4e9d751734`.
+Certificate SHA-256: `ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220`.
+Permanent owner Actions signing only, RSA3072/v2 verified; no new key or secrets
+exposed. Downloaded APK hash and embedded DER certificate fingerprint independently
+recomputed locally and compared to RC8 and CI reports.
+
+### Consolidated validation and focused follow-up
+
+- Run `36778187395`, source `abe8b757886e0ef8d2ca28763e1c70df53a69987`:
+  Debug70/70 (Work* plus 10 existing Stage A/History tests), Release60/60 (Work*),
+  zero failures/errors/skips. Debug compilation, unsigned Release compilation,
+  release instrumentation compilation and local-only/package gates passed.
+  Unit evidence artifact `11126731854`. No website/JS tests were run.
+- That run's real RC8→RC9 install, four update fixture phases, exact JSON equality,
+  updater and DistributionUiTest passed. ReportKeyboardTest then failed because
+  the six-entry fixture could fit in compact History at 360dp: no real scrolling
+  meant navigation correctly remained visible. This was a test-fixture failure,
+  not an app failure. Twenty synthetic scroll fixtures are now added only after
+  update preservation assertions. The old changing-viewport assertion now matches
+  Stage A's stable viewport; active control assertions match its hidden form state.
+- Final run `36779054455`, job `110104223678`: SUCCESS. Focused existing UI tests
+  only (10/10) rerun with recording enabled because initial capture calls produced
+  no PNGs without the Roborazzi recording property. All 25 generated renders
+  visually inspected: Home, Clock/Manual/Group, AI recording/processing/error/review
+  at 360dp/390dp; History final item and toolbar/ILS/USD selection at both widths.
+  Visual/unit artifact `11127157426`. No repeat broad Debug/Release suite; app code
+  is identical to the consolidated-test source (only instrumentation/tooling changed).
+- Final signed Release and release test APK compiled. API35 emulator, 360dp,
+  actual IME, pointer saves/double taps, app Settings round trip, mode/draft
+  recreation, active-shift start/cancel, genuine History movement with stable
+  viewport, returned navigation, complete final card and long press passed.
+  DistributionUiTest and ReportKeyboardTest each OK(1 test).
+- Simulated platform IME/gesture insets at 360dp/390dp passed in StageAInsetsTest;
+  actual emulator uses its default three-button navigation. No claim of physical
+  gesture-navigation/keyboard animation or physical microphone verification.
+
+### Required real RC8 update and retained data
+
+Original RC8 artifact from run `36666569653`, artifact `11075559765`:
+version16, SHA-256 `f0fccf4325203502543f7143eb7f773854c2959d24b16c4f466d203e3b57d7a7`.
+Pinned hash validated before installation, with the same package/certificate.
+Real `adb install -r` RC9/code17 returned Success. No uninstall, clear/reset,
+destructive migration or owner's records used.
+
+Seed/restart/updater/verify phases each OK(1 test). Exact pre/post update snapshots
+match, SHA-256 `f8536bc306fb98c03a6c70c7fa638d8fc22d4c15494a5eb07396e5b9bf84f798`.
+Preserved three representative shifts (manual ILS, overnight USD, group USD),
+categories/rates, stored non-recalculated amounts, dates/hours/notes, paid/unpaid,
+worker directory/group rates/payment, local default category/currency/category
+currency preferences and pending journal identities. Re-import adds zero;
+post-update edit/export preserves historical amounts. ILS79.97/USD443.12 retained.
+In-memory form drafts were not claimed to survive package replacement/process death;
+expected mode-transition/activity-recreation draft behavior is covered separately.
+
+Offline starts before/after upgrade passed. Final crash-log.txt is empty (0 bytes):
+no unexpected crashes/fatal exceptions or install/update errors in the final run.
+
+Raw verified synthetic evidence: [release-evidence/rc9](release-evidence/rc9/).
+[Signed candidate/evidence artifact](https://github.com/sholi2157-dev/Salary-calculation/actions/runs/36779054455/artifacts/11126034909).
+Signed candidate also delivered as `Salary-Calculation-1.5-rc9-v17.apk`.
+No APK/private key is committed to Git. No UI implementation/redesign, financial,
+storage, share/backup, provider/key, timer, cloud/account or website change.
+No Stable release, feed update, friend distribution, merge or launch video.
+
+### Owner physical-phone gate
+
+Review actual OEM keyboard/gesture navigation, scrolling/focus/Save and all report
+modes; physical microphone, installed speech-recognition service, editable voice
+transcript and live parsing/review with the owner's own key. AI tests use simulated
+speech/provider states and a real missing-key error; no live owner-key call made.
+Physical installer confirmation and actual existing-user data review remain owner
+checks. Stop here; Stable promotion requires explicit approval of this RC.
+
+
 Owner confirmed permanent signing creation and two off-Codespaces backups on
 2026-09-28 America/New_York. No signing key was generated or changed by this run.
 

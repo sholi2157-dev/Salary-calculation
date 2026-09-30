@@ -14,24 +14,27 @@ The website/sync work is intentionally paused on:
 
 Do not resume or modify website, Firebase, accounts or cloud sync until the user explicitly switches the project back to that phase.
 
-## Latest verified Android baseline
-Latest delivered/verified baseline:
-- Version: `1.5-rc8`
-- versionCode: `16`
+## Latest verified Android owner-review candidate
+
+- Version: `1.5-rc9`, versionCode `17`
+- Tested/signed source: `87c288cd3f18c44669a550a0d9b5a944dd5902e3`
 - Package: `com.aistudio.worktracker.qztvdw.distribution`
-- Tested app source: `912acceca3ee9d62ae4ebd91596196950bcd33a6`
-- Evidence commit: `f3d248233d89eb924b690ad9048c5ad4befa4467`
-- APK SHA-256: `f0fccf4325203502543f7143eb7f773854c2959d24b16c4f466d203e3b57d7a7`
+- APK SHA-256: `c63dd258bc328e25204498f593b9704399723e9166c5169839e5bc4e9d751734`
 - Permanent certificate SHA-256: `ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220`
+- Final run `36779054455` / job `110104223678`: SUCCESS
+- Signed artifact `11126034909`; owner APK `Salary-Calculation-1.5-rc9-v17.apk`
 
-Latest RC8 distribution workflow:
-- Run: `36666569653`
-- Result: SUCCESS
-- Artifact ID: `11075559765`
+Consolidated Debug70/70, Release60/60, then focused rendering10/10; compilation,
+same permanent signer, actual RC8/code16→RC9/code17 update and exact synthetic
+state preservation, existing UI/real IME/save/duplicate-save/navigation tests passed.
+Crash log empty. Actual physical speech/live personal-key AI not exercised.
+Details, first test-fixture failure, exact gates/artifact links and limitations:
+`docs/android-signed-rc-evidence.md`, RC9 section.
 
-Verified RC8 evidence includes Debug 60/60, Release 60/60, signed RC7→RC8 update/data-preservation, keyboard/focus/save coverage, duplicate-save protection, navigation/history behavior and empty crash log.
-
-See `docs/android-rc8-layout.md` for detail.
+Previous delivered baseline was RC8/code16, source
+`912acceca3ee9d62ae4ebd91596196950bcd33a6`; its original artifact `11075559765`
+was used for the actual upgrade. Stage A implementation and its evidence below
+remain unchanged. RC9 awaits owner physical-phone review; no Stable promotion.
 
 ## Stage A History checkpoint — 2026-09-30
 
@@ -113,21 +116,17 @@ Both Stage A checkpoint messages use `[skip ci]`; no heavy release gate was run.
 Checkpoint A was verified to have no Actions runs. Checkpoint B is the commit
 containing this completion note (do not embed its own hash into its tree).
 
-## Stage B in progress — owner authorized 2026-09-30
+## Stage B complete — 2026-09-30
 
-Starting HEAD verified: `a83fa7e2cccac6278ac996f69ffd8a1137083c6d`, clean tree,
-all three Stage A checkpoints present. Latest Actions candidate remains RC8/code16;
-no public releases exist. RC9/code17 is the next unused candidate version.
+Owner authorized Stage B. Exact starting HEAD/clean tree and Stage A completion
+verified. Only distribution metadata, validation tooling/test fixtures and verified
+evidence changed. Stage A app/UI and all business/persistence semantics preserved.
 
-RC9 preparation changes only version metadata and release-validation tooling.
-The signing workflow now pins the actual RC8/code16 artifact and SHA-256, runs
-one consolidated Android unit/build pass with existing Stage A coverage, then the
-real permanently signed update/data/crash and existing UI/IME gates. Legacy RC8
-UI assertions are aligned with the completed Stage A structure. No UI redesign.
-
-Validation is pending. Do not treat RC9 as delivered until signed artifact,
-actual RC8 update/data preservation, crash logs and visual evidence are verified.
-Owner physical review remains required. No Stable release/feed or distribution.
+Signed RC9 is delivered for physical-phone review. All required release/update
+and synthetic-data gates passed; see the latest candidate section above and the
+RC9 signed evidence. Stop here: physical OEM keyboard/gesture/speech/live AI and
+actual owner installation/data review remain. No Stable/feed/friend distribution,
+website/account/cloud work or launch video started.
 
 ## After the new RC is physically approved
 Only after the owner explicitly says the new RC is satisfactory:
