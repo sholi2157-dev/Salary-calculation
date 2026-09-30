@@ -413,6 +413,8 @@ fun MainAppContent(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchDialogOpen by remember { mutableStateOf(false) }
     var isContentScrolling by remember { mutableStateOf(false) }
+    var historyNavigationHeight by remember { mutableStateOf(0.dp) }
+    val navigationDensity = androidx.compose.ui.platform.LocalDensity.current
     val isImeVisible = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
     LaunchedEffect(selectedTab) {
         isContentScrolling = false
@@ -589,17 +591,7 @@ fun MainAppContent(
                     )
                 }
             },
-            bottomBar = {
-                AnimatedVisibility(
-                    // History keeps its existing scroll-to-reclaim-space behaviour.
-                    // Dashboard owns its single Save/live/navigation footer.
-                    visible = selectedTab == 1 && !isImeVisible && !isContentScrolling,
-                    enter = expandVertically(expandFrom = Alignment.Bottom, animationSpec = tween(140)) + fadeIn(tween(120)),
-                    exit = shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = tween(140)) + fadeOut(tween(100))
-                ) {
-                    if (selectedTab == 1) bottomNavigation()
-                }
-            }
+            bottomBar = {}
         ) { padding ->
             Column(
                 modifier = Modifier
@@ -673,6 +665,7 @@ fun MainAppContent(
                             }
                             1 -> ShiftsScreen(
                                 isVisible = selectedTab == 1,
+                                navigationBottomInset = historyNavigationHeight,
                                 viewModel = viewModel,
                                 entries = entries,
                                 categories = distinctCategories,
@@ -692,6 +685,15 @@ fun MainAppContent(
                                 }
                             )
                         }
+                    }
+                    androidx.compose.animation.AnimatedVisibility(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        visible = selectedTab == 1 && !isImeVisible && !isContentScrolling,
+                        enter = fadeIn(tween(140)), exit = fadeOut(tween(140))
+                    ) {
+                        Box(Modifier.onSizeChanged { size ->
+                            if (size.height > 0) historyNavigationHeight = with(navigationDensity) { size.height.toDp() }
+                        }) { bottomNavigation() }
                     }
                 }
             }
@@ -1030,6 +1032,7 @@ fun DashboardScreen(
     }
     val scope = rememberCoroutineScope()
     var showQuickShiftDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var showStopConfirmationDialog by remember { mutableStateOf(false) }
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
 
     var isManualMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) } // false = שעון, true = ידני
@@ -1340,6 +1343,21 @@ fun DashboardScreen(
                 }
             }
 
+            if (!isReportCardExpanded && !showQuickShiftDialog && !isImeVisible) {
+                OutlinedButton(
+                    onClick = {
+                        triggerHapticFeedback(context, isDestructive = false)
+                        if (activeShiftStartTime != null) showStopConfirmationDialog = true else showQuickShiftDialog = true
+                    },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("live_shift_fab"),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(if (activeShiftStartTime != null) Icons.Outlined.Stop else Icons.Outlined.PlayArrow, null, tint = Color(0xFFC7D2FE))
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (activeShiftStartTime != null) "סיים משמרת פעילה" else "התחל משמרת פעילה", color = Color(0xFFF1F5F9))
+                }
+            }
+
         // Form Card Block: "+ דיווח חדש"
 
             // Category Addition dialog inside item
@@ -1413,8 +1431,8 @@ fun DashboardScreen(
                     .graphicsLayer { alpha = focusAlpha }
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Title Header Row
                     Row(
@@ -1458,7 +1476,7 @@ fun DashboardScreen(
                         exit = shrinkVertically()
                     ) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
 
                     // 1.5. Unified Mode Selector (שעון / ידני / קבוצה / AI)
@@ -1787,517 +1805,33 @@ fun DashboardScreen(
                         }
                     } else {
                         // 3. "תאריך" Box Selection
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                        Text(
-                            text = "תאריך",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF8E8E93),
-                            modifier = Modifier.align(Alignment.End)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        val sdfDate = remember { SimpleDateFormat("dd.MM.yyyy", Locale.US) }
-                        val dateStr = sdfDate.format(Date(selectedDateMillis))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
-                                .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                .clickable {
-                                    val cal = Calendar.getInstance().apply { timeInMillis = selectedDateMillis }
-                                    DatePickerDialog(
-                                        context,
-                                        { _, y, m, d ->
-                                            val newCal = Calendar.getInstance().apply {
-                                                set(Calendar.YEAR, y)
-                                                set(Calendar.MONTH, m)
-                                                set(Calendar.DAY_OF_MONTH, d)
-                                            }
-                                            selectedDateMillis = newCal.timeInMillis
-                                        },
-                                        cal.get(Calendar.YEAR),
-                                        cal.get(Calendar.MONTH),
-                                        cal.get(Calendar.DAY_OF_MONTH)
-                                    ).show()
-                                }
-                                .padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.ArrowDropDown,
-                                    contentDescription = null,
-                                    tint = Color(0xFF8E8E93)
-                                )
-                                Text(
-                                    text = dateStr,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color.White
-                                )
+                    CompactReportFields(
+                        ReportFieldValues(selectedDateMillis, isManualMode, isGroupShift, startTimeStr, endTimeStr,
+                            manualHoursStr, breakMinutesStr, hourlyRateStr, selectedCurrency, selectedCategory, notesText,
+                            showSeparateRates, employerRateStr, workerRateStr, showErrorHours, showErrorRate),
+                        categories = categories,
+                        onDate = { selectedDateMillis = it }, onStart = { startTimeStr = it }, onEnd = { endTimeStr = it },
+                        onHours = { value ->
+                            manualHoursStr = value
+                            if (isGroupShift) {
+                                val hours = value.toDoubleOrNull() ?: 0.0
+                                for (i in groupWorkers.indices) groupWorkers[i] = groupWorkers[i].copy(hours = hours)
+                                currentWorkerHours = value
                             }
-                        }
-                    }
-
-                    // 4. Entry/Exit Dropdown Selectors (Side-by-side)
-                    if (!isManualMode) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            // Left item: יציאה
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "יציאה",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF8E8E93),
-                                    modifier = Modifier.align(Alignment.End)
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
-                                        .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                        .clickable {
-                                            val t = endTimeStr.split(":")
-                                            val h = t.getOrNull(0)?.toIntOrNull() ?: 17
-                                            val m = t.getOrNull(1)?.toIntOrNull() ?: 0
-                                            TimePickerDialog(context, { _, hour, minute ->
-                                                endTimeStr = String.format(Locale.US, "%02d:%02d", hour, minute)
-                                            }, h, m, true).show()
-                                        }
-                                        .padding(horizontal = 12.dp),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
-                                        Text(endTimeStr, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White)
-                                    }
-                                }
-                            }
-
-                            // Right item: כניסה
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "כניסה",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF8E8E93),
-                                    modifier = Modifier.align(Alignment.End)
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
-                                        .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                        .clickable {
-                                            val t = startTimeStr.split(":")
-                                            val h = t.getOrNull(0)?.toIntOrNull() ?: 9
-                                            val m = t.getOrNull(1)?.toIntOrNull() ?: 0
-                                            TimePickerDialog(context, { _, hour, minute ->
-                                                startTimeStr = String.format(Locale.US, "%02d:%02d", hour, minute)
-                                            }, h, m, true).show()
-                                        }
-                                        .padding(horizontal = 12.dp),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
-                                        Text(startTimeStr, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White)
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // Manual hours input field if selected "ידני"
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                "שעות עבודה",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF8E8E93),
-                                modifier = Modifier.align(Alignment.End)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            val currentHoursDouble = manualHoursStr.toDoubleOrNull() ?: 0.0
-                            val hVal = currentHoursDouble.toInt()
-                            val mVal = Math.round((currentHoursDouble - hVal) * 60).toInt()
-                            val displayHoursText = if (manualHoursStr.isBlank()) {
-                                "לחץ לבחירת שעות עבודה..."
-                            } else {
-                                formatCleanHours(currentHoursDouble)
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
-                                    .border(1.dp, if (showErrorHours) Color.Red else Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        TimePickerDialog(context, { _, hour, minute ->
-                                            val calculatedHours = hour + (minute / 60.0)
-                                            manualHoursStr = String.format(Locale.US, "%.2f", calculatedHours)
-                                            if (isGroupShift) {
-                                                for (i in groupWorkers.indices) {
-                                                    groupWorkers[i] = groupWorkers[i].copy(hours = calculatedHours)
-                                                }
-                                                currentWorkerHours = String.format(Locale.US, "%.2f", calculatedHours)
-                                            }
-                                            showErrorHours = false
-                                        }, hVal, mVal, true).show()
-                                    }
-                                    .padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.AccessTime,
-                                        contentDescription = null,
-                                        tint = Color(0xFF5C6BC0)
-                                    )
-                                    Text(
-                                        text = displayHoursText,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = if (manualHoursStr.isBlank()) Color(0xFF64748B) else Color.White
-                                    )
-                                }
-                            }
-                            if (showErrorHours) {
-                                Text(
-                                    text = "נא להזין כמות שעות תקינה",
-                                    color = Color.Red,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.align(Alignment.End).padding(top = 2.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // 5. "הפסקה (דקות)" Standard Input Card
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            "הפסקה",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF8E8E93),
-                            modifier = Modifier.align(Alignment.End)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        val totalMinutes = breakMinutesStr.toIntOrNull() ?: 0
-                        val bHours = totalMinutes / 60
-                        val bMins = totalMinutes % 60
-                        val displayBreakText = if (breakMinutesStr.isBlank() || breakMinutesStr == "0") {
-                            "0 שעות"
-                        } else {
-                            formatCleanHours(totalMinutes / 60.0)
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
-                                .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                .clickable {
-                                    TimePickerDialog(context, { _, hour, minute ->
-                                        val totalMins = hour * 60 + minute
-                                        breakMinutesStr = totalMins.toString()
-                                    }, bHours, bMins, true).show()
-                                }
-                                .padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.AccessTime,
-                                    contentDescription = null,
-                                    tint = Color(0xFF5C6BC0)
-                                )
-                                Text(
-                                    text = displayBreakText,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color.White
-                                )
-                            }
-                        }
-                    }
-
-                    // 6. "תעריף שעתי" Input Card
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Micro-toggle chip adjacent to Hourly Rate input to switch between "₪" and "$"
-                            Row(
-                                modifier = Modifier
-                                    .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
-                                    .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                    .padding(2.dp),
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .background(
-                                            if (selectedCurrency == "₪") Color(0xFF5C6BC0) else Color.Transparent,
-                                            RoundedCornerShape(10.dp)
-                                        )
-                                        .clickable { selectedCurrency = "₪" }
-                                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("₪", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (selectedCurrency == "₪") Color.White else Color(0xFF8E8E93))
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .background(
-                                            if (selectedCurrency == "$") Color(0xFF5C6BC0) else Color.Transparent,
-                                            RoundedCornerShape(10.dp)
-                                        )
-                                        .clickable { selectedCurrency = "$" }
-                                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("$", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (selectedCurrency == "$") Color.White else Color(0xFF8E8E93))
-                                }
-                            }
-
-                            Text(
-                                "תעריף לשעה",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF8E8E93)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                                value = hourlyRateStr,
-                                onValueChange = { newValue ->
-                                    val filtered = newValue.filter { it.isDigit() || it == '.' }
-                                    val dotCount = filtered.count { it == '.' }
-                                    if (dotCount <= 1) {
-                                        hourlyRateStr = filtered
-                                        showErrorRate = filtered.isBlank()
-                                    }
-                                },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxWidth().testTag("add_rate_input"),
-                                isError = showErrorRate,
-                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                    focusedBorderColor = if (showErrorRate) Color.Red else Color(0xFF5C6BC0),
-                                    unfocusedBorderColor = if (showErrorRate) Color.Red else Color(0xFF3F3F46),
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                )
-                        )
-                        if (showErrorRate) {
-                            Text(
-                                text = "נא להזין תעריף תקין",
-                                color = Color.Red,
-                                fontSize = 10.sp,
-                                modifier = Modifier.align(Alignment.End).padding(top = 2.dp)
-                            )
-                        }
-
-                        if (isGroupShift) {
-                            Text(
-                                text = "+ הגדר תעריפים נפרדים לקבוצה",
-                                color = Color(0xFF8E8E93),
-                                fontSize = 12.sp,
-                                modifier = Modifier
-                                    .padding(top = 8.dp)
-                                    .align(Alignment.Start)
-                                    .clickable { showSeparateRates = !showSeparateRates }
-                            )
-
-                            AnimatedVisibility(visible = showSeparateRates) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = employerRateStr,
-                                        onValueChange = { employerRateStr = it },
-                                        label = { Text("תעריף מעסיק (לקבלן)", fontSize = 12.sp) },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface, focusedBorderColor = Color(0xFF5C6BC0), unfocusedBorderColor = Color(0xFF44444F), focusedTextColor = Color.White, unfocusedTextColor = Color.White)
-                                    )
-                                    OutlinedTextField(
-                                        value = workerRateStr,
-                                        onValueChange = { workerRateStr = it },
-                                        label = { Text("תעריף לעובד", fontSize = 12.sp) },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface, focusedBorderColor = Color(0xFF5C6BC0), unfocusedBorderColor = Color(0xFF44444F), focusedTextColor = Color.White, unfocusedTextColor = Color.White)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // 7. Employer ("מעסיק") Dropdown Selector inside custom container Card with integrated addition / delete
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "+ חדש",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF5C6BC0),
-                                modifier = Modifier
-                                    .clickable { showAddCategoryDialog = true }
-                                    .padding(vertical = 2.dp, horizontal = 4.dp)
-                            )
-                            Text(
-                                "מעסיק",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF8E8E93)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Delete current category button
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(Color(0xFF3A1C1C), shape = RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        val matched = categories.find { it.name == selectedCategory }
-                                        if (matched != null) {
-                                            categoryToDelete = matched
-                                        }
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Delete,
-                                    contentDescription = null,
-                                    tint = Color(0xFFEF4444),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
-                            // Dynamic dropdown box selector
-                            var expandedDropdown by remember { mutableStateOf(false) }
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
-                                    .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                    .clickable { expandedDropdown = true }
-                                    .padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
-                                    Text(
-                                        text = selectedCategory,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color.White
-                                    )
-                                }
-
-                                DropdownMenu(
-                                    expanded = expandedDropdown,
-                                    onDismissRequest = { expandedDropdown = false }
-                                ) {
-                                    categories.forEach { cat ->
-                                        DropdownMenuItem(
-                                            text = { Text(cat.name, fontSize = 14.sp) },
-                                            onClick = {
-                                                selectedCategory = cat.name
-                                                val matchedRate = cat.defaultRate
-                                                hourlyRateStr = matchedRate.toString()
-                                                expandedDropdown = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 8. "הערות" Description Field
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            "הערות",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF8E8E93),
-                            modifier = Modifier.align(Alignment.End)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = notesText,
-                            onValueChange = { notesText = it },
-                            placeholder = { Text("מה עשית במשמרת?", color = Color(0xFF64748B)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = {
-                                keyboardController?.hide()
-                                focusManager.clearFocus(force = true)
-                            }),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth().testTag("notes_input"),
-                            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                focusedBorderColor = Color(0xFF5C6BC0),
-                                unfocusedBorderColor = Color(0xFF3F3F46),
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedPlaceholderColor = Color(0xFF64748B),
-                                unfocusedPlaceholderColor = Color(0xFF64748B)
-                            )
-                        )
-                    }
+                            showErrorHours = false
+                        },
+                        onBreak = { breakMinutesStr = it },
+                        onRate = { value ->
+                            val filtered = value.filter { it.isDigit() || it == '.' }
+                            if (filtered.count { it == '.' } <= 1) { hourlyRateStr = filtered; showErrorRate = filtered.isBlank() }
+                        },
+                        onCurrency = { selectedCurrency = it },
+                        onCategory = { selectedCategory = it.name; hourlyRateStr = it.defaultRate.toString() },
+                        onNotes = { notesText = it }, onAddCategory = { showAddCategoryDialog = true },
+                        onDeleteCategory = { categories.firstOrNull { it.name == selectedCategory }?.let { categoryToDelete = it } },
+                        onSeparateRates = { showSeparateRates = !showSeparateRates },
+                        onEmployerRate = { employerRateStr = it }, onWorkerRate = { workerRateStr = it }
+                    )
 
                     // --- Group Shift Dynamic Inputs ---
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -2435,7 +1969,6 @@ fun DashboardScreen(
             }
 
             if (latestThreeShifts.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(24.dp))
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = Color(0x331E293B)
@@ -2483,60 +2016,7 @@ fun DashboardScreen(
                     saveReport()
                 }
             }
-            val isRunning = activeShiftStartTime != null
-            var showStopConfirmationDialog by remember { mutableStateOf(false) }
-            AnimatedVisibility(
-                visible = !isImeVisible,
-                enter = expandVertically(expandFrom = Alignment.Bottom, animationSpec = tween(140)) + fadeIn(tween(120)),
-                exit = shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = tween(140)) + fadeOut(tween(100))
-            ) {
-                Column {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-        androidx.compose.animation.AnimatedVisibility(
-            visible = !showQuickShiftDialog,
-            enter = scaleIn(initialScale = 0.8f) + fadeIn(),
-            exit = scaleOut(targetScale = 0.8f) + fadeOut()
-        ) {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    triggerHapticFeedback(context, isDestructive = false)
-                    if (isRunning) {
-                        showStopConfirmationDialog = true
-                    } else {
-                        showQuickShiftDialog = true
-                    }
-                },
-                containerColor = if (isRunning) Color(0xFF10B981) else Color(0xFF1E2235),
-                contentColor = if (isRunning) Color.White else Color(0xFFF1F5F9),
-                modifier = Modifier
-                    .testTag("live_shift_fab")
-                    .border(
-                        1.dp,
-                        if (isRunning) Color(0x6610B981) else Color(0x33818CF8),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-            ) {
-                Icon(
-                    imageVector = if (isRunning) Icons.Outlined.Stop else Icons.Outlined.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (isRunning) "סיים משמרת פעילה" else "התחל משמרת פעילה",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-                    }
-                    bottomNavigation()
-                }
-            }
+            if (!isImeVisible) bottomNavigation()
 
         if (showStopConfirmationDialog) {
             AlertDialog(
@@ -3078,6 +2558,7 @@ fun RecentShiftItemRow(
 @Composable
 fun ShiftsScreen(
     isVisible: Boolean = true,
+    navigationBottomInset: androidx.compose.ui.unit.Dp = 0.dp,
     viewModel: WorkViewModel,
     entries: List<WorkEntry>,
     categories: List<WorkCategory>,
@@ -3096,9 +2577,21 @@ fun ShiftsScreen(
     var categoryDropdownExpanded by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
-    val historyIsScrolling = lazyListState.isScrollInProgress
-    LaunchedEffect(historyIsScrolling, isVisible) {
-        if (isVisible) onScrollStateChanged(historyIsScrolling)
+    val historyDensity = androidx.compose.ui.platform.LocalDensity.current
+    var selectionActionsHeight by remember { mutableStateOf(0.dp) }
+    val scrollCallback by rememberUpdatedState(onScrollStateChanged)
+    LaunchedEffect(lazyListState, isVisible) {
+        if (!isVisible) return@LaunchedEffect
+        var previous = lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
+        var moved = false
+        snapshotFlow { Triple(lazyListState.firstVisibleItemIndex, lazyListState.firstVisibleItemScrollOffset, lazyListState.isScrollInProgress) }
+            .collect { (index, offset, scrolling) ->
+                val position = index to offset
+                if (!scrolling) moved = false
+                else if (position != previous) moved = true
+                scrollCallback(moved && scrolling && lazyListState.canScrollForward)
+                previous = position
+            }
     }
 
     LaunchedEffect(sortOption) {
@@ -3550,7 +3043,7 @@ fun ShiftsScreen(
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             if (isMultiSelectMode) {
-                FlowRow(
+                androidx.compose.foundation.layout.FlowRow(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalArrangement = Arrangement.Center
@@ -3598,7 +3091,7 @@ fun ShiftsScreen(
                     .fillMaxSize()
                     .testTag("history_scroll_container")
                     .weight(1f),
-                contentPadding = PaddingValues(bottom = 16.dp),
+                contentPadding = PaddingValues(bottom = (if (isMultiSelectMode) maxOf(navigationBottomInset, selectionActionsHeight) else navigationBottomInset) + 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (!isMultiSelectMode) {
@@ -3723,6 +3216,8 @@ fun ShiftsScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .onSizeChanged { selectionActionsHeight = with(historyDensity) { it.height.toDp() } }
+                    .padding(bottom = navigationBottomInset)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 shape = RoundedCornerShape(20.dp),
                 color = Color(0xCC1E293B),
@@ -3851,7 +3346,7 @@ fun ShiftsScreen(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
+                .padding(bottom = navigationBottomInset + 16.dp)
         ) { data ->
             Snackbar(
                 snackbarData = data,

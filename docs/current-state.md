@@ -65,6 +65,26 @@ build/signing workflow for this small UI chunk.
 Do not redo these two changes in the next chunk. The other Stage A sections remain
 open. Physical-device approval remains part of the later consolidated RC review.
 
+## Stage A checkpoint A — 2026-09-30
+
+Home live-shift action now scrolls with the content and is hidden while the report
+is expanded. Save retains its own measured space below the scroll viewport.
+Clock date/start/end share one row; break/rate/currency share another. Manual and
+group reuse the compact fields without empty clock placeholders. Notes remain
+full width and group worker handling/calculations remain unchanged.
+
+History navigation observes actual list position changes, remains visible on top
+overscroll and returns at rest/end. Its measured height reserves list space without
+resizing the viewport; selection actions also reserve their measured space.
+The previous History toolbar and stored multi-select amounts are preserved.
+
+Verification: `:app:testDebugUnitTest --tests com.example.StageALayoutTest`
+passed 3 tests (360dp/390dp forms, draft mode switching, reachable Save/last recent
+card, genuine History movement/top overscroll/final-card long press). Debug app
+and test compilation passed. Six Roborazzi renders were inspected. `git diff --check`
+passed. AI redesign and final Stage A polish remain pending checkpoint B.
+No release gates, signed build or version changes were performed.
+
 ## Immediate next task
 RC8 is the baseline, not the final physical-approval candidate.
 
