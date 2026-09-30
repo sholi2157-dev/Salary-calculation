@@ -60,3 +60,18 @@ artifact (pinned hash), not a same-source reconstruction, to RC10/code18; retain
 exact synthetic snapshot/journal comparison and the real IME/UI gates. No website
 tests are added. Inspect actual results, rendered layouts and crash log before
 delivery. Pending: Actions execution and owner physical review.
+
+## Initial run and focused continuation
+
+Run36783808081 / source1f142712aca6b0f96853fb28ecf6185ceeaa6f71 compiled
+Debug app/tests and passed all70 pre-existing Debug tests. The two new tests failed
+only because their FlowRow tag is in the unmerged semantics tree of the clickable
+card; no production code failure was observed at that point. Correct the finder
+and rerun only those two Debug tests, then the not-yet-run Release suite/build,
+signing and actual upgrade gates. Do not repeat the successful70 Debug tests.
+All25 generated existing form/AI/History/inset PNGs were visually inspected.
+
+The bundled RC9 Heebo font was inspected from the real APK: all digits already
+have equal advance1151. No typeface change is needed; reserved width/LTR amount
+presentation are the substantive live-number layout refinements. The `tnum`
+feature request is harmless on this font (which has no separate tnum GSUB feature).

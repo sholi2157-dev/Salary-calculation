@@ -54,7 +54,7 @@ class WorkInterfacePolishTest {
         ui.onNodeWithTag("payment_status_71", useUnmergedTree = true).assertTextEquals("ממתין").assertIsDisplayed()
         ui.onNodeWithTag("recent_payment_status_72", useUnmergedTree = true).assertTextEquals("שולם").assertIsDisplayed()
         ui.onNodeWithTag("work_entry_card_71").performClick()
-        ui.onNodeWithTag("entry_actions_71").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithTag("entry_actions_71", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
         val card = ui.onNodeWithTag("work_entry_card_71").getUnclippedBoundsInRoot()
         val tags = listOf("global_share_btn_71", "edit_entry_btn_71", "delete_entry_btn_71")
         val bounds = tags.map { tag ->

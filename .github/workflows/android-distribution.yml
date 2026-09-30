@@ -26,8 +26,11 @@ jobs:
         with:
           gradle-version: '9.3.1'
           cache-read-only: false
-      - if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') }}
+      - if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') && !contains(github.event.head_commit.message, '[polish-followup]') }}
         run: gradle :app:compileDebugKotlin :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.StageALayoutTest' --tests 'com.example.StageAInsetsTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.HistoryCompactUiTest' :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true -Proborazzi.test.record=true --console=plain
+      - name: Focused polish retry and remaining Release gates
+        if: ${{ contains(github.event.head_commit.message, '[polish-followup]') }}
+        run: gradle :app:testDebugUnitTest --tests 'com.example.WorkInterfacePolishTest' :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true -Proborazzi.test.record=true --console=plain
       - name: Targeted missing visual evidence only
         if: ${{ contains(github.event.head_commit.message, '[stage-b-gates]') }}
         run: gradle :app:testDebugUnitTest --tests 'com.example.StageALayoutTest' --tests 'com.example.StageAInsetsTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.HistoryCompactUiTest' -Proborazzi.test.record=true --no-build-cache --console=plain
