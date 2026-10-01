@@ -60,7 +60,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.example.ui.theme.WorkPalette
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -469,10 +468,10 @@ fun MainAppContent(
                 icon = { Icon(imageVector = Icons.Outlined.GridView, contentDescription = "ראשי", modifier = Modifier.size(20.dp)) },
                 label = { Text("ראשי", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = WorkPalette.AccentText,
-                    unselectedIconColor = WorkPalette.MutedText,
-                    selectedTextColor = WorkPalette.AccentText,
-                    unselectedTextColor = WorkPalette.MutedText,
+                    selectedIconColor = Color(0xFF6366F1),
+                    unselectedIconColor = Color(0xFF8E8E93),
+                    selectedTextColor = Color(0xFF6366F1),
+                    unselectedTextColor = Color(0xFF8E8E93),
                     indicatorColor = com.example.ui.theme.FormSurface
                 ),
                 modifier = Modifier.testTag("tab_0")
@@ -486,10 +485,10 @@ fun MainAppContent(
                 icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = "היסטוריה", modifier = Modifier.size(20.dp)) },
                 label = { Text("היסטוריה", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = WorkPalette.AccentText,
-                    unselectedIconColor = WorkPalette.MutedText,
-                    selectedTextColor = WorkPalette.AccentText,
-                    unselectedTextColor = WorkPalette.MutedText,
+                    selectedIconColor = Color(0xFF6366F1),
+                    unselectedIconColor = Color(0xFF8E8E93),
+                    selectedTextColor = Color(0xFF6366F1),
+                    unselectedTextColor = Color(0xFF8E8E93),
                     indicatorColor = com.example.ui.theme.FormSurface
                 ),
                 modifier = Modifier.testTag("tab_1")
@@ -521,7 +520,7 @@ fun MainAppContent(
                                 Icon(
                                     imageVector = Icons.Outlined.AccessTime,
                                     contentDescription = null,
-                                    tint = WorkPalette.AccentText,
+                                    tint = Color(0xFF818CF8),
                                     modifier = Modifier.size(24.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -546,7 +545,7 @@ fun MainAppContent(
                                     Icon(
                                         imageVector = Icons.Default.Search,
                                         contentDescription = "חיפוש",
-                                        tint = WorkPalette.MutedText
+                                        tint = Color(0xFF8E8E93)
                                     )
                                 }
                             }
@@ -560,7 +559,7 @@ fun MainAppContent(
                                 Icon(
                                     imageVector = Icons.Outlined.Settings,
                                     contentDescription = "ניהול וקטגוריות",
-                                    tint = WorkPalette.MutedText
+                                    tint = Color(0xFF8E8E93)
                                 )
                             }
                         },
@@ -755,7 +754,7 @@ fun MainAppContent(
                         .wrapContentHeight()
                         .animateContentSize()
                         .clip(RoundedCornerShape(24.dp))
-                        .background(WorkPalette.Overlay)
+                        .background(Color(0xE6121212))
                         .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(24.dp))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -780,7 +779,7 @@ fun MainAppContent(
         ) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
-                border = BorderStroke(1.dp, WorkPalette.Outline),
+                border = BorderStroke(1.dp, Color(0xFF2D2D2D)),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
                     .fillMaxWidth(0.95f)
@@ -822,7 +821,7 @@ fun MainAppContent(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { isSearchDialogOpen = false }),
                         colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                            focusedBorderColor = WorkPalette.AccentText,
+                            focusedBorderColor = Color(0xFF5C6BC0),
                             unfocusedBorderColor = Color(0x33FFFFFF),
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White
@@ -836,7 +835,7 @@ fun MainAppContent(
                         TextButton(
                             onClick = { isSearchDialogOpen = false }
                         ) {
-                            Text("הצג תוצאות", color = WorkPalette.AccentText, fontWeight = FontWeight.Bold)
+                            Text("הצג תוצאות", color = Color(0xFF5C6BC0), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1214,7 +1213,7 @@ fun DashboardScreen(
                 Toast.makeText(context, "הדיווח נשמר בהצלחה!", Toast.LENGTH_SHORT).show()
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = WorkPalette.Accent,
+                containerColor = Color.Transparent,
                 contentColor = Color.White
             ),
             shape = RoundedCornerShape(12.dp),
@@ -1222,6 +1221,12 @@ fun DashboardScreen(
                 .fillMaxWidth()
                 .height(50.dp)
                 .pressScale(interactionSource = saveInteractionSource)
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color(0xFF4F46E5), Color(0xFF6366F1))
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
                 .testTag("save_shift_button"),
             contentPadding = PaddingValues(0.dp)
         ) {
@@ -1279,9 +1284,9 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("live_shift_fab"),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(if (activeShiftStartTime != null) Icons.Outlined.Stop else Icons.Outlined.PlayArrow, null, tint = WorkPalette.AccentText)
+                    Icon(if (activeShiftStartTime != null) Icons.Outlined.Stop else Icons.Outlined.PlayArrow, null, tint = Color(0xFFC7D2FE))
                     Spacer(Modifier.width(8.dp))
-                    Text(if (activeShiftStartTime != null) "סיים משמרת פעילה" else "התחל משמרת פעילה", color = WorkPalette.Text)
+                    Text(if (activeShiftStartTime != null) "סיים משמרת פעילה" else "התחל משמרת פעילה", color = Color(0xFFF1F5F9))
                 }
             }
 
@@ -1303,9 +1308,9 @@ fun DashboardScreen(
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                    focusedBorderColor = WorkPalette.AccentText,
+                                    focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
-                                    focusedLabelColor = WorkPalette.AccentText
+                                    focusedLabelColor = Color(0xFF5C6BC0)
                                 )
                             )
                             OutlinedTextField(
@@ -1316,9 +1321,9 @@ fun DashboardScreen(
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                    focusedBorderColor = WorkPalette.AccentText,
+                                    focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
-                                    focusedLabelColor = WorkPalette.AccentText
+                                    focusedLabelColor = Color(0xFF5C6BC0)
                                 )
                             )
                         }
@@ -1334,22 +1339,22 @@ fun DashboardScreen(
                                     showAddCategoryDialog = false
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = WorkPalette.Accent, contentColor = Color.White)
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C6BC0))
                         ) {
                             Text("הוסף", color = Color.White)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showAddCategoryDialog = false }) {
-                            Text("ביטול", color = WorkPalette.MutedText)
+                            Text("ביטול", color = Color(0xFF8E8E93))
                         }
                     }
                 )
             }
 
             Card(
-                colors = CardDefaults.cardColors(containerColor = WorkPalette.Card),
-                border = BorderStroke(1.dp, WorkPalette.Outline),
+                colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                border = BorderStroke(1.dp, Color(0x26FFFFFF)),
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1389,7 +1394,7 @@ fun DashboardScreen(
                         Icon(
                             imageVector = if (isReportCardExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                             contentDescription = if (isReportCardExpanded) "כווץ" else "הרחב",
-                            tint = WorkPalette.AccentText,
+                            tint = Color(0xFF5C6BC0),
                             modifier = Modifier.size(28.dp)
                         )
 
@@ -1410,7 +1415,7 @@ fun DashboardScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
-                            .background(WorkPalette.Control, shape = RoundedCornerShape(22.dp))
+                            .background(Color(0xFF161922), shape = RoundedCornerShape(22.dp))
                             .border(1.dp, Color(0x1FFFFFFF), shape = RoundedCornerShape(22.dp))
                             .padding(4.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -1422,11 +1427,11 @@ fun DashboardScreen(
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .background(
-                                    color = if (isClockSelected) WorkPalette.Selected else Color.Transparent,
+                                    color = if (isClockSelected) Color(0xFF2A2F45) else Color.Transparent,
                                     shape = RoundedCornerShape(18.dp)
                                 )
                                 .then(
-                                    if (isClockSelected) Modifier.border(1.dp, WorkPalette.AccentText.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                                    if (isClockSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                                     else Modifier
                                 )
                                 .clickable {
@@ -1440,7 +1445,7 @@ fun DashboardScreen(
                                 "שעון",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isClockSelected) WorkPalette.Text else WorkPalette.SecondaryText
+                                color = if (isClockSelected) Color(0xFFF1F5F9) else Color(0xFF94A3B8)
                             )
                         }
 
@@ -1451,11 +1456,11 @@ fun DashboardScreen(
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .background(
-                                    color = if (isManualSelected) WorkPalette.Selected else Color.Transparent,
+                                    color = if (isManualSelected) Color(0xFF2A2F45) else Color.Transparent,
                                     shape = RoundedCornerShape(18.dp)
                                 )
                                 .then(
-                                    if (isManualSelected) Modifier.border(1.dp, WorkPalette.AccentText.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                                    if (isManualSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                                     else Modifier
                                 )
                                 .clickable {
@@ -1469,7 +1474,7 @@ fun DashboardScreen(
                                 "ידני",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isManualSelected) WorkPalette.Text else WorkPalette.SecondaryText
+                                color = if (isManualSelected) Color(0xFFF1F5F9) else Color(0xFF94A3B8)
                             )
                         }
 
@@ -1480,11 +1485,11 @@ fun DashboardScreen(
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .background(
-                                    color = if (isGroupSelected) WorkPalette.Selected else Color.Transparent,
+                                    color = if (isGroupSelected) Color(0xFF2A2F45) else Color.Transparent,
                                     shape = RoundedCornerShape(18.dp)
                                 )
                                 .then(
-                                    if (isGroupSelected) Modifier.border(1.dp, WorkPalette.AccentText.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                                    if (isGroupSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                                     else Modifier
                                 )
                                 .clickable {
@@ -1500,7 +1505,7 @@ fun DashboardScreen(
                                 "קבוצה",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isGroupSelected) WorkPalette.Text else WorkPalette.SecondaryText
+                                color = if (isGroupSelected) Color(0xFFF1F5F9) else Color(0xFF94A3B8)
                             )
                         }
 
@@ -1510,11 +1515,11 @@ fun DashboardScreen(
                                 .weight(1.2f)
                                 .fillMaxHeight()
                                 .background(
-                                    color = if (isAiMode) WorkPalette.Selected else Color.Transparent,
+                                    color = if (isAiMode) Color(0xFF2A2F45) else Color.Transparent,
                                     shape = RoundedCornerShape(18.dp)
                                 )
                                 .then(
-                                    if (isAiMode) Modifier.border(1.dp, WorkPalette.AccentText.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                                    if (isAiMode) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                                     else Modifier
                                 )
                                 .clickable {
@@ -1530,14 +1535,14 @@ fun DashboardScreen(
                                 Icon(
                                     imageVector = androidx.compose.material.icons.Icons.Filled.AutoAwesome,
                                     contentDescription = null,
-                                    tint = if (isAiMode) WorkPalette.AccentText else WorkPalette.SecondaryText,
+                                    tint = if (isAiMode) Color(0xFF818CF8) else Color(0xFF94A3B8),
                                     modifier = Modifier.size(12.dp)
                                 )
                                 Text(
                                     "Ai",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isAiMode) WorkPalette.Text else WorkPalette.SecondaryText
+                                    color = if (isAiMode) Color(0xFFF1F5F9) else Color(0xFF94A3B8)
                                 )
                             }
                         }
@@ -1620,7 +1625,7 @@ fun DashboardScreen(
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(12.dp),
                                             colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                                focusedBorderColor = WorkPalette.AccentText,
+                                                focusedBorderColor = Color(0xFF5C6BC0),
                                                 unfocusedBorderColor = Color(0xFF44444F),
                                                 focusedTextColor = Color.White,
                                                 unfocusedTextColor = Color.White
@@ -1641,7 +1646,7 @@ fun DashboardScreen(
                                             modifier = Modifier.width(80.dp),
                                             shape = RoundedCornerShape(12.dp),
                                             colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                                focusedBorderColor = WorkPalette.AccentText,
+                                                focusedBorderColor = Color(0xFF5C6BC0),
                                                 unfocusedBorderColor = Color(0xFF44444F),
                                                 focusedTextColor = Color.White,
                                                 unfocusedTextColor = Color.White
@@ -1669,7 +1674,7 @@ fun DashboardScreen(
                                             singleLine = true,
                                             shape = RoundedCornerShape(12.dp),
                                             colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                                focusedBorderColor = WorkPalette.AccentText,
+                                                focusedBorderColor = Color(0xFF5C6BC0),
                                                 unfocusedBorderColor = Color(0xFF44444F),
                                                 focusedTextColor = Color.White,
                                                 unfocusedTextColor = Color.White
@@ -1684,7 +1689,7 @@ fun DashboardScreen(
                                         modifier = Modifier.width(80.dp).testTag("worker_hours_input"),
                                         shape = RoundedCornerShape(12.dp),
                                         colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                            focusedBorderColor = WorkPalette.AccentText,
+                                            focusedBorderColor = Color(0xFF5C6BC0),
                                             unfocusedBorderColor = Color(0xFF44444F),
                                             focusedTextColor = Color.White,
                                             unfocusedTextColor = Color.White
@@ -1700,7 +1705,7 @@ fun DashboardScreen(
                                                 currentWorkerHours = if (hDouble > 0) String.format(Locale.US, "%.2f", hDouble) else "0.0"
                                             }
                                         },
-                                        modifier = Modifier.background(WorkPalette.Accent, CircleShape)
+                                        modifier = Modifier.background(Color(0xFF5C6BC0), CircleShape)
                                     ) {
                                         Icon(Icons.Outlined.Add, contentDescription = "הוסף עובד", tint = Color.White)
                                     }
@@ -1723,9 +1728,9 @@ fun DashboardScreen(
             if (latestThreeShifts.isNotEmpty()) {
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = WorkPalette.Card
+                        containerColor = Color(0x331E293B)
                     ),
-                    border = BorderStroke(1.dp, WorkPalette.Outline),
+                    border = BorderStroke(1.dp, Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(24.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1789,7 +1794,7 @@ fun DashboardScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showStopConfirmationDialog = false }) {
-                        Text("ביטול", color = WorkPalette.MutedText)
+                        Text("ביטול", color = Color(0xFF8E8E93))
                     }
                 },
                 containerColor = com.example.ui.theme.FormSurface
@@ -1826,7 +1831,7 @@ fun DashboardScreen(
                 Card(
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
-                    border = BorderStroke(1.dp, WorkPalette.Outline),
+                    border = BorderStroke(1.dp, Color(0xFF2D2D2D)),
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
                         .widthIn(max = 520.dp)
@@ -1892,7 +1897,7 @@ fun DashboardScreen(
                                 showQuickShiftDialog = false
                             }
                         ) {
-                            Text("דלג", color = WorkPalette.MutedText)
+                            Text("דלג", color = Color(0xFF8E8E93))
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
@@ -1901,7 +1906,7 @@ fun DashboardScreen(
                                 onStartShift(dialogCategory, rateVal)
                                 showQuickShiftDialog = false
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = WorkPalette.Accent, contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C6BC0)),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text("אישור", color = Color.White)
@@ -1938,10 +1943,10 @@ fun DashboardScreen(
             },
             dismissButton = {
                 TextButton(onClick = { categoryToDelete = null }) {
-                    Text("ביטול", color = WorkPalette.MutedText)
+                    Text("ביטול", color = Color(0xFF8E8E93))
                 }
             },
-            containerColor = WorkPalette.Overlay,
+            containerColor = Color(0xFF1E293B),
             titleContentColor = Color.White,
             textContentColor = Color(0xFFE2E8F0)
         )
@@ -1969,9 +1974,9 @@ fun RecentShiftCompactCard(
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = WorkPalette.Card
+            containerColor = Color.Black.copy(alpha = 0.4f)
         ),
-        border = BorderStroke(1.dp, WorkPalette.Outline),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -1999,7 +2004,7 @@ fun RecentShiftCompactCard(
                     Text(
                         text = initialChar,
                         fontWeight = FontWeight.Bold,
-                        color = WorkPalette.AccentText,
+                        color = Color(0xFFC7D2FE),
                         fontSize = 12.sp
                     )
                 }
@@ -2011,14 +2016,14 @@ fun RecentShiftCompactCard(
                         text = entry.category,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
-                        color = WorkPalette.Text,
+                        color = Color(0xFFE5E5EA),
                         fontFamily = com.example.ui.theme.AssistantFontFamily
                     )
                     Text(
                         text = formattedDate,
                         fontWeight = FontWeight.Normal,
                         fontSize = 12.sp,
-                        color = WorkPalette.MutedText,
+                        color = Color(0xFF8E8E93),
                         fontFamily = com.example.ui.theme.AssistantFontFamily
                     )
                 }
@@ -2035,7 +2040,7 @@ fun RecentShiftCompactCard(
                             text = com.example.data.WorkMoney.format(entry.totalEarnings, entry.currency),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = WorkPalette.Text
+                            color = Color(0xFFE5E5EA)
                         )
                     }
                     Spacer(modifier = Modifier.height(2.dp))
@@ -2047,7 +2052,7 @@ fun RecentShiftCompactCard(
                             text = String.format(Locale.US, "%.1f ש'", entry.hours),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Normal,
-                            color = WorkPalette.MutedText
+                            color = Color(0xFF8E8E93)
                         )
                         Text(if (entry.isPaid) "שולם" else "ממתין", color = statusColor, fontSize = 12.sp,
                             modifier = Modifier.testTag("recent_payment_status_${entry.id}"), maxLines = 1)
@@ -2059,7 +2064,7 @@ fun RecentShiftCompactCard(
                 Icon(
                     imageVector = if (isExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
                     contentDescription = null,
-                    tint = WorkPalette.MutedText,
+                    tint = Color(0xFF8E8E93),
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -2079,7 +2084,7 @@ fun RecentShiftCompactCard(
                                     text = "שעות עבודה: ${entry.startTime} - ${entry.endTime} (${String.format(Locale.US, "%.1f", entry.hours)} שעות)",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Normal,
-                                    color = WorkPalette.MutedText,
+                                    color = Color(0xFF8E8E93),
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
                                 )
                             } else {
@@ -2087,7 +2092,7 @@ fun RecentShiftCompactCard(
                                     text = "שעות שהוזנו ידנית: ${String.format(Locale.US, "%.1f", entry.hours)} שעות",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Normal,
-                                    color = WorkPalette.MutedText,
+                                    color = Color(0xFF8E8E93),
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
                                 )
                             }
@@ -2096,7 +2101,7 @@ fun RecentShiftCompactCard(
                                 text = "תעריף שעתי: ${entry.currency}${entry.hourlyRate}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Normal,
-                                color = WorkPalette.MutedText,
+                                color = Color(0xFF8E8E93),
                                 fontFamily = com.example.ui.theme.AssistantFontFamily
                             )
 
@@ -2105,7 +2110,7 @@ fun RecentShiftCompactCard(
                                     text = "הערות: ${entry.notes}",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Normal,
-                                    color = WorkPalette.MutedText,
+                                    color = Color(0xFF8E8E93),
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
                                 )
                             }
@@ -2171,7 +2176,7 @@ fun StatsCard(
             Text(
                 text = title,
                 fontSize = 11.sp,
-                color = WorkPalette.MutedText,
+                color = Color(0xFF8E8E93),
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Start
             )
@@ -2186,7 +2191,7 @@ fun StatsCard(
                 overflow = TextOverflow.Ellipsis,
                 style = TextStyle(
                     brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                        colors = listOf(WorkPalette.Accent, WorkPalette.Accent)
+                        colors = listOf(Color(0xFF4F46E5), Color(0xFF6366F1))
                     )
                 )
             )
@@ -2195,7 +2200,7 @@ fun StatsCard(
             Text(
                 text = String.format(Locale.US, "%.1f שעות", stats.totalHours),
                 fontSize = 11.sp,
-                color = WorkPalette.MutedText,
+                color = Color(0xFF8E8E93),
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Start
             )
@@ -2240,13 +2245,13 @@ fun RecentShiftItemRow(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(WorkPalette.Selected, shape = RoundedCornerShape(12.dp)),
+                        .background(Color(0xFF3F375A), shape = RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = initialChar,
                         fontWeight = FontWeight.Bold,
-                        color = WorkPalette.AccentText,
+                        color = Color(0xFFC7D2FE),
                         fontSize = 16.sp
                     )
                 }
@@ -2268,7 +2273,7 @@ fun RecentShiftItemRow(
                             "$formattedDate | ${String.format(Locale.US, "%.1f", entry.hours)} שעות"
                         },
                         fontSize = 10.sp,
-                        color = WorkPalette.MutedText
+                        color = Color(0xFF8E8E93)
                     )
                 }
             }
@@ -2414,7 +2419,7 @@ fun ShiftsScreen(
                                     Box(
                                         modifier = Modifier
                                             .background(
-                                                if (isSelected) WorkPalette.Accent else com.example.ui.theme.FormSurface,
+                                                if (isSelected) Color(0xFF5C6BC0) else com.example.ui.theme.FormSurface,
                                                 shape = RoundedCornerShape(8.dp)
                                             )
                                             .border(
@@ -2433,7 +2438,7 @@ fun ShiftsScreen(
                                             text = label,
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) Color.White else WorkPalette.MutedText
+                                            color = if (isSelected) Color.White else Color(0xFF8E8E93)
                                         )
                                     }
                                 }
@@ -2468,7 +2473,7 @@ fun ShiftsScreen(
                                         Icon(
                                             imageVector = Icons.Outlined.ArrowDropDown,
                                             contentDescription = null,
-                                            tint = WorkPalette.MutedText,
+                                            tint = Color(0xFF8E8E93),
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
@@ -2511,7 +2516,7 @@ fun ShiftsScreen(
                                         .weight(1f)
                                         .height(30.dp)
                                         .background(
-                                            if (isSelected) WorkPalette.Accent else com.example.ui.theme.FormSurface,
+                                            if (isSelected) Color(0xFF5C6BC0) else com.example.ui.theme.FormSurface,
                                             shape = RoundedCornerShape(15.dp)
                                         )
                                         .border(
@@ -2529,7 +2534,7 @@ fun ShiftsScreen(
                                         text = statusLabel,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) Color.White else WorkPalette.MutedText
+                                        color = if (isSelected) Color.White else Color(0xFF8E8E93)
                                     )
                                 }
                             }
@@ -2617,7 +2622,7 @@ fun ShiftsScreen(
                                         Text(
                                             text = "עד תאריך",
                                             fontSize = 9.sp,
-                                            color = WorkPalette.MutedText,
+                                            color = Color(0xFF8E8E93),
                                             modifier = Modifier.align(Alignment.End)
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
@@ -2660,7 +2665,7 @@ fun ShiftsScreen(
                                         Text(
                                             text = "מתאריך",
                                             fontSize = 9.sp,
-                                            color = WorkPalette.MutedText,
+                                            color = Color(0xFF8E8E93),
                                             modifier = Modifier.align(Alignment.End)
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
@@ -2802,8 +2807,8 @@ fun ShiftsScreen(
                         Text("נבחרו ${selectedShiftIds.size} משמרות", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                     Row {
-                        TextButton(onClick = { selectedShiftIds = emptySet() }) { Text("בטל הכל", color = WorkPalette.AccentText) }
-                        TextButton(onClick = { selectedShiftIds = filteredEntries.map { it.id }.toSet() }) { Text("בחר הכל", color = WorkPalette.AccentText) }
+                        TextButton(onClick = { selectedShiftIds = emptySet() }) { Text("בטל הכל", color = Color(0xFFC7D2FE)) }
+                        TextButton(onClick = { selectedShiftIds = filteredEntries.map { it.id }.toSet() }) { Text("בחר הכל", color = Color(0xFFC7D2FE)) }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
@@ -2864,7 +2869,7 @@ fun ShiftsScreen(
                                     Text(
                                         text = "תוצאות חיפוש עבור: $searchQuery",
                                         fontSize = 12.sp,
-                                        color = WorkPalette.AccentText,
+                                        color = Color(0xFFC7D2FE),
                                         fontWeight = FontWeight.Medium
                                     )
                                     IconButton(
@@ -2927,7 +2932,7 @@ fun ShiftsScreen(
                                     text = "נסה לשנות את הסינון או הוסף משמרת חדשה",
                                     textAlign = TextAlign.Center,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = WorkPalette.MutedText
+                                    color = Color(0xFF8E8E93)
                                 )
                             }
                         }
@@ -2983,7 +2988,7 @@ fun ShiftsScreen(
                 ) {
                     Button(
                         onClick = { showBulkDeleteConfirm = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444), contentColor = Color.White),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                         shape = RoundedCornerShape(12.dp),
                         enabled = selectedShiftIds.isNotEmpty()
                     ) {
@@ -3002,7 +3007,7 @@ fun ShiftsScreen(
                                 isMultiSelectMode = false
                                 selectedShiftIds = emptySet()
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFBBF24), contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFBBF24)),
                             shape = RoundedCornerShape(12.dp),
                             enabled = selectedShiftIds.isNotEmpty()
                         ) {
@@ -3019,7 +3024,7 @@ fun ShiftsScreen(
                                 isMultiSelectMode = false
                                 selectedShiftIds = emptySet()
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34D399), contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34D399)),
                             shape = RoundedCornerShape(12.dp),
                             enabled = selectedShiftIds.isNotEmpty()
                         ) {
@@ -3051,10 +3056,10 @@ fun ShiftsScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showShiftDeleteConfirm = null }) {
-                        Text("ביטול", color = WorkPalette.MutedText)
+                        Text("ביטול", color = Color(0xFF8E8E93))
                     }
                 },
-                containerColor = WorkPalette.Overlay,
+                containerColor = Color(0xFF1E293B),
                 titleContentColor = Color.White,
                 textContentColor = Color(0xFFE2E8F0)
             )
@@ -3082,10 +3087,10 @@ fun ShiftsScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showBulkDeleteConfirm = false }) {
-                        Text("ביטול", color = WorkPalette.MutedText)
+                        Text("ביטול", color = Color(0xFF8E8E93))
                     }
                 },
-                containerColor = WorkPalette.Overlay,
+                containerColor = Color(0xFF1E293B),
                 titleContentColor = Color.White,
                 textContentColor = Color(0xFFE2E8F0)
             )
@@ -3135,9 +3140,9 @@ fun WorkEntryRowCard(
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) WorkPalette.Selected else WorkPalette.Card
+            containerColor = if (isSelected) Color(0xFF2D3748).copy(alpha = 0.8f) else Color.Black.copy(alpha = 0.6f)
         ),
-        border = BorderStroke(1.dp, if (isSelected) WorkPalette.Accent else WorkPalette.Outline),
+        border = BorderStroke(1.dp, if (isSelected) Color(0xFF6366F1) else Color.White.copy(alpha = 0.15f)),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -3172,7 +3177,7 @@ fun WorkEntryRowCard(
                     Text(
                         text = initialChar,
                         fontWeight = FontWeight.Bold,
-                        color = WorkPalette.AccentText,
+                        color = Color(0xFFC7D2FE),
                         fontSize = 14.sp
                     )
                 }
@@ -3184,7 +3189,7 @@ fun WorkEntryRowCard(
                         Icon(
                             imageVector = Icons.Outlined.Label,
                             contentDescription = null,
-                            tint = WorkPalette.AccentText,
+                            tint = Color(0xFF818CF8),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -3195,7 +3200,7 @@ fun WorkEntryRowCard(
                             overflow = TextOverflow.Ellipsis,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
-                            color = WorkPalette.Text
+                            color = Color(0xFFE5E5EA)
                         )
                         if (isMultiSelectMode) {
                             Spacer(Modifier.width(6.dp))
@@ -3205,16 +3210,16 @@ fun WorkEntryRowCard(
                                 style = MaterialTheme.typography.bodyMedium.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr),
                                 maxLines = 1,
                                 fontWeight = FontWeight.Bold,
-                                color = WorkPalette.Text
+                                color = Color(0xFFE5E5EA)
                             )
                         }
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = formattedDate,
-                        fontWeight = FontWeight.Normal,
+                        fontWeight = FontWeight.Light,
                         fontSize = 12.sp,
-                        color = WorkPalette.MutedText
+                        color = Color(0xFF8E8E93)
                     )
                 }
 
@@ -3227,8 +3232,8 @@ fun WorkEntryRowCard(
                             checked = isSelected,
                             onCheckedChange = { onToggleSelect() },
                             colors = androidx.compose.material3.CheckboxDefaults.colors(
-                                checkedColor = WorkPalette.Accent,
-                                uncheckedColor = WorkPalette.MutedText
+                                checkedColor = Color(0xFF6366F1),
+                                uncheckedColor = Color(0xFF8E8E93)
                             )
                         )
                     } else {
@@ -3246,7 +3251,7 @@ fun WorkEntryRowCard(
                                 text = com.example.data.WorkMoney.format(entry.totalEarnings, entry.currency),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = WorkPalette.Text
+                                color = Color(0xFFE5E5EA)
                             )
                         }
                         Spacer(modifier = Modifier.height(2.dp))
@@ -3257,14 +3262,14 @@ fun WorkEntryRowCard(
                             Icon(
                                 imageVector = Icons.Outlined.Timer,
                                 contentDescription = null,
-                                tint = WorkPalette.MutedText,
+                                tint = Color(0xFF8E8E93),
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f ש'", entry.hours),
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = WorkPalette.MutedText
+                                fontWeight = FontWeight.Light,
+                                color = Color(0xFF8E8E93)
                             )
                             Text(if (entry.isPaid) "שולם" else "ממתין", color = statusColor, fontSize = 12.sp,
                                 modifier = Modifier.testTag("payment_status_${entry.id}"), maxLines = 1)
@@ -3277,7 +3282,7 @@ fun WorkEntryRowCard(
                 Icon(
                     imageVector = if (isExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
                     contentDescription = if (isExpanded) "צמצם" else "הרחב",
-                    tint = WorkPalette.MutedText,
+                    tint = Color(0xFF8E8E93),
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -3298,23 +3303,23 @@ fun WorkEntryRowCard(
                                 Text(
                                     text = "שעות עבודה: ${entry.startTime} - ${entry.endTime} (${String.format(Locale.US, "%.1f", entry.hours)} שעות)",
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = WorkPalette.MutedText
+                                    fontWeight = FontWeight.Light,
+                                    color = Color(0xFF8E8E93)
                                 )
                             } else {
                                 Text(
                                     text = "שעות שהוזנו ידנית: ${String.format(Locale.US, "%.1f", entry.hours)} שעות",
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = WorkPalette.MutedText
+                                    fontWeight = FontWeight.Light,
+                                    color = Color(0xFF8E8E93)
                                 )
                             }
 
                             Text(
                                 text = "תעריף שעתי: ${entry.currency}${entry.hourlyRate}",
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = WorkPalette.MutedText
+                                fontWeight = FontWeight.Light,
+                                color = Color(0xFF8E8E93)
                             )
                         }
                     }
@@ -3331,9 +3336,9 @@ fun WorkEntryRowCard(
                             Text(
                                 text = "הערות: ${entry.notes}",
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Normal,
+                                fontWeight = FontWeight.Light,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                color = WorkPalette.MutedText
+                                color = Color(0xFF8E8E93)
                             )
                         }
                     }
@@ -3394,7 +3399,7 @@ fun WorkEntryRowCard(
                                 ) {
                                     Column(Modifier.weight(1f)) {
                                         Text(wName, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                                        Text("${wHours} שעות • ${entry.currency}${String.format(Locale.US, "%.2f", wPay)}", color = WorkPalette.MutedText, fontSize = 11.sp)
+                                        Text("${wHours} שעות • ${entry.currency}${String.format(Locale.US, "%.2f", wPay)}", color = Color(0xFF8E8E93), fontSize = 11.sp)
                                     }
 
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -3423,7 +3428,7 @@ fun WorkEntryRowCard(
                                             onCheckedChange = null,
                                             colors = androidx.compose.material3.CheckboxDefaults.colors(
                                                 checkedColor = Color(0xFF34D399),
-                                                uncheckedColor = WorkPalette.MutedText
+                                                uncheckedColor = Color(0xFF8E8E93)
                                             ),
                                             modifier = Modifier.size(20.dp)
                                         )
@@ -3536,7 +3541,7 @@ fun WorkEntryRowCard(
                                 },
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .background(WorkPalette.Overlay, shape = RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF1E293B), shape = RoundedCornerShape(8.dp))
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.ReceiptLong,
@@ -3557,7 +3562,7 @@ fun WorkEntryRowCard(
                             Icon(
                                 imageVector = Icons.Outlined.Edit,
                                 contentDescription = "ערוך משמרת",
-                                tint = WorkPalette.AccentText,
+                                tint = Color(0xFF6366F1),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -3715,7 +3720,7 @@ fun ManagementScreen(
                 val isExpanded = expandedSection == 0
                 Card(
                     colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
-                    border = BorderStroke(1.dp, if (isExpanded) WorkPalette.Accent else WorkPalette.Outline),
+                    border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3736,7 +3741,7 @@ fun ManagementScreen(
                                 Text(
                                     text = "קטגוריות מסווגות את המשמרות. שינוי ברירת מחדל אינו משנה סכומים שנשמרו.",
                                     fontSize = 12.sp,
-                                    color = WorkPalette.MutedText,
+                                    color = Color(0xFF8E8E93),
                                     textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -3756,7 +3761,7 @@ fun ManagementScreen(
                                         OutlinedTextField(
                                             value = newCategoryText,
                                             onValueChange = { newCategoryText = it },
-                                            label = { Text("קטגוריה חדשה", color = WorkPalette.MutedText) },
+                                            label = { Text("קטגוריה חדשה", color = Color(0xFF8E8E93)) },
                                             singleLine = true,
                                             modifier = Modifier
                                                 .weight(1f)
@@ -3764,7 +3769,7 @@ fun ManagementScreen(
                                             colors = OutlinedTextFieldDefaults.colors(
                                                 focusedTextColor = Color.White,
                                                 unfocusedTextColor = Color.White,
-                                                focusedBorderColor = WorkPalette.AccentText,
+                                                focusedBorderColor = Color(0xFF5C6BC0),
                                                 unfocusedBorderColor = Color(0xFF3F3F46),
                                                 focusedContainerColor = com.example.ui.theme.FormSurface,
                                                 unfocusedContainerColor = com.example.ui.theme.FormSurface
@@ -3774,14 +3779,14 @@ fun ManagementScreen(
                                         OutlinedTextField(
                                             value = newCategoryRateText,
                                             onValueChange = { newCategoryRateText = it },
-                                            label = { Text("תעריף שעתי", color = WorkPalette.MutedText) },
+                                            label = { Text("תעריף שעתי", color = Color(0xFF8E8E93)) },
                                             singleLine = true,
                                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                             modifier = Modifier.weight(0.7f),
                                             colors = OutlinedTextFieldDefaults.colors(
                                                 focusedTextColor = Color.White,
                                                 unfocusedTextColor = Color.White,
-                                                focusedBorderColor = WorkPalette.AccentText,
+                                                focusedBorderColor = Color(0xFF5C6BC0),
                                                 unfocusedBorderColor = Color(0xFF3F3F46),
                                                 focusedContainerColor = com.example.ui.theme.FormSurface,
                                                 unfocusedContainerColor = com.example.ui.theme.FormSurface
@@ -3802,7 +3807,7 @@ fun ManagementScreen(
                                             .fillMaxWidth()
                                             .height(48.dp)
                                             .testTag("add_category_btn"),
-                                        colors = ButtonDefaults.buttonColors(containerColor = WorkPalette.Accent, contentColor = Color.White)
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C6BC0))
                                     ) {
                                         Icon(imageVector = Icons.Outlined.Add, contentDescription = null, tint = Color.White)
                                         Spacer(modifier = Modifier.width(4.dp))
@@ -3852,7 +3857,7 @@ fun ManagementScreen(
                                                     Icon(
                                                         imageVector = Icons.Outlined.Edit,
                                                         contentDescription = "ערוך תעריף",
-                                                        tint = WorkPalette.AccentText,
+                                                        tint = Color(0xFF6366F1),
                                                         modifier = Modifier.size(12.dp)
                                                     )
                                                     Text(
@@ -3888,7 +3893,7 @@ fun ManagementScreen(
                 val isExpanded = expandedSection == 1
                 Card(
                     colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
-                    border = BorderStroke(1.dp, if (isExpanded) WorkPalette.Accent else WorkPalette.Outline),
+                    border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3916,7 +3921,7 @@ fun ManagementScreen(
                                 Text(
                                     text = "בחר את מטבע ברירת המחדל לחישוב וניהול משמרות ברחבי האפליקציה.",
                                     fontSize = 12.sp,
-                                    color = WorkPalette.MutedText,
+                                    color = Color(0xFF8E8E93),
                                     textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -3936,7 +3941,7 @@ fun ManagementScreen(
                                         )
                                         Text(
                                             text = "יחול אוטומטית בהוספת משמרות",
-                                            color = WorkPalette.MutedText,
+                                            color = Color(0xFF8E8E93),
                                             fontSize = 11.sp
                                         )
                                     }
@@ -3948,7 +3953,7 @@ fun ManagementScreen(
                                                 modifier = Modifier
                                                     .size(width = 54.dp, height = 36.dp)
                                                     .background(
-                                                        if (isSelected) WorkPalette.Accent else WorkPalette.Overlay,
+                                                        if (isSelected) Color(0xFF6366F1) else Color(0xFF1E293B),
                                                         shape = RoundedCornerShape(10.dp)
                                                     )
                                                     .border(
@@ -3962,7 +3967,7 @@ fun ManagementScreen(
                                             ) {
                                                 Text(
                                                     text = curr,
-                                                    color = if (isSelected) Color.White else WorkPalette.SecondaryText,
+                                                    color = if (isSelected) Color.White else Color(0xFF94A3B8),
                                                     fontWeight = FontWeight.Bold,
                                                     fontSize = 16.sp
                                                 )
@@ -3981,7 +3986,7 @@ fun ManagementScreen(
                 val isExpanded = expandedSection == 3
                 Card(
                     colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
-                    border = BorderStroke(1.dp, if (isExpanded) WorkPalette.Accent else WorkPalette.Outline),
+                    border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -4010,7 +4015,7 @@ fun ManagementScreen(
                                 Text(
                                     text = "ניהול הגדרות התראה, טיימר פעיל במכשיר, ושומר מסך כהה.",
                                     fontSize = 12.sp,
-                                    color = WorkPalette.MutedText,
+                                    color = Color(0xFF8E8E93),
                                     textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -4040,7 +4045,7 @@ fun ManagementScreen(
                                         Text(
                                             text = "הצגת טיימר פעיל ועדכון שכר שנצבר בהתראת רקע קבועה במכשיר בזמן שהשעון רץ.",
                                             fontSize = 12.sp,
-                                            color = WorkPalette.MutedText,
+                                            color = Color(0xFF8E8E93),
                                             textAlign = TextAlign.Start
                                         )
                                     }
@@ -4052,8 +4057,8 @@ fun ManagementScreen(
                                         },
                                         colors = SwitchDefaults.colors(
                                             checkedThumbColor = Color.White,
-                                            checkedTrackColor = WorkPalette.Accent,
-                                            uncheckedThumbColor = WorkPalette.MutedText,
+                                            checkedTrackColor = Color(0xFF6366F1),
+                                            uncheckedThumbColor = Color(0xFF8E8E93),
                                             uncheckedTrackColor = com.example.ui.theme.FormSurface
                                         ),
                                         modifier = Modifier.testTag("service_notification_switch")
@@ -4079,7 +4084,7 @@ fun ManagementScreen(
                 val isExpanded = expandedSection == 4
                 Card(
                     colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
-                    border = BorderStroke(1.dp, if (isExpanded) WorkPalette.Accent else WorkPalette.Outline),
+                    border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -4103,7 +4108,7 @@ fun ManagementScreen(
                                 Text(
                                     text = "ייבוא וייצוא נתונים לצורך גיבוי ושחזור.",
                                     fontSize = 12.sp,
-                                    color = WorkPalette.MutedText,
+                                    color = Color(0xFF8E8E93),
                                     textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -4123,7 +4128,7 @@ fun ManagementScreen(
                                 Text(
                                     text = "הדבק שורות מאקסל (מופרד באמצעות Tabs/פסיקים) או טקסט גיבוי JSON:",
                                     fontSize = 12.sp,
-                                    color = WorkPalette.MutedText,
+                                    color = Color(0xFF8E8E93),
                                     textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -4141,7 +4146,7 @@ fun ManagementScreen(
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedTextColor = Color.White,
                                         unfocusedTextColor = Color.White,
-                                        focusedBorderColor = WorkPalette.AccentText,
+                                        focusedBorderColor = Color(0xFF5C6BC0),
                                         unfocusedBorderColor = Color(0xFF3F3F46),
                                         focusedContainerColor = com.example.ui.theme.FormSurface,
                                         unfocusedContainerColor = com.example.ui.theme.FormSurface
@@ -4165,7 +4170,7 @@ fun ManagementScreen(
                                         .fillMaxWidth()
                                         .height(40.dp)
                                         .testTag("settings_import_action_btn"),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444), contentColor = Color.White),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                                     shape = RoundedCornerShape(10.dp)
                                 ) {
                                     Icon(imageVector = Icons.Outlined.Upload, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
@@ -4174,7 +4179,7 @@ fun ManagementScreen(
                                 }
 
                                 Spacer(modifier = Modifier.height(16.dp))
-                                HorizontalDivider(color = WorkPalette.Outline)
+                                HorizontalDivider(color = Color(0xFF2D2D2D))
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 // Export section
@@ -4196,7 +4201,7 @@ fun ManagementScreen(
                                         modifier = Modifier
                                             .weight(1f)
                                             .testTag("copy_backup_btn"),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F3F46), contentColor = Color.White)
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F3F46))
                                     ) {
                                         Icon(imageVector = Icons.Outlined.ContentCopy, contentDescription = null, tint = Color.White)
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -4208,7 +4213,7 @@ fun ManagementScreen(
                                         modifier = Modifier
                                             .weight(1f)
                                             .testTag("share_backup_btn"),
-                                        colors = ButtonDefaults.buttonColors(containerColor = WorkPalette.Accent, contentColor = Color.White)
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C6BC0))
                                     ) {
                                         Icon(imageVector = Icons.Outlined.Share, contentDescription = null, tint = Color.White)
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -4235,8 +4240,8 @@ fun ManagementScreen(
             // Sign Out row option
             if (BuildConfig.ACCOUNTS_ENABLED) Box(modifier = Modifier.fillMaxWidth()) {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = WorkPalette.Card),
-                    border = BorderStroke(1.dp, WorkPalette.Outline),
+                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                    border = BorderStroke(1.dp, Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -4265,7 +4270,7 @@ fun ManagementScreen(
                                         }.show()
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444), contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.testTag("settings_sign_out_btn")
                         ) {
@@ -4290,7 +4295,7 @@ fun ManagementScreen(
                             Text(
                                 text = sessionUser?.email ?: sessionUser?.displayName ?: "שימוש מקומי — ללא סנכרון",
                                 fontSize = 12.sp,
-                                color = WorkPalette.MutedText,
+                                color = Color(0xFF8E8E93),
                                 textAlign = TextAlign.Start
                             )
                         }
@@ -4348,7 +4353,7 @@ fun ManagementScreen(
                     .height(48.dp)
                     .testTag("settings_save_btn"),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = WorkPalette.Accent,
+                    containerColor = Color(0xFF6366F1),
                     contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(12.dp)
@@ -4379,10 +4384,10 @@ fun ManagementScreen(
             },
             dismissButton = {
                 TextButton(onClick = { categoryToDelete = null }) {
-                    Text("ביטול", color = WorkPalette.MutedText)
+                    Text("ביטול", color = Color(0xFF8E8E93))
                 }
             },
-            containerColor = WorkPalette.Overlay,
+            containerColor = Color(0xFF1E293B),
             titleContentColor = Color.White,
             textContentColor = Color(0xFFE2E8F0)
         )
@@ -4418,14 +4423,14 @@ fun ManagementScreen(
                             editRateText = it
                             errorEditRate = it.toDoubleOrNull() == null || it.toDouble() <= 0.0
                         },
-                        label = { Text("תעריף שעתי חדש", color = WorkPalette.MutedText) },
+                        label = { Text("תעריף שעתי חדש", color = Color(0xFF8E8E93)) },
                         singleLine = true,
                         isError = errorEditRate,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
-                            focusedBorderColor = WorkPalette.AccentText,
+                            focusedBorderColor = Color(0xFF5C6BC0),
                             unfocusedBorderColor = Color(0xFF3F3F46),
                             focusedContainerColor = com.example.ui.theme.FormSurface,
                             unfocusedContainerColor = com.example.ui.theme.FormSurface
@@ -4452,15 +4457,15 @@ fun ManagementScreen(
                         }
                     }
                 ) {
-                    Text("שמור", color = WorkPalette.AccentText)
+                    Text("שמור", color = Color(0xFF6366F1))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { categoryToEditByRate = null }) {
-                    Text("ביטול", color = WorkPalette.MutedText)
+                    Text("ביטול", color = Color(0xFF8E8E93))
                 }
             },
-            containerColor = WorkPalette.Overlay,
+            containerColor = Color(0xFF1E293B),
             titleContentColor = Color.White,
             textContentColor = Color(0xFFE2E8F0)
         )
@@ -4697,7 +4702,7 @@ fun ShiftFormDialog(
                                 colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                     disabledTextColor = Color.White,
                                     disabledBorderColor = Color(0xFF3F3F46),
-                                    disabledLabelColor = WorkPalette.MutedText
+                                    disabledLabelColor = Color(0xFF8E8E93)
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -4727,7 +4732,7 @@ fun ShiftFormDialog(
                                 colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                     disabledTextColor = Color.White,
                                     disabledBorderColor = Color(0xFF3F3F46),
-                                    disabledLabelColor = WorkPalette.MutedText
+                                    disabledLabelColor = Color(0xFF8E8E93)
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -4764,7 +4769,7 @@ fun ShiftFormDialog(
                             colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                 disabledTextColor = Color.White,
                                 disabledBorderColor = Color(0xFF3F3F46),
-                                disabledLabelColor = WorkPalette.MutedText
+                                disabledLabelColor = Color(0xFF8E8E93)
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -4937,7 +4942,7 @@ fun EditShiftBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp)
-                    .background(WorkPalette.Control, shape = RoundedCornerShape(22.dp))
+                    .background(Color(0xFF161922), shape = RoundedCornerShape(22.dp))
                     .border(1.dp, Color(0x1FFFFFFF), shape = RoundedCornerShape(22.dp))
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -4949,11 +4954,11 @@ fun EditShiftBottomSheet(
                         .weight(1f)
                         .fillMaxHeight()
                         .background(
-                            color = if (isClockSelected) WorkPalette.Selected else Color.Transparent,
+                            color = if (isClockSelected) Color(0xFF2A2F45) else Color.Transparent,
                             shape = RoundedCornerShape(18.dp)
                         )
                         .then(
-                            if (isClockSelected) Modifier.border(1.dp, WorkPalette.AccentText.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                            if (isClockSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                             else Modifier
                         )
                         .clickable {
@@ -4969,14 +4974,14 @@ fun EditShiftBottomSheet(
                         Icon(
                             imageVector = Icons.Outlined.AccessTime,
                             contentDescription = null,
-                            tint = if (isClockSelected) WorkPalette.AccentText else WorkPalette.SecondaryText,
+                            tint = if (isClockSelected) Color(0xFF818CF8) else Color(0xFF94A3B8),
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             "שעון",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isClockSelected) WorkPalette.Text else WorkPalette.SecondaryText
+                            color = if (isClockSelected) Color(0xFFF1F5F9) else Color(0xFF94A3B8)
                         )
                     }
                 }
@@ -4988,11 +4993,11 @@ fun EditShiftBottomSheet(
                         .weight(1f)
                         .fillMaxHeight()
                         .background(
-                            color = if (isManualSelected) WorkPalette.Selected else Color.Transparent,
+                            color = if (isManualSelected) Color(0xFF2A2F45) else Color.Transparent,
                             shape = RoundedCornerShape(18.dp)
                         )
                         .then(
-                            if (isManualSelected) Modifier.border(1.dp, WorkPalette.AccentText.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                            if (isManualSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                             else Modifier
                         )
                         .clickable {
@@ -5008,14 +5013,14 @@ fun EditShiftBottomSheet(
                         Icon(
                             imageVector = Icons.Outlined.Edit,
                             contentDescription = null,
-                            tint = if (isManualSelected) WorkPalette.AccentText else WorkPalette.SecondaryText,
+                            tint = if (isManualSelected) Color(0xFF818CF8) else Color(0xFF94A3B8),
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             "ידני",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isManualSelected) WorkPalette.Text else WorkPalette.SecondaryText
+                            color = if (isManualSelected) Color(0xFFF1F5F9) else Color(0xFF94A3B8)
                         )
                     }
                 }
@@ -5027,11 +5032,11 @@ fun EditShiftBottomSheet(
                         .weight(1f)
                         .fillMaxHeight()
                         .background(
-                            color = if (isGroupSelected) WorkPalette.Selected else Color.Transparent,
+                            color = if (isGroupSelected) Color(0xFF2A2F45) else Color.Transparent,
                             shape = RoundedCornerShape(18.dp)
                         )
                         .then(
-                            if (isGroupSelected) Modifier.border(1.dp, WorkPalette.AccentText.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                            if (isGroupSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                             else Modifier
                         )
                         .clickable {
@@ -5049,14 +5054,14 @@ fun EditShiftBottomSheet(
                         Icon(
                             imageVector = Icons.Outlined.People,
                             contentDescription = null,
-                            tint = if (isGroupSelected) WorkPalette.AccentText else WorkPalette.SecondaryText,
+                            tint = if (isGroupSelected) Color(0xFF818CF8) else Color(0xFF94A3B8),
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             "קבוצה",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isGroupSelected) WorkPalette.Text else WorkPalette.SecondaryText
+                            color = if (isGroupSelected) Color(0xFFF1F5F9) else Color(0xFF94A3B8)
                         )
                     }
                 }
@@ -5068,7 +5073,7 @@ fun EditShiftBottomSheet(
                     "תאריך",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = WorkPalette.MutedText,
+                    color = Color(0xFF8E8E93),
                     modifier = Modifier.align(Alignment.End)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -5108,7 +5113,7 @@ fun EditShiftBottomSheet(
                         Icon(
                             imageVector = Icons.Outlined.ArrowDropDown,
                             contentDescription = null,
-                            tint = WorkPalette.MutedText
+                            tint = Color(0xFF8E8E93)
                         )
                         Text(
                             text = dateStr,
@@ -5132,7 +5137,7 @@ fun EditShiftBottomSheet(
                             "יציאה",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = WorkPalette.MutedText,
+                            color = Color(0xFF8E8E93),
                             modifier = Modifier.align(Alignment.End)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -5158,7 +5163,7 @@ fun EditShiftBottomSheet(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Outlined.ArrowDropDown, null, tint = WorkPalette.MutedText)
+                                Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
                                 Text(endTimeStr, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White)
                             }
                         }
@@ -5170,7 +5175,7 @@ fun EditShiftBottomSheet(
                             "כניסה",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = WorkPalette.MutedText,
+                            color = Color(0xFF8E8E93),
                             modifier = Modifier.align(Alignment.End)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -5196,7 +5201,7 @@ fun EditShiftBottomSheet(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Outlined.ArrowDropDown, null, tint = WorkPalette.MutedText)
+                                Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
                                 Text(startTimeStr, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White)
                             }
                         }
@@ -5209,7 +5214,7 @@ fun EditShiftBottomSheet(
                         "שעות עבודה",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = WorkPalette.MutedText,
+                        color = Color(0xFF8E8E93),
                         modifier = Modifier.align(Alignment.End)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -5245,7 +5250,7 @@ fun EditShiftBottomSheet(
                             Icon(
                                 imageVector = Icons.Outlined.AccessTime,
                                 contentDescription = null,
-                                tint = WorkPalette.AccentText
+                                tint = Color(0xFF5C6BC0)
                             )
                             Text(
                                 text = displayHoursText,
@@ -5272,7 +5277,7 @@ fun EditShiftBottomSheet(
                     "הפסקה",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = WorkPalette.MutedText,
+                    color = Color(0xFF8E8E93),
                     modifier = Modifier.align(Alignment.End)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -5307,7 +5312,7 @@ fun EditShiftBottomSheet(
                         Icon(
                             imageVector = Icons.Outlined.AccessTime,
                             contentDescription = null,
-                            tint = WorkPalette.AccentText
+                            tint = Color(0xFF5C6BC0)
                         )
                         Text(
                             text = displayBreakText,
@@ -5325,7 +5330,7 @@ fun EditShiftBottomSheet(
                     "תעריף לשעה",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = WorkPalette.MutedText,
+                    color = Color(0xFF8E8E93),
                     modifier = Modifier.align(Alignment.End)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -5345,7 +5350,7 @@ fun EditShiftBottomSheet(
                     modifier = Modifier.fillMaxWidth().testTag("edit_rate_input"),
                     isError = showErrorRate,
                     colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                        focusedBorderColor = if (showErrorRate) Color.Red else WorkPalette.Accent,
+                        focusedBorderColor = if (showErrorRate) Color.Red else Color(0xFF5C6BC0),
                         unfocusedBorderColor = if (showErrorRate) Color.Red else Color(0xFF3F3F46),
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White
@@ -5363,7 +5368,7 @@ fun EditShiftBottomSheet(
                 if (isGroupShift) {
                     Text(
                         text = if (showSeparateRates) "- בטל תעריפים נפרדים לקבוצה" else "+ הגדר תעריפים נפרדים לקבוצה",
-                        color = WorkPalette.MutedText,
+                        color = Color(0xFF8E8E93),
                         fontSize = 12.sp,
                         modifier = Modifier
                             .padding(top = 8.dp)
@@ -5384,7 +5389,7 @@ fun EditShiftBottomSheet(
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                    focusedBorderColor = WorkPalette.AccentText,
+                                    focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White
@@ -5398,7 +5403,7 @@ fun EditShiftBottomSheet(
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                    focusedBorderColor = WorkPalette.AccentText,
+                                    focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White
@@ -5415,7 +5420,7 @@ fun EditShiftBottomSheet(
                     "מעסיק",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = WorkPalette.MutedText,
+                    color = Color(0xFF8E8E93),
                     modifier = Modifier.align(Alignment.End)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -5436,7 +5441,7 @@ fun EditShiftBottomSheet(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Outlined.ArrowDropDown, null, tint = WorkPalette.MutedText)
+                        Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
                         Text(
                             text = selectedCategory,
                             fontSize = 14.sp,
@@ -5468,7 +5473,7 @@ fun EditShiftBottomSheet(
                     "הערות",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = WorkPalette.MutedText,
+                    color = Color(0xFF8E8E93),
                     modifier = Modifier.align(Alignment.End)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -5480,7 +5485,7 @@ fun EditShiftBottomSheet(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                        focusedBorderColor = WorkPalette.AccentText,
+                        focusedBorderColor = Color(0xFF5C6BC0),
                         unfocusedBorderColor = Color(0xFF3F3F46),
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White
@@ -5522,7 +5527,7 @@ fun EditShiftBottomSheet(
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                        focusedBorderColor = WorkPalette.AccentText,
+                                        focusedBorderColor = Color(0xFF5C6BC0),
                                         unfocusedBorderColor = Color(0xFF44444F),
                                         focusedTextColor = Color.White,
                                         unfocusedTextColor = Color.White
@@ -5543,7 +5548,7 @@ fun EditShiftBottomSheet(
                                     modifier = Modifier.width(80.dp),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                        focusedBorderColor = WorkPalette.AccentText,
+                                        focusedBorderColor = Color(0xFF5C6BC0),
                                         unfocusedBorderColor = Color(0xFF44444F),
                                         focusedTextColor = Color.White,
                                         unfocusedTextColor = Color.White
@@ -5570,7 +5575,7 @@ fun EditShiftBottomSheet(
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                    focusedBorderColor = WorkPalette.AccentText,
+                                    focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White
@@ -5584,7 +5589,7 @@ fun EditShiftBottomSheet(
                                 modifier = Modifier.width(80.dp),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
-                                    focusedBorderColor = WorkPalette.AccentText,
+                                    focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White
@@ -5600,7 +5605,7 @@ fun EditShiftBottomSheet(
                                         currentWorkerHours = if (hDouble > 0) String.format(Locale.US, "%.2f", hDouble) else "0.0"
                                     }
                                 },
-                                modifier = Modifier.background(WorkPalette.Accent, CircleShape)
+                                modifier = Modifier.background(Color(0xFF5C6BC0), CircleShape)
                             ) {
                                 Icon(Icons.Outlined.Add, contentDescription = "הוסף עובד", tint = Color.White)
                             }
@@ -5676,7 +5681,7 @@ fun EditShiftBottomSheet(
                     )
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = WorkPalette.Accent,
+                    containerColor = Color(0xFF5C6BC0),
                     contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(12.dp),
@@ -5797,7 +5802,7 @@ fun DashboardBarChart(entries: List<WorkEntry>) {
                             // Vibrant purple / indigo gradient
                             drawRoundRect(
                                 brush = Brush.verticalGradient(
-                                    colors = listOf(Color(0xFFC084FC), WorkPalette.Accent)
+                                    colors = listOf(Color(0xFFC084FC), Color(0xFF5C6BC0))
                                 ),
                                 topLeft = Offset(x, y),
                                 size = Size(barWidth, barHeight),
@@ -5861,7 +5866,7 @@ fun LoginOverlay(
                 .fillMaxWidth(0.92f)
                 .wrapContentHeight(),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = WorkPalette.Overlay),
+            colors = CardDefaults.cardColors(containerColor = Color(0xEE121212)),
             border = BorderStroke(1.dp, Color(0x33FFFFFF))
         ) {
             Column(
@@ -5874,14 +5879,14 @@ fun LoginOverlay(
                 Box(
                     modifier = Modifier
                         .size(56.dp)
-                        .background(WorkPalette.Overlay, shape = CircleShape)
+                        .background(Color(0xFF1E293B), shape = CircleShape)
                         .border(1.dp, Color(0x33818CF8), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Lock,
                         contentDescription = null,
-                        tint = WorkPalette.AccentText,
+                        tint = Color(0xFF818CF8),
                         modifier = Modifier.size(26.dp)
                     )
                 }
@@ -5901,7 +5906,7 @@ fun LoginOverlay(
                     Text(
                         text = "התחבר למערכת כדי לנהל ולשמור את שעות העבודה והמשמרות שלך",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = WorkPalette.SecondaryText,
+                        color = Color(0xFF94A3B8),
                         textAlign = TextAlign.Center,
                         lineHeight = 20.sp
                     )
@@ -5916,7 +5921,7 @@ fun LoginOverlay(
                         .pressScale(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = WorkPalette.Accent,
+                        containerColor = Color(0xFF6366F1),
                         contentColor = Color.White
                     )
                 ) {

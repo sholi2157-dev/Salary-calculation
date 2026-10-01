@@ -14,7 +14,15 @@ The website/sync work is intentionally paused on:
 
 Do not resume or modify website, Firebase, accounts or cloud sync until the user explicitly switches the project back to that phase.
 
-## Active UI Skills task — 2026-10-01 UTC
+## Active task: restore RC10 interface as RC12 — 2026-10-01 UTC
+
+Owner rejected RC11 design and requested the previous version. All8 UI files are
+restored byte-for-byte from RC10 backup25f7066; version1.5-rc12/code20 is prepared
+for a signed update over original RC11/code19. Data/business/cloud sources unchanged.
+Scope/evidence: docs/android-ui-skills-rollback.md. Signed upgrade/build gates pending.
+No public/stable release. The verified previous candidate below remains RC11.
+
+## Previous UI Skills task — RC11
 
 RC11/code19 is completed and signed from the exact RC10 HEAD25f7066.
 Pre-change remote backup: `backup/android-rc10-before-ui-skills-20261001` at

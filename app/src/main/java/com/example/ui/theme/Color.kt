@@ -29,18 +29,4 @@ val DarkPrimaryContainer = Color(0xFF1E3F8F)
 val DarkBackground = Color(0xFF111318)
 val DarkSurface = Color(0xFF1A1C1E)
 
-// A quiet work ledger: ink canvas, paper-like layers and a single blue action hue.
-object WorkPalette {
-    val Canvas = Color(0xFF10151E)
-    val Card = Color(0xFF1A2230)
-    val Overlay = Color(0xFF242E3E)
-    val Control = Color(0xFF141C28)
-    val Selected = Color(0xFF293D59)
-    val Accent = Color(0xFF476EA8)
-    val AccentText = Color(0xFFA7C7F4)
-    val Text = Color(0xFFF1F4F8)
-    val SecondaryText = Color(0xFFB2BDCC)
-    val MutedText = Color(0xFF9AA8BC)
-    val Outline = Color(0x24FFFFFF)
-}
-val FormSurface = WorkPalette.Card
+val FormSurface = Color(0xE6222B49)
