@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.ui.theme.WorkPalette
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.*
@@ -34,7 +35,7 @@ import java.util.*
 
 @Composable
 private fun FieldLabel(text: String) {
-    Text(text, color = Color(0xFF94A3B8), style = MaterialTheme.typography.labelMedium, maxLines = 1)
+    Text(text, color = WorkPalette.SecondaryText, style = MaterialTheme.typography.labelMedium, maxLines = 1)
 }
 
 @Composable
@@ -45,16 +46,16 @@ fun CompactNumberField(label: String, value: String, onChange: (String) -> Unit,
         FieldLabel(label)
         BasicTextField(
             value = value, onValueChange = onChange, singleLine = true,
-            textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White, textDirection = TextDirection.Ltr, textAlign = TextAlign.Center),
-            cursorBrush = SolidColor(Color(0xFF818CF8)),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White, textDirection = TextDirection.Ltr, textAlign = TextAlign.Center, fontFeatureSettings = "tnum"),
+            cursorBrush = SolidColor(WorkPalette.AccentText),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); focus.clearFocus() }),
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { contentDescription = label }
                 .then(if (inputTag != null) Modifier.testTag(inputTag) else Modifier),
             decorationBox = { inner ->
                 Box(Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    .background(FormSurface, RoundedCornerShape(10.dp))
-                    .border(1.dp, if (error) Color(0xFFEF4444) else Color(0xFF3F3F46), RoundedCornerShape(10.dp))
+                    .background(WorkPalette.Control, RoundedCornerShape(10.dp))
+                    .border(1.dp, if (error) Color(0xFFEF4444) else WorkPalette.Outline, RoundedCornerShape(10.dp))
                     .padding(horizontal = 10.dp), contentAlignment = Alignment.CenterStart) { inner() }
             }
         )
@@ -67,12 +68,12 @@ private fun PickerField(label: String, value: String, tag: String, modifier: Mod
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         FieldLabel(label)
         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag(tag)
-            .background(FormSurface, RoundedCornerShape(10.dp))
-            .border(1.dp, Color(0xFF3F3F46), RoundedCornerShape(10.dp))
+            .background(WorkPalette.Control, RoundedCornerShape(10.dp))
+            .border(1.dp, WorkPalette.Outline, RoundedCornerShape(10.dp))
             .clickable(onClick = onClick).padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically) {
             Text(value, Modifier.weight(1f), color = Color.White, style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.ContentOrRtl, textAlign = TextAlign.Center), maxLines = 1)
-            Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
+            Icon(Icons.Outlined.ArrowDropDown, null, tint = WorkPalette.SecondaryText, modifier = Modifier.size(16.dp))
         }
     }
 }
@@ -134,7 +135,7 @@ fun CompactReportFields(
                 Box {
                     OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("report_currency"), contentPadding = PaddingValues(4.dp), shape = RoundedCornerShape(10.dp)) {
                         Text(values.currency, color = Color.White)
-                        Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
+                        Icon(Icons.Outlined.ArrowDropDown, null, tint = WorkPalette.SecondaryText, modifier = Modifier.size(16.dp))
                     }
                     DropdownMenu(expanded, { expanded = false }, modifier = Modifier.background(FormSurface)) {
                         listOf("₪", "$").forEach { c -> DropdownMenuItem(text = { Text(c, color = Color.White) }, onClick = { onCurrency(c); expanded = false }) }
@@ -144,7 +145,7 @@ fun CompactReportFields(
         }
         if (values.group) {
             TextButton(onClick = onSeparateRates, contentPadding = PaddingValues(horizontal = 4.dp)) {
-                Text(if (values.separateRates) "סגור תעריפים נפרדים" else "תעריפים נפרדים לקבוצה", color = Color(0xFFC7D2FE))
+                Text(if (values.separateRates) "סגור תעריפים נפרדים" else "תעריפים נפרדים לקבוצה", color = WorkPalette.AccentText)
             }
             if (values.separateRates) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CompactNumberField("תעריף מעסיק", values.employerRate, onEmployerRate, Modifier.weight(1f))
@@ -156,16 +157,16 @@ fun CompactReportFields(
             var expanded by remember { mutableStateOf(false) }
             Box(Modifier.weight(1f)) {
                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("report_category")
-                    .background(FormSurface, RoundedCornerShape(10.dp)).border(1.dp, Color(0xFF3F3F46), RoundedCornerShape(10.dp))
+                    .background(WorkPalette.Control, RoundedCornerShape(10.dp)).border(1.dp, WorkPalette.Outline, RoundedCornerShape(10.dp))
                     .clickable { expanded = true }.padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(values.category, Modifier.weight(1f), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF94A3B8))
+                    Icon(Icons.Outlined.ArrowDropDown, null, tint = WorkPalette.SecondaryText)
                 }
                 DropdownMenu(expanded, { expanded = false }, modifier = Modifier.background(FormSurface)) {
                     categories.forEach { cat -> DropdownMenuItem(text = { Text(cat.name, color = Color.White) }, onClick = { onCategory(cat); expanded = false }) }
                 }
             }
-            IconButton(onClick = onAddCategory) { Icon(Icons.Outlined.Add, "הוסף מעסיק", tint = Color(0xFF818CF8)) }
+            IconButton(onClick = onAddCategory) { Icon(Icons.Outlined.Add, "הוסף מעסיק", tint = WorkPalette.AccentText) }
             IconButton(onClick = onDeleteCategory) { Icon(Icons.Outlined.Delete, "מחק מעסיק", tint = Color(0xFFEF4444)) }
         }
         OutlinedTextField(value = values.notes, onValueChange = onNotes,

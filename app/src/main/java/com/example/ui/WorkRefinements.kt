@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import com.example.ui.theme.WorkPalette
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -65,12 +66,12 @@ object SummaryPages {
     )
 }
 @Composable
-private fun SummaryMetric(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
+private fun SummaryMetric(label: String, value: String, modifier: Modifier = Modifier, prominent: Boolean = false) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = WorkPalette.SecondaryText)
         Text(
             value,
-            style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum"),
+            style = (if (prominent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium).copy(textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum"),
             color = Color.White,
             maxLines = 1
         )
@@ -93,13 +94,13 @@ private fun SummaryMetric(label: String, value: String, modifier: Modifier = Mod
                     .padding(horizontal = 4.dp)
                     .height(232.dp)
                     .testTag("summary_page_$page"),
-                colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
-                border = BorderStroke(1.dp, Color(0x26FFFFFF)),
+                colors = CardDefaults.cardColors(containerColor = WorkPalette.Card),
+                border = BorderStroke(1.dp, WorkPalette.Outline),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (page == 0) {
                         Text("סיכום כללי", style = MaterialTheme.typography.titleLarge, color = Color.White)
@@ -112,7 +113,7 @@ private fun SummaryMetric(label: String, value: String, modifier: Modifier = Mod
                         }
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                             SummaryMetric("משמרות", entries.size.toString(), Modifier.weight(1f))
-                            SummaryMetric("שעות עבודה", String.format(Locale.US, "%.2f", entries.sumOf { it.hours }), Modifier.weight(1f))
+                            SummaryMetric("שעות עבודה", String.format(Locale.US, "%.2f", entries.sumOf { it.hours }), Modifier.weight(1f), prominent = true)
                         }
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                             SummaryMetric("משמרות היום", today.size.toString(), Modifier.weight(1f))
@@ -137,7 +138,7 @@ private fun SummaryMetric(label: String, value: String, modifier: Modifier = Mod
                         }
                         Text(if (currency == "₪") "סיכום בשקלים" else "סיכום בדולרים", style = MaterialTheme.typography.titleLarge, color = Color.White)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                            SummaryMetric("סה״כ הכנסות", money(rows), Modifier.weight(1f))
+                            SummaryMetric("סה״כ הכנסות", money(rows), Modifier.weight(1f), prominent = true)
                             SummaryMetric("שולם", money(rows.filter { it.isPaid }), Modifier.weight(1f))
                         }
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {

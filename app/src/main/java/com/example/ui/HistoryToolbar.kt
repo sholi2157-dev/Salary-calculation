@@ -8,6 +8,7 @@ import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.example.ui.theme.WorkPalette
 import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.FormSurface
 import androidx.compose.ui.Alignment
@@ -40,12 +41,12 @@ fun HistoryToolbar(
             if (activeFilterCount > 0) Badge { Text(activeFilterCount.toString()) }
         }) {
             IconButton(onClick = onFilters, modifier = Modifier.testTag("history_filters")) {
-                Icon(Icons.Outlined.FilterList, if (activeFilterCount == 0) "סינון" else "סינון · $activeFilterCount פעילים", tint = Color(0xFFC7D2FE))
+                Icon(Icons.Outlined.FilterList, if (activeFilterCount == 0) "סינון" else "סינון · $activeFilterCount פעילים", tint = WorkPalette.AccentText)
             }
         }
         Box {
             IconButton(onClick = { showCopyMenu = true }, modifier = Modifier.testTag("copy_menu_btn")) {
-                Icon(Icons.Outlined.ContentCopy, "שתף דוח", tint = Color(0xFFC7D2FE))
+                Icon(Icons.Outlined.ContentCopy, "שתף דוח", tint = WorkPalette.AccentText)
             }
             DropdownMenu(expanded = showCopyMenu, onDismissRequest = { showCopyMenu = false }, modifier = Modifier.background(FormSurface)) {
                 DropdownMenuItem(text = { Text("Excel (ייצוא)", color = Color.White) }, onClick = {
@@ -60,7 +61,7 @@ fun HistoryToolbar(
         }
         Box {
             IconButton(onClick = { showSortMenu = true }, modifier = Modifier.testTag("history_sort")) {
-                Icon(Icons.Outlined.Sort, "מיון", tint = Color(0xFFC7D2FE))
+                Icon(Icons.Outlined.Sort, "מיון", tint = WorkPalette.AccentText)
             }
             DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }, modifier = Modifier.background(FormSurface)) {
                 listOf("newest" to "תאריך: מהחדש לישן", "oldest" to "תאריך: מהישן לחדש", "latest_added" to "נוסף לאחרונה").forEach { (value, label) ->

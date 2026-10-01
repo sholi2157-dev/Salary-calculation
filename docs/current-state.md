@@ -14,6 +14,14 @@ The website/sync work is intentionally paused on:
 
 Do not resume or modify website, Firebase, accounts or cloud sync until the user explicitly switches the project back to that phase.
 
+## Active UI Skills task — 2026-10-01 UTC
+
+RC11/code19 UI implementation is prepared from the exact RC10 HEAD25f7066.
+Pre-change remote backup: `backup/android-rc10-before-ui-skills-20261001` at
+`25f7066cbe058af226ba46befc990f2d8b30b929`, verified by read-back.
+Scope/evidence/recovery: `docs/android-ui-skills.md`. Signed build/real RC10→RC11
+update and visual checks pending; the verified baseline below remains RC10.
+
 ## Latest verified Android owner-review candidate
 
 - Version: `1.5-rc10`, versionCode `18`

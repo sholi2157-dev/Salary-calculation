@@ -3,9 +3,9 @@ set -euo pipefail
 set +x
 : "${KEYSTORE_PATH:?Permanent key required}" "${STORE_PASSWORD:?}" "${KEY_PASSWORD:?}" "${CERT_SHA256:?}"
 mkdir -p release-evidence
-# Upgrade from the exact owner-tested RC9 binary, never a reconstruction.
-: "${PREVIOUS_APK:?Original RC9 artifact required}"
-echo "c63dd258bc328e25204498f593b9704399723e9166c5169839e5bc4e9d751734  $PREVIOUS_APK" | sha256sum -c -
+# Upgrade from the exact owner-tested RC10 binary, never a reconstruction.
+: "${PREVIOUS_APK:?Original RC10 artifact required}"
+echo "93d696b1324a8460e41a998afb52f01d174a23483ae33263ab03c5d4ebc788ee  $PREVIOUS_APK" | sha256sum -c -
 cp "$PREVIOUS_APK" candidate-a.apk
 version_b=$(python3 -c 'import re;print(re.search(r"orNull\?\.toInt\(\) \?: (\d+)",open("app/build.gradle.kts").read())[1])')
 gradle :app:assembleRelease :app:assembleReleaseAndroidTest \
@@ -16,7 +16,7 @@ for apk in candidate-a.apk candidate-b.apk app/build/outputs/apk/androidTest/rel
   report="release-evidence/$(basename "$apk").txt"
   {
     if [ "$apk" = candidate-a.apk ]; then
-      echo "Source commit: 87c288cd3f18c44669a550a0d9b5a944dd5902e3 (original RC9 artifact)"
+      echo "Source commit: 068c7fada2dad09c59c0b240c4ddb4e5bad18d20 (original RC10 artifact)"
     else echo "Source commit: $GITHUB_SHA"; fi
     "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
     sha256sum "$apk"
@@ -31,7 +31,7 @@ python3 scripts/check-local-build.py
 python3 - <<'CHECK'
 from pathlib import Path
 import re
-for name, code, version in [('candidate-a.apk', 17, '1.5-rc9'), ('candidate-b.apk', 18, '1.5-rc10')]:
+for name, code, version in [('candidate-a.apk', 18, '1.5-rc10'), ('candidate-b.apk', 19, '1.5-rc11')]:
     report = Path(f'release-evidence/{name}.txt').read_text()
     assert re.search(r"name='com.aistudio.worktracker.qztvdw.distribution' versionCode='" + str(code) + r"' versionName='" + re.escape(version) + "'", report), name
 CHECK
