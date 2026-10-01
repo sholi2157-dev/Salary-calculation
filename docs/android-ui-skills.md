@@ -75,9 +75,35 @@ No database, payroll, timer, drafts, import/export, providers, credentials, acco
 cloud or website changes. Version is1.5-rc11/code19. Upgrade gate now pins the exact
 previous delivered RC10 binary/hash and verifies RC10/code18→RC11/code19.
 
-## Validation status
+## Final verification
 
-Implementation complete; CI/signed artifact, screenshots and real update gate
-are pending. Do not describe this candidate as verified until actual results are
-recorded. Physical-phone appearance, animation and real speech/live AI remain
-owner checks; automated emulator motion is disabled by the existing workflow.
+Signed source `b8818c5da483ed9819f7f2abd576b8e61c07f0b0`.
+Run36806582196/job110192154238: SUCCESS, actual logs and downloaded artifacts
+inspected. Candidate artifact11137173981; unit/render artifact11138051900.
+Debug72/72 and Release60/60, zero failures/errors/skips. App/release/test builds
+and local-only package/Firebase initialization gates passed.
+
+Real original RC10/code18 to RC11/code19 installed via adb install-r. Six existing
+instrumentation stages passed: seed, restart, updater, verify, UI and keyboard UI.
+Exact synthetic before/after snapshots match byte-for-byte; crash log0 bytes.
+This includes stored amounts/currencies/worker JSON/categories/preferences and
+identities, offline restart, updater, real keyboard/reachable Save, duplicate-save
+and native UI interactions. No real owner data was accessed or modified.
+
+All29 Roborazzi PNGs inspected at360dp/390dp: Home, clock/manual/group forms,
+AI input/error/recording/processing/review, keyboard inset layouts, final History,
+selection and expanded group/payment/action cards. All13 emulator PNGs inspected;
+some are the launcher or stale named capture targets, so those do not establish
+screen-specific visual coverage. Actual Save/IME, currency summary, forms and
+History captures show no new clipping. Settings colors/typography are reviewed
+in code and tested by existing coverage; no current dedicated settings screenshot
+is available. Motion timing is not visually verified (CI disables animation).
+
+Downloaded APK independently verified locally: package/version/source manifest,
+cryptographic v2 signature, whole-APK content digest, permanent certificate and
+SHA256 agree with CI. APK SHA256:
+`68d0d70af713e69f88ede0e573dc00113493f095851a7d44ce39296fd754d506`.
+Owner APK: SalaryRC11.apk. Raw evidence: docs/release-evidence/rc11/.
+
+Physical-phone appearance, motion, speech/live personal-key AI remain owner checks.
+No public/stable release, update-feed publication, website/cloud work or video.

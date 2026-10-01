@@ -16,13 +16,22 @@ Do not resume or modify website, Firebase, accounts or cloud sync until the user
 
 ## Active UI Skills task — 2026-10-01 UTC
 
-RC11/code19 UI implementation is prepared from the exact RC10 HEAD25f7066.
+RC11/code19 is completed and signed from the exact RC10 HEAD25f7066.
 Pre-change remote backup: `backup/android-rc10-before-ui-skills-20261001` at
 `25f7066cbe058af226ba46befc990f2d8b30b929`, verified by read-back.
-Scope/evidence/recovery: `docs/android-ui-skills.md`. Signed build/real RC10→RC11
-update and visual checks pending; the verified baseline below remains RC10.
+Scope/evidence/recovery: `docs/android-ui-skills.md` and `docs/release-evidence/rc11/`.
 
-## Latest verified Android owner-review candidate
+Latest candidate: 1.5-rc11/code19, source b8818c5da483ed9819f7f2abd576b8e61c07f0b0.
+Run36806582196/job110192154238 SUCCESS; candidate artifact11137173981.
+APK SHA25668d0d70af713e69f88ede0e573dc00113493f095851a7d44ce39296fd754d506.
+Package/permanent certificate unchanged. Debug72 and Release60 passed; real signed
+original RC10 to RC11 upgrade preserved exact synthetic data, updater/UI/real IME
+and duplicate-save checks passed; crash log empty. All29 rendered/13 emulator
+PNGs inspected with the disclosed coverage limits. Downloaded APK signature,
+content digest and metadata independently verified. Owner APK SalaryRC11.apk.
+Physical owner review remains. No stable/public distribution or cloud/website work.
+
+## Previous verified Android owner-review candidate — RC10
 
 - Version: `1.5-rc10`, versionCode `18`
 - Tested/signed source: `068c7fada2dad09c59c0b240c4ddb4e5bad18d20`

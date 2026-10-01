@@ -1,0 +1,21 @@
+{
+  "source_commit": "b8818c5da483ed9819f7f2abd576b8e61c07f0b0",
+  "run_id": 36806582196,
+  "job_id": 110192154238,
+  "conclusion": "success",
+  "artifact_id": 11137173981,
+  "unit_artifact_id": 11138051900,
+  "version_name": "1.5-rc11",
+  "version_code": 19,
+  "apk_sha256": "68d0d70af713e69f88ede0e573dc00113493f095851a7d44ce39296fd754d506",
+  "certificate_sha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
+  "package": "com.aistudio.worktracker.qztvdw.distribution",
+  "independent_apk_v2_signature_and_content_digest_verified": true,
+  "exact_synthetic_snapshot_equality": true,
+  "crash_log_bytes": 0,
+  "rendered_pngs_inspected": 29,
+  "emulator_pngs_inspected": 13,
+  "previous_version": "1.5-rc10",
+  "previous_code": 18,
+  "owner_physical_review_pending": true
+}

@@ -222,3 +222,23 @@ hosting/download/installer round-trip before public distribution. No public
 Release, tag, merge, account activation, Firebase setup or sync rollout authorized.
 
 Future versions must use the same key/package and code>=8 after B7 is delivered.
+
+
+## RC11 UI Skills owner review — 2026-10-01 UTC
+
+- Source b8818c5da483ed9819f7f2abd576b8e61c07f0b0, version1.5-rc11/code19.
+- Run36806582196/job110192154238 SUCCESS; artifact11137173981.
+- Same permanent distribution package and certificate. Independent local v2
+  signature/content-digest, manifest/source and SHA verification passed.
+- APK SHA25668d0d70af713e69f88ede0e573dc00113493f095851a7d44ce39296fd754d506.
+- Debug72/Release60, no failures/errors/skips. Original RC10/code18 to RC11/code19
+  signed installation, exact synthetic snapshot equality, offline/updater/UI/real
+  keyboard/Save/duplicate-save checks passed. Crash log0 bytes.
+-29 rendered PNGs and13 emulator PNGs inspected; actual coverage/limits documented
+  in android-ui-skills.md. Motion/physical OEM/speech/live AI remain owner checks.
+- Pre-change remote backup branch backup/android-rc10-before-ui-skills-20261001,
+  exact HEAD25f7066cbe058af226ba46befc990f2d8b30b929. Restore UI via a HIGHER-code
+  signed update; no uninstall/downgrade/reset or forced release-branch rewrite.
+- Owner APK SalaryRC11.apk; original source/APK recovery archive
+  Salary-RC10-before-ui-skills.zip. Raw evidence docs/release-evidence/rc11/.
+- No stable/public release, feed change, website/cloud work or launch video.
