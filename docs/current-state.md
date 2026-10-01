@@ -1,6 +1,6 @@
 # Current project state
 
-Last updated: 2026-09-30
+Last updated: 2026-10-01
 
 ## Repository and active track
 Repository: `sholi2157-dev/Salary-calculation`
@@ -16,11 +16,20 @@ Do not resume or modify website, Firebase, accounts or cloud sync until the user
 
 ## Active task: restore RC10 interface as RC12 — 2026-10-01 UTC
 
-Owner rejected RC11 design and requested the previous version. All8 UI files are
-restored byte-for-byte from RC10 backup25f7066; version1.5-rc12/code20 is prepared
-for a signed update over original RC11/code19. Data/business/cloud sources unchanged.
-Scope/evidence: docs/android-ui-skills-rollback.md. Signed upgrade/build gates pending.
-No public/stable release. The verified previous candidate below remains RC11.
+Owner requested the previous version. All 8 UI files restored byte-for-byte from
+RC10 backup `25f7066cbe058af226ba46befc990f2d8b30b929`; old animated purple/navy
+background, translucent cards, original typography/palette/Save are restored.
+Latest verified candidate: `1.5-rc12` / code `20`, signed source
+`6a46483278d74439a5ec535d78dceaae196fe055`.
+Run `36808449941` / job `110197933791`: SUCCESS; artifact `11138556573`.
+APK SHA256 `23d5dd54f256ba865c6b5d8e976ae7c2d3226213fbc4a64d2aa608240f64f811`.
+Permanent package/certificate unchanged. Debug 72/72, Release 60/60; original
+signed RC11/code19 to RC12/code20 update preserves exact synthetic data. All six
+instrumentation stages, offline/updater/real keyboard/Save checks passed; crash
+log empty. Downloaded APK independently verified; all 29 rendered and 13 emulator
+PNGs inspected with coverage limits recorded. Owner file `SalaryRC12.apk`.
+Scope/evidence: `docs/android-ui-skills-rollback.md`, `docs/release-evidence/rc12/`.
+Physical owner review remains. No public/stable release or cloud/website changes.
 
 ## Previous UI Skills task — RC11
 

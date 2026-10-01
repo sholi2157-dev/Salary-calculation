@@ -242,3 +242,24 @@ Future versions must use the same key/package and code>=8 after B7 is delivered.
 - Owner APK SalaryRC11.apk; original source/APK recovery archive
   Salary-RC10-before-ui-skills.zip. Raw evidence docs/release-evidence/rc11/.
 - No stable/public release, feed change, website/cloud work or launch video.
+
+
+## RC12 restores exact RC10 interface — 2026-10-01 UTC
+
+- Signed source `6a46483278d74439a5ec535d78dceaae196fe055`, version `1.5-rc12`, code `20`.
+- Run `36808449941` / job `110197933791`: SUCCESS, candidate artifact `11138556573`.
+- APK SHA256 `23d5dd54f256ba865c6b5d8e976ae7c2d3226213fbc4a64d2aa608240f64f811`.
+- Same permanent package/certificate; independent v2 signature/content digest,
+  manifest/embedded source and downloaded-byte hash verification passed.
+- Eight UI files byte-identical to pre-UI-Skills RC10 backup `25f7066`; build tools,
+  data/business behavior and current permanent release identity preserved.
+- Debug 72/72 and Release 60/60, no failures/errors/skips. Real original RC11/code19
+  to RC12/code20 update without uninstall/reset passed; all six instrumentation
+  stages and offline launch/updater/keyboard/Save/duplicate-save gates passed.
+- Exact synthetic snapshots match, SHA256
+  `4fa2e3913aed78da5e0967f1c2d1368f6e42a31ae80cb364008f87f2d1793296`.
+  Crash log 0 bytes; no real owner records accessed.
+- All 29 rendered and 13 emulator PNGs inspected. Coverage/motion limits in
+  `android-ui-skills-rollback.md`; physical owner review remains.
+- Owner APK `SalaryRC12.apk`; raw evidence `release-evidence/rc12/`.
+  No public/stable release, feed update, website/cloud change or video.
