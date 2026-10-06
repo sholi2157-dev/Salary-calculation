@@ -118,3 +118,29 @@ transfer storage across domains, or clear caches/data manually. Future releases
 must use the identical eta origin. An HTTP 404 cannot be made into a working Web
 release without replacing its deployment; the owner's explicit “do not promote
 production yet” gate therefore leaves that serving issue pending rollout.
+
+## Public origin activated — 2026-10-06
+
+Owner subsequently requested a distribution-ready public link, authorizing rollout
+following the final onboarding correction. Exact deployed application source:
+789d7cd44627865a7bd2666447f12b72057da78b. Verified preview:
+https://salary-calculation-5hmbbj07f-sholi.vercel.app/
+Deployment: dpl_A4a8QRaa6ox1gs44FjuxCHGspxqg.
+
+Vercel's project promotion endpoint returned 422 without explicit scope and 403
+with the known sholi team scope; the mapped CLI was unavailable. The supported
+alias assignment succeeded instead: the existing eta alias was reassigned from
+missing artifact dpl_HqZsJt4sQAFh99bcd7XEifWWFFaH to the tested deployment. This
+publishes the verified artifact at the permanent origin, but does not change the
+Git production branch or mark the deployment's target as production. Future
+rollouts must continue assigning this same eta alias (or repair promotion access).
+No merge, new public URL, redirects, auth protection or storage changes.
+
+Anonymous HTTP GET /build-info.json returned 200 with exact source SHA/buildId
+789d7cd44627865a7bd2666447f12b72057da78b-87c14a2ec1ad519b. Public browser opened
+home and first-launch guide, then the shift form. Preview browser confirmed the
+navigation bottom equals the viewport bottom, and Settings has no replay control.
+The public browser's subsequent save/reload check was blocked by its URL policy;
+no circumvention attempted and that final live save/reload is not claimed passed.
+Local build/42 tests/all three browser suites passed including financial data,
+reload, active timer, drafts, offline shell and controlled updates.
