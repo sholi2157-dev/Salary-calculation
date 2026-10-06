@@ -58,6 +58,10 @@ class OnboardingExperienceTest {
                 val card = ui.onNodeWithTag("onboarding_card").getUnclippedBoundsInRoot()
                 assertTrue("${step.target} visible above or below coach: $target / $card", target.bottom <= card.top + 4.dp || target.top >= card.bottom - 4.dp)
                 assertTrue("RTL coach next appears to right of back", ui.onNodeWithTag("onboarding_next").getUnclippedBoundsInRoot().left >= ui.onNodeWithTag("onboarding_back").getUnclippedBoundsInRoot().right)
+                if (step.target == CoachTarget.API) {
+                    val actions = ui.onNodeWithTag("settings_action_bar", useUnmergedTree = true).getUnclippedBoundsInRoot()
+                    assertTrue("API key control must be above sticky Save/Cancel", target.bottom <= actions.top)
+                }
                 // Press on the spotlight itself: actual Save/Start/Share cannot run.
                 ui.onNodeWithTag("onboarding_root").performTouchInput { click(androidx.compose.ui.geometry.Offset((target.left.value + target.right.value) / 2 * app.resources.displayMetrics.density, (target.top.value + target.bottom.value) / 2 * app.resources.displayMetrics.density)) }
                 assertEquals(index, controller.index)

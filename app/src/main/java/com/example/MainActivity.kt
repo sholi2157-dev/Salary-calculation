@@ -3693,6 +3693,8 @@ fun ManagementScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // During guidance, scroll targets must remain above the real sticky actions.
+                .padding(bottom = if (coachStep != null) 88.dp else 0.dp)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(top = 16.dp, bottom = 100.dp),
@@ -4308,6 +4310,7 @@ fun ManagementScreen(
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .testTag("settings_action_bar")
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(

@@ -82,12 +82,12 @@ data class CoachStep(val screen: CoachScreen, val target: CoachTarget?, val titl
 val workOnboardingSteps = listOf(
     CoachStep(CoachScreen.HOME, null, "ברוכים הבאים לחישוב שכר", "רושמים משמרות, מחשבים שכר ומשתפים בקלות. בוא נכיר את המקומות החשובים."),
     CoachStep(CoachScreen.HOME, CoachTarget.SHIFT, "כאן מתחילים", "״דיווח חדש״ לרישום שעות שכבר עבדת. ״התחל משמרת פעילה״ מפעיל טיימר בזמן העבודה."),
-    CoachStep(CoachScreen.FORM, CoachTarget.FIELDS, "הפרטים שלך, החישוב שלנו", "ממלאים תאריך ושעות, הפסקה, תעריף ומטבע; בוחרים קטגוריה והערה אם צריך. הסכום מחושב אוטומטית."),
-    CoachStep(CoachScreen.AI, CoachTarget.AI, "אפשר גם במילים", "כותבים או מכתיבים, עורכים את הטקסט ולוחצים ״פענח עם AI״. בודקים את התוצאה ורק אז שומרים."),
+    CoachStep(CoachScreen.FORM, CoachTarget.FIELDS, "הפרטים שלך, החישוב שלנו", "תאריך ושעות, הפסקה, תעריף ומטבע. מוסיפים קטגוריה והערה אם צריך — והסכום מחושב לבד."),
+    CoachStep(CoachScreen.AI, CoachTarget.AI, "אפשר גם במילים", "כותבים או מכתיבים, עורכים ולוחצים ״פענח עם AI״. בודקים את התוצאה ורק אז שומרים."),
     CoachStep(CoachScreen.HISTORY, CoachTarget.HISTORY, "כל המשמרות במקום אחד", "כאן רואים סכומים, מחפשים ומסננים. לחיצה ארוכה בוחרת כמה משמרות לפעולה משותפת."),
     CoachStep(CoachScreen.SHARE, CoachTarget.SHARE, "שולחים סיכום מסודר", "פותחים משמרת ולוחצים על שיתוף. השעות והסכום מוכנים לשליחה, למשל בוואטסאפ. בהדרכה לא נשלח דבר."),
     CoachStep(CoachScreen.CATEGORIES, CoachTarget.CATEGORIES, "עובד בכמה מקומות?", "בהגדרות יוצרים קטגוריה לכל עבודה, עם תעריף ומטבע ברירת מחדל: שקל או דולר. אפשר לבחור מטבע גם בכל משמרת."),
-    CoachStep(CoachScreen.API, CoachTarget.API, "רוצה להשתמש ב־AI?", "בהגדרות, תחת ״מערכת ומשוב״, מוסיפים מפתח API אישי של ג׳מיני. שאר האפליקציה עובדת גם בלי AI."),
+    CoachStep(CoachScreen.API, CoachTarget.API, "רוצה להשתמש ב־AI?", "ב״מערכת ומשוב״ מוסיפים מפתח API אישי של ג׳מיני. שאר האפליקציה עובדת גם בלי AI."),
     CoachStep(CoachScreen.HOME, null, "זה הכול. אתה מוכן.", "מוסיפים משמרת — והחישובים עלינו. ההדרכה תמיד זמינה שוב בהגדרות.")
 )
 
@@ -240,7 +240,7 @@ internal fun CoachOverlay(controller: OnboardingController, target: Rect?, modif
                     TextButton(onClick = controller::finish, modifier = Modifier.heightIn(min = 48.dp).testTag("onboarding_skip")) { Text("דלג", color = Color(0xFFCBD5E1)) }
                 }
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(step.title, color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
+                    Text(step.title, color = Color.White, style = if (centered) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, lineHeight = 26.sp), fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
                     Text(step.body, color = Color(0xFFE2E8F0), style = MaterialTheme.typography.bodyMedium)
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
