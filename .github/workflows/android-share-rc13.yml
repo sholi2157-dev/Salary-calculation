@@ -1,0 +1,52 @@
+name: Share verified Android RC13
+on:
+  push:
+    branches: ['codex/android-local-distribution']
+    paths: ['.github/workflows/android-share-rc13.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: contains(github.event.head_commit.message, '[publish-rc13]') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch exact verified signed APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 37415910804 --repo sholi2157-dev/Salary-calculation --name salary-local-release-candidate --dir verified
+          echo '74da79a77d99e1e6d98ddca0c4b5b9b6079032cd191e57353ac2344d4c385da1  verified/candidate-b.apk' | sha256sum --check
+          cp verified/candidate-b.apk SalaryRC13.apk
+      - name: Publish download link without changing stable update feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=android-v1.5-rc13
+          repo=sholi2157-dev/Salary-calculation
+          cat > notes.md <<'NOTES'
+          חישוב שכר לאנדרואיד — RC13
+
+          הדרכת פתיחה בעברית עם תשעה שלבים והדגשת רכיבי האפליקציה הקיימים.
+          נתונים מקומיים; ללא חשבון. AI אופציונלי עם מפתח API אישי.
+          גרסה 1.5-rc13 / קוד 21. החבילה והחתימה הקבועות נשמרו.
+
+          הורדה: SalaryRC13.apk. למשתמשים קיימים: מתקינים מעל האפליקציה, ללא הסרה.
+          אם Android מבקש, מאפשרים התקנה מהדפדפן או ממנהל הקבצים שממנו נפתח הקובץ.
+          משתמשים קיימים: ההדרכה זמינה בהגדרות ← הצג שוב את ההדרכה.
+
+          APK SHA256: 74da79a77d99e1e6d98ddca0c4b5b9b6079032cd191e57353ac2344d4c385da1
+          Tested source: ae489c9655b1684f38be74ef0b12ff2c19e4e68e
+          Verified run: 37415910804. Original RC12 upgrade and fresh install/cold launch passed.
+          NOTES
+          if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
+            gh release download "$tag" --repo "$repo" --pattern SalaryRC13.apk --dir existing
+            echo '74da79a77d99e1e6d98ddca0c4b5b9b6079032cd191e57353ac2344d4c385da1  existing/SalaryRC13.apk' | sha256sum --check
+          else
+            gh release create "$tag" SalaryRC13.apk --repo "$repo" --target ae489c9655b1684f38be74ef0b12ff2c19e4e68e --title 'חישוב שכר — Android RC13' --notes-file notes.md --prerelease --latest=false
+          fi
+          gh release view "$tag" --repo "$repo" --json url,assets,isPrerelease > published.json
+          cat published.json
