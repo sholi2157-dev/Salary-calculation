@@ -110,3 +110,21 @@ dashboard, then the updated artifact deployed to the same eta origin.
 Current production remains 67f4e1a. No claim of collected traffic or live metrics.
 The connected tools have no analytics-enable operation; browser fallback requires
 owner approval under the current browser capability instructions.
+
+
+## Traffic measurement live verification — 2026-10-06
+
+Owner approved GitHub upload and Vercel browser activation. Code-equivalent
+application source 42af2c3527fbbc9af1860806f56f2793f90e0ce5 (tree
+fdf7992564c72420bba6b5765ce959039df472aa) was built READY as deployment
+dpl_Ae95zp98dg8RYJET6BRHU4GtTokM. The existing eta alias was assigned to this
+verified artifact; previous deployment dpl_5aZYgcD2yTwhB1vzt2qKJVa4azYR remains
+available for rollback. Build-info and insights script both return successfully
+on the public origin. Browser update notice and explicit safe update verified.
+
+Web Analytics enabled on included Hobby tier: 50,000 events/month, capped
+ingestion, 30 days viewable history, no custom events. Dashboard visibly reports
+one visitor, one page view and one online user after the synthetic browser visit.
+Stats page: https://vercel.com/sholi/salary-calculation/analytics?environment=all
+No finance payloads, provider keys or Android changes. Existing local validation
+(42 tests and mobile/parity/update suites) covered the identical application tree.
