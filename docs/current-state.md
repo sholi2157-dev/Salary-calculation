@@ -53,3 +53,18 @@ suites. Parity verifies settings closed/reopen/exclusive expansion at 360,390,
 coverage retained. Browser screenshots inspected against the attached images.
 Prior state remains recoverable at commit 69adb78462025093461dfb0fa5f7e0efaa6229b7.
 Production and original draft PR #1 remain untouched.
+
+## Public release follow-up — 2026-10-06
+
+Owner approved the screenshot correction and requested a distribution-ready
+permanent link, superseding the prior no-production-promotion gate after preview
+verification. Removed Settings' tutorial replay control and the final tutorial
+text promising that control. First-launch onboarding remains. Its cloned bottom
+navigation now stays at the viewport bottom beneath the coach card instead of
+being raised 265px through the screen. Added real-browser bounds assertions and
+welcome screenshots at mobile/desktop widths. No storage/Android changes.
+
+Validation: build, 42 tests, mobile/parity/update suites, exact 22/8 fixture,
+drafts/timer/offline/update preservation. Preview must pass before promoting the
+same artifact to the existing salary-calculation-eta.vercel.app production origin.
+Prior recoverable source: 7fb35841029f0fd3a5a6af8b00e25c65f055f831.

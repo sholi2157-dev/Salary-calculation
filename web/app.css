@@ -338,12 +338,12 @@ dialog p { margin: 10px 0; color: var(--muted); font-size: 13px; line-height: 1.
 :is(#filters-dialog,[data-coach-id="filters-dialog"]) h2 { margin-bottom: 16px; }
 :is(#tutorial-dialog,[data-coach-id="tutorial-dialog"]) { max-width: 680px; width: 100%; height: 100dvh; max-height: 100dvh; margin: 0 auto; padding: 0; border: 0; border-radius: 0; background: var(--canvas); overflow: hidden; }
 :is(#tutorial-demo,[data-coach-id="tutorial-demo"]) { height: 100%; overflow: auto; padding-bottom: 270px; background: linear-gradient(135deg,#090b10,#1e1b4b,#2e1065,#111827); scrollbar-width: none; }
-:is(#tutorial-demo,[data-coach-id="tutorial-demo"]) .bottom-nav { position: absolute; bottom: 265px; }
+:is(#tutorial-demo,[data-coach-id="tutorial-demo"]) .bottom-nav { position: absolute; bottom: 0; z-index: 0; }
 :is(#tutorial-demo,[data-coach-id="tutorial-demo"]) .app-container { padding-bottom: 24px; }
 :is(#tutorial-demo,[data-coach-id="tutorial-demo"]) .header-bar { pointer-events: none; }
 .tutorial-settings, .tutorial-share { padding: 16px; }
 .tutorial-settings details { border: 1px solid var(--border); padding: 12px; margin-top: 12px; border-radius: 16px; background: var(--field); }
-.tutorial-card { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px 20px calc(20px + env(safe-area-inset-bottom)); background: #222b49; border-top: 1px solid #818cf866; border-radius: 24px 24px 0 0; box-shadow: 0 -24px 60px #0008; }
+.tutorial-card { position: absolute; z-index: 1; bottom: 0; left: 0; right: 0; padding: 16px 20px calc(20px + env(safe-area-inset-bottom)); background: #222b49; border-top: 1px solid #818cf866; border-radius: 24px 24px 0 0; box-shadow: 0 -24px 60px #0008; }
 .tutorial-topline { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
 .tutorial-card h2 { font-size: 20px; color: white; margin-bottom: 8px; }
 .tutorial-card p { color: #e2e8f0; font-size: 14px; line-height: 1.7; }
@@ -351,7 +351,6 @@ dialog p { margin: 10px 0; color: var(--muted); font-size: 13px; line-height: 1.
 :is(#tutorial-demo,[data-coach-id="tutorial-demo"]) :is(#report-fields,[data-coach-id="report-fields"]) { pointer-events: none; }
 :is(#tutorial-demo,[data-coach-id="tutorial-demo"]) .journal-toolbar { flex-wrap: wrap; }
 :is(#tutorial-dialog,[data-coach-id="tutorial-dialog"]) .modal-btn-row { margin-top: 14px; }
-.tutorial-replay { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin: 10px 0 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 14px; }
 @media (max-height: 550px) { .tutorial-card { padding: 10px 16px; } .tutorial-card p { font-size: 12px; line-height: 1.5; } .tutorial-card h2 { font-size: 16px; } }
 
 .toast { position: fixed; inset: auto 16px calc(80px + env(safe-area-inset-bottom)); z-index: 10000; display: flex; align-items: center; gap: 10px; width: max-content; max-width: calc(100vw - 32px); margin: auto; padding: 12px 16px; border: 1px solid var(--border); border-radius: 14px; background: #242531; color: #f0f0f6; box-shadow: 0 6px 24px #0005; font-size: 13px; pointer-events: none; }
