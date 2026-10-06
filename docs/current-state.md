@@ -17,3 +17,11 @@ browser parity/22-8 migration/offline suite passed. No Android build/source chan
 Physical browser native share/keyboard and live account sync remain unverified.
 Web AI is isolated behind a disabled flag pending a secure server adapter.
 Do not claim production replaced before a verified safe preview and promotion.
+
+Application commit `e30160a3111c2648a1d6627a994ccfd1899f02f8` is deployed READY:
+https://salary-calculation-3kk40j9ez-sholi.vercel.app/
+Draft review PR: https://github.com/sholi2157-dev/Salary-calculation/pull/2
+Web CI run 37437505046 passed build, 36 tests and both real-browser suites.
+Live preview desktop/mobile save/reload also verified. Supplied production alias
+and connected project's listed production alias returned 404; no promotion or
+origin change was performed. See deployment path in the parity document.
