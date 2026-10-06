@@ -48,6 +48,7 @@ class OnboardingExperienceTest {
         for ((index, step) in workOnboardingSteps.withIndex()) {
             ui.onNodeWithTag("onboarding_progress").assertTextEquals("${index + 1} מתוך 9")
             if (step.target != null) {
+                ui.onNodeWithTag("onboarding_root").captureRoboImage(filePath = "/tmp/onboarding-diagnostic-$width-$index-$fontScale.png")
                 ui.waitUntil(5000) { ui.onAllNodesWithTag("coach_target_${step.target.name}", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
                 ui.mainClock.advanceTimeBy(600)
                 ui.waitForIdle()

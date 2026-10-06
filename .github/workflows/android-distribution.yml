@@ -26,16 +26,19 @@ jobs:
         with:
           gradle-version: '9.3.1'
           cache-read-only: false
-      - if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') }}
+      - if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') && !contains(github.event.head_commit.message, '[onboarding-focus]') }}
         run: gradle :app:compileDebugKotlin :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.StageALayoutTest' --tests 'com.example.StageAInsetsTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.HistoryCompactUiTest' --tests 'com.example.InterfacePolishTest' --tests 'com.example.OnboardingExperienceTest' :app:testReleaseUnitTest --tests 'com.example.Work*Test' :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true -Proborazzi.test.record=true --console=plain
+      - name: Focused onboarding iteration
+        if: ${{ contains(github.event.head_commit.message, '[onboarding-focus]') }}
+        run: gradle :app:testDebugUnitTest --tests 'com.example.WorkOnboardingTest' --tests 'com.example.OnboardingExperienceTest' -Proborazzi.test.record=true --console=plain
       - name: Targeted missing visual evidence only
         if: ${{ contains(github.event.head_commit.message, '[stage-b-gates]') }}
         run: gradle :app:testDebugUnitTest --tests 'com.example.StageALayoutTest' --tests 'com.example.StageAInsetsTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.HistoryCompactUiTest' -Proborazzi.test.record=true --no-build-cache --console=plain
       - name: Count actual Android test results
-        if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') }}
+        if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') && !contains(github.event.head_commit.message, '[onboarding-focus]') }}
         run: python3 scripts/summarize-android-tests.py
       - name: Verify release identity and local gates
-        if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') }}
+        if: ${{ !contains(github.event.head_commit.message, '[stage-b-gates]') && !contains(github.event.head_commit.message, '[onboarding-focus]') }}
         run: |
           set -euo pipefail
           apk=app/build/outputs/apk/release/app-release-unsigned.apk
@@ -78,12 +81,12 @@ jobs:
           printf '%s' "$KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/salary-distribution.p12"
           echo 'ready=true' >> "$GITHUB_OUTPUT"
       - name: Fetch the original verified RC12 for upgrade proof
-        if: steps.signing.outputs.ready == 'true'
+        if: steps.signing.outputs.ready == 'true' && !contains(github.event.head_commit.message, '[onboarding-focus]')
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh run download 36808449941 --repo sholi2157-dev/Salary-calculation --name salary-local-release-candidate --dir "$RUNNER_TEMP/rc12"
       - name: Build signed candidates A and B
-        if: steps.signing.outputs.ready == 'true'
+        if: steps.signing.outputs.ready == 'true' && !contains(github.event.head_commit.message, '[onboarding-focus]')
         env:
           PREVIOUS_APK: ${{ runner.temp }}/rc12/candidate-b.apk
           KEYSTORE_PATH: ${{ runner.temp }}/salary-distribution.p12
@@ -92,13 +95,13 @@ jobs:
           CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
         run: bash scripts/build-release-candidates.sh
       - name: Enable KVM for disposable emulator
-        if: steps.signing.outputs.ready == 'true'
+        if: steps.signing.outputs.ready == 'true' && !contains(github.event.head_commit.message, '[onboarding-focus]')
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Real release A to B update without clearing data
-        if: steps.signing.outputs.ready == 'true'
+        if: steps.signing.outputs.ready == 'true' && !contains(github.event.head_commit.message, '[onboarding-focus]')
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -107,7 +110,7 @@ jobs:
           disable-animations: true
           script: bash scripts/verify-release-update.sh
       - name: First launch on a separate fresh signed-install emulator
-        if: steps.signing.outputs.ready == 'true'
+        if: steps.signing.outputs.ready == 'true' && !contains(github.event.head_commit.message, '[onboarding-focus]')
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -117,7 +120,7 @@ jobs:
           disable-animations: true
           script: bash scripts/verify-onboarding-fresh.sh
       - name: Candidate for owner review only; never publish a Release
-        if: steps.signing.outputs.ready == 'true'
+        if: steps.signing.outputs.ready == 'true' && !contains(github.event.head_commit.message, '[onboarding-focus]')
         uses: actions/upload-artifact@v4
         with:
           name: salary-local-release-candidate
