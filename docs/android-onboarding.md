@@ -31,17 +31,29 @@ explicitly disabled in tutorial composition. No real API key displayed or change
 First-run notification request deferred to existing live-shift permission flow;
 optional AI setup is introduced by tutorial instead of interrupting startup.
 
-Focused verification passed on 6c946d6ff8841d579e7de4e7a3c0c1d109c3a9a9:
-4 state tests and 4 Compose tests (complete 360dp/390dp tours, actual inherited
-fontScale1.3 and Settings replay). Real target geometry, blocked spotlight taps,
-Back/Next, completion/skip/replay persistence and unchanged DB snapshots passed.
-API target is checked above the sticky Settings actions. Rendered nine-step
-sequences and enlarged text were visually inspected; initial overlay collision
-was corrected. Normal Settings/form drafts remain composed during replay.
+Final signed source: ae489c9655b1684f38be74ef0b12ff2c19e4e68e.
+Run37415910804/job112114352377 SUCCESS; candidate artifact11390889607.
+APK SHA256 74da79a77d99e1e6d98ddca0c4b5b9b6079032cd191e57353ac2344d4c385da1.
+Independent APK v2 RSA signature, complete content digest, manifest and original
+permanent certificate verified after download. Detailed reports: docs/release-evidence/rc13/.
 
-Signed original RC12 update, normal offline/UI/real IME, signed fresh-install
-emulator and independent downloaded APK verification pending final gates.
-Physical phone/TalkBack/animation pacing remain owner review after automated gates.
+Consolidated regression run37413045161/source7f69fb2: Debug80/Release64 all passed.
+Final focused run: Debug9/Release4, zero failures/errors/skips. State and Compose
+coverage includes fresh/empty upgrade/restored data, completion/skip/replay,
+Back/Next, immediate Activity save after replay dismissal, 360/390dp and inherited
+fontScale1.3, RTL order, target geometry, blocked taps, exact unchanged snapshots.
+Controller Saver reads current index directly, avoiding stale asynchronous mirrors.
+Fullscreen dialog is constrained to host viewport and uses host safeDrawing insets.
+API target is above sticky Settings actions; History and label above Android bars.
+
+Final original RC12→RC13 signed update gate: six stages passed, exact synthetic
+snapshots preserved, offline start/updater/normal UI/real IME/Save verified. Normal
+Settings feedback and group form drafts survive replay. Separate fresh signed
+emulator: all nine steps, complete/recreate, replay/skip/recreate, force-stop and
+cold launch passed. No saved demo shift, timer mutation or share dispatch. Both
+crash logs empty. Native and rendered target/text layouts visually inspected.
+Physical phone, TalkBack, OEM cutout/keyboard/animation timing and live voice/AI
+remain owner review. No public/stable Release published.
 
 Rollback: restore onboarding UI/source from the named baseline through a NEW,
 higher-versionCode signed update. Do not install a lower-code APK, uninstall,

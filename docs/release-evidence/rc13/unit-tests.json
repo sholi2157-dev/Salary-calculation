@@ -1,0 +1,38 @@
+{
+  "consolidated": {
+    "source": "7f69fb26b286705331bd44bc84bce9ab6054d22e",
+    "run": 37413045161,
+    "results": {
+      "Debug": {
+        "tests": 80,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "Release": {
+        "tests": 64,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "finalFocused": {
+    "source": "ae489c9655b1684f38be74ef0b12ff2c19e4e68e",
+    "run": 37415910804,
+    "results": {
+      "Debug": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "Release": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "apk_sha256": "74da79a77d99e1e6d98ddca0c4b5b9b6079032cd191e57353ac2344d4c385da1",
+  "certificates_sha256": [
+    "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220"
+  ],
+  "signature": "RSA/SHA256 v2 signature and complete APK content digest verified",
+  "manifest": {
+    "versionCode": 21,
+    "versionName": "1.5-rc13",
+    "package": "com.aistudio.worktracker.qztvdw.distribution"
+  }
+}

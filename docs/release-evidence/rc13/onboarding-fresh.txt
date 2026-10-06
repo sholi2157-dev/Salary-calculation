@@ -1,0 +1,8 @@
+
+com.example.OnboardingFreshInstallTest:.
+
+Time: 12.677
+
+OK (1 test)
+
+

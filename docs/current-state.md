@@ -19,11 +19,22 @@ Do not resume or modify website, Firebase, accounts or cloud sync until the user
 Owner requested an interactive first-launch tutorial and Settings replay.
 Exact pre-change clean HEAD: 6207796903515b97dcb147ae029d4b12e8f635fe.
 Rollback branch: `backup/android-rc12-before-onboarding-20261006`.
-RC13/code21 implementation and focused tests prepared; signed update verification
-pending. Scope and actual implementation: `docs/android-onboarding.md`.
+Latest verified owner-review APK: `1.5-rc13` / code `21`, signed source
+`ae489c9655b1684f38be74ef0b12ff2c19e4e68e`.
+Final run37415910804/job112114352377 SUCCESS; artifact11390889607.
+APK SHA256 `74da79a77d99e1e6d98ddca0c4b5b9b6079032cd191e57353ac2344d4c385da1`.
+Consolidated Debug80/Release64 passed; final focused Debug9/Release4 passed.
+Original RC12 signed upgrade: all six stages passed with exact synthetic data
+preservation, normal UI/draft replay/real IME. Separate signed fresh emulator:
+nine steps, completion/skip/replay/recreate/cold process launch passed. Crash logs
+empty; downloaded signature/digest/package/version independently verified.
+Version1 local state suppresses forced onboarding for established users. Replay
+is in Settings. Scope/evidence: `docs/android-onboarding.md`, `docs/release-evidence/rc13/`.
+Owner file `SalaryRC13.apk`; physical phone/TalkBack/live AI review remains.
+No public/stable release.
 No website/cloud/storage schema/provider/signing identity changes.
 
-## Active task: restore RC10 interface as RC12 — 2026-10-01 UTC
+## Previous completed task: restore RC10 interface as RC12 — 2026-10-01 UTC
 
 Owner requested the previous version. All 8 UI files restored byte-for-byte from
 RC10 backup `25f7066cbe058af226ba46befc990f2d8b30b929`; old animated purple/navy

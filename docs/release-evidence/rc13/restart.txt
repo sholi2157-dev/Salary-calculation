@@ -1,0 +1,8 @@
+
+com.example.DistributionUpdateTest:.
+
+Time: 0.023
+
+OK (1 test)
+
+
