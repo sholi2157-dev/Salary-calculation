@@ -1,5 +1,5 @@
 let historyPeriod='all',historyCurrency='הכל',historySort='newest',displayedEntries=[];
-function initParity(){document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=uiIcon(el.dataset.icon));document.querySelectorAll('#settings-dialog details').forEach(el=>el.addEventListener('toggle',()=>{if(el.open&&!el.classList.contains('main-currency-settings'))document.querySelectorAll('#settings-dialog details:not(.main-currency-settings)').forEach(other=>{if(other!==el)other.open=false;});}));
+function initParity(){document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=uiIcon(el.dataset.icon));document.querySelectorAll('#settings-dialog details').forEach(el=>el.addEventListener('toggle',()=>{if(el.open)document.querySelectorAll('#settings-dialog details').forEach(other=>{if(other!==el)other.open=false;});}));
  // A long touch can move the toolbar under the finger. Block its release click
  // even when the original summary node has been replaced by selection rendering.
  document.addEventListener('click',event=>{if(Date.now()<ignoreSelectionClickUntil&&event.pointerType!=='mouse'&&event.detail!==0){event.preventDefault();event.stopImmediatePropagation();}},true);
@@ -54,7 +54,7 @@ function openWebSettings(){
  document.getElementById('default-currency').value=webPreferences.mainCurrency||localStorage.getItem('work_default_currency')||'₪';
  selectMainCurrency(document.getElementById('default-currency').value);
  document.getElementById('new-category-name').value='';document.getElementById('new-category-error').textContent='';
- document.querySelectorAll('#settings-dialog details').forEach(d=>d.open=d.classList.contains('main-currency-settings')); renderCategorySettings();document.getElementById('settings-dialog').showModal();
+ document.querySelectorAll('#settings-dialog details').forEach(d=>d.open=false); renderCategorySettings();document.getElementById('settings-dialog').showModal();
 }
 function saveWebSettings(){
  if(!settingsDraft||settingsOwner!==currentUserId)return;

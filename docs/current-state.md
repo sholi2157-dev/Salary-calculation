@@ -32,3 +32,24 @@ controlled same-origin Web updates now preserve drafts/timers/data. Read
 alias diagnosis. Retain the verified `salary-calculation-eta.vercel.app` origin;
 its old deployment artifact must be replaced only after rollout approval.
 No promotion, merge, account-data deletion or Android change is authorized here.
+
+## Screenshot design correction — 2026-10-06
+
+Compared the supplied current Android settings/home/history screenshots with
+MainActivity's settings accordion and FormSurface. Settings now opens with all
+sections closed, permits one expanded section, and uses an outlined tutorial
+row, navy section surfaces and a charcoal-to-navy dialog. Removed the black
+footer rectangle; sticky actions blend into the dialog, retaining accessible
+Save/Cancel. Category/currency/backup titles follow Android. The web equivalent
+of the system section exposes the existing safe update check; Android-only
+notifications, personal AI keys and Android feedback mechanics are not added.
+Shift cards use translucent near-black surfaces, navy category avatars and
+visible payment status text. No financial schemas, storage, Android code,
+account flags or worker lifecycle changes.
+
+Validation: build and 42 unit tests; mobile, parity and controlled-update browser
+suites. Parity verifies settings closed/reopen/exclusive expansion at 360,390,
+768,1440 pixels; existing 22/8 preservation, drafts/timer, offline and update
+coverage retained. Browser screenshots inspected against the attached images.
+Prior state remains recoverable at commit 69adb78462025093461dfb0fa5f7e0efaa6229b7.
+Production and original draft PR #1 remain untouched.

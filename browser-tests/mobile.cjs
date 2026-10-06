@@ -13,7 +13,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  const url='http://127.0.0.1:'+server.address().port;
  const click=(name)=>page.getByRole('button',{name,exact:true}).click();
  const state=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('work_complete_backup')));
- const settings=async()=>{await click('ניהול וקטגוריות');await page.locator('#settings-dialog summary').filter({hasText:'ניהול עבודה וקטגוריות'}).click();};
+ const settings=async()=>{await click('ניהול וקטגוריות');await page.locator('#settings-dialog summary').filter({hasText:'עבודה וקטגוריות'}).click();};
  const category=async(name,rate,currency,def)=>{await page.locator('#new-category-name').fill(name);await page.locator('#new-category-rate').fill(rate);await page.locator('#new-category-currency').selectOption(currency);await click('הוספת קטגוריה');if(def){await click('עריכת '+name);await page.locator('#category-default').check();await page.locator('#category-dialog').getByRole('button',{name:'שמירה',exact:true}).click();}};
  try{
  await page.goto(url,{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'דלג',exact:true}).click();
@@ -42,7 +42,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  await page.reload({waitUntil:'domcontentloaded'});assert.equal((await state()).entries.length,0);
 
  await click('ראשי');await click('דיווח חדש');await page.getByRole('tab',{name:'שעון',exact:true}).click();await page.locator('#modal-start').fill('22:00');await page.locator('#modal-end').fill('02:00');await page.locator('#modal-break').fill('30');await page.locator('#modal-currency').selectOption('$');await page.locator('#modal-rate').fill('20');await click('שמירה');data=await state();assert.equal(data.entries[0].hours,3.5);assert.equal(data.entries[0].totalEarnings,70);assert.equal(data.entries[0].currency,'$');
- await click('ניהול וקטגוריות');assert.equal(await page.locator('#account-section').count(),0);await page.locator('#settings-dialog summary').filter({hasText:'תחזוקה וגיבוי נתונים'}).click();
+ await click('ניהול וקטגוריות');assert.equal(await page.locator('#account-section').count(),0);await page.locator('#settings-dialog summary').filter({hasText:'גיבוי ונתונים'}).click();
  await click('העתק ללוח');const copiedBackup=JSON.parse(await page.evaluate(()=>window.copiedText));assert.equal(copiedBackup.entries[0].currency,'$');await click('שתף גיבוי');assert.equal(JSON.parse(await page.evaluate(()=>window.sharedText)).entries[0].totalEarnings,70);
  const downloadPromise=page.waitForEvent('download');await click('גיבוי מלא');const download=await downloadPromise;const backup=JSON.parse(fs.readFileSync(await download.path(),'utf8'));assert.equal(backup.entries[0].currency,'$');assert.equal(backup.webPreferences.defaultCategory,'דולר חדש');
  await page.locator('#settings-import-text').fill('קטגוריה\tתאריך\tשעות\tתעריף שעתי\nשגיאה\tלא תאריך\t2\t40');await click('ייבא נתונים כעת');assert.equal(await page.locator('#transfer-save').isDisabled(),true);

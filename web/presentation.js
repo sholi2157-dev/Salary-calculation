@@ -1,5 +1,6 @@
 // DOM rendering only. Persistence, account ownership and event orchestration remain in parity.js.
 const iconPaths={
+ info:'M11 10h2v7h-2zm0-3h2v2h-2zm1-5a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16',
  filter:'M3 5h18v2H3zm3 6h12v2H6zm4 6h4v2h-4z',
  upload:'M11 16h2V7l3 3 1.4-1.4L12 3 6.6 8.6 8 10l3-3zM4 17v4h16v-4h-2v2H6v-2z',
  download:'M11 3h2v9l3-3 1.4 1.4L12 16l-5.4-5.6L8 9l3 3zM4 17v4h16v-4h-2v2H6v-2z',
@@ -25,7 +26,7 @@ function uiIcon(name){return '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidd
 function createShiftCard(entry,compact=false){
  const card=document.createElement('details');card.className='journal-card'+(compact?' compact':'');card.dataset.shiftId=entry.id;
  const summary=document.createElement('summary');const date=new Date(entry.date).toLocaleDateString('he-IL',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
- summary.innerHTML='<span class="category-avatar">'+escapeHtml(entry.category.slice(0,1))+'</span><span class="journal-info"><b>'+(!compact?uiIcon('label'):'')+escapeHtml(entry.category)+'</b><small>'+date+'</small></span><span class="journal-amount"><b>'+(!compact?uiIcon('cash'):'')+'<bdi>'+escapeHtml(entry.currency)+Number(entry.totalEarnings).toFixed(2)+'</bdi></b><small>'+(!compact?uiIcon('timer'):'')+Number(entry.hours).toFixed(1)+' ש׳ <i class="status-dot '+(entry.isPaid?'paid':'')+'" title="'+(entry.isPaid?'שולם':'ממתין')+'"></i></small></span><span class="chevron">'+uiIcon('down')+'</span>';
+ summary.innerHTML='<span class="category-avatar">'+escapeHtml(entry.category.slice(0,1))+'</span><span class="journal-info"><b>'+(!compact?uiIcon('label'):'')+escapeHtml(entry.category)+'</b><small>'+date+'</small></span><span class="journal-amount"><b>'+(!compact?uiIcon('cash'):'')+'<bdi>'+escapeHtml(entry.currency)+Number(entry.totalEarnings).toFixed(2)+'</bdi></b><small>'+(!compact?uiIcon('timer'):'')+Number(entry.hours).toFixed(1)+' ש׳ <span class="payment-status '+(entry.isPaid?'paid':'')+'">'+(entry.isPaid?'שולם':'ממתין')+'</span></small></span><span class="chevron">'+uiIcon('down')+'</span>';
  if(!compact){installLongPress(summary,entry.id);}
  if(!compact&&selectionMode){card.classList.toggle('selected',selectedShiftIds.has(entry.id));const mark=document.createElement('input');mark.type='checkbox';mark.checked=selectedShiftIds.has(entry.id);mark.setAttribute('aria-label','בחירת '+entry.category+' '+date);mark.onclick=event=>event.stopPropagation();mark.onchange=()=>toggleSelection(entry.id);summary.append(mark);summary.onclick=event=>{event.preventDefault();if(Date.now()>=ignoreSelectionClickUntil)toggleSelection(entry.id);};}
  const body=document.createElement('div');body.className='journal-details';const p=document.createElement('p');p.className='shift-work-facts';p.textContent=(entry.isTimeRange?'שעות עבודה: '+entry.startTime+' – '+entry.endTime+' ('+entry.hours+' שעות)':'שעות שהוזנו ידנית: '+entry.hours+' שעות')+'\nתעריף שעתי: '+entry.currency+entry.hourlyRate;body.append(p);if(entry.notes){const notes=document.createElement('p');notes.className='shift-note';notes.textContent='הערות: '+entry.notes;body.append(notes);}
