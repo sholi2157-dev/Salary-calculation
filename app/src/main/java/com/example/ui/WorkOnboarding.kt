@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -108,10 +109,12 @@ fun rememberOnboardingController(): OnboardingController {
     val store = remember { WorkOnboardingStore(context) }
     // initialize() is also called in Activity before Room; tests may host this independently.
     val auto = remember { store.initialize() }
-    var savedIndex by rememberSaveable { mutableIntStateOf(if (auto) 0 else -1) }
-    val controller = remember { OnboardingController(store, savedIndex) }
-    LaunchedEffect(controller.index) { savedIndex = controller.index }
-    return controller
+    // Save the controller's current value directly. An asynchronous mirror can retain
+    // the replay step when Android saves Activity state immediately after Skip.
+    return rememberSaveable(saver = Saver(
+        save = { it.index },
+        restore = { OnboardingController(store, it) }
+    )) { OnboardingController(store, if (auto) 0 else -1) }
 }
 
 val CoachTargetKey = SemanticsPropertyKey<CoachTarget>("Tutorial target")

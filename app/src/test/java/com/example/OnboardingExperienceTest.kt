@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -85,6 +86,21 @@ class OnboardingExperienceTest {
         ui.onNodeWithTag("onboarding_skip").performClick()
         assertFalse(controller.active)
         assertFalse(store.initialize())
+    }
+    @Test fun immediateStateSaveAfterReplaySkipStaysClosed() {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val store = WorkOnboardingStore(app); store.initialize(); store.complete()
+        val restoration = StateRestorationTester(ui)
+        lateinit var controller: OnboardingController
+        restoration.setContent { controller = rememberOnboardingController() }
+        ui.runOnIdle { controller.replay(); controller.next() }
+        restoration.emulateSavedInstanceStateRestore()
+        assertEquals(1, controller.index)
+        // Save immediately, with no recomposition/effect required after finishing.
+        ui.runOnIdle { controller.finish() }
+        restoration.emulateSavedInstanceStateRestore()
+        assertFalse(controller.active)
+        assertEquals(ONBOARDING_VERSION, store.completedVersion)
     }
     @Test fun settingsReplayActionIsDiscoverableAndWorks() {
         val app = ApplicationProvider.getApplicationContext<Application>()
