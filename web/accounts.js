@@ -51,11 +51,20 @@ async function open(){
 }
 window.WorkAccounts={open,sync,store:()=>account};
 (async()=>{try{
- if(typeof firebase==='undefined')throw Error('SDK unavailable');
+ if(typeof firebase==='undefined'){
+  // Load optional legacy accounts after the local application is already usable.
+  for(const service of ['app','auth','firestore'])await new Promise((resolve,reject)=>{
+   const script=document.createElement('script');script.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-'+service+'-compat.js';
+   const timer=setTimeout(()=>{script.remove();reject(Error('Account service unavailable'));},5000);
+   script.onload=()=>{clearTimeout(timer);resolve();};script.onerror=()=>{clearTimeout(timer);reject(Error('Account service unavailable'));};document.head.append(script);
+  });
+ }
  const response=await fetch('/api/config');if(!response.ok)throw Error('Config unavailable');const config=await response.json();if(!config.firebase)throw Error('Config missing');
  if(!firebase.apps.length)firebase.initializeApp(config.firebase);
  cloudEnabled=config.cloudSyncEnabled===true;transport=WorkCloud.firestoreTransport(firebase.firestore(),firebase.auth());
  firebase.auth().onAuthStateChanged(user=>{
+  if(!user&&!currentUserId&&!account){ready=true;status('שימוש מקומי — ללא סנכרון');return;} // Optional SDK must not dismiss fresh onboarding or reset a guest draft.
+  saveReportDraft();
   if(!currentUserId)guestData=guest();
   currentUserId=user?.uid||null;account=currentUserId?new WorkCloud.Store(localStorage,currentUserId,()=>firebase.auth().currentUser?.uid):null;
   pendingTransfer=null;closeAddModal();homeReportDraft=null;editingShiftId=null;if(typeof exitSelection==='function')exitSelection();
@@ -66,7 +75,7 @@ window.WorkAccounts={open,sync,store:()=>account};
   document.getElementById('modal-hours').value=8;document.getElementById('modal-break').value=0;document.getElementById('modal-start').value='08:00';document.getElementById('modal-end').value='16:00';
   const today=new Date();document.getElementById('modal-date').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');setReportMode('clock');updateGroupHours();
   document.getElementById('search-box').value='';document.getElementById('history-search').hidden=true;
-  display(account?account.data():guestData);actions.hidden=!account;
+  display(account?account.data():guestData);actions.hidden=!account;restoreReportDraft();renderLiveShift();
   document.getElementById('modal-category').value=WorkCategories.defaultName(categories,webPreferences);applyCategoryRate();
   document.getElementById('auth-btn').textContent=account?'התנתקות':'התחברות';
   status(account?(cloudEnabled?'מחובר · ממתין לסנכרון':'מחובר · סנכרון הענן עדיין אינו פעיל'):'שימוש מקומי — ללא סנכרון');

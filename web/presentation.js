@@ -1,5 +1,6 @@
 // DOM rendering only. Persistence, account ownership and event orchestration remain in parity.js.
 const iconPaths={
+ filter:'M3 5h18v2H3zm3 6h12v2H6zm4 6h4v2h-4z',
  upload:'M11 16h2V7l3 3 1.4-1.4L12 3 6.6 8.6 8 10l3-3zM4 17v4h16v-4h-2v2H6v-2z',
  download:'M11 3h2v9l3-3 1.4 1.4L12 16l-5.4-5.6L8 9l3 3zM4 17v4h16v-4h-2v2H6v-2z',
  close:'m6 4 6 6 6-6 2 2-6 6 6 6-2 2-6-6-6 6-2-2 6-6-6-6z',
@@ -31,17 +32,17 @@ function createShiftCard(entry,compact=false){
  if(entry.isGroupShift){try{
   const members=JSON.parse(entry.groupWorkersJson||'[]'),hours=members.reduce((n,w)=>n+Number(w.hours),0);
   const totals=document.createElement('div');totals.className='group-card-totals';
-  const total=document.createElement('strong');total.textContent='סה״כ לתשלום (כולל כולם): '+entry.currency+(entry.totalEarnings+hours*(entry.employerRate??entry.hourlyRate)).toFixed(2);
-  const mine=document.createElement('small');mine.textContent='החלק שלי (כולל הפרש תעריפים): '+entry.currency+(entry.totalEarnings+hours*((entry.employerRate??entry.hourlyRate)-(entry.workerRate??entry.hourlyRate))).toFixed(2);
+  const total=document.createElement('strong');total.textContent='סה״כ לתשלום (כולל כולם): '+entry.currency+(entry.totalEarnings+members.reduce((n,w)=>n+Number(w.hours)*WorkSharing.employerRate(w,entry),0)).toFixed(2);
+  const mine=document.createElement('small');mine.textContent='החלק שלי (כולל הפרש תעריפים): '+entry.currency+(entry.totalEarnings+members.reduce((n,w)=>n+Number(w.hours)*(WorkSharing.employerRate(w,entry)-WorkSharing.workerRate(w,entry)),0)).toFixed(2);
   totals.append(total,mine);body.append(totals);
   const roster=document.createElement('div');roster.className='group-card-workers';
   for(const [index,worker] of members.entries()){
    const row=document.createElement('div');row.className='group-card-worker'+(worker.isPaid?' is-paid':'');
-   const info=document.createElement('div'),name=document.createElement('strong'),detail=document.createElement('small');name.textContent=worker.name;detail.textContent=worker.hours+' שעות · '+entry.currency+Number(worker.hours*(entry.workerRate??entry.hourlyRate)).toFixed(2);info.append(name,detail);
+   const info=document.createElement('div'),name=document.createElement('strong'),detail=document.createElement('small');name.textContent=worker.name;detail.textContent=worker.hours+' שעות · '+entry.currency+Number(worker.hours*WorkSharing.workerRate(worker,entry)).toFixed(2);info.append(name,detail);
    const status=document.createElement('label');status.className='worker-payment';const check=document.createElement('input');check.type='checkbox';check.checked=Boolean(worker.isPaid);check.setAttribute('aria-label','שולם ל'+worker.name);check.onchange=()=>setWorkerPaid(entry.id,index,check.checked);status.append(check,document.createTextNode(worker.isPaid?'שולם':'ממתין'));
    const workerActions=document.createElement('div');workerActions.className='worker-card-actions';
    const share=document.createElement('button');share.className='icon-btn';share.setAttribute('aria-label','שיתוף פרטי '+worker.name);share.innerHTML=uiIcon('share');
-   share.onclick=()=>shareText('היי '+worker.name+', להלן פירוט שעות העבודה שלך מיום '+new Date(entry.date).toLocaleDateString('en-GB')+':\nשעות עבודה: '+worker.hours+' שעות\nסה״כ לתשלום: '+entry.currency+Number(worker.hours*(entry.workerRate??entry.hourlyRate)).toFixed(2)+'\nסטטוס תשלום: '+(worker.isPaid?'שולם':'ממתין'));
+   share.onclick=()=>shareText('היי '+worker.name+', להלן פירוט שעות עבודה שלך מיום '+new Date(entry.date).toLocaleDateString('en-GB')+':\nעבדת '+worker.hours+' שעות. מגיע לך: '+entry.currency+Number(worker.hours*WorkSharing.workerRate(worker,entry)).toFixed(2)+'.\nסטטוס תשלום: '+(worker.isPaid?'שולם':'ממתין'));
    workerActions.append(share,status);row.append(info,workerActions);roster.append(row);
   }body.append(roster);
  }catch{const p=document.createElement('p');p.textContent='לא ניתן להציג את פרטי הקבוצה. הנתונים נשמרו ללא שינוי.';body.append(p);}}
@@ -49,10 +50,8 @@ function createShiftCard(entry,compact=false){
 }
 
 
-function renderCategorySettings(){
- if(!settingsDraft)return;const box=document.getElementById('settings-categories');box.replaceChildren();
- const def=WorkCategories.defaultName(settingsDraft.categories,settingsDraft.webPreferences);
- for(const c of settingsDraft.categories){const row=document.createElement('div');row.className='category-setting';const text=document.createElement('div');const name=document.createElement('strong');name.textContent=c.name;const detail=document.createElement('small');detail.textContent=WorkCategories.currency(c.name,settingsDraft.webPreferences)+Number(c.defaultRate).toFixed(2)+' / שעה'+(c.name===def?' · ברירת המחדל':'');text.append(name,detail);row.append(text);
-  for(const [icon,label,action] of [['edit','עריכת '+c.name,()=>openCategoryDialog(c.name)],['trash','מחיקת '+c.name,()=>deleteCategory(c.name)]]){const b=document.createElement('button');b.className='icon-btn';b.innerHTML=uiIcon(icon);b.setAttribute('aria-label',label);b.onclick=action;row.append(b);}box.append(row);
- }
+function createCategorySetting(c,prefs){
+ const row=document.createElement('div');row.className='category-setting';const text=document.createElement('div'),name=document.createElement('strong'),detail=document.createElement('small');name.textContent=c.name;detail.textContent=WorkCategories.currency(c.name,prefs)+Number(c.defaultRate).toFixed(2)+' / שעה'+(c.name===WorkCategories.defaultName(categories,prefs)?' · ברירת המחדל':'');text.append(name,detail);row.append(text);
+ for(const [icon,label,action] of [['edit','עריכת '+c.name,()=>openCategoryDialog(c.name)],['trash','מחיקת '+c.name,()=>deleteCategory(c.name)]]){const b=document.createElement('button');b.className='icon-btn';b.innerHTML=uiIcon(icon);b.setAttribute('aria-label',label);b.onclick=action;row.append(b);}return row;
 }
+function renderCategorySettings(){if(!settingsDraft)return;document.getElementById('settings-categories').replaceChildren(...settingsDraft.categories.map(c=>createCategorySetting(c,settingsDraft.webPreferences)));}

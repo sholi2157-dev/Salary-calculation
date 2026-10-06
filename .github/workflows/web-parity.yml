@@ -1,0 +1,31 @@
+name: Web Android parity
+on:
+  push:
+    branches: ['codex/web-android-rc13-parity']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run build && npm test
+      - run: npm install --prefix /tmp/browser-qa --no-audit --no-fund playwright@1.62.1
+      - run: /tmp/browser-qa/node_modules/.bin/playwright install --with-deps chromium
+      - name: Browser flows and data preservation
+        env:
+          PLAYWRIGHT_MODULE: /tmp/browser-qa/node_modules/playwright
+          SCREENSHOT_DIR: browser-evidence
+        run: |
+          node browser-tests/mobile.cjs
+          node browser-tests/parity.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-parity-browser-evidence
+          path: browser-evidence/

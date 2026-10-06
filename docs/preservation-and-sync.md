@@ -707,3 +707,15 @@ required Gradle build6m23s. Targeted offline guest save/reconnect persisted data
 but offline reload could not open the app. Live email/password attempt returned
 a generic failure; registration/reset/logout and two-user/live Android sync
 remain unverified. No credentials captured, real data used or production changed.
+
+## 2026-10-06 — current user-authorized Web RC13 rebuild
+
+The user explicitly resumed Web work and superseded old timer/AI omission scope.
+Android remains untouched. Baseline web `05794abf` is preserved remotely at
+`backup/web-before-rc13-parity-20261006`. The implementation uses the separate
+`codex/web-android-rc13-parity` branch so existing PR #1 and main aren't overwritten.
+Current source authority is Android branch `b9dcba6` / signed RC13 APK revision
+`ae489c9`. See `docs/web-rc13-parity.md` for the complete parity, compatibility,
+security and deployment record. Account sync wire/data remain compatible, but
+physical/live account sync is not newly certified. Old text claiming timers
+must be omitted and the old summary composition are superseded for this task.

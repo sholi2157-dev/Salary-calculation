@@ -1,17 +1,8 @@
 const fs = require('node:fs');
 fs.mkdirSync('public/web', { recursive: true });
-fs.copyFileSync('index.html', 'public/index.html');
-fs.copyFileSync('web/transfer.js', 'public/web/transfer.js');
-fs.copyFileSync('web/app.css', 'public/web/app.css');
-fs.copyFileSync('web/history.js', 'public/web/history.js');
-fs.copyFileSync('web/parity.js', 'public/web/parity.js');
-fs.copyFileSync('web/presentation.js', 'public/web/presentation.js');
-
-fs.copyFileSync('web/selection.js', 'public/web/selection.js');
-fs.copyFileSync('web/cloud-sync.js', 'public/web/cloud-sync.js');
-fs.copyFileSync('web/accounts.js', 'public/web/accounts.js');
-
-for (const file of ['categories.js','sharing.js']) fs.copyFileSync('web/'+file,'public/web/'+file);
+fs.copyFileSync('index.html','public/index.html');
+fs.cpSync('web','public/web',{recursive:true,filter:source=>!source.endsWith('personal-ai.js')});
+fs.copyFileSync('sw.js','public/sw.js');
 
 // Public provenance contains no configuration or credentials. Preview QA uses
 // the deployed app in a real 390px browsing context, not a scaled desktop image.

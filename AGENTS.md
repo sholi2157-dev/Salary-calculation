@@ -1,19 +1,38 @@
-# Salary-calculation maintenance rules
+# Salary-calculation Web maintenance
 
-- Read `docs/preservation-and-sync.md` before changing this repository. Current user instructions override older historical notes there.
-- Work on `codex/preserve-app-sync` and PR #1. Preserve the existing Vercel project and production branch.
-- Preserve all user data and existing behavior. The user's reported backup contains 22 shifts and 8 categories. Never reset storage, replace a database, discard records, or recommend uninstalling as a shortcut. Use synthetic records for tests; do not modify the user's live records.
-- Never commit or upload secrets, credentials, keystores, signing keys, or encoded signing material. Use standard Android Gradle Plugin debug signing for debug/preview; no root debug.keystore dependency. Do not claim this solves existing-device signature mismatches.
-- Run `npm test`, `npm run build`, and `gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' :app:assemblePreview --console=plain`. If local Android dependencies are inaccessible, execute that command in GitHub Actions and inspect the actual result/logs.
-- Check GitHub Actions and the Vercel preview for the pushed code before finishing. If the preview is available, verify the site in the browser with synthetic data. Fix failures and rerun the relevant checks. Never infer success from a push alone.
-- Update `docs/preservation-and-sync.md` with the tested commit SHA and verified CI/Vercel results only after the required tests pass. Report blocked checks honestly rather than marking them passed.
-- Firebase and cloud sync are NOT verified. Do not present them as active until end-to-end tests cover user permissions, separate accounts, edits, deletion, offline/reconnect and conflict handling.
-- Use a single Gemini 3.5 Flash model and a user-supplied personal API key only. Never embed owner credentials in any build, including debug/preview. Never fall back to a server/owner key. Android stores personal keys encrypted in noBackupFilesDir with Android Keystore; web AI is temporarily omitted until protected persistent account credentials are verified. Keys never enter shift backups, logs or account sync. Requests go directly to Google. Separate quotas require keys belonging to separate provider projects. Changing the model requires explicit user intent.
+Current owner request supersedes historical scope notes in older documents.
+Read `docs/current-state.md`, `docs/web-rc13-parity.md` and
+`docs/preservation-and-sync.md` before editing.
 
-- Current design requirement: web must follow Android source theme/layout/components and navigation, not a generic dashboard. No claim of pixel parity without original-reference comparison. Keep Android main/history horizontal swipe and tab clicks, preserving nested summary carousel.
-- Current AI scope: temporarily omit web AI completely, as user authorized, until a verified protected account credential vault exists. Android optional first-use/first-sign-in setup with info icon and skip; settings add/replace/remove. Persist encrypted keys per local account UID (guest legacy slot stays separate); do not claim cross-device account sync.
-- Repeated APK installation failure is a release blocker: publish public certificate/package/version diagnostics, never suggest another blind update or uninstall, and never upload private signing material.
-
-- Website scope: omit AI and active/background shift timers, their start/stop controls and notification settings. These remain Android-only by user request. Preserve completed shifts and do not erase legacy timer storage while removing the feature. Keep manual clock-range entry and the daily summary.
-
-- Delivery target clarified by the user on 2026-09-20: preserve the original AI Studio app and update ONLY the separate trial app, package `com.aistudio.worktracker.qztvdw.preview`, label `שכר עבודות אישי — ניסיון`. Deliver the connected preview artifact, never the original-package debug artifact as a trial update. The genuine preview Firebase client is now provided. Runner debug certificates still vary: do not promise in-place update compatibility.
+- Active Web rebuild branch: `codex/web-android-rc13-parity`. Keep the existing
+  `codex/preserve-app-sync`/draft PR #1 and production branch intact.
+- Android RC13 on `codex/android-local-distribution` is authoritative for current
+  product behavior/design. Do not modify Android implementation, package,
+  signing, versions or distribution as part of Web work.
+- The exact previous web state is backed up remotely at
+  `backup/web-before-rc13-parity-20261006` (`05794abf`). Never overwrite the only
+  valid copy. Preserve the existing Vercel project/origin; verify a safe preview
+  before any production promotion.
+- Never reset storage, replace a database, silently recalculate stored amounts,
+  adopt guest records into an account, or discard records/unknown worker metadata.
+  Use synthetic fixtures for tests, including the realistic 22 shifts/8 categories.
+  Category deletion reassigns historical labels to the configured default.
+- Hebrew RTL, Heebo, compact fields, separate search clear/close, long-touch
+  selection, currency-separated totals, sharing, local operation, timer and
+  onboarding follow current Android. Keep browser platform exceptions isolated.
+- No provider key in client code/configuration/storage/backups. Web AI stays
+  feature-flagged off until the secure server adapter is verified. Never restore
+  the historical owner-key endpoint. Preserve Android's existing personal-key flow.
+- Keep legacy optional accounts/wire data compatible; no mandatory login or new
+  cloud requirement. Never claim live account/Android sync from unit tests alone.
+- Web validation: `npm run build`, `npm test`, `browser-tests/mobile.cjs`,
+  `browser-tests/parity.cjs`, `git diff --check`, then inspect actual CI logs and
+  live preview. Browser contexts use synthetic data only. Android-only builds
+  are not required for a Web-only change; no Android file is changed here.
+- `PLAYWRIGHT_MODULE` and `CHROMIUM_PATH` can point to installed QA dependencies.
+  `.github/workflows/web-parity.yml` provides repeatable browser evidence.
+- `web/app.css` owns styling. Preserve component/data contracts rather than
+  adding a generic dashboard or unrelated infrastructure. Update the service
+  worker shell cache version when releasing changed cached files.
+- Commit/push finished work and record exact source/test/deployment status.
+  Report blocked checks honestly. Never print or commit secrets/credentials.

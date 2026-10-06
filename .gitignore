@@ -20,3 +20,11 @@ debug.keystore
 google-services.json
 !app/src/debug/google-services.json
 !app/src/preview/google-services.json
+
+# Reproducible browser/build output (public/index.html is retained historically).
+/public/web/
+/public/build-info.json
+/public/sw.js
+/public/preview-check.html
+/browser-evidence/
+/node_modules/

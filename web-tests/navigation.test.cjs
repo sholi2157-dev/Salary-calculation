@@ -4,10 +4,11 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
-test('home/history navigation works after website timer controls are removed', () => {
+test('home/history navigation remains independent of timer state', () => {
   const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
   assert.equal(html, fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8'));
-  const source = html.match(/function showPage\(page\)\{[^\n]+/)[0];
+  const app=fs.readFileSync(path.join(__dirname, '../web/app.js'),'utf8');
+  const source = app.match(/function showPage\(page\)\{[^\n]+/)[0];
   const nodes = Object.fromEntries(['page-home', 'page-history', 'nav-home', 'nav-history'].map(id =>
     [id, {hidden:false, offsetWidth:100, classList:{remove(){},add(){}}, setAttribute(){},removeAttribute(){}}]));
   const context = vm.createContext({currentPage:0, pageScroll:[0,0],

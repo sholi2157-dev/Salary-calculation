@@ -1,5 +1,5 @@
 let historyPeriod='all',historyCurrency='הכל',historySort='newest',displayedEntries=[];
-function initParity(){document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=uiIcon(el.dataset.icon));document.querySelectorAll('#settings-dialog details').forEach(el=>el.addEventListener('toggle',()=>{if(el.open)document.querySelectorAll('#settings-dialog details').forEach(other=>{if(other!==el)other.open=false;});}));
+function initParity(){document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=uiIcon(el.dataset.icon));document.querySelectorAll('#settings-dialog details').forEach(el=>el.addEventListener('toggle',()=>{if(el.open&&!el.classList.contains('main-currency-settings'))document.querySelectorAll('#settings-dialog details:not(.main-currency-settings)').forEach(other=>{if(other!==el)other.open=false;});}));
  // A long touch can move the toolbar under the finger. Block its release click
  // even when the original summary node has been replaced by selection rendering.
  document.addEventListener('click',event=>{if(Date.now()<ignoreSelectionClickUntil&&event.pointerType!=='mouse'&&event.detail!==0){event.preventDefault();event.stopImmediatePropagation();}},true);
@@ -13,7 +13,7 @@ function setPeriod(period){historyPeriod=period;document.querySelectorAll('[data
 function setPayment(value){document.getElementById('payment-filter').value=value;document.querySelectorAll('[data-payment]').forEach(b=>b.classList.toggle('selected',b.dataset.payment===value));renderShifts();}
 function cycleCurrency(){historyCurrency=historyCurrency==='הכל'?'₪':historyCurrency==='₪'?'$':'הכל';document.getElementById('currency-filter').textContent=historyCurrency;renderShifts();}
 function setSort(value){historySort=value;document.getElementById('sort-dialog').close();renderShifts();}
-function renderHistoryControls(entries){document.getElementById('journal-title').textContent='יומן עבודה ('+entries.length+')';document.getElementById('displayed-total').textContent=formatTotals(WorkTransfer.totals(entries));const select=document.getElementById('category-filter');select.replaceChildren();for(const name of ['הכל',...new Set([...categories.map(c=>c.name),...shifts.map(s=>s.category)])]){const o=document.createElement('option');o.value=name;o.textContent=name==='הכל'?'כל הקטגוריות':name;select.append(o);}select.value=selectedCategory;}
+function renderHistoryControls(entries){document.getElementById('displayed-total').textContent=entries.length?formatTotals(WorkTransfer.totals(entries)):'0.00';updateFilterBadge();const select=document.getElementById('category-filter');select.replaceChildren();for(const name of ['הכל',...new Set([...categories.map(c=>c.name),...shifts.map(s=>s.category)])]){const o=document.createElement('option');o.value=name;o.textContent=name==='הכל'?'כל הקטגוריות':name;select.append(o);}select.value=selectedCategory;}
 async function copyDisplayed(kind){const reportEntries=displayedEntries;if(!reportEntries.length){showMessage('אין משמרות להעתקה');return;}const text=kind==='table'?WorkTransfer.csv(reportEntries,'\t'):WorkSharing.summary(reportEntries,selectedCategory);try{await navigator.clipboard.writeText(text);document.getElementById('report-dialog').close();showMessage('הדוח הועתק');}catch{showMessage('הדפדפן לא אפשר העתקה. אפשר לייצא קובץ דרך ההגדרות.');}}
 
 let selectionMode=false,selectedShiftIds=new Set(),ignoreSelectionClickUntil=0;
@@ -27,7 +27,7 @@ function renderSelectionControls(){
  document.querySelector('.journal-toolbar').classList.toggle('selecting',selectionMode);
  document.getElementById('selection-toolbar').hidden=!selectionMode;
  document.getElementById('selection-actions').hidden=!selectionMode;
- document.getElementById('selection-count').textContent='נבחרו '+selectedShiftIds.size+' משמרות';
+ document.getElementById('selection-count').textContent='נבחרו '+selectedShiftIds.size+' משמרות';document.getElementById('selection-total').textContent=formatTotals(WorkTransfer.totals(shifts.filter(e=>selectedShiftIds.has(e.id))));
  document.querySelectorAll('#selection-actions button').forEach(b=>b.disabled=!selectedShiftIds.size);
 }
 async function applySelection(action){
@@ -54,7 +54,7 @@ function openWebSettings(){
  document.getElementById('default-currency').value=webPreferences.mainCurrency||localStorage.getItem('work_default_currency')||'₪';
  selectMainCurrency(document.getElementById('default-currency').value);
  document.getElementById('new-category-name').value='';document.getElementById('new-category-error').textContent='';
- document.querySelectorAll('#settings-dialog details').forEach(d=>d.open=false);renderCategorySettings();document.getElementById('settings-dialog').showModal();
+ document.querySelectorAll('#settings-dialog details').forEach(d=>d.open=d.classList.contains('main-currency-settings')); renderCategorySettings();document.getElementById('settings-dialog').showModal();
 }
 function saveWebSettings(){
  if(!settingsDraft||settingsOwner!==currentUserId)return;
@@ -105,7 +105,8 @@ function installDismiss(dialog){
  dialog.addEventListener('pointerdown',e=>{outside=e.target===dialog&&isOutside(e);});
  dialog.addEventListener('click',e=>{if(outside&&e.target===dialog&&isOutside(e)&&dialog.id!=='confirm-dialog'){if(dialog.id==='add-modal')closeAddModal();else dialog.close();}outside=false;});
 }
-function confirmAction(title,text){
+function confirmAction(title,text,label='מחיקה'){
+ document.querySelector('#confirm-dialog button[value=confirm]').textContent=label;
  const dialog=document.getElementById('confirm-dialog');if(dialog.open)return Promise.resolve(false);
  document.getElementById('confirm-title').textContent=title;document.getElementById('confirm-text').textContent=text;
  return new Promise(resolve=>{dialog.returnValue='cancel';dialog.addEventListener('close',()=>resolve(dialog.returnValue==='confirm'),{once:true});dialog.showModal();document.getElementById('confirm-cancel').focus();});
