@@ -17,10 +17,14 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  }
  cp.execFileSync(process.execPath,['scripts/build-web.cjs'],{cwd:legacy,env:{...process.env,VERCEL_GIT_COMMIT_SHA:baseline},stdio:'pipe'});versions.legacy=path.join(legacy,'public');
  cp.execFileSync(process.execPath,['scripts/build-web.cjs'],{stdio:'pipe'}); // Leave the actual repository's build intact.
+ const brokenDir=path.join(temporary,'broken');fs.cpSync(versions.A,brokenDir,{recursive:true});versions.broken=brokenDir;
+ const brokenBuild='789d7cd44627865a7bd2666447f12b72057da78b-broken';fs.writeFileSync(path.join(brokenDir,'sw.js'),cp.execFileSync('git',['show','789d7cd44627865a7bd2666447f12b72057da78b:sw.js']).toString().replace('__WEB_BUILD_ID__',brokenBuild));
+ fs.writeFileSync(path.join(brokenDir,'web/build.js'),'window.WorkBuild='+JSON.stringify({buildId:brokenBuild})+';');
  let release='A';const requests=[];
  const server=http.createServer((req,res)=>{
   const pathname=new URL(req.url,'http://test').pathname;requests.push({pathname,cache:req.headers['cache-control'],release});
-  const file=path.resolve(versions[release],'.'+(pathname==='/'?'/index.html':pathname));
+  if(pathname==='/index.html'){res.writeHead(308,{Location:'/'});res.end();return;}
+  const file=path.resolve(versions[release],'.'+(pathname==='/'?'/index.html':pathname==='/repair'?'/repair.html':pathname));
   if(!file.startsWith(versions[release]+path.sep)||!fs.existsSync(file)){res.writeHead(404);res.end();return;}
   res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':file.endsWith('.json')?'application/json':file.endsWith('.ttf')?'font/ttf':'text/html');
   res.setHeader('Cache-Control','no-store');res.end(fs.readFileSync(file));
@@ -35,7 +39,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   release='A';const context=await browser.newContext({viewport:{width,height:844},hasTouch:true,isMobile:true,locale:'he-IL'});
   context.on('request',r=>{if(/firebase|gstatic|googleapis|\/api\/config|\/web\/(accounts|cloud-sync)\.js/.test(r.url()))forbidden.push(r.url());});
   await context.addInitScript(({snapshot})=>{
-   if(location.protocol==='http:'&&!sessionStorage.getItem('seeded')){
+   if(location.protocol==='http:'&&!localStorage.getItem('work_complete_backup')){
     localStorage.setItem('work_complete_backup',snapshot);localStorage.setItem('work_account_v1:old-owner','{"entries":[{"id":"account-only"}]}');localStorage.setItem('firebase:authUser:old:DEFAULT','synthetic-old-session');localStorage.setItem('work_pre_rc13_snapshot_v1','do-not-change');localStorage.setItem('work_onboarding_version','1');
     localStorage.setItem('work_active_shift_v1:guest',JSON.stringify({id:'ongoing',category:'קטגוריה 0',rate:50,currency:'₪',startedAt:Date.now()-3600000}));sessionStorage.setItem('seeded','yes');
    }
@@ -49,6 +53,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   await page.getByRole('button',{name:'דיווח חדש',exact:true}).click();await page.locator('#modal-notes').fill('טיוטה לעדכון '+width);await page.locator('#modal-rate').fill('77');
   // Existing supported draft is stored before update; not a financial save.
   const before=await page.evaluate(()=>({...localStorage}));assert.equal(before.work_complete_backup,snapshot);
+  await page.reload({waitUntil:'load'});assert.deepEqual(await page.evaluate(()=>({...localStorage})),before);assert.equal(await page.locator('#modal-notes').inputValue(),'טיוטה לעדכון '+width);
+  const reopened=await context.newPage();await reopened.goto(url,{waitUntil:'load'});assert.deepEqual(await reopened.evaluate(()=>({...localStorage})),before);await reopened.close();
+
   assert.equal(await page.locator('#web-update-notice').isVisible(),false);
   release='B';await page.evaluate(()=>WebUpdateManager.check(true));await page.locator('#web-update-notice').waitFor({state:'visible'});
   assert.equal(await page.evaluate(()=>document.body.dataset.testShell),'A'); // No mixed network HTML / cached JS.
@@ -70,9 +77,16 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   await context.setOffline(true);await page.reload({waitUntil:'load'});assert.equal(await page.evaluate(()=>document.body.dataset.testShell),'D');assert.deepEqual(await page.evaluate(()=>shifts),entries);assert.deepEqual(await page.evaluate(()=>({...localStorage})),before);assert.equal(await page.locator('#web-update-notice').isVisible(),false);await context.setOffline(false);
   await context.close();console.log('PASS: disabled accounts/old session, exact 22/8, later, edit delay, A→C→D exactly one reload per update, draft/timer/storage, offline latest shell, RTL '+width+'px');
  }
+ // Reproduce the shipped ERR_FAILED before installing its narrowly scoped repair.
+ release='broken';const repair=await browser.newContext();await repair.addInitScript(({snapshot})=>{if(location.protocol==='http:'&&!localStorage.getItem('work_complete_backup')){localStorage.setItem('work_complete_backup',snapshot);localStorage.setItem('work_onboarding_version','1');sessionStorage.setItem('seeded','1');}},{snapshot});
+ const repairPage=await repair.newPage();await repairPage.goto(url,{waitUntil:'load'});await repairPage.waitForFunction(()=>navigator.serviceWorker.controller);
+ const badResponse=await repairPage.evaluate(async()=>{const cache=await caches.open('salary-web-789d7cd44627865a7bd2666447f12b72057da78b-broken');return (await cache.match('/index.html')).redirected;});assert.equal(badResponse,true);
+ const failed=await repair.newPage();await assert.rejects(failed.goto(url,{waitUntil:'load'}),/ERR_FAILED/);
+ const saved=await repairPage.evaluate(()=>({...localStorage}));release='A';
+ await failed.close();const recovered=await repair.newPage();await recovered.goto(url+'/repair',{waitUntil:'load'});await recovered.waitForURL(url+'/');assert.equal(await recovered.locator('#page-home').isVisible(),true);assert.deepEqual(await recovered.evaluate(()=>({...localStorage})),saved);await recovered.reload({waitUntil:'load'});assert.deepEqual(await recovered.evaluate(()=>({...localStorage})),saved);await repair.close();console.log('PASS: reproduced shipped cleanUrls ERR_FAILED; same-origin repair page activates corrected worker; reopening/reload preserves all storage.');
  // Bridge from the exact previous cache-first-JS/network-HTML RC13 worker.
  release='legacy';const old=await browser.newContext({viewport:{width:390,height:844}});await old.route('https://www.gstatic.com/**',r=>r.abort());
- await old.addInitScript(({snapshot})=>{if(location.protocol==='http:'&&!sessionStorage.getItem('seeded')){localStorage.setItem('work_complete_backup',snapshot);localStorage.setItem('work_onboarding_version','1');sessionStorage.setItem('seeded','1');}},{snapshot});
+ await old.addInitScript(({snapshot})=>{if(location.protocol==='http:'&&!localStorage.getItem('work_complete_backup')){localStorage.setItem('work_complete_backup',snapshot);localStorage.setItem('work_onboarding_version','1');sessionStorage.setItem('seeded','1');}},{snapshot});
  const oldPage=await old.newPage();oldPage.on('pageerror',e=>errors.push(e.message));await oldPage.goto(url,{waitUntil:'load'});await oldPage.waitForFunction(()=>navigator.serviceWorker.controller);
  release='A';await oldPage.reload({waitUntil:'load'});await oldPage.locator('#web-update-notice').waitFor({state:'visible'});assert.equal(await oldPage.evaluate(()=>typeof prepareWebUpdate),'undefined'); // old experience.js really came from v2 cache
  await oldPage.getByRole('button',{name:'דיווח חדש',exact:true}).click();await oldPage.locator('#modal-notes').fill('טיוטת מעבר RC13');await oldPage.getByRole('button',{name:'עדכן עכשיו',exact:true}).click();await oldPage.waitForFunction(()=>document.body.dataset.testShell==='A'&&typeof prepareWebUpdate==='function');assert.equal(await oldPage.locator('#modal-notes').inputValue(),'טיוטת מעבר RC13');assert.equal(await oldPage.evaluate(()=>localStorage.getItem('work_complete_backup')),snapshot);await old.close();console.log('PASS: exact completed RC13 worker upgrades safely into controlled shell without losing draft/data.');

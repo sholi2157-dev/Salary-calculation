@@ -144,3 +144,24 @@ The public browser's subsequent save/reload check was blocked by its URL policy;
 no circumvention attempted and that final live save/reload is not claimed passed.
 Local build/42 tests/all three browser suites passed including financial data,
 reload, active timer, drafts, offline shell and controlled updates.
+
+## Clean-URL return-visit failure — 2026-10-06
+
+Owner reproduced ERR_FAILED on the permanent origin after the first visit.
+Anonymous /index.html returns Vercel's 308 redirect to /. The shipped worker
+cached its followed (redirected) response then returned it to a navigation
+request; Chromium rejects that response. Earlier test servers didn't reproduce
+the deployment's cleanUrls redirect, so their reload tests missed this defect.
+
+The worker now normalizes redirected navigation responses, both when caching
+HTML and serving it. Ordinary releases still wait for explicit Update. A small
+same-origin /repair page registers/checks the latest worker, sends SKIP_WAITING
+to the verified deployed build, waits for the new controller, then returns to /.
+It allows a user stuck on the old error page to activate the fix without clearing
+storage or moving origins. It never reads/writes financial, draft or account
+storage and is not precached. There is no forced reload of other open editors.
+
+Updates suite now simulates Vercel's 308, verifies reload and reopening in another
+tab, reproduces the previous worker's ERR_FAILED and verifies same-origin repair
+plus exact localStorage preservation. Existing 360/390, 22/8, timer/draft/offline,
+A/C/D and legacy RC13 tests remain. The permanent eta alias remains unchanged.
