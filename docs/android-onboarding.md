@@ -53,7 +53,9 @@ emulator: all nine steps, complete/recreate, replay/skip/recreate, force-stop an
 cold launch passed. No saved demo shift, timer mutation or share dispatch. Both
 crash logs empty. Native and rendered target/text layouts visually inspected.
 Physical phone, TalkBack, OEM cutout/keyboard/animation timing and live voice/AI
-remain owner review. No public/stable Release published.
+remain owner review. Owner subsequently authorized the friend download link:
+exact same verified APK published as RC13 prerelease; see public-download.json.
+Stable/Latest update feed unchanged.
 
 Rollback: restore onboarding UI/source from the named baseline through a NEW,
 higher-versionCode signed update. Do not install a lower-code APK, uninstall,

@@ -27,7 +27,10 @@ Targets/text inspected visually. Normal Home/Form/History/AI regression tested.
 
 Physical owner phone installation, TalkBack, OEM cutouts/keyboard/animation pacing,
 and actual voice/live AI remain manual review. No claim of personal-device data
-verification; preservation was proven on synthetic emulator data. No public Release.
+verification; preservation was proven on synthetic emulator data.
+Owner subsequently authorized public friend download on 2026-10-06. RC13 is
+published as a prerelease, using exactly the verified APK. Anonymous download
+SHA256 matches. See public-download.json. Stable feed/Latest unchanged; no rebuild.
 
 Exact rollback branch backup/android-rc12-before-onboarding-20261006 at
 6207796903515b97dcb147ae029d4b12e8f635fe. Restore UI with a future HIGHER-code signed

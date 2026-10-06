@@ -1,0 +1,13 @@
+{
+  "release_url": "https://github.com/sholi2157-dev/Salary-calculation/releases/tag/android-v1.5-rc13",
+  "download_url": "https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v1.5-rc13/SalaryRC13.apk",
+  "tag": "android-v1.5-rc13",
+  "prerelease": true,
+  "draft": false,
+  "published_at": "2026-10-06T15:23:06Z",
+  "apk_sha256": "74da79a77d99e1e6d98ddca0c4b5b9b6079032cd191e57353ac2344d4c385da1",
+  "size": 19214995,
+  "anonymous_download_verified": true,
+  "publication_run": 37487018264,
+  "source": "ae489c9655b1684f38be74ef0b12ff2c19e4e68e"
+}

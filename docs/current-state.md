@@ -31,7 +31,12 @@ empty; downloaded signature/digest/package/version independently verified.
 Version1 local state suppresses forced onboarding for established users. Replay
 is in Settings. Scope/evidence: `docs/android-onboarding.md`, `docs/release-evidence/rc13/`.
 Owner file `SalaryRC13.apk`; physical phone/TalkBack/live AI review remains.
-No public/stable release.
+Owner authorized a friend download link on 2026-10-06. Exact verified RC13 APK
+published as prerelease `android-v1.5-rc13` (run37487018264); anonymous download
+and exact SHA256 verified. Direct permanent link:
+https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v1.5-rc13/SalaryRC13.apk
+Stable update feed/Latest remains unchanged. No rebuild or app source changes.
+Public metadata: `docs/release-evidence/rc13/public-download.json`.
 No website/cloud/storage schema/provider/signing identity changes.
 
 ## Previous completed task: restore RC10 interface as RC12 — 2026-10-01 UTC
