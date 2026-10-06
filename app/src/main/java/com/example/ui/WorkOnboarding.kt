@@ -157,12 +157,12 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
     val step = controller.step!!
     val targets = remember { CoachTargets() }
     val keyboard = LocalSoftwareKeyboardController.current
+    val density = LocalDensity.current
     LaunchedEffect(Unit) { keyboard?.hide() }
     Dialog(onDismissRequest = { if (controller.index > 0) controller.back() else controller.finish() },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false, dismissOnClickOutside = false)) {
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalCoachTargets provides targets, LocalCoachStep provides step) {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalDensity provides density, LocalCoachTargets provides targets, LocalCoachStep provides step) {
             BackHandler { if (controller.index > 0) controller.back() else controller.finish() }
-            val density = LocalDensity.current
             var cardHeight by remember { mutableStateOf(260.dp) }
             var rootOrigin by remember { mutableStateOf(Offset.Zero) }
             com.example.ui.theme.MyApplicationTheme {

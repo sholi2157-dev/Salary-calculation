@@ -67,7 +67,10 @@ class OnboardingExperienceTest {
             if (index == 3) {
                 ui.onNodeWithTag("onboarding_back").performClick()
                 assertEquals(2, controller.index)
-                ui.onNodeWithTag("onboarding_next").performClick()
+                ui.mainClock.advanceTimeBy(1200); ui.waitForIdle()
+                ui.onNodeWithTag("onboarding_next").assertIsEnabled().performClick()
+                assertEquals(3, controller.index)
+                ui.mainClock.advanceTimeBy(1200); ui.waitForIdle()
             }
             ui.onNodeWithTag("onboarding_next").performClick()
         }

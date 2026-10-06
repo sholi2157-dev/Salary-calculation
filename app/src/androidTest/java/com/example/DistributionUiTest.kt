@@ -139,6 +139,14 @@ class DistributionUiTest {
         ui.onNodeWithText("משוב ודיווח על תקלה").performScrollTo().assertIsDisplayed()
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("Synthetic feedback draft")
         ui.onNodeWithTag("feedback_message").assertTextContains("Synthetic feedback draft")
+        // A replay is an overlay: unsaved Settings and normal form drafts survive it.
+        ui.onNodeWithTag("replay_onboarding").performScrollTo().performClick()
+        ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
+        ui.onNodeWithTag("onboarding_skip").performClick()
+        ui.onNodeWithTag("feedback_message").performScrollTo().assertTextContains("Synthetic feedback draft")
+        Espresso.pressBack()
+        ui.onNodeWithTag("tab_0").performClick()
+        ui.onNodeWithTag("add_rate_input").performScrollTo().assertTextContains("73.25")
         val target = InstrumentationRegistry.getInstrumentation().targetContext
         kotlinx.coroutines.runBlocking {
             val db = com.example.data.WorkDatabase.getDatabase(target, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO))

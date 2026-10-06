@@ -751,10 +751,7 @@ fun MainAppContent(
                         categories = distinctCategories,
                         onNavigateBack = { showSettings = false },
                         onSignIn = signInForSync,
-                        onReplayTutorial = {
-                            showSettings = false
-                            onboarding.replay()
-                        }
+                        onReplayTutorial = { onboarding.replay() }
                     )
                 }
             }
