@@ -50,7 +50,6 @@ class OnboardingExperienceTest {
             if (step.target != null) {
                 ui.mainClock.advanceTimeBy(1200)
                 ui.waitForIdle()
-                ui.onNodeWithTag("onboarding_root").captureRoboImage(filePath = "/tmp/onboarding-diagnostic-$width-$index-$fontScale.png")
                 ui.waitUntil(5000) { ui.onAllNodes(SemanticsMatcher.expectValue(CoachTargetKey, step.target), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
                 ui.mainClock.advanceTimeBy(600)
                 ui.waitForIdle()
@@ -67,7 +66,7 @@ class OnboardingExperienceTest {
                 assertEquals(index, controller.index)
             }
             ui.onNodeWithTag("onboarding_next").assertIsDisplayed().assertIsEnabled()
-            if (fontScale == 1f) ui.onNodeWithTag("onboarding_root").captureRoboImage(filePath = "/tmp/onboarding-$width-$index.png")
+            ui.onNodeWithTag("onboarding_root").captureRoboImage(filePath = if (fontScale == 1f) "/tmp/onboarding-$width-$index.png" else "/tmp/onboarding-font-$width-$index.png")
             if (index == 3) {
                 ui.onNodeWithTag("onboarding_back").performClick()
                 assertEquals(2, controller.index)

@@ -31,8 +31,16 @@ explicitly disabled in tutorial composition. No real API key displayed or change
 First-run notification request deferred to existing live-shift permission flow;
 optional AI setup is introduced by tutorial instead of interrupting startup.
 
-Verification pending: unit/Compose rendered coverage, signed original RC12 update,
-normal offline/UI/real IME gates and independent downloaded APK verification.
+Focused verification passed on 6c946d6ff8841d579e7de4e7a3c0c1d109c3a9a9:
+4 state tests and 4 Compose tests (complete 360dp/390dp tours, actual inherited
+fontScale1.3 and Settings replay). Real target geometry, blocked spotlight taps,
+Back/Next, completion/skip/replay persistence and unchanged DB snapshots passed.
+API target is checked above the sticky Settings actions. Rendered nine-step
+sequences and enlarged text were visually inspected; initial overlay collision
+was corrected. Normal Settings/form drafts remain composed during replay.
+
+Signed original RC12 update, normal offline/UI/real IME, signed fresh-install
+emulator and independent downloaded APK verification pending final gates.
 Physical phone/TalkBack/animation pacing remain owner review after automated gates.
 
 Rollback: restore onboarding UI/source from the named baseline through a NEW,
