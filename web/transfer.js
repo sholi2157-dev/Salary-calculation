@@ -74,13 +74,14 @@ function normalize(e) {
  for(const k of ['employerRate','workerRate'])check(e[k]==null||(typeof e[k]==='number'&&Number.isFinite(e[k])&&e[k]>=0),'תעריף קבוצה לא תקין');
  return {category:e.category,date:e.date,createdAt:e.createdAt??e.date,isTimeRange:e.isTimeRange??false,startTime:e.startTime??null,endTime:e.endTime??null,hours:e.hours,hourlyRate:e.hourlyRate,totalEarnings:e.totalEarnings,isPaid:e.isPaid,notes:String(e.notes??''),currency:e.currency??'₪',isGroupShift:e.isGroupShift??false,employerRate:e.employerRate??null,workerRate:e.workerRate??null,groupWorkersJson:group};
 }
+function androidPreferences(local){const currencies={};for(const [k,v] of Object.entries(local))if(k.startsWith('categoryCurrency:')&&['₪','$'].includes(v))Object.defineProperty(currencies,k.slice(17),{value:v,enumerable:true});return {mainCurrency:local.default_currency||'₪',defaultCategory:local.defaultCategory||'עצמאי',categoryCurrencies:currencies};}
 function decode(text){
  if(!/^[\s\ufeff]*[\[{]/.test(text))return decodeTable(text);
  let root=JSON.parse(text.replace(/^\ufeff/,''));if(Array.isArray(root))root={entries:root};
  check([1,2].includes(root.formatVersion??1),'גרסת גיבוי לא נתמכת');check(Array.isArray(root.entries),'לא נמצאו משמרות בגיבוי');
  const categories=(root.categories||[]).map(c=>{check(typeof c.name==='string'&&c.name.trim(),'קטגוריה לא תקינה');return {name:c.name,defaultRate:number(c.defaultRate??40)};});
  const workers=(root.workers||[]).map(w=>{check(typeof w.name==='string','עובד לא תקין');return {name:w.name};});
- return {formatVersion:2,entries:root.entries.map(normalize),categories,workers,...(root.webPreferences?{webPreferences:root.webPreferences}:{})};
+ return {formatVersion:2,entries:root.entries.map(normalize),categories,workers,...(root.webPreferences?{webPreferences:root.webPreferences}:root.androidLocalPreferences?{webPreferences:androidPreferences(root.androidLocalPreferences)}:{})};
 }
 function missing(existing,incoming){
  const signature=e=>JSON.stringify({...normalize(e),createdAt:0});const counts=new Map();
