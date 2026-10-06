@@ -25,7 +25,7 @@ class OnboardingFreshInstallTest {
             ui.onNodeWithTag("onboarding_progress").assertTextEquals("${index + 1} מתוך 9")
             if (step.target != null) {
                 ui.waitUntil(10_000) { ui.onAllNodes(hasTestTag("onboarding_next") and isEnabled()).fetchSemanticsNodes().isNotEmpty() }
-                val target = ui.onNodeWithTag("coach_target_${step.target.name}", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+                val target = ui.onNode(SemanticsMatcher.expectValue(CoachTargetKey, step.target), useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
                 val card = ui.onNodeWithTag("onboarding_card").fetchSemanticsNode().boundsInRoot
                 assertTrue("visible spotlight target must not be obscured by card: ${step.target}", target.bottom <= card.top + 8f || target.top >= card.bottom - 8f)
                 ui.onNodeWithTag("onboarding_root").performTouchInput { click(target.center) }

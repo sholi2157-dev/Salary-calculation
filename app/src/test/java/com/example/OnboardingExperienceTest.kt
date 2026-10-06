@@ -48,11 +48,13 @@ class OnboardingExperienceTest {
         for ((index, step) in workOnboardingSteps.withIndex()) {
             ui.onNodeWithTag("onboarding_progress").assertTextEquals("${index + 1} מתוך 9")
             if (step.target != null) {
+                ui.mainClock.advanceTimeBy(1200)
+                ui.waitForIdle()
                 ui.onNodeWithTag("onboarding_root").captureRoboImage(filePath = "/tmp/onboarding-diagnostic-$width-$index-$fontScale.png")
-                ui.waitUntil(5000) { ui.onAllNodesWithTag("coach_target_${step.target.name}", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+                ui.waitUntil(5000) { ui.onAllNodes(SemanticsMatcher.expectValue(CoachTargetKey, step.target), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
                 ui.mainClock.advanceTimeBy(600)
                 ui.waitForIdle()
-                val target = ui.onNodeWithTag("coach_target_${step.target.name}", useUnmergedTree = true).getUnclippedBoundsInRoot()
+                val target = ui.onNode(SemanticsMatcher.expectValue(CoachTargetKey, step.target), useUnmergedTree = true).getUnclippedBoundsInRoot()
                 val card = ui.onNodeWithTag("onboarding_card").getUnclippedBoundsInRoot()
                 assertTrue("${step.target} visible above or below coach: $target / $card", target.bottom <= card.top + 4.dp || target.top >= card.bottom - 4.dp)
                 assertTrue("RTL coach next appears to right of back", ui.onNodeWithTag("onboarding_next").getUnclippedBoundsInRoot().left >= ui.onNodeWithTag("onboarding_back").getUnclippedBoundsInRoot().right)

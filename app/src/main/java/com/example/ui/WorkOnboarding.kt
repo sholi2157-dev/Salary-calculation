@@ -114,6 +114,9 @@ fun rememberOnboardingController(): OnboardingController {
     return controller
 }
 
+val CoachTargetKey = SemanticsPropertyKey<CoachTarget>("Tutorial target")
+var SemanticsPropertyReceiver.tutorialTarget by CoachTargetKey
+
 class CoachTargets { val bounds = mutableStateMapOf<CoachTarget, Rect>() }
 val LocalCoachTargets = staticCompositionLocalOf<CoachTargets?> { null }
 val LocalCoachStep = staticCompositionLocalOf<CoachStep?> { null }
@@ -132,7 +135,7 @@ fun Modifier.coachTarget(target: CoachTarget): Modifier = composed {
     }
     this.bringIntoViewRequester(requester).onGloballyPositioned {
         registry.bounds[target] = it.boundsInRoot()
-    }.testTag("coach_target_${target.name}")
+    }.semantics { tutorialTarget = target }
 }
 
 /** Both touch and accessibility are blocked on the demonstration's actual UI.
