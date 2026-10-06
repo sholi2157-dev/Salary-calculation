@@ -99,9 +99,6 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
         run: bash scripts/build-release-candidates.sh
-      - name: Require exact APK bytes already verified by the RC12 upgrade gate
-        if: ${{ contains(github.event.head_commit.message, '[onboarding-fresh-only]') }}
-        run: echo 'b607ffb3cda8bc5ffcfc1a0bea0943f385ccdcee50981762fe3d2c8e95390f3f  candidate-b.apk' | sha256sum --check
       - name: Enable KVM for disposable emulator
         if: steps.signing.outputs.ready == 'true' && !contains(github.event.head_commit.message, '[onboarding-focus]')
         run: |
@@ -109,7 +106,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Real release A to B update without clearing data
-        if: steps.signing.outputs.ready == 'true' && !contains(github.event.head_commit.message, '[onboarding-focus]') && !contains(github.event.head_commit.message, '[onboarding-fresh-only]')
+        if: steps.signing.outputs.ready == 'true' && !contains(github.event.head_commit.message, '[onboarding-focus]')
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
