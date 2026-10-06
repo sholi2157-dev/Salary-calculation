@@ -98,6 +98,8 @@ class DistributionUpdateTest {
                 try { WorkUpdates.checkWithClient(context, transport); fail("server failure accepted") } catch (_: IllegalStateException) { }
                 assertEquals(evidence.getString("snapshot", null), dao.exportSnapshot())
             } else if (stage == "verify") {
+                assertFalse("Existing RC12 installation must not get a forced tour", com.example.ui.WorkOnboardingStore(context).initialize())
+                assertEquals(com.example.ui.ONBOARDING_VERSION, com.example.ui.WorkOnboardingStore(context).completedVersion)
                 assertTrue(installedCode > evidence.getInt("versionA", Int.MAX_VALUE))
                 val original = dao.getEntriesList().first()
                 dao.updateEntry(WorkEntryEdits.apply(original, original.copy(notes = "edited after update")))

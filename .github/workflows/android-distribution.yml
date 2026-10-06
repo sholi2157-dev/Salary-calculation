@@ -106,6 +106,16 @@ jobs:
           profile: pixel_2
           disable-animations: true
           script: bash scripts/verify-release-update.sh
+      - name: First launch on a separate fresh signed-install emulator
+        if: steps.signing.outputs.ready == 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          avd-name: salary-onboarding-fresh
+          disable-animations: true
+          script: bash scripts/verify-onboarding-fresh.sh
       - name: Candidate for owner review only; never publish a Release
         if: steps.signing.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
