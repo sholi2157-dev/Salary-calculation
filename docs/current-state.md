@@ -68,3 +68,30 @@ Validation: build, 42 tests, mobile/parity/update suites, exact 22/8 fixture,
 drafts/timer/offline/update preservation. Preview must pass before promoting the
 same artifact to the existing salary-calculation-eta.vercel.app production origin.
 Prior recoverable source: 7fb35841029f0fd3a5a6af8b00e25c65f055f831.
+
+## Android screenshot alignment — 2026-10-06
+
+Owner confirmed the repeat-open service-worker repair works, then requested
+closer category/settings/history/filter alignment with current Android images.
+Category settings now use horizontal edit/remove chips, compact name/rate
+inputs, and retain the category currency control/default editor. Filters use a
+bottom sheet with separate date/category/payment rows and Android-style actions.
+Selection uses a compact inline count/total/select-all/clear/share/close toolbar,
+checkboxes beside amounts and a fixed red/amber/green action shelf above nav.
+Leaving history for home clears only transient selection, including back/forward;
+filters/search and all saved financial data remain unchanged.
+
+System/feedback mirrors Android's feedback type/message/email-draft flow,
+addressed to its existing feedback recipient. Only Web build and browser details
+are included, never work records. A mailto draft opens only on the user's click;
+there is no automatic sending. Android update/notification/personal-key mechanics
+remain platform exceptions. Account/AI flags, removed tutorial replay, financial
+schemas and the working redirect-safe service worker/repair page are unchanged.
+
+Validation: build, 42 unit tests; mobile, parity and controlled-update browser
+suites; 360/390/768/1440 RTL layouts, new selection navigation/feedback tests,
+horizontal eight-category chips and exact existing 22/8 preservation, drafts,
+timer, backup/import, offline/repeat-open repair. No application JS errors.
+Production release uses the previously authorized verified-artifact alias path
+at the same permanent eta origin; no merge or production branch mutation.
+Recoverable prior source: 682aaeceb83a81b48137eac07ad3c7f33d5aade5.

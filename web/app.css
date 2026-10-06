@@ -396,3 +396,58 @@ dialog p { margin: 10px 0; color: var(--muted); font-size: 13px; line-height: 1.
 .web-update-actions .btn-primary { width: auto; min-width: 112px; min-height: 44px; padding: 8px 18px; }
 .web-update-actions .text-button { min-height: 44px; padding-inline: 12px; }
 #tutorial-demo .web-update-notice { display: none; }
+/* Android history selection: one toolbar and three explicit payment/delete actions. */
+.journal-toolbar.selecting { display: none; }
+.selection-toolbar { flex-wrap: nowrap; gap: 2px; margin: 12px 0 16px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.selection-toolbar .selected-summary { flex: 1; }
+.selection-toolbar strong { font-size: 12px; }
+.selection-toolbar .text-button { padding: 4px; min-height: 44px; white-space: nowrap; }
+.selection-toolbar .icon-btn { width: 40px; min-width: 40px; height: 44px; color: var(--text); }
+.selection-toolbar #selection-total { font-size: 10px; color: var(--muted); }
+.selection-actions { position: fixed; inset-inline: 0; width: min(648px,calc(100% - 28px)); margin: 0 auto; bottom: calc(var(--nav-height) + 12px + env(safe-area-inset-bottom)); flex-wrap: nowrap; gap: 7px; padding: 10px; border: 1px solid #ffffff40; border-radius: 20px; background: #1e293be6; }
+:is(#selection-actions,[data-coach-id="selection-actions"]) { flex-wrap: nowrap; }
+.selection-actions button { min-height: 44px; min-width: 0; padding: 10px 5px; border: 0; border-radius: 12px; font-size: 12px; font-weight: 700; }
+.selection-delete { background: var(--danger); color: white; }
+.selection-unpaid { flex: 1.4 !important; background: var(--amber); color: #090b10; }
+.selection-paid { background: #2dcc95; color: #090b10; }
+.history-selecting { padding-bottom: 88px; }
+.journal-card.selected { border-color: var(--primary); background: #30384be6; }
+.journal-card.selected .chevron { display: block; }
+.journal-card.selectable .journal-amount > small, .journal-card.selectable .journal-amount > b .ui-icon { display: none; }
+.journal-card.selectable input[type=checkbox] { width: 20px; height: 20px; margin: 0; flex-shrink: 0; accent-color: var(--primary); cursor: pointer; }
+.journal-card.selectable > summary { gap: 7px; }
+.journal-card.selectable .journal-info b { font-size: 14px; }
+.journal-card.selectable .journal-amount > b { font-size: 14px; }
+/* Android category chips scroll within the accordion, never the page. */
+.category-create-row { grid-template-columns: minmax(0,1fr) 105px; gap: 8px; }
+.category-create-row .form-input { min-height: 48px; border-radius: 14px; padding: 10px; }
+.category-create-row > label:last-child { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.category-create-row > label:last-child select { width: 70px; min-height: 40px; }
+:is(#settings-categories,[data-coach-id="settings-categories"]) { flex-wrap: nowrap; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 6px; }
+.category-setting { flex: 0 0 auto; max-width: none; gap: 2px; padding: 0 2px; border-radius: 8px; background: transparent; }
+.category-setting > span { font-size: 12px; white-space: nowrap; }
+.category-setting .icon-btn { width: 32px; height: 44px; color: var(--secondary); }
+.category-setting .category-remove { color: var(--danger); }
+.category-setting.default { border-color: #818cf880; }
+/* Web-native feedback mirrors Android's draft-only interaction. */
+.feedback-section { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 12px; }
+.feedback-types { display: flex; gap: 8px; margin: 18px 0; }
+.feedback-types button { min-height: 40px; padding: 6px 14px; border: 1px solid var(--border); border-radius: 12px; background: transparent; color: var(--muted); }
+.feedback-types button[aria-pressed=true] { color: var(--text); border-color: var(--secondary); background: #818cf81a; }
+#feedback-message { min-height: 100px; border-radius: 14px; background: transparent; }
+#feedback-open { border-radius: 24px; font-size: 12px; }
+/* History filters use Android's bottom sheet layout and separate category row. */
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) { width: min(680px,100vw); max-width: 680px; max-height: 90dvh; margin: auto auto 0; padding: 18px 16px calc(20px + env(safe-area-inset-bottom)); border-radius: 24px 24px 0 0; background: #222b49f2; }
+#filters-dialog::backdrop { background: #0006; backdrop-filter: none; }
+:is(#filters-dialog,[data-coach-id="filters-dialog"])::before { content: ''; display: block; width: 30px; height: 4px; margin: 0 auto 28px; border-radius: 4px; background: var(--muted); }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) h2 { font-size: 20px; font-weight: 400; color: var(--muted); }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) .history-filters { display: grid; grid-template-columns: 1fr; justify-items: start; gap: 10px; margin-bottom: 16px; }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) .date-modes { width: min(100%,290px); flex: none; }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) #category-filter { width: 155px; max-width: 100%; background: transparent; }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) .date-modes button { background: transparent; }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) .date-modes button.selected { background: #5c6bc0; }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) .payment-segments button { background: transparent; }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) .payment-segments button.selected { background: #5c6bc0; }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) .modal-btn-row { flex-direction: column; align-items: flex-start; gap: 18px; margin-top: 22px; }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) .modal-btn-row button { flex: none; min-height: 44px; }
+:is(#filters-dialog,[data-coach-id="filters-dialog"]) .modal-btn-row .btn-primary { min-width: 120px; border-radius: 25px; align-self: flex-start; }

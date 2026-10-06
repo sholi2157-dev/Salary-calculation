@@ -11,13 +11,15 @@ test('home/history navigation remains independent of timer state', () => {
   const source = app.match(/function showPage\(page\)\{[^\n]+/)[0];
   const nodes = Object.fromEntries(['page-home', 'page-history', 'nav-home', 'nav-history'].map(id =>
     [id, {hidden:false, offsetWidth:100, classList:{remove(){},add(){}}, setAttribute(){},removeAttribute(){}}]));
-  const context = vm.createContext({currentPage:0, pageScroll:[0,0],
+  const context = vm.createContext({currentPage:0, pageScroll:[0,0], selectionMode:true, selectionCleared:false,
     window:{scrollY:25,scrollTo(){}}, document:{getElementById:id=>nodes[id],
       querySelector(){throw new Error('navigation must not depend on removed timer controls');}}});
-  vm.runInContext(source + ';showPage(1);', context);
+  vm.runInContext('function exitSelection(){selectionMode=false;selectionCleared=true;}'+source + ';showPage(1);', context);
   assert.equal(nodes['page-home'].hidden, true);
   assert.equal(nodes['page-history'].hidden, false);
   vm.runInContext('showPage(0);', context);
   assert.equal(nodes['page-home'].hidden, false);
   assert.equal(nodes['page-history'].hidden, true);
+  assert.equal(context.selectionMode,false);
+  assert.equal(context.selectionCleared,true);
 });

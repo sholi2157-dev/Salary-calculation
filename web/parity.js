@@ -25,6 +25,8 @@ function clearSelection(){selectedShiftIds.clear();renderShifts();}
 function renderSelectionControls(){
  const visible=new Set(displayedEntries.map(e=>e.id));selectedShiftIds=new Set([...selectedShiftIds].filter(id=>visible.has(id)));
  document.querySelector('.journal-toolbar').classList.toggle('selecting',selectionMode);
+ document.getElementById('page-history').classList.toggle('history-selecting',selectionMode);
+ document.getElementById('selection-share').disabled=!selectedShiftIds.size;
  document.getElementById('selection-toolbar').hidden=!selectionMode;
  document.getElementById('selection-actions').hidden=!selectionMode;
  document.getElementById('selection-count').textContent='נבחרו '+selectedShiftIds.size+' משמרות';document.getElementById('selection-total').textContent=formatTotals(WorkTransfer.totals(shifts.filter(e=>selectedShiftIds.has(e.id))));
