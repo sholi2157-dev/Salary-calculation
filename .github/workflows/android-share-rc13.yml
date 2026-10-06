@@ -46,7 +46,7 @@ jobs:
             gh release download "$tag" --repo "$repo" --pattern SalaryRC13.apk --dir existing
             echo '74da79a77d99e1e6d98ddca0c4b5b9b6079032cd191e57353ac2344d4c385da1  existing/SalaryRC13.apk' | sha256sum --check
           else
-            gh release create "$tag" SalaryRC13.apk --repo "$repo" --target ae489c9655b1684f38be74ef0b12ff2c19e4e68e --title 'חישוב שכר — Android RC13' --notes-file notes.md --prerelease --latest=false
+            gh release create "$tag" SalaryRC13.apk --repo "$repo" --target "$GITHUB_SHA" --title 'חישוב שכר — Android RC13' --notes-file notes.md --prerelease --latest=false
           fi
           gh release view "$tag" --repo "$repo" --json url,assets,isPrerelease > published.json
           cat published.json
