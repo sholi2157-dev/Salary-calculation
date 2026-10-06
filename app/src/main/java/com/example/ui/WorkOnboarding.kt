@@ -162,6 +162,12 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
     val keyboard = LocalSoftwareKeyboardController.current
     val density = LocalDensity.current
     LaunchedEffect(Unit) { keyboard?.hide() }
+    // Constrain the fullscreen dialog to the host viewport. Android's WRAP_CONTENT
+    // dialog probing can otherwise measure fillMaxSize beyond the physical screen.
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val hostWidth = maxWidth
+    val hostHeight = maxHeight
+    val hostInsets = WindowInsets.safeDrawing.asPaddingValues()
     Dialog(onDismissRequest = { if (controller.index > 0) controller.back() else controller.finish() },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false, dismissOnClickOutside = false)) {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalDensity provides density, LocalCoachTargets provides targets, LocalCoachStep provides step) {
@@ -169,7 +175,7 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
             var cardHeight by remember { mutableStateOf(260.dp) }
             var rootOrigin by remember { mutableStateOf(Offset.Zero) }
             com.example.ui.theme.MyApplicationTheme {
-            Box(Modifier.fillMaxSize().safeDrawingPadding().testTag("onboarding_root")) {
+            Box(Modifier.requiredSize(hostWidth, hostHeight).padding(hostInsets).testTag("onboarding_root")) {
                 Box(Modifier.fillMaxSize().onGloballyPositioned { rootOrigin = it.boundsInRoot().topLeft }) {
                     Column(Modifier.fillMaxSize().readOnlyTutorial()) {
                         TopAppBar(title = { Text(if (step.screen in listOf(CoachScreen.CATEGORIES, CoachScreen.API)) "הגדרות מערכת" else "שכר עבודות אישי", style = MaterialTheme.typography.titleMedium) },
@@ -202,6 +208,7 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
             }
             }
         }
+    }
     }
 }
 
