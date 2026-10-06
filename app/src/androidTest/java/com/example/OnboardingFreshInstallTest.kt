@@ -45,7 +45,7 @@ class OnboardingFreshInstallTest {
                     val nav = ui.onNode(SemanticsMatcher.expectValue(CoachTargetKey, step.target), useUnmergedTree = true)
                         .fetchSemanticsNode().boundsInWindow
                     assertTrue("whole History navigation must fit above Android navigation bar", nav.bottom <= ui.activity.window.decorView.height - insets.bottom + 1f)
-                    ui.onNodeWithText("היסטוריה", useUnmergedTree = true).assertIsDisplayed()
+                    ui.onNode(hasText("היסטוריה") and hasAnyAncestor(SemanticsMatcher.expectValue(CoachTargetKey, CoachTarget.HISTORY)), useUnmergedTree = true).assertIsDisplayed()
                 }
                 if (step.target == CoachTarget.API) {
                     val actions = ui.onNodeWithTag("settings_action_bar", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
