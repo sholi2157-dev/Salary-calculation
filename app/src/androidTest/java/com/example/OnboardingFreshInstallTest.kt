@@ -14,6 +14,12 @@ import java.io.File
 /** Runs against the signed RC13 on a separate freshly created disposable emulator. */
 class OnboardingFreshInstallTest {
     @get:Rule val ui = createAndroidComposeRule<MainActivity>()
+    @Test fun completedColdLaunchStaysHidden() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        assertEquals(ONBOARDING_VERSION, WorkOnboardingStore(context).completedVersion)
+        ui.onNodeWithTag("onboarding_card").assertDoesNotExist()
+        ui.onNodeWithTag("settings_button").assertIsDisplayed()
+    }
     @Test fun firstLaunchCompletionReplaySkipAndNoSideEffects() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val device = InstrumentationRegistry.getInstrumentation().uiAutomation
