@@ -150,5 +150,15 @@ if (WorkFeatures.accountsEnabled) {
 }
 </script>
 
+<!-- Traffic metrics only; work records are never sent to analytics. -->
+<script>
+if (location.hostname === 'salary-calculation-eta.vercel.app') {
+ window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+ var trafficScript = document.createElement('script');
+ trafficScript.defer = true;
+ trafficScript.src = '/_vercel/insights/script.js';
+ document.head.appendChild(trafficScript);
+}
+</script>
 </body>
 </html>

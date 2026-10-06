@@ -95,3 +95,18 @@ timer, backup/import, offline/repeat-open repair. No application JS errors.
 Production release uses the previously authorized verified-artifact alias path
 at the same permanent eta origin; no merge or production branch mutation.
 Recoverable prior source: 682aaeceb83a81b48137eac07ad3c7f33d5aade5.
+
+## Traffic measurement preparation — 2026-10-06
+
+Owner requested visitor statistics for the published eta origin. Added the
+standard Vercel Web Analytics loader, scoped to salary-calculation-eta.vercel.app.
+No work-record events, custom financial payloads or application storage changes.
+The existing build hashes HTML into the worker version, preserving safe updates.
+
+Validation: build, all 42 unit tests and mobile/parity/update browser suites pass,
+including exact 22/8 records, drafts/timer, offline, repeat-open recovery.
+This branch is prepared only: Web Analytics must first be enabled in the Vercel
+dashboard, then the updated artifact deployed to the same eta origin.
+Current production remains 67f4e1a. No claim of collected traffic or live metrics.
+The connected tools have no analytics-enable operation; browser fallback requires
+owner approval under the current browser capability instructions.
