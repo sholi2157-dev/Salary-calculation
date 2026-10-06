@@ -35,7 +35,7 @@ The browser uses the same narrow product surface on desktop (680px, Android's ow
 | Long-press selection, displayed per-row amounts, selected totals | Long touch plus explicit desktop selection; same currency-separated selection totals | WEB-NATIVE EQUIVALENT | Explicit desktop entry; bulk payment retained from previous web |
 | Individual/group/worker/history/selected sharing | Android Hebrew content and saved per-worker rate overrides | WEB-NATIVE EQUIVALENT | Native Web Share then clipboard then text dialog; does not send automatically |
 | Categories, rename, default, delete/reassign, currency | Same configurable default/rates/currency; add/delete available from report and Settings | MATCHED | Delete changes category labels only; no financial recalculation |
-| Settings and direct default currency | Accordions plus direct currency control; legacy accounts secondary | MATCHED | Existing optional web account support preserved to avoid hiding old users' data |
+| Settings and direct default currency | Accordions plus direct currency control; accounts UI feature-flagged off | MATCHED | Account implementation/storage retained; public experience uses the guest dataset |
 | Backup/export/import preview | Same v2 data; JSON/CSV/TSV/file and clipboard; validated dedup preview | WEB-NATIVE EQUIVALENT | Android local category/currency defaults also translate on explicit restore |
 | Fresh onboarding/skip/replay | Nine read-only steps with highlighted clones of actual product components | WEB-NATIVE EQUIVALENT | AI/API steps replaced by applicable modes/backup; existing users aren't forced through tour |
 | Local/offline operation | Same-origin local snapshots; shell cache after first online load | WEB-NATIVE EQUIVALENT | Optional accounts/API responses never enter the shell cache |
@@ -78,3 +78,12 @@ Reuse the existing `salary-calculation` Vercel project (`prj_W8eD12XnlqJ5wVEsnTm
 - The supplied `https://salary-calculation-eta.vercel.app` returned 404 NOT_FOUND. The project's currently listed `https://salary-calculation-sholi.vercel.app` also returned 404. Neither is a verified functioning production baseline. The tested preview is accessible.
 
 Production path: review/merge this PR into the existing web branch, then carry the approved web changes to the configured production `main` branch or promote a verified build using the existing project. Confirm the original production origin is assigned correctly before promotion. Retain the user's original domain so browser storage remains accessible; a new domain cannot read the old domain's localStorage. Do not promote simply to fix the unrelated alias problem, and do not change domain assignment during a UI rebuild. Rollback deploys the backup branch to that same origin. Production has deliberately not been replaced.
+
+## Focused local release/update follow-up
+
+The subsequent owner request disables public account/cloud UI and initialization
+without deleting its implementation/stores. Controlled Web updates replace code
+only; see `docs/web-local-updates.md`. This supersedes earlier optional account UI
+notes. The permanent eta domain is verified and already assigned correctly; the
+404 is caused by its old production deployment, with resolution gated on approval
+to promote the tested Web build. No domain move or production promotion occurred.

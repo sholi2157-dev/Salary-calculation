@@ -11,6 +11,8 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Update QA loads the exact completed RC13 shell from Git history.
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -24,6 +26,7 @@ jobs:
         run: |
           node browser-tests/mobile.cjs
           node browser-tests/parity.cjs
+          node browser-tests/updates.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

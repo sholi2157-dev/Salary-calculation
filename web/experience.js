@@ -86,12 +86,12 @@ async function deleteFormCategory(){
  try{const next=WorkCategories.remove({entries:shifts,categories,webPreferences},name);persistAll(next.entries,next.categories,workers,next.webPreferences);renderShifts();el('modal-category').value=def;applyCategoryRate();syncToCloud();}catch(e){showMessage(e.message);}
 }
 function saveReportDraft(){
- if(editingShiftId!==null||!storageHealthy)return;
- try{const values=Object.fromEntries([...el('report-fields').querySelectorAll('input[id],textarea[id],select[id]')].map(c=>[c.id,{value:c.value,checked:c.checked}]));const group=[...el('group-rows').children].map(row=>({...row.workerData,name:row.querySelector('[data-field=name]').value,hours:row.querySelector('[data-field=hours]').value,isPaid:row.querySelector('[data-field=paid]').checked}));localStorage.setItem(ownerKey('work_report_draft_v1:'),JSON.stringify({mode:reportMode,expanded:!el('report-content').hidden,values,group}));}catch{ /* Shift saving remains explicit and reports storage failures. */ }
+ if(editingShiftId!==null||!storageHealthy)return false;
+ try{const values=Object.fromEntries([...el('report-fields').querySelectorAll('input[id],textarea[id],select[id]')].map(c=>[c.id,{value:c.value,checked:c.checked}]));const group=[...el('group-rows').children].map(row=>({...row.workerData,name:row.querySelector('[data-field=name]').value,hours:row.querySelector('[data-field=hours]').value,isPaid:row.querySelector('[data-field=paid]').checked}));localStorage.setItem(ownerKey('work_report_draft_v1:'),JSON.stringify({mode:reportMode,expanded:!el('report-content').hidden,values,group}));return true;}catch{return false;}
 }
 function clearReportDraft(){localStorage.removeItem(ownerKey('work_report_draft_v1:'));}
 function restoreReportDraft(){
- try{const d=JSON.parse(localStorage.getItem(ownerKey('work_report_draft_v1:'))||'null');if(!d)return;setReportMode(['clock','manual','group'].includes(d.mode)?d.mode:'clock');for(const [id,v] of Object.entries(d.values||{})){const c=el(id);if(c&&el('report-fields').contains(c)){c.value=v.value;c.checked=Boolean(v.checked);}}el('group-rows').replaceChildren();for(const worker of d.group||[])addGroupRow(worker);toggleRange();el('group-fields').hidden=!el('modal-group').checked;el('report-content').hidden=!d.expanded;document.querySelector('.card-heading').setAttribute('aria-expanded',String(d.expanded));syncFormLayout();}catch{ /* Leave invalid draft bytes intact; never reset financial storage. */ }
+ try{const d=JSON.parse(localStorage.getItem(ownerKey('work_report_draft_v1:'))||'null');if(!d)return;setReportMode(['clock','manual','group'].includes(d.mode)?d.mode:'clock');for(const [id,v] of Object.entries(d.values||{})){const c=el(id);if(c&&el('report-fields').contains(c)){c.value=v.value;if('checked' in c)c.checked=Boolean(v.checked);}}el('group-rows').replaceChildren();for(const worker of d.group||[])addGroupRow(worker);toggleRange();el('group-fields').hidden=!el('modal-group').checked;el('report-content').hidden=!d.expanded;document.querySelector('.card-heading').setAttribute('aria-expanded',String(d.expanded));syncFormLayout();}catch{ /* Leave invalid draft bytes intact; never reset financial storage. */ }
 }
 
 // Read-only clones of actual components. Replay never touches normal draft/selection/payment state.
@@ -137,4 +137,8 @@ initializeApp();restoreReportDraft();syncFormLayout();renderLiveShift();setInter
 if(location.hash==='#history')navigateScreen(1);
 const established=shifts.length>0||localStorage.getItem('work_pre_rc13_snapshot_v1')!==null;
 if(!localStorage.getItem('work_onboarding_version')){if(established)localStorage.setItem('work_onboarding_version','1');else startTutorial();}
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+// Updates never submit an edit or close an unsaved settings/import/category dialog.
+window.prepareWebUpdate=()=>{
+ if(editingShiftId!==null||document.querySelector('dialog[open]'))return false;
+ return saveReportDraft();
+};

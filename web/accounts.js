@@ -1,5 +1,10 @@
 (function(){
 'use strict';
+if(window.WorkFeatures?.accountsEnabled!==true)return;
+const template=document.getElementById('account-template');
+document.querySelector('#settings-dialog .settings-footer').before(template.content.cloneNode(true));
+const section=document.getElementById('account-section');
+section.addEventListener('toggle',()=>{if(section.open)document.querySelectorAll('#settings-dialog details:not(.main-currency-settings)').forEach(other=>{if(other!==section)other.open=false;});});
 let account=null,transport=null,ready=false,cloudEnabled=false;
 // Use the reviewed guest state already loaded by the existing app; never adopt implicitly.
 const guest=()=>JSON.parse(localStorage.getItem('work_complete_backup')||JSON.stringify({entries:shifts,categories,workers,webPreferences}));

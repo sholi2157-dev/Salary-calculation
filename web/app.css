@@ -387,3 +387,12 @@ dialog p { margin: 10px 0; color: var(--muted); font-size: 13px; line-height: 1.
   *, *::before { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   body::before { background-position: 50% 50%; }
 }
+
+/* A small inline update notice: no modal, no obstruction of the save/navigation bar. */
+.web-update-notice { position: sticky; top: 8px; z-index: 21; padding: 12px 14px; margin-bottom: 12px; background: var(--form-surface, #222b49); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 4px 16px #0003; }
+.web-update-notice strong { font-size: 14px; }
+.web-update-notice p { margin-top: 3px; font-size: 12px; color: var(--muted); }
+.web-update-actions { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.web-update-actions .btn-primary { width: auto; min-width: 112px; min-height: 44px; padding: 8px 18px; }
+.web-update-actions .text-button { min-height: 44px; padding-inline: 12px; }
+#tutorial-demo .web-update-notice { display: none; }

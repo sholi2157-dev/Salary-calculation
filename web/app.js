@@ -24,8 +24,8 @@
     function saveLocalShifts(){persistAll(shifts);}
 
     // Versioned sync is configured by WorkAccounts; live device E2E remains a release gate.
-    function handleAuthClick() { return window.WorkAccounts.open(); }
-    function syncToCloud() { window.WorkAccounts?.sync(); }
+    function handleAuthClick() { if(window.WorkFeatures?.accountsEnabled) return window.WorkAccounts?.open(); }
+    function syncToCloud() { if(window.WorkFeatures?.accountsEnabled) window.WorkAccounts?.sync(); }
     function download(name, text, type) {
         const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }

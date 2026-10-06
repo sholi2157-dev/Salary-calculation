@@ -25,3 +25,10 @@ Web CI run 37437505046 passed build, 36 tests and both real-browser suites.
 Live preview desktop/mobile save/reload also verified. Supplied production alias
 and connected project's listed production alias returned 404; no promotion or
 origin change was performed. See deployment path in the parity document.
+
+Focused follow-up: public accounts are disabled with a preserved feature switch;
+controlled same-origin Web updates now preserve drafts/timers/data. Read
+`docs/web-local-updates.md` for detection/lifecycle tests and exact production
+alias diagnosis. Retain the verified `salary-calculation-eta.vercel.app` origin;
+its old deployment artifact must be replaced only after rollout approval.
+No promotion, merge, account-data deletion or Android change is authorized here.
