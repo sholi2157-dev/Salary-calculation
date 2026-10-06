@@ -102,7 +102,7 @@ fun CompactReportFields(
         TimePickerDialog(context, { _, h, m -> onPicked(String.format(Locale.US, "%02d:%02d", h, m)) },
             t.getOrNull(0)?.toIntOrNull() ?: fallback, t.getOrNull(1)?.toIntOrNull() ?: 0, true).show()
     }
-    Column(Modifier.fillMaxWidth().testTag("compact_report_fields"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth().testTag("compact_report_fields").coachTarget(CoachTarget.FIELDS), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PickerField("תאריך", SimpleDateFormat("dd.MM", Locale.US).format(Date(values.date)), "report_date", Modifier.weight(1f)) {
                 val cal = Calendar.getInstance().apply { timeInMillis = values.date }

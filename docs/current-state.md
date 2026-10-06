@@ -1,6 +1,6 @@
 # Current project state
 
-Last updated: 2026-10-01
+Last updated: 2026-10-06
 
 ## Repository and active track
 Repository: `sholi2157-dev/Salary-calculation`
@@ -13,6 +13,15 @@ The website/sync work is intentionally paused on:
 `codex/preserve-app-sync` / PR #1
 
 Do not resume or modify website, Firebase, accounts or cloud sync until the user explicitly switches the project back to that phase.
+
+## Active task: first-launch Android onboarding — RC13
+
+Owner requested an interactive first-launch tutorial and Settings replay.
+Exact pre-change clean HEAD: 6207796903515b97dcb147ae029d4b12e8f635fe.
+Rollback branch: `backup/android-rc12-before-onboarding-20261006`.
+RC13/code21 implementation and focused tests prepared; signed update verification
+pending. Scope and actual implementation: `docs/android-onboarding.md`.
+No website/cloud/storage schema/provider/signing identity changes.
 
 ## Active task: restore RC10 interface as RC12 — 2026-10-01 UTC
 

@@ -83,6 +83,10 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import com.example.ui.coachTarget
+import com.example.ui.CoachTarget
+import com.example.ui.LocalCoachStep
+import com.example.ui.CoachScreen
 import com.example.data.WorkCategory
 import com.example.data.WorkEntry
 import com.example.ui.theme.MyApplicationTheme
@@ -241,6 +245,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.example.ui.WorkOnboardingStore(this).initialize()
         try {
             com.example.api.FirebaseSafeInitializer.init(applicationContext)
             com.example.api.AuthManager.init(applicationContext)
@@ -258,13 +263,7 @@ class MainActivity : ComponentActivity() {
 
         handleIntent(intent)
 
-        // Request notification permission for Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permission = android.Manifest.permission.POST_NOTIFICATIONS
-            if (checkSelfPermission(permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(permission), 101)
-            }
-        }
+        // Notification permission is requested only when starting a live shift.
 
         setContent {
             MyApplicationTheme {
@@ -325,7 +324,8 @@ fun MainAppContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    com.example.ui.WorkUpdateSettings(automatic = true)
+    val onboarding = com.example.ui.rememberOnboardingController()
+    if (!onboarding.active) com.example.ui.WorkUpdateSettings(automatic = true)
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     val googleSignInLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -390,23 +390,7 @@ fun MainAppContent(
         navigationScope.launch { mainPagerState.animateScrollToPage(page) }
     }
     val accountSession by viewModel.currentUserSession.collectAsStateWithLifecycle()
-    val keySetupPreferences = remember(context) {
-        context.getSharedPreferences("personal_ai_setup", Context.MODE_PRIVATE)
-    }
-    var showPersonalKeySetup by remember { mutableStateOf(false) }
-    val setupScope = accountSession?.uid ?: "local_device"
-    LaunchedEffect(setupScope) {
-        val hasKey = runCatching { com.example.api.PersonalAiKey.read(context, viewModel.owner.uid).isNotBlank() }.getOrDefault(false)
-        showPersonalKeySetup = !hasKey && !keySetupPreferences.getBoolean("offered_$setupScope", false)
-    }
-    if (showPersonalKeySetup) {
-        key(setupScope) {
-            PersonalAiKeyDialog(ownerUid = viewModel.owner.uid, onDismiss = {
-                keySetupPreferences.edit().putBoolean("offered_$setupScope", true).apply()
-                showPersonalKeySetup = false
-            })
-        }
-    }
+    // Optional personal AI setup is now introduced by the tour and available in Settings.
     var showSettings by remember { mutableStateOf(false) }
     var entryToEdit by remember { mutableStateOf<WorkEntry?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -766,7 +750,11 @@ fun MainAppContent(
                         viewModel = viewModel,
                         categories = distinctCategories,
                         onNavigateBack = { showSettings = false },
-                        onSignIn = signInForSync
+                        onSignIn = signInForSync,
+                        onReplayTutorial = {
+                            showSettings = false
+                            onboarding.replay()
+                        }
                     )
                 }
             }
@@ -842,6 +830,8 @@ fun MainAppContent(
             }
         }
     }
+    com.example.ui.WorkOnboarding(onboarding, viewModel, distinctCategories, entries)
+
 
 
 }
@@ -997,7 +987,8 @@ fun DashboardScreen(
             appliedCategoryDefaults = selectedCategory
         }
     }
-    var isReportCardExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val coachStep = LocalCoachStep.current
+    var isReportCardExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(coachStep?.screen in listOf(CoachScreen.FORM, CoachScreen.AI)) }
     var reportSubmitted by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
@@ -1014,7 +1005,7 @@ fun DashboardScreen(
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
 
     var isManualMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) } // false = שעון, true = ידני
-    var isAiMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var isAiMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(coachStep?.screen == CoachScreen.AI) }
     var aiInputText by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var isAiParsing by remember { mutableStateOf(false) }
     var aiError by remember { mutableStateOf<String?>(null) }
@@ -1369,6 +1360,7 @@ fun DashboardScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .coachTarget(CoachTarget.SHIFT)
                             .clickable {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                 if (!isReportCardExpanded) reportSubmitted = false
@@ -3126,7 +3118,8 @@ fun WorkEntryRowCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    val tutorialShare = LocalCoachStep.current?.screen == CoachScreen.SHARE
+    var isExpanded by remember { mutableStateOf(tutorialShare) }
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
@@ -3415,7 +3408,7 @@ fun WorkEntryRowCard(
                                                     type = "text/plain"
                                                     putExtra(android.content.Intent.EXTRA_TEXT, textToSend)
                                                 }
-                                                context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת לעובד"))
+                                                if (!tutorialShare) context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת לעובד"))
                                             },
                                             modifier = Modifier.size(48.dp)
                                         ) {
@@ -3491,12 +3484,13 @@ fun WorkEntryRowCard(
                                     type = "text/plain"
                                     putExtra(android.content.Intent.EXTRA_TEXT, textToSend)
                                 }
-                                context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת"))
+                                if (!tutorialShare) context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת"))
                             },
                             modifier = Modifier
                                 .size(48.dp)
                                 .background(Color(0xFF064E3B), shape = RoundedCornerShape(8.dp))
                                 .testTag("global_share_btn_${entry.id}")
+                                .coachTarget(CoachTarget.SHARE)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Share,
@@ -3537,7 +3531,7 @@ fun WorkEntryRowCard(
                                         type = "text/plain"
                                         putExtra(android.content.Intent.EXTRA_TEXT, textToSend)
                                     }
-                                    context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף חשבונית לקבלן"))
+                                    if (!tutorialShare) context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף חשבונית לקבלן"))
                                 },
                                 modifier = Modifier
                                     .size(48.dp)
@@ -3668,7 +3662,8 @@ fun ManagementScreen(
     viewModel: WorkViewModel,
     categories: List<WorkCategory>,
     onNavigateBack: () -> Unit,
-    onSignIn: () -> Unit = {}
+    onSignIn: () -> Unit = {},
+    onReplayTutorial: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val accountSession by viewModel.currentUserSession.collectAsStateWithLifecycle()
@@ -3694,7 +3689,8 @@ fun ManagementScreen(
     var draftDefaultCurrency by remember(savedDefaultCurrency) { mutableStateOf(savedDefaultCurrency) }
 
     // Accordion state - default to all closed (-1)
-    var expandedSection by remember { mutableStateOf(-1) }
+    val coachStep = LocalCoachStep.current
+    var expandedSection by remember { mutableStateOf(if (coachStep?.screen == CoachScreen.API) 3 else -1) }
 
     Box(modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
         Column(
@@ -3715,6 +3711,12 @@ fun ManagementScreen(
                 )
             }
 
+            OutlinedButton(onClick = onReplayTutorial, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("replay_onboarding"), shape = RoundedCornerShape(12.dp)) {
+                Icon(Icons.Outlined.Info, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("הצג שוב את ההדרכה")
+            }
+
             // Category 1: ניהול עבודה וקטגוריות
             Box(modifier = Modifier.fillMaxWidth()) {
                 val isExpanded = expandedSection == 0
@@ -3725,6 +3727,7 @@ fun ManagementScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("settings_section_עבודה וקטגוריות")
+                        .coachTarget(CoachTarget.CATEGORIES)
                         .clickable {
                             expandedSection = if (isExpanded) -1 else 0
                         }
@@ -4068,7 +4071,7 @@ fun ManagementScreen(
                                 HorizontalDivider(color = Color(0xFF334155))
                                 Text("בינה מלאכותית", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                                 Text("שימוש אופציונלי בג׳מיני באמצעות המפתח האישי שלך")
-                                TextButton(onClick = { showPersonalKeySettings = true }) { Text("מפתח אישי") }
+                                TextButton(onClick = { showPersonalKeySettings = true }, modifier = Modifier.coachTarget(CoachTarget.API)) { Text("מפתח אישי") }
 
                                 HorizontalDivider(color = Color(0xFF334155))
                                 Text("משוב ודיווח על תקלה", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)

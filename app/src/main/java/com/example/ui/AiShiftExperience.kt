@@ -69,7 +69,7 @@ fun AiShiftInput(text: String, onText: (String) -> Unit, capturing: Boolean, lis
                  error: String?, onRecord: () -> Unit, onStop: () -> Unit, onCancel: () -> Unit, onParse: () -> Unit) {
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
-    Column(Modifier.fillMaxWidth().testTag("ai_experience"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxWidth().testTag("ai_experience").coachTarget(CoachTarget.AI), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(Icons.Filled.AutoAwesome, null, tint = Color(0xFFA5B4FC), modifier = Modifier.size(24.dp))
             Column {
