@@ -19,8 +19,17 @@ Do not resume or modify website, Firebase, accounts or cloud sync until the user
 Owner requested currency editing for stored and active shifts, correct timer
 currency defaults, confirmed discard without creating a saved shift, and Enter
 in feedback without collapsing Settings. Baseline: 51ca2908349681141f17461399615ea00f88b870.
-Scope/evidence: `docs/android-currency-feedback.md`. Implementation under validation;
-RC14/code22 uses the existing permanent signing identity and original RC13 upgrade.
+Scope/evidence: `docs/android-currency-feedback.md`. Verified owner-review candidate
+RC14/code22, signed source4267f5e0083f1b945e7d3642d803d15d222f0bdf.
+Run37888789674/job113684763786 SUCCESS; artifact11598265150.
+SHA256588e058c21f3a1a42de88d7a33028ebce2c2ec302ce3deb5d8b6d6874854f627.
+Permanent signature/content digest/package/version independently verified after
+download. Original RC13-to-RC14 update preserved exact synthetic data; all nine
+native stages passed, including currency defaults/editing/persistence, confirmed
+cancel and real Enter in feedback. Crash logs empty. Consolidated84/67 tests passed
+before final header fix; exact final focused9/4 plus native gates passed.
+Owner file SalaryRC14.apk; existing restricted Drive file replaced in place with
+permissions retained. Owner physical-phone review remains.
 No stable/feed publication or website/cloud changes requested by this task.
 
 ## Previous completed task: first-launch Android onboarding — RC13

@@ -1,0 +1,32 @@
+{
+  "source": "4267f5e0083f1b945e7d3642d803d15d222f0bdf",
+  "run_id": 37888789674,
+  "job_id": 113684763786,
+  "conclusion": "success",
+  "artifact_id": 11598265150,
+  "consolidated_tests": {
+    "source": "743bea564bc1589b07f1954f3a48d893bd2b6ba0",
+    "debug": 84,
+    "release": 67
+  },
+  "final_focused_tests": {
+    "debug": 9,
+    "release": 4
+  },
+  "native_stages": {
+    "seed": "passed",
+    "restart": "passed",
+    "updater": "passed",
+    "verify": "passed",
+    "ui": "passed",
+    "currency-feedback": "passed",
+    "keyboard-ui": "passed",
+    "onboarding-fresh": "passed",
+    "onboarding-cold-reopen": "passed"
+  },
+  "upgrade_snapshots_equal": true,
+  "synthetic_snapshot_sha256": "bfb2e585a3334ad7181c2c551bd9ed6b4d4b5f4a211854b98d064db2b54cf556",
+  "crash_logs_empty": true,
+  "physical_phone_review": "pending",
+  "stable_feed_publication": false
+}
