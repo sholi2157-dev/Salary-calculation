@@ -1,0 +1,9 @@
+{
+  "versionCode": 23,
+  "versionName": "1.5-rc15",
+  "package": "com.aistudio.worktracker.qztvdw.distribution",
+  "certificate_sha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
+  "apk_sha256": "9935eb6d49c971832653a207186e64392c93ba65da271d839684c5b624ff0bcc",
+  "apk_bytes": 19231379,
+  "v2_signature_and_content_digest_verified": true
+}

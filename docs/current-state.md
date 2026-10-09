@@ -1,5 +1,12 @@
 # Current project state
 
+## Latest completed owner request — RC15, 2026-10-09
+
+Delivered Android1.5-rc15/code23: exact signed/tested sourcebc876374cb7486351fcd7bd9c69c229215241021, candidate run37993791019, public channel+real RC14button/download/Androidinstaller/data gate run37994406008. All passed. APK SHA2569935eb6d49c971832653a207186e64392c93ba65da271d839684c5b624ff0bcc and permanent package/certificate are unchanged. See docs/rc15-layout.md and docs/release-evidence/rc15. Do not repeat completed work or publish a different rebuilt binary underRC15.
+
+Owner explicitly requested both platforms. Web production at the existing eta origin is d4feadd0cdf053906c70d6b76e6b9651c57e455e, with live public browser run37993523248 passed. Preserve that branch/origin and existing design; detailed Web evidence is on codex/web-rc15-live/docs/rc15-feature-parity.md. Android and Web now have on-demand default category/add controls and compact currency/rate layouts; Web also retains RC14currency fallback/editable active currency/confirmed cancellation. Existing Drive APK identity/link/ACL were retained and updated in place toRC15. Future delivery must use a higher code than23 and retain signer/data.
+
+
 Last updated: 2026-10-09
 
 ## Repository and active track
