@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 pkg=com.aistudio.worktracker.qztvdw.distribution
 runner="$pkg.test/androidx.test.runner.AndroidJUnitRunner"
 external="/sdcard/Android/data/$pkg/files"

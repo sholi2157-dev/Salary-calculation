@@ -47,6 +47,7 @@ jobs:
           name: android-update-publication-evidence
           path: update-publication/
   verify-live:
+    if: always() && (needs.publish.result == 'success' || contains(github.event.head_commit.message, '[verify-update]'))
     needs: publish
     runs-on: ubuntu-latest
     timeout-minutes: 20
