@@ -27,6 +27,7 @@ class CurrencyFeedbackTest {
         ui.onNodeWithText("אישור").performClick()
         ui.waitUntil(5000) { state.activeShiftStartTime.value != null }
         val start = state.activeShiftStartTime.value!!
+        assertEquals("RC14 default currency", state.activeShiftCategory.value)
         assertEquals("$", state.activeShiftCurrency.value)
         ui.onNodeWithTag("active_shift_currency_₪").performScrollTo().performClick()
         assertEquals("₪", WorkShiftState(context, WorkAccountScope(null)).activeShiftCurrency.value)

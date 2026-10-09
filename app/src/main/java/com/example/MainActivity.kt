@@ -3743,14 +3743,15 @@ fun ManagementScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("settings_section_עבודה וקטגוריות")
                         .coachTarget(CoachTarget.CATEGORIES)
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 0
-                        }
+
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsSectionHeader("עבודה וקטגוריות", isExpanded)
+                        Box(Modifier.fillMaxWidth().clickable {
+                            expandedSection = if (isExpanded) -1 else 0
+                        }.testTag("settings_section_עבודה וקטגוריות")) {
+                            SettingsSectionHeader("עבודה וקטגוריות", isExpanded)
+                        }
 
                         androidx.compose.animation.AnimatedVisibility(
                             visible = isExpanded,
@@ -3917,13 +3918,14 @@ fun ManagementScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("settings_section_מטבע וברירות מחדל")
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 1
-                        }
+
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsSectionHeader("מטבע וברירות מחדל", isExpanded)
+                        Box(Modifier.fillMaxWidth().clickable {
+                            expandedSection = if (isExpanded) -1 else 1
+                        }.testTag("settings_section_מטבע וברירות מחדל")) {
+                            SettingsSectionHeader("מטבע וברירות מחדל", isExpanded)
+                        }
 
                         androidx.compose.animation.AnimatedVisibility(
                             visible = isExpanded,
@@ -4010,13 +4012,14 @@ fun ManagementScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("settings_section_מערכת ומשוב")
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 3
-                        }
+
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsSectionHeader("מערכת ומשוב", isExpanded)
+                        Box(Modifier.fillMaxWidth().clickable {
+                            expandedSection = if (isExpanded) -1 else 3
+                        }.testTag("settings_section_מערכת ומשוב")) {
+                            SettingsSectionHeader("מערכת ומשוב", isExpanded)
+                        }
 
                         androidx.compose.animation.AnimatedVisibility(
                             visible = isExpanded,
@@ -4108,13 +4111,14 @@ fun ManagementScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("settings_section_גיבוי ונתונים")
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 4
-                        }
+
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsSectionHeader("גיבוי ונתונים", isExpanded)
+                        Box(Modifier.fillMaxWidth().clickable {
+                            expandedSection = if (isExpanded) -1 else 4
+                        }.testTag("settings_section_גיבוי ונתונים")) {
+                            SettingsSectionHeader("גיבוי ונתונים", isExpanded)
+                        }
 
                         androidx.compose.animation.AnimatedVisibility(
                             visible = isExpanded,
