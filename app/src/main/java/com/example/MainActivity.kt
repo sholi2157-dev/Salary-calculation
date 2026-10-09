@@ -456,7 +456,7 @@ fun MainAppContent(
                     unselectedIconColor = Color(0xFF8E8E93),
                     selectedTextColor = Color(0xFF6366F1),
                     unselectedTextColor = Color(0xFF8E8E93),
-                    indicatorColor = com.example.ui.theme.FormSurface
+                    indicatorColor = Color(0xFF1E1E1E)
                 ),
                 modifier = Modifier.testTag("tab_0")
             )
@@ -473,7 +473,7 @@ fun MainAppContent(
                     unselectedIconColor = Color(0xFF8E8E93),
                     selectedTextColor = Color(0xFF6366F1),
                     unselectedTextColor = Color(0xFF8E8E93),
-                    indicatorColor = com.example.ui.theme.FormSurface
+                    indicatorColor = Color(0xFF1E1E1E)
                 ),
                 modifier = Modifier.testTag("tab_1")
             )
@@ -1851,7 +1851,6 @@ fun DashboardScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                     Text("הגדרת משמרת פעילה", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
-                    com.example.ui.ShiftCurrencyPicker(dialogCurrency, { dialogCurrency = it }, "quick_shift_currency")
 
                     ExposedDropdownMenuBox(
                         expanded = expanded,
@@ -1859,6 +1858,7 @@ fun DashboardScreen(
                     ) {
                         OutlinedTextField(
                             value = dialogCategory,
+                            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
                             onValueChange = {},
                             readOnly = true,
                             label = { Text("קטגוריה / מעסיק") },
@@ -1882,14 +1882,17 @@ fun DashboardScreen(
                             }
                         }
                     }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = dialogRateStr,
                         onValueChange = { dialogRateStr = it },
                         label = { Text("תעריף שעתי") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     )
+                        com.example.ui.ShiftCurrencyPicker(dialogCurrency, { dialogCurrency = it }, "quick_shift_currency", Modifier.weight(1f), compact = true)
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
@@ -3689,12 +3692,34 @@ fun ManagementScreen(
         }
     }
     var newCategoryText by remember { mutableStateOf("") }
+    var defaultCategoryMenu by remember { mutableStateOf(false) }
+    var addingDefaultCategory by remember { mutableStateOf(false) }
+    var defaultCategoryName by remember { mutableStateOf("") }
+    var defaultCategoryRate by remember { mutableStateOf("40") }
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
     var categoryToEditByRate by remember { mutableStateOf<WorkCategory?>(null) }
     var editRateText by remember { mutableStateOf("") }
     var importText by remember { mutableStateOf("") }
 
     val localPreferences by viewModel.localPreferences.collectAsStateWithLifecycle()
+    if (addingDefaultCategory) {
+        var error by remember { mutableStateOf("") }
+        AlertDialog(onDismissRequest = { addingDefaultCategory = false }, containerColor = com.example.ui.theme.FormSurface,
+            title = { Text("הוספת קטגוריה") }, text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(defaultCategoryName, { defaultCategoryName = it }, label = { Text("שם קטגוריה") }, singleLine = true, modifier = Modifier.testTag("default_category_new_name"))
+                    OutlinedTextField(defaultCategoryRate, { defaultCategoryRate = it }, label = { Text("תעריף לשעה") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.testTag("default_category_new_rate"))
+                    Text("המטבע יהיה מטבע ברירת המחדל שלך.", style = MaterialTheme.typography.bodySmall)
+                    if (error.isNotEmpty()) Text(error, color = Color(0xFFF87171))
+                }
+            }, confirmButton = { TextButton(onClick = {
+                val name = defaultCategoryName.trim()
+                val rate = defaultCategoryRate.toDoubleOrNull()
+                if (name.isBlank() || categories.any { it.name == name } || rate == null || !rate.isFinite() || rate < 0) error = "יש להזין שם חדש ותעריף תקין"
+                else { viewModel.addDefaultCategory(name, rate); addingDefaultCategory = false }
+            }) { Text("הוסף ובחר") } }, dismissButton = { TextButton(onClick = { addingDefaultCategory = false }) { Text("ביטול") } })
+    }
+
     val saveBackupLauncher = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri?.let { viewModel.saveBackup(context, it) }
     }
@@ -3934,9 +3959,16 @@ fun ManagementScreen(
                         ) {
                             Column(modifier = Modifier.padding(top = 16.dp)) {
                 Text("קטגוריית ברירת מחדל")
-                categories.forEach { cat ->
-                    TextButton(onClick = { viewModel.setDefaultCategory(cat.name) }) {
-                        Text(if ((localPreferences["defaultCategory"] ?: categories.firstOrNull()?.name) == cat.name) "✓ ${cat.name}" else cat.name)
+                Box(Modifier.fillMaxWidth()) {
+                    OutlinedButton(onClick = { defaultCategoryMenu = true }, modifier = Modifier.fillMaxWidth().testTag("default_category_picker")) {
+                        Text((localPreferences["defaultCategory"]?.takeIf { name -> categories.any { it.name == name } } ?: categories.firstOrNull()?.name ?: "עצמאי"))
+                        Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
+                    }
+                    DropdownMenu(expanded = defaultCategoryMenu, onDismissRequest = { defaultCategoryMenu = false }) {
+                        categories.forEach { cat ->
+                            DropdownMenuItem(text = { Text(cat.name) }, onClick = { viewModel.setDefaultCategory(cat.name); defaultCategoryMenu = false }, modifier = Modifier.testTag("default_category_option_${cat.name}"))
+                        }
+                        DropdownMenuItem(text = { Text("הוספת קטגוריה") }, onClick = { defaultCategoryMenu = false; defaultCategoryName = ""; defaultCategoryRate = "40"; addingDefaultCategory = true })
                     }
                 }
 
@@ -4963,7 +4995,6 @@ fun EditShiftBottomSheet(
                 modifier = Modifier.align(Alignment.End)
             )
 
-            com.example.ui.ShiftCurrencyPicker(selectedCurrency, { selectedCurrency = it }, "edit_shift_currency")
             Text("שינוי המטבע מתקן את סימון הדיווח; הסכום אינו מומר לפי שער חליפין.", style = MaterialTheme.typography.bodySmall)
 
             // Replicate same layout as "דיווח חדש"
@@ -5364,6 +5395,7 @@ fun EditShiftBottomSheet(
                     modifier = Modifier.align(Alignment.End)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = hourlyRateStr,
                     onValueChange = { newValue ->
@@ -5377,7 +5409,7 @@ fun EditShiftBottomSheet(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().testTag("edit_rate_input"),
+                    modifier = Modifier.weight(1f).testTag("edit_rate_input"),
                     isError = showErrorRate,
                     colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                         focusedBorderColor = if (showErrorRate) Color.Red else Color(0xFF5C6BC0),
@@ -5386,6 +5418,8 @@ fun EditShiftBottomSheet(
                         unfocusedTextColor = Color.White
                     )
                 )
+                    com.example.ui.ShiftCurrencyPicker(selectedCurrency, { selectedCurrency = it }, "edit_shift_currency", Modifier.weight(1f), compact = true)
+                }
                 if (showErrorRate) {
                     Text(
                         text = "נא להזין תעריף תקין",

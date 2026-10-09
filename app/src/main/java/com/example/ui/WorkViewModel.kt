@@ -46,6 +46,12 @@ class WorkViewModel(
     private val localDao = owner.database(application).workDao()
     val localPreferences = localDao.observeLocalPreferences().map { rows -> rows.associate { it.name to it.value } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+    fun addDefaultCategory(name: String, rate: Double) { viewModelScope.launch {
+        if (name.isBlank() || !rate.isFinite() || rate < 0 || repository.getCategoryByName(name) != null) return@launch
+        repository.insertCategory(com.example.data.WorkCategory(name = name, defaultRate = rate))
+        localDao.setLocalPreference(com.example.data.WorkLocalPreference("categoryCurrency:$name", defaultCurrency.value))
+        localDao.setLocalPreference(com.example.data.WorkLocalPreference("defaultCategory", name))
+    } }
     fun setDefaultCategory(name: String) { viewModelScope.launch {
         if (repository.getCategoryByName(name) != null) localDao.setLocalPreference(com.example.data.WorkLocalPreference("defaultCategory", name))
     } }

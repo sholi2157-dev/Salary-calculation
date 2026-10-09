@@ -165,8 +165,8 @@ dependencies {
 androidComponents {
   onVariants(selector().withBuildType("release")) { variant ->
     variant.outputs.forEach { output ->
-      output.versionCode.set(providers.gradleProperty("distributionVersionCode").orNull?.toInt() ?: 22)
-      output.versionName.set(providers.gradleProperty("distributionVersionName").orNull ?: "1.5-rc14")
+      output.versionCode.set(providers.gradleProperty("distributionVersionCode").orNull?.toInt() ?: 23)
+      output.versionName.set(providers.gradleProperty("distributionVersionName").orNull ?: "1.5-rc15")
     }
   }
 }

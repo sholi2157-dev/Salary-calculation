@@ -213,13 +213,22 @@ object SalaryFeedback {
 
 
 
-@Composable fun ShiftCurrencyPicker(currency: String, onCurrency: (String) -> Unit, tag: String) {
-    Row(Modifier.fillMaxWidth().testTag(tag), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text("מטבע")
-        listOf("₪", "$").forEach { value ->
-            FilterChip(selected = currency == value, onClick = { onCurrency(value) },
-                label = { Text(if (value == "₪") "שקל ₪" else "דולר $") },
-                modifier = Modifier.testTag("${tag}_$value"))
+@Composable fun ShiftCurrencyPicker(currency: String, onCurrency: (String) -> Unit, tag: String, modifier: Modifier = Modifier, compact: Boolean = false) {
+    if (compact) {
+        Column(modifier.testTag(tag), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("מטבע", style = MaterialTheme.typography.labelSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf("₪", "$").forEach { value ->
+                    FilterChip(selected = currency == value, onClick = { onCurrency(value) }, label = { Text(value) }, modifier = Modifier.testTag("${tag}_$value"))
+                }
+            }
+        }
+    } else {
+        Row(modifier.fillMaxWidth().testTag(tag), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+            Text("מטבע")
+            listOf("₪", "$").forEach { value ->
+                FilterChip(selected = currency == value, onClick = { onCurrency(value) }, label = { Text(if (value == "₪") "שקל ₪" else "דולר $") }, modifier = Modifier.testTag("${tag}_$value"))
+            }
         }
     }
 }

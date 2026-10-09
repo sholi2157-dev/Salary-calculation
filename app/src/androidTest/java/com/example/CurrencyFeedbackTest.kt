@@ -77,5 +77,25 @@ class CurrencyFeedbackTest {
             click(androidx.compose.ui.geometry.Offset(center.x, 20f))
         }
         ui.onNodeWithTag("settings_root", useUnmergedTree=true).assertDoesNotExist()
+        // RC15: one current default, on-demand choices and add from that picker.
+        ui.onNodeWithContentDescription("ניהול וקטגוריות").performClick()
+        ui.onNodeWithTag("settings_section_מטבע וברירות מחדל", useUnmergedTree=true).performScrollTo().performClick()
+        ui.onNodeWithTag("default_category_picker").performScrollTo().assertTextContains("ILS category")
+        ui.onNodeWithTag("default_category_option_USD category").assertDoesNotExist()
+        ui.onNodeWithTag("default_category_picker").performClick()
+        ui.onNodeWithTag("default_category_option_USD category").performClick()
+        ui.waitUntil(5000) { runBlocking { dao.getLocalPreferences() }.any { it.name == "defaultCategory" && it.value == "USD category" } }
+        ui.onNodeWithTag("default_category_picker").assertTextContains("USD category").performClick()
+        ui.onNodeWithText("הוספת קטגוריה", useUnmergedTree=true).performClick()
+        ui.onNodeWithTag("default_category_new_name").performTextInput("RC15 new default")
+        ui.onNodeWithText("הוסף ובחר").performClick()
+        ui.waitUntil(5000) { runBlocking { dao.getLocalPreferences() }.any { it.name == "defaultCategory" && it.value == "RC15 new default" } }
+        ui.onNodeWithTag("default_category_picker").assertTextContains("RC15 new default")
+        val prefs = runBlocking { dao.getLocalPreferences() }
+        assertEquals("₪", prefs.first { it.name == "categoryCurrency:RC15 new default" }.value)
+        assertEquals(before, runBlocking { dao.getEntriesList() })
+        runBlocking { dao.setLocalPreference(WorkLocalPreference("defaultCategory", "ILS category")) }
+        ui.onNodeWithTag("settings_root", useUnmergedTree=true).performTouchInput { click(androidx.compose.ui.geometry.Offset(center.x, 20f)) }
+
     }
 }
