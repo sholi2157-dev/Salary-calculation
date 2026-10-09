@@ -13,7 +13,7 @@ instrument() {
   local method="$1" output="$2"
   shift 2
   adb shell am instrument -w -r -e class "$method" "$@" "$runner" | tee "live-update-evidence/$output.txt"
-  rg 'OK \(1 test\)' "live-update-evidence/$output.txt"
+  grep -E 'OK \(1 test\)' "live-update-evidence/$output.txt"
 }
 instrument com.example.DistributionUpdateTest seed -e stage seed
 # Seed completed data means this is an existing installation, not a fresh onboarding run.
@@ -39,16 +39,16 @@ x=(bounds[0]+bounds[2])//2;y=(bounds[1]+bounds[3])//2
 subprocess.run(['adb','shell','input','tap',str(x),str(y)],check=True)
 PY
 for attempt in $(seq 1 60); do
-  if adb shell dumpsys package "$pkg" | rg -q 'versionCode=22 '; then break; fi
+  if adb shell dumpsys package "$pkg" | grep -q 'versionCode=22 '; then break; fi
   sleep 1
 done
 adb shell dumpsys package "$pkg" > live-update-evidence/installed-package.txt
-rg 'versionCode=22 ' live-update-evidence/installed-package.txt
+grep 'versionCode=22 ' live-update-evidence/installed-package.txt
 instrument 'com.example.LiveUpdateChannelTest#installedRc14RetainsDataAndDoesNotOfferItselfAgain' live-retained
 adb pull "$external/live-after.json" live-update-evidence/live-after.json
 cmp live-update-evidence/live-before.json live-update-evidence/live-after.json
 adb logcat -b crash -d > live-update-evidence/crash-log.txt
-if rg 'FATAL EXCEPTION|Process: com.aistudio.worktracker.qztvdw.distribution' live-update-evidence/crash-log.txt; then exit 1; fi
+if grep -E 'FATAL EXCEPTION|Process: com.aistudio.worktracker.qztvdw.distribution' live-update-evidence/crash-log.txt; then exit 1; fi
 python3 - <<'PY'
 import json,pathlib
 pathlib.Path('live-update-evidence/result.json').write_text(json.dumps({'originalInstalledVersionCode':21,'liveManualCheckFoundVersionCode':22,'liveApkChecksumVerified':True,'androidInstallerConfirmed':True,'installedVersionCode':22,'syntheticDataPreservedExactly':True,'sameVersionNotOfferedAgain':True},indent=2)+'\n')
