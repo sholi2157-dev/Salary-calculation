@@ -9,3 +9,9 @@ Both platforms show the current default category in one control, opening choices
 Saved entry currency editing and multiline feedback are retained. Web AI/account flags and Android personal-key behavior are unchanged. No financial schemas, historical amounts, user records or permissions are reset.
 
 Validation: 43 local Web unit tests and build pass. Existing browser preservation suites and the new RC15 browser suite run in CI at 360/390/768/1440 widths. Native tests include the existing currency/feedback gate plus default picker/add assertions. Signed RC14-to-RC15 and actual public-channel download/installer/data gates must pass before completion is claimed. Publication and deployment evidence will be recorded after verification.
+
+## Verified publication
+
+Exact tested Web source d4feadd0cdf053906c70d6b76e6b9651c57e455e passed run37993152040, job114032255010: build, all43 unit tests, mobile/parity/controlled-update suites and RC15 timer/default/feedback assertions at all4 widths. Artifact11645942146 contains actual browser screenshots; default/form/history views were inspected.
+Vercel deployment dpl_2P1wBDybjGLCZmi28E7h3rYnD651 is READY and was assigned to the existing eta alias on October9. Public build-info confirms the exact source and CSS5dfa8e49be8f564899abd359860b166546867b9929770a98c5d32f93b1af650a. Rollback is the previous eta deployment dpl_Ae95zp98dg8RYJET6BRHU4GtTokM. No merge/main mutation or protection-settings change occurred.
+Protected-preview access was unavailable through the connector; automatic approval review rejected a temporary external auth-bypass share link. No link was created. CI browser verification and inspection preceded publication; the existing public origin is then tested directly with isolated synthetic storage and analytics requests blocked.

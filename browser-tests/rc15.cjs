@@ -10,8 +10,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  try{for(const width of [360,390,768,1440]){
   const context=await browser.newContext({viewport:{width,height:844},locale:'he-IL'});
   await context.route('https://www.gstatic.com/**',r=>r.abort());
+  await context.route('**/_vercel/insights/**',r=>r.abort());
   await context.addInitScript(()=>{if(!sessionStorage.getItem('seeded')){localStorage.setItem('work_onboarding_version','1');localStorage.setItem('work_complete_backup',JSON.stringify({formatVersion:2,entries:[],workers:[],categories:[{name:'ללא מטבע',defaultRate:37},{name:'שקל מפורש',defaultRate:20}],webPreferences:{mainCurrency:'$',defaultCategory:'ללא מטבע',categoryCurrencies:{'שקל מפורש':'₪'}}}));sessionStorage.setItem('seeded','yes');}});
-  const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'domcontentloaded'});
+  const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(process.env.PUBLIC_SITE_URL||('http://127.0.0.1:'+server.address().port),{waitUntil:'domcontentloaded'});
   await p.getByRole('button',{name:'ניהול וקטגוריות',exact:true}).click();await p.locator('.main-currency-settings > summary').click();assert.match(await p.locator('#default-category-button').innerText(),/ללא מטבע/);
   await p.locator('#default-category-button').click();await p.locator('#default-category-options').getByRole('button',{name:'שקל מפורש',exact:true}).click();assert.match(await p.locator('#default-category-button').innerText(),/שקל מפורש/);
   await p.locator('#default-category-button').click();await p.locator('#default-category-dialog').getByRole('button',{name:'הוספת קטגוריה',exact:true}).click();await p.locator('#category-name').fill('חדש '+width);assert.equal(await p.locator('#category-currency').inputValue(),'$');assert.equal(await p.locator('#category-default').isChecked(),true);
