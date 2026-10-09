@@ -2,7 +2,6 @@ package com.example
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.data.*
 import kotlinx.coroutines.runBlocking
@@ -73,6 +72,9 @@ class CurrencyFeedbackTest {
         java.io.File(context.getExternalFilesDir(null), "rc14-feedback.png").outputStream().use {
             bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
         }
-        Espresso.pressBack()
+        ui.onNodeWithTag("settings_root", useUnmergedTree=true).performTouchInput {
+            click(androidx.compose.ui.geometry.Offset(center.x, 20f))
+        }
+        ui.onNodeWithTag("settings_root", useUnmergedTree=true).assertDoesNotExist()
     }
 }

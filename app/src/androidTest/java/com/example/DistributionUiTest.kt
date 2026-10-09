@@ -144,7 +144,12 @@ class DistributionUiTest {
         ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
         ui.onNodeWithTag("onboarding_skip").performClick()
         ui.onNodeWithTag("feedback_message").performScrollTo().assertTextContains("Synthetic feedback draft")
-        Espresso.pressBack()
+        // Settings has its own Dialog window; avoid selecting the unfocused
+        // Activity root after replay. Verify the real outside-tap dismissal.
+        ui.onNodeWithTag("settings_root", useUnmergedTree = true).performTouchInput {
+            click(androidx.compose.ui.geometry.Offset(center.x, 20f))
+        }
+        ui.onNodeWithTag("settings_root", useUnmergedTree = true).assertDoesNotExist()
         ui.onNodeWithTag("tab_0").performClick()
         ui.onNodeWithTag("add_rate_input").performScrollTo().assertTextContains("73.25")
         val target = InstrumentationRegistry.getInstrumentation().targetContext
