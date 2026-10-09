@@ -4,6 +4,9 @@ pkg=com.aistudio.worktracker.qztvdw.distribution
 runner="$pkg.test/androidx.test.runner.AndroidJUnitRunner"
 external="/sdcard/Android/data/$pkg/files"
 mkdir -p live-update-evidence
+update_code=$(python3 -c 'import json; print(json.load(open("docs/android-update-release.json"))["versionCode"])')
+update_name=$(python3 -c 'import json; print(json.load(open("docs/android-update-release.json"))["versionName"])')
+update_sha=$(python3 -c 'import json; print(json.load(open("docs/android-update-release.json"))["sha256"])')
 collect_failure() {
   adb logcat -d > live-update-evidence/device-log.txt || true
   adb shell dumpsys activity activities > live-update-evidence/failure-activities.txt || true
@@ -19,7 +22,7 @@ adb logcat -c
 instrument() {
   local method="$1" output="$2"
   shift 2
-  timeout 240s adb shell am instrument -w -r -e timeout_msec 180000 -e class "$method" "$@" "$runner" | tee "live-update-evidence/$output.txt"
+  timeout 240s adb shell am instrument -w -r -e timeout_msec 180000 -e previousVersionCode 22 -e updateVersionCode "$update_code" -e updateVersionName "$update_name" -e updateSha256 "$update_sha" -e class "$method" "$@" "$runner" | tee "live-update-evidence/$output.txt"
   grep -E 'OK \(1 test\)' "live-update-evidence/$output.txt"
 }
 instrument com.example.DistributionUpdateTest seed -e stage seed
@@ -27,9 +30,9 @@ instrument com.example.DistributionUpdateTest seed -e stage seed
 instrument com.example.DistributionUpdateTest restart -e stage restart
 # The seed suppressed automatic startup checks; the manual button contacts the live channel.
 adb shell am force-stop "$pkg"
-instrument 'com.example.LiveUpdateChannelTest#originalRc13FindsAndDownloadsThroughActualButton' live-check
+instrument 'com.example.LiveUpdateChannelTest#previousReleaseFindsAndDownloadsThroughActualButton' live-check
 adb pull "$external/live-downloaded.apk" live-update-evidence/live-downloaded.apk
-printf '%s\n' '588e058c21f3a1a42de88d7a33028ebce2c2ec302ce3deb5d8b6d6874854f627  live-update-evidence/live-downloaded.apk' | sha256sum --check
+printf '%s\n' "$update_sha  live-update-evidence/live-downloaded.apk" | sha256sum --check
 adb pull "$external/live-before.json" live-update-evidence/live-before.json
 adb shell dumpsys activity activities > live-update-evidence/installer-activities.txt
 adb shell uiautomator dump /sdcard/live-installer.xml
@@ -46,11 +49,11 @@ x=(bounds[0]+bounds[2])//2;y=(bounds[1]+bounds[3])//2
 subprocess.run(['adb','shell','input','tap',str(x),str(y)],check=True)
 PY
 for attempt in $(seq 1 60); do
-  if adb shell dumpsys package "$pkg" | grep 'versionCode=22 ' > /dev/null; then break; fi
+  if adb shell dumpsys package "$pkg" | grep "versionCode=$update_code " > /dev/null; then break; fi
   sleep 1
 done
 adb shell dumpsys package "$pkg" > live-update-evidence/installed-package.txt
-grep 'versionCode=22 ' live-update-evidence/installed-package.txt
+grep "versionCode=$update_code " live-update-evidence/installed-package.txt
 # versionCode changes before Android finishes dexopt and unfreezes the package.
 # Wait for the actual successful-install screen instead of racing instrumentation.
 python3 - <<'DONEPY'
@@ -79,12 +82,13 @@ DONEPY
 adb shell input keyevent KEYCODE_HOME
 adb shell am force-stop "$pkg"
 sleep 1
-instrument 'com.example.LiveUpdateRetainedDataTest#installedRc14RetainsDataAndDoesNotOfferItselfAgain' live-retained
+instrument 'com.example.LiveUpdateRetainedDataTest#updatedReleaseRetainsDataAndDoesNotOfferItselfAgain' live-retained
 adb pull "$external/live-after.json" live-update-evidence/live-after.json
 cmp live-update-evidence/live-before.json live-update-evidence/live-after.json
 adb logcat -b crash -d > live-update-evidence/crash-log.txt
 if grep -E 'FATAL EXCEPTION|Process: com.aistudio.worktracker.qztvdw.distribution' live-update-evidence/crash-log.txt; then exit 1; fi
 python3 - <<'PY'
 import json,pathlib
-pathlib.Path('live-update-evidence/result.json').write_text(json.dumps({'originalInstalledVersionCode':21,'liveManualCheckFoundVersionCode':22,'liveApkChecksumVerified':True,'androidInstallerConfirmed':True,'installedVersionCode':22,'syntheticDataPreservedExactly':True,'sameVersionNotOfferedAgain':True},indent=2)+'\n')
+config=json.loads(pathlib.Path('docs/android-update-release.json').read_text())
+pathlib.Path('live-update-evidence/result.json').write_text(json.dumps({'originalInstalledVersionCode':22,'liveManualCheckFoundVersionCode':config['versionCode'],'liveApkChecksumVerified':True,'androidInstallerConfirmed':True,'installedVersionCode':config['versionCode'],'syntheticDataPreservedExactly':True,'sameVersionNotOfferedAgain':True},indent=2)+'\n')
 PY
