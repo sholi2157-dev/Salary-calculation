@@ -55,7 +55,7 @@ elif sys.argv[1]=='publish':
     except subprocess.CalledProcessError:
         release=None
     if not release:
-        subprocess.run(['gh','release','create',tag,str(root/name),str(root/'release.json'),'--repo',repo,'--target',config['sourceSha'],'--title','חישוב שכר — '+config['versionName'],'--notes-file',str(root/'notes.md'),'--draft'],check=True)
+        subprocess.run(['gh','release','create',tag,str(root/name),str(root/'release.json'),'--repo',repo,'--target',os.environ['GITHUB_SHA'],'--title','חישוב שכר — '+config['versionName'],'--notes-file',str(root/'notes.md'),'--draft'],check=True)
     else:
         existing=root/'existing';existing.mkdir(exist_ok=True)
         subprocess.run(['gh','release','download',tag,'--repo',repo,'--pattern',name,'--pattern','release.json','--dir',str(existing)],check=True)

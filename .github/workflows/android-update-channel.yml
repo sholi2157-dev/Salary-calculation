@@ -1,4 +1,5 @@
 name: Publish and verify Android update channel
+# Release tag identifies publication; immutable APK source is recorded separately.
 on:
   push:
     branches: ['codex/android-local-distribution']
