@@ -51,7 +51,31 @@ for attempt in $(seq 1 60); do
 done
 adb shell dumpsys package "$pkg" > live-update-evidence/installed-package.txt
 grep 'versionCode=22 ' live-update-evidence/installed-package.txt
-# Finish the installer and clear the old activity/process before starting new instrumentation.
+# versionCode changes before Android finishes dexopt and unfreezes the package.
+# Wait for the actual successful-install screen instead of racing instrumentation.
+python3 - <<'DONEPY'
+import re, subprocess, time, pathlib, xml.etree.ElementTree as ET
+deadline=time.monotonic()+60
+while time.monotonic()<deadline:
+    subprocess.run(['adb','shell','uiautomator','dump','/sdcard/live-install-complete.xml'],check=True,timeout=15)
+    subprocess.run(['adb','pull','/sdcard/live-install-complete.xml','live-update-evidence/live-install-complete.xml'],check=True,timeout=15)
+    root=ET.parse('live-update-evidence/live-install-complete.xml').getroot()
+    nodes=list(root.iter('node'))
+    buttons=[n for n in nodes if n.get('text','').casefold() in ('done','סיום','בוצע') and n.get('enabled')=='true' and n.get('clickable')=='true' and 'packageinstaller' in n.get('package','')]
+    if buttons:
+        texts=' '.join(n.get('text','') for n in nodes).casefold()
+        assert 'app installed' in texts or 'האפליקציה הותקנה' in texts, texts
+        assert len(buttons)==1
+        subprocess.run(['adb','shell','screencap','-p','/sdcard/live-install-complete.png'],check=True,timeout=15)
+        subprocess.run(['adb','pull','/sdcard/live-install-complete.png','live-update-evidence/live-install-complete.png'],check=True,timeout=15)
+        bounds=list(map(int,re.findall(r'\d+',buttons[0].get('bounds'))))
+        subprocess.run(['adb','shell','input','tap',str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2)],check=True,timeout=15)
+        break
+    time.sleep(1)
+else:
+    raise AssertionError('Android did not report successful completed installation')
+DONEPY
+# Start retained-data verification only after Android has finished installation.
 adb shell input keyevent KEYCODE_HOME
 adb shell am force-stop "$pkg"
 sleep 1
