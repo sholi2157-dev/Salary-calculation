@@ -33,6 +33,7 @@ class DistributionUpdateTest {
         val dao = db.workDao()
         val evidence = context.getSharedPreferences("update_fixture_evidence", 0)
         if (stage == "seed") {
+            context.getSharedPreferences("release_updates", 0).edit().putLong("lastCheck", System.currentTimeMillis()).commit()
             context.getSharedPreferences("personal_ai_setup", 0).edit().putBoolean("offered_local_device", true).commit()
             assertTrue(dao.getEntriesList().isEmpty())
             dao.insertCategory(WorkCategory(name = "ILS category", defaultRate = 40.0))

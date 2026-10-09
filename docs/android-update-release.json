@@ -1,0 +1,12 @@
+{
+  "runId": 37888789674,
+  "sourceSha": "4267f5e0083f1b945e7d3642d803d15d222f0bdf",
+  "artifactName": "salary-local-release-candidate",
+  "tag": "android-v1.5-rc14",
+  "fileName": "SalaryRC14.apk",
+  "versionCode": 22,
+  "versionName": "1.5-rc14",
+  "sha256": "588e058c21f3a1a42de88d7a33028ebce2c2ec302ce3deb5d8b6d6874854f627",
+  "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
+  "releaseNotes": "אפשר לשנות מטבע בדיווח שמור ובמשמרת פעילה. תוקנה ברירת המחדל של המטבע בטיימר. נוסף ביטול משמרת פעילה עם אישור. Enter במשוב מוסיף שורה בלי לסגור את ההגדרות. הנתונים נשמרים בהתקנה מעל הגרסה הקיימת."
+}
