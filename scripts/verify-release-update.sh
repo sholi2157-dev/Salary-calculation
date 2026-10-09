@@ -44,6 +44,11 @@ adb shell am instrument -w -e class com.example.DistributionUiTest "$pkg.test/an
 grep -F 'OK (1 test)' release-evidence/ui.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/ui.txt
 adb shell am force-stop "$pkg"
+adb shell am instrument -w -e class com.example.CurrencyFeedbackTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/currency-feedback.txt
+grep -F 'OK (1 test)' release-evidence/currency-feedback.txt
+! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/currency-feedback.txt
+adb pull "/sdcard/Android/data/$pkg/files/rc14-feedback.png" release-evidence/rc14-feedback.png >/dev/null 2>&1 || true
+adb shell am force-stop "$pkg"
 adb shell am instrument -w -e class com.example.ReportKeyboardTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/keyboard-ui.txt
 grep -F 'OK (1 test)' release-evidence/keyboard-ui.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/keyboard-ui.txt

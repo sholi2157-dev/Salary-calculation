@@ -1,6 +1,6 @@
 # Current project state
 
-Last updated: 2026-10-06
+Last updated: 2026-10-09
 
 ## Repository and active track
 Repository: `sholi2157-dev/Salary-calculation`
@@ -14,7 +14,16 @@ The website/sync work is intentionally paused on:
 
 Do not resume or modify website, Firebase, accounts or cloud sync until the user explicitly switches the project back to that phase.
 
-## Active task: first-launch Android onboarding — RC13
+## Active task: RC14 currency, timer cancellation and multiline feedback
+
+Owner requested currency editing for stored and active shifts, correct timer
+currency defaults, confirmed discard without creating a saved shift, and Enter
+in feedback without collapsing Settings. Baseline: 51ca2908349681141f17461399615ea00f88b870.
+Scope/evidence: `docs/android-currency-feedback.md`. Implementation under validation;
+RC14/code22 uses the existing permanent signing identity and original RC13 upgrade.
+No stable/feed publication or website/cloud changes requested by this task.
+
+## Previous completed task: first-launch Android onboarding — RC13
 
 Owner requested an interactive first-launch tutorial and Settings replay.
 Exact pre-change clean HEAD: 6207796903515b97dcb147ae029d4b12e8f635fe.

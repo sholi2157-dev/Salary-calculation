@@ -56,7 +56,7 @@ class StageAInsetsTest {
                 MyApplicationTheme {
                     Column(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
                         DashboardScreen(vm, WorkViewModel.StatsSummary(), listOf(WorkCategory(name = "עצמאי", defaultRate = 40.0)), emptyList(), null, "", 40.0, 1f,
-                            { _, _ -> }, { _, _, _ -> }, emptyList(), {}, {}, { _, _, _, _, _, _, _, _, _, _, _, _, _ -> }, { _, _ -> }, {},
+                            { _, _, _ -> }, { _, _, _ -> }, emptyList(), {}, {}, { _, _, _, _, _, _, _, _, _, _, _, _, _ -> }, { _, _ -> }, {},
                             bottomNavigation = { Box(Modifier.fillMaxWidth().height(64.dp).testTag("test_navigation")) { Text("ראשי / היסטוריה") } })
                     }
                 }

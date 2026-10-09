@@ -186,7 +186,7 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
                                 when (step.screen) {
                                     CoachScreen.HOME, CoachScreen.FORM, CoachScreen.AI -> DashboardScreen(
                                         viewModel, WorkViewModel.StatsSummary(), categories, emptyList(), null, "", 40.0, 1f,
-                                        { _, _ -> }, { _, _, _ -> }, entries, {}, {}, { _, _, _, _, _, _, _, _, _, _, _, _, _ -> }, { _, _ -> }, {})
+                                        { _, _, _ -> }, { _, _, _ -> }, entries, {}, {}, { _, _, _, _, _, _, _, _, _, _, _, _, _ -> }, { _, _ -> }, {})
                                     CoachScreen.HISTORY -> ShiftsScreen(viewModel = viewModel, entries = entries, categories = categories,
                                         searchQuery = "", onSearchQueryChange = {}, onTogglePaid = {}, onEdit = {}, onDelete = {})
                                     CoachScreen.SHARE -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {

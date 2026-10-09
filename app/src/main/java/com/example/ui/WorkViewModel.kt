@@ -49,7 +49,7 @@ class WorkViewModel(
     fun setDefaultCategory(name: String) { viewModelScope.launch {
         if (repository.getCategoryByName(name) != null) localDao.setLocalPreference(com.example.data.WorkLocalPreference("defaultCategory", name))
     } }
-    fun categoryCurrency(name: String): String = localPreferences.value["categoryCurrency:$name"] ?: "₪"
+    fun categoryCurrency(name: String): String = localPreferences.value["categoryCurrency:$name"] ?: defaultCurrency.value
     fun editCategory(category: WorkCategory, name: String, rate: Double, currency: String) { viewModelScope.launch {
         try { localDao.editCategorySafely(category, name, rate, currency); performAutoBackup() }
         catch (_: IllegalArgumentException) { Toast.makeText(getApplication(), "שם כפול או ערכים לא תקינים", Toast.LENGTH_LONG).show() }
@@ -404,12 +404,25 @@ class WorkViewModel(
         }
     }
 
+    fun updateActiveShiftCurrency(currency: String, expectedStart: Long?) {
+        if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return
+        if (!shiftState.updateCurrency(currency, expectedStart)) {
+            Toast.makeText(getApplication(), "המטבע לא עודכן. יש לנסות שוב", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun cancelActiveShift(expectedStart: Long?) {
+        if (expectedStart == null || activeShiftStartTime.value != expectedStart) return
+        finishActiveShift(save = false, expectedStart = expectedStart)
+    }
+
     fun stopActiveShift() {
         finishActiveShift(save = false)
     }
 
-    fun finishActiveShift(save: Boolean = true) {
-        val start = activeShiftStartTime.value ?: return
+    fun finishActiveShift(save: Boolean = true, expectedStart: Long? = activeShiftStartTime.value) {
+        val start = expectedStart ?: return
+        if (activeShiftStartTime.value != start) return
         val rate = activeShiftRate.value
         val category = activeShiftCategory.value
         val currency = shiftState.activeShiftCurrency.value

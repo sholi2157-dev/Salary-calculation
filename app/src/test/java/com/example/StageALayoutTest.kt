@@ -45,7 +45,7 @@ class StageALayoutTest {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 MyApplicationTheme {
                     DashboardScreen(vm, WorkViewModel.StatsSummary(), listOf(WorkCategory(name = "עצמאי", defaultRate = 40.0)), emptyList(), null, "", 40.0, 1f,
-                        { _, _ -> }, { _, _, _ -> }, entries.take(3), {}, {}, { _, _, _, _, _, _, _, _, _, _, _, _, _ -> }, { _, _ -> }, {},
+                        { _, _, _ -> }, { _, _, _ -> }, entries.take(3), {}, {}, { _, _, _, _, _, _, _, _, _, _, _, _, _ -> }, { _, _ -> }, {},
                         bottomNavigation = { Box(Modifier.fillMaxWidth().height(64.dp).testTag("test_navigation")) { Text("ראשי / היסטוריה", color = Color.White) } })
                 }
             }

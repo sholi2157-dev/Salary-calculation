@@ -588,7 +588,7 @@ fun MainAppContent(
                                     activeShiftCategory = activeShiftCategory,
                                     activeShiftRate = activeShiftRate,
                                     focusAlpha = focusAlpha,
-                                    onStartShift = { cat, rate ->
+                                    onStartShift = { cat, rate, currency ->
                                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                             val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
                                                 context,
@@ -598,7 +598,7 @@ fun MainAppContent(
                                                 permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                                             }
                                         }
-                                        viewModel.startActiveShift(cat, rate)
+                                        viewModel.startActiveShift(cat, rate, currency)
                                     },
                                     onSaveShift = { cat, hrs, rate ->
                                         viewModel.finishActiveShift()
@@ -683,7 +683,7 @@ fun MainAppContent(
             categories = distinctCategories,
             viewModel = viewModel,
             onDismiss = { entryToEdit = null },
-            onSave = { category, date, isRange, start, end, hours, rate, notes, isPaid, isGroup, empRate, workerRate, groupJson ->
+            onSave = { category, date, isRange, start, end, hours, rate, notes, isPaid, isGroup, empRate, workerRate, groupJson, currency ->
                 entryToEdit?.let { old ->
                     viewModel.editEntry(
                         id = old.id,
@@ -700,7 +700,7 @@ fun MainAppContent(
                         employerRate = empRate,
                         workerRate = workerRate,
                         groupWorkersJson = groupJson,
-                        currency = old.currency
+                        currency = currency
                     )
                 }
                 entryToEdit = null
@@ -723,11 +723,7 @@ fun MainAppContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .testTag("settings_root")
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { showSettings = false }
-                    )
+                    .pointerInput(Unit) { detectTapGestures(onTap = { showSettings = false }) }
             ) {
                 Box(
                     modifier = Modifier
@@ -740,11 +736,7 @@ fun MainAppContent(
                         .clip(RoundedCornerShape(24.dp))
                         .background(Color(0xE6121212))
                         .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(24.dp))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {} // Consume click inside dialog
-                        )
+                        .pointerInput(Unit) { detectTapGestures(onTap = {}) }
                 ) {
                     ManagementScreen(
                         viewModel = viewModel,
@@ -927,7 +919,7 @@ fun DashboardScreen(
     activeShiftCategory: String,
     activeShiftRate: Double,
     focusAlpha: Float,
-    onStartShift: (String, Double) -> Unit,
+    onStartShift: (String, Double, String) -> Unit,
     onSaveShift: (String, Double, Double) -> Unit,
     recentEntries: List<WorkEntry>,
     onTogglePaid: (WorkEntry) -> Unit,
@@ -999,6 +991,7 @@ fun DashboardScreen(
     val scope = rememberCoroutineScope()
     var showQuickShiftDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showStopConfirmationDialog by remember { mutableStateOf(false) }
+    var cancelShiftStart by remember { mutableStateOf<Long?>(null) }
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
 
     var isManualMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) } // false = שעון, true = ידני
@@ -1259,6 +1252,13 @@ fun DashboardScreen(
                             style = LocalTextStyle.current.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr, fontFeatureSettings = "tnum"))
                         Text(com.example.data.WorkMoney.format(tickerSeconds * activeShiftRate / 3600.0, viewModel.activeShiftCurrency.collectAsStateWithLifecycle().value),
                             modifier = Modifier.widthIn(min = 120.dp), style = LocalTextStyle.current.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr, fontFeatureSettings = "tnum"))
+                        com.example.ui.ShiftCurrencyPicker(
+                            viewModel.activeShiftCurrency.collectAsStateWithLifecycle().value,
+                            { viewModel.updateActiveShiftCurrency(it, activeShiftStartTime) }, "active_shift_currency"
+                        )
+                        TextButton(onClick = { cancelShiftStart = activeShiftStartTime }, modifier = Modifier.testTag("cancel_active_shift")) {
+                            Text("בטל משמרת פעילה", color = Color(0xFFF87171))
+                        }
                     }
                 }
             }
@@ -1791,10 +1791,27 @@ fun DashboardScreen(
         }
     }
 
+    if (cancelShiftStart != null) {
+        AlertDialog(
+            onDismissRequest = { cancelShiftStart = null },
+            title = { Text("ביטול משמרת פעילה") },
+            text = { Text("האם אתה בטוח שברצונך לבטל? הזמן שנצבר במשמרת זו לא יישמר. דיווחים קודמים לא יימחקו.") },
+            confirmButton = { TextButton(onClick = {
+                viewModel.cancelActiveShift(cancelShiftStart)
+                cancelShiftStart = null
+            }, modifier = Modifier.testTag("confirm_cancel_active_shift")) { Text("כן, בטל את המשמרת") } },
+            dismissButton = { TextButton(onClick = { cancelShiftStart = null }) { Text("המשך במשמרת") } }
+        )
+    }
+
     var dialogCategory by remember(defaultCategory) { mutableStateOf(defaultCategory) }
     val dialogDefaultRate = categories.firstOrNull { it.name == dialogCategory }?.defaultRate ?: 40.0
     var dialogRateStr by remember(dialogCategory, dialogDefaultRate, showQuickShiftDialog) {
         mutableStateOf(dialogDefaultRate.toString())
+    }
+    val dialogDefaultCurrency = viewModel.categoryCurrency(dialogCategory)
+    var dialogCurrency by androidx.compose.runtime.saveable.rememberSaveable(dialogCategory, dialogDefaultCurrency, showQuickShiftDialog) {
+        mutableStateOf(dialogDefaultCurrency)
     }
     var expanded by remember { mutableStateOf(false) }
 
@@ -1834,6 +1851,7 @@ fun DashboardScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                     Text("הגדרת משמרת פעילה", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                    com.example.ui.ShiftCurrencyPicker(dialogCurrency, { dialogCurrency = it }, "quick_shift_currency")
 
                     ExposedDropdownMenuBox(
                         expanded = expanded,
@@ -1882,7 +1900,7 @@ fun DashboardScreen(
                                 val lastEntry = recentEntries.firstOrNull()
                                 val cat = lastEntry?.category ?: defaultCategory
                                 val rate = categories.firstOrNull { it.name == cat }?.defaultRate ?: WorkViewModel.DEFAULT_RATE
-                                onStartShift(cat, rate)
+                                onStartShift(cat, rate, viewModel.categoryCurrency(cat))
                                 showQuickShiftDialog = false
                             }
                         ) {
@@ -1892,7 +1910,7 @@ fun DashboardScreen(
                         Button(
                             onClick = {
                                 val rateVal = dialogRateStr.toDoubleOrNull() ?: 40.0
-                                onStartShift(dialogCategory, rateVal)
+                                onStartShift(dialogCategory, rateVal, dialogCurrency)
                                 showQuickShiftDialog = false
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C6BC0)),
@@ -4882,9 +4900,11 @@ fun EditShiftBottomSheet(
         isGroupShift: Boolean,
         employerRate: Double?,
         workerRate: Double?,
-        groupWorkersJson: String
+        groupWorkersJson: String,
+        currency: String
     ) -> Unit
 ) {
+    var selectedCurrency by androidx.compose.runtime.saveable.rememberSaveable(entry.id) { mutableStateOf(entry.currency) }
     val context = LocalContext.current
     var isManualMode by remember { mutableStateOf(!entry.isTimeRange || entry.isGroupShift) }
     var selectedDateMillis by remember { mutableStateOf(entry.date) }
@@ -4938,6 +4958,9 @@ fun EditShiftBottomSheet(
                 color = Color.White,
                 modifier = Modifier.align(Alignment.End)
             )
+
+            com.example.ui.ShiftCurrencyPicker(selectedCurrency, { selectedCurrency = it }, "edit_shift_currency")
+            Text("שינוי המטבע מתקן את סימון הדיווח; הסכום אינו מומר לפי שער חליפין.", style = MaterialTheme.typography.bodySmall)
 
             // Replicate same layout as "דיווח חדש"
             // 2. Pill Toggle Switch (שעון / ידני / קבוצה)
@@ -5680,7 +5703,8 @@ fun EditShiftBottomSheet(
                         isGroupShift,
                         eRate,
                         wRate,
-                        gJson
+                        gJson,
+                        selectedCurrency
                     )
                 },
                 colors = ButtonDefaults.buttonColors(

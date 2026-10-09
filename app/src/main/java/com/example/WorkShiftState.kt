@@ -14,7 +14,7 @@ class WorkShiftState internal constructor(private val context: Context, val owne
     val activeShiftCurrency = MutableStateFlow(prefs.getString("currency", "₪") ?: "₪")
 
     fun start(category: String, rate: Double, startTime: Long, currency: String = "₪"): Boolean = synchronized(ShiftStateManager) {
-        require(rate.isFinite() && rate >= 0 && startTime > 0)
+        require(rate.isFinite() && rate >= 0 && startTime > 0 && currency in listOf("₪", "$"))
         if (ShiftStateManager.hasActiveShift(context)) return false
         // Persist the owner first; no timer is lost if process death occurs between commits.
         if (!ShiftStateManager.setOwner(context, owner)) return false
@@ -24,6 +24,14 @@ class WorkShiftState internal constructor(private val context: Context, val owne
         activeShiftRate.value = rate
         activeShiftCurrency.value = currency
         activeShiftStartTime.value = startTime
+        true
+    }
+
+    fun updateCurrency(currency: String, expectedStart: Long?): Boolean = synchronized(ShiftStateManager) {
+        require(currency in listOf("₪", "$"))
+        if (expectedStart == null || activeShiftStartTime.value != expectedStart) return false
+        if (!prefs.edit().putString("currency", currency).commit()) return false
+        activeShiftCurrency.value = currency
         true
     }
 

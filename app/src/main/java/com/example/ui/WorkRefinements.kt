@@ -4,7 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -44,13 +47,14 @@ object SummaryPages {
 }
 @Composable fun SettingsSection(title: String, expanded: Boolean, toggle: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     Card(
-        onClick = toggle,
-        modifier = Modifier.testTag("settings_section_$title"),
+        modifier = Modifier,
         colors = CardDefaults.cardColors(containerColor = FormSurface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SettingsSectionHeader(title, expanded)
+            Box(Modifier.fillMaxWidth().clickable(onClick = toggle).testTag("settings_section_$title")) {
+                SettingsSectionHeader(title, expanded)
+            }
             if (expanded) content()
         }
     }
@@ -189,7 +193,7 @@ object SalaryFeedback {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("תקלה", "הצעה", "הערה").forEach { kind -> FilterChip(selected = type == kind, onClick = { type = kind }, label = { Text(kind) }) }
         }
-        OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("מה קרה, או מה תרצה להציע?") }, modifier = Modifier.fillMaxWidth().testTag("feedback_message"), minLines = 3,
+        OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("מה קרה, או מה תרצה להציע?") }, modifier = Modifier.fillMaxWidth().testTag("feedback_message"), minLines = 3, singleLine = false, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
             colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = FormSurface, unfocusedContainerColor = FormSurface))
         Text("יצורפו רק גרסת האפליקציה ופרטי המכשיר. נתוני העבודה לא מצורפים.", style = MaterialTheme.typography.bodySmall)
         Button(enabled = message.isNotBlank(), onClick = {
@@ -207,3 +211,15 @@ object SalaryFeedback {
     }
 }
 
+
+
+@Composable fun ShiftCurrencyPicker(currency: String, onCurrency: (String) -> Unit, tag: String) {
+    Row(Modifier.fillMaxWidth().testTag(tag), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("מטבע")
+        listOf("₪", "$").forEach { value ->
+            FilterChip(selected = currency == value, onClick = { onCurrency(value) },
+                label = { Text(if (value == "₪") "שקל ₪" else "דולר $") },
+                modifier = Modifier.testTag("${tag}_$value"))
+        }
+    }
+}
