@@ -4,6 +4,13 @@ pkg=com.aistudio.worktracker.qztvdw.distribution
 runner="$pkg.test/androidx.test.runner.AndroidJUnitRunner"
 external="/sdcard/Android/data/$pkg/files"
 mkdir -p live-update-evidence
+collect_failure() {
+  adb logcat -d > live-update-evidence/device-log.txt || true
+  adb shell dumpsys activity activities > live-update-evidence/failure-activities.txt || true
+  adb shell screencap -p /sdcard/failure.png || true
+  adb pull /sdcard/failure.png live-update-evidence/failure.png || true
+}
+trap collect_failure ERR
 adb install previous/candidate-b.apk
 adb install app/build/outputs/apk/androidTest/release/app-release-androidTest.apk
 adb shell appops set "$pkg" REQUEST_INSTALL_PACKAGES allow
@@ -12,7 +19,7 @@ adb logcat -c
 instrument() {
   local method="$1" output="$2"
   shift 2
-  adb shell am instrument -w -r -e class "$method" "$@" "$runner" | tee "live-update-evidence/$output.txt"
+  timeout 240s adb shell am instrument -w -r -e timeout_msec 180000 -e class "$method" "$@" "$runner" | tee "live-update-evidence/$output.txt"
   grep -E 'OK \(1 test\)' "live-update-evidence/$output.txt"
 }
 instrument com.example.DistributionUpdateTest seed -e stage seed
@@ -39,7 +46,7 @@ x=(bounds[0]+bounds[2])//2;y=(bounds[1]+bounds[3])//2
 subprocess.run(['adb','shell','input','tap',str(x),str(y)],check=True)
 PY
 for attempt in $(seq 1 60); do
-  if adb shell dumpsys package "$pkg" | grep -q 'versionCode=22 '; then break; fi
+  if adb shell dumpsys package "$pkg" | grep 'versionCode=22 ' > /dev/null; then break; fi
   sleep 1
 done
 adb shell dumpsys package "$pkg" > live-update-evidence/installed-package.txt

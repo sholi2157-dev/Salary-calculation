@@ -28,17 +28,21 @@ class LiveUpdateChannelTest {
         val dao = WorkDatabase.getDatabase(context, CoroutineScope(Dispatchers.IO)).workDao()
         val before = runBlocking { dao.exportSnapshot() }
         File(context.getExternalFilesDir(null), "live-before.json").writeText(before)
+        android.util.Log.i("LiveUpdateEvidence", "before_public_check")
         val online = runBlocking { WorkUpdates.check(context) }!!
         assertEquals(22L, online.code)
         assertEquals(expectedHash, online.sha256)
+        android.util.Log.i("LiveUpdateEvidence", "public_check_passed_opening_settings")
         ui.onNodeWithContentDescription("ניהול וקטגוריות").performClick()
         ui.onNodeWithText("מערכת ומשוב").performScrollTo().performClick()
         ui.onNodeWithText("בדוק עדכונים", substring = true).performScrollTo().performClick()
         ui.waitUntil(60000) { ui.onAllNodesWithText("גרסה 1.5-rc14 זמינה").fetchSemanticsNodes().isNotEmpty() }
+        android.util.Log.i("LiveUpdateEvidence", "manual_button_found_live_release")
         ui.onNodeWithText("עדכון", useUnmergedTree = true).performClick()
         val downloaded = File(context.cacheDir, "salary-update-22.apk")
         ui.waitUntil(180000) { downloaded.exists() }
         assertEquals(expectedHash, MessageDigest.getInstance("SHA-256").digest(downloaded.readBytes()).joinToString("") { "%02x".format(it.toInt() and 255) })
+        android.util.Log.i("LiveUpdateEvidence", "live_download_verified_installer_started")
         downloaded.copyTo(File(context.getExternalFilesDir(null), "live-downloaded.apk"), overwrite = true)
         assertEquals(before, runBlocking { dao.exportSnapshot() })
         // Allow the UI coroutine to start Android's package installer before test cleanup.
