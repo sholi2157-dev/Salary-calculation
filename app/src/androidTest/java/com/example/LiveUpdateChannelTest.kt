@@ -48,6 +48,10 @@ class LiveUpdateChannelTest {
         // Allow the UI coroutine to start Android's package installer before test cleanup.
         Thread.sleep(2000)
     }
+}
+
+@RunWith(AndroidJUnit4::class)
+class LiveUpdateRetainedDataTest {
     @Test fun installedRc14RetainsDataAndDoesNotOfferItselfAgain() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         @Suppress("DEPRECATION")

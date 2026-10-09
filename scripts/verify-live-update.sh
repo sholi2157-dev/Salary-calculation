@@ -51,7 +51,11 @@ for attempt in $(seq 1 60); do
 done
 adb shell dumpsys package "$pkg" > live-update-evidence/installed-package.txt
 grep 'versionCode=22 ' live-update-evidence/installed-package.txt
-instrument 'com.example.LiveUpdateChannelTest#installedRc14RetainsDataAndDoesNotOfferItselfAgain' live-retained
+# Finish the installer and clear the old activity/process before starting new instrumentation.
+adb shell input keyevent KEYCODE_HOME
+adb shell am force-stop "$pkg"
+sleep 1
+instrument 'com.example.LiveUpdateRetainedDataTest#installedRc14RetainsDataAndDoesNotOfferItselfAgain' live-retained
 adb pull "$external/live-after.json" live-update-evidence/live-after.json
 cmp live-update-evidence/live-before.json live-update-evidence/live-after.json
 adb logcat -b crash -d > live-update-evidence/crash-log.txt

@@ -1,6 +1,7 @@
 name: Publish and verify Android update channel
 # Release tag identifies publication; immutable APK source is recorded separately.
 # Verification uses standard runner grep; ripgrep is not preinstalled.
+# Retained-data verification starts a clean post-upgrade process without an Activity rule.
 on:
   push:
     branches: ['codex/android-local-distribution']
