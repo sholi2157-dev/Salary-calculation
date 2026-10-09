@@ -8,4 +8,8 @@ The disposable emulator test installs the original publicly distributed RC13/cod
 
 User instructions: Settings → מערכת ומשוב → בדוק עדכונים → עדכון. If Android asks to allow installation from this source, allow it, return and press עדכון again, then approve Android's install dialog. Installation cannot happen silently. RC14 users correctly see no new update until a higher-code release is published. Future updates must publish the signed higher-code APK and matching manifest to this channel; replacing the Drive file alone is insufficient.
 
-Publication/verification status: awaiting the publication workflow.
+Publication status: run37897894084, publication job113713359685 SUCCESS. Independent anonymous manifest/APK download and v2 signature/content digest verification passed. Original RC13 live end-to-end verification PASSED: run37963754070/job113932814425, artifact11631484547. The actual settings button found RC14, the public APK passed validation, Android installer confirmation and success screen passed, exact local snapshots matched, three entries remained, and RC14 did not offer itself again. Crash log empty. Evidence: docs/release-evidence/rc14/live-update.json.
+
+The initial attempt to tag the historical APK source was refused by GitHub Actions permissions. The release tag instead identifies the publication commit; the exact immutable APK source is recorded separately in the selection manifest and release notes.
+
+Post-install test diagnostic: run37962791319 recorded ActivityManager refusing test startup because the package was still frozen during Android dexopt. The app had already downloaded and passed the actual installer confirmation. The harness now waits for the actual installer success/Done screen before starting retained-data instrumentation; it does not change production app code or bypass Android installation.

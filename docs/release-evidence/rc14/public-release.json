@@ -1,0 +1,7 @@
+{
+  "versionCode": 22,
+  "versionName": "1.5-rc14",
+  "sha256": "588e058c21f3a1a42de88d7a33028ebce2c2ec302ce3deb5d8b6d6874854f627",
+  "releaseNotes": "אפשר לשנות מטבע בדיווח שמור ובמשמרת פעילה. תוקנה ברירת המחדל של המטבע בטיימר. נוסף ביטול משמרת פעילה עם אישור. Enter במשוב מוסיף שורה בלי לסגור את ההגדרות. הנתונים נשמרים בהתקנה מעל הגרסה הקיימת.",
+  "apkUrl": "https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v1.5-rc14/SalaryRC14.apk"
+}

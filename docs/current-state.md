@@ -14,7 +14,22 @@ The website/sync work is intentionally paused on:
 
 Do not resume or modify website, Firebase, accounts or cloud sync until the user explicitly switches the project back to that phase.
 
-## Active task: RC14 currency, timer cancellation and multiline feedback
+## Active task: activate the installed-app update channel
+
+Owner explicitly requested activation on 2026-10-09 after reporting that friends
+could not find updates. The old channel was absent (HTTP404); changing Drive did
+not publish release.json. Exact tested RC14/code22 is now published at:
+https://github.com/sholi2157-dev/Salary-calculation/releases/latest/download/release.json
+APK artifact/source/signature are unchanged. Publication job113713359685 in
+run37897894084 succeeded. Independent anonymous download, APK v2 signature,
+content digest, package, version and SHA256 all verified. Live original RC13
+manual-button/Android-installer/data-preservation verification PASSED in
+run37963754070/job113932814425, artifact11631484547. Actual installer success
+screen confirmed; exact before/after snapshots match, 3 synthetic entries
+retained, same-code check returns no update and crash log is empty.
+Scope: docs/android-update-channel.md. No website/cloud changes.
+
+## Previous completed task: RC14 currency, timer cancellation and multiline feedback
 
 Owner requested currency editing for stored and active shifts, correct timer
 currency defaults, confirmed discard without creating a saved shift, and Enter
@@ -30,7 +45,8 @@ cancel and real Enter in feedback. Crash logs empty. Consolidated84/67 tests pas
 before final header fix; exact final focused9/4 plus native gates passed.
 Owner file SalaryRC14.apk; existing restricted Drive file replaced in place with
 permissions retained. Owner physical-phone review remains.
-No stable/feed publication or website/cloud changes requested by this task.
+The original fixes task did not request feed publication; the owner has now
+explicitly requested it in the active task above. No website/cloud changes.
 
 ## Previous completed task: first-launch Android onboarding — RC13
 
@@ -53,7 +69,8 @@ Owner authorized a friend download link on 2026-10-06. Exact verified RC13 APK
 published as prerelease `android-v1.5-rc13` (run37487018264); anonymous download
 and exact SHA256 verified. Direct permanent link:
 https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v1.5-rc13/SalaryRC13.apk
-Stable update feed/Latest remains unchanged. No rebuild or app source changes.
+Stable update feed/Latest remained unchanged at RC13 publication; superseded by
+the explicitly requested RC14 channel activation above. No APK rebuild.
 Public metadata: `docs/release-evidence/rc13/public-download.json`.
 No website/cloud/storage schema/provider/signing identity changes.
 
