@@ -1,7 +1,7 @@
 name: Web Android parity
 on:
   push:
-    branches: ['codex/web-android-rc13-parity']
+    branches: ['codex/web-android-rc13-parity', 'codex/web-rc15-live']
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,6 +27,7 @@ jobs:
           node browser-tests/mobile.cjs
           node browser-tests/parity.cjs
           node browser-tests/updates.cjs
+          node browser-tests/rc15.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

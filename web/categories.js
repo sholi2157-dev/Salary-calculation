@@ -7,7 +7,7 @@ function preferences(value={}) {
  return result;
 }
 function defaultName(categories,prefs){return categories.some(c=>c.name===prefs.defaultCategory)?prefs.defaultCategory:categories.find(c=>c.name==='עצמאי')?.name||categories[0]?.name||'עצמאי';}
-function currency(name,prefs){return Object.hasOwn(prefs.categoryCurrencies,name)?prefs.categoryCurrencies[name]:'₪';}
+function currency(name,prefs){return Object.hasOwn(prefs.categoryCurrencies,name)?prefs.categoryCurrencies[name]:prefs.mainCurrency;}
 function rename(data,oldName,newName,rate,money){
  const next=clone(data),name=newName.trim();
  if(!name)throw Error('יש להזין שם קטגוריה');

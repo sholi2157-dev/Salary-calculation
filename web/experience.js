@@ -43,7 +43,21 @@ function renderLiveShift(){
   const seconds=Math.max(0,Math.floor((Date.now()-t.startedAt)/1000));el('active-shift-category').textContent='משמרת פעילה · '+t.category;
   el('active-shift-timer').textContent=[Math.floor(seconds/3600),Math.floor(seconds/60)%60,seconds%60].map(n=>String(n).padStart(2,'0')).join(':');
   el('active-shift-amount').textContent=t.currency+(seconds*t.rate/3600).toFixed(2);
+  el('active-shift-currency').value=t.currency;
  }catch{el('active-shift-card').hidden=false;el('active-shift-category').textContent='לא ניתן לקרוא את המשמרת הפעילה. הנתונים נשמרו ללא שינוי.';el('live-shift-action').disabled=true;}
+}
+function changeLiveCurrency(currency){
+ try{if(!storageHealthy)throw Error('לא ניתן לשמור כרגע');const t=WorkRuntime.readTimer(localStorage,currentUserId);if(!t)return;
+  if(!['₪','$'].includes(currency))return;
+  localStorage.setItem(WorkRuntime.timerKey(currentUserId),JSON.stringify({...t,currency}));renderLiveShift();
+ }catch(e){showMessage('לא ניתן לשנות מטבע: '+e.message);renderLiveShift();}
+}
+async function cancelLiveShift(){
+ const owner=currentUserId,t=WorkRuntime.readTimer(localStorage,owner);if(!t)return;
+ if(!await confirmAction('ביטול משמרת פעילה','לבטל את המשמרת הפעילה? שעות העבודה של המשמרת הזו לא יישמרו.','כן, בטל משמרת'))return;
+ if(owner!==currentUserId)return;
+ try{const live=WorkRuntime.readTimer(localStorage,owner);if(!live||live.id!==t.id)return;localStorage.removeItem(WorkRuntime.timerKey(owner));renderLiveShift();showMessage('המשמרת בוטלה');}
+ catch(e){showMessage('לא ניתן לבטל את המשמרת: '+e.message);}
 }
 function applyLiveCategory(){const name=el('live-category').value;el('live-rate').value=categories.find(c=>c.name===name)?.defaultRate??40;el('live-currency').value=WorkCategories.currency(name,webPreferences);}
 async function openLiveShift(){
@@ -68,7 +82,7 @@ async function stopLiveShift(){
   const live=WorkRuntime.readTimer(localStorage,owner);if(!live||live.id!==t.id)return;
   // Reload guest state after the confirmation: another tab may have saved a shift.
   if(!owner){const current=WorkRuntime.loadGuest(localStorage);shifts=current.entries;categories=current.categories.length?current.categories:categories;workers=current.workers;}
-  if(!shifts.some(e=>e.id===t.id)){const entry=WorkRuntime.stopEntry(t,Date.now());persistAll([entry,...shifts]);}
+  if(!shifts.some(e=>e.id===t.id)){const entry=WorkRuntime.stopEntry(live,Date.now());persistAll([entry,...shifts]);}
   // Persist first, remove only afterward. Stable entry ID makes interrupted stops idempotent.
   localStorage.removeItem(WorkRuntime.timerKey(owner));renderShifts();renderLiveShift();syncToCloud();showMessage('הדיווח נשמר בהצלחה');
  }catch(e){showMessage('לא ניתן לסיים את המשמרת: '+e.message);}

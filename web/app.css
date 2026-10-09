@@ -451,3 +451,13 @@ dialog p { margin: 10px 0; color: var(--muted); font-size: 13px; line-height: 1.
 :is(#filters-dialog,[data-coach-id="filters-dialog"]) .modal-btn-row { flex-direction: column; align-items: flex-start; gap: 18px; margin-top: 22px; }
 :is(#filters-dialog,[data-coach-id="filters-dialog"]) .modal-btn-row button { flex: none; min-height: 44px; }
 :is(#filters-dialog,[data-coach-id="filters-dialog"]) .modal-btn-row .btn-primary { min-width: 120px; border-radius: 25px; align-self: flex-start; }
+
+/* RC15: keep the existing palette and fit short controls beside related fields. */
+.compact-dialog-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(80px,.45fr); gap:12px; align-items:end; }
+.compact-dialog-row label { min-width:0; }
+.centered-choice, #live-category, #modal-category, #category-filter { text-align:center; text-align-last:center; }
+.active-shift-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:end; grid-column:1/-1; }
+.active-shift-controls label { width:90px; }
+.active-shift-controls button { flex:1; min-width:170px; }
+.category-options { display:grid; gap:8px; margin-block:12px; }
+.category-options [aria-pressed="true"] { border-color:var(--primary,#818cf8); }

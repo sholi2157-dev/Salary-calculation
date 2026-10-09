@@ -58,7 +58,7 @@ function createCategorySetting(c,prefs){
  if(c.name===WorkCategories.defaultName(settingsDraft?.categories||categories,prefs)){row.classList.add('default');name.title='ברירת המחדל';}
  const remove=document.createElement('button');remove.className='icon-btn category-remove';remove.innerHTML='<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 8 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-width="2"/></svg>';remove.setAttribute('aria-label','מחיקת '+c.name);remove.onclick=()=>deleteCategory(c.name);row.append(edit,name,remove);return row;
 }
-function renderCategorySettings(){if(!settingsDraft)return;document.getElementById('settings-categories').replaceChildren(...settingsDraft.categories.map(c=>createCategorySetting(c,settingsDraft.webPreferences)));}
+function renderCategorySettings(){if(!settingsDraft)return;document.getElementById('default-category-button').textContent=WorkCategories.defaultName(settingsDraft.categories,settingsDraft.webPreferences)+' ▾';document.getElementById('settings-categories').replaceChildren(...settingsDraft.categories.map(c=>createCategorySetting(c,settingsDraft.webPreferences)));}
 
 // User-triggered mail draft: no financial data or storage is included.
 function selectFeedbackType(button){document.querySelectorAll('.feedback-types button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));}

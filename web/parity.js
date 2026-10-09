@@ -133,6 +133,7 @@ function shareDisplayed(){if(displayedEntries.length)shareText(WorkSharing.summa
 function exportDisplayed(){download('filtered-shifts.csv',WorkTransfer.csv(displayedEntries),'text/csv;charset=utf-8');}
 
 function selectMainCurrency(currency){
+ if(settingsDraft)settingsDraft.webPreferences.mainCurrency=currency;
  document.getElementById('default-currency').value=currency;
  document.getElementById('settings-currency-icon').textContent=currency;
  document.querySelectorAll('[data-main-currency]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mainCurrency===currency)));
@@ -164,3 +165,13 @@ function setWorkerPaid(id,index,paid){
  try{const next=shifts.map(entry=>{if(entry.id!==id)return entry;const members=JSON.parse(entry.groupWorkersJson||'[]');if(!members[index])throw Error('עובד לא נמצא');members[index]={...members[index],isPaid:paid};return {...entry,groupWorkersJson:JSON.stringify(members)};});persistAll(next);renderShifts();syncToCloud();showMessage('מצב התשלום לעובד עודכן');}
  catch{renderShifts();showMessage('השינוי לא נשמר. נסה שוב');}
 }
+
+function openDefaultCategory(){
+ if(!settingsDraft)return;
+ const current=WorkCategories.defaultName(settingsDraft.categories,settingsDraft.webPreferences);
+ document.getElementById('default-category-options').replaceChildren(...settingsDraft.categories.map(c=>{
+  const b=document.createElement('button');b.className='btn-secondary';b.textContent=(c.name===current?'✓ ':'')+c.name;b.setAttribute('aria-pressed',String(c.name===current));
+  b.onclick=()=>{if(!settingsDraft)return;settingsDraft.webPreferences.defaultCategory=c.name;document.getElementById('default-category-dialog').close();renderCategorySettings();};return b;
+ }));document.getElementById('default-category-dialog').showModal();
+}
+function addDefaultCategory(){document.getElementById('default-category-dialog').close();openCategoryDialog();document.getElementById('category-default').checked=true;}
