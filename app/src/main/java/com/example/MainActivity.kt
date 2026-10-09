@@ -5508,6 +5508,8 @@ fun EditShiftBottomSheet(
                         Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
                         Text(
                             text = selectedCategory,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
