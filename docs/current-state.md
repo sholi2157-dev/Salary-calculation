@@ -1,5 +1,12 @@
 # Current Web track — 2026-10-06
 
+## Latest completed owner request — RC15 parity, 2026-10-09
+
+Current public website remains https://salary-calculation-eta.vercel.app, exact tested/deployed source d4feadd0cdf053906c70d6b76e6b9651c57e455e and Vercel deployment dpl_2P1wBDybjGLCZmi28E7h3rYnD651. Development/evidence branch is codex/web-rc15-live. Read docs/rc15-feature-parity.md and docs/rc15-web-live.json before new work. Build,43 unit tests and all4 browser suites passed run37993152040. Actual public-origin UI then passed run37993523248 at360/390/768/1440 with isolated synthetic data and analytics traffic blocked. Same origin/design/storage/analytics loader retained; no protection settings or main merge changed.
+
+Web now has RC14's default currency fallback for unconfigured categories, active currency editing without timer restart, confirmed cancellation without history, and current-timer reads after finish confirmation. Both platforms gained on-demand default category selection/add and compact currency/rate fields with centered standalone category choices. Android RC15/code23 is published and its real previous RC14 button/download/Androidinstaller/retained-data/no-self-update gate passed run37994406008. Existing Drive APK link/ACL was preserved and replaced with the verifiedRC15 binary. Do not repeat completed work or mistake a later metadata-only preview for the public deployment.
+
+
 The owner explicitly resumed the Web project. Android remains unchanged at
 `codex/android-local-distribution` HEAD `b9dcba6fadfa17a370fa7b3fb8aa284a13eec1be`.
 Signed RC13 is the product source of truth; attached APK digest and packaged
