@@ -42,9 +42,15 @@ class WorkRepository(private val workDao: WorkDao) {
         }
     }
 
+    suspend fun deleteEntriesById(ids: List<Int>, userId: String? = null) {
+        workDao.deleteEntriesById(ids)
+        if (!userId.isNullOrBlank()) ids.forEach { FirestoreSyncManager.deleteShift(userId, it) }
+    }
+
     suspend fun togglePaymentStatus(entry: WorkEntry, userId: String? = null) {
         val updated = entry.copy(isPaid = !entry.isPaid)
-        workDao.updateEntry(updated)
+        // A UI card can be stale after editing; only mutate the requested field.
+        workDao.setPaymentStatus(entry.id, updated.isPaid)
         if (!userId.isNullOrBlank()) {
             FirestoreSyncManager.updatePaymentStatus(userId, entry.id, updated.isPaid)
         }

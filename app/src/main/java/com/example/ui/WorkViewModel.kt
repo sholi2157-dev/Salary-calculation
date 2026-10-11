@@ -103,12 +103,17 @@ class WorkViewModel(
         val ids = if (lastAddedEntryIds.isNotEmpty()) lastAddedEntryIds else listOfNotNull(lastAddedEntryId)
         if (ids.isNotEmpty()) {
             val uid = getActiveUserId()
+            // Consume before suspension: a delayed undo must not erase a newer save's undo state.
+            lastAddedEntryIds = emptyList()
+            lastAddedEntryId = null
             viewModelScope.launch {
-                ids.forEach { id ->
-                    repository.deleteEntryById(id, uid)
+                try {
+                    repository.deleteEntriesById(ids, uid)
+                    performAutoBackup()
+                } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                catch (_: Exception) {
+                    Toast.makeText(getApplication(), "הביטול לא הושלם. יש לבדוק את ההיסטוריה", Toast.LENGTH_LONG).show()
                 }
-                lastAddedEntryIds = emptyList()
-                lastAddedEntryId = null
             }
         }
     }
@@ -440,7 +445,10 @@ class WorkViewModel(
                     totalEarnings = Math.round(elapsed * rate / 3600.0 * 100.0) / 100.0,
                     notes = "משמרת פעילה (טיימר החישוב)", currency = currency) else null
                 val id = owner.database(getApplication()).workDao().finishTimer(start, entry)
-                if (id > 0) lastAddedEntryId = id.toInt()
+                if (id > 0) {
+                    lastAddedEntryIds = listOf(id.toInt())
+                    lastAddedEntryId = id.toInt()
+                }
                 if (shiftState.clear(start)) getApplication<Application>().stopService(
                     Intent(getApplication(), ShiftForegroundService::class.java))
                 performAutoBackup()
@@ -550,6 +558,7 @@ class WorkViewModel(
             )
             val uid = getActiveUserId()
             val insertedId = repository.insertEntry(entry, uid)
+            lastAddedEntryIds = listOf(insertedId.toInt())
             lastAddedEntryId = insertedId.toInt()
             
             performAutoBackup()

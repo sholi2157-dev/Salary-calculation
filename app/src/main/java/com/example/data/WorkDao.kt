@@ -78,23 +78,44 @@ interface WorkDao {
     @Transaction
     suspend fun importBackup(backup: WorkBackup.Contents): Int {
         val wasEmpty = getEntriesList().isEmpty()
-        val categoryNames = getCategoriesList().map { it.name.trim().lowercase(java.util.Locale.ROOT) }.toMutableSet()
+        fun categoryKey(name: String) = name.trim().lowercase(java.util.Locale.ROOT)
+        val categoryNames = getCategoriesList().associate { categoryKey(it.name) to it.name }.toMutableMap()
         for (category in backup.categories) {
-            if (categoryNames.add(category.name.trim().lowercase(java.util.Locale.ROOT))) insertCategory(category.copy(id = 0))
+            val key = categoryKey(category.name)
+            if (key !in categoryNames) {
+                val name = category.name.trim()
+                insertCategory(category.copy(id = 0, name = name))
+                categoryNames[key] = name
+            }
+        }
+        // Entries and preferences must use the exact stored category name. Otherwise
+        // case/space-equivalent imports become invisible to exact-name filters/deletion.
+        val incoming = backup.entries.map { entry ->
+            val key = categoryKey(entry.category)
+            val name = categoryNames.getOrPut(key) { entry.category.trim() }
+            entry.copy(category = name)
+        }
+        for (name in categoryNames.values) {
+            if (getCategoryByName(name) == null) insertCategory(WorkCategory(name = name))
         }
         val workerNames = getWorkersList().map { it.name.trim() }.toMutableSet()
         for (worker in backup.workers) {
             if (workerNames.add(worker.name.trim())) insertWorker(worker.copy(id = 0))
         }
-        val missing = WorkBackup.missingEntries(getEntriesList(), backup.entries)
+        val missing = WorkBackup.missingEntries(getEntriesList(), incoming)
         for (entry in missing) {
-            if (categoryNames.add(entry.category.trim().lowercase(java.util.Locale.ROOT))) insertCategory(WorkCategory(name = entry.category))
             insertEntry(entry.copy(id = 0))
         }
         // Existing settings win; migration into an empty app can adopt reviewed preferences.
         val existingKeys = getLocalPreferences().map { it.name }.toSet()
-        for ((key, value) in backup.localPreferences) {
-            if (key !in existingKeys && (wasEmpty || key.startsWith("categoryCurrency:")))
+        val adoptedKeys = existingKeys.toMutableSet()
+        for ((sourceKey, sourceValue) in backup.localPreferences) {
+            val key = if (sourceKey.startsWith("categoryCurrency:")) {
+                val name = categoryNames[categoryKey(sourceKey.removePrefix("categoryCurrency:"))] ?: continue
+                "categoryCurrency:$name"
+            } else sourceKey
+            val value = if (key == "defaultCategory") categoryNames[categoryKey(sourceValue)] ?: continue else sourceValue
+            if ((wasEmpty || key.startsWith("categoryCurrency:")) && adoptedKeys.add(key))
                 setLocalPreference(WorkLocalPreference(key, value))
         }
         return missing.size
@@ -114,6 +135,12 @@ interface WorkDao {
 
     @Delete
     suspend fun deleteEntry(entry: WorkEntry)
+
+    @Query("UPDATE work_entries SET isPaid = :paid WHERE id = :id")
+    suspend fun setPaymentStatus(id: Int, paid: Boolean)
+
+    @Query("DELETE FROM work_entries WHERE id IN (:ids)")
+    suspend fun deleteEntriesById(ids: List<Int>)
 
     @Query("DELETE FROM work_entries WHERE id = :id")
     suspend fun deleteEntryById(id: Int)

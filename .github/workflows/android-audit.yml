@@ -1,0 +1,43 @@
+name: Android audit regression
+on:
+  push:
+    branches: ['codex/android-audit-20261011']
+    paths: ['app/**', '.github/workflows/android-audit.yml']
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          cache-read-only: false
+      - name: Data and UI regression (no signing or publishing)
+        run: >-
+          gradle :app:testDebugUnitTest --tests 'com.example.Work*Test'
+          --tests 'com.example.StageALayoutTest' --tests 'com.example.StageAInsetsTest'
+          --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.HistoryCompactUiTest'
+          --tests 'com.example.InterfacePolishTest' --tests 'com.example.OnboardingExperienceTest'
+          :app:testReleaseUnitTest --tests 'com.example.Work*Test'
+          -Proborazzi.test.record=true --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-audit-evidence
+          path: |
+            app/build/test-results/
+            app/build/reports/tests/
+            /tmp/stage-*.png
+            /tmp/salary-history-*.png
+            /tmp/onboarding-*.png
