@@ -130,6 +130,9 @@ interface WorkDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEntry(entry: WorkEntry): Long
 
+    @Transaction
+    suspend fun insertEntriesAtomically(entries: List<WorkEntry>): List<Long> = entries.map { insertEntry(it) }
+
     @Update
     suspend fun updateEntry(entry: WorkEntry)
 

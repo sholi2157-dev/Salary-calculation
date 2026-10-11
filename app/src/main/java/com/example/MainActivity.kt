@@ -999,6 +999,7 @@ fun DashboardScreen(
     var aiInputText by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var isAiParsing by remember { mutableStateOf(false) }
     var aiError by remember { mutableStateOf<String?>(null) }
+    var isAiSaving by remember { mutableStateOf(false) }
     var aiProposal by remember { mutableStateOf<List<com.example.api.GeminiParser.ParsedShift>?>(null) }
     var selectedDateMillis by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
     var startTimeStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("09:00") }
@@ -1100,16 +1101,20 @@ fun DashboardScreen(
     }
     if (aiScreenActive) aiProposal?.let { proposal ->
         com.example.ui.AiShiftReview(proposal,
-            onEdit = { aiProposal = null },
+            onEdit = { if (!isAiSaving) aiProposal = null },
             onSave = {
-                // Consume before dispatch to prevent a second tap from adding it twice.
-                if (aiProposal != null) {
-                    aiProposal = null
-                    viewModel.addShifts(proposal)
-                    aiInputText = ""
-                    Toast.makeText(context, "המשמרות הועברו לשמירה", Toast.LENGTH_SHORT).show()
+                if (aiProposal != null && !isAiSaving) {
+                    isAiSaving = true
+                    viewModel.addShifts(proposal) { saved ->
+                        isAiSaving = false
+                        if (saved) {
+                            aiProposal = null
+                            aiInputText = ""
+                            Toast.makeText(context, "המשמרות נשמרו", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
-            })
+            }, saving = isAiSaving)
     }
 
     val saveInteractionSource = remember { MutableInteractionSource() }

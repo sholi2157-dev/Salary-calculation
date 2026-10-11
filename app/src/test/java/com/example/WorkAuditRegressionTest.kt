@@ -103,4 +103,31 @@ class WorkAuditRegressionTest {
         assertEquals("₪", dao.getLocalPreferences().single().value)
         assertEquals(0, dao.importBackup(backup))
     }
+    @Test fun failedBatchRollsBackEarlierRowsAndSyncJournal() = runBlocking {
+        val db = database(); val dao = db.workDao()
+        dao.insertEntry(row().copy(notes = "existing"))
+        val before = dao.getEntriesList()
+        val journal = db.syncDao().pending()
+        db.openHelper.writableDatabase.execSQL("CREATE TRIGGER reject_test_row BEFORE INSERT ON work_entries WHEN NEW.notes = 'reject' BEGIN SELECT RAISE(ABORT, 'synthetic write failure'); END")
+        try {
+            WorkRepository(dao).insertEntries(listOf(row().copy(notes = "first"), row().copy(notes = "reject")))
+            fail("batch should fail")
+        } catch (_: android.database.sqlite.SQLiteException) { }
+        assertEquals(before, dao.getEntriesList())
+        assertEquals(journal, db.syncDao().pending())
+    }
+
+    @Test fun invalidAiBatchReportsFailureWithoutPartialRows() = runBlocking {
+        val owner = WorkAccountScope("audit-invalid-${UUID.randomUUID()}")
+        val vm = ViewModelProvider(models, WorkViewModelFactory(app, owner))
+            .get(owner.storageKey, WorkViewModel::class.java)
+        val done = CompletableDeferred<Boolean>()
+        vm.addShifts(listOf(
+            GeminiParser.ParsedShift("Work", 1000L, 2.0, 40.0, "valid"),
+            GeminiParser.ParsedShift("Work", 2000L, -1.0, 40.0, "invalid"))) { done.complete(it) }
+        assertFalse(withTimeout(5000) { done.await() })
+        assertTrue(owner.database(app).workDao().getEntriesList().isEmpty())
+        assertNull(vm.lastAddedEntryId)
+    }
+
 }

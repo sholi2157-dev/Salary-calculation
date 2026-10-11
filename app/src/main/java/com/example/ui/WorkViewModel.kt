@@ -565,13 +565,16 @@ class WorkViewModel(
         }
     }
 
-    fun addShifts(shifts: List<com.example.api.GeminiParser.ParsedShift>) {
-        if (shifts.isEmpty()) return
+    fun addShifts(shifts: List<com.example.api.GeminiParser.ParsedShift>, onComplete: (Boolean) -> Unit = {}) {
+        if (shifts.isEmpty()) { onComplete(false); return }
         viewModelScope.launch {
             try {
                 val uid = getActiveUserId()
-                val insertedIds = mutableListOf<Int>()
-                for (shift in shifts) {
+                val proposed = shifts.map { shift ->
+                    require(shift.category.isNotBlank() && shift.date >= 0 && shift.hours.isFinite() && shift.hours > 0 &&
+                        shift.hourlyRate.isFinite() && shift.hourlyRate >= 0 && (shift.hours * shift.hourlyRate).isFinite() &&
+                        shift.currency in listOf("₪", "$"))
+                    require(!shift.isGroup || shift.groupMembers.all { it.isNotBlank() })
                     val groupJson = if (shift.isGroup && shift.groupMembers.isNotEmpty()) {
                         val groupWorkersList = shift.groupMembers.map { GroupWorkerState(name = it, hours = shift.hours, isPaid = false) }
                         stringifyGroupWorkers(groupWorkersList)
@@ -595,17 +598,21 @@ class WorkViewModel(
                         groupWorkersJson = groupJson,
                         currency = shift.currency
                     )
-                    val insertedId = repository.insertEntry(entry, uid)
-                    insertedIds.add(insertedId.toInt())
+                    entry
                 }
+                val insertedIds = repository.insertEntries(proposed, uid).map { it.toInt() }
                 lastAddedEntryIds = insertedIds
                 lastAddedEntryId = insertedIds.lastOrNull()
 
                 performAutoBackup()
                 runCountAnimationTrigger.value = runCountAnimationTrigger.value + 1
-            } catch (e: Exception) {
-                android.util.Log.e("WorkViewModel", "Failed to add shifts via AI bulk parser: ${e.localizedMessage}")
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) {
+                Toast.makeText(getApplication(), "השמירה לא הושלמה. התיאור נשמר; אפשר לתקן ולנסות שוב", Toast.LENGTH_LONG).show()
+                onComplete(false)
+                return@launch
             }
+            onComplete(true)
         }
     }
 

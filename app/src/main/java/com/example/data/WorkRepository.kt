@@ -19,6 +19,14 @@ class WorkRepository(private val workDao: WorkDao) {
         return insertedId
     }
 
+    suspend fun insertEntries(entries: List<WorkEntry>, userId: String? = null): List<Long> {
+        val ids = workDao.insertEntriesAtomically(entries)
+        if (!userId.isNullOrBlank()) entries.zip(ids).forEach { (entry, id) ->
+            FirestoreSyncManager.saveShift(userId, entry.copy(id = id.toInt()))
+        }
+        return ids
+    }
+
     suspend fun getEntryById(id: Int): WorkEntry? = workDao.getEntryById(id)
 
     suspend fun updateEntry(entry: WorkEntry, userId: String? = null) {

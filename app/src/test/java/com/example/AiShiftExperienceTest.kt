@@ -43,6 +43,19 @@ class AiShiftExperienceTest {
         voice.begin(draft); voice.onError(SpeechRecognizer.ERROR_NETWORK)
         assertFalse(voice.active); assertTrue(error.isNotBlank()); assertTrue(draft.endsWith("תמלול חלקי"))
     }
+    @Test fun savingReviewDisablesDuplicateSaveAndAllowsRetryAfterFailure() {
+        var saving by mutableStateOf(true)
+        var saves = 0
+        ui.setContent { MyApplicationTheme {
+            AiShiftReview(listOf(ParsedShift("Work", 1, 2.0, 40.0, "draft")), {}, { saves++ }, saving)
+        } }
+        ui.onNodeWithTag("ai_confirm_save").assertIsNotEnabled()
+        ui.onNodeWithText("חזרה לעריכה").assertIsNotEnabled()
+        ui.runOnIdle { saving = false }
+        ui.onNodeWithTag("ai_review").assertIsDisplayed()
+        ui.onNodeWithTag("ai_confirm_save").assertIsEnabled().performClick()
+        assertEquals(1, saves)
+    }
     @Test fun editableVoiceParseReviewAt360() = checkFlow()
     @Test @Config(qualifiers = "w390dp-h800dp-xhdpi") fun editableVoiceParseReviewAt390() = checkFlow()
     private fun checkFlow() {
