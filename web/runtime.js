@@ -27,5 +27,9 @@ function stopEntry(timer,now){
  if(!hours||!Number.isFinite(hours))throw Error('לא עבר זמן עבודה');
  return {id:timer.id,category:timer.category,date:timer.startedAt,createdAt:now,hours,hourlyRate:timer.rate,totalEarnings:Math.round((hours*timer.rate+Number.EPSILON)*100)/100,currency:timer.currency,isPaid:false,notes:'',isTimeRange:false,startTime:null,endTime:null,isGroupShift:false,employerRate:null,workerRate:null,groupWorkersJson:''};
 }
-const api={preferencesFromAndroid,androidPreferences,loadGuest,checkpoint,timerKey,readTimer,stopEntry};if(typeof module!=='undefined')module.exports=api;else root.WorkRuntime=api;
+function assertUnchangedEdit(base,current){
+ if(!current)throw Error('המשמרת נמחקה בחלון אחר. השינויים שהקלדת לא נשמרו');
+ if(!base||JSON.stringify(base)!==JSON.stringify(current))throw Error('המשמרת עודכנה בחלון אחר. העתק את השינויים שלך ופתח את העריכה מחדש');
+}
+const api={assertUnchangedEdit,preferencesFromAndroid,androidPreferences,loadGuest,checkpoint,timerKey,readTimer,stopEntry};if(typeof module!=='undefined')module.exports=api;else root.WorkRuntime=api;
 })(globalThis);
