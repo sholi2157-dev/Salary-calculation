@@ -2,7 +2,7 @@
     // State management
     let shifts = [];
     let currentUserId = null;
-    let webPreferences=WorkCategories.preferences(), categories = [], workers = [], pendingTransfer = null, editingShiftId = null;
+    let webPreferences=WorkCategories.preferences(), categories = [], workers = [], pendingTransfer = null, editingShiftId = null, editingShiftBase = null;
     try { const meta=JSON.parse(localStorage.getItem('work_transfer_meta')||'{}');categories=meta.categories||[];workers=meta.workers||[]; } catch {}
     let selectedCategory = 'הכל';
 
@@ -88,7 +88,7 @@
             rangeHidden:document.getElementById('range-fields').hidden,
             groupHidden:document.getElementById('group-fields').hidden
         };
-        editingShiftId=null;
+        editingShiftId=null;editingShiftBase=null;
         document.getElementById('modal-break').value=0;document.getElementById('modal-hours').value=8;document.getElementById('modal-notes').value='';
         const today=new Date();document.getElementById('modal-date').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
         document.getElementById('modal-range').checked=false;toggleRange();
@@ -110,7 +110,7 @@
             document.getElementById('group-fields').hidden=homeReportDraft.groupHidden;
             homeReportDraft=null;
         }
-        document.getElementById('report-slot').append(document.getElementById('report-fields'));editingShiftId=null;syncFormLayout();updateGroupHours();
+        document.getElementById('report-slot').append(document.getElementById('report-fields'));editingShiftId=null;editingShiftBase=null;syncFormLayout();updateGroupHours();
     }
 
     function saveNewShift() {
@@ -120,6 +120,13 @@
         const dateVal = document.getElementById('modal-date').value;
         const date = dateVal ? new Date(dateVal+'T00:00:00').getTime() : NaN;
         if(!Number.isFinite(date)){showMessage('יש לבחור תאריך תקין');return;}
+        // Read the current guest snapshot even if another tab's storage event is queued.
+        if(editingShiftId!==null){
+            try {
+                if(!currentUserId){const live=WorkRuntime.loadGuest(localStorage);shifts=live.entries;categories=live.categories;workers=live.workers;webPreferences=WorkCategories.preferences(live.webPreferences);}
+                WorkRuntime.assertUnchangedEdit(editingShiftBase,shifts.find(e=>e.id===editingShiftId));
+            } catch(e){reportError(e.message);return;}
+        }
         const original=shifts.find(e=>e.id===editingShiftId);
         if(document.getElementById('modal-range').checked){try{document.getElementById('modal-hours').value=WorkTransfer.rangeHours(document.getElementById('modal-start').value,document.getElementById('modal-end').value,document.getElementById('modal-break').value,original);}catch(e){reportError(e.message);return;}}
         let hours,hourlyRate;try{hours=WorkTransfer.number(document.getElementById('modal-hours').value);hourlyRate=WorkTransfer.number(document.getElementById('modal-rate').value);}catch(e){showMessage(e.message);return;}
@@ -160,7 +167,7 @@
 
     function togglePaid(id){try{persistAll(shifts.map(s=>s.id===id?{...s,isPaid:!s.isPaid}:s));renderShifts();syncToCloud();}catch(e){alert('השמירה נכשלה: '+e.message);}}
     async function deleteShift(id){const owner=currentUserId;if(await confirmAction('מחיקת משמרת','למחוק את המשמרת? פעולה זו אינה ניתנת לביטול.')){if(owner!==currentUserId)return;try{persistAll(shifts.filter(s=>s.id!==id));renderShifts();syncToCloud();showMessage('המשמרת נמחקה');}catch(e){showMessage('המחיקה לא נשמרה: '+e.message);}}}
-    function editShift(id){const e=shifts.find(s=>s.id===id);if(!e)return;openAddModal();editingShiftId=id;document.getElementById('modal-category').value=e.category;const d=new Date(e.date);document.getElementById('modal-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');document.getElementById('modal-hours').value=e.hours;document.getElementById('modal-rate').value=e.hourlyRate;document.getElementById('modal-currency').value=e.currency;document.getElementById('modal-notes').value=e.notes;document.getElementById('modal-break').value=WorkTransfer.inferredBreak(e);
+    function editShift(id){const e=shifts.find(s=>s.id===id);if(!e)return;openAddModal();editingShiftId=id;editingShiftBase=JSON.parse(JSON.stringify(e));document.getElementById('modal-category').value=e.category;const d=new Date(e.date);document.getElementById('modal-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');document.getElementById('modal-hours').value=e.hours;document.getElementById('modal-rate').value=e.hourlyRate;document.getElementById('modal-currency').value=e.currency;document.getElementById('modal-notes').value=e.notes;document.getElementById('modal-break').value=WorkTransfer.inferredBreak(e);
         document.getElementById('modal-range').checked=e.isTimeRange||false;document.getElementById('range-fields').hidden=!e.isTimeRange;document.getElementById('modal-hours').readOnly=Boolean(e.isTimeRange);if(e.startTime)document.getElementById('modal-start').value=e.startTime;if(e.endTime)document.getElementById('modal-end').value=e.endTime;
         document.getElementById('modal-group').checked=e.isGroupShift||false;document.getElementById('group-fields').hidden=!e.isGroupShift;document.getElementById('group-employer-rate').value=e.employerRate??e.hourlyRate;document.getElementById('group-worker-rate').value=e.workerRate??e.hourlyRate;
         document.querySelector('.group-rates').open=Boolean(e.isGroupShift);for(const worker of JSON.parse(e.groupWorkersJson||'[]'))addGroupRow(worker);syncFormLayout();updateGroupHours();
@@ -212,7 +219,7 @@
     function showPage(page){if(page===currentPage)return;if(currentPage===1&&page===0&&selectionMode)exitSelection();pageScroll[currentPage]=window.scrollY;const old=currentPage;currentPage=page;document.getElementById('page-home').hidden=page!==0;document.getElementById('page-history').hidden=page!==1;for(const [i,id] of ['nav-home','nav-history'].entries()){const b=document.getElementById(id);if(i===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}const panel=document.getElementById(page?'page-history':'page-home');panel.classList.remove('slide-forward','slide-back');void panel.offsetWidth;panel.classList.add(page>old?'slide-forward':'slide-back');window.scrollTo({top:pageScroll[page],behavior:'instant'});}
     function summaryPage(page){const el=document.querySelector('.summary-carousel');el.children[page].scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'nearest',inline:'start'});}
     function toggleReport(button){const content=document.getElementById('report-content');content.hidden=!content.hidden;button.setAttribute('aria-expanded',String(!content.hidden));syncFormLayout();renderLiveShift();saveReportDraft();}
-    function setReportMode(mode){reportMode=mode;editingShiftId=null;document.getElementById('modal-range').checked=mode==='clock';toggleRange();document.getElementById('modal-group').checked=mode==='group';document.getElementById('group-fields').hidden=mode!=='group';document.querySelectorAll('.mode-switch button').forEach((b,i)=>b.setAttribute('aria-selected',String(['clock','manual','group'][i]===mode)));syncFormLayout();}
+    function setReportMode(mode){reportMode=mode;editingShiftId=null;editingShiftBase=null;document.getElementById('modal-range').checked=mode==='clock';toggleRange();document.getElementById('modal-group').checked=mode==='group';document.getElementById('group-fields').hidden=mode!=='group';document.querySelectorAll('.mode-switch button').forEach((b,i)=>b.setAttribute('aria-selected',String(['clock','manual','group'][i]===mode)));syncFormLayout();}
 
     function renderCompanionViews(filtered){
         renderSummaries();

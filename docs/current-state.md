@@ -1,5 +1,10 @@
 # Current Web track — 2026-10-06
 
+## October 11 audit review branch
+
+Audit fixes are isolated on `codex/web-audit-20261011`. Read `docs/audit-20261011.md` for findings, exact verification and remaining gates. These are review changes, not a new delivered APK or production deployment. RC15 remains the public baseline. Earlier scope sections below are historical and must be read together with the latest completion notes.
+
+
 ## Latest completed owner request — RC15 parity, 2026-10-09
 
 Current public website remains https://salary-calculation-eta.vercel.app, exact tested/deployed source d4feadd0cdf053906c70d6b76e6b9651c57e455e and Vercel deployment dpl_2P1wBDybjGLCZmi28E7h3rYnD651. Development/evidence branch is codex/web-rc15-live. Read docs/rc15-feature-parity.md and docs/rc15-web-live.json before new work. Build,43 unit tests and all4 browser suites passed run37993152040. Actual public-origin UI then passed run37993523248 at360/390/768/1440 with isolated synthetic data and analytics traffic blocked. Same origin/design/storage/analytics loader retained; no protection settings or main merge changed.
