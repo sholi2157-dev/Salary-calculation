@@ -133,9 +133,9 @@ fun AiShiftInput(text: String, onText: (String) -> Unit, capturing: Boolean, lis
 }
 
 @Composable
-fun AiShiftReview(shifts: List<ParsedShift>, onEdit: () -> Unit, onSave: () -> Unit) {
+fun AiShiftReview(shifts: List<ParsedShift>, onEdit: () -> Unit, onSave: () -> Unit, saving: Boolean = false) {
     val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.45f).dp
-    AlertDialog(onDismissRequest = onEdit, containerColor = Color(0xFF171D34),
+    AlertDialog(onDismissRequest = { if (!saving) onEdit() }, containerColor = Color(0xFF171D34),
         icon = { Icon(Icons.Filled.AutoAwesome, null, tint = Color(0xFFA5B4FC)) },
         title = { Text("בדיקת הפענוח", color = Color.White) },
         text = {
@@ -151,6 +151,6 @@ fun AiShiftReview(shifts: List<ParsedShift>, onEdit: () -> Unit, onSave: () -> U
                     }
                 }
             }
-        }, confirmButton = { TextButton(onClick = onSave, modifier = Modifier.testTag("ai_confirm_save")) { Text("שמור את המשמרות", color = Color(0xFFC7D2FE), fontWeight = FontWeight.Bold) } },
-        dismissButton = { TextButton(onClick = onEdit) { Text("חזרה לעריכה", color = Color(0xFF94A3B8)) } })
+        }, confirmButton = { TextButton(onClick = onSave, enabled = !saving, modifier = Modifier.testTag("ai_confirm_save")) { Text(if (saving) "שומר…" else "שמור את המשמרות", color = Color(0xFFC7D2FE), fontWeight = FontWeight.Bold) } },
+        dismissButton = { TextButton(onClick = onEdit, enabled = !saving) { Text("חזרה לעריכה", color = Color(0xFF94A3B8)) } })
 }

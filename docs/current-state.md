@@ -1,5 +1,10 @@
 # Current project state
 
+## October 11 audit review branch
+
+Audit fixes are isolated on `codex/android-audit-20261011`. Read `docs/audit-20261011.md` for findings, exact verification and remaining gates. These are review changes, not a new delivered APK or production deployment. RC15 remains the public baseline. Earlier scope sections below are historical and must be read together with the latest completion notes.
+
+
 ## Latest completed owner request — RC15, 2026-10-09
 
 Delivered Android1.5-rc15/code23: exact signed/tested sourcebc876374cb7486351fcd7bd9c69c229215241021, candidate run37993791019, public channel+real RC14button/download/Androidinstaller/data gate run37994406008. All passed. APK SHA2569935eb6d49c971832653a207186e64392c93ba65da271d839684c5b624ff0bcc and permanent package/certificate are unchanged. See docs/rc15-layout.md and docs/release-evidence/rc15. Do not repeat completed work or publish a different rebuilt binary underRC15.
