@@ -4,5 +4,8 @@
   "publicOrigin": "https://salary-calculation-eta.vercel.app",
   "ciRun": 38117622906,
   "artifactId": 11694396601,
-  "rollbackDeployment": "dpl_2P1wBDybjGLCZmi28E7h3rYnD651"
+  "rollbackDeployment": "dpl_2P1wBDybjGLCZmi28E7h3rYnD651",
+  "buildId": "562a7a568558d6fba22bd6aac2fe173ed85ff971-bdf044743a70b60b",
+  "liveCiRun": 38595391853,
+  "liveArtifactId": 11908872883
 }
