@@ -1,5 +1,9 @@
 # Current project state
 
+## October 14 authorized redistribution — in progress
+
+Owner authorized merging the audit fixes and redistribution to all existing platforms. PR #4 is merged. RC16 / code24 is being prepared from the audited Android source; it is not published yet. Preserve the permanent package/signer and test the exact original RC15 APK (run37993791019) to RC16 with unchanged synthetic data. Read `docs/rc16-release.md` for scope and gates. Earlier release notes are historical.
+
 ## October 11 audit review branch
 
 Audit fixes are isolated on `codex/android-audit-20261011`. Read `docs/audit-20261011.md` for findings, exact verification and remaining gates. These are review changes, not a new delivered APK or production deployment. RC15 remains the public baseline. Earlier scope sections below are historical and must be read together with the latest completion notes.
