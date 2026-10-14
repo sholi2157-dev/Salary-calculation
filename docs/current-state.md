@@ -1,8 +1,14 @@
 # Current project state
 
-## October 14 authorized redistribution — in progress
+## October 14 redistribution — Android RC16 delivered; Web production blocked
 
-Owner authorized merging the audit fixes and redistribution to all existing platforms. PR #4 is merged. RC16 / code24 is being prepared from the audited Android source; it is not published yet. Preserve the permanent package/signer and test the exact original RC15 APK (run37993791019) to RC16 with unchanged synthetic data. Read `docs/rc16-release.md` for scope and gates. Earlier release notes are historical.
+Owner authorized merge and redistribution of the audit fixes. Android PR #4 and Web PR #3 are merged on their separate active branches.
+
+Delivered Android `1.5-rc16` / code `24`, exact signed/tested source `c0d655365cfd35e2bba11807cb4fe3c0ff27af93`. Candidate run38591694409/job115947937994 SUCCESS: 91 Debug + 73 Release tests, nine native stages, exact original RC15-to-RC16 retained data, clean crash logs. Public update run38593112482 SUCCESS: original RC15 actual update button/download/Android installer, code24 installed, exact data retained and same-version update not offered again. APK SHA256 `400e11bccd9a46e7911c498137da9ba5d23b3b86cee50f0f1ea6400f40e7cc30`, size19231375. Permanent package/signing identity unchanged. Public anonymous download and Drive roundtrip match the tested bytes. Existing Drive file/link/parent/all eight permissions retained. See `docs/rc16-release.md` and `docs/release-evidence/rc16/`. Next delivered Android build must use a code higher than24; never rebuild/mutate RC16 in place.
+
+Website audit merge `2f55bcda80f0c1e5f563a4ffeeeb44d75a691ad2` is identical to the reviewed audit tree (46 tests, build, five browser suites passed in run38117622906). Web head `562a7a568558d6fba22bd6aac2fe173ed85ff971` adds only release-state documentation. Vercel Git integration built Preview `https://salary-calculation-hggp2rgsn-sholi.vercel.app` (GitHub deployment7070107231, success); this is NOT production. Existing public origin `https://salary-calculation-eta.vercel.app` still reports source `d4feadd0cdf053906c70d6b76e6b9651c57e455e`. Vercel connector returns HTTP403 for existing team `sholi`, lists no accessible teams; no CLI credentials configured. Reconnect with access to the existing team/project to promote and verify the public website. No replacement project, origin, or relaxed protection was introduced.
+
+Manual physical-phone/native-sharing/live-AI review remains. General simultaneous full-snapshot Web localStorage writes are not solved by the scoped open-edit conflict fix. Earlier notes below are historical; this section is authoritative.
 
 ## October 11 audit review branch
 
