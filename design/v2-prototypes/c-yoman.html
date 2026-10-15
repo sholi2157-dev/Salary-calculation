@@ -1,0 +1,491 @@
+<title>חישוב שכר · יומן</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Assistant:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a week of days drawn as vertical time columns above a day agenda; entries are written as sentences. Dark-first, evening palette. */
+:root{
+  --bg:#0E1412; --surface:#161F1C; --sunk:#1E2925; --ink:#E9EFEA; --muted:#93A49B; --line:#283430;
+  --accent:#F1A45E; --on-accent:#1A1107; --accent-soft:#3A2A1A; --warn:#F2958B; --warn-soft:#3A1E1C;
+  --font-body:"Assistant",system-ui,"Segoe UI",Arial,sans-serif;
+  --font-display:"Frank Ruhl Libre","David",Georgia,serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --bg:#F1F3EF; --surface:#FFFFFF; --sunk:#E5EAE5; --ink:#14201B; --muted:#5A6A62; --line:#D2DAD4;
+  --accent:#A9500F; --on-accent:#FFFFFF; --accent-soft:#F8E4D2; --warn:#B0313F; --warn-soft:#FBE3E3; color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#F1F3EF; --surface:#FFFFFF; --sunk:#E5EAE5; --ink:#14201B; --muted:#5A6A62; --line:#D2DAD4;
+  --accent:#A9500F; --on-accent:#FFFFFF; --accent-soft:#F8E4D2; --warn:#B0313F; --warn-soft:#FBE3E3; color-scheme:light}
+/*CORE_CSS*/
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--font-body);direction:rtl;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums lining-nums;unicode-bidi:isolate;direction:ltr;display:inline-block}
+.serif{font-family:var(--font-display)}
+.app{max-width:1060px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 110px}
+.app>*{min-width:0}
+header.mast{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.mast .word{display:flex;gap:10px;align-items:center;font-family:var(--font-display);font-weight:700;font-size:17px}
+.mast .word svg{width:30px;height:30px}
+.mast .mo{font-family:var(--font-display);font-weight:900;font-size:clamp(30px,8vw,44px);line-height:1}
+.mast .mo small{font-size:.45em;font-weight:500;color:var(--muted);margin-inline-start:6px}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--bg);display:flex;gap:22px;padding-block:12px 0;margin-bottom:12px;border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:31;background:var(--bg)}
+nav.tabs button{border:0;background:none;padding:6px 0 12px;font-weight:600;font-size:16px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+nav.tabs button[aria-current=page]{color:var(--ink);border-bottom-color:var(--accent)}
+.lede{font-family:var(--font-display);font-size:clamp(20px,5.2vw,26px);line-height:1.45;margin:6px 0 4px;text-wrap:pretty}
+.lede b{font-weight:700;color:var(--accent)}
+.lede .q{color:var(--warn);text-decoration:underline dotted;text-underline-offset:5px;cursor:pointer;background:none;border:0;font:inherit;padding:0}
+/* Week */
+.weekbar{display:flex;justify-content:space-between;align-items:center;margin:18px 0 8px}
+.weekbar strong{font-family:var(--font-display);font-size:18px}
+.weekbar button{border:1px solid var(--line);background:var(--surface);border-radius:99px;min-width:40px;min-height:36px;cursor:pointer}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.day{border:0;background:var(--surface);border-radius:14px;padding:8px 0 6px;cursor:pointer;display:grid;justify-items:center;gap:6px;position:relative}
+.day .dn{font-size:12px;color:var(--muted);font-weight:600}
+.day .dd{font-family:var(--font-display);font-size:20px;font-weight:700;line-height:1}
+.day .col{position:relative;width:14px;height:96px;border-radius:7px;background:var(--sunk);overflow:hidden}
+.day .col i{position:absolute;inset-inline:0;border-radius:4px;background:var(--accent)}
+.day .col i.p{background:transparent;box-shadow:inset 0 0 0 1.5px var(--accent)}
+.day .col i.w{background:var(--warn)}
+.day .hrs{font-size:11px;color:var(--muted);min-height:16px}
+.day[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.day[aria-pressed=true] .dn,.day[aria-pressed=true] .hrs{color:color-mix(in oklab,var(--bg) 70%,transparent)}
+.day[aria-pressed=true] .col{background:color-mix(in oklab,var(--bg) 20%,transparent)}
+.day.today .dd::after{content:"";display:block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin:3px auto 0}
+/* Agenda */
+.agenda-h{display:flex;justify-content:space-between;align-items:baseline;margin:24px 0 6px}
+.agenda-h h2{font-family:var(--font-display);font-weight:700;font-size:24px;margin:0}
+.agenda-h span{color:var(--muted);font-size:14px}
+.entry{display:grid;grid-template-columns:auto 1fr auto;gap:2px 14px;align-items:baseline;padding:14px 2px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;-webkit-user-select:none}
+.entry .tm{font-family:var(--font-display);font-weight:700;font-size:20px;grid-row:span 2;min-width:108px}
+.entry .tm small{display:block;font-family:var(--font-body);font-weight:600;font-size:12px;color:var(--muted)}
+.entry .wh{font-weight:600}
+.entry .am{font-family:var(--font-display);font-weight:700;font-size:19px;grid-row:span 2}
+.entry .sub{color:var(--muted);font-size:14px;min-width:0}
+.entry.plan .tm,.entry.plan .am{color:var(--muted)}
+.entry.plan .wh::after{content:" · מתוכנן";color:var(--accent);font-weight:600;font-size:13px}
+.entry.await .wh::after{content:" · ממתין לאישורך";color:var(--warn)}
+.entry.sel{background:var(--accent-soft);border-radius:12px;padding-inline:10px}
+.q-amt{color:var(--warn);font-family:var(--font-body)!important;font-size:14px!important;font-weight:600!important}
+.mark{white-space:nowrap;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:0 8px;margin-inline-start:6px;font-weight:600}
+.e-acts{grid-column:1/-1;display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.e-acts button{min-height:40px;border-radius:99px;border:1px solid var(--line);background:none;padding-inline:16px;font-weight:600;cursor:pointer}
+.e-acts .go{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.add-line{display:flex;align-items:center;gap:10px;width:100%;padding:16px 2px;border:0;border-bottom:1px dashed var(--line);background:none;color:var(--accent);font-weight:600;font-size:16px;cursor:pointer;text-align:start}
+.add-line b{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--accent);display:grid;place-items:center;font-size:18px;line-height:1}
+/* Sentence composer */
+.compose{background:var(--surface);border-radius:20px;padding:18px 18px 14px;margin:10px 0 6px;box-shadow:0 0 0 1px var(--line),0 18px 40px rgb(0 0 0/.18);display:grid;gap:14px;animation:open .3s cubic-bezier(.2,.8,.2,1)}
+.compose>*{min-width:0}
+@keyframes open{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.sentence{font-family:var(--font-display);font-size:clamp(22px,5.8vw,28px);line-height:2.05;font-weight:500;margin:0}
+.tok{display:inline-flex;align-items:center;gap:4px;position:relative;border:0;border-bottom:2px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:8px 8px 2px 2px;padding:0 8px;font:700 1em var(--font-display);line-height:1.35;cursor:pointer;vertical-align:baseline}
+.tok.empty{color:var(--accent);border-bottom-style:dashed}
+.tok.warn{background:var(--warn-soft);border-color:var(--warn)}
+.tok input,.tok select{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer;font-size:16px}
+.tok .chev{font-size:.5em;opacity:.6;font-family:var(--font-body)}
+.meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:14px}
+.meta .fig{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--ink);margin-inline-start:auto}
+.sugs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:14px;color:var(--muted)}
+.sugs button,.adds button{min-height:38px;border-radius:99px;border:1px dashed var(--line);background:none;padding-inline:14px;font-weight:600;cursor:pointer;font-size:14px}
+.sugs button{border-color:var(--accent);color:var(--accent)}
+.adds{display:flex;gap:6px;flex-wrap:wrap}
+.adds button[aria-pressed=true]{border-style:solid;border-color:var(--ink)}
+.cbtn{display:flex;gap:8px}
+.cbtn button{flex:1;min-height:50px;border-radius:14px;border:1px solid var(--line);background:none;font-weight:700;font-size:16px;cursor:pointer}
+.cbtn .go{flex:2;background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.cbtn .go[disabled]{opacity:.4;cursor:not-allowed}
+.note{font-size:14px;padding:8px 12px;border-radius:10px;background:var(--warn-soft);color:var(--warn)}
+.extra{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:12px}
+.extra .r{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld{display:grid;gap:4px}
+.fld label{font-size:13px;color:var(--muted);font-weight:600}
+.fld input,.fld select{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding-inline:12px}
+.ppl{display:grid;gap:6px}
+.ppl .p{display:grid;grid-template-columns:auto 1fr 90px;gap:10px;align-items:center}
+.ppl input[type=number]{min-height:38px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding-inline:8px}
+.ck{appearance:none;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--muted);display:grid;place-items:center;cursor:pointer;margin:0}
+.ck:checked{background:var(--accent);border-color:var(--accent)}
+.ck:checked::after{content:"✓";color:var(--on-accent);font-size:14px;font-weight:700}
+.wd{display:flex;gap:6px}
+.wd button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:none;font-weight:700;cursor:pointer}
+.wd button[aria-pressed=true]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.fab{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:max(20px,env(safe-area-inset-left,0px));z-index:35;width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);font-size:30px;line-height:1;cursor:pointer;box-shadow:0 10px 26px rgb(0 0 0/.3)}
+/* List view, month */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:99px;padding:3px;gap:2px}
+.seg button{border:0;background:none;min-height:34px;padding-inline:14px;border-radius:99px;font-weight:600;color:var(--muted);cursor:pointer;font-size:14px}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:14px}
+.cal .h{text-align:center;font-size:12px;color:var(--muted);font-weight:600;padding-bottom:4px}
+.cal .c{aspect-ratio:1;max-width:100%;border-radius:10px;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:15px;background:var(--sunk);position:relative;border:0;cursor:pointer;color:var(--ink)}
+.cal .c.out{opacity:0;pointer-events:none}
+.cal .c.td{box-shadow:inset 0 0 0 2px var(--ink)}
+.cal .c.pl{background:transparent;box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent)}
+.cal .c.wq::after{content:"";position:absolute;top:6px;inset-inline-end:6px;width:6px;height:6px;border-radius:50%;background:var(--warn)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-inline-end:4px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;border-top:1px solid var(--line);margin-top:20px}
+.facts div{padding:14px 2px;border-bottom:1px solid var(--line)}
+.facts small{color:var(--muted);font-size:13px;display:block}
+.facts b{font-family:var(--font-display);font-size:26px;font-weight:700}
+.read{min-height:54px;width:100%;border-radius:14px;border:0;background:var(--ink);color:var(--bg);font:700 17px var(--font-display);cursor:pointer;margin-top:22px}
+/* Settings */
+.sec-t{font-family:var(--font-display);font-weight:700;font-size:20px;margin:26px 0 4px}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}
+.opt .l{flex:1;min-width:0}
+.opt .l small{display:block;color:var(--muted);font-size:14px}
+.opt select{min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding-inline:8px}
+.what{border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer;padding:0;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.explain{margin-top:10px;padding:14px 16px;border-radius:14px;background:var(--surface);border:1px solid var(--line);display:grid;gap:8px;font-size:15px}
+.explain ol{margin:0;padding-inline-start:20px}
+.explain a{color:var(--accent);font-weight:700}
+.tg{appearance:none;width:44px;height:26px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;flex:0 0 auto;margin-top:2px}
+.tg::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;background:var(--ink);transition:inset-inline-start .2s}
+.tg:checked{background:var(--accent)}
+.tg:checked::after{inset-inline-start:21px;background:var(--on-accent)}
+.btn-s{min-height:40px;border-radius:99px;border:1px solid var(--line);background:none;padding-inline:16px;font-weight:600;cursor:pointer}
+/* Bottom sheet for bulk + series */
+.scrim{position:fixed;inset:0;background:rgb(0 0 0/.5);z-index:60}
+.sheet{position:fixed;inset:auto 0 0 0;z-index:61;background:var(--surface);border-radius:22px 22px 0 0;padding:20px max(18px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));max-height:85%;overflow:auto;animation:open .3s}
+.sheet .in{max-width:600px;margin-inline:auto;display:grid;gap:12px}
+.sheet .in>*{min-width:0}
+.sheet h3{font-family:var(--font-display);font-size:24px;margin:0}
+.selbar{position:fixed;inset:auto 0 0 0;z-index:45;background:var(--ink);color:var(--bg);padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.selbar .in{max-width:1060px;margin-inline:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.selbar strong{margin-inline-end:auto;font-family:var(--font-display);font-size:18px}
+.selbar button{min-height:40px;border-radius:99px;border:1px solid color-mix(in oklab,var(--bg) 35%,transparent);background:none;color:var(--bg);font-weight:600;padding-inline:14px;cursor:pointer}
+/* Wrapped */
+.over{position:fixed;inset:0;z-index:80;background:var(--bg);color:var(--ink);display:grid;grid-template-rows:auto 1fr auto;padding:calc(16px + env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px))}
+.over .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);padding-bottom:10px}
+.page{align-self:center;max-width:600px;margin-inline:auto;width:100%;display:grid;gap:16px;animation:open .5s}
+.page .kick{font-size:13px;letter-spacing:.08em;color:var(--accent);font-weight:700}
+.page h3{font-family:var(--font-display);font-weight:900;font-size:clamp(34px,9vw,58px);line-height:1.08;margin:0;text-wrap:balance}
+.page h3 em{font-style:normal;color:var(--accent)}
+.page p{margin:0;font-size:18px;color:var(--muted);max-width:44ch}
+.over .ctl{display:flex;justify-content:space-between;gap:8px;max-width:600px;margin-inline:auto;width:100%}
+.over .ctl button{min-height:50px;border-radius:14px;border:1px solid var(--line);background:none;font-weight:700;padding-inline:18px;cursor:pointer}
+.over .ctl .go{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.brandp{position:fixed;inset:0;z-index:80;overflow:auto;background:var(--bg);padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
+.brandp .in{max-width:820px;margin-inline:auto;display:grid;gap:22px}
+.brandp .in>*{min-width:0}
+.bph{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+.bph svg{width:100px;height:100px}
+.bph h1{font-family:var(--font-display);font-weight:900;font-size:clamp(38px,10vw,60px);margin:0;line-height:1}
+.bph p{margin:6px 0 0;color:var(--muted);font-size:17px}
+.homescr{border-radius:30px;padding:22px;background:linear-gradient(170deg,#24323A,#0B1013);display:grid;grid-template-columns:repeat(4,1fr);gap:18px 10px;max-width:340px}
+.homescr div{display:grid;justify-items:center;gap:6px;font-size:11px;color:#fff}
+.homescr .ic{width:56px;height:56px;border-radius:16px;background:rgb(255 255 255/.14)}
+.sws{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.sws div{border-radius:14px;padding:44px 12px 10px;font-weight:700;font-size:13px;border:1px solid var(--line)}
+@media (min-width:900px){
+  .two{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:start}
+  .two>*{min-width:0}
+  .fab{left:max(32px,calc(50% - 530px + 32px))}
+}
+</style>
+
+<div class="app" id="app"></div>
+<button class="fab" id="fab" aria-label="משמרת חדשה" data-act="add">+</button>
+<div id="layer"></div>
+
+<script>
+/*CORE_JS*/
+(() => {
+const C = Core, $ = s => document.querySelector(s), E = C.esc, S = () => C.state;
+C.load('c-yoman'); C.applyTheme();
+const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="var(--sunk)"/><path d="M17 40a15 15 0 0 1 30 0z" fill="var(--accent)"/><path d="M11 40h42" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/><path d="M22 47h20" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" opacity=".35"/></svg>`;
+let view = 'journal', day = C.today(), weekStart = C.addDays(C.today(), -C.weekday(C.today())), listMode = false, filter = 'all', month = C.ym(C.today());
+let draft = null, extra = false, openOcc = null, sel = new Set(), explain = null, timer = null;
+const money = (v, c) => `<span class="num">${E(C.money(v, c, true))}</span>`;
+
+function lede() {
+  const st = C.monthStats(C.ym(C.today())), cur = Object.entries(st.byCur);
+  const mo = C.MONTH[C.now().getMonth()];
+  return `<p class="lede">ב${mo} עבדת עד עכשיו <b class="num">${C.hours(st.minutes)}</b> שעות ב-${st.count} משמרות, והרווחת ${cur.map(([c, v]) => `<b>${money(v.total, c)}</b>`).join(' ו-') || '<b>₪0</b>'}.${st.pending ? ` <button class="lede q" data-act="pending">${C.pl(st.pending, 'משמרת אחת עוד בלי תעריף', '# משמרות עוד בלי תעריף')}.</button>` : ''}${st.planned ? ` עוד ${st.planned} בלוח.` : ''}</p>`;
+}
+function weekStrip() {
+  const days = Array.from({ length: 7 }, (_, i) => C.addDays(weekStart, i));
+  const occ = C.occurrences();
+  const y = m => Math.max(0, Math.min(100, (m - 360) / (1560 - 360) * 100)); // 06:00 → 02:00 next day
+  const seg = (s, cls) => { let a = C.toMin(s.start), b = C.toMin(s.end); if (b <= a) b += 1440; if (a < 360) { a += 1440; b += 1440; } return `<i class="${cls}" style="top:${y(a)}%;height:${Math.max(4, y(b) - y(a))}%"></i>`; };
+  return `<div class="weekbar"><button data-act="pw" aria-label="שבוע קודם">→</button><strong>${C.shortDate(days[0])}–${C.shortDate(days[6])}</strong><button data-act="nw" aria-label="שבוע הבא">←</button></div>
+  <div class="week" role="group" aria-label="ימי השבוע">${days.map(d => {
+    const done = S().shifts.filter(s => s.date === d), pl = occ.filter(o => o.date === d);
+    const m = done.reduce((a, s) => a + C.shiftMinutes(s), 0);
+    return `<button class="day${d === C.today() ? ' today' : ''}" data-day="${d}" aria-pressed="${d === day}" aria-label="${E(C.dayLabel(d))}"><span class="dn">${C.DAY_SHORT[C.weekday(d)]}</span><span class="dd num">${C.parseYmd(d).getDate()}</span>
+      <span class="col">${done.map(s => seg(s, s.total == null ? 'w' : '')).join('')}${pl.map(o => seg(o, 'p')).join('')}</span><span class="hrs num">${m ? C.hours(m) : ''}</span></button>`;
+  }).join('')}</div>`;
+}
+function entry(s) {
+  const m = C.span(s.start, s.end, s.breakMin || 0).minutes, ov = C.toMin(s.end) <= C.toMin(s.start), c = C.cat(s.cat);
+  if (s.status) {
+    const open = openOcc === s.key;
+    return `<div class="entry plan${s.status === 'awaiting' ? ' await' : ''}" data-occ="${E(s.key)}" tabindex="0">
+      <span class="tm num">${s.start}–${s.end}<small>${ov ? 'עד למחרת' : C.hours(m) + ' שעות'}</small></span>
+      <span class="wh">${E(c.name)}</span><span class="am">${s.rate == null ? '<span class="q-amt">?</span>' : money(C.round2(m / 60 * s.rate), s.currency)}</span>
+      <span class="sub">${listMode ? E(C.dayLabel(s.date)) + ' · ' : ''}משמרת קבועה</span>
+      ${open ? `<span class="e-acts">${s.status === 'awaiting' ? '<button class="go" data-act="ok">כן, עבדתי</button>' : ''}<button data-act="eo">שינוי שעות</button><button data-act="no">לא עבדתי</button></span>` : ''}</div>`;
+  }
+  return `<div class="entry${sel.has(s.id) ? ' sel' : ''}" data-id="${s.id}" tabindex="0">
+    <span class="tm num">${s.start}–${s.end}<small>${ov ? 'עד למחרת · ' : ''}${C.hours(m)} שעות</small></span>
+    <span class="wh">${E(c.name)}${s.auto ? '<span class="mark" title="נרשמה לבד כשנגמר הזמן">נרשמה לבד</span>' : ''}</span>
+    <span class="am">${s.total == null ? '<span class="q-amt">תעריף?</span>' : money(s.total, s.currency)}</span>
+    <span class="sub">${listMode ? E(C.dayLabel(s.date)) + ' · ' : ''}${s.paid ? 'שולם' : 'טרם שולם'}${s.bonus ? ' · כולל בונוס ' + E(C.money(s.bonus, s.currency)) : ''}${s.group ? ` · עם ${s.group.workers.map(w => w.name).join(', ')}` : ''}${s.notes ? ' · ' + E(s.notes) : ''}</span></div>`;
+}
+function composer() {
+  const d = draft, ev = C.evaluate(d), sug = C.suggestStart(d.cat, d.date), c = C.cat(d.cat);
+  const sp = ev.span;
+  return `<div class="compose" id="compose" role="form" aria-label="${d.id ? 'עריכת משמרת' : 'משמרת חדשה'}">
+    <p class="sentence">${d.repeat ? 'כל' : 'ב'}<span class="tok">${d.repeat ? d.repeat.days.map(x => 'יום ' + C.DAY_SHORT[x]).join(', ') || 'בחר ימים' : E(C.dayLabel(d.date))}<span class="chev">▾</span>${d.repeat ? '' : `<input type="date" id="cd" value="${d.date}" aria-label="תאריך">`}</span>
+      עבדתי ב<span class="tok">${E(c.name)}<span class="chev">▾</span><select id="cc" aria-label="מקום עבודה">${S().cats.map(x => `<option value="${x.id}" ${x.id === d.cat ? 'selected' : ''}>${E(x.name)}</option>`).join('')}</select></span>
+      מ-<span class="tok${d.start ? '' : ' empty'}"><span class="num">${d.start || 'שעה'}</span><input type="time" id="cs" value="${d.start || ''}" aria-label="שעת התחלה"></span>
+      עד <span class="tok"><span class="num">${d.end}</span><input type="time" id="ce" value="${d.end}" aria-label="שעת סיום"></span>${sp && sp.overnight ? ' למחרת' : ''},
+      ${d.rateUnknown ? `<button type="button" class="tok warn" data-act="rk">בתעריף שעוד לא ידוע</button>` : `לפי <span class="tok"><span class="num">${E(d.currency)}${E(d.rate)}</span><input type="number" inputmode="decimal" id="cr" value="${E(d.rate)}" aria-label="תעריף לשעה"></span> לשעה`}${Number(d.bonus) ? `, ועוד בונוס של <span class="tok"><span class="num">${E(d.currency)}${E(d.bonus)}</span><input type="number" inputmode="decimal" id="cb" value="${E(d.bonus)}" aria-label="בונוס"></span>` : ''}.</p>
+    ${!d.start ? `<div class="sugs">בדרך כלל מתחילים ב-${sug.chips.map(h => `<button data-st="${h}">${h}</button>`).join('')}</div>` : ''}
+    <div class="meta"><span>${sp && !sp.invalid ? `<span class="num">${C.hm(sp.minutes)}</span> שעות${d.breakMin ? ` אחרי ${d.breakMin} דק׳ הפסקה` : ''}` : E(ev.errors[0] || '')}</span>
+      <span class="fig">${ev.total != null ? money(ev.total, d.currency) : d.rateUnknown ? '<span class="q-amt">יחושב כשהתעריף יוזן</span>' : ''}</span></div>
+    ${ev.warnings.map(w => `<div class="note">${E(w)}</div>`).join('')}
+    <div class="adds">${d.rateUnknown ? '' : '<button data-act="ru">לא יודע את התעריף</button>'}${Number(d.bonus) ? '' : '<button data-act="bon">+ בונוס</button>'}<button data-act="ext" aria-pressed="${extra}">${extra ? 'פחות' : 'הפסקה · צוות · חוזר'}</button></div>
+    ${extra ? extras() : ''}
+    <div class="cbtn"><button data-act="cancel">ביטול</button>${d.id ? '<button data-act="del">מחיקה</button>' : ''}<button class="go" data-act="save" ${ev.errors.length ? 'disabled' : ''}>${d.repeat ? 'הוספה ללוח' : 'רישום'}</button></div>
+  </div>`;
+}
+function extras() {
+  const d = draft;
+  return `<div class="extra">
+    <div class="r"><div class="fld"><label for="xb">הפסקה (דק׳)</label><input id="xb" type="number" inputmode="numeric" value="${d.breakMin || ''}" placeholder="0"></div>
+    <div class="fld"><label for="xc">מטבע</label><select id="xc"><option ${d.currency === '₪' ? 'selected' : ''}>₪</option><option ${d.currency === '$' ? 'selected' : ''}>$</option></select></div></div>
+    <label class="opt" style="padding:4px 0;border:0;align-items:center"><span class="l">עם צוות</span><input type="checkbox" class="tg" id="xg" ${d.group ? 'checked' : ''}></label>
+    ${d.group ? `<div class="ppl">${d.group.workers.map((w, i) => `<div class="p"><input type="checkbox" class="ck" data-wb="${i}" ${w.on !== false ? 'checked' : ''} aria-label="בונוס ל${E(w.name)}"><span>${E(w.name)}</span><input type="number" data-wv="${i}" value="${w.bonus || ''}" placeholder="בונוס" inputmode="decimal" aria-label="בונוס ל${E(w.name)}"></div>`).join('')}
+      <div class="adds">${C.WORKERS.filter(n => !d.group.workers.some(w => w.name === n)).map(n => `<button data-aw="${E(n)}">+ ${E(n)}</button>`).join('')}</div>
+      ${d.group.workers.length ? `<div class="sugs">הבונוס עבור${[['all', 'כולם'], ['me', 'רק אני'], ['others', 'רק הצוות']].map(([v, l]) => `<button data-bt="${v}" style="${d.bonusTarget === v ? 'background:var(--accent);color:var(--on-accent)' : ''}">${l}</button>`).join('')}</div>` : ''}</div>` : ''}
+    ${d.id ? '' : `<label class="opt" style="padding:4px 0;border:0;align-items:center"><span class="l">חוזרת כל שבוע</span><input type="checkbox" class="tg" id="xr" ${d.repeat ? 'checked' : ''}></label>`}
+    ${d.repeat ? (() => { const p = C.previewRule({ ...d, days: d.repeat.days, from: d.date, until: d.repeat.until }); return `<div class="wd">${C.DAY_SHORT.map((n, i) => `<button data-wd="${i}" aria-pressed="${d.repeat.days.includes(i)}">${n}</button>`).join('')}</div>
+      <div class="r"><div class="fld"><label for="xf">מתאריך</label><input type="date" id="xf" value="${d.date}"></div><div class="fld"><label for="xu">עד</label><input type="date" id="xu" value="${d.repeat.until}"></div></div>
+      <p style="margin:0">ייכנסו ללוח <b class="num">${p.dates.length}</b> משמרות${p.clashes.length ? `. <span style="color:var(--warn)">${p.clashes.length} חופפות למשמרות קיימות ולא ייווצרו פעמיים</span>` : ''}.</p>`; })() : ''}
+    <div class="fld"><label for="xn">הערה</label><input id="xn" value="${E(d.notes)}" placeholder="לא חובה"></div>
+  </div>`;
+}
+function journal() {
+  const done = S().shifts.filter(s => s.date === day).sort((a, b) => a.start.localeCompare(b.start));
+  const pl = C.occurrences().filter(o => o.date === day);
+  const sep = S().settings.planningView === 'separate';
+  const m = done.reduce((a, s) => a + C.shiftMinutes(s), 0);
+  const inline = draft && !draft.id && !listMode;
+  return `<div class="two"><div>${lede()}${weekStrip()}</div><div>
+    <div class="agenda-h"><h2>${E(C.dayLabel(day))}</h2><span>${m ? `<span class="num">${C.hours(m)}</span> שעות` : ''}</span></div>
+    ${timer && day === C.today() ? `<div class="entry" style="cursor:default"><span class="tm num" id="tick">0:00:00</span><span class="wh">במשמרת מ-${E(timer.start)}</span><span class="am"><button class="btn-s" data-act="stop">סיום</button></span></div>` : ''}
+    ${done.map(s => draft && draft.id === s.id ? composer() : entry(s)).join('')}
+    ${sep && day > C.today() ? '' : pl.map(entry).join('')}
+    ${inline ? composer() : `<button class="add-line" data-act="add"><b>+</b>רישום משמרת ל${E(C.dayLabel(day))}</button>`}
+    ${day === C.today() && !timer && !draft ? '<button class="add-line" data-act="start" style="color:var(--muted)"><b style="border-color:var(--muted)">▸</b>התחלתי עכשיו — להפעיל שעון</button>' : ''}
+    <div class="toolbar"><button class="btn-s" data-act="list">כל המשמרות ברשימה</button>${sep ? '<button class="btn-s" data-go="plan">תכנון</button>' : ''}</div>
+  </div></div>`;
+}
+function list() {
+  const sep = S().settings.planningView === 'separate', f = sep ? 'done' : filter;
+  const occ = C.occurrences(), done = S().shifts.filter(s => C.ym(s.date) === month).sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start));
+  return `<div class="toolbar" style="margin-top:4px"><button class="btn-s" data-act="list">→ חזרה לשבוע</button>${sep ? '' : `<div class="seg" role="group" aria-label="סינון">${[['all', 'הכול'], ['done', 'בוצעו'], ['planned', 'מתוכננות']].map(([v, l]) => `<button data-f="${v}" aria-pressed="${filter === v}">${l}</button>`).join('')}</div>`}</div>
+    ${f !== 'done' ? `<div class="agenda-h"><h2>מה בלוח</h2><span>${occ.length}</span></div>${occ.slice(0, f === 'all' ? 4 : 60).map(entry).join('') || '<p style="color:var(--muted)">שום דבר לא מתוכנן.</p>'}` : ''}
+    ${f !== 'planned' ? `<div class="agenda-h"><h2>${E(C.monthName(month))}</h2><span style="display:flex;gap:6px"><button class="btn-s" data-act="pm" aria-label="חודש קודם">→</button><button class="btn-s" data-act="nm" aria-label="חודש הבא">←</button></span></div>
+      ${done.map(s => draft && draft.id === s.id ? composer() : entry(s)).join('') || '<p style="color:var(--muted)">אין רישומים בחודש הזה.</p>'}<p style="color:var(--muted);font-size:14px;text-align:center;margin-top:14px">לחיצה ארוכה לבחירה של כמה רישומים</p>` : ''}`;
+}
+function monthView() {
+  const st = C.monthStats(month), ins = C.insights(st), cur = Object.entries(st.byCur);
+  const first = C.parseYmd(month + '-01'), lead = first.getDay(), n = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const occ = C.occurrences();
+  const max = Math.max(1, ...Array.from({ length: n }, (_, i) => st.list.filter(s => Number(s.date.slice(8)) === i + 1).reduce((a, s) => a + C.shiftMinutes(s), 0)));
+  const cells = Array.from({ length: lead }, () => '<span class="c out"></span>').concat(Array.from({ length: n }, (_, i) => {
+    const d = `${month}-${C.pad(i + 1)}`, list = st.list.filter(s => s.date === d), m = list.reduce((a, s) => a + C.shiftMinutes(s), 0);
+    const pl = !m && occ.some(o => o.date === d);
+    const bg = m ? `background:color-mix(in oklab,var(--accent) ${Math.round(25 + m / max * 75)}%,var(--sunk));color:${m / max > .55 ? 'var(--on-accent)' : 'var(--ink)'}` : '';
+    return `<button class="c${d === C.today() ? ' td' : ''}${pl ? ' pl' : ''}${list.some(s => s.total == null) ? ' wq' : ''}" style="${bg}" data-jump="${d}" aria-label="${E(C.dayLabel(d))}${m ? ', ' + C.hours(m) + ' שעות' : ''}">${i + 1}</button>`;
+  }));
+  return `<div class="agenda-h" style="margin-top:4px"><h2>${E(C.monthName(month))}</h2><span style="display:flex;gap:6px"><button class="btn-s" data-act="pm" aria-label="חודש קודם">→</button><button class="btn-s" data-act="nm" aria-label="חודש הבא">←</button></span></div>
+  <div class="two"><div><div class="cal">${C.DAY_SHORT.map(x => `<span class="h">${x}</span>`).join('')}${cells.join('')}</div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>יותר שעות</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--accent)"></i>מתוכנן</span><span><i style="background:var(--warn);border-radius:50%;width:8px;height:8px"></i>חסר תעריף</span></div></div>
+  <div><div class="facts">
+    ${cur.map(([c, v]) => `<div><small>הכנסה (${E(c)})</small><b>${money(v.total, c)}</b></div><div><small>מזה טרם שולם</small><b>${money(v.unpaid, c)}</b></div>`).join('')}
+    <div><small>שעות</small><b class="num">${C.hours(st.minutes)}</b></div><div><small>משמרות</small><b class="num">${st.count}</b></div>
+  </div>
+  ${ins.length ? `<div style="display:grid;gap:10px;margin-top:20px">${ins.map(x => `<p class="lede" style="font-size:19px;margin:0">${E(x.text)}.</p>`).join('')}</div>` : ''}
+  <button class="read" data-act="wr">לקרוא את ${E(C.MONTH[Number(month.slice(5)) - 1])} שלך</button></div></div>`;
+}
+function plan() {
+  const rules = S().rules.filter(r => r.until >= C.today());
+  return `<div class="agenda-h" style="margin-top:4px"><h2>משמרות קבועות</h2></div>
+    ${rules.map(r => `<div class="entry" style="cursor:default"><span class="tm num">${r.start}–${r.end}<small>${r.days.map(x => C.DAY_SHORT[x]).join(' ')}</small></span><span class="wh">${E(C.cat(r.cat).name)}</span><span class="am"><button class="btn-s" data-rr="${r.id}">${r.rate == null ? 'תעריף?' : E(C.money(r.rate, r.currency))}</button></span><span class="sub">עוד ${C.futureCount(r.id)} עד ${C.shortDate(r.until)}</span></div>`).join('')}
+    <button class="add-line" data-act="addrep"><b>+</b>משמרת קבועה חדשה</button>
+    ${draft && draft.repeat ? composer() : ''}
+    <div class="agenda-h"><h2>השבועיים הקרובים</h2></div>${C.occurrences().filter(o => o.date <= C.addDays(C.today(), 14)).map(o => entry({ ...o })).join('')}`;
+}
+function settings() {
+  const s = S().settings;
+  const ex = (k, html) => explain === k ? `<div class="explain">${html}</div>` : '';
+  return `<h2 class="sec-t" style="margin-top:6px">רישום</h2>
+  <div class="opt"><div class="l">מקום עבודה קבוע<small>יופיע ראשון ברישום חדש</small></div><select id="sd">${S().cats.map(c => `<option value="${c.id}" ${c.id === s.defaultCat ? 'selected' : ''}>${E(c.name)}</option>`).join('')}</select></div>
+  <div class="opt"><div class="l">משמרות קבועות נרשמות לבד<small>כשהשעה עוברת, המשמרת נכנסת לחישוב. <button class="what" data-ex="auto">איך מבטלים?</button></small>${ex('auto', '<p style="margin:0">המשמרת מופיעה עם הסימון "נרשמה לבד". נוגעים בה כדי לשנות שעות או למחוק. אם מכבים את האפשרות, כל משמרת קבועה תחכה לאישור שלך.</p>')}</div><input type="checkbox" class="tg" id="sa" ${s.autoConfirm ? 'checked' : ''} aria-label="רישום אוטומטי"></div>
+  <h2 class="sec-t">התראות</h2>
+  <div class="opt"><div class="l">כשהסיכום של החודש מוכן</div><input type="checkbox" class="tg" id="sm" ${s.notifyMonthly ? 'checked' : ''} aria-label="סיכום חודשי"></div>
+  <div class="opt"><div class="l">כשיש משמרות בלי תעריף<small>רק אם יש, ולא יותר מ-</small><select id="sf" style="margin-top:6px"><option value="weekly" ${s.rateFrequency === 'weekly' ? 'selected' : ''}>פעם בשבוע</option><option value="monthly" ${s.rateFrequency === 'monthly' ? 'selected' : ''}>פעם בחודש</option></select></div><input type="checkbox" class="tg" id="sr" ${s.notifyRate ? 'checked' : ''} aria-label="תזכורת תעריף"></div>
+  <h2 class="sec-t">רישום במילים</h2>
+  <div class="opt"><div class="l">${s.aiKey ? 'מחובר עם מפתח Gemini שלך' : 'כותבים משפט, והמשמרת מתמלאת'}<small><button class="what" data-ex="ai">מה צריך בשביל זה?</button></small>
+    ${ex('ai', '<p style="margin:0">מפתח אישי וחינמי מ-Google. לוקח דקה:</p><ol><li>נכנסים ל-Google AI Studio</li><li>Get API key → Create</li><li>מדביקים את המפתח כאן</li></ol><p style="margin:0;color:var(--muted)">המפתח נשאר רק במכשיר שלך ולא נשלח אלינו.</p><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">לפתיחת Google AI Studio ↗</a>')}</div>
+    <button class="btn-s" data-act="ai">${s.aiKey ? 'ניתוק' : 'חיבור'}</button></div>
+  <h2 class="sec-t">גיבוי</h2>
+  <div class="opt"><div class="l">שמירה לקובץ<small>כולל משמרות קבועות ובונוסים</small></div><button class="btn-s" data-act="noop">ייצוא</button></div>
+  <div class="opt"><div class="l">טעינה מקובץ</div><button class="btn-s" data-act="noop">ייבוא</button></div>
+  <p style="display:flex;gap:10px;align-items:center;color:var(--muted);font-size:14px;margin-top:24px"><span style="width:28px;display:inline-block">${LOGO}</span>חישוב שכר 2.0 · כיוון "יומן"</p>`;
+}
+function render() {
+  const sep = S().settings.planningView === 'separate';
+  if (view === 'plan' && !sep) view = 'journal';
+  const tabs = [['journal', 'יומן'], ...(sep ? [['plan', 'תכנון']] : []), ['month', 'החודש'], ['set', 'הגדרות']];
+  $('#app').innerHTML = `<header class="mast"><div class="word">${LOGO}<span>חישוב שכר</span></div><div class="mo">${E(C.MONTH[C.now().getMonth()])}<small class="num">${C.now().getFullYear()}</small></div></header>
+    <nav class="tabs" aria-label="ניווט ראשי">${tabs.map(([k, l]) => `<button data-go="${k}" ${view === k ? 'aria-current="page"' : ''}>${l}</button>`).join('')}</nav>
+    ${view === 'journal' ? (listMode ? list() : journal()) : view === 'month' ? monthView() : view === 'plan' ? plan() : settings()}`;
+  $('#fab').hidden = view === 'set' || !!draft || sel.size > 0;
+  selbar();
+}
+function selbar() {
+  let b = $('#selbar');
+  if (!sel.size) { b?.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.id = 'selbar'; b.className = 'selbar'; document.body.append(b); }
+  const pend = S().shifts.filter(s => sel.has(s.id) && s.rate == null).length;
+  b.innerHTML = `<div class="in"><strong>${C.pl(sel.size, 'רישום אחד נבחר', '# רישומים נבחרו')}</strong>${pend ? `<button data-act="bulk">השלמת תעריף · ${pend}</button>` : ''}<button data-act="paid">שולם</button><button data-act="unsel">ביטול</button></div>`;
+}
+function sheet(html, mount) { $('#layer').innerHTML = `<div class="scrim" data-act="cs"></div><div class="sheet" role="dialog" aria-modal="true"><div class="in">${html}</div></div>`; mount?.(); }
+function bulk() {
+  const ids = [...sel];
+  const draw = r => {
+    const p = r > 0 ? C.bulkRatePreview(ids, r) : null;
+    sheet(`<h3>השלמת תעריף</h3><p style="margin:0;color:var(--muted)">יעודכנו רק רישומים שחסר בהם תעריף. סכומים שכבר נשמרו לא משתנים.</p>
+      <div class="fld"><label for="br">תעריף לשעה</label><input id="br" type="number" inputmode="decimal" value="${r || ''}"></div>
+      ${p ? p.target.map(s => `<div class="entry" style="cursor:default"><span class="tm num">${s.start}–${s.end}<small>${E(C.dayLabel(s.date))}</small></span><span class="wh">${E(C.cat(s.cat).name)}</span><span class="am">${money(s.newTotal, s.currency)}</span></div>`).join('') + (p.skipped ? `<div class="note">${p.skipped} כבר עם תעריף ולא ישתנו</div>` : '') : ''}
+      <div class="cbtn"><button data-act="cs">ביטול</button><button class="go" id="bok" ${p && p.target.length ? '' : 'disabled'}>עדכון</button></div>`, () => {
+      const i = $('#br'); i.focus(); i.oninput = () => { clearTimeout(i._t); i._t = setTimeout(() => draw(Number(i.value)), 350); };
+      $('#bok').onclick = () => { const n = C.bulkRateApply(ids, r).length; sel.clear(); $('#layer').innerHTML = ''; C.toast(C.pl(n, 'רישום אחד עודכן', '# רישומים עודכנו')); };
+    });
+  };
+  draw(0);
+}
+function occEdit(key) {
+  const o = C.occurrences().find(x => x.key === key);
+  sheet(`<h3>${E(C.dayLabel(o.date))}, ${E(C.cat(o.cat).name)}</h3><div class="extra" style="border:0;padding:0"><div class="r"><div class="fld"><label for="os">התחלה</label><input type="time" id="os" value="${o.start}"></div><div class="fld"><label for="oe">סיום</label><input type="time" id="oe" value="${o.end}"></div></div></div>
+    <div class="cbtn"><button id="o2">מהיום והלאה</button><button class="go" id="o1">רק הפעם</button></div>`, () => {
+    const go = sc => { C.editOcc(key, { start: $('#os').value, end: $('#oe').value }, sc); $('#layer').innerHTML = ''; openOcc = null; C.toast(sc === 'one' ? 'שונה רק הפעם' : 'שונה מהיום והלאה'); };
+    $('#o1').onclick = () => go('one'); $('#o2').onclick = () => go('all');
+  });
+}
+function ruleRate(id) {
+  const r = S().rules.find(x => x.id === id), n = C.futureCount(id);
+  sheet(`<h3>תעריף למשמרת הקבועה</h3><p style="margin:0;color:var(--muted)">יחול על ${n} המשמרות הבאות בלוח. רישומים קיימים לא משתנים.</p><div class="fld"><label for="rr">לשעה (${E(r.currency)})</label><input id="rr" type="number" inputmode="decimal" value="${r.rate ?? ''}"></div><div class="cbtn"><button data-act="cs">ביטול</button><button class="go" id="rok">החלה</button></div>`,
+    () => $('#rok').onclick = () => { C.applyRateToFuture(id, Number($('#rr').value)); $('#layer').innerHTML = ''; C.toast('התעריף עודכן'); });
+}
+function wrapped() {
+  const w = C.wrapped(month), st = w.st, cur = Object.entries(st.byCur), mo = C.MONTH[Number(month.slice(5)) - 1];
+  let hide = true, i = 0;
+  const pages = [
+    () => `<div class="kick">${E(C.monthName(month))}</div><h3>בחודש ${E(mo)} עבדת <em class="num">${C.hours(st.minutes)}</em> שעות.</h3><p>${st.count} משמרות, ${Object.keys(st.cats).length} מקומות עבודה.</p>`,
+    () => w.topCat ? `<div class="kick">הבית השני</div><h3>רוב הזמן היית ב<em>${E(w.topCat.name)}</em>.</h3><p><span class="num">${C.hours(w.topCat.minutes)}</span> שעות, ${Math.round(w.topCat.minutes / Math.max(1, st.minutes) * 100)} אחוז מהחודש.</p>` : '<h3>חודש שקט.</h3>',
+    () => w.longest ? `<div class="kick">הערב הארוך</div><h3>המשמרת הארוכה הייתה <em>${E(C.dayLabel(w.longest.date))}</em>, <span class="num">${w.longest.start}–${w.longest.end}</span>.</h3><p>${w.nights} פעמים סיימת אחרי אחת עשרה בלילה.</p>` : '',
+    () => `<div class="kick">הקצב</div><h3>יום ${E(w.bestDay)} היה היום שלך.</h3><p>בו עבדת יותר מבכל יום אחר בשבוע.</p>`,
+    () => `<div class="kick">השורה התחתונה</div><h3>${cur.map(([c, v]) => hide ? '<em>••••</em>' : `<em>${money(v.total, c)}</em>`).join(' ו-')}</h3><p>${st.pending ? `לא כולל ${C.pl(st.pending, 'משמרת אחת', '# משמרות')} שעוד בלי תעריף. ` : ''}הסכום מוסתר כשמשתפים.</p><button class="btn-s" data-rev style="justify-self:start">${hide ? 'הצגת הסכום' : 'הסתרה'}</button>`,
+  ].filter(f => f());
+  const el = document.createElement('div'); el.className = 'over'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'החודש שלך');
+  const draw = () => { el.innerHTML = `<div class="top"><span>חישוב שכר · ${E(C.monthName(month))}</span><span class="num">${i + 1} / ${pages.length}</span></div><div class="page">${pages[i]()}</div>
+    <div class="ctl"><button data-w="x">סגירה</button><span style="display:flex;gap:8px">${i ? '<button data-w="p">הקודם</button>' : ''}<button class="go" data-w="${i < pages.length - 1 ? 'n' : 's'}">${i < pages.length - 1 ? 'המשך' : 'שיתוף'}</button></span></div>`; };
+  el.onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.rev !== undefined) { hide = !hide; draw(); return; }
+    const a = b.dataset.w; if (a === 'x') return el.remove(); if (a === 'n') i++; if (a === 'p') i--; if (a === 's') return C.toast('בגרסה האמיתית: עמוד לשיתוף בלי סכומים'); draw(); };
+  draw(); document.body.append(el);
+}
+function brand() {
+  const el = document.createElement('div'); el.className = 'brandp'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'מיתוג');
+  el.innerHTML = `<div class="in"><div style="display:flex;justify-content:space-between"><span class="mark" style="font-size:13px">כיוון ג׳ · יומן</span><button class="btn-s" data-x aria-label="סגירה">✕</button></div>
+    <div class="bph">${LOGO}<div><h1>חישוב שכר</h1><p>יומן עבודה רגוע וכתוב, בצבעים של ערב.</p></div></div>
+    <p class="lede" style="font-size:20px">הסמל הוא שמש על קו האופק: תחילת משמרת וסופה. הממשק בנוי כמו יומן: שבוע של ימים, ומתחתיו מה קרה בכל יום, במשפטים. רושמים משמרת כמו שאומרים אותה: "ביום חמישי עבדתי במסעדה מ-17 עד 22:30".</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;align-items:start">
+      <div class="homescr">${'<div><span class="ic"></span><span>&nbsp;</span></div>'.repeat(6)}<div><span style="width:56px">${LOGO}</span><span>חישוב שכר</span></div><div><span class="ic"></span><span>&nbsp;</span></div></div>
+      <div style="display:grid;gap:6px"><small style="color:var(--muted)">Frank Ruhl Libre · כותרות</small><span class="serif" style="font-size:40px;font-weight:900;line-height:1.1">ערב ארוך במסעדה</span><small style="color:var(--muted)">Assistant · טקסט</small><span style="font-size:19px">שולם · כולל בונוס ₪50</span></div>
+    </div>
+    <div class="sws">${[['ערב', 'var(--bg)', 'var(--ink)'], ['משטח', 'var(--surface)', 'var(--ink)'], ['משמש', 'var(--accent)', 'var(--on-accent)'], ['חסר', 'var(--warn)', 'var(--bg)'], ['דיו', 'var(--ink)', 'var(--bg)']].map(([n, b, f]) => `<div style="background:${b};color:${f}">${n}</div>`).join('')}</div></div>`;
+  el.onclick = e => { if (e.target.closest('[data-x]')) el.remove(); };
+  document.body.append(el);
+}
+
+/* ---------- events ---------- */
+const reDraft = () => { const c = $('#compose'); if (!c) return render(); const tmp = document.createElement('div'); tmp.innerHTML = composer(); c.replaceWith(tmp.firstElementChild); };
+document.addEventListener('click', e => {
+  const t = e.target.closest('button,[data-occ],[data-id]'); if (!t) return;
+  const ds = t.dataset;
+  if (draft && t.closest('#compose')) {
+    if (ds.st) { draft.start = ds.st; draft._touched = true; return reDraft(); }
+    if (ds.wd) { const n = +ds.wd, a = draft.repeat.days; draft.repeat.days = a.includes(n) ? a.filter(x => x !== n) : [...a, n].sort(); return reDraft(); }
+    if (ds.aw) { draft.group.workers.push({ name: ds.aw, bonus: 0 }); return reDraft(); }
+    if (ds.bt) { draft.bonusTarget = ds.bt; draft.group.workers.forEach(w => { w.on = ds.bt !== 'me'; w.bonus = ds.bt === 'me' ? 0 : Number(draft.bonus) || 0; }); return reDraft(); }
+  }
+  if (ds.go) { view = ds.go; listMode = false; draft = null; sel.clear(); openOcc = null; render(); scrollTo(0, 0); return; }
+  if (ds.day) { day = ds.day; if (draft && !draft.id) { draft.date = day; } render(); return; }
+  if (ds.jump) { day = ds.jump; weekStart = C.addDays(day, -C.weekday(day)); view = 'journal'; listMode = false; render(); scrollTo(0, 0); return; }
+  if (ds.f) { filter = ds.f; render(); return; }
+  if (ds.ex) { explain = explain === ds.ex ? null : ds.ex; render(); return; }
+  if (ds.rr) return ruleRate(ds.rr);
+  if (ds.occ && !ds.act) { openOcc = openOcc === ds.occ ? null : ds.occ; render(); return; }
+  if (ds.id && !ds.act && !t.closest('#compose')) { if (sel.size) { sel.has(ds.id) ? sel.delete(ds.id) : sel.add(ds.id); render(); return; } draft = C.draftFromShift(S().shifts.find(s => s.id === ds.id)); extra = !!(draft.group || draft.breakMin || draft.notes); render(); return; }
+  const A = {
+    add: () => { if (view !== 'journal' || listMode) { view = 'journal'; listMode = false; } draft = C.newDraft({ date: day }); extra = false; render(); requestAnimationFrame(() => $('#compose')?.scrollIntoView({ block: 'center', behavior: 'smooth' })); },
+    addrep: () => { draft = C.newDraft({ repeat: { days: [C.weekday(C.today())], until: C.addDays(C.today(), 56) } }); extra = true; render(); },
+    cancel: () => { draft = null; render(); },
+    save: () => { const was = draft.id, r = C.saveDraft(draft); if (!r.ok) return; draft = null; render(); C.toast(r.rule ? `${C.previewRule(r.rule).dates.length} משמרות נוספו ללוח` : was ? 'הרישום עודכן' : 'נרשם'); },
+    del: () => { const s = C.deleteShift(draft.id); draft = null; render(); C.toast('הרישום נמחק', 'ביטול', () => C.restoreShift(s)); },
+    ru: () => { draft.rateUnknown = true; reDraft(); }, rk: () => { draft.rateUnknown = false; draft.rate = draft.rate ?? C.cat(draft.cat).rate ?? ''; reDraft(); },
+    bon: () => { draft.bonus = 50; reDraft(); requestAnimationFrame(() => $('#cb')?.focus()); },
+    ext: () => { extra = !extra; reDraft(); },
+    pw: () => { weekStart = C.addDays(weekStart, -7); day = weekStart; render(); }, nw: () => { weekStart = C.addDays(weekStart, 7); day = weekStart; render(); },
+    pm: () => { month = C.prevMonth(month); render(); }, nm: () => { month = C.nextMonth(month); render(); },
+    list: () => { listMode = !listMode; draft = null; render(); scrollTo(0, 0); },
+    pending: () => { view = 'journal'; listMode = true; filter = 'done'; sel = new Set(S().shifts.filter(s => s.rate == null).map(s => s.id)); render(); },
+    start: () => { timer = { start: C.fromMin(C.nowMin()), at: Date.now() }; render(); },
+    stop: () => { const st = timer.start; timer = null; draft = C.newDraft({ start: st, end: C.fromMin(C.nowMin()) }); render(); },
+    ok: () => { C.confirmOcc(openOcc); openOcc = null; C.toast('נרשם'); }, no: () => { const k = openOcc; C.cancelOcc(k); openOcc = null; C.toast('בוטלה', 'ביטול', () => C.restoreOcc(k)); },
+    eo: () => occEdit(openOcc), bulk, paid: () => { C.setPaid([...sel], true); C.toast(C.pl(sel.size, 'סומן כשולם', '# סומנו כשולמו')); sel.clear(); render(); }, unsel: () => { sel.clear(); render(); },
+    cs: () => { $('#layer').innerHTML = ''; }, wr: () => wrapped(), ai: () => { S().settings.aiKey = !S().settings.aiKey; C.commit(); }, noop: () => C.toast('לא פעיל באב-טיפוס'),
+  };
+  A[ds.act]?.();
+});
+document.addEventListener('change', e => {
+  const t = e.target, s = S().settings;
+  if (draft) {
+    if (t.id === 'cd' && t.value) { draft.date = t.value; day = t.value; weekStart = C.addDays(day, -C.weekday(day)); if (!draft.id && !draft._touched) { const g = C.suggestStart(draft.cat, draft.date); if (g.start) draft.start = g.start; } return render(); }
+    if (t.id === 'cc') { C.setDraftCat(draft, t.value); return reDraft(); }
+    if (t.id === 'cs' && t.value) { draft.start = t.value; draft._touched = true; return reDraft(); }
+    if (t.id === 'ce' && t.value) { draft.end = t.value; return reDraft(); }
+    if (t.id === 'cr') { draft.rate = t.value; return reDraft(); }
+    if (t.id === 'cb') { draft.bonus = t.value; return reDraft(); }
+    if (t.id === 'xb') { draft.breakMin = t.value; return reDraft(); }
+    if (t.id === 'xc') { draft.currency = t.value; return reDraft(); }
+    if (t.id === 'xg') { draft.group = t.checked ? { workers: [] } : null; return reDraft(); }
+    if (t.id === 'xr') { draft.repeat = t.checked ? { days: [C.weekday(draft.date)], until: C.addDays(draft.date, 56) } : null; return reDraft(); }
+    if (t.id === 'xf' && t.value) { draft.date = t.value; return reDraft(); }
+    if (t.id === 'xu') { draft.repeat.until = t.value; return reDraft(); }
+    if (t.dataset.wb) { draft.group.workers[t.dataset.wb].on = t.checked; return; }
+  }
+  if (t.id === 'sa') { s.autoConfirm = t.checked; C.commit(); if (t.checked) { const x = C.catchUp(); C.commit(); if (x.length) C.toast(C.pl(x.length, 'משמרת אחת נרשמה', '# משמרות נרשמו'), 'ביטול', () => C.undoAuto(x)); } }
+  if (t.id === 'sm') { s.notifyMonthly = t.checked; C.commit(); }
+  if (t.id === 'sr') { s.notifyRate = t.checked; C.commit(); }
+  if (t.id === 'sf') { s.rateFrequency = t.value; C.commit(); }
+  if (t.id === 'sd') { s.defaultCat = t.value; C.commit(); }
+});
+document.addEventListener('input', e => { const t = e.target; if (!draft) return; if (t.id === 'xn') draft.notes = t.value; if (t.dataset.wv) draft.group.workers[t.dataset.wv].bonus = Number(t.value) || 0; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('#layer').innerHTML) $('#layer').innerHTML = ''; else if (draft) { draft = null; render(); } document.querySelector('.over,.brandp')?.remove(); } });
+C.longPress(document.body, '.entry[data-id]', el => { sel.add(el.dataset.id); render(); });
+setInterval(() => { const el = $('#tick'); if (el && timer) { const s = Math.floor((Date.now() - timer.at) / 1000); el.textContent = `${Math.floor(s / 3600)}:${C.pad(Math.floor(s / 60) % 60)}:${C.pad(s % 60)}`; } }, 1000);
+C.subscribe(() => { if (!draft) render(); });
+C.mountPanel({ name: 'כיוון ג׳ · יומן', onBrand: brand, onWrapped: () => { month = C.ym(C.today()); wrapped(); } });
+render();
+const auto = C.catchUp(); if (auto.length) { C.commit(); C.toast(C.pl(auto.length, 'משמרת קבועה הסתיימה ונרשמה', '# משמרות קבועות הסתיימו ונרשמו'), 'ביטול', () => C.undoAuto(auto)); }
+})();
+</script>
