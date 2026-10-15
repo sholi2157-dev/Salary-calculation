@@ -7,7 +7,7 @@
 :root{
   --bg:#EDF0F5; --surface:#FFFFFF; --sunk:#E2E6EE; --ink:#0D1015; --muted:#5D6573; --line:#D6DBE4;
   --accent:#0D1015; --on-accent:#FFFFFF;
-  --k0:#FF5A36; --k1:#10A87A; --k2:#3A63F5; --k3:#F5A300;
+  --k0:#E2552F; --k1:#0B8F6C; --k2:#3352C9; --k3:#E3A21A;
   --k0-ink:#FFFFFF; --k1-ink:#FFFFFF; --k2-ink:#FFFFFF; --k3-ink:#2A1C00;
   --warn:#B25E00; --warn-soft:#FFEBC7;
   --font-body:"Rubik",system-ui,"Segoe UI",Arial,sans-serif;
@@ -105,6 +105,31 @@ nav.pill{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));inse
 nav.pill button{border:0;background:none;color:color-mix(in oklab,var(--bg) 70%,transparent);min-height:48px;padding-inline:14px;border-radius:99px;font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px}
 nav.pill button[aria-current=page]{background:var(--bg);color:var(--ink)}
 nav.pill .plus{background:var(--k0);color:#fff;width:48px;padding:0;justify-content:center;font-size:26px;line-height:1}
+
+.modes{display:flex;background:color-mix(in oklab,var(--pass-ink) 16%,transparent);border-radius:12px;padding:3px;gap:2px}
+.modes button{flex:1;border:0;background:none;color:inherit;min-height:36px;border-radius:9px;font-weight:600;cursor:pointer;opacity:.85}
+.modes button[aria-pressed=true]{background:var(--pass-ink);color:var(--pass);opacity:1}
+.cseg{display:inline-flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.chipline .cseg button{border:0;border-radius:0;flex:0 0 46px;width:46px;min-width:46px;padding:0;justify-content:center;background:var(--surface)}
+.chipline .cseg button[aria-pressed=true]{background:var(--ink);color:var(--bg);box-shadow:none}
+.datechip{position:relative}
+.datechip input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0}
+.go-start{background:var(--k1)!important;color:#fff;border-color:var(--k1)!important;font-size:17px!important;min-height:60px!important}
+.linkish{display:block;margin:10px auto 0;border:0;background:none;color:var(--muted);font-weight:600;text-decoration:underline;text-underline-offset:4px;cursor:pointer;min-height:40px}
+.live-card{margin-top:22px;border-radius:18px;padding:16px 18px;background:var(--pass);color:var(--pass-ink);display:grid;gap:8px}
+.lc-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-weight:600}
+.lc-top select{background:color-mix(in oklab,var(--pass-ink) 15%,transparent);color:inherit;border:0;border-radius:10px;min-height:36px;padding-inline:8px;font-weight:600;max-width:55%}
+.lc-top option{color:#111}
+.lc-clock{font-size:52px;line-height:1}
+.lc-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lc-acts button{flex:1;min-height:50px;border-radius:14px;border:2px solid color-mix(in oklab,var(--pass-ink) 40%,transparent);background:none;color:inherit;font-weight:700;cursor:pointer}
+.lc-acts .go{flex:2;background:var(--pass-ink);color:var(--pass);border-color:var(--pass-ink)}
+.live-card .dot{background:var(--pass-ink);box-shadow:0 0 0 0 var(--pass-ink)}
+nav.pill{inset:auto 0 0 0;bottom:0;width:auto;max-width:none;margin:0;border-radius:0;justify-content:space-around;padding:6px max(10px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));box-shadow:none;border-top:1px solid color-mix(in oklab,var(--bg) 12%,transparent)}
+nav.pill button{flex:1;justify-content:center;border-radius:12px}
+nav.pill .plus{flex:0 0 52px;height:52px;border-radius:16px;margin-top:-22px;box-shadow:0 8px 20px rgb(0 0 0/.25)}
+.pass{border-radius:18px}
+.card{border-radius:14px}
 /* Add page */
 .add-page{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;grid-template-rows:auto 1fr auto;animation:up .32s cubic-bezier(.2,.8,.2,1)}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
@@ -341,6 +366,9 @@ const Core = (() => {
     add(-9, 'c1', '20:00', '02:00', { bonus: 50, notes: 'סגירה של אירוע פרטי' });
     add(-6, 'c4', '18:00', '01:00', { rate: null, notes: 'חתונה — התעריף עוד לא סוכם' });
     add(-2, 'c4', '19:00', '00:30', { rate: null });
+    // Hours-only entry (the existing "ידני" mode): no clock times.
+    shifts.push({ id: uid(), cat: 'c3', date: addDays(t, -3), start: null, end: null, hours: 3.5, breakMin: 0, rate: 35, currency: '$', bonus: 0,
+      total: round2(3.5 * 35), paid: false, notes: 'תיקוני לוגו מהבית', group: null, auto: false, ruleKey: null });
     add(-12, 'c4', '17:30', '23:30', {
       rate: 45, bonus: 40,
       group: { workers: [{ name: 'נועה', bonus: 40 }, { name: 'איתי', bonus: 40 }, { name: 'מאיה', bonus: 0 }] },
@@ -354,7 +382,7 @@ const Core = (() => {
       from: addDays(t, 1), until: addDays(t, 40),
     }];
     return {
-      v: 1, cats: CATS.map(c => ({ ...c })), workers: [...WORKERS], shifts, rules, exceptions: {},
+      v: 2, cats: CATS.map(c => ({ ...c })), workers: [...WORKERS], shifts, rules, exceptions: {},
       settings: {
         autoConfirm: true, notifyMonthly: true, notifyRate: true, rateFrequency: 'weekly',
         planningView: 'unified', defaultCat: 'c1', aiKey: false, theme: 'system',
@@ -366,7 +394,7 @@ const Core = (() => {
   function load(direction) {
     KEY = 'salary-v2-proto-' + direction;
     try { state = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { state = null; }
-    if (!state || state.v !== 1) state = seed();
+    if (!state || state.v !== 2) state = seed();
     clockOffset = state.clockOffset || 0;
     return state;
   }
@@ -377,6 +405,19 @@ const Core = (() => {
   function advance(minutes) { clockOffset += minutes; state.clockOffset = clockOffset; const done = catchUp(); commit(); return done; }
 
   const cat = id => state.cats.find(c => c.id === id) || state.cats[0];
+
+  const shiftMinutes = s => s.start ? span(s.start, s.end, s.breakMin).minutes : Math.round((s.hours || 0) * 60);
+  const timeLabel = s => s.start ? `${s.start}–${s.end}` : `${hours(shiftMinutes(s))} שעות`;
+
+  /* ---------- live timer (persists like the current app's active shift) ---------- */
+  function startTimer(catId) { state.timer = { date: today(), start: fromMin(nowMin()), cat: catId || state.settings.defaultCat, at: now().getTime() }; commit(); }
+  function timerElapsed() { return state.timer ? Math.max(0, Math.floor((now().getTime() - state.timer.at) / 1000)) : 0; }
+  function stopTimer() {
+    const t = state.timer; state.timer = null; commit();
+    const d = newDraft({ start: t.start, end: fromMin(nowMin()), date: t.date }); setDraftCat(d, t.cat); d.start = t.start; return d;
+  }
+  function cancelTimer() { const t = state.timer; state.timer = null; commit(); return t; }
+  function restoreTimer(t) { state.timer = t; commit(); }
 
   /* ---------- planned shifts ---------- */
   const occKey = (ruleId, date) => `${ruleId}@${date}`;
@@ -443,7 +484,7 @@ const Core = (() => {
     const dates = [];
     for (let d = rule.from; d <= rule.until; d = addDays(d, 1)) if (rule.days.includes(weekday(d))) dates.push(d);
     const occ = occurrences();
-    const clashes = dates.filter(d => occ.some(o => o.date === d && overlaps(o, rule)) || state.shifts.some(s => s.date === d && overlaps(s, rule)));
+    const clashes = dates.filter(d => occ.some(o => o.date === d && overlaps(o, rule)) || state.shifts.some(s => s.date === d && s.start && overlaps(s, rule)));
     return { dates, clashes };
   }
   function overlaps(a, b) {
@@ -455,7 +496,7 @@ const Core = (() => {
   /* ---------- drafts (add / edit shift) ---------- */
   function suggestStart(catId, date) {
     const same = state.shifts.filter(s => s.cat === catId && weekday(s.date) === weekday(date));
-    const mode = list => { const m = {}; list.forEach(s => m[s.start] = (m[s.start] || 0) + 1); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+    const mode = list => { const m = {}; list.forEach(s => { if (s.start) m[s.start] = (m[s.start] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
     const strong = mode(same);
     const chips = mode(state.shifts.filter(s => s.cat === catId)).slice(0, 3).map(x => x[0]);
     const fallback = chips.length ? chips : mode(state.shifts).slice(0, 3).map(x => x[0]);
@@ -463,23 +504,36 @@ const Core = (() => {
   }
   function newDraft(over = {}) {
     const c = cat(state.settings.defaultCat);
-    const d = { id: null, cat: c.id, date: today(), start: null, end: roundedEnd(), breakMin: 0, rate: c.rate, rateUnknown: c.rate == null,
+    const d = { id: null, mode: 'clock', hours: '', cat: c.id, date: today(), start: null, end: roundedEnd(), breakMin: 0, rate: c.rate, rateUnknown: c.rate == null,
       currency: c.currency, bonus: 0, bonusTarget: 'me', notes: '', group: null, repeat: null, ...over };
     if (!over.start) d.start = suggestStart(d.cat, d.date).start;
     return d;
   }
   function draftFromShift(s) {
-    return { id: s.id, cat: s.cat, date: s.date, start: s.start, end: s.end, breakMin: s.breakMin, rate: s.rate, rateUnknown: s.rate == null,
+    return { id: s.id, mode: !s.start ? 'hours' : s.group ? 'group' : 'clock', hours: s.hours ?? '', cat: s.cat, date: s.date, start: s.start, end: s.end || roundedEnd(), breakMin: s.breakMin, rate: s.rate, rateUnknown: s.rate == null,
       currency: s.currency, bonus: s.bonus, bonusTarget: 'me', notes: s.notes, group: s.group ? JSON.parse(JSON.stringify(s.group)) : null, repeat: null, auto: s.auto };
   }
   function setDraftCat(d, id) {
     const c = cat(id); d.cat = id; d.currency = c.currency;
     if (!d.id) { d.rate = c.rate; d.rateUnknown = c.rate == null; const s = suggestStart(id, d.date); if (s.start) d.start = s.start; }
   }
+  function setMode(d, m) {
+    d.mode = m;
+    if (m === 'group' && !d.group) d.group = { workers: [] };
+    if (m !== 'group') d.group = null;
+  }
   function evaluate(d) {
     const errors = [], warnings = [];
-    if (!d.start) errors.push('בחר שעת התחלה');
-    const sp = d.start ? span(d.start, d.end, d.breakMin) : null;
+    let sp;
+    if (d.mode === 'hours') {
+      const h = Number(d.hours);
+      if (!(h > 0)) errors.push('הזן מספר שעות');
+      else if (h > 24) errors.push('יותר מ-24 שעות ביום');
+      sp = h > 0 ? { minutes: Math.round(h * 60), overnight: false, invalid: false } : null;
+    } else {
+      if (!d.start) errors.push('בחר שעת התחלה');
+      sp = d.start ? span(d.start, d.end, d.breakMin) : null;
+    }
     if (sp && sp.invalid) errors.push(sp.reason);
     if (sp && sp.long) warnings.push('משמרת של יותר מ-16 שעות. לוודא?');
     if (sp && sp.overnight && toMin(d.end) > toMin(d.start) - 60 && sp.minutes > 20 * 60) warnings.push('נראה כמו טעות בשעות');
@@ -498,7 +552,8 @@ const Core = (() => {
       state.rules.push(r); const done = catchUp(); commit();
       return { ok: true, rule: r, auto: done };
     }
-    const rec = { cat: d.cat, date: d.date, start: d.start, end: d.end, breakMin: Number(d.breakMin) || 0, rate: d.rateUnknown ? null : Number(d.rate),
+    const hoursOnly = d.mode === 'hours';
+    const rec = { cat: d.cat, date: d.date, start: hoursOnly ? null : d.start, end: hoursOnly ? null : d.end, hours: hoursOnly ? Number(d.hours) : undefined, breakMin: Number(d.breakMin) || 0, rate: d.rateUnknown ? null : Number(d.rate),
       currency: d.currency, bonus: ev.bonus, total: ev.total, notes: d.notes, group: d.group };
     if (d.id) { const s = state.shifts.find(x => x.id === d.id); Object.assign(s, rec, { auto: false }); }
     else state.shifts.push({ id: uid(), paid: false, auto: false, ruleKey: null, ...rec });
@@ -511,19 +566,18 @@ const Core = (() => {
   function bulkRatePreview(ids, rate) {
     const list = state.shifts.filter(s => ids.includes(s.id));
     const target = list.filter(s => s.rate == null);
-    return { target: target.map(s => ({ ...s, newTotal: round2(span(s.start, s.end, s.breakMin).minutes / 60 * rate + (s.bonus || 0)) })), skipped: list.length - target.length };
+    return { target: target.map(s => ({ ...s, newTotal: round2(shiftMinutes(s) / 60 * rate + (s.bonus || 0)) })), skipped: list.length - target.length };
   }
   function bulkRateApply(ids, rate) {
     const done = [];
     for (const s of state.shifts) if (ids.includes(s.id) && s.rate == null) {
-      s.rate = rate; s.total = round2(span(s.start, s.end, s.breakMin).minutes / 60 * rate + (s.bonus || 0)); done.push(s.id);
+      s.rate = rate; s.total = round2(shiftMinutes(s) / 60 * rate + (s.bonus || 0)); done.push(s.id);
     }
     commit(); return done;
   }
   function setPaid(ids, paid) { state.shifts.forEach(s => { if (ids.includes(s.id)) s.paid = paid; }); commit(); }
 
   /* ---------- summaries ---------- */
-  const shiftMinutes = s => span(s.start, s.end, s.breakMin).minutes;
   function monthStats(k) {
     const list = state.shifts.filter(s => ym(s.date) === k);
     const byCur = {};
@@ -560,7 +614,7 @@ const Core = (() => {
     const st = monthStats(k);
     const longest = st.list.reduce((a, s) => (!a || shiftMinutes(s) > shiftMinutes(a) ? s : a), null);
     const topCat = Object.entries(st.cats).sort((a, b) => b[1] - a[1])[0];
-    const nights = st.list.filter(s => span(s.start, s.end).overnight || toMin(s.end) >= 23 * 60).length;
+    const nights = st.list.filter(s => s.start && span(s.start, s.end).overnight || toMin(s.end) >= 23 * 60).length;
     const bestDay = st.days.indexOf(Math.max(...st.days));
     return { st, longest, topCat: topCat ? { name: cat(topCat[0]).name, minutes: topCat[1] } : null, nights, bestDay: DAY[bestDay] };
   }
@@ -632,7 +686,7 @@ const Core = (() => {
     span, endDateTime, money, pl, hours, hm, round2, esc, load, save, commit, subscribe, reset, advance, cat, get state() { return state; },
     occurrences, catchUp, undoAuto, confirmOcc, cancelOcc, restoreOcc, editOcc, futureCount, applyRateToFuture, previewRule,
     suggestStart, newDraft, draftFromShift, setDraftCat, evaluate, saveDraft, deleteShift, restoreShift, bulkRatePreview, bulkRateApply, setPaid,
-    shiftMinutes, monthStats, insights, wrapped, toast, setTheme, applyTheme, mountPanel, longPress, WORKERS,
+    shiftMinutes, timeLabel, setMode, startTimer, stopTimer, cancelTimer, restoreTimer, timerElapsed, monthStats, insights, wrapped, toast, setTheme, applyTheme, mountPanel, longPress, WORKERS,
   };
 })();
 
@@ -642,7 +696,19 @@ C.load('b-kis'); C.applyTheme();
 const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="19" fill="var(--ink)"/><g stroke-linecap="round" stroke-width="7"><path d="M19 44V30" stroke="var(--k0)"/><path d="M32 44V20" stroke="var(--k3)"/><path d="M45 44V25" stroke="var(--k1)"/></g><path d="M19 44h26" stroke="var(--bg)" stroke-width="7" stroke-linecap="round"/></svg>`;
 const hue = id => C.cat(id).hue;
 const pv = id => `--pass:var(--k${hue(id)});--pass-ink:var(--k${hue(id)}-ink)`;
-let view = 'home', filter = 'all', month = C.ym(C.today()), openPass = null, openOcc = null, sel = new Set(), d = null, tgt = 'end', buf = '', more = false, timer = null;
+let view = 'home', filter = 'all', month = C.ym(C.today()), openPass = null, openOcc = null, sel = new Set(), d = null, tgt = 'end', buf = '', more = false, confirmCancel = false;
+function timerBlock() {
+  const t = S().timer;
+  if (!t) return `<div class="now"><button class="go-start" data-act="start"><span class="dot" style="background:#fff;box-shadow:none;animation:none"></span>התחל משמרת עכשיו</button></div>
+    <button class="linkish" data-act="add">או: רישום משמרת שכבר עשיתי</button>`;
+  return `<section class="live-card" style="${pv(t.cat)}" aria-live="polite">
+    <div class="lc-top"><span><span class="dot"></span> במשמרת מ-<span class="num">${E(t.start)}</span></span>
+      <select id="tcat" aria-label="מקום עבודה">${S().cats.map(c => `<option value="${c.id}" ${c.id === t.cat ? 'selected' : ''}>${E(c.name)}</option>`).join('')}</select></div>
+    <span class="disp num lc-clock" id="tick">0:00:00</span>
+    ${confirmCancel ? `<div class="lc-acts"><span>לבטל בלי לשמור?</span><button data-act="cancelYes">כן</button><button class="go" data-act="cancelNo">לא</button></div>`
+      : `<div class="lc-acts"><button data-act="cancelT">ביטול</button><button class="go" data-act="stop">סיום ושמירה</button></div>`}
+  </section>`;
+}
 const mny = (v, c) => `<span class="cur">${E(c)}</span>${E(C.money(v, "", true))}`;
 const amt = (v, c) => `<span class="num">${mny(v, c)}</span>`;
 const greet = () => { const h = C.now().getHours(); return h < 5 ? 'לילה טוב' : h < 12 ? 'בוקר טוב' : h < 17 ? 'צהריים טובים' : h < 21 ? 'ערב טוב' : 'לילה טוב'; };
@@ -672,8 +738,7 @@ function home() {
       <div class="legend"><span><span class="num">${C.hours(st.minutes)}</span>&nbsp;שעות</span><span>${st.count} משמרות</span>${st.planned ? `<span>עוד ${st.planned} מתוכננות</span>` : ''}</div>
       ${st.pending ? `<button class="flag" data-act="pending">${C.pl(st.pending, 'משמרת אחת מחכה לתעריף', '# משמרות מחכות לתעריף')} ←</button>` : ''}
     </section>
-    <div class="now">${timer ? `<button class="live" data-act="stop"><span style="display:flex;gap:10px;align-items:center"><span class="dot"></span>במשמרת</span><span class="num" id="tick">0:00:00</span><span>סיום</span></button>`
-      : `<button data-act="start"><span class="dot" style="animation:none;background:var(--k1);box-shadow:none"></span>אני מתחיל עכשיו</button>`}</div>
+    ${timerBlock()}
     ${next.length ? `<h2>הבא בתור${S().settings.planningView === 'separate' ? '<button data-go="plan">לתכנון</button>' : '<button data-go="hist" data-f="planned">הכול</button>'}</h2>${next.map(card).join('')}` : ''}
     </div><div>
     <h2>הכיס של החודש<button data-go="sum">סיכום</button></h2>
@@ -681,7 +746,7 @@ function home() {
     </div></div>`;
 }
 function card(s) {
-  const m = C.span(s.start, s.end, s.breakMin || 0).minutes, c = C.cat(s.cat), ovn = C.toMin(s.end) <= C.toMin(s.start);
+  const m = s.status ? C.span(s.start, s.end).minutes : C.shiftMinutes(s), c = C.cat(s.cat), ovn = s.start && C.toMin(s.end) <= C.toMin(s.start);
   if (s.status) {
     const open = openOcc === s.key;
     return `<div class="card plan" data-occ="${E(s.key)}" style="${pv(s.cat)}" tabindex="0"><span class="av">${E(c.name[0])}</span>
@@ -693,12 +758,12 @@ function card(s) {
   return `<div class="card${sel.has(s.id) ? ' sel' : ''}" data-id="${s.id}" style="${pv(s.cat)}" tabindex="0"><span class="av">${E(c.name[0])}</span>
     <span class="t">${E(C.dayLabel(s.date))}${s.auto ? '<span class="tag" title="נרשמה אוטומטית בסוף הזמן המתוכנן">אוטו׳</span>' : ''}${s.paid ? '' : '<span class="tag">לא שולם</span>'}</span>
     <span class="m">${s.total == null ? '<span class="tag w" style="font-size:12px">תעריף חסר</span>' : amt(s.total, s.currency)}</span>
-    <span class="s"><span class="num">${s.start}–${s.end}</span>${ovn ? ' · למחרת' : ''} · ${C.hours(m)} ש׳${s.bonus ? ' · בונוס ' + E(C.money(s.bonus, s.currency)) : ''}${s.group ? ` · ${s.group.workers.length + 1} אנשים` : ''}</span></div>`;
+    <span class="s"><span class="num">${E(C.timeLabel(s))}</span>${ovn ? ' · למחרת' : ''}${s.start ? ` · ${C.hours(m)} ש׳` : ''}${s.bonus ? ' · בונוס ' + E(C.money(s.bonus, s.currency)) : ''}${s.group ? ` · ${s.group.workers.length + 1} אנשים` : ''}</span></div>`;
 }
 function hist() {
   const sep = S().settings.planningView === 'separate', f = sep ? 'done' : filter;
   const occ = C.occurrences();
-  const done = S().shifts.filter(s => C.ym(s.date) === month).sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start));
+  const done = S().shifts.filter(s => C.ym(s.date) === month).sort((a, b) => (b.date + (b.start || '')).localeCompare(a.date + (a.start || '')));
   const weeks = {};
   done.forEach(s => { const k = C.addDays(s.date, -C.weekday(s.date)); (weeks[k] ||= []).push(s); });
   const wl = k => k === C.addDays(C.today(), -C.weekday(C.today())) ? 'השבוע' : `שבוע של ${C.shortDate(k)}`;
@@ -756,7 +821,8 @@ const VIEWS = { home, hist, plan, sum, set: settings };
 function nav() {
   const sep = S().settings.planningView === 'separate';
   const items = [['home', 'בית'], ['hist', 'היסטוריה'], ...(sep ? [['plan', 'תכנון']] : []), ['sum', 'סיכום'], ['set', 'הגדרות']];
-  $('#nav').innerHTML = items.map(([k, l]) => `<button data-go="${k}" ${view === k ? 'aria-current="page"' : ''}>${l}</button>`).join('') + `<button class="plus" data-act="add" aria-label="משמרת חדשה">+</button>`;
+  const btn = ([k, l]) => `<button data-go="${k}" ${view === k ? 'aria-current="page"' : ''}>${l}</button>`, mid = Math.ceil(items.length / 2);
+  $('#nav').innerHTML = items.slice(0, mid).map(btn).join('') + `<button class="plus" data-act="add" aria-label="משמרת חדשה">+</button>` + items.slice(mid).map(btn).join('');
 }
 function render() {
   if (view === 'plan' && S().settings.planningView !== 'separate') view = 'hist';
@@ -765,7 +831,7 @@ function render() {
 
 /* ---------- add page with keypad ---------- */
 const KEYS_TIME = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '⌫'];
-function openAdd(draft) { d = draft; tgt = d.start ? 'end' : 'start'; buf = ''; more = !!(d.group || d.repeat || d.bonus || d.breakMin); drawAdd(true); }
+function openAdd(draft) { d = draft; tgt = d.mode === 'hours' ? 'hours' : d.start ? 'end' : 'start'; buf = ''; more = !!(d.repeat || d.breakMin || d.notes); drawAdd(true); }
 function shown(k) {
   if (tgt === k && buf) { if (k === 'start' || k === 'end') { const b = buf.padEnd(4, '·'); return b.slice(0, 2) + ':' + b.slice(2); } return buf; }
   if (k === 'start') return d.start || '--:--'; if (k === 'end') return d.end;
@@ -780,23 +846,26 @@ function drawAdd(first) {
   el.style.cssText = pv(d.cat);
   el.innerHTML = `<div class="ap-top"><div class="ap-in">
       <div class="ap-bar"><button data-act="closeAdd">ביטול</button><strong>${d.id ? 'עריכה' : d.repeat ? 'משמרת קבועה' : 'משמרת חדשה'}</strong>${d.id ? '<button data-act="del">מחיקה</button>' : '<span style="width:64px"></span>'}</div>
+      <div class="modes" role="group" aria-label="סוג רישום">${[['clock', 'שעון'], ['hours', 'ידני'], ['group', 'קבוצה']].map(([v, l]) => `<button data-mode="${v}" aria-pressed="${d.mode === v}">${l}</button>`).join('')}</div>
       <div class="cats" role="group" aria-label="מקום עבודה">${S().cats.map(x => `<button data-cat="${x.id}" aria-pressed="${x.id === d.cat}">${E(x.name)}</button>`).join('')}</div>
-      <div class="clock">
+      ${d.mode === 'hours' ? `<div class="clock" style="grid-template-columns:1fr"><button data-t="hours" aria-pressed="${tgt === 'hours'}" class="${d.hours || (tgt === 'hours' && buf) ? '' : 'empty'}"><small>כמה שעות</small><span class="disp num">${E(shown('hours') || '0')}</span></button></div>` : `<div class="clock">
         <button data-t="start" class="${d.start || (tgt === 'start' && buf) ? '' : 'empty'}" aria-pressed="${tgt === 'start'}"><small>התחלה</small><span class="disp num">${E(shown('start'))}</span></button>
         <span class="arrow">←</span>
         <button data-t="end" aria-pressed="${tgt === 'end'}"><small>סיום</small><span class="disp num">${E(shown('end'))}</span></button>
-      </div>
+      </div>`}
       <div class="ap-meta"><span>${ev.span && !ev.span.invalid ? `<span class="num">${C.hm(ev.span.minutes)}</span> שעות ${ev.span.overnight ? '<span class="nx">עד למחרת</span>' : ''}` : ev.errors[0] ? E(ev.errors[0]) : ''}</span>
         <span>${ev.total != null ? `<span class="disp" style="font-size:24px">${amt(ev.total, d.currency)}</span>` : d.rateUnknown ? 'תעריף חסר' : ''}</span></div>
     </div></div>
     <div class="ap-mid"><div class="ap-in">
+      ${d.mode === 'group' ? groupBlock() : ''}
       ${!d.start && isTime ? `<div class="chipline"><span style="font-size:13px;color:var(--muted)">התחלה נפוצה:</span>${sug.chips.map(h => `<button class="sug" data-start="${h}">${h}</button>`).join('')}</div>` : ''}
       <div class="days7" role="group" aria-label="יום">${days.map(x => { const dd = C.parseYmd(x); return `<button data-date="${x}" aria-pressed="${d.date === x}">${x === C.today() ? 'היום' : C.DAY_SHORT[dd.getDay()]}<b class="num">${dd.getDate()}</b></button>`; }).join('')}</div>
       ${d.date < days[0] ? `<div class="msg err">${E(C.dayLabel(d.date))}</div>` : ''}
       <div class="chipline">
         ${d.rateUnknown ? `<button class="w" data-act="rateKnown">תעריף חסר · להוספה</button>` : `<button data-t="rate" aria-pressed="${tgt === 'rate'}"><span class="num">${E(d.currency)}${E(shown('rate'))}</span>/שעה</button><button data-act="rateUnknown">לא יודע</button>`}
+        <span class="cseg" role="group" aria-label="מטבע">${['₪', '$'].map(c => `<button data-cur="${c}" aria-pressed="${d.currency === c}">${c}</button>`).join('')}</span>
         <button data-t="bonus" aria-pressed="${tgt === 'bonus'}">${d.bonus || (tgt === 'bonus' && buf) ? `בונוס <span class="num">${E(d.currency)}${E(shown('bonus'))}</span>` : '+ בונוס'}</button>
-        <label>תאריך אחר<input type="date" id="dt" value="${d.date}" style="width:20px;opacity:0;position:absolute" aria-label="תאריך אחר"></label>
+        <label class="datechip">📅 תאריך אחר<input type="date" id="dt" value="${d.date}" aria-label="תאריך אחר"></label>
         <button data-act="more" aria-expanded="${more}">${more ? 'פחות' : 'עוד'}</button>
       </div>
       ${ev.warnings.map(w => `<div class="msg">${E(w)}</div>`).join('')}
@@ -804,24 +873,28 @@ function drawAdd(first) {
     </div></div>
     <div class="keypad"><div class="keys">
       ${KEYS_TIME.map((k, i) => { const key = !isTime && k === '00' ? '.' : k; return `<button data-k="${key}" class="${key === '00' || key === '.' || key === '⌫' ? 'alt' : ''}" style="grid-column:${i % 3 + 1}">${key}</button>`; }).join('')}
-      <button class="tgt" data-act="nextTgt" style="grid-row:1">${isTime ? (tgt === 'start' ? 'לסיום ←' : 'לתעריף ←') : 'לשעות ←'}</button>
+      <button class="tgt" data-act="nextTgt" style="grid-row:1">${tgt === 'start' ? 'לסיום ←' : tgt === 'end' || tgt === 'hours' ? 'לתעריף ←' : 'לשעות ←'}</button>
       <button class="save" data-act="save" style="grid-row:2 / span 3" ${ev.errors.length ? 'disabled' : ''}>${d.repeat ? 'יצירת<br>סדרה' : 'שמירה'}</button>
     </div></div>`;
 }
 function moreBlock() {
   return `<div class="drawer">
-    <div class="row2"><div class="field"><label for="brk">הפסקה (דק׳)</label><input type="number" id="brk" inputmode="numeric" value="${d.breakMin || ''}" placeholder="0"></div>
-    <div class="field"><label for="cur">מטבע</label><select id="cur"><option ${d.currency === '₪' ? 'selected' : ''}>₪</option><option ${d.currency === '$' ? 'selected' : ''}>$</option></select></div></div>
+    ${d.mode === 'hours' ? '' : `<div class="field"><label for="brk">הפסקה (דקות)</label><input type="number" id="brk" inputmode="numeric" value="${d.breakMin || ''}" placeholder="0"></div>`}
     <div class="field"><label for="nt">הערה</label><input id="nt" value="${E(d.notes)}" placeholder="לא חובה"></div>
-    <label class="tog">עבדתי עם צוות<input type="checkbox" class="sw" id="grp" ${d.group ? 'checked' : ''}></label>
-    ${d.group ? `<div style="display:grid;gap:8px">${d.group.workers.map((w, i) => `<div class="wk"><input type="checkbox" class="sw" data-wb="${i}" ${w.on !== false ? 'checked' : ''} aria-label="בונוס ל${E(w.name)}"><span>${E(w.name)}</span><input type="number" data-wv="${i}" value="${w.bonus || ''}" placeholder="בונוס" inputmode="decimal" aria-label="בונוס ל${E(w.name)}"></div>`).join('')}
-      <div class="chipline">${C.WORKERS.filter(n => !d.group.workers.some(w => w.name === n)).map(n => `<button data-addw="${E(n)}">+ ${E(n)}</button>`).join('')}</div>
-      ${d.group.workers.length ? `<div class="chipline"><span style="font-size:13px;color:var(--muted)">הבונוס של ${E(d.currency)}${d.bonus || 0} הולך ל:</span>${[['all', 'כולם'], ['me', 'רק אני'], ['others', 'רק הצוות']].map(([v, l]) => `<button data-bt="${v}" aria-pressed="${d.bonusTarget === v}">${l}</button>`).join('')}</div>` : ''}</div>` : ''}
-    ${d.id ? '' : `<label class="tog">חוזרת כל שבוע<input type="checkbox" class="sw" id="rep" ${d.repeat ? 'checked' : ''}></label>`}
-    ${d.repeat ? (() => { const p = C.previewRule({ ...d, days: d.repeat.days, from: d.date, until: d.repeat.until }); return `<div class="dsel" role="group" aria-label="ימים">${C.DAY_SHORT.map((n, i) => `<button data-day="${i}" aria-pressed="${d.repeat.days.includes(i)}">${n}</button>`).join('')}</div>
-      <div class="field"><label for="until">עד תאריך</label><input type="date" id="until" value="${d.repeat.until}"></div>
-      <div class="msg err"><strong class="num">${p.dates.length}</strong> משמרות ייכנסו ללוח${p.clashes.length ? ` · ${p.clashes.length} חופפות למשמרת קיימת ולא ייווצרו פעמיים` : ''}</div>`; })() : ''}
+    ${d.id || d.mode === 'hours' ? '' : `<label class="tog">חוזרת כל שבוע<input type="checkbox" class="sw" id="rep" ${d.repeat ? 'checked' : ''}></label>`}
+    ${d.repeat ? repeatBits() : ''}
   </div>`;
+}
+function groupBlock() {
+  return `<div class="drawer"><strong>מי עבד איתך</strong>${d.group ? `<div style="display:grid;gap:8px">${d.group.workers.map((w, i) => `<div class="wk"><input type="checkbox" class="sw" data-wb="${i}" ${w.on !== false ? 'checked' : ''} aria-label="בונוס ל${E(w.name)}"><span>${E(w.name)}</span><input type="number" data-wv="${i}" value="${w.bonus || ''}" placeholder="בונוס" inputmode="decimal" aria-label="בונוס ל${E(w.name)}"></div>`).join('')}
+      <div class="chipline">${C.WORKERS.filter(n => !d.group.workers.some(w => w.name === n)).map(n => `<button data-addw="${E(n)}">+ ${E(n)}</button>`).join('')}</div>
+      ${d.group.workers.length ? `<div class="chipline"><span style="font-size:13px;color:var(--muted)">הבונוס של ${E(d.currency)}${d.bonus || 0} הולך ל:</span>${[['all', 'כולם'], ['me', 'רק אני'], ['others', 'רק הצוות']].map(([v, l]) => `<button data-bt="${v}" aria-pressed="${d.bonusTarget === v}">${l}</button>`).join('')}</div>` : '<span style="font-size:13px;color:var(--muted)">הבונוס נקבע דרך "+ בונוס" ואז בוחרים למי</span>'}</div>` : ''}</div>`;
+}
+function repeatBits() {
+  const p = C.previewRule({ ...d, days: d.repeat.days, from: d.date, until: d.repeat.until });
+  return `<div class="dsel" role="group" aria-label="ימים">${C.DAY_SHORT.map((n, i) => `<button data-day="${i}" aria-pressed="${d.repeat.days.includes(i)}">${n}</button>`).join('')}</div>
+      <div class="field"><label for="until">עד תאריך</label><input type="date" id="until" value="${d.repeat.until}"></div>
+      <div class="msg err"><strong class="num">${p.dates.length}</strong> משמרות ייכנסו ללוח${p.clashes.length ? ` · ${p.clashes.length} חופפות למשמרת קיימת ולא ייווצרו פעמיים` : ''}</div>`;
 }
 function commitBuf() {
   if (!buf) return true;
@@ -928,6 +1001,8 @@ document.addEventListener('click', e => {
     if (ds.k) return key(ds.k);
     if (ds.t) { commitBuf(); tgt = ds.t; drawAdd(); return; }
     if (ds.cat) { commitBuf(); C.setDraftCat(d, ds.cat); drawAdd(); return; }
+    if (ds.mode) { commitBuf(); C.setMode(d, ds.mode); tgt = ds.mode === 'hours' ? 'hours' : d.start ? 'end' : 'start'; drawAdd(); return; }
+    if (ds.cur) { d.currency = ds.cur; drawAdd(); return; }
     if (ds.date) { d.date = ds.date; if (!d.id && !d._touched) { const s = C.suggestStart(d.cat, d.date); if (s.start) d.start = s.start; } drawAdd(); return; }
     if (ds.start) { d.start = ds.start; d._touched = true; tgt = 'end'; buf = ''; drawAdd(); return; }
     if (ds.day) { const n = +ds.day, a = d.repeat.days; d.repeat.days = a.includes(n) ? a.filter(x => x !== n) : [...a, n].sort(); drawAdd(); return; }
@@ -942,12 +1017,14 @@ document.addEventListener('click', e => {
   const A = {
     add: () => openAdd(C.newDraft(ds.repeat ? { repeat: { days: [C.weekday(C.today())], until: C.addDays(C.today(), 56) } } : {})),
     closeAdd, more: () => { more = !more; drawAdd(); },
-    nextTgt: () => { commitBuf(); tgt = { start: 'end', end: 'rate', rate: 'start', bonus: 'start' }[tgt]; if (tgt === 'rate' && d.rateUnknown) tgt = 'start'; drawAdd(); },
+    nextTgt: () => { commitBuf(); tgt = { start: 'end', end: 'rate', hours: 'rate', rate: d.mode === 'hours' ? 'hours' : 'start', bonus: d.mode === 'hours' ? 'hours' : 'start' }[tgt]; if (tgt === 'rate' && d.rateUnknown) tgt = d.mode === 'hours' ? 'hours' : 'start'; drawAdd(); },
     rateUnknown: () => { d.rateUnknown = true; if (tgt === 'rate') tgt = 'end'; drawAdd(); }, rateKnown: () => { d.rateUnknown = false; d.rate = d.rate ?? ''; tgt = 'rate'; buf = ''; drawAdd(); },
     save: () => { commitBuf(); const was = d.id, r = C.saveDraft(d); if (!r.ok) { drawAdd(); return; } closeAdd(); C.toast(r.rule ? `נוצרו ${C.previewRule(r.rule).dates.length} משמרות קבועות` : was ? 'עודכן' : 'נשמר ✓'); },
     del: () => { const s = C.deleteShift(d.id); closeAdd(); C.toast('נמחקה', 'ביטול', () => C.restoreShift(s)); },
-    start: () => { timer = { start: C.fromMin(C.nowMin()), at: Date.now() }; render(); },
-    stop: () => { const st = timer.start; timer = null; openAdd(C.newDraft({ start: st, end: C.fromMin(C.nowMin()) })); },
+    start: () => { C.startTimer(); C.toast('התחלת! השעון ממשיך גם אם סוגרים את האפליקציה'); },
+    stop: () => { confirmCancel = false; openAdd(C.stopTimer()); },
+    cancelT: () => { confirmCancel = true; render(); }, cancelNo: () => { confirmCancel = false; render(); },
+    cancelYes: () => { confirmCancel = false; const t = C.cancelTimer(); C.toast('המשמרת הפעילה בוטלה', 'שחזור', () => C.restoreTimer(t)); },
     pending: () => { view = 'hist'; filter = 'done'; sel = new Set(S().shifts.filter(s => s.rate == null).map(s => s.id)); render(); },
     pm: () => { month = C.prevMonth(month); render(); }, nm: () => { month = C.nextMonth(month); render(); },
     okOcc: () => { C.confirmOcc(openOcc); openOcc = null; C.toast('נרשמה ✓'); },
@@ -963,13 +1040,12 @@ document.addEventListener('change', e => {
   if (d) {
     if (t.id === 'dt' && t.value) { d.date = t.value; drawAdd(); return; }
     if (t.id === 'until') { d.repeat.until = t.value; drawAdd(); return; }
-    if (t.id === 'grp') { d.group = t.checked ? { workers: [] } : null; drawAdd(); return; }
     if (t.id === 'rep') { d.repeat = t.checked ? { days: [C.weekday(d.date)], until: C.addDays(d.date, 56) } : null; drawAdd(); return; }
-    if (t.id === 'cur') { d.currency = t.value; drawAdd(); return; }
     if (t.dataset.wb) { d.group.workers[t.dataset.wb].on = t.checked; return; }
     if (t.id === 'brk') { d.breakMin = t.value; drawAdd(); return; }
   }
   const s = S().settings;
+  if (t.id === 'tcat') { S().timer.cat = t.value; C.commit(); return; }
   if (t.id === 'auto') { s.autoConfirm = t.checked; C.commit(); if (t.checked) { const x = C.catchUp(); C.commit(); if (x.length) C.toast(C.pl(x.length, 'משמרת אחת נרשמה', '# משמרות נרשמו'), 'ביטול', () => C.undoAuto(x)); } }
   if (t.id === 'nmo') { s.notifyMonthly = t.checked; C.commit(); }
   if (t.id === 'nr') { s.notifyRate = t.checked; C.commit(); }
@@ -983,7 +1059,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { if ($('#layer').innerHTML) closeSheet(); else if (d) closeAdd(); document.querySelector('.over,.brandp')?.remove(); }
 });
 C.longPress(document.body, '.card[data-id]', el => { sel.add(el.dataset.id); render(); });
-setInterval(() => { const el = $('#tick'); if (el && timer) { const s = Math.floor((Date.now() - timer.at) / 1000); el.textContent = `${Math.floor(s / 3600)}:${C.pad(Math.floor(s / 60) % 60)}:${C.pad(s % 60)}`; } }, 1000);
+setInterval(() => { const el = $('#tick'); if (el && S().timer) { const s = C.timerElapsed(); el.textContent = `${Math.floor(s / 3600)}:${C.pad(Math.floor(s / 60) % 60)}:${C.pad(s % 60)}`; } }, 1000);
 C.subscribe(() => { if (!d) render(); });
 C.mountPanel({ name: 'כיוון ב׳ · כיס', onBrand: brand, onWrapped: () => { month = C.ym(C.today()); wrapped(); } });
 render();

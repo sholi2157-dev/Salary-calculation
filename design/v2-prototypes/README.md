@@ -6,7 +6,14 @@ Synthetic data only. Not product code; nothing here ships.
 |---|---|---|
 | A · סרגל (ruler, precise, light) | `a-sargel.html` | https://claude.ai/artifact/LZkfyig9i6dh9DgRrhEAZy |
 | B · כיס (wallet, colour per workplace, keypad) | `b-kis.html` | https://claude.ai/artifact/X5t7iAtAo38mSroQMC5ykT |
-| C · יומן (journal, dark-first, sentence entry) | `c-yoman.html` | https://claude.ai/artifact/JC43BdeeBZxSHbxBrKyBWe |
+| C · יומן — dropped by owner after round 1; kept for reference | `archive/c-yoman.html` (round-1 engine build: `archive/c-yoman.dist.html`) | https://claude.ai/artifact/JC43BdeeBZxSHbxBrKyBWe |
 
 `shared/core.js` holds the common behaviour (time rounding, overnight, unknown rate, bonus, recurring series, auto-confirm with undo, summaries) so the directions differ only in design.
 Build: `python3 build.py` inlines the shared engine into `dist/`.
+
+## Round 2 (owner feedback on round 1)
+- C dropped. A and B now follow the current app's structure: summary → start shift → recent; clock / manual / group modes.
+- Fixed: "other date" did not open on phones; currency now visible as ₪/$ in the main form; start/stop/cancel shift is prominent and persists across reloads.
+- A: the ruler is display-only (accidental drags); times use the phone's own picker plus ±15.
+- B: calmer palette, docked bottom bar, smaller radii to reduce the template look.
+- Engine: hours-only ("ידני") entries supported end to end.
