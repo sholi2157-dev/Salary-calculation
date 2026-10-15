@@ -1,5 +1,8 @@
 # Salary-calculation — agent rules
 
+## Language
+Always reply to the owner in Hebrew — final answers, progress updates, questions and summaries — unless the owner explicitly asks for another language. Code, commit messages and technical identifiers may stay in English.
+
 ## Source of truth
 Before changing anything in this repository:
 1. Read this file.

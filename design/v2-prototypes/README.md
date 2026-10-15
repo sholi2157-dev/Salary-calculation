@@ -17,3 +17,6 @@ Build: `python3 build.py` inlines the shared engine into `dist/`.
 - A: the ruler is display-only (accidental drags); times use the phone's own picker plus ±15.
 - B: calmer palette, docked bottom bar, smaller radii to reduce the template look.
 - Engine: hours-only ("ידני") entries supported end to end.
+
+## Owner decision after round 2
+Owner preferred the round-1 look. A and B are restored to round 1 (commit 3b8f2d6) with only two invisible bug fixes: the "other date" picker now opens on phones, and A's advanced fields no longer overflow. Round-2 files are kept in `archive/round2/` for reference. Owner especially liked B's bottom navigation bar.
