@@ -1,5 +1,9 @@
 # Current project state
 
+## October 15 — Salary Calculation 2.0 planning (planning branch only)
+
+Owner approved the 2.0 product plan: `docs/v2-plan.md` on branch `claude/payroll-v2-planning-vrdjmp`. Current phase: design research and three interactive HTML prototypes with synthetic data. No app code, distribution branch, release, Drive file or Vercel setting changes. RC16/code24 and the eta production site remain the delivered baselines. Any merge, migration, architectural refactor, release or production change requires explicit owner approval.
+
 ## October 14 redistribution — Android RC16 and Web production delivered
 
 Owner authorized merge and redistribution of the audit fixes. Android PR #4 and Web PR #3 are merged on their separate active branches.
