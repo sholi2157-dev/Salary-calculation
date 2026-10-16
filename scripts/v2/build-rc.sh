@@ -8,19 +8,21 @@ mkdir -p release-evidence
 # A = the exact public RC16 bytes (versionCode 24), never a rebuild.
 curl -fsSL -o candidate-a.apk "https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v1.5-rc16/SalaryRC16.apk"
 echo "400e11bccd9a46e7911c498137da9ba5d23b3b86cee50f0f1ea6400f40e7cc30  candidate-a.apk" | sha256sum -c -
-# The delivered 2.0-rc1 (versionCode 25), exact bytes from its own candidate run.
-cp prev-rc/candidate-b.apk candidate-rc1.apk
-echo "$PREV_SHA  candidate-rc1.apk" | sha256sum -c -
-test "$RC_CODE" -gt 25
+# The previously delivered 2.0 candidate, exact bytes from its own candidate run.
+: "${PREV_CODE:?}" "${PREV_NAME:?}"
+cp prev-rc/candidate-b.apk candidate-prev.apk
+echo "$PREV_SHA  candidate-prev.apk" | sha256sum -c -
+test "$RC_CODE" -gt "$PREV_CODE"
+test "$PREV_CODE" -gt 24
 gradle :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true \
   -PdistributionVersionCode="$RC_CODE" -PdistributionVersionName="$RC_NAME" --no-configuration-cache --console=plain
 cp app/build/outputs/apk/release/app-release.apk candidate-b.apk
-for apk in candidate-a.apk candidate-rc1.apk candidate-b.apk app/build/outputs/apk/androidTest/release/app-release-androidTest.apk; do
+for apk in candidate-a.apk candidate-prev.apk candidate-b.apk app/build/outputs/apk/androidTest/release/app-release-androidTest.apk; do
   report="release-evidence/$(basename "$apk").txt"
   {
     case "$apk" in
       candidate-a.apk) echo "Source: public release android-v1.5-rc16 (delivered RC16)";;
-      candidate-rc1.apk) echo "Source: run $PREV_RUN artifact (delivered 2.0-rc1)";;
+      candidate-prev.apk) echo "Source: run $PREV_RUN artifact (delivered $PREV_NAME)";;
       *) echo "Source commit: $GITHUB_SHA";;
     esac
     "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
@@ -32,12 +34,12 @@ for apk in candidate-a.apk candidate-rc1.apk candidate-b.apk app/build/outputs/a
   ! grep -F 'CN=Android Debug' "$report"
 done
 python3 scripts/check-local-build.py
-RC_CODE="$RC_CODE" RC_NAME="$RC_NAME" python3 - <<'CHECK'
+RC_CODE="$RC_CODE" RC_NAME="$RC_NAME" PREV_CODE="$PREV_CODE" PREV_NAME="$PREV_NAME" python3 - <<'CHECK'
 from pathlib import Path
 import os, re
-for name, code, version in [('candidate-a.apk', '24', '1.5-rc16'), ('candidate-rc1.apk', '25', '2.0-rc1'), ('candidate-b.apk', os.environ['RC_CODE'], os.environ['RC_NAME'])]:
+for name, code, version in [('candidate-a.apk', '24', '1.5-rc16'), ('candidate-prev.apk', os.environ['PREV_CODE'], os.environ['PREV_NAME']), ('candidate-b.apk', os.environ['RC_CODE'], os.environ['RC_NAME'])]:
     report = Path(f'release-evidence/{name}.txt').read_text()
     assert re.search(r"name='com.aistudio.worktracker.qztvdw.distribution' versionCode='" + code + r"' versionName='" + re.escape(version) + "'", report), name
-print('Identity verified: same package, same permanent certificate, versionCode', os.environ['RC_CODE'], '> 25 > 24')
+print('Identity verified: same package, same permanent certificate, versionCode', os.environ['RC_CODE'], '>', os.environ['PREV_CODE'], '> 24')
 CHECK
 sha256sum candidate-b.apk | tee release-evidence/candidate-b.sha256

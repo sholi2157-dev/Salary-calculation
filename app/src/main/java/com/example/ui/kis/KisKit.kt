@@ -8,6 +8,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -115,15 +116,18 @@ fun MoneyText(amount: Double, currency: String, style: TextStyle, modifier: Modi
 
 /** Pressed-state scale (0.97) plus a light tap haptic. */
 @Composable
-fun Modifier.kisClick(enabled: Boolean = true, role: Role? = Role.Button, haptic: KisSettings.Haptic? = KisSettings.Haptic.TAP, onClick: () -> Unit): Modifier {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+fun Modifier.kisClick(enabled: Boolean = true, role: Role? = Role.Button, haptic: KisSettings.Haptic? = KisSettings.Haptic.TAP,
+                      onLongClick: (() -> Unit)? = null, onClick: () -> Unit): Modifier {
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed && enabled) 0.97f else 1f, tween(80), label = "press")
     val settings = Kis.settings
-    return this.graphicsLayer { scaleX = scale; scaleY = scale }
-        .clickable(interactionSource = source, indication = LocalIndication.current, enabled = enabled, role = role) {
-            haptic?.let(settings::haptic); onClick()
-        }
+    val scaled = this.graphicsLayer { scaleX = scale; scaleY = scale }
+    return if (onLongClick == null) scaled.clickable(interactionSource = source, indication = LocalIndication.current, enabled = enabled, role = role) {
+        haptic?.let(settings::haptic); onClick()
+    } else scaled.combinedClickable(interactionSource = source, indication = LocalIndication.current, enabled = enabled, role = role,
+        onLongClick = { settings.haptic(KisSettings.Haptic.SELECT); onLongClick() }) { haptic?.let(settings::haptic); onClick() }
 }
 
 enum class KisButtonKind { PRIMARY, GHOST, DANGER, OUTLINE }
@@ -166,7 +170,7 @@ fun KisAction(label: String, icon: ImageVector, onClick: () -> Unit, modifier: M
 
 @Composable
 fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifier: Modifier = Modifier, dashed: Boolean = false, warn: Boolean = false,
-            leading: ImageVector? = null, tag: String? = null, minHeight: Dp = 40.dp) {
+            leading: ImageVector? = null, tag: String? = null, minHeight: Dp = 40.dp, onLongClick: (() -> Unit)? = null) {
     val c = Kis.colors
     val shape = RoundedCornerShape(12.dp)
     val bg = when { warn -> c.pendingSoft; else -> c.surface }
@@ -178,7 +182,7 @@ fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifi
             selected -> Modifier.border(2.dp, c.ink, shape)
             else -> Modifier.border(1.5.dp, c.line, shape)
         })
-        .kisClick(onClick = onClick).then(if (tag != null) Modifier.testTag(tag) else Modifier)
+        .kisClick(onLongClick = onLongClick, onClick = onClick).then(if (tag != null) Modifier.testTag(tag) else Modifier)
         .semantics { this.selected = selected }
         .padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (leading != null) Icon(leading, null, tint = fg, modifier = Modifier.size(18.dp))

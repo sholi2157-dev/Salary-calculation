@@ -167,10 +167,11 @@ fun KisApp(
             // Above the selection bar while choosing shifts, so it never covers its buttons.
             val above = if (history.selecting && pager.currentPage == 1) history.barHeight + 8.dp else navHeight
             Row(Modifier.align(Alignment.BottomCenter).padding(bottom = above, start = 16.dp, end = 16.dp)
-                .clip(RoundedCornerShape(99.dp)).background(c.bar).padding(start = 18.dp, end = 6.dp).heightIn(min = 48.dp).testTag("kis_message"),
+                .shadow(14.dp, RoundedCornerShape(99.dp), ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.25f))
+                .clip(RoundedCornerShape(99.dp)).background(c.bar).border(1.dp, c.line, RoundedCornerShape(99.dp)).padding(start = 18.dp, end = 6.dp).heightIn(min = 48.dp).testTag("kis_message"),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(m.text, style = KisType.label, color = c.onBar, modifier = Modifier.padding(vertical = 10.dp))
-                if (m.action != null) Text(m.action, style = KisType.label, color = Workplaces[3].accent(true),
+                if (m.action != null) Text(m.action, style = KisType.label, color = if (c.dark) Workplaces[3].accent(true) else Workplaces[0].from,
                     modifier = Modifier.clip(RoundedCornerShape(99.dp)).kisClick { m.onAction?.invoke(); message = null }.testTag("kis_message_action").padding(horizontal = 12.dp, vertical = 10.dp))
                 else Spacer(Modifier.width(12.dp))
             }
@@ -221,7 +222,8 @@ fun KisApp(
 internal fun PillNav(page: Int, onPage: (Int) -> Unit, onSettings: () -> Unit, onAdd: () -> Unit) {
     val c = Kis.colors
     val shape = RoundedCornerShape(99.dp)
-    Row(Modifier.shadow(18.dp, shape, ambientColor = Color.Black, spotColor = Color.Black).clip(shape).background(c.nav).border(1.dp, c.line, shape)
+    Row(Modifier.shadow(if (c.dark) 18.dp else 14.dp, shape, ambientColor = Color.Black.copy(alpha = if (c.dark) 1f else 0.3f), spotColor = Color.Black.copy(alpha = if (c.dark) 1f else 0.3f))
+        .clip(shape).background(c.nav).border(1.dp, if (c.dark) c.line else Color.White, shape)
         .padding(6.dp).testTag("bottom_navigation"), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         @Composable fun item(label: String, on: Boolean, tag: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
             Box(modifier.heightIn(min = 48.dp).clip(shape).background(if (on) c.navOn else Color.Transparent).kisClick(role = Role.Tab, onClick = onClick)

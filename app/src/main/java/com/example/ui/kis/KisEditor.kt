@@ -287,12 +287,24 @@ fun KisEditorPage(
             check.warnings.forEach { Notice(it) }
             if (d.rateUnknown && d.mode != EntryMode.JOB) Text("אפשר לשמור עכשיו ולהשלים את התעריף אחר כך — גם לכמה משמרות ביחד מההיסטוריה. עד אז היא לא נספרת בסכומים.",
                 style = KisType.caption, color = c.muted)
-            if (d.mode == EntryMode.GROUP) GroupBlock(d, workersDirectory) { d = it }
+            if (d.mode == EntryMode.GROUP) GroupBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
             if (more && d.mode != EntryMode.JOB) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (d.start != null) Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("הפסקה", style = KisType.label, color = c.ink, modifier = Modifier.weight(1f))
-                        KisChip(if (shown(KeyTarget.BREAK).isEmpty()) "בלי הפסקה" else "${shown(KeyTarget.BREAK)} דק׳", selected = pad && target == KeyTarget.BREAK, tag = "editor_break", onClick = { open(KeyTarget.BREAK) })
+                    if (d.start != null) Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("break_block")) {
+                        Text("הפסקה", style = KisType.label, color = c.ink)
+                        Text("השעות והסכום מחושבים אחרי ההפסקה", style = KisType.caption, color = c.muted)
+                        val quick = listOf(0, 15, 30, 45, 60)
+                        val custom = d.breakMin !in quick
+                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            quick.forEach { m ->
+                                KisChip(if (m == 0) "ללא" else "$m דק׳", selected = d.breakMin == m && !(pad && target == KeyTarget.BREAK), tag = "break_$m", minHeight = 44.dp, onClick = {
+                                    if (target == KeyTarget.BREAK) { buf = ""; pad = false }
+                                    d = d.copy(breakMin = m)
+                                })
+                            }
+                            KisChip(if (custom || (pad && target == KeyTarget.BREAK)) "${shown(KeyTarget.BREAK).ifEmpty { "0" }} דק׳" else "אחר", selected = custom || (pad && target == KeyTarget.BREAK),
+                                tag = "editor_break", minHeight = 44.dp, onClick = { open(KeyTarget.BREAK) })
+                        }
                     }
                     KisTextField(d.notes, { d = d.copy(notes = it) }, "הערה", Modifier.fillMaxWidth().testTag("notes_input"), placeholder = "לא חובה", singleLine = false)
                 }
@@ -509,9 +521,20 @@ private fun Notice(text: String) {
 }
 
 @Composable
-private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onDraft: (EntryDraft) -> Unit) {
+private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget: (String) -> Unit, onDraft: (EntryDraft) -> Unit) {
     val c = Kis.colors
     var newName by rememberSaveable { mutableStateOf("") }
+    var forgetting by rememberSaveable { mutableStateOf<String?>(null) }
+    forgetting?.let { name ->
+        KisSheet(onDismiss = { forgetting = null }, tag = "forget_worker_sheet") {
+            Text("להסיר את $name מהרשימה?", style = KisType.title, color = c.ink)
+            Text("השם לא יוצע יותר. משמרות קודמות שבהן הוא עבד לא משתנות.", style = KisType.body, color = c.muted)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                KisButton("ביטול", { forgetting = null }, Modifier.weight(1f), KisButtonKind.GHOST)
+                KisButton("הסרה", { onForget(name); forgetting = null }, Modifier.weight(1f), KisButtonKind.DANGER, tag = "forget_worker_confirm")
+            }
+        }
+    }
     KisCard(padding = PaddingValues(14.dp), radius = 18.dp, modifier = Modifier.testTag("group_block")) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("מי עבד איתך", style = KisType.label.copy(fontSize = 16.sp), color = c.ink)
@@ -527,8 +550,9 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onDraft:
             val defaultHours = d.check().minutes?.let { KisFormat.hours(it / 60.0) } ?: d.hours
             val suggestions = directory.map { it.name.trim() }.filter { n -> n.isNotEmpty() && d.workers.none { it.name == n } }.distinct()
             if (suggestions.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                suggestions.forEach { n -> KisChip("+ $n", onClick = { onDraft(d.copy(workers = d.workers + WorkerDraft(n, defaultHours))) }, tag = "add_worker_$n") }
+                suggestions.forEach { n -> KisChip("+ $n", onClick = { onDraft(d.copy(workers = d.workers + WorkerDraft(n, defaultHours))) }, tag = "add_worker_$n", onLongClick = { forgetting = n }) }
             }
+            if (suggestions.isNotEmpty()) Text("לחיצה ארוכה על שם מסירה אותו מהרשימה", style = KisType.micro, color = c.muted)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 KisTextField(newName, { newName = it }, "עובד חדש", Modifier.weight(1f).testTag("worker_name_input"))
                 Icon(Icons.Rounded.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(c.ink)

@@ -763,6 +763,9 @@ class WorkViewModel(
     }
 
     /** Group workers' payment marks and bonuses live in the group JSON; nothing else changes. */
+    /** Forgets a saved worker name (suggestion list only). History keeps every worker it recorded. */
+    fun forgetWorker(name: String) { viewModelScope.launch { repository.forgetWorker(name) } }
+
     fun updateGroupWorkers(entry: WorkEntry, workers: List<com.example.data.WorkPay.Worker>) {
         viewModelScope.launch {
             val current = repository.getEntryById(entry.id) ?: return@launch

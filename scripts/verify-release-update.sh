@@ -32,10 +32,10 @@ grep -F "Status: ok" release-evidence/offline-start.txt
 run_stage restart
 adb push candidate-b.apk "/sdcard/Android/data/$pkg/files/candidate-b.apk"
 run_stage updater
-# The owner's real path: RC16 → the delivered 2.0-rc1 → this candidate, data kept at every step.
-if [ -f candidate-rc1.apk ]; then
-  adb install -r candidate-rc1.apk | tee release-evidence/install-rc1.txt
-  run_stage restart after-rc1
+# The owner's real path: RC16 → the delivered 2.0 build → this candidate, data kept at every step.
+if [ -f candidate-prev.apk ]; then
+  adb install -r candidate-prev.apk | tee release-evidence/install-prev.txt
+  run_stage restart after-prev
 fi
 adb install -r candidate-b.apk | tee release-evidence/install-update.txt
 run_stage verify

@@ -92,4 +92,9 @@ class WorkRepository(private val workDao: WorkDao) {
         val worker = WorkerDirectory(name = name)
         workDao.insertWorker(worker)
     }
+
+    /** Removes a name from the suggestions only; shifts that already list this worker are untouched. */
+    suspend fun forgetWorker(name: String) {
+        workDao.getWorkersList().filter { it.name.trim() == name.trim() }.forEach { workDao.deleteWorkerById(it.id) }
+    }
 }

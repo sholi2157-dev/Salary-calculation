@@ -178,6 +178,8 @@ private fun StatTile(label: String, rows: List<WorkEntry>, caption: String?, mod
 private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, onCancel: () -> Unit, onCurrency: (String) -> Unit) {
     val c = Kis.colors
     var confirmCancel by rememberSaveable { mutableStateOf(false) }
+    var confirmShort by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(live?.start) { confirmShort = false }
     Column(Modifier.padding(top = 22.dp).coachTarget(CoachTarget.SHIFT), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (live == null) {
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(18.dp)).background(c.surface).border(1.5.dp, c.line, RoundedCornerShape(18.dp))
@@ -185,6 +187,13 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
                 Box(Modifier.size(10.dp).clip(CircleShape).background(Workplaces[1].accent(c.dark)))
                 Spacer(Modifier.width(10.dp))
                 Text("אני מתחיל עכשיו", style = KisType.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+            }
+        } else if (confirmShort) {
+            // A timer stopped within its first minute is almost always a mis-tap: ask before saving a 0-hour shift.
+            Text("המשמרת נמשכה פחות מדקה. לשמור בכל זאת?", style = KisType.body, color = c.ink, modifier = Modifier.testTag("short_live_question"))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                KisButton("ביטול בלי שמירה", { confirmShort = false; onCancel() }, Modifier.weight(1f), KisButtonKind.GHOST, height = 56.dp, tag = "short_live_discard")
+                KisButton("שמירה", { confirmShort = false; onStop() }, Modifier.weight(1f), height = 56.dp, tag = "short_live_save")
             }
         } else if (confirmCancel) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -197,7 +206,9 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
             val pulse = rememberInfiniteTransition(label = "live")
             val a by pulse.animateFloat(1f, 0.35f, infiniteRepeatable(tween(800), RepeatMode.Reverse), label = "dot")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(18.dp)).background(c.ink).kisClick(haptic = KisSettings.Haptic.SUCCESS, onClick = onStop)
+                Row(Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(18.dp)).background(c.ink).kisClick(haptic = KisSettings.Haptic.SUCCESS) {
+                    if (System.currentTimeMillis() - live.start < 60_000L) confirmShort = true else onStop()
+                }
                     .testTag("live_shift_stop").padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(10.dp).clip(CircleShape).background(Workplaces[1].accent(true).copy(alpha = a)))
                     Spacer(Modifier.width(8.dp))

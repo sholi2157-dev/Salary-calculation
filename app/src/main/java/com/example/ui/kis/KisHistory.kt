@@ -35,6 +35,13 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.border
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -139,6 +146,8 @@ fun KisHistory(
                         }
                     }
                     AnimatedVisibility(ui.searching, enter = fadeIn(), exit = fadeOut()) { SearchBar(ui) }
+                    // A closed search stays visible while it filters the list: tap to edit it, ✕ to clear it.
+                    if (!ui.searching && ui.query.isNotBlank()) SearchChip(ui.query, onEdit = { ui.searching = true }, onClear = { ui.query = "" })
                     if (filter.period == Period.MONTH) MonthSwitcher(filter.month) { filter = filter.copy(month = it) }
                     else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(if (filter.period == Period.ALL) "כל התאריכים" else "${KisShare.shortDate(filter.from)}–${KisShare.shortDate(filter.to)}", style = KisType.title, color = c.ink)
@@ -219,6 +228,22 @@ private fun ToolIcon(icon: ImageVector, label: String, tag: String, onClick: () 
 }
 
 @Composable
+private fun SearchChip(query: String, onEdit: () -> Unit, onClear: () -> Unit) {
+    val c = Kis.colors
+    val shape = RoundedCornerShape(14.dp)
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(shape).background(c.surface).border(1.5.dp, c.ink, shape).testTag("history_query_chip"),
+        verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).heightIn(min = 48.dp).kisClick(onClick = onEdit).semantics { contentDescription = "עריכת החיפוש: $query" }.padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(Icons.Rounded.Search, null, tint = c.muted, modifier = Modifier.size(20.dp))
+            Text("חיפוש: ", style = KisType.label, color = c.muted)
+            Text(query, style = KisType.label, color = c.ink, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        }
+        Icon(Icons.Rounded.Close, "ניקוי החיפוש", tint = c.ink, modifier = Modifier.size(48.dp).clip(CircleShape).kisClick(onClick = onClear).testTag("history_query_clear").padding(12.dp))
+    }
+}
+
+@Composable
 private fun SearchBar(ui: HistoryUi) {
     val c = Kis.colors
     val focus = remember { FocusRequester() }
@@ -278,29 +303,45 @@ private fun SelectionBar(selected: List<WorkEntry>, rows: List<WorkEntry>, ui: H
     val c = Kis.colors
     val density = androidx.compose.ui.platform.LocalDensity.current
     val pending = selected.count { !it.payKnown && !WorkPay.isJob(it) }
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(c.bar)
+    val shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
+    Column(Modifier.fillMaxWidth().shadow(16.dp, shape, ambientColor = Color.Black.copy(alpha = 0.3f), spotColor = Color.Black.copy(alpha = 0.3f)).clip(shape).background(c.bar)
         .onSizeChanged { ui.barHeight = with(density) { it.height.toDp() } }.navigationBarsPadding()
-        .padding(horizontal = 16.dp, vertical = 12.dp).testTag("selection_bar"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("נבחרו ${selected.size}", style = KisType.title, color = c.onBar, modifier = Modifier.weight(1f).testTag("selection_count"))
+        .padding(horizontal = 12.dp, vertical = 10.dp).testTag("selection_bar"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("נבחרו ${selected.size}", style = KisType.title, color = c.onBar, modifier = Modifier.weight(1f).padding(start = 4.dp).testTag("selection_count"))
             BarButton(if (selected.size < rows.size) "בחירת הכול" else "ניקוי") { ui.selection = if (selected.size < rows.size) rows.map { it.id }.toSet() else emptySet() }
             BarButton("ביטול", tag = "selection_cancel") { ui.selection = emptySet() }
         }
-        FlowRowCompat {
-            BarButton("שיתוף", tag = "selection_share", onClick = onShare)
-            BarButton("העתקה", tag = "selection_copy", onClick = onCopy)
-            BarButton("שולם", tag = "selection_paid") { onPaid(true) }
-            BarButton("לא שולם", tag = "selection_unpaid") { onPaid(false) }
-            if (pending > 0) BarButton("השלמת תעריף · $pending", tag = "selection_bulk_rate", onClick = onBulk)
-            BarButton("מחיקה", tag = "selection_delete", onClick = onDelete)
+        // One full row of equal actions; completing rates is its own wide bar when it applies.
+        if (pending > 0) Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).clip(RoundedCornerShape(12.dp)).background(c.pendingSoft).kisClick(onClick = onBulk)
+            .testTag("selection_bulk_rate"), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            Text("השלמת תעריף · $pending", style = KisType.label, color = c.pending)
         }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            SelAction("שיתוף", Icons.Rounded.Share, "selection_share", Modifier.weight(1f), onClick = onShare)
+            SelAction("העתקה", Icons.Rounded.ContentCopy, "selection_copy", Modifier.weight(1f), onClick = onCopy)
+            SelAction("שולם", Icons.Rounded.CheckCircle, "selection_paid", Modifier.weight(1f)) { onPaid(true) }
+            SelAction("לא שולם", Icons.Rounded.RadioButtonUnchecked, "selection_unpaid", Modifier.weight(1f)) { onPaid(false) }
+            SelAction("מחיקה", Icons.Rounded.DeleteOutline, "selection_delete", Modifier.weight(1f), danger = true, onClick = onDelete)
+        }
+    }
+}
+
+@Composable
+private fun SelAction(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, tag: String, modifier: Modifier, danger: Boolean = false, onClick: () -> Unit) {
+    val c = Kis.colors
+    val ink = if (danger) c.danger else c.onBar
+    Column(modifier.heightIn(min = 58.dp).clip(RoundedCornerShape(12.dp)).background(c.onBar.copy(alpha = 0.08f)).kisClick(onClick = onClick).testTag(tag)
+        .padding(vertical = 7.dp, horizontal = 2.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Icon(icon, null, tint = ink, modifier = Modifier.size(22.dp))
+        Text(text, style = KisType.caption.copy(fontWeight = FontWeight.Medium), color = ink, maxLines = 1)
     }
 }
 
 @Composable
 private fun BarButton(text: String, tag: String? = null, onClick: () -> Unit) {
     val c = Kis.colors
-    Box(Modifier.heightIn(min = 42.dp).clip(RoundedCornerShape(12.dp)).background(c.onBar.copy(alpha = 0.14f)).kisClick(onClick = onClick)
+    Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(c.onBar.copy(alpha = 0.08f)).kisClick(onClick = onClick)
         .then(if (tag != null) Modifier.testTag(tag) else Modifier).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
         Text(text, style = KisType.label, color = c.onBar, maxLines = 1)
     }

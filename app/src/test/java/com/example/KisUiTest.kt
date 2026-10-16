@@ -116,6 +116,12 @@ class KisUiTest {
         shot("editor-job-$suffix")
         ui.onNodeWithTag("mode_clock").performClick()
         // Unknown rate: saving is allowed and the total says what is missing instead of ₪0.
+        // A break is one tap: 30 minutes off the shift, then back to none.
+        ui.onNodeWithTag("break_30").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_meta").assertTextContains("8:15 שעות", substring = true)
+        shot("editor-break-$suffix")
+        ui.onNodeWithTag("break_0").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_meta").assertTextContains("8:45 שעות", substring = true)
         ui.onNodeWithTag("editor_rate_unknown").performScrollTo().performClick()
         ui.onNodeWithTag("editor_meta").assertTextContains("תעריף חסר", substring = true)
         ui.onNodeWithTag("save_shift_button").assertIsEnabled()
@@ -224,6 +230,24 @@ class KisUiTest {
         ui.onNodeWithText("Excel (טבלה)").assertExists()
     }
 
+    @Test fun longPressForgetsASavedWorkerButNotHistory() {
+        val vm = model()
+        val past = WorkEntry(category = "מסעדה", date = day - 86_400_000L, isTimeRange = false, hours = 4.0, hourlyRate = 50.0, totalEarnings = 200.0, isGroupShift = true,
+            groupWorkersJson = """[{"name":"יוסי","hours":4,"isPaid":false}]""")
+        runBlocking { dao.insertWorker(WorkerDirectory(name = "יוסי")); dao.insertEntry(past) }
+        host {
+            KisEditorPage(vm, EntryDraft(category = "מסעדה", rate = "50", currency = "₪", start = "09:00", end = "13:00", day = day), null, categories, rows(),
+                runBlocking { dao.getWorkersList() }, onClose = {}, onSaved = { _, _ -> }, onDeleted = {})
+        }
+        ui.onNodeWithTag("mode_group").performClick()
+        ui.onNodeWithTag("add_worker_יוסי").performScrollTo().performTouchInput { longClick() }
+        ui.onNodeWithTag("forget_worker_sheet").assertExists()
+        ui.onNodeWithTag("forget_worker_confirm").performClick()
+        waitFor(5_000) { runBlocking { dao.getWorkersList() }.isEmpty() }
+        // The past group shift still lists the worker.
+        assertTrue(rows().single().groupWorkersJson.contains("יוסי"))
+    }
+
     @Test fun searchHasSeparateClearAndClose() {
         val vm = model()
         seed()
@@ -236,6 +260,17 @@ class KisUiTest {
         assertEquals("", state.query)
         ui.onNodeWithTag("history_search_close").performClick()
         ui.onNodeWithTag("history_search_input").assertDoesNotExist()
+        ui.onNodeWithTag("history_query_chip").assertDoesNotExist()
+        // A closed search that still filters stays visible as a chip: tap to edit, ✕ to clear.
+        ui.runOnIdle { state.query = "ארון" }
+        ui.onNodeWithTag("history_query_chip").onChildren().onFirst().assertTextContains("ארון", substring = true)
+        shot("history-search-chip")
+        ui.onNodeWithTag("history_query_chip").onChildren().onFirst().performClick()
+        ui.onNodeWithTag("history_search_input").assertExists()
+        ui.onNodeWithTag("history_search_close").performClick()
+        ui.onNodeWithTag("history_query_clear").performClick()
+        assertEquals("", state.query)
+        ui.onNodeWithTag("history_query_chip").assertDoesNotExist()
     }
 
     @Test fun detailActionsAreLargeAndDistinct() {
