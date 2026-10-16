@@ -5,6 +5,8 @@ import com.example.api.FirestoreSyncManager
 import kotlinx.coroutines.flow.Flow
 
 class WorkRepository(private val workDao: WorkDao) {
+    suspend fun exportSnapshot(): String = workDao.exportSnapshot()
+    suspend fun importBackup(backup: WorkBackup.Contents): Int = workDao.importBackup(backup)
     val allEntries: Flow<List<WorkEntry>> = workDao.getAllEntries()
     val allCategories: Flow<List<WorkCategory>> = workDao.getAllCategories()
 
@@ -16,6 +18,16 @@ class WorkRepository(private val workDao: WorkDao) {
         }
         return insertedId
     }
+
+    suspend fun insertEntries(entries: List<WorkEntry>, userId: String? = null): List<Long> {
+        val ids = workDao.insertEntriesAtomically(entries)
+        if (!userId.isNullOrBlank()) entries.zip(ids).forEach { (entry, id) ->
+            FirestoreSyncManager.saveShift(userId, entry.copy(id = id.toInt()))
+        }
+        return ids
+    }
+
+    suspend fun getEntryById(id: Int): WorkEntry? = workDao.getEntryById(id)
 
     suspend fun updateEntry(entry: WorkEntry, userId: String? = null) {
         workDao.updateEntry(entry)
@@ -38,9 +50,15 @@ class WorkRepository(private val workDao: WorkDao) {
         }
     }
 
+    suspend fun deleteEntriesById(ids: List<Int>, userId: String? = null) {
+        workDao.deleteEntriesById(ids)
+        if (!userId.isNullOrBlank()) ids.forEach { FirestoreSyncManager.deleteShift(userId, it) }
+    }
+
     suspend fun togglePaymentStatus(entry: WorkEntry, userId: String? = null) {
         val updated = entry.copy(isPaid = !entry.isPaid)
-        workDao.updateEntry(updated)
+        // A UI card can be stale after editing; only mutate the requested field.
+        workDao.setPaymentStatus(entry.id, updated.isPaid)
         if (!userId.isNullOrBlank()) {
             FirestoreSyncManager.updatePaymentStatus(userId, entry.id, updated.isPaid)
         }
@@ -74,5 +92,9 @@ class WorkRepository(private val workDao: WorkDao) {
         val worker = WorkerDirectory(name = name)
         workDao.insertWorker(worker)
     }
-}
 
+    /** Removes a name from the suggestions only; shifts that already list this worker are untouched. */
+    suspend fun forgetWorker(name: String) {
+        workDao.getWorkersList().filter { it.name.trim() == name.trim() }.forEach { workDao.deleteWorkerById(it.id) }
+    }
+}

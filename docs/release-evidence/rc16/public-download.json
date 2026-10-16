@@ -1,0 +1,8 @@
+{
+  "manifestUrl": "https://github.com/sholi2157-dev/Salary-calculation/releases/latest/download/release.json",
+  "apkUrl": "https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v1.5-rc16/SalaryRC16.apk",
+  "versionCode": 24,
+  "sha256": "400e11bccd9a46e7911c498137da9ba5d23b3b86cee50f0f1ea6400f40e7cc30",
+  "size": 19231375,
+  "anonymousDownloadMatchesTestedArtifact": true
+}

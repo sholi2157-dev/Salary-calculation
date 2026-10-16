@@ -1,0 +1,17 @@
+{
+  "path": "output/SalaryRC12.apk",
+  "identity": {
+    "versionCode": 20,
+    "versionName": "1.5-rc12",
+    "package": "com.aistudio.worktracker.qztvdw.distribution"
+  },
+  "sha256": "23d5dd54f256ba865c6b5d8e976ae7c2d3226213fbc4a64d2aa608240f64f811",
+  "certificate_sha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
+  "signature_verified": true,
+  "content_digest_verified": true,
+  "source": "repositories {\n  system: GIT\n  local_root_path: \"$PROJECT_DIR\"\n  revision: \"6a46483278d74439a5ec535d78dceaae196fe055\"\n}\n",
+  "snapshot_sha256": "4fa2e3913aed78da5e0967f1c2d1368f6e42a31ae80cb364008f87f2d1793296",
+  "snapshot_exactly_preserved": true,
+  "crash_log_bytes": 0,
+  "instrumentation_stages": 6
+}

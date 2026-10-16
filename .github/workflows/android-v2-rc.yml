@@ -1,0 +1,132 @@
+name: Android 2.0 signed release candidate (owner testing only, never published)
+# Runs only when a commit on the 2.0 branch asks for it ("[v2-rc]") or manually.
+# Signs with the permanent identity, proves the real RC16 → 2.0 update keeps data, and uploads
+# the candidate as a private workflow artifact. It never creates a Release or touches the update feed.
+on:
+  push:
+    branches: ['claude/v2-android']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: android-v2-rc-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  RC_CODE: '28'
+  RC_NAME: '2.0-rc4'
+  # The previously delivered 2.0 candidate (owner's phone): its exact bytes come from that run's artifact.
+  PREV_RUN: '38943035549'
+  PREV_SHA: '26352b7875ba7aaac80f1c89799fc1560dba4bbbcdabbc0aeea64901bdace890'
+  PREV_CODE: '27'
+  PREV_NAME: '2.0-rc3'
+jobs:
+  candidate:
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[v2-rc]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          cache-read-only: false
+      - name: Consolidated regression (logic on Debug and Release, screens on Debug)
+        run: >-
+          gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
+          --tests 'com.example.KisUiTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.OnboardingExperienceTest'
+          :app:testReleaseUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
+          -Proborazzi.test.record=true --console=plain
+      - name: Count actual Android test results
+        run: python3 scripts/summarize-android-tests.py
+      - name: Previously delivered 2.0 candidate (exact bytes from its own run)
+        uses: actions/download-artifact@v4
+        with:
+          name: salary-2.0-rc3-candidate
+          path: prev-rc
+          run-id: ${{ env.PREV_RUN }}
+          github-token: ${{ github.token }}
+      - name: Load permanent signing material
+        env:
+          KEY_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$KEY_BASE64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$CERT_SHA256"
+          umask 077
+          printf '%s' "$KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/salary-distribution.p12"
+      - name: Build signed candidate and verify identity against the delivered RC16
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/salary-distribution.p12
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        run: bash scripts/v2/build-rc.sh
+      - name: Remove runner signing files
+        if: always()
+        run: rm -f "$RUNNER_TEMP/salary-distribution.p12"
+      - name: Enable KVM for disposable emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Real RC16 → delivered 2.0 → 2.0-rc4 updates without clearing data, then 2.0 screens and crash log
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: bash scripts/verify-release-update.sh
+      - name: First launch on a separate fresh signed-install emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          avd-name: salary-onboarding-fresh
+          disable-animations: true
+          script: bash scripts/verify-onboarding-fresh.sh
+      - name: Print device screenshots for review (compressed, base64)
+        if: always()
+        run: |
+          pip install -q pillow >/dev/null 2>&1 || true
+          python3 - <<'PY'
+          import base64, glob, io, os
+          from PIL import Image
+          for f in sorted(glob.glob('release-evidence/*.png')):
+              im = Image.open(f).convert('RGB'); im.thumbnail((400, 900))
+              buf = io.BytesIO(); im.save(buf, 'JPEG', quality=72)
+              data = base64.b64encode(buf.getvalue()).decode()
+              print('@@IMG device-' + os.path.basename(f))
+              for i in range(0, len(data), 3000): print('@@B ' + data[i:i+3000])
+              print('@@END')
+          PY
+      - name: Candidate for owner review only; never publish a Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: salary-2.0-rc4-candidate
+          path: |
+            candidate-b.apk
+            release-evidence/
+          if-no-files-found: error
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-rc-failure-evidence
+          path: |
+            release-evidence/
+            app/build/test-results/
