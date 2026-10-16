@@ -106,6 +106,11 @@ const Core = (() => {
     // Hours-only entry (the existing "ידני" mode): no clock times.
     shifts.push({ id: uid(), cat: 'c3', date: addDays(t, -3), start: null, end: null, hours: 3.5, breakMin: 0, rate: 35, currency: '$', bonus: 0,
       total: round2(3.5 * 35), paid: false, notes: 'תיקוני לוגו מהבית', group: null, auto: false, ruleKey: null });
+    // Fixed-price jobs ("קבלנות"): a date, an amount and a short description; time is optional.
+    shifts.push({ id: uid(), kind: 'job', cat: 'c3', date: addDays(t, -5), start: null, end: null, hours: 2, breakMin: 0, rate: null, currency: '$', bonus: 0,
+      total: 50, paid: false, notes: 'פירוק והרכבת ארון ספרים', group: null, auto: false, ruleKey: null });
+    shifts.push({ id: uid(), kind: 'job', cat: 'c3', date: addDays(t, -1), start: null, end: null, hours: null, breakMin: 0, rate: null, currency: '$', bonus: 0,
+      total: 50, paid: true, notes: 'השלמת מיין', group: null, auto: false, ruleKey: null });
     add(-12, 'c4', '17:30', '23:30', {
       rate: 45, bonus: 40,
       group: { workers: [{ name: 'נועה', bonus: 40 }, { name: 'איתי', bonus: 40 }, { name: 'מאיה', bonus: 0 }] },
@@ -119,7 +124,7 @@ const Core = (() => {
       from: addDays(t, 1), until: addDays(t, 40),
     }];
     return {
-      v: 2, cats: CATS.map(c => ({ ...c })), workers: [...WORKERS], shifts, rules, exceptions: {},
+      v: 3, cats: CATS.map(c => ({ ...c })), workers: [...WORKERS], shifts, rules, exceptions: {},
       settings: {
         autoConfirm: true, notifyMonthly: true, notifyRate: true, rateFrequency: 'weekly',
         planningView: 'unified', defaultCat: 'c1', aiKey: false, theme: 'system',
@@ -132,7 +137,7 @@ const Core = (() => {
   function load(direction) {
     KEY = 'salary-v2-proto-' + direction;
     try { state = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { state = null; }
-    if (!state || state.v !== 2) state = seed();
+    if (!state || state.v !== 3) state = seed();
     clockOffset = state.clockOffset || 0;
     return state;
   }
@@ -145,7 +150,8 @@ const Core = (() => {
   const cat = id => state.cats.find(c => c.id === id) || state.cats[0];
 
   const shiftMinutes = s => s.start ? span(s.start, s.end, s.breakMin).minutes : Math.round((s.hours || 0) * 60);
-  const timeLabel = s => s.start ? `${s.start}–${s.end}` : `${hours(shiftMinutes(s))} שעות`;
+  const isJob = s => s.kind === 'job';
+  const timeLabel = s => s.start ? `${s.start}–${s.end}` : isJob(s) ? (s.hours ? `קבלנות · ${hours(shiftMinutes(s))} שעות` : 'קבלנות') : `${hours(shiftMinutes(s))} שעות`;
 
   /* ---------- live timer (persists like the current app's active shift) ---------- */
   function startTimer(catId) { state.timer = { date: today(), start: fromMin(nowMin()), cat: catId || state.settings.defaultCat, at: now().getTime() }; commit(); }
@@ -242,13 +248,13 @@ const Core = (() => {
   }
   function newDraft(over = {}) {
     const c = cat(state.settings.defaultCat);
-    const d = { id: null, mode: 'clock', hours: '', cat: c.id, date: today(), start: null, end: roundedEnd(), breakMin: 0, rate: c.rate, rateUnknown: c.rate == null,
+    const d = { id: null, mode: 'clock', hours: '', amount: '', amountUnknown: false, cat: c.id, date: today(), start: null, end: roundedEnd(), breakMin: 0, rate: c.rate, rateUnknown: c.rate == null,
       currency: c.currency, bonus: 0, bonusTarget: 'me', notes: '', group: null, repeat: null, ...over };
     if (!over.start) d.start = suggestStart(d.cat, d.date).start;
     return d;
   }
   function draftFromShift(s) {
-    return { id: s.id, mode: !s.start ? 'hours' : s.group ? 'group' : 'clock', hours: s.hours ?? '', cat: s.cat, date: s.date, start: s.start, end: s.end || roundedEnd(), breakMin: s.breakMin, rate: s.rate, rateUnknown: s.rate == null,
+    return { id: s.id, mode: isJob(s) ? 'job' : !s.start ? 'hours' : s.group ? 'group' : 'clock', hours: s.hours ?? '', amount: isJob(s) ? (s.total ?? '') : '', amountUnknown: isJob(s) && s.total == null, cat: s.cat, date: s.date, start: s.start, end: s.end || roundedEnd(), breakMin: s.breakMin, rate: s.rate, rateUnknown: s.rate == null,
       currency: s.currency, bonus: s.bonus, bonusTarget: 'me', notes: s.notes, group: s.group ? JSON.parse(JSON.stringify(s.group)) : null, repeat: null, auto: s.auto };
   }
   function setDraftCat(d, id) {
@@ -263,6 +269,13 @@ const Core = (() => {
   function evaluate(d) {
     const errors = [], warnings = [];
     let sp;
+    if (d.mode === 'job') {
+      // A job is a date + an amount; how long it took is optional.
+      const amt = d.amountUnknown ? null : Number(d.amount), h = Number(d.hours) || 0;
+      if (!d.amountUnknown && !(amt > 0)) errors.push('הזן סכום, או סמן "לא יודע עדיין"');
+      if (h > 24) errors.push('יותר מ-24 שעות ביום');
+      return { errors, warnings, span: h > 0 ? { minutes: Math.round(h * 60), overnight: false, invalid: false } : null, base: amt, bonus: 0, total: amt > 0 ? round2(amt) : null };
+    }
     if (d.mode === 'hours') {
       const h = Number(d.hours);
       if (!(h > 0)) errors.push('הזן מספר שעות');
@@ -290,8 +303,15 @@ const Core = (() => {
       state.rules.push(r); const done = catchUp(); commit();
       return { ok: true, rule: r, auto: done };
     }
+    if (d.mode === 'job') {
+      const rec = { kind: 'job', cat: d.cat, date: d.date, start: null, end: null, hours: Number(d.hours) > 0 ? Number(d.hours) : null, breakMin: 0, rate: null,
+        currency: d.currency, bonus: 0, total: ev.total, notes: d.notes, group: null };
+      if (d.id) Object.assign(state.shifts.find(x => x.id === d.id), rec, { auto: false });
+      else state.shifts.push({ id: uid(), paid: false, auto: false, ruleKey: null, ...rec });
+      commit(); return { ok: true };
+    }
     const hoursOnly = d.mode === 'hours';
-    const rec = { cat: d.cat, date: d.date, start: hoursOnly ? null : d.start, end: hoursOnly ? null : d.end, hours: hoursOnly ? Number(d.hours) : undefined, breakMin: Number(d.breakMin) || 0, rate: d.rateUnknown ? null : Number(d.rate),
+    const rec = { kind: undefined, cat: d.cat, date: d.date, start: hoursOnly ? null : d.start, end: hoursOnly ? null : d.end, hours: hoursOnly ? Number(d.hours) : undefined, breakMin: Number(d.breakMin) || 0, rate: d.rateUnknown ? null : Number(d.rate),
       currency: d.currency, bonus: ev.bonus, total: ev.total, notes: d.notes, group: d.group };
     if (d.id) { const s = state.shifts.find(x => x.id === d.id); Object.assign(s, rec, { auto: false }); }
     else state.shifts.push({ id: uid(), paid: false, auto: false, ruleKey: null, ...rec });
@@ -303,12 +323,12 @@ const Core = (() => {
   /* Bulk rate completion: writes only to shifts whose rate is missing. */
   function bulkRatePreview(ids, rate) {
     const list = state.shifts.filter(s => ids.includes(s.id));
-    const target = list.filter(s => s.rate == null);
+    const target = list.filter(s => s.rate == null && !isJob(s));
     return { target: target.map(s => ({ ...s, newTotal: round2(shiftMinutes(s) / 60 * rate + (s.bonus || 0)) })), skipped: list.length - target.length };
   }
   function bulkRateApply(ids, rate) {
     const done = [];
-    for (const s of state.shifts) if (ids.includes(s.id) && s.rate == null) {
+    for (const s of state.shifts) if (ids.includes(s.id) && s.rate == null && !isJob(s)) {
       s.rate = rate; s.total = round2(shiftMinutes(s) / 60 * rate + (s.bonus || 0)); done.push(s.id);
     }
     commit(); return done;
@@ -325,7 +345,8 @@ const Core = (() => {
       const m = shiftMinutes(s); minutes += m;
       if (s.total == null) { pending++; continue; }
       const c = byCur[s.currency] ||= { total: 0, paid: 0, unpaid: 0, minutes: 0 };
-      c.total += s.total; c.minutes += m; s.paid ? c.paid += s.total : c.unpaid += s.total;
+      // Jobs count toward income but not toward the hourly average.
+      c.total += s.total; if (!isJob(s)) c.minutes += m; s.paid ? c.paid += s.total : c.unpaid += s.total;
     }
     // Compare like with like: for the running month, only the same days of last month.
     const cutoff = k === ym(today()) ? Number(today().slice(8)) : 31;
@@ -363,7 +384,7 @@ const Core = (() => {
     // Isolate times and amounts so they never flip inside Hebrew text (WhatsApp, notes, clipboard).
     const L = t => '\u2066' + t + '\u2069';
     const rows = [...list].sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || ''))).map(s =>
-      `${L(shortDate(s.date))} · ${cat(s.cat).name} · ${s.start ? L(`${s.start}–${s.end}`) + ` (${L(hours(shiftMinutes(s)))} ש׳)` : `${L(hours(shiftMinutes(s)))} שעות`} · ${s.total == null ? 'תעריף חסר' : L(money(s.total, s.currency))}${s.bonus ? ` (כולל בונוס ${L(money(s.bonus, s.currency))})` : ''}`);
+      isJob(s) ? `${L(shortDate(s.date))} · קבלנות: ${s.notes || cat(s.cat).name}${s.hours ? ` (${L(hours(shiftMinutes(s)))} ש׳)` : ''} · ${s.total == null ? 'סכום חסר' : L(money(s.total, s.currency))}` : `${L(shortDate(s.date))} · ${cat(s.cat).name} · ${s.start ? L(`${s.start}–${s.end}`) + ` (${L(hours(shiftMinutes(s)))} ש׳)` : `${L(hours(shiftMinutes(s)))} שעות`} · ${s.total == null ? 'תעריף חסר' : L(money(s.total, s.currency))}${s.bonus ? ` (כולל בונוס ${L(money(s.bonus, s.currency))})` : ''}`);
     const tot = {}; let mins = 0, pend = 0;
     list.forEach(s => { mins += shiftMinutes(s); if (s.total == null) pend++; else tot[s.currency] = (tot[s.currency] || 0) + s.total; });
     rows.push('', `סה״כ: ${L(hours(mins))} שעות · ${Object.entries(tot).map(([c, v]) => L(money(v, c))).join(' + ') || '—'}${pend ? ` · ${pend} בלי תעריף` : ''}`);
@@ -383,6 +404,16 @@ const Core = (() => {
   function haptic(kind = 'tap') {
     if (state?.settings?.haptics === false) return;
     try { navigator.vibrate?.(HAPTIC[kind] ?? 6); } catch { /* not available (desktop or embedded frame) */ }
+  }
+
+  function hourProfile(list) {
+    const h = Array(24).fill(0);
+    for (const s of list) {
+      if (!s.start) continue;
+      let a = toMin(s.start), b = toMin(s.end); if (b <= a) b += 1440;
+      for (let m = a; m < b; m += 15) h[Math.floor((m % 1440) / 60)] += 15;
+    }
+    return h;
   }
 
   /* ---------- shared UI helpers ---------- */
@@ -452,6 +483,6 @@ const Core = (() => {
     span, endDateTime, money, pl, hours, hm, round2, esc, load, save, commit, subscribe, reset, advance, cat, get state() { return state; },
     occurrences, catchUp, undoAuto, confirmOcc, cancelOcc, restoreOcc, editOcc, futureCount, applyRateToFuture, previewRule,
     suggestStart, newDraft, draftFromShift, setDraftCat, evaluate, saveDraft, deleteShift, restoreShift, bulkRatePreview, bulkRateApply, setPaid,
-    shiftMinutes, timeLabel, setMode, startTimer, stopTimer, cancelTimer, restoreTimer, timerElapsed, monthStats, insights, wrapped, toast, haptic, quietDelay, shareText, setTheme, applyTheme, mountPanel, longPress, WORKERS,
+    shiftMinutes, timeLabel, isJob, hourProfile, setMode, startTimer, stopTimer, cancelTimer, restoreTimer, timerElapsed, monthStats, insights, wrapped, toast, haptic, quietDelay, shareText, setTheme, applyTheme, mountPanel, longPress, WORKERS,
   };
 })();

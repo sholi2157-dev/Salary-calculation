@@ -288,6 +288,13 @@ button:active:not([disabled]){transform:scale(.97)}
 .poster .pg small{display:block;opacity:.8;font-size:13px}
 .poster .pg b{font-family:var(--font-display);font-weight:400;font-size:24px;line-height:1.15}
 @media (prefers-reduced-motion:reduce){.blob,.ring,.slide2>*,.tops li,.wbars i{animation:none!important}}
+.jobnote{display:grid;gap:8px;background:var(--surface);border-radius:18px;padding:14px}
+.jobnote label{font-weight:600;font-size:15px}
+.jobnote input{min-height:50px;border:1.5px solid var(--line);border-radius:14px;background:var(--bg);padding-inline:14px;font:500 17px var(--font-body)}
+.jobnote input:focus{border-color:var(--acc)}
+.hbars{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;height:90px;align-items:end;direction:ltr}
+.hbars i{display:block;height:calc(var(--h) * 100%);min-height:3px;border-radius:3px;background:rgb(255 255 255/.35);transform-origin:bottom;animation:grow .6s cubic-bezier(.2,.9,.2,1) both;animation-delay:var(--d)}
+.hlab{display:flex;justify-content:space-between;direction:ltr;font-size:12px;opacity:.7;margin-top:-6px}
 /* Sheets */
 .scrim{position:fixed;inset:0;background:rgb(0 0 0/.4);z-index:70}
 .sheet{position:fixed;inset:auto 0 0 0;z-index:71;background:var(--surface);border-radius:26px 26px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-height:85%;overflow:auto;animation:up .28s}
@@ -428,8 +435,8 @@ function card(s) {
   }
   return `<div class="card${sel.has(s.id) ? ' sel' : ''}" data-id="${s.id}" style="${pv(s.cat)}" tabindex="0"><span class="av">${E(c.name[0])}</span>
     <span class="t">${E(C.dayLabel(s.date))}${s.auto ? '<span class="tag" title="נרשמה אוטומטית בסוף הזמן המתוכנן">אוטו׳</span>' : ''}${s.paid ? '' : '<span class="tag">לא שולם</span>'}</span>
-    <span class="m">${s.total == null ? '<span class="tag w" style="font-size:12px">תעריף חסר</span>' : amt(s.total, s.currency)}</span>
-    <span class="s"><span class="num">${E(C.timeLabel(s))}</span>${ovn ? ' · למחרת' : ''}${s.start ? ` · ${C.hours(m)} ש׳` : ''}${s.bonus ? ' · בונוס ' + E(C.money(s.bonus, s.currency)) : ''}${s.group ? ` · ${s.group.workers.length + 1} אנשים` : ''}</span></div>`;
+    <span class="m">${s.total == null ? `<span class="tag w" style="font-size:12px">${C.isJob(s) ? 'סכום חסר' : 'תעריף חסר'}</span>` : amt(s.total, s.currency)}</span>
+    <span class="s">${C.isJob(s) ? `<span class="tag" style="margin:0 0 0 6px">קבלנות</span>${E(s.notes || c.name)}${s.hours ? ` · ${C.hours(m)} ש׳` : ''}` : `<span class="num">${E(C.timeLabel(s))}</span>`}${ovn ? ' · למחרת' : ''}${s.start ? ` · ${C.hours(m)} ש׳` : ''}${s.bonus ? ' · בונוס ' + E(C.money(s.bonus, s.currency)) : ''}${s.group ? ` · ${s.group.workers.length + 1} אנשים` : ''}</span></div>`;
 }
 function hist() {
   const sep = S().settings.planningView === 'separate', f = sep ? 'done' : filter;
@@ -509,7 +516,7 @@ function render() {
 const KEYS_TIME = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '⌫'];
 const snap = () => JSON.stringify([d.mode, d.cat, d.date, d.start, d.end, d.hours, d.rate, d.rateUnknown, d.currency, d.bonus, d.breakMin, d.notes, d.group]);
 function openAdd(draft) {
-  d = draft; tgt = d.mode === 'hours' ? 'hours' : d.start ? 'end' : 'start'; buf = ''; pad = false; confirmLeave = false;
+  d = draft; tgt = d.mode === 'job' ? 'amount' : d.mode === 'hours' ? 'hours' : d.start ? 'end' : 'start'; buf = ''; pad = false; confirmLeave = false;
   more = !!(d.repeat || d.breakMin || d.notes); d._orig = d.id ? snap() : null; drawAdd();
 }
 function shown(k) {
@@ -576,9 +583,12 @@ function drawAdd() {
   el.innerHTML = `<div class="ap-top"><div class="ap-in">
       <div class="ap-bar"><button data-act="closeAdd">${edit ? 'סגירה' : 'ביטול'}</button><strong>${edit ? 'עריכת משמרת' : d.repeat ? 'משמרת קבועה' : 'משמרת חדשה'}</strong>${edit ? '<button data-act="del">מחיקה</button>' : '<span style="width:64px"></span>'}</div>
       ${edit ? `<div class="was">${changed ? '<b>שונה</b> · ' : ''}לפני: ${E(C.dayLabel(orig.date))} · <span class="num">${E(C.timeLabel(orig))}</span> · ${orig.total == null ? 'תעריף חסר' : amt(orig.total, orig.currency)}</div>` : ''}
-      <div class="modes" role="group" aria-label="סוג רישום">${[['clock', 'שעון'], ['hours', 'ידני'], ['group', 'קבוצה']].map(([v, l]) => `<button data-mode="${v}" aria-pressed="${d.mode === v}">${l}</button>`).join('')}</div>
+      <div class="modes" role="group" aria-label="סוג רישום">${[['clock', 'שעון'], ['hours', 'ידני'], ['job', 'קבלנות'], ['group', 'קבוצה']].map(([v, l]) => `<button data-mode="${v}" aria-pressed="${d.mode === v}">${l}</button>`).join('')}</div>
       <div class="cats" role="group" aria-label="מקום עבודה">${S().cats.map(x => `<button data-cat="${x.id}" aria-pressed="${x.id === d.cat}" ${edit ? `style="--c:var(--k${x.hue})"` : ''}>${E(x.name)}</button>`).join('')}</div>
-      ${d.mode === 'hours' ? `<div class="clock" style="grid-template-columns:1fr"><button data-t="hours" aria-pressed="${pad && tgt === 'hours'}" class="${d.hours || (tgt === 'hours' && buf) ? '' : 'empty'}"><small>כמה שעות · נגיעה להקלדה</small><span class="disp num">${E(shown('hours') || '0')}</span></button></div>
+      ${d.mode === 'job' ? `<div class="clock" style="grid-template-columns:1fr">${d.amountUnknown ? `<button data-act="amtKnown" class="empty"><small>כמה הרווחת</small><span class="disp" style="font-size:34px">עוד לא יודע · להוספה</span></button>`
+          : `<button data-t="amount" aria-pressed="${pad && tgt === 'amount'}" class="${d.amount || (tgt === 'amount' && buf) ? '' : 'empty'}"><small>כמה הרווחת · נגיעה להקלדה</small><span class="disp num"><span class="cur">${E(d.currency)}</span>${E(shown('amount') || '0')}</span></button>`}</div>
+        <div class="nudges">${d.amountUnknown ? '' : '<button data-act="amtUnknown" style="flex:0 0 auto;padding-inline:14px">עוד לא יודע</button>'}<button data-t="hours" style="flex:1">${Number(d.hours) || (tgt === 'hours' && buf) ? `לקח <span class="num">${E(shown('hours'))}</span> שעות` : 'כמה זמן לקח? (לא חובה)'}</button></div>`
+      : d.mode === 'hours' ? `<div class="clock" style="grid-template-columns:1fr"><button data-t="hours" aria-pressed="${pad && tgt === 'hours'}" class="${d.hours || (tgt === 'hours' && buf) ? '' : 'empty'}"><small>כמה שעות · נגיעה להקלדה</small><span class="disp num">${E(shown('hours') || '0')}</span></button></div>
         <div class="nudges">${[2, 4, 6, 8].map(h => `<button data-hrs="${h}">${h} ש׳</button>`).join('')}</div>`
       : `<div class="clock">
         <button data-t="start" class="${d.start || (tgt === 'start' && buf) ? '' : 'empty'}" aria-pressed="${tgt === 'start'}"><small>התחלה</small><span class="disp num">${E(shown('start'))}</span></button>
@@ -588,15 +598,16 @@ function drawAdd() {
       <div class="ap-meta" id="apmeta">${metaHtml(ev)}</div>
     </div></div>
     <div class="ap-mid"><div class="ap-in">
-      ${!d.start && d.mode !== 'hours' ? `<div class="chipline"><span class="hintx">התחלה נפוצה:</span>${sug.chips.map(h => `<button class="sug" data-start="${h}">${h}</button>`).join('')}</div>` : ''}
+      ${d.mode === 'job' ? jobNote() : ''}
+      ${!d.start && d.mode !== 'hours' && d.mode !== 'job' ? `<div class="chipline"><span class="hintx">התחלה נפוצה:</span>${sug.chips.map(h => `<button class="sug" data-start="${h}">${h}</button>`).join('')}</div>` : ''}
       <div class="days7" role="group" aria-label="יום">${days.map(x => { const dd = C.parseYmd(x); return `<button data-date="${x}" aria-pressed="${d.date === x}">${x === C.today() ? 'היום' : C.DAY_SHORT[dd.getDay()]}<b class="num">${dd.getDate()}</b></button>`; }).join('')}</div>
       ${d.date < days[0] ? `<div class="msg err">📅 ${E(C.dayLabel(d.date))}</div>` : ''}
       <div class="chipline">
-        ${d.rateUnknown ? `<button class="w" data-act="rateKnown">תעריף חסר · להוספה</button>` : `<button data-t="rate" aria-pressed="${pad && tgt === 'rate'}"><span class="num">${E(d.currency)}${E(shown('rate'))}</span>/שעה</button><button data-act="rateUnknown">לא יודע</button>`}
+        ${d.mode === 'job' ? '<span class="hintx">מטבע:</span>' : d.rateUnknown ? `<button class="w" data-act="rateKnown">תעריף חסר · להוספה</button>` : `<button data-t="rate" aria-pressed="${pad && tgt === 'rate'}"><span class="num">${E(d.currency)}${E(shown('rate'))}</span>/שעה</button><button data-act="rateUnknown">לא יודע</button>`}
         <span class="cseg" role="group" aria-label="מטבע">${['₪', '$'].map(c => `<button data-cur="${c}" aria-pressed="${d.currency === c}">${c}</button>`).join('')}</span>
       </div>
       <div class="chipline">
-        <button data-t="bonus" aria-pressed="${pad && tgt === 'bonus'}">${Number(d.bonus) || (tgt === 'bonus' && buf) ? `בונוס <span class="num">${E(d.currency)}${E(shown('bonus'))}</span>` : '+ בונוס'}</button>
+        ${d.mode === 'job' ? '' : `<button data-t="bonus" aria-pressed="${pad && tgt === 'bonus'}">${Number(d.bonus) || (tgt === 'bonus' && buf) ? `בונוס <span class="num">${E(d.currency)}${E(shown('bonus'))}</span>` : '+ בונוס'}</button>`}
         <label style="position:relative">📅 תאריך אחר<input type="date" id="dt" value="${d.date}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0" aria-label="תאריך אחר"></label>
         <button data-act="more" aria-expanded="${more}">${more ? 'פחות' : 'הפסקה · הערה · חזרה'}</button>
       </div>
@@ -613,6 +624,11 @@ function drawAdd() {
     ${confirmLeave ? `<div class="leave"><div class="ap-in"><strong>לצאת בלי לשמור את השינויים?</strong><div class="row2b"><button class="big-btn ghost" data-act="stay">להמשיך לערוך</button><button class="big-btn" data-act="leave">לצאת</button></div></div></div>` : ''}`;
   rulerLive(); bindRuler();
 }
+function jobNote() {
+  const past = [...new Set(S().shifts.filter(x => C.isJob(x) && x.notes).map(x => x.notes))].slice(0, 4);
+  return `<div class="jobnote"><label for="jn">מה עשית?</label><input id="jn" value="${E(d.notes)}" placeholder="למשל: פירוק ארון ספרים" maxlength="80" autocomplete="off">
+    ${past.length ? `<div class="chipline">${past.map(n => `<button class="sug" data-jn="${E(n)}">${E(n)}</button>`).join('')}</div>` : ''}</div>`;
+}
 function groupBlock() {
   const ws = d.group.workers;
   return `<div class="drawer"><strong>מי עבד איתך</strong>
@@ -623,9 +639,9 @@ function groupBlock() {
 }
 function moreBlock() {
   return `<div class="drawer">
-    ${d.mode === 'hours' ? '' : `<div class="field"><label for="brk">הפסקה (דקות)</label><input type="number" id="brk" inputmode="numeric" value="${d.breakMin || ''}" placeholder="0"></div>`}
-    <div class="field"><label for="nt">הערה</label><input id="nt" value="${E(d.notes)}" placeholder="לא חובה"></div>
-    ${d.id || d.mode === 'hours' ? '' : `<label class="tog">חוזרת כל שבוע<input type="checkbox" class="sw" id="rep" ${d.repeat ? 'checked' : ''}></label>`}
+    ${d.mode === 'hours' || d.mode === 'job' ? '' : `<div class="field"><label for="brk">הפסקה (דקות)</label><input type="number" id="brk" inputmode="numeric" value="${d.breakMin || ''}" placeholder="0"></div>`}
+    ${d.mode === 'job' ? '' : `<div class="field"><label for="nt">הערה</label><input id="nt" value="${E(d.notes)}" placeholder="לא חובה"></div>`}
+    ${d.id || d.mode === 'hours' || d.mode === 'job' ? '' : `<label class="tog">חוזרת כל שבוע<input type="checkbox" class="sw" id="rep" ${d.repeat ? 'checked' : ''}></label>`}
     ${d.repeat ? (() => { const p = C.previewRule({ ...d, days: d.repeat.days, from: d.date, until: d.repeat.until }); return `<div class="dsel" role="group" aria-label="ימים">${C.DAY_SHORT.map((n, i) => `<button data-day="${i}" aria-pressed="${d.repeat.days.includes(i)}">${n}</button>`).join('')}</div>
       <div class="field"><label for="until">עד תאריך</label><input type="date" id="until" value="${d.repeat.until}"></div>
       <div class="msg err"><strong class="num">${p.dates.length}</strong> משמרות ייכנסו ללוח${p.clashes.length ? ` · ${p.clashes.length} חופפות למשמרת קיימת ולא ייווצרו פעמיים` : ''}</div>`; })() : ''}
@@ -659,14 +675,15 @@ function openDetail(id) {
   const c = C.cat(s.cat), m = C.shiftMinutes(s), ovn = s.start && C.toMin(s.end) <= C.toMin(s.start);
   const fact = (k, v) => `<div class="fact"><small>${k}</small><span>${v}</span></div>`;
   sheet(`<div class="det-top" style="${pv(s.cat)}"><span class="av">${E(c.name[0])}</span><div><strong>${E(c.name)}</strong><small>${E(C.dayLabel(s.date))}${s.auto ? ' · נרשמה לבד בסוף הזמן המתוכנן' : ''}</small></div>
-      <span class="disp det-amt">${s.total == null ? '<span style="font-size:18px">תעריף חסר</span>' : amt(s.total, s.currency)}</span></div>
+      <span class="disp det-amt">${s.total == null ? `<span style="font-size:18px">${C.isJob(s) ? 'סכום חסר' : 'תעריף חסר'}</span>` : amt(s.total, s.currency)}</span></div>
     <div class="facts">
-      ${fact('שעות', `<span class="num">${E(C.timeLabel(s))}</span>${ovn ? ' · למחרת' : ''}${s.start ? ` · ${C.hours(m)} ש׳` : ''}`)}
-      ${fact('תעריף', s.rate == null ? '<button class="linkb" data-act="fillRate" data-id2="' + s.id + '">להשלמה ←</button>' : `${E(C.money(s.rate, s.currency))} לשעה`)}
+      ${C.isJob(s) ? `${fact('סוג', 'עבודה קבלנית')}${fact('מה עשית', E(s.notes || '—'))}${fact('זמן', s.hours ? `${C.hours(m)} שעות` : 'לא צוין')}${s.total == null ? fact('סכום', '<button class="linkb" data-act="editShift" data-id2="' + s.id + '">להשלמה ←</button>') : ''}`
+      : `${fact('שעות', `<span class="num">${E(C.timeLabel(s))}</span>${ovn ? ' · למחרת' : ''}${s.start ? ` · ${C.hours(m)} ש׳` : ''}`)}
+      ${fact('תעריף', s.rate == null ? '<button class="linkb" data-act="fillRate" data-id2="' + s.id + '">להשלמה ←</button>' : `${E(C.money(s.rate, s.currency))} לשעה`)}`}
       ${s.bonus ? fact('בונוס', E(C.money(s.bonus, s.currency))) : ''}
       ${s.breakMin ? fact('הפסקה', `${s.breakMin} דק׳`) : ''}
       ${s.group ? fact('צוות', s.group.workers.map(w => E(w.name) + (w.bonus ? ` (+${E(C.money(w.bonus, s.currency))})` : '')).join(', ')) : ''}
-      ${s.notes ? fact('הערה', E(s.notes)) : ''}
+      ${s.notes && !C.isJob(s) ? fact('הערה', E(s.notes)) : ''}
       <div class="fact"><small>תשלום</small><label class="tog" style="gap:8px">${s.paid ? 'שולם' : 'עוד לא שולם'}<input type="checkbox" class="sw" id="dpaid" data-id2="${s.id}" ${s.paid ? 'checked' : ''}></label></div>
     </div>
     <div class="det-acts" role="group" aria-label="פעולות">
@@ -772,6 +789,9 @@ function wrapped(scope) {
     { bg: HEX[per.a], a: per.b, b: 3, html: () => `<div class="kick">טיפוס העבודה שלך</div><h3 class="big">${E(per.name)}</h3><p>${E(per.line)}</p>` },
     { bg: HEX[2], a: 4, b: 3, html: () => longest ? `<div class="kick">המשמרת הארוכה</div><div class="huge num">${C.hm(C.shiftMinutes(longest))}</div><h3>${E(C.dayLabel(longest.date))}${longest.start ? `, <span class="num">${longest.start}–${longest.end}</span>` : ''}.</h3><p>מגיע לך קפה. אולי שניים.${w.nights ? ` ועוד ${w.nights} פעמים סיימת אחרי 23:00.` : ''}</p>` : '<h3 class="big">חודש רגוע.</h3>' },
     { bg: '#121212', a: 5, b: 1, html: () => `<div class="kick">הקצב שלך</div><h3>יום ${E(w.bestDay)} הוא היום שלך.</h3><div class="wbars">${st.days.map((m, j) => `<div><i style="--h:${(m / Math.max(1, ...st.days)).toFixed(3)};--d:${j * 80}ms;background:${C.DAY[j] === w.bestDay ? HEX[3] : '#3A3A3A'}"></i><span>${C.DAY_SHORT[j]}</span></div>`).join('')}</div>` },
+    { bg: HEX[5], a: 3, b: 4, html: () => { const p = C.hourProfile(st.list), mx = Math.max(1, ...p), h = p.indexOf(mx);
+      const joke = h >= 22 || h < 5 ? 'בזמן שכולם רואים סדרה במיטה, אתה בשטח.' : h < 11 ? 'קפה ראשון? אתה כבר באמצע העבודה.' : h < 17 ? 'שעות השיא של העולם. וגם שלך.' : 'השעה שבה כולם חוזרים הביתה, ואתה בדיוק בשיא.';
+      return `<div class="kick">השעה הכי פעילה שלך</div><div class="huge num">${C.pad(h)}:00</div><div class="hbars">${p.map((m, j) => `<i style="--h:${(m / mx).toFixed(3)};--d:${j * 25}ms;${j === h ? 'background:#fff' : ''}"></i>`).join('')}</div><div class="hlab"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div><p>${joke}</p>`; } },
     { bg: HEX[1], a: 3, b: 0, html: () => `<div class="kick">השורה התחתונה</div>${cur.map(([c, v]) => `<div class="huge num money">${hide ? `<span class="cur">${E(c)}</span>•••` : mny(v.total, c)}</div>`).join('')}<p>${st.pending ? `ועוד ${C.pl(st.pending, 'משמרת אחת', '# משמרות')} שמחכות לתעריף. ` : ''}הסכום רק בשבילך, הוא לא מופיע בשיתוף.</p><button class="reveal" data-rev>${hide ? 'הצג לי' : 'הסתר'}</button>` },
     { bg: '#121212', a: 0, b: 3, card: true, html: () => `<div class="kick">${isYear ? 'השנה' : 'החודש'} שלך בכיס</div>
       <div class="poster" style="--p1:${HEX[0]};--p2:${HEX[4]}"><div class="pt"><span>${E(label)}</span>${LOGO}</div>
@@ -847,7 +867,8 @@ document.addEventListener('click', e => {
   if (d && t.closest('.add-page')) {
     if (ds.k) return key(ds.k);
     if (ds.t) { commitBuf(); tgt = ds.t; pad = true; buf = ''; drawAdd(); return; }
-    if (ds.mode) { commitBuf(); C.setMode(d, ds.mode); tgt = ds.mode === 'hours' ? 'hours' : d.start ? 'end' : 'start'; pad = false; drawAdd(); return; }
+    if (ds.jn) { d.notes = ds.jn; drawAdd(); return; }
+    if (ds.mode) { commitBuf(); C.setMode(d, ds.mode); tgt = ds.mode === 'job' ? 'amount' : ds.mode === 'hours' ? 'hours' : d.start ? 'end' : 'start'; pad = ds.mode === 'job' && !d.amount; drawAdd(); return; }
     if (ds.cur) { d.currency = ds.cur; drawAdd(); return; }
     if (ds.hrs) { d.hours = Number(ds.hrs); drawAdd(); return; }
     if (ds.nudge) { commitBuf(); const k = tgt === 'start' && d.start ? 'start' : 'end'; d[k] = C.fromMin(C.toMin(d[k]) + Number(ds.nudge)); d._touched = true; tgt = k; drawAdd(); return; }
@@ -868,6 +889,7 @@ document.addEventListener('click', e => {
     add: () => openAdd(C.newDraft(ds.repeat ? { repeat: { days: [C.weekday(C.today())], until: C.addDays(C.today(), 56) } } : {})),
     closeAdd: () => closeAdd(), more: () => { more = !more; drawAdd(); },
     padDone: () => { commitBuf(); pad = false; drawAdd(); },
+    amtUnknown: () => { commitBuf(); d.amountUnknown = true; pad = false; drawAdd(); }, amtKnown: () => { d.amountUnknown = false; tgt = 'amount'; buf = ''; pad = true; drawAdd(); },
     stay: () => { confirmLeave = false; drawAdd(); }, leave: () => closeAdd(true),
     rateUnknown: () => { d.rateUnknown = true; if (tgt === 'rate') { tgt = 'end'; pad = false; } drawAdd(); }, rateKnown: () => { d.rateUnknown = false; d.rate = d.rate ?? ''; tgt = 'rate'; buf = ''; pad = true; drawAdd(); },
     save: () => {
@@ -921,7 +943,7 @@ document.addEventListener('change', e => {
   if (t.id === 'nr') { s.notifyRate = t.checked; C.commit(); }
   if (t.id === 'defcat') { s.defaultCat = t.value; C.commit(); }
 });
-document.addEventListener('input', e => { const t = e.target; if (!d) return; if (t.id === 'nt') d.notes = t.value; if (t.dataset.wv) d.group.workers[t.dataset.wv].bonus = Number(t.value) || 0; });
+document.addEventListener('input', e => { const t = e.target; if (!d) return; if (t.id === 'nt' || t.id === 'jn') d.notes = t.value; if (t.dataset.wv) d.group.workers[t.dataset.wv].bonus = Number(t.value) || 0; });
 document.addEventListener('keydown', e => {
   if (d && $('.add-page') && !/INPUT|SELECT/.test(document.activeElement.tagName)) {
     if (/^[0-9]$/.test(e.key)) { pad = true; key(e.key); e.preventDefault(); } else if (e.key === 'Backspace') { key('⌫'); e.preventDefault(); } else if (e.key === 'Enter') { $('[data-act=save]:not([disabled])')?.click(); }
