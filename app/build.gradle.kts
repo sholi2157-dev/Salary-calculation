@@ -174,3 +174,7 @@ androidComponents {
   }
 }
 
+
+// Debug and Release KSP both write the same exported Room schema file; running them
+// concurrently can leave one reading a half-written JSON. Serialize them.
+tasks.matching { it.name == "kspReleaseKotlin" }.configureEach { mustRunAfter("kspDebugKotlin") }
