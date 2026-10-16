@@ -203,7 +203,7 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
                             }
                         }
                         if (step.screen != CoachScreen.FORM && step.screen != CoachScreen.AI) Box(Modifier.fillMaxWidth().padding(bottom = 14.dp), contentAlignment = Alignment.Center) {
-                            com.example.ui.kis.PillNav(if (step.screen == CoachScreen.HISTORY || step.screen == CoachScreen.SHARE) 1 else 0, {}, {}, {})
+                            com.example.ui.kis.PillNav(when (step.screen) { CoachScreen.HISTORY, CoachScreen.SHARE -> 1; CoachScreen.CATEGORIES, CoachScreen.API -> 2; else -> 0 }, {}, {}, {})
                         }
                     }
                     val rect = step.target?.let { targets.bounds[it] }?.translate(-rootOrigin)

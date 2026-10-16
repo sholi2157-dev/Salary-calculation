@@ -7,7 +7,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Every text the app shares or copies (docs/v2-sharing.md; expected outputs in docs/v2-share-fixtures.json).
+ * Every text the app shares or copies (docs/v2-sharing.md; expected outputs in app/src/test/resources/v2-share-fixtures.json).
  * The RC16 wording is the base. Amounts are always the stored ones (WorkPay), never recalculated here,
  * and a missing rate or amount is said in words, never shown as 0.
  */

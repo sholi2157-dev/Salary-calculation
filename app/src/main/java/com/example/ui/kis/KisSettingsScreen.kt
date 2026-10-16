@@ -66,7 +66,9 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
 
     Column(Modifier.fillMaxSize().background(c.bg).testTag("settings_root")) {
         Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = bottomInset + 8.dp).imePadding()) {
+        // With the keyboard open the floating navigation is covered anyway: pad for the keyboard only, not both.
+        val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = if (imeOpen) 8.dp else bottomInset + 8.dp).imePadding()) {
             Group("עבודה") {
                 Row_("מקום ברירת מחדל", "נבחר אוטומטית במשמרת חדשה ובטיימר · כאן גם מוסיפים ועורכים מקומות", tag = "default_category_picker",
                     modifier = Modifier.coachTarget(CoachTarget.CATEGORIES), onClick = { pickingDefault = true },
@@ -90,7 +92,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 }
             }
             Group("עזרה וכלים") {
-                Row_("רישום במילים (AI) · מפתח Gemini אישי", if (hasKey) "פעיל עם המפתח שלך" else "לא חובה. בלעדיו כל השאר עובד", tag = "ai_key_row", onClick = { aiSheet = true },
+                Row_("רישום במילים (AI)", if (hasKey) "פעיל עם מפתח Gemini האישי שלך" else "מפתח Gemini אישי · לא חובה, בלעדיו כל השאר עובד", tag = "ai_key_row", onClick = { aiSheet = true },
                     modifier = Modifier.coachTarget(CoachTarget.API)) {
                     Text("?", style = KisType.label, color = c.muted, modifier = Modifier.size(32.dp).clip(CircleShape).background(c.sunk).kisClick { aiHelp = true }
                         .semantics { contentDescription = "מה זה מפתח אישי" }.padding(top = 6.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -100,7 +102,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 if (BuildConfig.LOCAL_DISTRIBUTION) {
                     KisDivider()
                     Column(Modifier.padding(vertical = 8.dp).testTag("settings_updates")) {
-                        Text("עדכונים · גרסה ${BuildConfig.VERSION_NAME}", style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
+                        Text("עדכונים", style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
                         WorkUpdateSettings()
                     }
                 }
@@ -145,7 +147,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     if (pickingDefault) KisSheet(onDismiss = { pickingDefault = false }, tag = "default_category_sheet") {
         Text("מקומות עבודה", style = KisType.title, color = c.ink)
         Text("נגיעה במקום הופכת אותו לברירת המחדל. העיפרון פותח עריכה.", style = KisType.caption, color = c.muted)
-        categories.forEach { cat ->
+        Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) { categories.forEach { cat ->
             val on = cat.name == defaultCategory
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(if (on) c.sunk else androidx.compose.ui.graphics.Color.Transparent)
                 .kisClick { viewModel.setDefaultCategory(cat.name); pickingDefault = false }.semantics { selected = on }
@@ -153,13 +155,13 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 Box(Modifier.size(24.dp).clip(RoundedCornerShape(8.dp)).background(workplaceOf(cat.name, categories).brush))
                 Column(Modifier.weight(1f)) {
                     Text(cat.name, style = KisType.body.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), color = c.ink)
-                    Text("${KisFormat.money(cat.defaultRate, viewModel.categoryCurrency(cat.name))} לשעה${if (on) " · ברירת מחדל" else ""}", style = KisType.caption, color = c.muted)
+                    Text("${KisFormat.money(cat.defaultRate, viewModel.categoryCurrency(cat.name))} לשעה", style = KisType.caption, color = c.muted)
                 }
                 if (on) Icon(Icons.Rounded.Check, "ברירת מחדל", tint = c.ink)
                 Icon(Icons.Rounded.Edit, "עריכת ${cat.name}", tint = c.ink, modifier = Modifier.size(48.dp).clip(CircleShape)
                     .kisClick { pickingDefault = false; editing = cat.name }.testTag("category_row_${cat.name}").padding(13.dp))
             }
-        }
+        } }
         KisButton("+ מקום עבודה חדש", { pickingDefault = false; addingDefault = true; adding = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "default_category_add")
     }
     editing?.let { name -> categories.firstOrNull { it.name == name }?.let { cat ->

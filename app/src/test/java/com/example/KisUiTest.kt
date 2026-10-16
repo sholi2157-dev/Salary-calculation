@@ -263,6 +263,8 @@ class KisUiTest {
         runBlocking {
             dao.insertEntry(WorkEntry(category = "מסעדה", date = today, isTimeRange = false, hours = 6.0, hourlyRate = 50.0, totalEarnings = 300.0))
             dao.insertEntry(WorkEntry(category = "שיעורים", date = today, isTimeRange = false, hours = 2.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = false))
+            // Hours-only shifts are stored at noon: they count today even in the morning.
+            dao.insertEntry(WorkEntry(category = "מסעדה", date = EntryDraft.startOfDay(now) + 12 * 3_600_000L, isTimeRange = false, hours = 1.0, hourlyRate = 50.0, totalEarnings = 50.0))
             dao.insertEntry(WorkEntry(category = "הובלות", date = now - 40 * 86_400_000L, isTimeRange = false, hours = 3.0, hourlyRate = 0.0, totalEarnings = 180.0, kind = WorkEntry.KIND_JOB, currency = "$"))
             dao.insertEntry(WorkEntry(category = "מסעדה", date = now - 50 * 86_400_000L, isTimeRange = false, hours = 2.0, hourlyRate = 50.0, totalEarnings = 100.0))
             // Planned for later: never counted as earned.
@@ -277,12 +279,12 @@ class KisUiTest {
             }
         }
         ui.onNodeWithTag("home_hero").assertIsDisplayed()
-        ui.onNodeWithTag("home_total_₪", useUnmergedTree = true).assertTextEquals("₪300")
-        ui.onNodeWithTag("home_week_count").assertTextEquals("2 משמרות השבוע")
-        ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).assertTextEquals("₪300")
-        ui.onNodeWithTag("home_all_₪", useUnmergedTree = true).assertTextEquals("₪400")
+        ui.onNodeWithTag("home_total_₪", useUnmergedTree = true).assertTextEquals("₪350")
+        ui.onNodeWithTag("home_week_count").assertTextEquals("3 משמרות השבוע")
+        ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).assertTextEquals("₪350")
+        ui.onNodeWithTag("home_all_₪", useUnmergedTree = true).assertTextEquals("₪450")
         ui.onNodeWithTag("home_all_$", useUnmergedTree = true).assertTextEquals("$180")
-        ui.onNodeWithTag("home_all_count", useUnmergedTree = true).assertTextEquals("4 משמרות")
+        ui.onNodeWithTag("home_all_count", useUnmergedTree = true).assertTextEquals("5 משמרות")
         ui.onNodeWithTag("pending_flag").assertIsDisplayed()
         ui.onNodeWithTag("live_shift_fab").assertIsDisplayed()
         shot("home-light")

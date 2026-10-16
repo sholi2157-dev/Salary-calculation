@@ -577,7 +577,7 @@ private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean,
             .semantics(mergeDescendants = true) {}.testTag("keypad_display"), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(label, style = KisType.label, color = c.ink)
-                Text(if (typing) "מקלידים ערך חדש" else if (value.isEmpty() || value == "--:--") "עוד לא הוזן" else "הקלדה מחליפה את הערך",
+                Text(if (typing) "בעריכה · ⌫ מוחק ספרה" else if (value.isEmpty() || value == "--:--") "עוד לא הוזן" else "הקלדה מחליפה את הערך",
                     style = KisType.micro, color = c.muted)
             }
             Text(value.ifEmpty { "—" }, style = KisType.amount.copy(fontSize = 26.sp, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum"),
@@ -599,15 +599,14 @@ private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean,
                     }
                 }
             }
-            Box(Modifier.weight(1.2f).height(232.dp).clip(RoundedCornerShape(14.dp)).background(c.bar)
-                .kisClick(onClick = onDone).testTag("keypad_done").semantics { contentDescription = "אישור" }, contentAlignment = Alignment.Center) {
-                Text("אישור", style = KisType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 18.sp), color = c.onBar)
+            Box(Modifier.weight(1.2f).height(232.dp).clip(RoundedCornerShape(14.dp)).background(c.ink)
+                .kisClick(onClick = onDone).testTag("keypad_done"), contentAlignment = Alignment.Center) {
+                Text("אישור", style = KisType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 18.sp), color = c.onInk)
             }
         }
     }
 }
 
-private fun Modifier.graphicsAlpha(a: Float) = this.graphicsLayer { alpha = a }
 
 @Composable
 private fun SaveBar(check: EntryDraft.Check, label: String, enabled: Boolean, onSave: () -> Unit) {

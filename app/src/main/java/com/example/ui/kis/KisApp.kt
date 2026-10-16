@@ -10,9 +10,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +27,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -118,7 +118,11 @@ fun KisApp(
         }
     }
     LaunchedEffect(message?.id) { if (message != null) { delay(if (message?.action != null) 6000 else 2600); message = null } }
-    BackHandler(enabled = editorJson == null && pager.currentPage != 0 && !history.selecting && !history.searching) { go(0) }
+    // History handles its own Back for selection and search, but only on its page; elsewhere Back goes Home.
+    BackHandler(enabled = editorJson == null && pager.currentPage != 0 && !(pager.currentPage == 1 && (history.selecting || history.searching))) { go(0) }
+    // Leaving a page never leaves a field focused (and the keyboard open) behind it.
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    LaunchedEffect(pager.currentPage) { focusManager.clearFocus() }
 
     Box(modifier.fillMaxSize().background(c.bg)) {
         HorizontalPager(state = pager, modifier = Modifier.fillMaxSize().testTag("main_screen_pager"), beyondViewportPageCount = 1,
@@ -174,9 +178,11 @@ fun KisApp(
                     }
                     // Editing is the same page as adding, shown as a framed pop-up over the app so it is clearly an edit.
                     if (base == null) page()
-                    else Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).systemBarsPadding().padding(horizontal = 10.dp, vertical = 10.dp)) {
+                    else Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f))
+                        .pointerInput(Unit) { detectTapGestures { } } // the app behind is not touchable while editing
+                        .systemBarsPadding().padding(horizontal = 10.dp, vertical = 10.dp)) {
                         val frame = RoundedCornerShape(26.dp)
-                        Box(Modifier.fillMaxSize().clip(frame).border(3.dp, EditFrame, frame).testTag("edit_frame")) { page() }
+                        Box(Modifier.fillMaxSize().clip(frame).border(3.dp, c.ink, frame).testTag("edit_frame")) { page() }
                     }
                 }
             }
@@ -200,9 +206,6 @@ fun KisApp(
         viewModel.startActiveShift(cat, rate, currency)
     }
 }
-
-/** The frame colour that marks an edit (the same amber as the "שונה" tag). */
-val EditFrame = Workplaces[3].from
 
 @Composable
 internal fun PillNav(page: Int, onPage: (Int) -> Unit, onSettings: () -> Unit, onAdd: () -> Unit) {

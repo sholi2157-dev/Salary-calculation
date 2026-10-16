@@ -67,12 +67,14 @@ fun KisHome(
     onSettings: () -> Unit,
 ) {
     val c = Kis.colors
-    val now = remember(entries) { System.currentTimeMillis() }
-    // Nothing dated later than now counts as earned "until now".
-    val done = remember(entries, now) { entries.filter { it.date <= now } }
-    val week = remember(done) { val from = KisHistoryLogic.weekStart(now); done.filter { it.date >= from } }
-    val today = remember(done) { val from = EntryDraft.startOfDay(now); done.filter { it.date >= from } }
-    val month = remember(done) { val key = HistoryFilter.monthKey(now); done.filter { HistoryFilter.monthKey(it.date) == key } }
+    // A clock that moves on by itself, so "today" and "this week" roll over without new data.
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { delay(60_000); now = System.currentTimeMillis() } }
+    // By calendar day: a shift saved for today counts today (hours-only shifts are stored at noon); later days do not.
+    val done = remember(entries, now) { val end = EntryDraft.startOfDay(now); entries.filter { EntryDraft.startOfDay(it.date) <= end } }
+    val week = remember(done, now) { val from = KisHistoryLogic.weekStart(now); done.filter { it.date >= from } }
+    val today = remember(done, now) { val from = EntryDraft.startOfDay(now); done.filter { it.date >= from } }
+    val month = remember(done, now) { val key = HistoryFilter.monthKey(now); done.filter { HistoryFilter.monthKey(it.date) == key } }
     val hoursByCat = remember(week) { week.groupBy { it.category }.mapValues { (_, l) -> l.sumOf { it.hours } }.toList().sortedByDescending { it.second } }
     val lead = hoursByCat.firstOrNull()?.first ?: done.maxByOrNull { it.date }?.category
     val glow = lead?.let { workplaceOf(it, categories).accent(c.dark) } ?: Workplaces[0].accent(c.dark)
@@ -126,7 +128,9 @@ private fun Hero(week: List<WorkEntry>, today: List<WorkEntry>, all: List<WorkEn
     Column(Modifier.padding(top = 22.dp, bottom = 4.dp).testTag("home_hero")) {
         Text("השבוע", style = KisType.label.copy(fontWeight = FontWeight.Medium), color = c.muted)
         Row(Modifier.padding(top = 6.dp).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-            if (totals.isEmpty()) MoneyText(0.0, "₪", KisType.hero, modifier = Modifier.testTag("home_total"), color = c.ink)
+            // Unknown pay is never shown as 0: a week with only rate-less shifts says so instead.
+            if (totals.isEmpty() && week.isNotEmpty()) Text("תעריף חסר", style = KisType.hero.copy(fontSize = 40.sp), color = c.pending, modifier = Modifier.testTag("home_total"))
+            else if (totals.isEmpty()) MoneyText(0.0, "₪", KisType.hero, modifier = Modifier.testTag("home_total"), color = c.ink)
             totals.forEachIndexed { i, (cur, v) ->
                 MoneyText(v, cur, if (i == 0) KisType.hero else KisType.hero.copy(fontSize = 30.sp), color = if (i == 0) c.ink else c.muted,
                     modifier = Modifier.testTag("home_total_$cur"))
@@ -163,7 +167,8 @@ private fun StatTile(label: String, rows: List<WorkEntry>, caption: String?, mod
     Column(modifier.clip(RoundedCornerShape(18.dp)).background(c.surface.copy(alpha = if (c.dark) 0.72f else 0.86f)).border(1.dp, c.line, RoundedCornerShape(18.dp))
         .padding(horizontal = 14.dp, vertical = 12.dp).semantics(mergeDescendants = true) {}.testTag(tag), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(label, style = KisType.caption, color = c.muted)
-        if (totals.isEmpty()) MoneyText(0.0, "₪", KisType.title, modifier = Modifier.testTag("${tag}_₪"), color = c.ink)
+        if (totals.isEmpty() && rows.isNotEmpty()) Text("תעריף חסר", style = KisType.title, color = c.pending, modifier = Modifier.testTag("${tag}_pending"))
+        else if (totals.isEmpty()) MoneyText(0.0, "₪", KisType.title, modifier = Modifier.testTag("${tag}_₪"), color = c.ink)
         totals.forEach { (cur, v) -> MoneyText(v, cur, KisType.title, modifier = Modifier.testTag("${tag}_$cur"), color = c.ink) }
         if (caption != null) Text(caption, style = KisType.caption, color = c.muted, modifier = Modifier.testTag("${tag}_count"))
     }
