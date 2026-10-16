@@ -54,6 +54,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     var pickingDefault by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     var adding by rememberSaveable { mutableStateOf(false) }
+    var addingDefault by rememberSaveable { mutableStateOf(false) }
     var aiSheet by rememberSaveable { mutableStateOf(false) }
     var aiHelp by rememberSaveable { mutableStateOf(false) }
     var importText by rememberSaveable { mutableStateOf("") }
@@ -158,12 +159,12 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 if (cat.name == defaultCategory) Icon(Icons.Rounded.Check, "נבחר", tint = c.ink)
             }
         }
-        KisButton("הוספת מקום", { pickingDefault = false; adding = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp)
+        KisButton("הוספת מקום ובחירה בו", { pickingDefault = false; addingDefault = true; adding = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "default_category_add")
     }
     editing?.let { name -> categories.firstOrNull { it.name == name }?.let { cat ->
         EditWorkplaceSheet(cat, categories, viewModel, onDismiss = { editing = null })
     } }
-    if (adding) NewWorkplaceSheet(viewModel, categories, defaultCurrency, onDismiss = { adding = false })
+    if (adding) NewWorkplaceSheet(viewModel, categories, defaultCurrency, makeDefault = addingDefault, onDismiss = { adding = false; addingDefault = false })
     if (aiSheet) AiKeySheet(viewModel.owner.uid, onDismiss = { aiSheet = false })
     if (aiHelp) KisSheet(onDismiss = { aiHelp = false }, tag = "ai_help") {
         Text("מה זה מפתח אישי?", style = KisType.title, color = c.ink)
@@ -250,7 +251,7 @@ private fun EditWorkplaceSheet(cat: WorkCategory, categories: List<WorkCategory>
 }
 
 @Composable
-private fun NewWorkplaceSheet(viewModel: WorkViewModel, categories: List<WorkCategory>, defaultCurrency: String, onDismiss: () -> Unit) {
+private fun NewWorkplaceSheet(viewModel: WorkViewModel, categories: List<WorkCategory>, defaultCurrency: String, makeDefault: Boolean = false, onDismiss: () -> Unit) {
     val c = Kis.colors
     var name by rememberSaveable { mutableStateOf("") }
     var rate by rememberSaveable { mutableStateOf("40") }
@@ -258,7 +259,7 @@ private fun NewWorkplaceSheet(viewModel: WorkViewModel, categories: List<WorkCat
     val taken = categories.any { it.name.trim().equals(name.trim(), true) }
     val rateValue = rate.toDoubleOrNull()?.takeIf { it >= 0 }
     KisSheet(onDismiss = onDismiss, tag = "add_place_sheet") {
-        Text("מקום עבודה חדש", style = KisType.title, color = c.ink)
+        Text(if (makeDefault) "מקום חדש — יהיה ברירת המחדל" else "מקום עבודה חדש", style = KisType.title, color = c.ink)
         KisTextField(name, { name = it }, "שם המקום", Modifier.fillMaxWidth().testTag("category_input"), isError = taken)
         if (taken) Text("כבר יש מקום בשם הזה", style = KisType.caption, color = c.danger)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -266,7 +267,7 @@ private fun NewWorkplaceSheet(viewModel: WorkViewModel, categories: List<WorkCat
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
             CurrencyToggle(currency, { currency = it }, "new_category_currency")
         }
-        KisButton("הוספה", { if (name.isNotBlank() && !taken && rateValue != null) { viewModel.addWorkplace(name, rateValue, currency); onDismiss() } },
+        KisButton("הוספה", { if (name.isNotBlank() && !taken && rateValue != null) { viewModel.addWorkplace(name, rateValue, currency, makeDefault); onDismiss() } },
             Modifier.fillMaxWidth(), enabled = name.isNotBlank() && !taken && rateValue != null, tag = "category_add_confirm")
     }
 }

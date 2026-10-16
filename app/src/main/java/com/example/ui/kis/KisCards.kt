@@ -27,7 +27,7 @@ import com.example.data.WorkPay
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShiftCard(entry: WorkEntry, categories: List<WorkCategory>, onClick: () -> Unit, onLongClick: (() -> Unit)? = null,
-              selected: Boolean = false, modifier: Modifier = Modifier) {
+              selected: Boolean = false, modifier: Modifier = Modifier, tagPrefix: String = "work_entry_card_") {
     val c = Kis.colors
     val settings = Kis.settings
     val workplace = workplaceOf(entry.category, categories)
@@ -38,7 +38,7 @@ fun ShiftCard(entry: WorkEntry, categories: List<WorkCategory>, onClick: () -> U
         .combinedClickable(onClick = { settings.haptic(KisSettings.Haptic.TAP); onClick() },
             onLongClick = onLongClick?.let { lc -> { settings.haptic(KisSettings.Haptic.SELECT); lc() } })
         .semantics { this.selected = selected }
-        .testTag("work_entry_card_${entry.id}")
+        .testTag("$tagPrefix${entry.id}")
         .padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Avatar(entry.category, workplace)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {

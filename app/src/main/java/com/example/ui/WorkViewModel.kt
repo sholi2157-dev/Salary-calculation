@@ -814,13 +814,14 @@ class WorkViewModel(
     }
 
     /** A new workplace with its own default rate and currency (from the editor or settings). */
-    fun addWorkplace(name: String, defaultRate: Double, currency: String) {
+    fun addWorkplace(name: String, defaultRate: Double, currency: String, makeDefault: Boolean = false) {
         val clean = name.trim()
         if (clean.isBlank() || !defaultRate.isFinite() || defaultRate < 0 || currency !in listOf("₪", "$")) return
         viewModelScope.launch {
             if (categories.value.any { it.name.trim().equals(clean, ignoreCase = true) } || repository.getCategoryByName(clean) != null) return@launch
             repository.insertCategory(WorkCategory(name = clean, defaultRate = defaultRate))
             localDao.setLocalPreference(com.example.data.WorkLocalPreference("categoryCurrency:$clean", currency))
+            if (makeDefault) localDao.setLocalPreference(com.example.data.WorkLocalPreference("defaultCategory", clean))
             performAutoBackup()
         }
     }

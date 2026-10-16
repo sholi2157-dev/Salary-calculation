@@ -42,15 +42,13 @@ class DistributionUpdateTest {
             dao.setLocalPreference(WorkLocalPreference("defaultCategory", "USD category"))
             dao.setLocalPreference(WorkLocalPreference("default_currency", "$"))
             dao.setLocalPreference(WorkLocalPreference("categoryCurrency:USD category", "$"))
-            dao.insertEntry(WorkEntry(category = "ILS category", date = 1700000000000, isTimeRange = false,
-                hours = 2.0, hourlyRate = 40.0, totalEarnings = 79.97, notes = "saved imported amount", isPaid = true))
-            dao.insertEntry(WorkEntry(category = "USD category", date = 1700100000000, isTimeRange = true,
-                startTime = "22:00", endTime = "06:00", hours = 7.5, hourlyRate = 45.75, totalEarnings = 343.12,
-                currency = "$", notes = "overnight with break"))
-            dao.insertEntry(WorkEntry(category = "USD category", date = 1700200000000, isTimeRange = false,
-                hours = 2.0, hourlyRate = 50.0, totalEarnings = 100.0, currency = "$", notes = "group",
-                isGroupShift = true, employerRate = 65.0, workerRate = 30.0,
-                groupWorkersJson = """[{"name":"Synthetic worker","hours":3,"isPaid":false,"workerRate":31.25,"employerRate":67.5}]"""))
+            // The seed stage runs inside the previous release (schema 8), whose WorkEntry has fewer
+            // fields than this test was compiled against: write rows with plain SQL in its own columns.
+            val sql = db.openHelper.writableDatabase
+            fun row(values: String) = sql.execSQL("INSERT INTO work_entries (category, date, isTimeRange, startTime, endTime, hours, hourlyRate, totalEarnings, isPaid, notes, createdAt, isGroupShift, employerRate, workerRate, groupWorkersJson, currency) VALUES ($values)")
+            row("'ILS category', 1700000000000, 0, NULL, NULL, 2.0, 40.0, 79.97, 1, 'saved imported amount', 1700000000001, 0, NULL, NULL, '', '₪'")
+            row("'USD category', 1700100000000, 1, '22:00', '06:00', 7.5, 45.75, 343.12, 0, 'overnight with break', 1700100000001, 0, NULL, NULL, '', '$'")
+            row("'USD category', 1700200000000, 0, NULL, NULL, 2.0, 50.0, 100.0, 0, 'group', 1700200000001, 1, 65.0, 30.0, '[{\"name\":\"Synthetic worker\",\"hours\":3,\"isPaid\":false,\"workerRate\":31.25,\"employerRate\":67.5}]', '$'")
             context.getExternalFilesDir(null)!!.mkdirs()
             assertTrue(evidence.edit().putString("snapshot", dao.exportSnapshot())
                 .putString("identities", db.syncDao().pending().toString()).putInt("versionA", installedCode).commit())
@@ -102,6 +100,8 @@ class DistributionUpdateTest {
                 assertFalse("Existing RC12 installation must not get a forced tour", com.example.ui.WorkOnboardingStore(context).initialize())
                 assertEquals(com.example.ui.ONBOARDING_VERSION, com.example.ui.WorkOnboardingStore(context).completedVersion)
                 assertTrue(installedCode > evidence.getInt("versionA", Int.MAX_VALUE))
+                // Schema 8 → 9: every existing row is an ordinary shift with known pay and no bonus.
+                assertTrue(dao.getEntriesList().all { it.kind == WorkEntry.KIND_SHIFT && it.payKnown && it.bonus == 0.0 && it.seriesKey == null && !it.autoConfirmed })
                 val original = dao.getEntriesList().first()
                 dao.updateEntry(WorkEntryEdits.apply(original, original.copy(notes = "edited after update")))
                 assertEquals(original.totalEarnings, dao.getEntryById(original.id)!!.totalEarnings, 0.0)

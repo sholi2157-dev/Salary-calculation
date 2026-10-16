@@ -86,7 +86,7 @@ fun KisHome(
             val recent = remember(entries) { entries.sortedByDescending { it.createdAt }.take(3) }
             if (recent.isNotEmpty()) {
                 SectionTitle("אחרונות", action = "הכול", onAction = onAllHistory, actionTag = "home_all_history")
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { recent.forEach { e -> ShiftCard(e, categories, onClick = { onOpen(e) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { recent.forEach { e -> ShiftCard(e, categories, onClick = { onOpen(e) }, tagPrefix = "recent_shift_card_") } }
             }
             if (categories.isNotEmpty() && month.isNotEmpty()) {
                 SectionTitle("הכיס של החודש")

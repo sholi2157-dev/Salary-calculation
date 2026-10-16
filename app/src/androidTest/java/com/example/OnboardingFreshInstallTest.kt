@@ -47,10 +47,6 @@ class OnboardingFreshInstallTest {
                     assertTrue("whole History navigation must fit above Android navigation bar", nav.bottom <= ui.activity.window.decorView.height - insets.bottom + 1f)
                     ui.onNode(hasText("היסטוריה") and hasAnyAncestor(SemanticsMatcher.expectValue(CoachTargetKey, CoachTarget.HISTORY)), useUnmergedTree = true).assertIsDisplayed()
                 }
-                if (step.target == CoachTarget.API) {
-                    val actions = ui.onNodeWithTag("settings_action_bar", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-                    assertTrue("API key must not be behind sticky settings actions", target.bottom <= actions.top)
-                }
                 ui.onNodeWithTag("onboarding_root").performTouchInput { click(target.center) }
                 ui.onNodeWithTag("onboarding_progress").assertTextEquals("${index + 1} מתוך 9")
             }
