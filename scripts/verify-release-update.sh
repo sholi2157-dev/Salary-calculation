@@ -18,11 +18,12 @@ adb install app/build/outputs/apk/androidTest/release/app-release-androidTest.ap
 adb shell svc wifi disable
 adb shell svc data disable
 run_stage() {
+  log="release-evidence/${2:-$1}.txt"
   adb shell am force-stop "$pkg"
   adb shell am instrument -w -e class com.example.DistributionUpdateTest -e stage "$1" \
-    "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee "release-evidence/$1.txt"
-  grep -F 'OK (1 test)' "release-evidence/$1.txt"
-  ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' "release-evidence/$1.txt"
+    "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee "$log"
+  grep -F 'OK (1 test)' "$log"
+  ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' "$log"
 }
 adb shell pm grant "$pkg" android.permission.POST_NOTIFICATIONS
 run_stage seed
@@ -31,6 +32,11 @@ grep -F "Status: ok" release-evidence/offline-start.txt
 run_stage restart
 adb push candidate-b.apk "/sdcard/Android/data/$pkg/files/candidate-b.apk"
 run_stage updater
+# The owner's real path: RC16 → the delivered 2.0-rc1 → this candidate, data kept at every step.
+if [ -f candidate-rc1.apk ]; then
+  adb install -r candidate-rc1.apk | tee release-evidence/install-rc1.txt
+  run_stage restart after-rc1
+fi
 adb install -r candidate-b.apk | tee release-evidence/install-update.txt
 run_stage verify
 for evidence_file in restart-before.json updater-before.json verify-before.json verify-after-edit.json; do
