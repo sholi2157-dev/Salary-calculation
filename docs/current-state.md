@@ -1,8 +1,8 @@
 # Current project state
 
-## October 16 — 2.0 stage B: signed test build ready (not published)
+## October 16 — 2.0-rc2 after the owner's phone review (not published)
 
-Branch `claude/v2-android` only. Signed `2.0-rc1` / code 25 from source `8b7dcbd`, run 38865496966 SUCCESS: 109 Debug + 92 Release tests, real RC16 → 2.0 signed update with exact data retained, device UI/keyboard/currency tests, fresh-install onboarding, empty crash logs. APK SHA-256 `619adbd5ec5058b94d834a3077c5a5355357f90a1888697f68797e99f5d048ad`, same package and permanent certificate. Private workflow artifact `salary-2.0-rc1-candidate` only — no Release, no update feed change, no merge. Details: `docs/v2-stage-b.md`. Waiting for owner physical review; stage C only after that.
+Branch `claude/v2-android` only. Signed `2.0-rc2` / code 26 from `c6b0086`, run 38908161196 SUCCESS: 112 Debug + 95 Release tests, real RC16 → delivered 2.0-rc1 → rc2 updates with exact data kept, device UI/keyboard/currency tests, fresh install, empty crash logs. APK SHA-256 `2c2c6765915265ae2788fa1c9381149bc1e476338b82f6318610a38f79bfea0a`, same package and permanent certificate. Private artifact `salary-2.0-rc2-candidate` only. Sharing contract: `docs/v2-sharing.md` (website must match its fixtures in stage E). Details: `docs/v2-stage-b.md`. Next delivered build must use a code higher than 26. Waiting for owner physical review; stage C after that. Note: PR #6 (claude/v2-android → main) exists; not merged.
 
 ## October 14 redistribution — Android RC16 and Web production delivered
 
