@@ -280,7 +280,7 @@ private fun SelectionBar(selected: List<WorkEntry>, rows: List<WorkEntry>, ui: H
             BarButton(if (selected.size < rows.size) "בחירת הכול" else "ניקוי") { ui.selection = if (selected.size < rows.size) rows.map { it.id }.toSet() else emptySet() }
             BarButton("ביטול", tag = "selection_cancel") { ui.selection = emptySet() }
         }
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FlowRowCompat {
             BarButton("שיתוף", tag = "selection_share", onClick = onShare)
             BarButton("העתקה", tag = "selection_copy", onClick = onCopy)
             BarButton("שולם", tag = "selection_paid") { onPaid(true) }

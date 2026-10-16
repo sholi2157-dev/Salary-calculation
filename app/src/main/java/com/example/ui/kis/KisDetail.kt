@@ -207,7 +207,7 @@ fun RateCompletionSheet(selected: List<WorkEntry>, viewModel: WorkViewModel, onD
                 }
             }
         }
-        if (skipped > 0) Text(if (skipped == 1) "משמרת אחת כבר עם סכום ולא תשתנה" else "$skipped כבר עם סכום ולא ישתנו", style = KisType.caption, color = c.pending,
+        if (skipped > 0) Text(if (skipped == 1) "פריט אחד לא ישתנה: כבר יש לו סכום, או שהוא קבלנות" else "$skipped לא ישתנו: כבר יש להם סכום, או שהם קבלנות", style = KisType.caption, color = c.pending,
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.pendingSoft).padding(10.dp))
         KisButton(if (targets.size > 1) "עדכון ${targets.size} משמרות" else "עדכון", {
             if (rate != null) viewModel.completeMissingRates(targets.map { it.id }, rate, onDone)

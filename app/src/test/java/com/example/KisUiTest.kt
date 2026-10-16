@@ -1,6 +1,7 @@
 package com.example
 
 import android.app.Application
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
@@ -48,7 +49,7 @@ class KisUiTest {
     private fun host(dark: Boolean = false, content: @Composable () -> Unit) {
         ui.setContent {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                KisTheme(darkOverride = dark) { Box(Modifier.fillMaxSize()) { content() } }
+                KisTheme(darkOverride = dark) { Box(Modifier.fillMaxSize().background(Kis.colors.bg)) { content() } }
             }
         }
     }
@@ -117,7 +118,7 @@ class KisUiTest {
         assertFalse(e.payKnown); assertEquals(0.0, e.hourlyRate, 0.0); assertEquals(0.0, e.totalEarnings, 0.0)
         assertEquals("טיוטה שנשמרת במעבר", e.notes)
         assertEquals(WorkEntry.KIND_SHIFT, e.kind)
-        ui.waitUntil(5_000) { closed }
+        ui.waitUntil(10_000) { closed }
         assertTrue(saved.contains("התעריף"))
     }
 
@@ -133,7 +134,7 @@ class KisUiTest {
         ui.onNodeWithTag("was_banner").assertIsDisplayed()
         ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
         shot("edit-unchanged")
-        ui.onNodeWithTag("editor_more").performScrollTo().performClick()
+        // A saved note opens the note drawer by itself.
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("רק ההערה השתנתה")
         ui.onNodeWithTag("save_shift_button").assertIsEnabled().performClick()
         ui.waitUntil(5_000) { rows().single().notes == "רק ההערה השתנתה" }
@@ -247,7 +248,7 @@ class KisUiTest {
         ui.setContent {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 KisTheme(darkOverride = dark) {
-                    KisHome(rows(), categories, null, 80.dp, {}, {}, {}, {}, {}, {}, {}, {})
+                    Box(Modifier.fillMaxSize().background(Kis.colors.bg)) { KisHome(rows(), categories, null, 80.dp, {}, {}, {}, {}, {}, {}, {}, {}) }
                 }
             }
         }

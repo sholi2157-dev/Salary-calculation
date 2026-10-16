@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,7 +56,8 @@ fun TimeRuler(start: String?, end: String, selected: TimeHandle, ink: Color, sur
     val currentEnd by rememberUpdatedState(end)
     val emitChange by rememberUpdatedState(onChange)
     val emitSelect by rememberUpdatedState(onSelect)
-    BoxWithConstraints(modifier.fillMaxWidth().padding(horizontal = 26.dp).height(86.dp).testTag("time_ruler")) {
+    // Children are positioned with absolute x (00 at the right edge), so align them from the absolute left.
+    BoxWithConstraints(modifier.fillMaxWidth().padding(horizontal = 26.dp).height(86.dp).testTag("time_ruler"), contentAlignment = AbsoluteAlignment.TopLeft) {
         val widthPx = with(density) { maxWidth.toPx() }
         fun xOf(minutes: Int): Float = widthPx - minutes / 1440f * widthPx // RTL: 00 at the right edge
         fun minutesAt(x: Float): Int = ((((widthPx - x) / widthPx) * 96f).roundToInt() * 15).coerceIn(0, 1425)

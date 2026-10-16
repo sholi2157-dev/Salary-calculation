@@ -371,17 +371,22 @@ private fun CategoryChips(categories: List<WorkCategory>, selected: String, ink:
 
 @Composable
 private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, target: KeyTarget, ink: Color, onStart: () -> Unit, onEnd: () -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        @Composable fun cell(label: String, value: String, on: Boolean, empty: Boolean, tag: String, click: () -> Unit) {
-            Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (on) ink.copy(alpha = 0.16f) else Color.Transparent)
-                .kisClick(onClick = click).testTag(tag).padding(horizontal = 8.dp, vertical = 6.dp)) {
-                Text(label, color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
-                Text(value, color = ink.copy(alpha = if (empty) 0.45f else 1f), style = KisType.hero.copy(fontSize = 54.sp, lineHeight = 56.sp, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum"), maxLines = 1)
+    // The digits scale with the width so "00:00" always fits whole (360dp phones included).
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val digits = (maxWidth.value * 0.125f).coerceIn(38f, 60f).sp
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            @Composable fun cell(label: String, value: String, on: Boolean, empty: Boolean, tag: String, click: () -> Unit) {
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (on) ink.copy(alpha = 0.16f) else Color.Transparent)
+                    .kisClick(onClick = click).testTag(tag).padding(horizontal = 8.dp, vertical = 6.dp)) {
+                    Text(label, color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+                    Text(value, color = ink.copy(alpha = if (empty) 0.45f else 1f), style = KisType.hero.copy(fontSize = digits, lineHeight = digits * 1.05f,
+                        textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
+                }
             }
+            cell("התחלה", start, target == KeyTarget.START, startEmpty, "clock_start", onStart)
+            Text("←", color = ink.copy(alpha = 0.7f), fontSize = 20.sp, modifier = Modifier.padding(bottom = 16.dp))
+            cell("סיום", end, target == KeyTarget.END, false, "clock_end", onEnd)
         }
-        cell("התחלה", start, target == KeyTarget.START, startEmpty, "clock_start", onStart)
-        Text("←", color = ink.copy(alpha = 0.7f), fontSize = 22.sp, modifier = Modifier.padding(bottom = 16.dp))
-        cell("סיום", end, target == KeyTarget.END, false, "clock_end", onEnd)
     }
 }
 
