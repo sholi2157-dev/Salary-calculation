@@ -161,7 +161,7 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
         workers.forEachIndexed { i, w ->
             val wPay = WorkPay.workerPay(w, entry)
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.surface)
-                .kisClick { viewModel.updateGroupWorkers(entry, workers.mapIndexed { j, x -> if (j == i) x.copy(isPaid = !x.isPaid) else x }) }
+                .kisClick { viewModel.toggleWorkerPaid(entry.id, i) }
                 .padding(horizontal = 12.dp, vertical = 8.dp).testTag("group_worker_$i"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(if (w.isPaid) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked, if (w.isPaid) "שולם" else "לא שולם", tint = if (w.isPaid) c.paid else c.muted)
                 Column(Modifier.weight(1f)) {

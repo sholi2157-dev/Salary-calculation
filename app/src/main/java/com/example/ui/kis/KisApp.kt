@@ -138,7 +138,7 @@ fun KisApp(
             when (page) {
                 0 -> KisHome(entries, categories, live, navHeight,
                     onStartLive = { startLive = true },
-                    onStopLive = { viewModel.finishActiveShift(); settings.haptic(KisSettings.Haptic.SUCCESS); say("המשמרת נשמרה ✓", "ביטול") { viewModel.undoLastAddedEntry() } },
+                    onStopLive = { viewModel.finishActiveShift(onSaved = { settings.haptic(KisSettings.Haptic.SUCCESS); say("המשמרת נשמרה ✓", "ביטול") { viewModel.undoLastAddedEntry() } }) },
                     onCancelLive = { viewModel.cancelActiveShift(liveStart) },
                     onLiveCurrency = { viewModel.updateActiveShiftCurrency(it, liveStart) },
                     onOpen = { detailId = it.id },

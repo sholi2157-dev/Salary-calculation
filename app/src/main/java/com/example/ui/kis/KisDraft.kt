@@ -158,7 +158,9 @@ data class EntryDraft(
             if (workers.any { w -> num(w.hours)?.let { it < 0 || it > 24 } == true }) errors += "שעות העובד לא תקינות"
             if (separateRates && listOf(employerRate, workerRate).any { it.isNotBlank() && num(it) == null }) errors += "תעריף לא תקין"
         }
-        val total = if (mode == EntryMode.JOB) ev.total else ev.total?.let { WorkPay.amount((ev.minutes ?: 0) / 60.0, rateValue() ?: 0.0, ev.bonus) }
+        // Typed hours are paid exactly as typed (7.33 h, not 440 minutes), the same way they are saved.
+        val payHours = if (mode == EntryMode.HOURS || groupByHours) num(hours) ?: 0.0 else (ev.minutes ?: 0) / 60.0
+        val total = if (mode == EntryMode.JOB) ev.total else ev.total?.let { WorkPay.amount(payHours, rateValue() ?: 0.0, ev.bonus) }
         return Check(errors, warnings, ev.minutes, total, overnight)
     }
 

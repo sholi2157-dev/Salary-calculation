@@ -129,7 +129,7 @@ private fun Hero(week: List<WorkEntry>, today: List<WorkEntry>, all: List<WorkEn
         Text("השבוע", style = KisType.label.copy(fontWeight = FontWeight.Medium), color = c.muted)
         Row(Modifier.padding(top = 6.dp).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
             // Unknown pay is never shown as 0: a week with only rate-less shifts says so instead.
-            if (totals.isEmpty() && week.isNotEmpty()) Text("תעריף חסר", style = KisType.hero.copy(fontSize = 40.sp), color = c.pending, modifier = Modifier.testTag("home_total"))
+            if (totals.isEmpty() && week.isNotEmpty()) Text("עוד לא ידוע", style = KisType.hero.copy(fontSize = 40.sp), color = c.pending, modifier = Modifier.testTag("home_total"))
             else if (totals.isEmpty()) MoneyText(0.0, "₪", KisType.hero, modifier = Modifier.testTag("home_total"), color = c.ink)
             totals.forEachIndexed { i, (cur, v) ->
                 MoneyText(v, cur, if (i == 0) KisType.hero else KisType.hero.copy(fontSize = 30.sp), color = if (i == 0) c.ink else c.muted,
@@ -167,7 +167,7 @@ private fun StatTile(label: String, rows: List<WorkEntry>, caption: String?, mod
     Column(modifier.clip(RoundedCornerShape(18.dp)).background(c.surface.copy(alpha = if (c.dark) 0.72f else 0.86f)).border(1.dp, c.line, RoundedCornerShape(18.dp))
         .padding(horizontal = 14.dp, vertical = 12.dp).semantics(mergeDescendants = true) {}.testTag(tag), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(label, style = KisType.caption, color = c.muted)
-        if (totals.isEmpty() && rows.isNotEmpty()) Text("תעריף חסר", style = KisType.title, color = c.pending, modifier = Modifier.testTag("${tag}_pending"))
+        if (totals.isEmpty() && rows.isNotEmpty()) Text("עוד לא ידוע", style = KisType.title, color = c.pending, modifier = Modifier.testTag("${tag}_pending"))
         else if (totals.isEmpty()) MoneyText(0.0, "₪", KisType.title, modifier = Modifier.testTag("${tag}_₪"), color = c.ink)
         totals.forEach { (cur, v) -> MoneyText(v, cur, KisType.title, modifier = Modifier.testTag("${tag}_$cur"), color = c.ink) }
         if (caption != null) Text(caption, style = KisType.caption, color = c.muted, modifier = Modifier.testTag("${tag}_count"))

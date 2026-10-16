@@ -241,7 +241,8 @@ class KisUiTest {
         }
         ui.onNodeWithTag("mode_group").performClick()
         ui.onNodeWithTag("add_worker_יוסי").performScrollTo().performTouchInput { longClick() }
-        ui.onNodeWithTag("forget_worker_sheet").assertExists()
+        try { waitFor(5_000) { ui.onAllNodesWithTag("forget_worker_confirm").fetchSemanticsNodes().isNotEmpty() } }
+        catch (e: Throwable) { shot("forget-worker-failed"); throw e }
         ui.onNodeWithTag("forget_worker_confirm").performClick()
         waitFor(5_000) { runBlocking { dao.getWorkersList() }.isEmpty() }
         // The past group shift still lists the worker.

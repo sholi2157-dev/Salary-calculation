@@ -436,8 +436,10 @@ class WorkViewModel(
         finishActiveShift(save = false)
     }
 
-    fun finishActiveShift(save: Boolean = true, expectedStart: Long? = activeShiftStartTime.value) {
+    fun finishActiveShift(save: Boolean = true, expectedStart: Long? = activeShiftStartTime.value, onSaved: () -> Unit = {}) {
         val start = expectedStart ?: return
+        // "Undo" may only ever remove what this save adds.
+        if (save) { lastAddedEntryIds = emptyList(); lastAddedEntryId = null }
         if (activeShiftStartTime.value != start) return
         val rate = activeShiftRate.value
         val category = activeShiftCategory.value
@@ -453,6 +455,7 @@ class WorkViewModel(
                 if (id > 0) {
                     lastAddedEntryIds = listOf(id.toInt())
                     lastAddedEntryId = id.toInt()
+                    onSaved()
                 }
                 if (shiftState.clear(start)) getApplication<Application>().stopService(
                     Intent(getApplication(), ShiftForegroundService::class.java))
@@ -716,7 +719,10 @@ class WorkViewModel(
         viewModelScope.launch {
             try {
                 val original = repository.getEntryById(id) ?: run { android.util.Log.w("WorkViewModel", "Edit target $id is gone"); onFailed(); return@launch }
-                val updated = com.example.data.WorkEntryEdits.apply(original, proposed)
+                val applied = com.example.data.WorkEntryEdits.apply(original, proposed)
+                // A changed job amount is stored to the cent, as on creation.
+                val updated = if (applied.kind == WorkEntry.KIND_JOB && applied.payKnown && applied.totalEarnings != original.totalEarnings)
+                    applied.copy(totalEarnings = Math.round(applied.totalEarnings * 100.0) / 100.0) else applied
                 if (!valid(updated)) { android.util.Log.w("WorkViewModel", "Edit rejected as invalid: $updated"); onFailed(); return@launch }
                 repository.updateEntry(updated, getActiveUserId())
                 rememberWorkers(updated)
@@ -770,6 +776,18 @@ class WorkViewModel(
     /** Group workers' payment marks and bonuses live in the group JSON; nothing else changes. */
     /** Forgets a saved worker name (suggestion list only). History keeps every worker it recorded. */
     fun forgetWorker(name: String) { viewModelScope.launch { repository.forgetWorker(name) } }
+
+    /** Toggles one worker's paid mark on the row as stored now, so quick taps on two workers never undo each other. */
+    fun toggleWorkerPaid(entryId: Int, index: Int) {
+        viewModelScope.launch {
+            val current = repository.getEntryById(entryId) ?: return@launch
+            val workers = com.example.data.WorkPay.workers(current)
+            if (index !in workers.indices) return@launch
+            repository.updateEntry(current.copy(groupWorkersJson = com.example.data.WorkPay.encodeWorkers(
+                workers.mapIndexed { j, w -> if (j == index) w.copy(isPaid = !w.isPaid) else w })), getActiveUserId())
+            performAutoBackup()
+        }
+    }
 
     fun updateGroupWorkers(entry: WorkEntry, workers: List<com.example.data.WorkPay.Worker>) {
         viewModelScope.launch {
