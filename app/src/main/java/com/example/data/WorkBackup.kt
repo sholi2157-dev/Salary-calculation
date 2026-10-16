@@ -7,9 +7,20 @@ import org.json.JSONObject
 object WorkBackup {
     data class Contents(val categories: List<WorkCategory>, val entries: List<WorkEntry>, val workers: List<WorkerDirectory>, val localPreferences: Map<String, String> = emptyMap())
 
+    /**
+     * Version 3 only when a 2.0 feature is actually used (unknown pay, bonus, fixed-price job,
+     * series, worker bonus). Otherwise the file is byte-for-byte the version 2 format, so older
+     * app versions and the current website keep reading it.
+     */
+    fun needsVersion3(entries: List<WorkEntry>): Boolean = entries.any { e ->
+        e.kind != WorkEntry.KIND_SHIFT || !e.payKnown || e.bonus != 0.0 || e.seriesKey != null || e.autoConfirmed ||
+            WorkPay.workers(e).any { it.bonus > 0 }
+    }
+
     fun encode(categories: List<WorkCategory>, entries: List<WorkEntry>, workers: List<WorkerDirectory>, localPreferences: Map<String, String> = emptyMap()): String {
+        val v3 = needsVersion3(entries)
         return JSONObject().apply {
-            put("formatVersion", 2)
+            put("formatVersion", if (v3) 3 else 2)
             if (localPreferences.isNotEmpty()) put("androidLocalPreferences", JSONObject(localPreferences))
             put("categories", JSONArray().apply {
                 categories.forEach { put(JSONObject().put("name", it.name).put("defaultRate", it.defaultRate)) }
@@ -34,6 +45,13 @@ object WorkBackup {
                     put("employerRate", e.employerRate ?: JSONObject.NULL)
                     put("workerRate", e.workerRate ?: JSONObject.NULL)
                     put("groupWorkersJson", e.groupWorkersJson)
+                    if (v3) {
+                        put("kind", e.kind)
+                        put("payKnown", e.payKnown)
+                        put("bonus", e.bonus)
+                        put("seriesKey", e.seriesKey ?: JSONObject.NULL)
+                        put("autoConfirmed", e.autoConfirmed)
+                    }
                 }) }
             })
         }.toString(2)
@@ -41,7 +59,7 @@ object WorkBackup {
 
     fun decode(text: String): Contents {
         val root = JSONObject(text)
-        require(root.optInt("formatVersion", 1) in 1..2) { "Unsupported backup version" }
+        require(root.optInt("formatVersion", 1) in 1..3) { "Unsupported backup version" }
         val records = root.getJSONArray("entries")
         val entries = (0 until records.length()).map { i ->
             val e = records.getJSONObject(i)
@@ -60,9 +78,13 @@ object WorkBackup {
                     val worker = group.getJSONObject(i)
                     require(worker.getString("name").isNotBlank()) { "Missing worker name" }
                     require(worker.getDouble("hours").let { it.isFinite() && it >= 0 }) { "Invalid worker hours" }
-                    worker.nullableRate("workerRate"); worker.nullableRate("employerRate")
+                    worker.nullableRate("workerRate"); worker.nullableRate("employerRate"); worker.nullableRate("bonus")
                 }
             }
+            val kind = e.optString("kind", WorkEntry.KIND_SHIFT)
+            require(kind == WorkEntry.KIND_SHIFT || kind == WorkEntry.KIND_JOB) { "Unknown entry kind" }
+            val bonus = e.optDouble("bonus", 0.0)
+            require(bonus.isFinite() && bonus >= 0) { "Invalid bonus" }
             require(e.getString("category").isNotBlank()) { "Missing category" }
             WorkEntry(
                 // Source IDs belong to the exporting installation; never overwrite by ID.
@@ -75,7 +97,10 @@ object WorkBackup {
                 createdAt = e.optLong("createdAt", date), currency = currency,
                 isGroupShift = e.optBoolean("isGroupShift", false),
                 employerRate = e.nullableRate("employerRate"), workerRate = e.nullableRate("workerRate"),
-                groupWorkersJson = groupJson
+                groupWorkersJson = groupJson,
+                kind = kind, payKnown = e.optBoolean("payKnown", true), bonus = bonus,
+                seriesKey = if (e.isNull("seriesKey")) null else e.optString("seriesKey").takeIf { it.isNotBlank() },
+                autoConfirmed = e.optBoolean("autoConfirmed", false)
             )
         }
         val cats = root.optJSONArray("categories") ?: JSONArray()
@@ -99,7 +124,7 @@ object WorkBackup {
     }
 
     private fun JSONObject.nullableRate(key: String): Double? {
-        if (isNull(key)) return null
+        if (!has(key) || isNull(key)) return null
         val value = getDouble(key)
         require(value.isFinite() && value >= 0)
         return value

@@ -1,5 +1,8 @@
 # Salary-calculation — agent rules
 
+## Language
+Always reply to the owner in Hebrew — final answers, progress updates, questions and summaries — unless the owner explicitly asks for another language. Code, commit messages and technical identifiers may stay in English.
+
 ## Source of truth
 Before changing anything in this repository:
 1. Read this file.
@@ -49,7 +52,7 @@ Preserve all existing user data and behavior.
 ## Product behavior to preserve
 The detailed product contract lives in `docs/preservation-and-sync.md`.
 Important durable rules include:
-- RTL-first Android UI with Heebo.
+- RTL-first Android UI. Since 2.0 ("כיס"): Rubik for text and Secular One for display, bundled under OFL (`docs/licenses`); ₪/$ always render in Rubik.
 - Main/history navigation behavior must remain intact.
 - Currency is stored per shift; ILS and USD totals stay separated.
 - Configurable default category; `עצמאי` is not mandatory.

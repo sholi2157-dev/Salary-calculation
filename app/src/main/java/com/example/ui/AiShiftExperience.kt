@@ -29,7 +29,6 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.example.api.GeminiParser.ParsedShift
 import com.example.data.WorkMoney
-import com.example.ui.theme.FormSurface
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -69,65 +68,51 @@ fun AiShiftInput(text: String, onText: (String) -> Unit, capturing: Boolean, lis
                  error: String?, onRecord: () -> Unit, onStop: () -> Unit, onCancel: () -> Unit, onParse: () -> Unit) {
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
-    Column(Modifier.fillMaxWidth().testTag("ai_experience").coachTarget(CoachTarget.AI), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(Icons.Filled.AutoAwesome, null, tint = Color(0xFFA5B4FC), modifier = Modifier.size(24.dp))
+    val c = com.example.ui.kis.Kis.colors
+    val accent = com.example.ui.kis.Workplaces[0].accent(c.dark)
+    Column(Modifier.fillMaxWidth().testTag("ai_experience").coachTarget(CoachTarget.AI), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(Icons.Filled.AutoAwesome, null, tint = accent, modifier = Modifier.size(26.dp))
             Column {
-                Text("משמרת במילים שלך", color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("כתיבה או קול ← פענוח ← בדיקה ושמירה", color = Color(0xFFA5B4FC), style = MaterialTheme.typography.labelMedium)
+                Text("משמרת במילים שלך", color = c.ink, style = com.example.ui.kis.KisType.title)
+                Text("כותבים או מכתיבים ← פענוח ← בדיקה ושמירה", color = c.muted, style = com.example.ui.kis.KisType.caption)
             }
         }
-        OutlinedTextField(value = text, onValueChange = onText, enabled = !processing && !capturing,
-            modifier = Modifier.fillMaxWidth().testTag("ai_free_text_input"), minLines = 3, maxLines = 6,
-            label = { Text("תיאור המשמרת / התמלול") },
-            placeholder = { Text("אתמול עבדתי אצל פלוני מ־9 עד 5, חצי שעה הפסקה, 50 שקל לשעה.") },
-            textStyle = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.ContentOrRtl),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); focus.clearFocus() }),
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = FormSurface, unfocusedContainerColor = FormSurface,
-                disabledContainerColor = FormSurface, focusedTextColor = Color.White, unfocusedTextColor = Color.White,
-                disabledTextColor = Color.White, focusedBorderColor = Color(0xFF818CF8), unfocusedBorderColor = Color(0xFF555E87)))
+        com.example.ui.kis.KisTextField(text, onText, "תיאור המשמרת", Modifier.fillMaxWidth().testTag("ai_free_text_input"),
+            placeholder = "אתמול עבדתי במסעדה מ-17 עד 23, חצי שעה הפסקה, 52 שקל לשעה", singleLine = false, minLines = 3,
+            enabled = !processing && !capturing,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); focus.clearFocus() }))
         if (capturing) {
             val pulse = rememberInfiniteTransition(label = "voice")
             val alpha by pulse.animateFloat(0.45f, 1f, infiniteRepeatable(tween(850), RepeatMode.Reverse), label = "listening glow")
-            Surface(color = Color(0xFF252B4D), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().testTag("ai_recording")) {
-                Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Outlined.Mic, null, tint = Color(0xFFA5B4FC).copy(alpha = if (listening) alpha else 1f))
-                        Text(if (listening) "מקשיב... אפשר לדבר" else "מסיים את התמלול...", color = Color.White, style = MaterialTheme.typography.bodyMedium)
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = onStop, enabled = listening, modifier = Modifier.heightIn(min = 48.dp).testTag("ai_stop")) {
-                            Icon(Icons.Filled.Stop, null, tint = Color(0xFFC7D2FE)); Text("סיום הקלטה", color = Color(0xFFC7D2FE))
-                        }
-                        TextButton(onClick = onCancel, modifier = Modifier.heightIn(min = 48.dp).testTag("ai_cancel_voice")) { Text("ביטול הקלטה", color = Color(0xFF94A3B8)) }
-                    }
-                }
-            }
-        } else {
-            OutlinedButton(onClick = { keyboard?.hide(); focus.clearFocus(); onRecord() }, enabled = !processing,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("ai_mic_btn"), shape = RoundedCornerShape(12.dp)) {
-                Icon(Icons.Outlined.Mic, null, tint = Color(0xFFC7D2FE)); Spacer(Modifier.width(8.dp)); Text("הקלטת תיאור בקול", color = Color(0xFFC7D2FE))
-            }
-            Text("אפשר לערוך את הטקסט לפני הפענוח. שום משמרת לא נשמרת בלי אישור שלך.", color = Color(0xFF94A3B8), style = MaterialTheme.typography.bodySmall)
-        }
-        if (error != null) Text(error, color = Color(0xFFFCA5A5), style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("ai_inline_error"))
-        if (processing) {
-            Column(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xFF292C58), Color(0xFF352358))), RoundedCornerShape(14.dp))
-                .border(1.dp, Color(0xFF5553A5), RoundedCornerShape(14.dp)).padding(14.dp).testTag("ai_processing"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.fillMaxWidth().background(c.sunk, RoundedCornerShape(16.dp)).padding(12.dp).testTag("ai_recording"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Filled.AutoAwesome, null, tint = Color(0xFFC7D2FE))
-                    Text("מפענח את המשמרת...", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                    Icon(Icons.Outlined.Mic, null, tint = accent.copy(alpha = if (listening) alpha else 1f))
+                    Text(if (listening) "מקשיב... אפשר לדבר" else "מסיים את התמלול...", color = c.ink, style = com.example.ui.kis.KisType.body)
                 }
-                LinearProgressIndicator(Modifier.fillMaxWidth(), color = Color(0xFFA5B4FC), trackColor = Color(0xFF42416B))
-                Text("מיד אפשר לבדוק את הפרטים לפני השמירה", color = Color(0xFFC7D2FE), style = MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    com.example.ui.kis.KisButton("סיום הקלטה", onStop, Modifier.weight(1f), com.example.ui.kis.KisButtonKind.PRIMARY, enabled = listening, height = 48.dp, tag = "ai_stop")
+                    com.example.ui.kis.KisButton("ביטול הקלטה", onCancel, Modifier.weight(1f), com.example.ui.kis.KisButtonKind.GHOST, height = 48.dp, tag = "ai_cancel_voice")
+                }
             }
         } else {
-            Button(onClick = { keyboard?.hide(); focus.clearFocus(); onParse() }, enabled = text.isNotBlank() && !capturing,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("ai_parse_button"), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366C4))) {
-                Icon(Icons.Filled.AutoAwesome, null, tint = Color.White); Spacer(Modifier.width(8.dp)); Text("פענח עם AI", color = Color.White, fontWeight = FontWeight.Bold)
+            com.example.ui.kis.KisButton("הקלטת תיאור בקול", { keyboard?.hide(); focus.clearFocus(); onRecord() }, Modifier.fillMaxWidth(),
+                com.example.ui.kis.KisButtonKind.OUTLINE, enabled = !processing, icon = Icons.Outlined.Mic, height = 50.dp, tag = "ai_mic_btn")
+            Text("אפשר לערוך את הטקסט לפני הפענוח. שום משמרת לא נשמרת בלי אישור שלך.", color = c.muted, style = com.example.ui.kis.KisType.caption)
+        }
+        if (error != null) Text(error, color = c.danger, style = com.example.ui.kis.KisType.caption, modifier = Modifier.testTag("ai_inline_error"))
+        if (processing) {
+            Column(Modifier.fillMaxWidth().background(c.sunk, RoundedCornerShape(16.dp)).padding(14.dp).testTag("ai_processing"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Filled.AutoAwesome, null, tint = accent)
+                    Text("מפענח את המשמרת...", color = c.ink, style = com.example.ui.kis.KisType.body)
+                }
+                LinearProgressIndicator(Modifier.fillMaxWidth(), color = accent, trackColor = c.line)
+                Text("מיד אפשר לבדוק את הפרטים לפני השמירה", color = c.muted, style = com.example.ui.kis.KisType.caption)
             }
+        } else {
+            com.example.ui.kis.KisButton("פענוח", { keyboard?.hide(); focus.clearFocus(); onParse() }, Modifier.fillMaxWidth(),
+                enabled = text.isNotBlank() && !capturing, icon = Icons.Filled.AutoAwesome, tag = "ai_parse_button")
         }
     }
 }
@@ -135,22 +120,23 @@ fun AiShiftInput(text: String, onText: (String) -> Unit, capturing: Boolean, lis
 @Composable
 fun AiShiftReview(shifts: List<ParsedShift>, onEdit: () -> Unit, onSave: () -> Unit, saving: Boolean = false) {
     val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.45f).dp
-    AlertDialog(onDismissRequest = { if (!saving) onEdit() }, containerColor = Color(0xFF171D34),
-        icon = { Icon(Icons.Filled.AutoAwesome, null, tint = Color(0xFFA5B4FC)) },
-        title = { Text("בדיקת הפענוח", color = Color.White) },
+    val c = com.example.ui.kis.Kis.colors
+    AlertDialog(onDismissRequest = { if (!saving) onEdit() }, containerColor = c.surface,
+        icon = { Icon(Icons.Filled.AutoAwesome, null, tint = com.example.ui.kis.Workplaces[0].accent(c.dark)) },
+        title = { Text("בדיקת הפענוח", color = c.ink, style = com.example.ui.kis.KisType.title) },
         text = {
             Column(Modifier.heightIn(max = maxHeight).verticalScroll(rememberScrollState()).testTag("ai_review"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("בדוק שהפרטים נכונים. לשינוי, חזור לתיאור ופענח שוב.", color = Color(0xFF94A3B8))
+                Text("בדוק שהפרטים נכונים. לשינוי, חזור לתיאור ופענח שוב.", color = c.muted)
                 shifts.forEach { shift ->
-                    Column(Modifier.fillMaxWidth().background(FormSurface, RoundedCornerShape(12.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(shift.category, color = Color.White, fontWeight = FontWeight.Bold)
-                        Text(SimpleDateFormat("dd.MM.yyyy", Locale.US).format(Date(shift.date)), color = Color(0xFFC7D2FE), style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr))
-                        Text("${shift.hours} שעות · תעריף \u2066${WorkMoney.format(shift.hourlyRate, shift.currency)}\u2069 לשעה", color = Color.White)
-                        if (shift.isGroup) Text("קבוצה: ${shift.groupMembers.joinToString(", ")}", color = Color(0xFFC7D2FE))
-                        if (shift.notes.isNotBlank()) Text(shift.notes, color = Color(0xFF94A3B8))
+                    Column(Modifier.fillMaxWidth().background(c.sunk, RoundedCornerShape(14.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(shift.category, color = c.ink, fontWeight = FontWeight.Bold)
+                        Text(SimpleDateFormat("dd.MM.yyyy", Locale.US).format(Date(shift.date)), color = c.muted, style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr))
+                        Text("${shift.hours} שעות · תעריף \u2066${WorkMoney.format(shift.hourlyRate, shift.currency)}\u2069 לשעה", color = c.ink)
+                        if (shift.isGroup) Text("קבוצה: ${shift.groupMembers.joinToString(", ")}", color = c.muted)
+                        if (shift.notes.isNotBlank()) Text(shift.notes, color = c.muted)
                     }
                 }
             }
-        }, confirmButton = { TextButton(onClick = onSave, enabled = !saving, modifier = Modifier.testTag("ai_confirm_save")) { Text(if (saving) "שומר…" else "שמור את המשמרות", color = Color(0xFFC7D2FE), fontWeight = FontWeight.Bold) } },
-        dismissButton = { TextButton(onClick = onEdit, enabled = !saving) { Text("חזרה לעריכה", color = Color(0xFF94A3B8)) } })
+        }, confirmButton = { TextButton(onClick = onSave, enabled = !saving, modifier = Modifier.testTag("ai_confirm_save")) { Text(if (saving) "שומר…" else "שמור את המשמרות", color = c.ink, fontWeight = FontWeight.Bold) } },
+        dismissButton = { TextButton(onClick = onEdit, enabled = !saving) { Text("חזרה לעריכה", color = c.muted) } })
 }

@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.example.api.GeminiParser.ParsedShift
 import com.example.ui.*
-import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.kis.KisTheme
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.*
 import org.junit.Rule
@@ -46,7 +46,7 @@ class AiShiftExperienceTest {
     @Test fun savingReviewDisablesDuplicateSaveAndAllowsRetryAfterFailure() {
         var saving by mutableStateOf(true)
         var saves = 0
-        ui.setContent { MyApplicationTheme {
+        ui.setContent { KisTheme {
             AiShiftReview(listOf(ParsedShift("Work", 1, 2.0, 40.0, "draft")), {}, { saves++ }, saving)
         } }
         ui.onNodeWithTag("ai_confirm_save").assertIsNotEnabled()
@@ -68,7 +68,7 @@ class AiShiftExperienceTest {
         val voice = VoiceTranscriptSession({ text = it }, { error = it })
         ui.setContent {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                MyApplicationTheme {
+                KisTheme {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
                         AiShiftInput(text, { text = it; error = null }, voice.active, voice.listening, processing, error,
                             { voice.begin(text) }, { voice.stop() }, { voice.cancel() }, { parseCount++; processing = true })

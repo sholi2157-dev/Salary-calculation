@@ -81,14 +81,14 @@ enum class CoachScreen { HOME, FORM, AI, HISTORY, SHARE, CATEGORIES, API }
 enum class CoachTarget { SHIFT, FIELDS, AI, HISTORY, SHARE, CATEGORIES, API }
 data class CoachStep(val screen: CoachScreen, val target: CoachTarget?, val title: String, val body: String)
 val workOnboardingSteps = listOf(
-    CoachStep(CoachScreen.HOME, null, "ברוכים הבאים לחישוב שכר", "רושמים משמרות, מחשבים שכר ומשתפים בקלות. בוא נכיר את המקומות החשובים."),
-    CoachStep(CoachScreen.HOME, CoachTarget.SHIFT, "כאן מתחילים", "״דיווח חדש״ לרישום שעות שכבר עבדת. ״התחל משמרת פעילה״ מפעיל טיימר בזמן העבודה."),
-    CoachStep(CoachScreen.FORM, CoachTarget.FIELDS, "הפרטים שלך, החישוב שלנו", "תאריך ושעות, הפסקה, תעריף ומטבע. מוסיפים קטגוריה והערה אם צריך — והסכום מחושב לבד."),
-    CoachStep(CoachScreen.AI, CoachTarget.AI, "אפשר גם במילים", "כותבים או מכתיבים, עורכים ולוחצים ״פענח עם AI״. בודקים את התוצאה ורק אז שומרים."),
-    CoachStep(CoachScreen.HISTORY, CoachTarget.HISTORY, "כל המשמרות במקום אחד", "כאן רואים סכומים, מחפשים ומסננים. לחיצה ארוכה בוחרת כמה משמרות לפעולה משותפת."),
-    CoachStep(CoachScreen.SHARE, CoachTarget.SHARE, "שולחים סיכום מסודר", "פותחים משמרת ולוחצים על שיתוף. השעות והסכום מוכנים לשליחה, למשל בוואטסאפ. בהדרכה לא נשלח דבר."),
-    CoachStep(CoachScreen.CATEGORIES, CoachTarget.CATEGORIES, "עובד בכמה מקומות?", "בהגדרות יוצרים קטגוריה לכל עבודה, עם תעריף ומטבע ברירת מחדל: שקל או דולר. אפשר לבחור מטבע גם בכל משמרת."),
-    CoachStep(CoachScreen.API, CoachTarget.API, "רוצה להשתמש ב־AI?", "ב״מערכת ומשוב״ מוסיפים מפתח API אישי של ג׳מיני. שאר האפליקציה עובדת גם בלי AI."),
+    CoachStep(CoachScreen.HOME, null, "ברוכים הבאים לחישוב שכר", "רושמים משמרות, רואים כמה הרווחתם ומשתפים בקלות. בוא נכיר את המקומות החשובים."),
+    CoachStep(CoachScreen.HOME, CoachTarget.SHIFT, "כאן מתחילים", "הכפתור + למטה מוסיף משמרת שכבר עבדת. ״אני מתחיל עכשיו״ מפעיל טיימר בזמן העבודה."),
+    CoachStep(CoachScreen.FORM, CoachTarget.FIELDS, "השעות כבר מוצעות", "הסיום מעוגל לחצי השעה האחרונה, וההתחלה לפי ההרגל שלך. גוררים בסרגל או מקלידים — והסכום מחושב מיד."),
+    CoachStep(CoachScreen.AI, CoachTarget.AI, "אפשר גם במילים", "כותבים או מכתיבים, לוחצים ״פענוח״, בודקים את התוצאה ורק אז שומרים."),
+    CoachStep(CoachScreen.HISTORY, CoachTarget.HISTORY, "כל המשמרות במקום אחד", "לפי חודש ושבוע, עם חיפוש וסינון. לחיצה ארוכה בוחרת כמה משמרות: שיתוף, סימון תשלום או השלמת תעריף."),
+    CoachStep(CoachScreen.SHARE, CoachTarget.SHARE, "שולחים סיכום מסודר", "נגיעה במשמרת פותחת את הפרטים, ומשם משתפים לוואטסאפ או מעתיקים. בהדרכה לא נשלח דבר."),
+    CoachStep(CoachScreen.CATEGORIES, CoachTarget.CATEGORIES, "עובד בכמה מקומות?", "בהגדרות מוסיפים מקום עבודה לכל עבודה, עם תעריף, מטבע וצבע משלו."),
+    CoachStep(CoachScreen.API, CoachTarget.API, "רוצה להשתמש ב־AI?", "מוסיפים מפתח Gemini אישי. שאר האפליקציה עובדת גם בלי AI."),
     CoachStep(CoachScreen.HOME, null, "זה הכול. אתה מוכן.", "מוסיפים משמרת — והחישובים עלינו. ההדרכה תמיד זמינה שוב בהגדרות.")
 )
 
@@ -153,7 +153,6 @@ private fun Modifier.readOnlyTutorial() = clearAndSetSemantics { }.pointerInput(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, categories: List<WorkCategory>, entries: List<WorkEntry>) {
     if (!controller.active) return
@@ -161,6 +160,8 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
     val targets = remember { CoachTargets() }
     val keyboard = LocalSoftwareKeyboardController.current
     val density = LocalDensity.current
+    val kisSettings = com.example.ui.kis.Kis.settings
+    val dark = com.example.ui.kis.Kis.colors.dark
     LaunchedEffect(Unit) { keyboard?.hide() }
     // Constrain the fullscreen dialog to the host viewport. Android's WRAP_CONTENT
     // dialog probing can otherwise measure fillMaxSize beyond the physical screen.
@@ -174,32 +175,35 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
             BackHandler { if (controller.index > 0) controller.back() else controller.finish() }
             var cardHeight by remember { mutableStateOf(260.dp) }
             var rootOrigin by remember { mutableStateOf(Offset.Zero) }
-            com.example.ui.theme.MyApplicationTheme {
-            Box(Modifier.requiredSize(hostWidth, hostHeight).padding(hostInsets).testTag("onboarding_root")) {
+            com.example.ui.kis.KisTheme(kisSettings, darkOverride = dark) {
+            val c = com.example.ui.kis.Kis.colors
+            Box(Modifier.requiredSize(hostWidth, hostHeight).background(c.bg).padding(hostInsets).testTag("onboarding_root")) {
                 Box(Modifier.fillMaxSize().onGloballyPositioned { rootOrigin = it.boundsInRoot().topLeft }) {
                     Column(Modifier.fillMaxSize().readOnlyTutorial()) {
-                        TopAppBar(title = { Text(if (step.screen in listOf(CoachScreen.CATEGORIES, CoachScreen.API)) "הגדרות מערכת" else "שכר עבודות אישי", style = MaterialTheme.typography.titleMedium) },
-                            actions = { IconButton(onClick = {}) { Icon(Icons.Outlined.Settings, "הגדרות") } }, windowInsets = WindowInsets(0, 0, 0, 0))
                         Box(Modifier.weight(1f).fillMaxWidth().padding(bottom = if (step.target != null && step.target != CoachTarget.HISTORY) cardHeight + 20.dp else 0.dp)) {
-                            // Separate state from normal screens. No simulated save/start/payment callbacks.
+                            // Real screens with separate state. No save/start/payment/share callback does anything here.
                             key(step.screen) {
+                                val sample = entries.firstOrNull()?.copy(isGroupShift = false, groupWorkersJson = "") ?: WorkEntry(id = -1, category = categories.firstOrNull()?.name ?: "עבודה לדוגמה",
+                                    date = System.currentTimeMillis(), isTimeRange = true, startTime = "09:00", endTime = "17:00", hours = 8.0, hourlyRate = 40.0, totalEarnings = 320.0)
                                 when (step.screen) {
-                                    CoachScreen.HOME, CoachScreen.FORM, CoachScreen.AI -> DashboardScreen(
-                                        viewModel, WorkViewModel.StatsSummary(), categories, emptyList(), null, "", 40.0, 1f,
-                                        { _, _, _ -> }, { _, _, _ -> }, entries, {}, {}, { _, _, _, _, _, _, _, _, _, _, _, _, _ -> }, { _, _ -> }, {})
-                                    CoachScreen.HISTORY -> ShiftsScreen(viewModel = viewModel, entries = entries, categories = categories,
-                                        searchQuery = "", onSearchQueryChange = {}, onTogglePaid = {}, onEdit = {}, onDelete = {})
-                                    CoachScreen.SHARE -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-                                        if (entries.isEmpty()) Text("משמרת לדוגמה בלבד · לא נשמרת", color = Color(0xFFC7D2FE), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 12.dp))
-                                        WorkEntryRowCard(entry = entries.firstOrNull()?.copy(isGroupShift = false, groupWorkersJson = "") ?: WorkEntry(id = -1, category = "עבודה לדוגמה", date = 1735732800000, isTimeRange = true, startTime = "09:00", endTime = "17:00", hours = 8.0, hourlyRate = 40.0, totalEarnings = 320.0), onTogglePaid = {}, onEdit = {}, onDelete = {})
+                                    CoachScreen.HOME -> com.example.ui.kis.KisHome(entries, categories, null, 0.dp, {}, {}, {}, {}, {}, {}, {}, {})
+                                    CoachScreen.FORM, CoachScreen.AI -> {
+                                        val cat = categories.firstOrNull()
+                                        com.example.ui.kis.KisEditorPage(viewModel, com.example.ui.kis.EntryDraft.new(cat, cat?.let { viewModel.categoryCurrency(it.name) } ?: "₪", entries).let {
+                                            if (it.start == null) it.copy(start = com.example.domain.V2Rules.fromMinutes(com.example.domain.V2Rules.toMinutes(it.end) - 8 * 60)) else it
+                                        }, null, categories, entries, emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}, startInAi = step.screen == CoachScreen.AI, interactive = false)
                                     }
-                                    CoachScreen.CATEGORIES, CoachScreen.API -> ManagementScreen(viewModel, categories, {})
+                                    CoachScreen.HISTORY -> com.example.ui.kis.KisHistory(remember { com.example.ui.kis.HistoryUi() }, false, entries, categories, viewModel, 0.dp, {}, {}, {})
+                                    CoachScreen.SHARE -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                                        if (entries.isEmpty()) Text("משמרת לדוגמה בלבד · לא נשמרת", color = c.muted, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 12.dp))
+                                        com.example.ui.kis.ShiftDetailContent(sample, categories, onPaid = {}, onEdit = {}, onShare = {}, onCopy = {}, onDelete = {}, onCompleteRate = {}, group = {})
+                                    }
+                                    CoachScreen.CATEGORIES, CoachScreen.API -> com.example.ui.kis.KisSettingsPage(viewModel, categories, onClose = {}, onReplayTour = {})
                                 }
                             }
                         }
-                        NavigationBar(containerColor = Color.Transparent, windowInsets = WindowInsets(0, 0, 0, 0)) {
-                            NavigationBarItem(selected = step.screen !in listOf(CoachScreen.HISTORY, CoachScreen.SHARE), onClick = {}, icon = { Icon(Icons.Outlined.GridView, null) }, label = { Text("ראשי") })
-                            NavigationBarItem(selected = step.screen in listOf(CoachScreen.HISTORY, CoachScreen.SHARE), onClick = {}, icon = { Icon(Icons.Outlined.History, null) }, label = { Text("היסטוריה") }, modifier = Modifier.coachTarget(CoachTarget.HISTORY))
+                        if (step.screen != CoachScreen.FORM && step.screen != CoachScreen.AI) Box(Modifier.fillMaxWidth().padding(bottom = 14.dp), contentAlignment = Alignment.Center) {
+                            com.example.ui.kis.PillNav(if (step.screen == CoachScreen.HISTORY || step.screen == CoachScreen.SHARE) 1 else 0, {}, {}, {})
                         }
                     }
                     val rect = step.target?.let { targets.bounds[it] }?.translate(-rootOrigin)
@@ -230,7 +234,7 @@ internal fun CoachOverlay(controller: OnboardingController, target: Rect?, modif
                 if (valid != null) addRoundRect(RoundRect(hole, CornerRadius(12.dp.toPx())))
             }
             drawPath(path, Color.Black.copy(alpha = .68f))
-            if (valid != null) drawRoundRect(Color(0xFFA5B4FC), hole.topLeft, hole.size, CornerRadius(12.dp.toPx()), style = Stroke(2.dp.toPx()))
+            if (valid != null) drawRoundRect(Color(0xFFFFC94D), hole.topLeft, hole.size, CornerRadius(12.dp.toPx()), style = Stroke(2.5.dp.toPx()))
         }
         // Full-window blocker also covers the highlighted hole. The only actionable controls
         // are the coach card; this never forwards a tap to a real Save/Share/Start button.
@@ -243,21 +247,20 @@ internal fun CoachOverlay(controller: OnboardingController, target: Rect?, modif
             .heightIn(max = if (centered) maxHeight - 32.dp else minOf(260.dp, maxHeight - 112.dp))
             .onSizeChanged { onCardHeight(it.height) }.testTag("onboarding_card")
         Surface(modifier = cardModifier.semantics { isTraversalGroup = true; liveRegion = LiveRegionMode.Polite },
-            shape = RoundedCornerShape(20.dp), color = Color(0xFF202238), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4A4E70)), shadowElevation = 12.dp) {
+            shape = RoundedCornerShape(22.dp), color = com.example.ui.kis.Kis.colors.surface, shadowElevation = 12.dp) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${controller.index + 1} מתוך ${workOnboardingSteps.size}", color = Color(0xFFA5B4FC), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f).testTag("onboarding_progress"))
-                    TextButton(onClick = controller::finish, modifier = Modifier.heightIn(min = 48.dp).testTag("onboarding_skip")) { Text("דלג", color = Color(0xFFCBD5E1)) }
+                    Text("${controller.index + 1} מתוך ${workOnboardingSteps.size}", color = com.example.ui.kis.Kis.colors.muted, style = com.example.ui.kis.KisType.label, modifier = Modifier.weight(1f).testTag("onboarding_progress"))
+                    TextButton(onClick = controller::finish, modifier = Modifier.heightIn(min = 48.dp).testTag("onboarding_skip")) { Text("דלג", color = com.example.ui.kis.Kis.colors.muted) }
                 }
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(step.title, color = Color.White, style = if (centered) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, lineHeight = 26.sp), fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
-                    Text(step.body, color = Color(0xFFE2E8F0), style = MaterialTheme.typography.bodyMedium)
+                    Text(step.title, color = com.example.ui.kis.Kis.colors.ink, style = com.example.ui.kis.KisType.title.copy(fontSize = if (centered) 26.sp else 21.sp), modifier = Modifier.semantics { heading() })
+                    Text(step.body, color = com.example.ui.kis.Kis.colors.ink, style = com.example.ui.kis.KisType.body)
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Button(onClick = controller::next, enabled = ready, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("onboarding_next"), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1))) {
-                        Text(if (controller.index == workOnboardingSteps.lastIndex) "יאללה, מתחילים" else "הבא", fontWeight = FontWeight.Bold)
-                    }
-                    if (controller.index > 0) TextButton(onClick = controller::back, modifier = Modifier.heightIn(min = 48.dp).testTag("onboarding_back")) { Text("הקודם", color = Color(0xFFE2E8F0)) }
+                    com.example.ui.kis.KisButton(if (controller.index == workOnboardingSteps.lastIndex) "יאללה, מתחילים" else "הבא", controller::next, Modifier.weight(1f),
+                        enabled = ready, height = 50.dp, tag = "onboarding_next")
+                    if (controller.index > 0) TextButton(onClick = controller::back, modifier = Modifier.heightIn(min = 48.dp).testTag("onboarding_back")) { Text("הקודם", color = com.example.ui.kis.Kis.colors.ink) }
                 }
             }
         }

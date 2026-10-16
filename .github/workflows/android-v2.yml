@@ -28,21 +28,25 @@ jobs:
         with:
           gradle-version: '9.3.1'
           cache-read-only: false
-      # Same test selection as the RC16 distribution pipeline (UI tests run on Debug only), plus 2.0 tests.
+      # Fast iteration: "[compile]" in the commit message only compiles app and tests.
+      - name: Compile only
+        if: ${{ contains(github.event.head_commit.message, '[compile]') }}
+        run: gradle :app:compileDebugKotlin :app:compileDebugUnitTestKotlin --console=plain
+      # Logic tests run on Debug and Release; screen tests (Robolectric + screenshots) on Debug only.
       - name: Unit regression, release build and instrumentation APK (unsigned)
+        if: ${{ !contains(github.event.head_commit.message, '[compile]') }}
         run: >-
           gradle :app:compileDebugKotlin
           :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
-          --tests 'com.example.StageALayoutTest' --tests 'com.example.StageAInsetsTest'
-          --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.HistoryCompactUiTest'
-          --tests 'com.example.InterfacePolishTest' --tests 'com.example.OnboardingExperienceTest'
+          --tests 'com.example.KisUiTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.OnboardingExperienceTest'
           :app:testReleaseUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
           :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true
           -Proborazzi.test.record=true --continue --console=plain
       - name: Count actual Android test results
-        if: always()
+        if: ${{ always() && !contains(github.event.head_commit.message, '[compile]') }}
         run: python3 scripts/summarize-android-tests.py
       - name: Verify release identity and local gates
+        if: ${{ !contains(github.event.head_commit.message, '[compile]') }}
         run: |
           set -euo pipefail
           apk=app/build/outputs/apk/release/app-release-unsigned.apk
@@ -64,4 +68,7 @@ jobs:
             app/build/test-results/
             app/schemas/
             /tmp/release-identity.txt
+            /tmp/kis-*.png
+            /tmp/onboarding-*.png
+            /tmp/stage-ai-*.png
             release-evidence/unit-tests.json

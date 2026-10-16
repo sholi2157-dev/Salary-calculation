@@ -28,11 +28,22 @@ object WorkEntryEdits {
         return maxOf(0.0, rangeHours(start, end) - breakDurationMinutes / 60.0)
     }
 
+    /**
+     * A saved amount is kept unless something that defines it changed (hours, rate, bonus,
+     * kind or whether pay is known). A fixed-price job keeps the amount the user entered.
+     * Unknown pay is stored as a 0 placeholder that is never shown or summed.
+     */
     fun apply(original: WorkEntry, proposed: WorkEntry): WorkEntry = proposed.copy(
         id = original.id,
         createdAt = original.createdAt,
-        totalEarnings = if (original.hours == proposed.hours && original.hourlyRate == proposed.hourlyRate)
-            original.totalEarnings
-        else Math.round(proposed.hours * proposed.hourlyRate * 100.0) / 100.0
+        seriesKey = original.seriesKey,
+        totalEarnings = when {
+            !proposed.payKnown -> 0.0
+            proposed.kind == WorkEntry.KIND_JOB -> proposed.totalEarnings
+            original.hours == proposed.hours && original.hourlyRate == proposed.hourlyRate && original.bonus == proposed.bonus &&
+                original.kind == proposed.kind && original.payKnown -> original.totalEarnings
+            else -> WorkPay.amount(proposed.hours, proposed.hourlyRate, proposed.bonus)
+        },
+        hourlyRate = if (proposed.payKnown && proposed.kind != WorkEntry.KIND_JOB) proposed.hourlyRate else 0.0
     )
 }

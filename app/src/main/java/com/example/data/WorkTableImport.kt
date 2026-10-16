@@ -19,7 +19,9 @@ object WorkTableImport {
         "notes" to listOf("הערות", "notes"),
         "currency" to listOf("מטבע", "currency"),
         "start" to listOf("שעת כניסה", "התחלה", "startTime", "start", "שעת התחלה", "start time"),
-        "end" to listOf("שעת יציאה", "סיום", "endTime", "end", "שעת סיום", "end time")
+        "end" to listOf("שעת יציאה", "סיום", "endTime", "end", "שעת סיום", "end time"),
+        "kind" to listOf("סוג", "kind"),
+        "bonus" to listOf("בונוס", "bonus")
     ).mapValues { (_, v) -> v.map(::key) }
 
     fun decode(input: String): WorkBackup.Contents {
@@ -48,8 +50,12 @@ object WorkTableImport {
                 val category = cell("category"); require(category.isNotBlank()) { "חסרה קטגוריה" }
                 val hoursText = cell("hours")
                 val hours = duration(hoursText)
-                val rate = number(cell("rate"))
-                val total = cell("total").takeIf { it.isNotBlank() }?.let(::number) ?: hours * rate
+                val job = cell("kind") in listOf("קבלנות", "job")
+                val bonus = cell("bonus").takeIf { it.isNotBlank() }?.let(::number) ?: 0.0
+                // 2.0 exports leave rate and amount empty while the rate (or job amount) is unknown.
+                val payKnown = if (job) cell("total").isNotBlank() else cell("rate").isNotBlank() || cell("total").isNotBlank()
+                val rate = if (job || !payKnown) 0.0 else number(cell("rate"))
+                val total = if (!payKnown) 0.0 else cell("total").takeIf { it.isNotBlank() }?.let(::number) ?: (hours * rate + bonus)
                 require(total.isFinite()) { "סכום לא תקין" }
                 val currencies = listOf(cell("currency"), cell("rate"), cell("total")).mapNotNull { value ->
                     when {
@@ -70,10 +76,13 @@ object WorkTableImport {
                 val date = date(cell("date"))
                 WorkEntry(category=category, date=date, createdAt=date, isTimeRange=start != null,
                     startTime=start, endTime=end, hours=hours, hourlyRate=rate, totalEarnings=total,
-                    isPaid=paid, notes=cell("notes"), currency=currencies.firstOrNull() ?: "₪")
+                    isPaid=paid, notes=cell("notes"), currency=currencies.firstOrNull() ?: "₪",
+                    kind=if (job) WorkEntry.KIND_JOB else WorkEntry.KIND_SHIFT, payKnown=payKnown, bonus=if (job) 0.0 else bonus)
             } catch (e: Exception) { throw IllegalArgumentException("שורה ${i+2}: ${e.message}", e) }
         }
-        val categories = entries.distinctBy { it.category }.map { WorkCategory(name=it.category,defaultRate=it.hourlyRate) }
+        val categories = entries.distinctBy { it.category }.map { c ->
+            WorkCategory(name=c.category, defaultRate=entries.firstOrNull { it.category == c.category && it.payKnown && it.kind == WorkEntry.KIND_SHIFT }?.hourlyRate ?: 40.0)
+        }
         return WorkBackup.Contents(categories, entries, emptyList())
     }
 

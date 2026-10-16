@@ -238,7 +238,7 @@ class WorkViewModel(
             val remote = com.example.data.WorkRemoteRecord.decode(checkNotNull(row.conflictPayload))
             val localDescription = when (row.entityType) {
                 "entry" -> owner.database(getApplication()).workDao().getEntryById(row.localId)?.let {
-                    "${it.category} · ${it.totalEarnings} ${it.currency}\n${it.notes}"
+                    "${it.category} · ${if (it.payKnown) "${it.totalEarnings} ${it.currency}" else com.example.data.WorkPay.missingLabel(it)}\n${it.notes}"
                 } ?: "נמחק במכשיר"
                 else -> "${row.entityType} #${row.localId}"
             }
@@ -467,8 +467,8 @@ class WorkViewModel(
                 return@launch
             }
             val reviewed = com.example.data.WorkLegacyAdoption.snapshot(com.example.data.WorkAccountScope(null).database(context))
-            val totals = reviewed.entries.groupBy { it.currency }.map { (currency, rows) ->
-                "$currency: ${String.format(Locale.US, "%.2f", rows.sumOf { it.totalEarnings })}"
+            val totals = com.example.data.WorkPay.totals(reviewed.entries).map { (currency, sum) ->
+                "$currency: ${String.format(Locale.US, "%.2f", sum)}"
             }.joinToString("\n")
             android.app.AlertDialog.Builder(context)
                 .setTitle("העתקת נתונים מקומיים לחשבון")
@@ -665,6 +665,110 @@ class WorkViewModel(
         }
     }
 
+    // ---- 2.0 entry operations (Kis UI). Amounts follow WorkPay; unknown pay is never 0. ----
+
+    private fun valid(e: WorkEntry): Boolean {
+        if (e.category.isBlank() || e.currency !in listOf("₪", "$") || !e.hours.isFinite() || e.hours < 0) return false
+        if (!e.bonus.isFinite() || e.bonus < 0 || !e.hourlyRate.isFinite() || e.hourlyRate < 0 || !e.totalEarnings.isFinite() || e.totalEarnings < 0) return false
+        if (e.kind == WorkEntry.KIND_JOB) return !e.payKnown || e.totalEarnings > 0
+        if (e.kind != WorkEntry.KIND_SHIFT || e.hours <= 0) return false
+        if (e.isGroupShift && com.example.data.WorkPay.workers(e).any { it.name.isBlank() || !it.hours.isFinite() || it.hours < 0 || it.bonus < 0 }) return false
+        return listOfNotNull(e.employerRate, e.workerRate).all { it.isFinite() && it >= 0 }
+    }
+
+    private suspend fun rememberWorkers(e: WorkEntry) {
+        val known = workersDirectory.value.map { it.name.trim() }.toSet()
+        com.example.data.WorkPay.workers(e).map { it.name.trim() }.filter { it.isNotEmpty() && it !in known }.distinct().forEach { repository.insertWorker(it) }
+    }
+
+    /** Saves a new entry built by the editor. The stored total is computed here, never trusted from the UI for hourly pay. */
+    fun saveNewEntry(draft: WorkEntry, onSaved: (Int) -> Unit = {}, onFailed: () -> Unit = {}) {
+        val entry = when {
+            !draft.payKnown -> draft.copy(hourlyRate = 0.0, totalEarnings = 0.0)
+            draft.kind == WorkEntry.KIND_JOB -> draft.copy(hourlyRate = 0.0, totalEarnings = Math.round(draft.totalEarnings * 100.0) / 100.0)
+            else -> draft.copy(totalEarnings = com.example.data.WorkPay.amount(draft.hours, draft.hourlyRate, draft.bonus))
+        }.copy(id = 0)
+        if (!valid(entry)) { onFailed(); return }
+        viewModelScope.launch {
+            try {
+                val id = repository.insertEntry(entry, getActiveUserId()).toInt()
+                rememberWorkers(entry)
+                lastAddedEntryIds = listOf(id)
+                lastAddedEntryId = id
+                performAutoBackup()
+                onSaved(id)
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) {
+                Toast.makeText(getApplication(), "המשמרת לא נשמרה. הפרטים נשארו בטופס; אפשר לנסות שוב", Toast.LENGTH_LONG).show()
+                onFailed()
+            }
+        }
+    }
+
+    /** Applies an edit; the saved amount is kept unless hours, rate, bonus or kind changed (WorkEntryEdits). */
+    fun saveEditedEntry(id: Int, proposed: WorkEntry, onSaved: () -> Unit = {}, onFailed: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val original = repository.getEntryById(id) ?: run { onFailed(); return@launch }
+                val updated = com.example.data.WorkEntryEdits.apply(original, proposed)
+                if (!valid(updated)) { onFailed(); return@launch }
+                repository.updateEntry(updated, getActiveUserId())
+                rememberWorkers(updated)
+                performAutoBackup()
+                onSaved()
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) {
+                Toast.makeText(getApplication(), "השינוי לא נשמר. אפשר לנסות שוב", Toast.LENGTH_LONG).show()
+                onFailed()
+            }
+        }
+    }
+
+    fun setPaid(ids: Collection<Int>, paid: Boolean) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch { localDao.setPaymentStatusFor(ids.toList(), paid); performAutoBackup() }
+    }
+
+    /** Fills the rate only where it is missing; returns the number of shifts completed. */
+    fun completeMissingRates(ids: Collection<Int>, rate: Double, onDone: (Int) -> Unit = {}) {
+        if (!rate.isFinite() || rate < 0) return
+        viewModelScope.launch {
+            val n = localDao.completeMissingRates(ids.toList(), rate)
+            performAutoBackup()
+            onDone(n)
+        }
+    }
+
+    /** Deletes and returns the exact rows, so the UI can offer undo. */
+    fun deleteEntries(entries: List<WorkEntry>, onDone: (List<WorkEntry>) -> Unit = {}) {
+        if (entries.isEmpty()) return
+        viewModelScope.launch {
+            val uid = getActiveUserId()
+            entries.forEach { repository.deleteEntry(it, uid) }
+            performAutoBackup()
+            onDone(entries)
+        }
+    }
+
+    /** Undo of a delete: the same rows come back with their ids, amounts and dates. */
+    fun restoreEntries(entries: List<WorkEntry>) {
+        if (entries.isEmpty()) return
+        viewModelScope.launch {
+            val uid = getActiveUserId()
+            entries.forEach { repository.insertEntry(it, uid) }
+            performAutoBackup()
+        }
+    }
+
+    /** Group workers' payment marks and bonuses live in the group JSON; nothing else changes. */
+    fun updateGroupWorkers(entry: WorkEntry, workers: List<com.example.data.WorkPay.Worker>) {
+        viewModelScope.launch {
+            val current = repository.getEntryById(entry.id) ?: return@launch
+            repository.updateEntry(current.copy(groupWorkersJson = com.example.data.WorkPay.encodeWorkers(workers)), getActiveUserId())
+            performAutoBackup()
+        }
+    }
+
     fun deleteEntry(entry: WorkEntry) {
         viewModelScope.launch {
             val uid = getActiveUserId()
@@ -706,6 +810,18 @@ class WorkViewModel(
                 repository.insertCategory(WorkCategory(name = name.trim(), defaultRate = defaultRate))
                 localDao.setLocalPreference(com.example.data.WorkLocalPreference("categoryCurrency:${name.trim()}", defaultCurrency.value))
             }
+        }
+    }
+
+    /** A new workplace with its own default rate and currency (from the editor or settings). */
+    fun addWorkplace(name: String, defaultRate: Double, currency: String) {
+        val clean = name.trim()
+        if (clean.isBlank() || !defaultRate.isFinite() || defaultRate < 0 || currency !in listOf("₪", "$")) return
+        viewModelScope.launch {
+            if (categories.value.any { it.name.trim().equals(clean, ignoreCase = true) } || repository.getCategoryByName(clean) != null) return@launch
+            repository.insertCategory(WorkCategory(name = clean, defaultRate = defaultRate))
+            localDao.setLocalPreference(com.example.data.WorkLocalPreference("categoryCurrency:$clean", currency))
+            performAutoBackup()
         }
     }
 
@@ -828,13 +944,16 @@ class WorkViewModel(
             return false
         }
         fun amount(value: Double) = String.format(Locale.US, "%.2f", value)
-        val totals = backup.entries.groupBy { it.currency }.map { (currency, rows) ->
-            "$currency: סך הכול ${amount(rows.sumOf { it.totalEarnings })}, שולם ${amount(rows.filter { it.isPaid }.sumOf { it.totalEarnings })}, לא שולם ${amount(rows.filter { !it.isPaid }.sumOf { it.totalEarnings })}"
+        val totals = backup.entries.groupBy { it.currency }.map { (currency, all) ->
+            val rows = all.filter { it.payKnown }
+            val pending = all.size - rows.size
+            "$currency: סך הכול ${amount(rows.sumOf { it.totalEarnings })}, שולם ${amount(rows.filter { it.isPaid }.sumOf { it.totalEarnings })}, לא שולם ${amount(rows.filter { !it.isPaid }.sumOf { it.totalEarnings })}" +
+                if (pending > 0) " · $pending בלי תעריף (לא נספרו)" else ""
         }.joinToString("\n")
         val categoryCount = (backup.categories.map { it.name } + backup.entries.map { it.category }).distinct().size
         val summary = "נקראו ${backup.entries.size} משמרות ו־$categoryCount קטגוריות.\nסך שעות: ${amount(backup.entries.sumOf { it.hours })}\nסכומי הקובץ לפי מצב תשלום המשמרת:\n$totals\nהשווה לסיכום המקורי לפני האישור.\nרשומות שכבר קיימות לא יתווספו שוב.\n\n" +
             backup.entries.take(20).joinToString("\n") { entry ->
-                "${entry.category} | ${SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(entry.date))} | ${entry.hours} שעות | ${entry.totalEarnings} ${entry.currency}"
+                "${entry.category} | ${SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(entry.date))} | ${entry.hours} שעות | ${if (entry.payKnown) "${entry.totalEarnings} ${entry.currency}" else com.example.data.WorkPay.missingLabel(entry)}"
             } + if (backup.entries.size > 20) "\nועוד ${backup.entries.size - 20} משמרות" else ""
         android.app.AlertDialog.Builder(context)
             .setTitle("בדיקת נתונים לפני ייבוא")
@@ -869,22 +988,26 @@ class WorkViewModel(
             csvBuilder.append('\ufeff')
             
             // CSV Headers
-            csvBuilder.append("מזהה,מעסיק/קטגוריה,תאריך,שעות,תעריף שעתי,סה\"כ רווח,סטטוס תשלום,סוג דיווח,שעת כניסה,שעת יציאה,הערות,מטבע\n")
+            csvBuilder.append("מזהה,מעסיק/קטגוריה,תאריך,שעות,תעריף שעתי,סה\"כ רווח,סטטוס תשלום,סוג דיווח,שעת כניסה,שעת יציאה,הערות,מטבע,סוג,בונוס\n")
             
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.US)
             for (entry in entryList) {
                 val escapedCategory = escapeCsvField(entry.category)
                 val formattedDate = sdf.format(Date(entry.date))
                 val hoursStr = String.format(Locale.US, "%.2f", entry.hours)
-                val rateStr = String.format(Locale.US, "%.2f", entry.hourlyRate)
-                val earningsStr = String.format(Locale.US, "%.2f", entry.totalEarnings)
+                // Unknown pay stays empty (never 0); a fixed-price job has no hourly rate.
+                val job = entry.kind == WorkEntry.KIND_JOB
+                val rateStr = if (!entry.payKnown || job) "" else String.format(Locale.US, "%.2f", entry.hourlyRate)
+                val earningsStr = if (!entry.payKnown) "" else String.format(Locale.US, "%.2f", entry.totalEarnings)
                 val statusStr = if (entry.isPaid) "שולם" else "ממתין"
                 val reportTypeStr = if (entry.isTimeRange) "טווח שעות" else "ידני"
                 val startTimeStr = entry.startTime ?: ""
                 val endTimeStr = entry.endTime ?: ""
                 val escapedNotes = escapeCsvField(entry.notes)
                 
-                csvBuilder.append("${entry.id},$escapedCategory,$formattedDate,$hoursStr,$rateStr,$earningsStr,$statusStr,$reportTypeStr,$startTimeStr,$endTimeStr,$escapedNotes,${entry.currency}\n")
+                val kindStr = if (job) "קבלנות" else "משמרת"
+                val bonusStr = if (entry.bonus > 0) String.format(Locale.US, "%.2f", entry.bonus) else ""
+                csvBuilder.append("${entry.id},$escapedCategory,$formattedDate,$hoursStr,$rateStr,$earningsStr,$statusStr,$reportTypeStr,$startTimeStr,$endTimeStr,$escapedNotes,${entry.currency},$kindStr,$bonusStr\n")
             }
 
             // Write to local cache file

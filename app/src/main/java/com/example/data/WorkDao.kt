@@ -103,8 +103,12 @@ interface WorkDao {
             if (workerNames.add(worker.name.trim())) insertWorker(worker.copy(id = 0))
         }
         val missing = WorkBackup.missingEntries(getEntriesList(), incoming)
+        // insertEntry REPLACEs on a unique-key clash; an imported series key must never
+        // replace a row already recorded here, so a clashing key is dropped instead.
+        val seriesKeys = getEntriesList().mapNotNull { it.seriesKey }.toMutableSet()
         for (entry in missing) {
-            insertEntry(entry.copy(id = 0))
+            val key = entry.seriesKey?.takeIf { seriesKeys.add(it) }
+            insertEntry(entry.copy(id = 0, seriesKey = key))
         }
         // Existing settings win; migration into an empty app can adopt reviewed preferences.
         val existingKeys = getLocalPreferences().map { it.name }.toSet()
@@ -141,6 +145,26 @@ interface WorkDao {
 
     @Query("UPDATE work_entries SET isPaid = :paid WHERE id = :id")
     suspend fun setPaymentStatus(id: Int, paid: Boolean)
+
+    @Query("UPDATE work_entries SET isPaid = :paid WHERE id IN (:ids)")
+    suspend fun setPaymentStatusFor(ids: List<Int>, paid: Boolean)
+
+    /**
+     * Bulk rate completion: writes only to selected shifts whose rate is still missing.
+     * Known amounts and fixed-price jobs are never touched. Returns how many were completed.
+     */
+    @Transaction
+    suspend fun completeMissingRates(ids: List<Int>, rate: Double): Int {
+        require(rate.isFinite() && rate >= 0)
+        var completed = 0
+        for (id in ids.distinct()) {
+            val entry = getEntryById(id) ?: continue
+            if (entry.payKnown || entry.kind == WorkEntry.KIND_JOB) continue
+            updateEntry(entry.copy(hourlyRate = rate, payKnown = true, totalEarnings = WorkPay.amount(entry.hours, rate, entry.bonus)))
+            completed++
+        }
+        return completed
+    }
 
     @Query("DELETE FROM work_entries WHERE id IN (:ids)")
     suspend fun deleteEntriesById(ids: List<Int>)
