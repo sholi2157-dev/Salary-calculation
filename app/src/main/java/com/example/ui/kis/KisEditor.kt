@@ -99,6 +99,11 @@ fun KisEditorPage(
     var addingPlace by rememberSaveable { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
     var aiMode by rememberSaveable { mutableStateOf(startInAi && !initial.editing) }
+    // "חוזרת כל שבוע" (stage C): a new clock shift can become a weekly plan.
+    var repeat by rememberSaveable { mutableStateOf(false) }
+    var repeatDays by rememberSaveable { mutableStateOf(weekdayOf(initial.day).toString()) }
+    var repeatUntil by rememberSaveable { mutableStateOf(isoDayPlus(initial.day, 56)) }
+    val repeatSet = repeatDays.split(",").mapNotNull { it.toIntOrNull() }.toSet()
     val changed = d.toJson() != original
     val check = d.check()
     val workplace = workplaceOf(d.category, categories)
@@ -159,6 +164,17 @@ fun KisEditorPage(
         if (!now.canSave) { settings.haptic(KisSettings.Haptic.WARN); return }
         if (d.editing && !changed) return
         saving = true
+        if (repeatOn(d, repeat) && repeatSet.isNotEmpty()) {
+            viewModel.createSeries(d.category, repeatSet, com.example.domain.V2Plan.dateOf(d.day), repeatUntil, d.start!!, d.end, d.rateValue(), d.currency, onFailed = { saving = false }) { created, recorded ->
+                settings.haptic(KisSettings.Haptic.SUCCESS)
+                onSaved(buildString {
+                    append(if (created == 1) "נוצרה משמרת קבועה אחת" else "נוצרו $created משמרות קבועות")
+                    if (recorded.isNotEmpty()) append(" · ${recorded.size} שכבר עברו נרשמו")
+                }, null)
+                onClose()
+            }
+            return
+        }
         val entry = d.toEntry(base)
         if (d.editing && base != null) {
             viewModel.saveEditedEntry(base.id, entry, onSaved = {
@@ -304,6 +320,24 @@ fun KisEditorPage(
             if (d.rateUnknown && d.mode != EntryMode.JOB) Text("אפשר לשמור עכשיו ולהשלים את התעריף אחר כך — גם לכמה משמרות ביחד מההיסטוריה. עד אז היא לא נספרת בסכומים.",
                 style = KisType.caption, color = c.muted)
             if (d.mode == EntryMode.GROUP) GroupBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
+            if (!d.editing && d.mode == EntryMode.CLOCK && d.start != null) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("חוזרת כל שבוע", style = KisType.label, color = c.ink)
+                            Text("משמרת קבועה: תופיע מראש ותירשם לבד כשהזמן נגמר", style = KisType.caption, color = c.muted)
+                        }
+                        KisSwitch(repeat, { repeat = it }, Modifier.testTag("repeat_switch"), label = "חוזרת כל שבוע")
+                    }
+                    if (repeat) {
+                        val preview = remember(repeatDays, repeatUntil, d.day, d.start, d.end) {
+                            d.start?.let { viewModel.planPreview(repeatSet, com.example.domain.V2Plan.dateOf(d.day), repeatUntil, it, d.end) }
+                        }
+                        RepeatBlock(repeatSet, repeatUntil, preview, onDays = { set -> repeatDays = set.sorted().joinToString(",") }, onUntil = { repeatUntil = it })
+                        if (d.breakMin > 0) Text("הפסקה לא נכללת במשמרת קבועה", style = KisType.caption, color = c.muted)
+                    }
+                }
+            }
             if (more && d.mode != EntryMode.JOB) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (d.start != null && d.mode != EntryMode.HOURS && !d.groupByHours) Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("break_block")) {
@@ -331,7 +365,8 @@ fun KisEditorPage(
         // The keypad only enters values; the shift is saved from the save bar alone.
         if (pad) Keypad(time = target == KeyTarget.START || target == KeyTarget.END, label = keyLabel(target, d.currency), value = shown(target),
             typing = buf.isNotEmpty(), onKey = ::key, onDone = { if (commitBuf()) pad = false })
-        else SaveBar(check, saveLabel(d, changed), check.canSave && (!d.editing || changed) && !saving, ::save)
+        else SaveBar(check, if (repeatOn(d, repeat)) "יצירת הסדרה" else saveLabel(d, changed),
+            check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatSet.isNotEmpty()), ::save)
     }
 
     if (confirmLeave) KisSheet(onDismiss = { confirmLeave = false }, tag = "leave_sheet") {
@@ -358,6 +393,8 @@ fun KisEditorPage(
         d = if (d.editing) d.copy(category = name) else d.copy(category = name, rate = KisFormat.hours(rate), rateUnknown = false, currency = currency)
     }
 }
+
+private fun repeatOn(d: EntryDraft, repeat: Boolean) = repeat && !d.editing && d.mode == EntryMode.CLOCK && d.start != null
 
 private fun saveLabel(d: EntryDraft, changed: Boolean) = if (d.editing) (if (changed) "שמירת שינויים" else "אין שינויים") else "שמירה"
 

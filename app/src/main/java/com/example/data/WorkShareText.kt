@@ -76,6 +76,18 @@ object WorkShareText {
         }.joinToString("\n")
     }
 
+    /** A planned shift (stage C): clearly marked as planned; the amount is only an estimate, never "to pay". */
+    fun planned(o: com.example.domain.V2Plan.Occurrence): String {
+        val h = com.example.domain.V2Rules.span(o.start, o.end).minutes / 60.0
+        return buildList {
+            add("היי, להלן פרטי משמרת מתוכננת ליום ${date(com.example.domain.V2Plan.startMillis(o.date, "12:00"))}:")
+            add("קטגוריה: ${o.category}")
+            add("שעות: ${o.start}–${o.end} (${hours(h)} שעות)")
+            add("תעריף שעתי: " + (o.rate?.let { money(it, o.currency) } ?: "עדיין לא ידוע"))
+            add("צפי (עוד לא בוצעה): " + (o.rate?.let { money(WorkPay.amount(h, it), o.currency) } ?: "ממתין להשלמת תעריף"))
+        }.joinToString("\n")
+    }
+
     /** WhatsApp summary of exactly the given rows: per category, hours and one amount per currency. */
     fun summary(entries: List<WorkEntry>, workerName: String? = null): String = WorkMoney.report(entries, workerName)
 

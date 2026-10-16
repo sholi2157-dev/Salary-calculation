@@ -245,6 +245,8 @@ fun MainAppContent(
     val request = when (intentAction) {
         "com.example.ACTION_IMPORT_EXCEL" -> com.example.ui.kis.ShellRequest.IMPORT
         "com.example.ACTION_OPEN_HISTORY_SEARCH" -> com.example.ui.kis.ShellRequest.HISTORY_SEARCH
+        PlanJobs.ACTION_MONTH -> com.example.ui.kis.ShellRequest.HISTORY
+        PlanJobs.ACTION_RATES -> com.example.ui.kis.ShellRequest.RATES
         else -> null
     }
     com.example.ui.kis.KisApp(

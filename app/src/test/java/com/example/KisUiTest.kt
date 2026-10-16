@@ -329,6 +329,67 @@ class KisUiTest {
         shot("home-dark")
     }
 
+    @Test fun weeklyPlanFromEditorIsCreatedWithItsDaysAndPreview() {
+        val vm = model()
+        var closed = false
+        host {
+            KisEditorPage(vm, EntryDraft(category = "מסעדה", rate = "50", currency = "₪", start = "09:00", end = "17:00", day = day), null, categories, emptyList(), emptyList(),
+                onClose = { closed = true }, onSaved = { _, _ -> }, onDeleted = {})
+        }
+        ui.onNodeWithTag("repeat_switch").performScrollTo().performClick()
+        val weekday = weekdayOf(day)
+        ui.onNodeWithTag("repeat_day_$weekday").performScrollTo().assertIsSelected()
+        // Today plus eight weeks: nine days, nothing overlaps.
+        ui.onNodeWithTag("repeat_preview").performScrollTo().assertTextEquals("9 משמרות ייכנסו ללוח")
+        ui.onNodeWithTag("save_shift_button").assertTextContains("יצירת הסדרה", substring = true)
+        shot("editor-repeat")
+        ui.onNodeWithTag("save_shift_button").performClick()
+        waitFor(5_000) { closed }
+        val s = runBlocking { dao.getSeries() }.single()
+        assertEquals("מסעדה", s.category); assertEquals(com.example.domain.V2Plan.mask(setOf(weekday)), s.daysMask)
+        assertEquals("09:00", s.startTime); assertEquals("17:00", s.endTime); assertEquals(50.0, s.hourlyRate!!, 0.0)
+        assertEquals(com.example.domain.V2Plan.dateOf(day), s.fromDate); assertEquals(isoDayPlus(day, 56), s.untilDate)
+        // Only today can already have ended; it is then recorded once, as a normal shift.
+        assertTrue(rows().size <= 1)
+        rows().forEach { assertEquals("${s.id}@${s.fromDate}", it.seriesKey); assertTrue(it.autoConfirmed) }
+    }
+
+    @Test fun plannedShiftsShowOnHomeAndInTheirOwnHistoryViewOnly() {
+        val vm = model()
+        seed()
+        val now = System.currentTimeMillis()
+        val series = com.example.data.ShiftSeries("plan-1", "מסעדה", com.example.domain.V2Plan.mask((0..6).toSet()), "09:00", "17:00", 50.0, "₪",
+            isoDayPlus(now, -2), isoDayPlus(now, 10))
+        val plans = com.example.domain.V2Plan.occurrences(listOf(series), emptyList(), emptySet(), isoDayPlus(now, -2), isoDayPlus(now, 10), now)
+        val worked = mutableListOf<String>(); val skipped = mutableListOf<String>()
+        val actions = PlanActions(worked = { worked += it.key }, skip = { skipped += it.key }, hours = {}, share = {})
+        val state = HistoryUi()
+        var page by mutableStateOf(0)
+        host {
+            if (page == 0) KisHome(rows(), categories, null, 80.dp, {}, {}, {}, {}, {}, {}, {}, {}, plans = plans, planActions = actions, onAllPlans = { state.planned = true; page = 1 })
+            else KisHistory(state, true, rows(), categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {}, plans = plans, planActions = actions)
+        }
+        // Home: what ended waits first; the totals never include plans.
+        ui.onNodeWithTag("next_up").performScrollTo().assertExists()
+        val waiting = plans.first { it.status == com.example.domain.V2Plan.Status.AWAITING }
+        ui.onNodeWithTag("planned_card_${waiting.key}").performScrollTo().performClick()
+        ui.onNodeWithTag("plan_worked_${waiting.key}").performClick()
+        ui.onNodeWithTag("plan_skip_${waiting.key}").performClick()
+        assertEquals(listOf(waiting.key), worked); assertEquals(listOf(waiting.key), skipped)
+        shot("home-planned")
+        ui.onNodeWithTag("next_up_all").performScrollTo().performClick()
+        // History: the planned view lists plans only, without totals, copy or Excel.
+        ui.onNodeWithTag("history_planned").assertIsSelected()
+        ui.onNodeWithTag("history_total").assertDoesNotExist()
+        ui.onNodeWithTag("copy_menu_btn").assertDoesNotExist()
+        ui.onNodeWithTag("history_scroll_container").performScrollToNode(hasTestTag("planned_card_${plans.last().key}"))
+        shot("history-planned")
+        ui.onNodeWithTag("history_scroll_container").performScrollToIndex(0)
+        ui.onNodeWithTag("history_worked").performClick()
+        ui.onNodeWithTag("history_total").assertTextContains("₪300", substring = true)
+        ui.onAllNodesWithTag("planned_card_${plans.last().key}").assertCountEquals(0)
+    }
+
     @Test fun settingsSectionsAndThemeChoice() {
         val vm = model()
         lateinit var settings: KisSettings
@@ -349,5 +410,17 @@ class KisUiTest {
         shot("settings-dark")
         ui.onNodeWithTag("haptics_switch").performScrollTo().performClick()
         assertFalse(settings.haptics)
+        // Weekly plans and their reminders live here too (device-only settings).
+        ui.onNodeWithTag("quiet_switch").performScrollTo().assertExists()
+        ui.onNodeWithTag("quiet_from").performScrollTo().assertTextContains("22:00", substring = true)
+        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
+        assertTrue(vm.planSettings.notifyMonthly)
+        ui.onNodeWithTag("notify_monthly_switch").performClick()
+        assertFalse(vm.planSettings.notifyMonthly)
+        ui.onNodeWithTag("series_row").performScrollTo().performClick()
+        ui.onNodeWithTag("auto_confirm_switch").performClick()
+        assertFalse(vm.planSettings.autoConfirm)
+        ui.onNodeWithTag("auto_confirm_switch").performClick()
+        assertTrue(vm.planSettings.autoConfirm)
     }
 }

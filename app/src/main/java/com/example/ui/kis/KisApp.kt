@@ -56,7 +56,7 @@ import kotlinx.coroutines.launch
 data class KisMessage(val text: String, val action: String? = null, val onAction: (() -> Unit)? = null, val id: Long = System.nanoTime())
 
 /** Requests the shell can receive from outside (system shortcuts, notifications). */
-enum class ShellRequest { IMPORT, HISTORY_SEARCH }
+enum class ShellRequest { IMPORT, HISTORY_SEARCH, HISTORY, RATES }
 
 @Composable
 fun KisApp(
@@ -83,6 +83,7 @@ fun KisApp(
     val liveRate by viewModel.activeShiftRate.collectAsStateWithLifecycle()
     val liveCurrency by viewModel.activeShiftCurrency.collectAsStateWithLifecycle()
     val live = liveStart?.let { LiveShift(it, liveCategory, liveRate, liveCurrency) }
+    val plans by viewModel.occurrences.collectAsStateWithLifecycle()
     val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.firstOrNull()?.name ?: ""
 
     // Home, history and settings are one swipeable pager (RTL swipe = next tab).
@@ -96,6 +97,7 @@ fun KisApp(
     var pendingBulk by rememberSaveable { mutableStateOf(false) }
     var message by remember { mutableStateOf<KisMessage?>(null) }
     var navHeight by remember { mutableStateOf(0.dp) }
+    var hoursFor by remember { mutableStateOf<com.example.domain.V2Plan.Occurrence?>(null) }
 
     fun say(text: String, action: String? = null, onAction: (() -> Unit)? = null) { message = KisMessage(text, action, onAction) }
     fun openNew(ai: Boolean = false) {
@@ -108,6 +110,28 @@ fun KisApp(
     val onDeleted: (List<WorkEntry>) -> Unit = { rows ->
         say(if (rows.size == 1) "המשמרת נמחקה" else "${rows.size} משמרות נמחקו", "ביטול") { viewModel.restoreEntries(rows) }
     }
+    // Weekly plans: recording one keeps an undo that holds it (it is not recorded again by itself).
+    val planActions = remember(viewModel) {
+        PlanActions(
+            worked = { o -> viewModel.confirmOccurrence(o) { id ->
+                if (id != null) { settings.haptic(KisSettings.Haptic.SUCCESS); say("נרשמה ✓", "ביטול") { viewModel.undoAutoConfirm(listOf(id)) } }
+            } },
+            skip = { o -> viewModel.cancelOccurrence(o); say("סומן שלא עבדת", "ביטול") { viewModel.restoreOccurrence(o) } },
+            hours = { o -> hoursFor = o },
+            share = { o -> KisShare.shareOrCopy(context, com.example.data.WorkShareText.planned(o), "שיתוף משמרת מתוכננת") { say(it) } },
+        )
+    }
+    // Plans that ended are recorded on open and on every return to the app (and by the daily job), with an undo.
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycle) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) viewModel.catchUpPlans { ids ->
+                say(if (ids.size == 1) "משמרת קבועה הסתיימה ונרשמה" else "${ids.size} משמרות קבועות הסתיימו ונרשמו", "ביטול") { viewModel.undoAutoConfirm(ids) }
+            }
+        }
+        lifecycle.lifecycle.addObserver(observer)
+        onDispose { lifecycle.lifecycle.removeObserver(observer) }
+    }
     val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!granted) say("בלי הרשאה, הטיימר לא יופיע בהתראות. הוא עדיין רץ ונשמר.")
     }
@@ -116,6 +140,13 @@ fun KisApp(
         when (request) {
             ShellRequest.IMPORT -> { pager.scrollToPage(2); onRequestHandled() }
             ShellRequest.HISTORY_SEARCH -> { pager.scrollToPage(1); history.searching = true; onRequestHandled() }
+            ShellRequest.HISTORY -> { pager.scrollToPage(1); history.planned = false; onRequestHandled() }
+            ShellRequest.RATES -> {
+                pager.scrollToPage(1); history.planned = false
+                history.selection = entries.filter { !it.payKnown && it.kind != WorkEntry.KIND_JOB }.map { it.id }.toSet()
+                pendingBulk = history.selection.isNotEmpty()
+                onRequestHandled()
+            }
             null -> Unit
         }
     }
@@ -153,8 +184,11 @@ fun KisApp(
                         pendingBulk = history.selection.isNotEmpty()
                     },
                     onAllHistory = { go(1) },
-                    onSettings = { go(2) })
-                1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) })
+                    onSettings = { go(2) },
+                    plans = plans, planActions = planActions,
+                    onAllPlans = { history.planned = true; go(1) })
+                1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) },
+                    plans = plans, planActions = planActions)
                 else -> Box(Modifier.onFocusChanged { settingsHasFocus = it.hasFocus }) {
                     KisSettingsPage(viewModel, categories, onClose = { go(0) }, onReplayTour = onReplayTour, onSignIn = onSignIn, bottomInset = navHeight)
                 }
@@ -218,6 +252,13 @@ fun KisApp(
             pendingBulk = false; history.selection = emptySet()
             settings.haptic(KisSettings.Haptic.SUCCESS)
             say(if (n == 1) "תעריף הושלם למשמרת אחת ✓" else "תעריף הושלם ל-$n משמרות ✓")
+        }
+    }
+    hoursFor?.let { o ->
+        PlanHoursSheet(o, onDismiss = { hoursFor = null }) { start, end, fromNowOn ->
+            hoursFor = null
+            viewModel.editOccurrence(o, start, end, fromNowOn)
+            say(if (fromNowOn) "השעות עודכנו מעכשיו והלאה ✓" else "השעות עודכנו ליום הזה ✓")
         }
     }
     if (startLive) StartLiveSheet(categories, defaultCategory, viewModel::categoryCurrency, onDismiss = { startLive = false }) { cat, rate, currency ->

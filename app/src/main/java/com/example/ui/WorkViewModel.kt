@@ -814,7 +814,7 @@ class WorkViewModel(
 
     /** Creates a weekly plan from the editor; overlapping days are not created. Past days are recorded right away. */
     fun createSeries(category: String, days: Set<Int>, from: String, until: String, start: String, end: String, rate: Double?, currency: String,
-                     onDone: (created: Int, recorded: List<Int>) -> Unit) {
+                     onFailed: () -> Unit = {}, onDone: (created: Int, recorded: List<Int>) -> Unit) {
         val preview = planPreview(days, from, until, start, end)
         val s = com.example.data.ShiftSeries(java.util.UUID.randomUUID().toString(), category, com.example.domain.V2Plan.mask(days), start, end, rate, currency, from, until)
         viewModelScope.launch {
@@ -828,6 +828,7 @@ class WorkViewModel(
             } catch (e: Exception) {
                 android.util.Log.e("WorkViewModel", "Saving a plan failed", e)
                 Toast.makeText(getApplication(), "המשמרת הקבועה לא נשמרה. אפשר לנסות שוב", Toast.LENGTH_LONG).show()
+                onFailed()
             }
         }
     }

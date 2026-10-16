@@ -76,6 +76,8 @@ class HistoryUi {
     val selecting get() = selection.isNotEmpty()
     /** Height of the selection bar, so messages appear above it instead of over its buttons. */
     var barHeight by mutableStateOf(0.dp)
+    /** Showing the weekly plans instead of recorded shifts (never summed, copied or exported). */
+    var planned by mutableStateOf(false)
 }
 
 @Composable
@@ -89,10 +91,15 @@ fun KisHistory(
     onOpen: (WorkEntry) -> Unit,
     onDeleted: (List<WorkEntry>) -> Unit,
     onMessage: (String) -> Unit,
+    plans: List<com.example.domain.V2Plan.Occurrence> = emptyList(),
+    planActions: PlanActions? = null,
 ) {
     val c = Kis.colors
     val settings = Kis.settings
     val context = LocalContext.current
+    // The planned view only exists while there is something planned.
+    if (plans.isEmpty() && ui.planned) ui.planned = false
+    val showPlans = ui.planned && planActions != null
     var filter by rememberSaveable(stateSaver = FilterSaver) { mutableStateOf(HistoryFilter()) }
     var showFilters by rememberSaveable { mutableStateOf(false) }
     var bulkOpen by rememberSaveable { mutableStateOf(false) }
@@ -120,52 +127,64 @@ fun KisHistory(
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item(key = "head") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("היסטוריה", style = KisType.page, color = c.ink, modifier = Modifier.weight(1f))
-                        ToolIcon(Icons.Rounded.Search, "חיפוש", "history_search_button") { ui.searching = true }
-                        Box {
-                            ToolIcon(Icons.Rounded.FilterList, if (filter.activeCount == 0) "סינון" else "סינון · ${filter.activeCount} פעילים", "history_filters") { showFilters = true }
-                            if (filter.activeCount > 0) Box(Modifier.align(Alignment.TopStart).padding(6.dp).size(16.dp).clip(CircleShape).background(c.ink), contentAlignment = Alignment.Center) {
-                                Text(filter.activeCount.toString(), style = KisType.micro, color = c.onInk)
+                        if (!showPlans) {
+                            ToolIcon(Icons.Rounded.Search, "חיפוש", "history_search_button") { ui.searching = true }
+                            Box {
+                                ToolIcon(Icons.Rounded.FilterList, if (filter.activeCount == 0) "סינון" else "סינון · ${filter.activeCount} פעילים", "history_filters") { showFilters = true }
+                                if (filter.activeCount > 0) Box(Modifier.align(Alignment.TopStart).padding(6.dp).size(16.dp).clip(CircleShape).background(c.ink), contentAlignment = Alignment.Center) {
+                                    Text(filter.activeCount.toString(), style = KisType.micro, color = c.onInk)
+                                }
                             }
-                        }
-                        var sortMenu by remember { mutableStateOf(false) }
-                        Box {
-                            ToolIcon(Icons.AutoMirrored.Rounded.Sort, "מיון", "history_sort") { sortMenu = true }
-                            DropdownMenu(sortMenu, { sortMenu = false }) {
-                                SortOrder.entries.forEach { o ->
-                                    DropdownMenuItem(text = { Text((if (o == filter.sort) "✓ " else "") + o.label) }, onClick = { sortMenu = false; filter = filter.copy(sort = o) })
+                            var sortMenu by remember { mutableStateOf(false) }
+                            Box {
+                                ToolIcon(Icons.AutoMirrored.Rounded.Sort, "מיון", "history_sort") { sortMenu = true }
+                                DropdownMenu(sortMenu, { sortMenu = false }) {
+                                    SortOrder.entries.forEach { o ->
+                                        DropdownMenuItem(text = { Text((if (o == filter.sort) "✓ " else "") + o.label) }, onClick = { sortMenu = false; filter = filter.copy(sort = o) })
+                                    }
+                                }
+                            }
+                            var copyMenu by remember { mutableStateOf(false) }
+                            Box {
+                                ToolIcon(Icons.Rounded.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
+                                DropdownMenu(copyMenu, { copyMenu = false }) {
+                                    DropdownMenuItem(text = { Text("Excel (טבלה)") }, onClick = { copyMenu = false; if (rows.isEmpty()) onMessage("אין שורות להעתקה") else { copyExcelToClipboard(context, rows); onMessage("הטבלה הועתקה ✓ · מוכנה להדבקה באקסל") } })
+                                    DropdownMenuItem(text = { Text("WhatsApp (סיכום)") }, onClick = {
+                                        copyMenu = false
+                                        KisShare.copy(context, generateWhatsAppReportText(rows, filter.category ?: "הכל", ui.query), "WhatsApp Report"); onMessage("הסיכום הועתק ✓")
+                                    })
                                 }
                             }
                         }
-                        var copyMenu by remember { mutableStateOf(false) }
-                        Box {
-                            ToolIcon(Icons.Rounded.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
-                            DropdownMenu(copyMenu, { copyMenu = false }) {
-                                DropdownMenuItem(text = { Text("Excel (טבלה)") }, onClick = { copyMenu = false; if (rows.isEmpty()) onMessage("אין שורות להעתקה") else { copyExcelToClipboard(context, rows); onMessage("הטבלה הועתקה ✓ · מוכנה להדבקה באקסל") } })
-                                DropdownMenuItem(text = { Text("WhatsApp (סיכום)") }, onClick = {
-                                    copyMenu = false
-                                    KisShare.copy(context, generateWhatsAppReportText(rows, filter.category ?: "הכל", ui.query), "WhatsApp Report"); onMessage("הסיכום הועתק ✓")
-                                })
-                            }
+                    }
+                    if (plans.isNotEmpty() && planActions != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        KisChip("עבדתי", selected = !ui.planned, onClick = { ui.planned = false }, tag = "history_worked", minHeight = 38.dp)
+                        KisChip("מתוכנן · ${plans.size}", selected = ui.planned, onClick = { ui.selection = emptySet(); ui.planned = true }, tag = "history_planned", minHeight = 38.dp)
+                    }
+                    if (!showPlans) {
+                        AnimatedVisibility(ui.searching, enter = fadeIn(), exit = fadeOut()) { SearchBar(ui) }
+                        // A closed search stays visible while it filters the list: tap to edit it, ✕ to clear it.
+                        if (!ui.searching && ui.query.isNotBlank()) SearchChip(ui.query, onEdit = { ui.searching = true }, onClear = { ui.query = "" })
+                        if (filter.period == Period.MONTH) MonthSwitcher(filter.month) { filter = filter.copy(month = it) }
+                        else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(if (filter.period == Period.ALL) "כל התאריכים" else "${KisShare.shortDate(filter.from)}–${KisShare.shortDate(filter.to)}", style = KisType.title, color = c.ink)
+                            KisChip("לפי חודש", onClick = { filter = filter.copy(period = Period.MONTH) }, minHeight = 34.dp)
                         }
-                    }
-                    AnimatedVisibility(ui.searching, enter = fadeIn(), exit = fadeOut()) { SearchBar(ui) }
-                    // A closed search stays visible while it filters the list: tap to edit it, ✕ to clear it.
-                    if (!ui.searching && ui.query.isNotBlank()) SearchChip(ui.query, onEdit = { ui.searching = true }, onClear = { ui.query = "" })
-                    if (filter.period == Period.MONTH) MonthSwitcher(filter.month) { filter = filter.copy(month = it) }
-                    else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(if (filter.period == Period.ALL) "כל התאריכים" else "${KisShare.shortDate(filter.from)}–${KisShare.shortDate(filter.to)}", style = KisType.title, color = c.ink)
-                        KisChip("לפי חודש", onClick = { filter = filter.copy(period = Period.MONTH) }, minHeight = 34.dp)
-                    }
-                    ActiveFilters(filter, onClear = { filter = it })
-                    Totals(rows, onPending = {
-                        ui.selection = rows.filter { !it.payKnown && !WorkPay.isJob(it) }.map { it.id }.toSet()
-                        if (ui.selection.isNotEmpty()) bulkOpen = true
-                    })
+                        ActiveFilters(filter, onClear = { filter = it })
+                        Totals(rows, onPending = {
+                            ui.selection = rows.filter { !it.payKnown && !WorkPay.isJob(it) }.map { it.id }.toSet()
+                            if (ui.selection.isNotEmpty()) bulkOpen = true
+                        })
+                    } else Text("משמרות קבועות שעוד לא נרשמו. הן לא נכנסות לסכומים, להעתקה או לאקסל.", style = KisType.caption, color = c.muted)
                 }
             }
-            if (rows.isEmpty()) item(key = "empty") {
+            if (showPlans) {
+                items(plans, key = { "p" + it.key }) { o ->
+                    PlannedCard(o, categories, { planActions!!.worked(o) }, { planActions!!.skip(o) }, { planActions!!.hours(o) }, { planActions!!.share(o) })
+                }
+            } else if (rows.isEmpty()) item(key = "empty") {
                 Column(Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(if (entries.isEmpty()) "עוד אין משמרות" else "אין משמרות להצגה", style = KisType.title, color = c.ink)
                     Text(if (entries.isEmpty()) "משמרת ראשונה מוסיפים בכפתור +" else "אפשר לשנות חודש, חיפוש או סינון", style = KisType.body, color = c.muted, textAlign = TextAlign.Center)
@@ -183,7 +202,7 @@ fun KisHistory(
                     items(list, key = { it.id }) { e -> HistoryCard(e, categories, ui, onOpen) }
                 }
             }
-            if (rows.isNotEmpty() && !ui.selecting) item(key = "hint") {
+            if (!showPlans && rows.isNotEmpty() && !ui.selecting) item(key = "hint") {
                 Text("נגיעה לפרטים · לחיצה ארוכה לבחירה, שיתוף והעתקה", style = KisType.caption, color = c.muted, textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
             }

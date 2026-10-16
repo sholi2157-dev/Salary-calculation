@@ -65,6 +65,9 @@ fun KisHome(
     onPending: () -> Unit,
     onAllHistory: () -> Unit,
     onSettings: () -> Unit,
+    plans: List<com.example.domain.V2Plan.Occurrence> = emptyList(),
+    planActions: PlanActions? = null,
+    onAllPlans: () -> Unit = {},
 ) {
     val c = Kis.colors
     // A clock that moves on by itself, so "today" and "this week" roll over without new data.
@@ -88,8 +91,13 @@ fun KisHome(
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 16.dp)
             .padding(top = 12.dp, bottom = bottomInset).testTag("dashboard_scroll_container")) {
             Hello()
-            Hero(week, today, done, hoursByCat, categories, onPending)
+            Hero(week, today, done, hoursByCat, categories, onPending,
+                plannedThisWeek = remember(plans, now) { val from = com.example.domain.V2Plan.dateOf(KisHistoryLogic.weekStart(now)); val to = isoDayPlus(KisHistoryLogic.weekStart(now), 6)
+                    plans.count { it.status == com.example.domain.V2Plan.Status.PLANNED && it.date in from..to } })
             NowRow(live, onStartLive, onStopLive, onCancelLive, onLiveCurrency)
+            if (planActions != null && plans.isNotEmpty()) Box(Modifier.padding(top = 4.dp)) {
+                NextUp(plans, categories, planActions.worked, planActions.skip, planActions.hours, planActions.share, onAllPlans)
+            }
             val recent = remember(entries) { entries.sortedByDescending { it.createdAt }.take(3) }
             if (recent.isNotEmpty()) {
                 SectionTitle("אחרונות", action = "הכול", onAction = onAllHistory, actionTag = "home_all_history")
@@ -121,7 +129,8 @@ private fun Hello() {
 }
 
 @Composable
-private fun Hero(week: List<WorkEntry>, today: List<WorkEntry>, all: List<WorkEntry>, hoursByCat: List<Pair<String, Double>>, categories: List<WorkCategory>, onPending: () -> Unit) {
+private fun Hero(week: List<WorkEntry>, today: List<WorkEntry>, all: List<WorkEntry>, hoursByCat: List<Pair<String, Double>>, categories: List<WorkCategory>, onPending: () -> Unit,
+                 plannedThisWeek: Int = 0) {
     val c = Kis.colors
     val totals = WorkPay.totals(week).toList().sortedByDescending { it.second }
     val pending = WorkPay.pending(all).count { !WorkPay.isJob(it) }
@@ -144,6 +153,8 @@ private fun Hero(week: List<WorkEntry>, today: List<WorkEntry>, all: List<WorkEn
         }
         Row(Modifier.padding(top = if (total > 0) 0.dp else 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(if (week.size == 1) "משמרת אחת השבוע" else "${week.size} משמרות השבוע", style = KisType.caption, color = c.muted, modifier = Modifier.testTag("home_week_count"))
+            // Planned shifts are shown, never added to what was earned.
+            if (plannedThisWeek > 0) Text("עוד $plannedThisWeek מתוכננות", style = KisType.caption, color = c.muted, modifier = Modifier.testTag("home_week_planned"))
             hoursByCat.take(3).forEach { (cat, _) ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     Box(Modifier.size(9.dp).clip(RoundedCornerShape(3.dp)).background(workplaceOf(cat, categories).accent(c.dark)))

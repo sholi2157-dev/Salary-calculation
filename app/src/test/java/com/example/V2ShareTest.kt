@@ -52,6 +52,9 @@ class V2ShareTest {
             "worker" -> rows.single().let { WorkShareText.worker(it, WorkPay.workers(it)[c.getInt("worker")]) }
             "summary" -> WorkShareText.summary(rows, c.optString("workerName").ifEmpty { null })
             "excel" -> WorkShareText.excel(rows)
+            "planned" -> c.getJSONObject("occurrence").let { o -> WorkShareText.planned(com.example.domain.V2Plan.Occurrence(o.getString("key"), o.getString("seriesId"),
+                o.getString("category"), o.getString("date"), o.getString("start"), o.getString("end"), if (o.isNull("rate")) null else o.getDouble("rate"),
+                o.getString("currency"), edited = false, hold = false, status = com.example.domain.V2Plan.Status.PLANNED)) }
             else -> error("unknown type ${c.getString("type")}")
         }
     }

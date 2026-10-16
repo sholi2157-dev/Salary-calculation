@@ -63,6 +63,34 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     // Not saveable: a pasted backup can be far larger than what Android may keep in saved state.
     var importText by remember { mutableStateOf("") }
     val hasKey = remember(aiSheet) { runCatching { PersonalAiKey.read(context, viewModel.owner.uid).isNotBlank() }.getOrDefault(false) }
+    // Weekly plans and their reminders (device-only settings, see PlanSettings).
+    val plan = viewModel.planSettings
+    val series by viewModel.series.collectAsStateWithLifecycle()
+    val plans by viewModel.occurrences.collectAsStateWithLifecycle()
+    var seriesSheet by rememberSaveable { mutableStateOf(false) }
+    var autoConfirm by remember { mutableStateOf(plan.autoConfirm) }
+    var notifyMonthly by remember { mutableStateOf(plan.notifyMonthly) }
+    var notifyRate by remember { mutableStateOf(plan.notifyRate) }
+    var quiet by remember { mutableStateOf(plan.quiet) }
+    var quietFrom by remember { mutableStateOf(plan.quietFrom) }
+    var quietTo by remember { mutableStateOf(plan.quietTo) }
+    var denied by remember { mutableStateOf(false) }
+    var asking by remember { mutableStateOf<String?>(null) }
+    fun turnOn(kind: String) {
+        denied = false
+        if (kind == "monthly") { plan.notifyMonthly = true; notifyMonthly = true } else { plan.notifyRate = true; notifyRate = true }
+    }
+    val askNotify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        // Without permission the switch stays off, with a short explanation.
+        asking?.let { if (granted) turnOn(it) else denied = true }
+        asking = null
+    }
+    fun enable(kind: String, on: Boolean) {
+        if (!on) { if (kind == "monthly") { plan.notifyMonthly = false; notifyMonthly = false } else { plan.notifyRate = false; notifyRate = false }; return }
+        if (android.os.Build.VERSION.SDK_INT >= 33 && androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED) { asking = kind; askNotify.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
+        else turnOn(kind)
+    }
     val saveBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let { viewModel.saveBackup(context, it) } }
 
     Column(Modifier.fillMaxSize().background(c.bg).testTag("settings_root")) {
@@ -81,6 +109,11 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 Row_("מטבע ברירת מחדל", "למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה") {
                     CurrencyToggle(defaultCurrency, { viewModel.updateDefaultCurrency(it) }, "settings_currency")
                 }
+                KisDivider()
+                Row_("משמרות קבועות", if (series.isEmpty()) "יוצרים במסך ההוספה: \"חוזרת כל שבוע\"" else
+                    "${series.size} פעילות · רישום אוטומטי ${if (autoConfirm) "פועל" else "כבוי"}", tag = "series_row", onClick = { seriesSheet = true }) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
+                }
             }
             Group("מראה ותחושה") {
                 Row_("ערכת צבעים", when (settings.theme) { ThemeChoice.SYSTEM -> "לפי הגדרת הטלפון"; ThemeChoice.DARK -> "כהה תמיד"; ThemeChoice.LIGHT -> "בהיר תמיד" }) {
@@ -91,6 +124,23 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             Group("התראות") {
                 Row_("התראת משמרת פעילה", "טיימר וסכום שנצבר בהתראה קבועה בזמן שהשעון רץ") {
                     KisSwitch(serviceNotification, { viewModel.updateServiceNotificationEnabled(it) }, Modifier.testTag("service_notification_switch"), label = "התראת משמרת פעילה")
+                }
+                KisDivider()
+                Row_("הסיכום החודשי מוכן", "פעם בחודש, בתחילת החודש: כמה עבדת וכמה הרווחת") {
+                    KisSwitch(notifyMonthly, { enable("monthly", it) }, Modifier.testTag("notify_monthly_switch"), label = "הסיכום החודשי מוכן")
+                }
+                Row_("תזכורת לתעריף חסר", "לכל היותר פעם בשבוע, רק כשיש משמרות בלי תעריף") {
+                    KisSwitch(notifyRate, { enable("rate", it) }, Modifier.testTag("notify_rate_switch"), label = "תזכורת לתעריף חסר")
+                }
+                if (denied) Text("בלי הרשאת התראות אי אפשר לשלוח תזכורות. אפשר לאשר בהגדרות הטלפון ולנסות שוב.", style = KisType.caption, color = c.pending,
+                    modifier = Modifier.padding(bottom = 8.dp).testTag("notify_denied"))
+                KisDivider()
+                Row_("שעות שקט", "תזכורת שנופלת בשעות האלה תגיע כשהן נגמרות") {
+                    KisSwitch(quiet, { plan.quiet = it; quiet = it }, Modifier.testTag("quiet_switch"), label = "שעות שקט")
+                }
+                if (quiet) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 12.dp)) {
+                    TimeChip("משעה", quietFrom, Modifier.weight(1f), "quiet_from") { plan.quietFrom = it; quietFrom = it }
+                    TimeChip("עד שעה", quietTo, Modifier.weight(1f), "quiet_to") { plan.quietTo = it; quietTo = it }
                 }
             }
             Group("עזרה וכלים") {
@@ -170,6 +220,8 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         EditWorkplaceSheet(cat, categories, viewModel, onDismiss = { editing = null })
     } }
     if (adding) NewWorkplaceSheet(viewModel, categories, defaultCurrency, makeDefault = addingDefault, onDismiss = { adding = false; addingDefault = false })
+    if (seriesSheet) SeriesSheet(series, plans, categories, autoConfirm, onAuto = { plan.autoConfirm = it; autoConfirm = it },
+        onRate = { s, rate -> viewModel.applySeriesRate(s.id, rate) }, onEnd = { s -> viewModel.endSeries(s.id) }, onDismiss = { seriesSheet = false })
     if (aiSheet) AiKeySheet(viewModel.owner.uid, onDismiss = { aiSheet = false })
     if (aiHelp) KisSheet(onDismiss = { aiHelp = false }, tag = "ai_help") {
         Text("מה זה מפתח אישי?", style = KisType.title, color = c.ink)
