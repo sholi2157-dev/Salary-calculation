@@ -190,16 +190,16 @@ fun KisEditorPage(
                 }
             }
             if (!aiMode) {
-                // While the system keyboard is open (note, worker name) only the top row and the total stay,
-                // so the form and the Save bar keep their room on small phones.
+                // While the system keyboard is open (note, worker name) the clock, ruler and places fold away,
+                // the mode tabs and total stay, so the form and the Save bar keep their room on small phones.
+                if (!imeOpen && d.editing && base != null) WasBanner(base, changed, onTop)
+                ModeTabs(d.mode, onTop, workplace.from.takeIf { !d.editing } ?: c.edit) { m ->
+                    commitBuf()
+                    d = d.withMode(m)
+                    target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> if (d.start == null && m == EntryMode.CLOCK) KeyTarget.START else KeyTarget.END }
+                    if (m == EntryMode.GROUP && d.start == null && !d.editing) d = d.copy(start = EntryDraft.suggestStart(d.category, d.day, history).start)
+                }
                 if (!imeOpen) {
-                    if (d.editing && base != null) WasBanner(base, changed, onTop)
-                    ModeTabs(d.mode, onTop, workplace.from.takeIf { !d.editing } ?: c.edit) { m ->
-                        commitBuf()
-                        d = d.withMode(m)
-                        target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> if (d.start == null && m == EntryMode.CLOCK) KeyTarget.START else KeyTarget.END }
-                        if (m == EntryMode.GROUP && d.start == null && !d.editing) d = d.copy(start = EntryDraft.suggestStart(d.category, d.day, history).start)
-                    }
                     CategoryChips(categories, d.category, onTop, topBg, onPick = { cat -> commitBuf(); d = d.withCategory(cat, viewModel::categoryCurrency, history) }, onAdd = { addingPlace = true })
                     when {
                         d.mode == EntryMode.JOB -> JobAmount(d, shown(KeyTarget.AMOUNT), pad && target == KeyTarget.AMOUNT, onTop,
