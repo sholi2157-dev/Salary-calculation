@@ -6,7 +6,7 @@ if adb shell pm list packages | grep -Fx "package:$pkg"; then echo 'Expected fre
 mkdir -p release-evidence
 collect_ui_evidence() {
   adb exec-out screencap -p > release-evidence/last-ui.png || true
-  for name in v2-home v2-add-hours v2-add-job v2-add-group v2-add-clock v2-history v2-history-selection v2-detail v2-settings v2-feedback v2-clock-keyboard v2-hours-keyboard v2-save-with-ime v2-history-final v2-home-before-live v2-home-timeout v2-live; do
+  for name in v2-home v2-add-hours v2-add-job v2-add-group v2-add-clock v2-history v2-history-selection v2-detail v2-settings v2-feedback v2-clock-keyboard v2-hours-keyboard v2-save-with-ime v2-history-final v2-home-before-live v2-home-timeout v2-keypad v2-live; do
     adb pull "/sdcard/Android/data/$pkg/files/$name.png" "release-evidence/$name.png" >/dev/null 2>&1 || true
   done
 }

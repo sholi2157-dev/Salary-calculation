@@ -47,6 +47,8 @@ class ReportKeyboardTest {
         openAdd()
         ui.onNodeWithTag("clock_start").performClick()
         listOf("0", "9", "0", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
+        ui.onNodeWithTag("keypad_display").assertIsDisplayed()
+        snapshot("v2-keypad")
         ui.onNodeWithTag("keypad_done").performClick()
         ui.onNodeWithTag("editor_more").performScrollTo().performClick()
         for (mode in listOf("clock", "hours")) {
