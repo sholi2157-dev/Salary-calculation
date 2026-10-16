@@ -351,7 +351,7 @@ const Core = (() => {
     const st = monthStats(k);
     const longest = st.list.reduce((a, s) => (!a || shiftMinutes(s) > shiftMinutes(a) ? s : a), null);
     const topCat = Object.entries(st.cats).sort((a, b) => b[1] - a[1])[0];
-    const nights = st.list.filter(s => s.start && span(s.start, s.end).overnight || toMin(s.end) >= 23 * 60).length;
+    const nights = st.list.filter(s => s.start && (span(s.start, s.end).overnight || toMin(s.end) >= 23 * 60)).length;
     const bestDay = st.days.indexOf(Math.max(...st.days));
     return { st, longest, topCat: topCat ? { name: cat(topCat[0]).name, minutes: topCat[1] } : null, nights, bestDay: DAY[bestDay] };
   }
@@ -366,6 +366,13 @@ const Core = (() => {
     list.forEach(s => { mins += shiftMinutes(s); if (s.total == null) pend++; else tot[s.currency] = (tot[s.currency] || 0) + s.total; });
     rows.push('', `סה״כ: ${L(hours(mins))} שעות · ${Object.entries(tot).map(([c, v]) => L(money(v, c))).join(' + ') || '—'}${pend ? ` · ${pend} בלי תעריף` : ''}`);
     return rows.join('\n');
+  }
+
+  /* Haptics: short, distinct patterns. The Android app uses native HapticFeedback for the same moments. */
+  const HAPTIC = { tap: 6, tick: 4, select: 14, success: [12, 60, 22], warn: [35, 50, 35] };
+  function haptic(kind = 'tap') {
+    if (state?.settings?.haptics === false) return;
+    try { navigator.vibrate?.(HAPTIC[kind] ?? 6); } catch { /* not available (desktop or embedded frame) */ }
   }
 
   /* ---------- shared UI helpers ---------- */
@@ -423,7 +430,7 @@ const Core = (() => {
     let timer = null, fired = false;
     root.addEventListener('pointerdown', e => {
       const el = e.target.closest(selector); if (!el) return; fired = false;
-      timer = setTimeout(() => { fired = true; navigator.vibrate?.(12); onLong(el); }, 450);
+      timer = setTimeout(() => { fired = true; haptic('select'); onLong(el); }, 450);
     });
     const clear = () => clearTimeout(timer);
     ['pointerup', 'pointerleave', 'pointercancel', 'pointermove'].forEach(ev => root.addEventListener(ev, e => { if (ev !== 'pointermove' || Math.abs(e.movementY) > 4) clear(); }));
@@ -435,6 +442,6 @@ const Core = (() => {
     span, endDateTime, money, pl, hours, hm, round2, esc, load, save, commit, subscribe, reset, advance, cat, get state() { return state; },
     occurrences, catchUp, undoAuto, confirmOcc, cancelOcc, restoreOcc, editOcc, futureCount, applyRateToFuture, previewRule,
     suggestStart, newDraft, draftFromShift, setDraftCat, evaluate, saveDraft, deleteShift, restoreShift, bulkRatePreview, bulkRateApply, setPaid,
-    shiftMinutes, timeLabel, setMode, startTimer, stopTimer, cancelTimer, restoreTimer, timerElapsed, monthStats, insights, wrapped, toast, shareText, setTheme, applyTheme, mountPanel, longPress, WORKERS,
+    shiftMinutes, timeLabel, setMode, startTimer, stopTimer, cancelTimer, restoreTimer, timerElapsed, monthStats, insights, wrapped, toast, haptic, shareText, setTheme, applyTheme, mountPanel, longPress, WORKERS,
   };
 })();

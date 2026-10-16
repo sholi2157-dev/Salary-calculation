@@ -180,8 +180,11 @@ nav.pill .plus{background:var(--k0);color:#fff;width:48px;padding:0;justify-cont
 .fact small{color:var(--muted);font-size:14px}
 .fact span,.fact label{text-align:start;font-weight:500}
 .linkb{border:0;background:none;color:var(--warn);font-weight:700;cursor:pointer;padding:0}
-.det-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.det-acts .big-btn:first-child{grid-column:1/-1}
+.det-acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.det-acts button{display:grid;justify-items:center;gap:4px;min-height:64px;padding:8px 4px;border-radius:14px;border:0;background:var(--sunk);color:var(--ink);font:600 13px var(--font-body);cursor:pointer}
+.det-acts svg{width:22px;height:22px}
+.det-acts .go{background:var(--ink);color:var(--bg)}
+.det-acts .danger{color:#C2362B}
 .big-btn.danger{color:#C2362B}
 .sharebox{width:100%;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);padding:10px 12px;font:14px/1.5 var(--font-body);resize:none}
 a.big-btn{display:grid;place-items:center;text-decoration:none}
@@ -194,6 +197,8 @@ a.big-btn{display:grid;place-items:center;text-decoration:none}
 .modes button{flex:1;border:0;background:none;color:inherit;min-height:36px;border-radius:9px;font-weight:600;cursor:pointer;opacity:.85}
 .modes button[aria-pressed=true]{background:var(--pass-ink);color:var(--pass);opacity:1}
 .ruler{margin-inline:24px}
+button{-webkit-tap-highlight-color:transparent;transition:transform .08s ease}
+button:active:not([disabled]){transform:scale(.97)}
 /* Sheets */
 .scrim{position:fixed;inset:0;background:rgb(0 0 0/.4);z-index:70}
 .sheet{position:fixed;inset:auto 0 0 0;z-index:71;background:var(--surface);border-radius:26px 26px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-height:85%;overflow:auto;animation:up .28s}
@@ -220,7 +225,8 @@ a.big-btn{display:grid;place-items:center;text-decoration:none}
 .help ol{margin:0;padding-inline-start:20px;display:grid;gap:4px}
 .help a{color:var(--k2);font-weight:600}
 .bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:140px}
-.bars div{display:grid;gap:6px;justify-items:center;align-content:end;height:100%}
+.bars div{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%;min-width:0}
+.bars i{flex:0 0 auto}
 .bars i{width:100%;max-width:34px;border-radius:10px;background:var(--sunk);min-height:6px}
 .bars i.top{background:var(--k0)}
 .bars span{font-size:12px;color:var(--muted)}
@@ -272,6 +278,12 @@ a.big-btn{display:grid;place-items:center;text-decoration:none}
 const C = Core, $ = s => document.querySelector(s), E = C.esc, S = () => C.state;
 C.load('b-kis'); C.applyTheme();
 const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="19" fill="var(--ink)"/><g stroke-linecap="round" stroke-width="7"><path d="M19 44V30" stroke="var(--k0)"/><path d="M32 44V20" stroke="var(--k3)"/><path d="M45 44V25" stroke="var(--k1)"/></g><path d="M19 44h26" stroke="var(--bg)" stroke-width="7" stroke-linecap="round"/></svg>`;
+const IC = {
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+};
 const hue = id => C.cat(id).hue;
 const pv = id => `--pass:var(--k${hue(id)});--pass-ink:var(--k${hue(id)}-ink)`;
 let view = 'home', filter = 'all', month = C.ym(C.today()), openPass = null, openOcc = null, sel = new Set(), d = null, tgt = 'end', buf = '', more = false, pad = false, confirmLeave = false, confirmCancel = false;
@@ -360,7 +372,7 @@ function sum() {
       ${st.pending ? `<div class="tile" style="background:var(--warn-soft);color:var(--warn)"><small style="color:inherit">ממתינות לתעריף</small><span class="disp">${st.pending}</span><small style="color:inherit">לא נספרות בהכנסה</small></div>` : ''}
     </div>
     <h2>מתי עבדת</h2>
-    <div class="tile"><div class="bars">${st.days.map((m, i) => `<div><i class="${i === top && m ? 'top' : ''}" style="height:${m / mx * 90}%"></i><span>${C.DAY_SHORT[i]}</span></div>`).join('')}</div></div>
+    <div class="tile"><div class="bars">${st.days.map((m, i) => `<div><i class="${i === top && m ? 'top' : ''}" style="height:calc(${(m / mx).toFixed(3)} * (100% - 26px))"></i><span>${C.DAY_SHORT[i]}</span></div>`).join('')}</div></div>
     ${ins.length ? `<h2>שמנו לב</h2><div class="ins">${ins.map(x => `<div>${E(x.text)}</div>`).join('')}</div>` : ''}
     <button class="big-btn" style="margin-top:20px;background:var(--k0);color:#fff" data-act="wrapped">הסיפור של ${E(C.MONTH[Number(month.slice(5)) - 1])} ✦</button>`;
 }
@@ -371,6 +383,7 @@ function settings() {
     <div class="srow"><div class="l">איפה עובדים בדרך כלל</div><select id="defcat">${S().cats.map(c => `<option value="${c.id}" ${c.id === s.defaultCat ? 'selected' : ''}>${E(c.name)}</option>`).join('')}</select></div>
     <div class="srow"><div class="l">רישום אוטומטי של משמרות קבועות<small>כשהזמן נגמר המשמרת נרשמת. תמיד אפשר לבטל.</small></div><input type="checkbox" class="sw" id="auto" ${s.autoConfirm ? 'checked' : ''} aria-label="רישום אוטומטי"></div>
   </div>
+  <div class="sgroup" style="margin-top:10px"><div class="srow"><div class="l">רטט במגע<small>רטט קצר בלחיצות, ורטט שונה לשמירה ולמחיקה</small></div><input type="checkbox" class="sw" id="hap" ${s.haptics !== false ? 'checked' : ''} aria-label="רטט במגע"></div></div>
   <h2>התראות</h2>
   <div class="sgroup">
     <div class="srow"><div class="l">הסיכום החודשי מוכן<small>בתחילת כל חודש</small></div><input type="checkbox" class="sw" id="nmo" ${s.notifyMonthly ? 'checked' : ''} aria-label="סיכום חודשי"></div>
@@ -438,7 +451,7 @@ function bindRuler() {
     drag.live = true;
     const r = el.getBoundingClientRect(), frac = (r.right - e.clientX) / r.width;
     const v = C.fromMin(Math.max(0, Math.min(1425, Math.round(frac * 96) * 15)));
-    if (d[drag.k] !== v) { d[drag.k] = v; d._touched = true; navigator.vibrate?.(4); liveTop(); }
+    if (d[drag.k] !== v) { d[drag.k] = v; d._touched = true; C.haptic('tick'); liveTop(); }
   });
   const end = () => { if (drag) { const k = drag.k, moved = drag.live; drag = null; tgt = k; buf = ''; if (moved) drawAdd(); else { pad = false; drawAdd(); } } };
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
@@ -560,11 +573,11 @@ function openDetail(id) {
       ${s.notes ? fact('הערה', E(s.notes)) : ''}
       <div class="fact"><small>תשלום</small><label class="tog" style="gap:8px">${s.paid ? 'שולם' : 'עוד לא שולם'}<input type="checkbox" class="sw" id="dpaid" data-id2="${s.id}" ${s.paid ? 'checked' : ''}></label></div>
     </div>
-    <div class="det-acts">
-      <button class="big-btn" data-act="editShift" data-id2="${s.id}">עריכה</button>
-      <button class="big-btn ghost" data-act="share1" data-id2="${s.id}">שיתוף</button>
-      <button class="big-btn ghost" data-act="copy1" data-id2="${s.id}">העתקה</button>
-      <button class="big-btn ghost danger" data-act="del1" data-id2="${s.id}">מחיקה</button>
+    <div class="det-acts" role="group" aria-label="פעולות">
+      <button class="go" data-act="editShift" data-id2="${s.id}">${IC.edit}<span>עריכה</span></button>
+      <button data-act="share1" data-id2="${s.id}">${IC.share}<span>שיתוף</span></button>
+      <button data-act="copy1" data-id2="${s.id}">${IC.copy}<span>העתקה</span></button>
+      <button class="danger" data-act="del1" data-id2="${s.id}">${IC.trash}<span>מחיקה</span></button>
     </div>`);
 }
 async function copyText(text) {
@@ -637,7 +650,7 @@ function wrapped() {
     [2, () => w.topCat ? `<div class="e">המקום הקבוע שלך</div><h3>${E(w.topCat.name)}</h3><div class="x1 num">${Math.round(w.topCat.minutes / Math.max(1, st.minutes) * 100)}%</div><p>מהזמן שלך החודש</p>` : '<h3>חודש רגוע</h3>'],
     [1, () => `<div class="e">ציפור לילה?</div><div class="x1 num">${w.nights}</div><h3>משמרות שנגמרו אחרי 23:00</h3>${w.longest ? `<p>הארוכה ביותר: <span class="num">${C.hm(C.shiftMinutes(w.longest))}</span> שעות, ${E(C.dayLabel(w.longest.date))}</p>` : ''}`],
     [3, () => `<div class="e">יום ${E(w.bestDay)}</div><h3>היום שלך</h3><p>יותר שעות מכל יום אחר בשבוע</p>`],
-    [0, () => `<div class="e">ההכנסה</div>${cur.map(([c, v]) => `<div class="x1 num" style="font-size:clamp(56px,18vw,110px)">${hide ? '₪•••' : mny(v.total, c)}</div>`).join('')}${st.pending ? `<p>ועוד ${st.pending} שמחכות לתעריף</p>` : ''}<button data-rev style="justify-self:start;min-height:44px;border-radius:99px;border:2px solid currentColor;background:none;color:inherit;padding-inline:16px;font-weight:600;cursor:pointer">${hide ? 'הצגה' : 'הסתרה'}</button>`],
+    [0, () => `<div class="e">ההכנסה</div>${cur.map(([c, v]) => `<div class="x1 num" style="font-size:clamp(56px,18vw,110px)">${hide ? `<span class="cur">${E(c)}</span>•••` : mny(v.total, c)}</div>`).join('')}${st.pending ? `<p>ועוד ${C.pl(st.pending, 'משמרת אחת שמחכה', '# משמרות שמחכות')} לתעריף</p>` : ''}<button data-rev style="justify-self:start;min-height:44px;border-radius:99px;border:2px solid currentColor;background:none;color:inherit;padding-inline:16px;font-weight:600;cursor:pointer">${hide ? 'הצגה' : 'הסתרה'}</button>`],
   ];
   const el = document.createElement('div'); el.className = 'over'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'הסיפור של החודש');
   const draw = () => { const [h] = slides[i]; el.style.cssText = `--slide:var(--k${h});--slide-ink:var(--k${h}-ink)`;
@@ -662,8 +675,11 @@ function brand() {
 }
 
 /* ---------- events ---------- */
+// Light tap feedback on every control; stronger patterns for save / delete below.
+document.addEventListener('pointerdown', e => { if (e.target.closest('button,label,.card,[data-id],[data-occ]')) C.haptic('tap'); }, { passive: true });
 document.addEventListener('click', e => {
   const t = e.target.closest('button,[data-occ],[data-id]'); if (!t) return;
+  if (/^(del|del1|delSel|cancelYes|noOcc)$/.test(t.dataset.act || '')) C.haptic('warn');
   const ds = t.dataset;
   if (d && t.closest('.add-page')) {
     if (ds.k) return key(ds.k);
@@ -693,7 +709,7 @@ document.addEventListener('click', e => {
     save: () => {
       commitBuf(); const was = d.id, before = new Set(S().shifts.map(x => x.id)), r = C.saveDraft(d);
       if (!r.ok) { drawAdd(); return; }
-      closeAdd(true);
+      closeAdd(true); C.haptic('success');
       if (r.rule) return C.toast(`נוצרו ${C.previewRule(r.rule).dates.length} משמרות קבועות`);
       if (was) return C.toast('השינויים נשמרו ✓', 'פרטים', () => openDetail(was));
       const nid = S().shifts.find(x => !before.has(x.id))?.id;
@@ -714,7 +730,7 @@ document.addEventListener('click', e => {
     copyBox: () => { const b = $('.sharebox'); b.select(); copyText(b.value); },
     pending: () => { view = 'hist'; filter = 'done'; sel = new Set(S().shifts.filter(s => s.rate == null).map(s => s.id)); render(); },
     pm: () => { month = C.prevMonth(month); render(); }, nm: () => { month = C.nextMonth(month); render(); },
-    okOcc: () => { C.confirmOcc(openOcc); openOcc = null; C.toast('נרשמה ✓'); },
+    okOcc: () => { C.haptic('success'); C.confirmOcc(openOcc); openOcc = null; C.toast('נרשמה ✓'); },
     noOcc: () => { const k = openOcc; C.cancelOcc(k); openOcc = null; C.toast('בוטלה', 'ביטול', () => C.restoreOcc(k)); },
     editOcc: () => occEdit(openOcc), rr: () => ruleRate(ds.rule),
     bulk, paid: () => { C.setPaid([...sel], true); C.toast(C.pl(sel.size, 'סומנה כשולמה', '# סומנו כשולמו')); sel.clear(); render(); }, unsel: () => { sel.clear(); render(); },
@@ -734,6 +750,7 @@ document.addEventListener('change', e => {
   if (t.id === 'dpaid') { C.setPaid([t.dataset.id2], t.checked); openDetail(t.dataset.id2); C.toast(t.checked ? 'סומנה כשולמה' : 'סומנה כלא שולמה'); return; }
   const s = S().settings;
   if (t.id === 'auto') { s.autoConfirm = t.checked; C.commit(); if (t.checked) { const x = C.catchUp(); C.commit(); if (x.length) C.toast(C.pl(x.length, 'משמרת אחת נרשמה', '# משמרות נרשמו'), 'ביטול', () => C.undoAuto(x)); } }
+  if (t.id === 'hap') { s.haptics = t.checked; C.commit(); if (t.checked) C.haptic('success'); }
   if (t.id === 'nmo') { s.notifyMonthly = t.checked; C.commit(); }
   if (t.id === 'nr') { s.notifyRate = t.checked; C.commit(); }
   if (t.id === 'defcat') { s.defaultCat = t.value; C.commit(); }
