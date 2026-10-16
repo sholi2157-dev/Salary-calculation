@@ -240,7 +240,8 @@ class KisUiTest {
                 runBlocking { dao.getWorkersList() }, onClose = {}, onSaved = { _, _ -> }, onDeleted = {})
         }
         ui.onNodeWithTag("mode_group").performClick()
-        ui.onNodeWithTag("add_worker_יוסי").performScrollTo().performTouchInput { longClick() }
+        // The long-press action itself (the same one TalkBack uses); the gesture is covered on device.
+        ui.onNodeWithTag("add_worker_יוסי").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnLongClick)
         try { waitFor(5_000) { ui.onAllNodesWithTag("forget_worker_confirm").fetchSemanticsNodes().isNotEmpty() } }
         catch (e: Throwable) { shot("forget-worker-failed"); throw e }
         ui.onNodeWithTag("forget_worker_confirm").performClick()
