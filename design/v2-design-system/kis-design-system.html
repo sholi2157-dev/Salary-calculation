@@ -7,20 +7,17 @@
 :root{
   --bg:#EDF0F5; --surface:#FFFFFF; --sunk:#E2E6EE; --ink:#0D1015; --muted:#5D6573; --line:#D6DBE4;
   --pending:#9A5000; --pending-soft:#FFEBC7; --paid:#0B7F60; --danger:#C2362B;
-  --w1:#3F51D4; --w1o:#FFFFFF; --w2:#0B7F60; --w2o:#FFFFFF; --w3:#C93767; --w3o:#FFFFFF; --w4:#F2B32B; --w4o:#2A1C00;
-  --w5:#8A3FA8; --w5o:#FFFFFF; --w6:#0F7891; --w6o:#FFFFFF; --w7:#5E7A1F; --w7o:#FFFFFF; --w8:#8B5A3C; --w8o:#FFFFFF;
+  --w1:#5145E8; --w1o:#FFFFFF; --w2:#0E8059; --w2o:#FFFFFF; --w3:#D6336C; --w3o:#FFFFFF; --w4:#F5B82E; --w4o:#1A1200; --w5:#7D3CF0; --w5o:#FFFFFF; --w6:#1F72E0; --w6o:#FFFFFF; --w7:#0E8A86; --w7o:#FFFFFF; --w8:#B5294E; --w8o:#FFFFFF;
   --font-body:"Rubik","Heebo",system-ui,sans-serif; --font-display:"Secular One","Rubik",system-ui,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#1E222B; --surface:#272C37; --sunk:#313744; --ink:#F2F4F8; --muted:#A9B1BF; --line:#3B4250;
-  --pending:#FFC266; --pending-soft:#4A3A1E; --paid:#5FD3AE; --danger:#FF9A8A;
-  --w1:#464D6B; --w1o:#F4F6FA; --w2:#365756; --w2o:#F4F6FA; --w3:#5F4657; --w3o:#F4F6FA; --w4:#5F5645; --w4o:#F4F6FA;
-  --w5:#534A66; --w5o:#F4F6FA; --w6:#395664; --w6o:#F4F6FA; --w7:#4C5845; --w7o:#F4F6FA; --w8:#574E4E; --w8o:#F4F6FA; color-scheme:dark}}
+  --bg:#121212; --surface:#1E1E1E; --sunk:#2A2A2A; --ink:#FFFFFF; --muted:#B3B3B3; --line:#303030;
+  --pending:#FFC266; --pending-soft:#3A2D12; --paid:#3DDC97; --danger:#FF8A7A;
+  --w1:#5145E8; --w1o:#FFFFFF; --w2:#0E8059; --w2o:#FFFFFF; --w3:#D6336C; --w3o:#FFFFFF; --w4:#F5B82E; --w4o:#1A1200; --w5:#7D3CF0; --w5o:#FFFFFF; --w6:#1F72E0; --w6o:#FFFFFF; --w7:#0E8A86; --w7o:#FFFFFF; --w8:#B5294E; --w8o:#FFFFFF; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#1E222B; --surface:#272C37; --sunk:#313744; --ink:#F2F4F8; --muted:#A9B1BF; --line:#3B4250;
-  --pending:#FFC266; --pending-soft:#4A3A1E; --paid:#5FD3AE; --danger:#FF9A8A;
-  --w1:#464D6B; --w1o:#F4F6FA; --w2:#365756; --w2o:#F4F6FA; --w3:#5F4657; --w3o:#F4F6FA; --w4:#5F5645; --w4o:#F4F6FA;
-  --w5:#534A66; --w5o:#F4F6FA; --w6:#395664; --w6o:#F4F6FA; --w7:#4C5845; --w7o:#F4F6FA; --w8:#574E4E; --w8o:#F4F6FA; color-scheme:dark}
+  --bg:#121212; --surface:#1E1E1E; --sunk:#2A2A2A; --ink:#FFFFFF; --muted:#B3B3B3; --line:#303030;
+  --pending:#FFC266; --pending-soft:#3A2D12; --paid:#3DDC97; --danger:#FF8A7A;
+  --w1:#5145E8; --w1o:#FFFFFF; --w2:#0E8059; --w2o:#FFFFFF; --w3:#D6336C; --w3o:#FFFFFF; --w4:#F5B82E; --w4o:#1A1200; --w5:#7D3CF0; --w5o:#FFFFFF; --w6:#1F72E0; --w6o:#FFFFFF; --w7:#0E8A86; --w7o:#FFFFFF; --w8:#B5294E; --w8o:#FFFFFF; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--font-body);direction:rtl;margin:0;-webkit-font-smoothing:antialiased}
 .wrap{max-width:860px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 64px;display:grid;gap:40px}
@@ -168,7 +165,7 @@ td code{font:500 12px ui-monospace,monospace;direction:ltr;unicode-bidi:isolate}
 
 <section>
   <h2>צבעי מקומות עבודה</h2>
-  <p class="lead">8 צבעים, בלי כתום. בבהיר: גוש צבע חזק. בכהה: גוון רך עם טקסט בהיר, והצבע החזק משמש רק להדגשות. הצבעים מתחלקים לפי הסדר. מקום עבודה תשיעי מקבל שוב צבע 1 עם סימון נוסף. כל צבע מגיע עם צבע טקסט משלו.</p>
+  <p class="lead">8 צבעים חיים, בלי כתום, בגרדיאנט שמתכהה לכיוון השם, כך שהטקסט נשאר קריא. המצב הכהה בהשראת Spotify: רקע כמעט שחור והצבעים נשארים חיים. הצבעים מתחלקים לפי הסדר. מקום עבודה תשיעי מקבל שוב צבע 1 עם סימון נוסף. כל צבע מגיע עם צבע טקסט משלו.</p>
   <div class="wp" id="wp"></div>
 </section>
 
@@ -272,10 +269,11 @@ td code{font:500 12px ui-monospace,monospace;direction:ltr;unicode-bidi:isolate}
 <script>
 (() => {
   const $ = s => document.querySelector(s);
-  const names = ['אינדיגו', 'אורן', 'ורד', 'חרדל', 'שזיף', 'ים', 'זית', 'קקאו'];
-  const ratios = { light: [6.29, 4.98, 4.97, 8.9, 6.26, 5.1, 4.91, 5.79], dark: [7.66, 7.31, 7.76, 6.68, 7.64, 7.22, 6.96, 7.45] };
+  const names = ["אינדיגו", "ירוק", "ורד", "חרדל", "סגול", "תכלת", "טורקיז", "בורדו"];
+  const GB = ["#1E1873", "#073D2C", "#5C1230", "#C98A10", "#2E1466", "#0C2F66", "#063B3A", "#4A0F21"];
+  const ratios = { light: [6.24, 4.6, 4.62, 10.42, 5.56, 4.62, 4.2, 6.19], dark: [6.24, 4.6, 4.62, 10.42, 5.56, 4.62, 4.2, 6.19] };
   const dark = () => document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
-  const drawWp = () => { const r = ratios[dark() ? 'dark' : 'light']; $('#wp').innerHTML = names.map((n, i) => `<div style="background:var(--w${i + 1});color:var(--w${i + 1}o)"><b>${i + 1} · ${n}</b><small>${r[i]}:1</small></div>`).join(''); };
+  const drawWp = () => { const r = ratios[dark() ? 'dark' : 'light']; $('#wp').innerHTML = names.map((n, i) => `<div style="background:linear-gradient(90deg,var(--w${i + 1}),${GB[i]});color:var(--w${i + 1}o)"><b>${i + 1} · ${n}</b><small>${r[i]}:1</small></div>`).join(''); };
   drawWp();
   document.querySelector('.space').innerHTML = [4, 8, 12, 16, 20, 24, 32, 40].map(v => `<div><i style="height:${v}px"></i>${v}</div>`).join('');
   document.querySelector('.keys').innerHTML = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '⌫'].map(k => `<button type="button">${k}</button>`).join('');

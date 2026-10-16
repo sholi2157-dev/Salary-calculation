@@ -317,7 +317,8 @@ const Core = (() => {
 
   /* ---------- summaries ---------- */
   function monthStats(k) {
-    const list = state.shifts.filter(s => ym(s.date) === k);
+    // k is a month (YYYY-MM) or a whole year (YYYY).
+    const list = state.shifts.filter(s => s.date.startsWith(k));
     const byCur = {};
     let minutes = 0, pending = 0;
     for (const s of list) {
@@ -328,10 +329,10 @@ const Core = (() => {
     }
     // Compare like with like: for the running month, only the same days of last month.
     const cutoff = k === ym(today()) ? Number(today().slice(8)) : 31;
-    const prev = state.shifts.filter(s => ym(s.date) === prevMonth(k) && Number(s.date.slice(8)) <= cutoff).reduce((a, s) => a + shiftMinutes(s), 0);
+    const prev = k.length !== 7 ? 0 : state.shifts.filter(s => ym(s.date) === prevMonth(k) && Number(s.date.slice(8)) <= cutoff).reduce((a, s) => a + shiftMinutes(s), 0);
     const days = Array(7).fill(0); list.forEach(s => days[weekday(s.date)] += shiftMinutes(s));
     const cats = {}; list.forEach(s => cats[s.cat] = (cats[s.cat] || 0) + shiftMinutes(s));
-    const planned = occurrences().filter(o => ym(o.date) === k && o.status === 'planned');
+    const planned = occurrences().filter(o => o.date.startsWith(k) && o.status === 'planned');
     const plannedMin = planned.reduce((a, o) => a + span(o.start, o.end).minutes, 0);
     return { k, list, count: list.length, minutes, byCur, pending, prevMinutes: prev, days, cats, planned: planned.length, plannedMin };
   }
