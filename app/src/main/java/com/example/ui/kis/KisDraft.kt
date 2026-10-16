@@ -84,7 +84,8 @@ data class EntryDraft(
         /** The editable form of a saved entry. Break minutes are inferred exactly as before (range − saved hours). */
         fun from(e: WorkEntry): EntryDraft {
             val job = WorkPay.isJob(e)
-            val clock = e.isTimeRange && e.startTime != null && e.endTime != null
+            // Only well-formed times open as a clock; anything else (old imports) opens as hours, never crashes.
+            val clock = e.isTimeRange && V2Rules.isTime(e.startTime) && V2Rules.isTime(e.endTime)
             val mode = when { job -> EntryMode.JOB; e.isGroupShift -> EntryMode.GROUP; clock -> EntryMode.CLOCK; else -> EntryMode.HOURS }
             val breakMin = Math.round(WorkEntryEdits.breakMinutes(e)).toInt()
             return EntryDraft(
@@ -182,7 +183,8 @@ data class EntryDraft(
         val payKnown = if (job) !amountUnknown else !rateUnknown
         val date = when {
             base != null && startOfDay(base.date) == day -> base.date
-            clock -> day + V2Rules.toMinutes(start!!) * 60_000L
+            // Wall-clock time on that day (Calendar handles a 23/25-hour daylight-saving day).
+            clock -> Calendar.getInstance().apply { timeInMillis = day; val m = V2Rules.toMinutes(start!!); set(Calendar.HOUR_OF_DAY, m / 60); set(Calendar.MINUTE, m % 60) }.timeInMillis
             else -> day + 12 * 60 * 60_000L
         }
         val amountNumber = if (was != null && was.amount == amount && !was.amountUnknown) base!!.totalEarnings else num(amount) ?: 0.0

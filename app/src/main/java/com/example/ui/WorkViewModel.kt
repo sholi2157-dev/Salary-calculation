@@ -15,6 +15,7 @@ import com.example.data.WorkDatabase
 import com.example.data.WorkEntry
 import com.example.data.WorkRepository
 import com.example.data.WorkerDirectory
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -401,8 +402,11 @@ class WorkViewModel(
             return
         }
         
-        // Start Foreground Service only if enabled
-        if (serviceNotificationEnabled.value) {
+        // Start Foreground Service only if enabled. Read the stored choice itself: the StateFlow is only
+        // collected by the settings page and would still hold its default (on) right after a cold start.
+        viewModelScope.launch {
+        val enabled = runCatching { settings.data.first()[SERVICE_NOTIFICATION_ENABLED_KEY] }.getOrNull() ?: true
+        if (enabled) {
             val intent = Intent(getApplication(), ShiftForegroundService::class.java).apply {
                 action = "START"
                 putExtra(ShiftForegroundService.EXTRA_OWNER_UID, owner.uid)
@@ -412,6 +416,7 @@ class WorkViewModel(
             } else {
                 getApplication<Application>().startService(intent)
             }
+        }
         }
     }
 

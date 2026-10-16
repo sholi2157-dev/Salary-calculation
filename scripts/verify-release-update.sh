@@ -33,16 +33,16 @@ run_stage restart
 adb push candidate-b.apk "/sdcard/Android/data/$pkg/files/candidate-b.apk"
 run_stage updater
 # The owner's real path: RC16 → the delivered 2.0 build → this candidate, data kept at every step.
-if [ -f candidate-prev.apk ]; then
-  adb install -r candidate-prev.apk | tee release-evidence/install-prev.txt
-  run_stage restart after-prev
-fi
+test -f candidate-prev.apk
+adb install -r candidate-prev.apk | tee release-evidence/install-prev.txt
+run_stage restart after-prev
 adb install -r candidate-b.apk | tee release-evidence/install-update.txt
 run_stage verify
 for evidence_file in restart-before.json updater-before.json verify-before.json verify-after-edit.json; do
   adb pull "/sdcard/Android/data/$pkg/files/$evidence_file" "release-evidence/$evidence_file"
 done
-cmp release-evidence/restart-before.json release-evidence/verify-before.json
+# updater-before.json was written on RC16 itself and is never overwritten by the later stages.
+cmp release-evidence/updater-before.json release-evidence/verify-before.json
 adb shell am start -W -n "$pkg/com.example.MainActivity" | tee release-evidence/offline-start-after-update.txt
 grep -F "Status: ok" release-evidence/offline-start-after-update.txt
 adb shell am force-stop "$pkg"

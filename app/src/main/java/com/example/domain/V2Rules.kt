@@ -14,10 +14,15 @@ import kotlin.math.roundToLong
 object V2Rules {
     const val LONG_SHIFT_MINUTES = 16 * 60
 
+    /** Tolerates malformed stored times (old imports): anything unreadable counts as 0 instead of crashing. */
     fun toMinutes(time: String): Int {
-        val parts = time.split(":")
-        return parts[0].toInt() * 60 + parts[1].toInt()
+        val parts = time.trim().split(":")
+        return (parts.getOrNull(0)?.trim()?.toIntOrNull() ?: 0) * 60 + (parts.getOrNull(1)?.trim()?.take(2)?.toIntOrNull() ?: 0)
     }
+
+    /** "H:MM" / "HH:MM" within a day. */
+    fun isTime(time: String?): Boolean = time != null && Regex("^\\d{1,2}:\\d{2}$").matches(time.trim()) &&
+        time.trim().substringBefore(':').toInt() < 24 && time.trim().substringAfter(':').toInt() < 60
 
     fun fromMinutes(minutes: Int): String {
         val m = ((minutes % 1440) + 1440) % 1440

@@ -40,7 +40,7 @@ class ShiftForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (finishing) return START_NOT_STICKY
+        if (finishing) { foregroundThenStop(startId); return START_NOT_STICKY }
         val owner = if (intent?.hasExtra(EXTRA_OWNER_UID) == true)
             com.example.data.WorkAccountScope(intent.getStringExtra(EXTRA_OWNER_UID))
         else ShiftStateManager.activeOwner(this)
@@ -54,7 +54,7 @@ class ShiftForegroundService : Service() {
             handleEndShift()
         } else {
             if (shiftState.activeShiftStartTime.value == null) {
-                stopSelf(startId)
+                foregroundThenStop(startId)
                 return START_NOT_STICKY
             }
             // Build and show persistent notification
@@ -209,6 +209,20 @@ class ShiftForegroundService : Service() {
     override fun onDestroy() {
         timerJob?.cancel()
         super.onDestroy()
+    }
+
+    /**
+     * A service started with startForegroundService must call startForeground even when it has nothing to show
+     * (Android 12+ crashes the app otherwise). Shows a minimal notification and removes it at once.
+     */
+    private fun foregroundThenStop(startId: Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) runCatching {
+            val n = NotificationCompat.Builder(this, CHANNEL_ID).setSmallIcon(android.R.drawable.ic_notification_overlay).setContentTitle("חישוב שכר").setSilent(true).build()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) startForeground(NOTIFICATION_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            else startForeground(NOTIFICATION_ID, n)
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        }
+        stopSelf(startId)
     }
 
     private fun createNotificationChannel() {
