@@ -173,6 +173,8 @@ fun KisEditorPage(
         }
     }
 
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    val imeOpen = WindowInsets.isImeVisible
     Column(Modifier.fillMaxSize().background(c.bg).imePadding().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
         // ---------------- coloured top ----------------
         Column(Modifier.fillMaxWidth().background(if (d.editing) Brush.linearGradient(listOf(topBg, topBg)) else workplace.brush)
@@ -187,36 +189,40 @@ fun KisEditorPage(
                 }
             }
             if (!aiMode) {
-                if (d.editing && base != null) WasBanner(base, changed, onTop)
-                ModeTabs(d.mode, onTop, workplace.from.takeIf { !d.editing } ?: c.edit) { m ->
-                    commitBuf()
-                    d = d.withMode(m)
-                    target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> if (d.start == null && m == EntryMode.CLOCK) KeyTarget.START else KeyTarget.END }
-                    if (m == EntryMode.GROUP && d.start == null && !d.editing) d = d.copy(start = EntryDraft.suggestStart(d.category, d.day, history).start)
-                }
-                CategoryChips(categories, d.category, onTop, topBg, onPick = { cat -> commitBuf(); d = d.withCategory(cat, viewModel::categoryCurrency, history) }, onAdd = { addingPlace = true })
-                when {
-                    d.mode == EntryMode.JOB -> JobAmount(d, shown(KeyTarget.AMOUNT), pad && target == KeyTarget.AMOUNT, onTop,
-                        onOpen = { open(KeyTarget.AMOUNT) }, onUnknown = { pad = false; d = d.copy(amountUnknown = true, amount = "") }, onKnown = { d = d.copy(amountUnknown = false); open(KeyTarget.AMOUNT) },
-                        hoursLabel = shown(KeyTarget.HOURS), onHours = { open(KeyTarget.HOURS) })
-                    d.mode == EntryMode.HOURS || d.groupByHours -> HoursDisplay(shown(KeyTarget.HOURS), pad && target == KeyTarget.HOURS, onTop,
-                        onOpen = { open(KeyTarget.HOURS) }, onQuick = { h -> d = d.copy(hours = h.toString()); buf = "" },
-                        onUseClock = if (d.mode == EntryMode.GROUP) ({ d = d.copy(start = EntryDraft.suggestStart(d.category, d.day, history).chips.firstOrNull() ?: "09:00"); target = KeyTarget.START }) else null)
-                    else -> {
-                        Box(Modifier.coachTarget(CoachTarget.FIELDS)) {
-                            ClockDisplay(shown(KeyTarget.START), shown(KeyTarget.END), d.start == null && !(pad && target == KeyTarget.START && buf.isNotEmpty()), target, onTop,
-                                onStart = { open(KeyTarget.START) }, onEnd = { open(KeyTarget.END) })
+                // While the system keyboard is open (note, worker name) only the top row and the total stay,
+                // so the form and the Save bar keep their room on small phones.
+                if (!imeOpen) {
+                    if (d.editing && base != null) WasBanner(base, changed, onTop)
+                    ModeTabs(d.mode, onTop, workplace.from.takeIf { !d.editing } ?: c.edit) { m ->
+                        commitBuf()
+                        d = d.withMode(m)
+                        target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> if (d.start == null && m == EntryMode.CLOCK) KeyTarget.START else KeyTarget.END }
+                        if (m == EntryMode.GROUP && d.start == null && !d.editing) d = d.copy(start = EntryDraft.suggestStart(d.category, d.day, history).start)
+                    }
+                    CategoryChips(categories, d.category, onTop, topBg, onPick = { cat -> commitBuf(); d = d.withCategory(cat, viewModel::categoryCurrency, history) }, onAdd = { addingPlace = true })
+                    when {
+                        d.mode == EntryMode.JOB -> JobAmount(d, shown(KeyTarget.AMOUNT), pad && target == KeyTarget.AMOUNT, onTop,
+                            onOpen = { open(KeyTarget.AMOUNT) }, onUnknown = { pad = false; d = d.copy(amountUnknown = true, amount = "") }, onKnown = { d = d.copy(amountUnknown = false); open(KeyTarget.AMOUNT) },
+                            hoursLabel = shown(KeyTarget.HOURS), onHours = { open(KeyTarget.HOURS) })
+                        d.mode == EntryMode.HOURS || d.groupByHours -> HoursDisplay(shown(KeyTarget.HOURS), pad && target == KeyTarget.HOURS, onTop,
+                            onOpen = { open(KeyTarget.HOURS) }, onQuick = { h -> d = d.copy(hours = h.toString()); buf = "" },
+                            onUseClock = if (d.mode == EntryMode.GROUP) ({ d = d.copy(start = EntryDraft.suggestStart(d.category, d.day, history).chips.firstOrNull() ?: "09:00"); target = KeyTarget.START }) else null)
+                        else -> {
+                            Box(Modifier.coachTarget(CoachTarget.FIELDS)) {
+                                ClockDisplay(shown(KeyTarget.START), shown(KeyTarget.END), d.start == null && !(pad && target == KeyTarget.START && buf.isNotEmpty()), target, onTop,
+                                    onStart = { open(KeyTarget.START) }, onEnd = { open(KeyTarget.END) })
+                            }
+                            TimeRuler(d.start, d.end, if (target == KeyTarget.START && d.start != null) TimeHandle.START else TimeHandle.END, onTop, topBg,
+                                onChange = { h, v -> buf = ""; d = if (h == TimeHandle.START) d.copy(start = v) else d.copy(end = v) },
+                                onSelect = { h -> target = if (h == TimeHandle.START) KeyTarget.START else KeyTarget.END; buf = "" })
+                            val nudgeStart = target == KeyTarget.START && d.start != null
+                            TimeNudges(if (nudgeStart) "התחלה" else "סיום", onTop) { n ->
+                                commitBuf()
+                                d = if (nudgeStart) d.copy(start = nudge(d.start!!, n)) else d.copy(end = nudge(d.end, n))
+                            }
+                            if (d.mode == EntryMode.GROUP) Text("הזנת שעות במקום שעון", color = onTop.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold),
+                                modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick { d = d.copy(start = null); target = KeyTarget.HOURS }.padding(vertical = 4.dp))
                         }
-                        TimeRuler(d.start, d.end, if (target == KeyTarget.START && d.start != null) TimeHandle.START else TimeHandle.END, onTop, topBg,
-                            onChange = { h, v -> buf = ""; d = if (h == TimeHandle.START) d.copy(start = v) else d.copy(end = v) },
-                            onSelect = { h -> target = if (h == TimeHandle.START) KeyTarget.START else KeyTarget.END; buf = "" })
-                        val nudgeStart = target == KeyTarget.START && d.start != null
-                        TimeNudges(if (nudgeStart) "התחלה" else "סיום", onTop) { n ->
-                            commitBuf()
-                            d = if (nudgeStart) d.copy(start = nudge(d.start!!, n)) else d.copy(end = nudge(d.end, n))
-                        }
-                        if (d.mode == EntryMode.GROUP) Text("הזנת שעות במקום שעון", color = onTop.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold),
-                            modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick { d = d.copy(start = null); target = KeyTarget.HOURS }.padding(vertical = 4.dp))
                     }
                 }
                 // On an edit, show exactly what will be stored (an untouched imported amount stays as it is).
