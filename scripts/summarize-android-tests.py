@@ -10,8 +10,9 @@ for variant in ('Debug','Release'):
         for key in totals: totals[key]+=int(suite.get(key,0))
     assert totals['tests']>=51 and not any(totals[key] for key in ('failures','errors','skipped')), totals
     if variant == 'Debug':
-        for name in ('StageALayoutTest', 'StageAInsetsTest', 'AiShiftExperienceTest', 'HistoryCompactUiTest', 'OnboardingExperienceTest'):
+        for name in ('KisUiTest', 'AiShiftExperienceTest', 'OnboardingExperienceTest'):
             assert any(file.name == f'TEST-com.example.{name}.xml' for file in files), name
+    assert any(file.name == 'TEST-com.example.V2PayTest.xml' for file in files), '2.0 pay rules coverage missing'
     assert any(file.name == 'TEST-com.example.WorkOnboardingTest.xml' for file in files), 'versioned onboarding coverage missing'
     result[variant]=totals
 Path('release-evidence').mkdir(exist_ok=True)
