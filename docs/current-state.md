@@ -1,5 +1,9 @@
 # Current project state
 
+## October 16 — 2.0 stage B: signed test build ready (not published)
+
+Branch `claude/v2-android` only. Signed `2.0-rc1` / code 25 from source `8b7dcbd`, run 38865496966 SUCCESS: 109 Debug + 92 Release tests, real RC16 → 2.0 signed update with exact data retained, device UI/keyboard/currency tests, fresh-install onboarding, empty crash logs. APK SHA-256 `619adbd5ec5058b94d834a3077c5a5355357f90a1888697f68797e99f5d048ad`, same package and permanent certificate. Private workflow artifact `salary-2.0-rc1-candidate` only — no Release, no update feed change, no merge. Details: `docs/v2-stage-b.md`. Waiting for owner physical review; stage C only after that.
+
 ## October 14 redistribution — Android RC16 and Web production delivered
 
 Owner authorized merge and redistribution of the audit fixes. Android PR #4 and Web PR #3 are merged on their separate active branches.
