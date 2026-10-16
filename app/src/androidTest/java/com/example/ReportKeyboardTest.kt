@@ -130,9 +130,14 @@ class ReportKeyboardTest {
         assertEquals(original, runBlocking { dao.getEntriesList() })
         // Live shift: start and cancel without saving.
         ui.onNodeWithTag("tab_0").performClick()
-        // Wait until Home is really the shown page (the pager keeps the neighbour page composed off-screen).
-        ui.waitUntil(5_000) { runCatching { ui.onNodeWithTag("tab_0").assertIsSelected(); ui.onNodeWithTag("live_shift_fab").assertIsDisplayed(); true }.getOrDefault(false) }
+        ui.waitForIdle()
         snapshot("v2-home-before-live")
+        // Wait until Home is really the shown page (the pager keeps the neighbour page composed off-screen).
+        try { ui.waitUntil(8_000) { runCatching { ui.onNodeWithTag("tab_0").assertIsSelected(); true }.getOrDefault(false) } }
+        catch (e: Throwable) {
+            snapshot("v2-home-timeout")
+            throw AssertionError("Home did not become the shown page. Navigation: " + ui.onNodeWithTag("bottom_navigation").printToString(), e)
+        }
         ui.onNodeWithTag("live_shift_fab").performScrollTo().performClick()
         ui.waitUntil(5_000) { ui.onAllNodesWithTag("live_start_confirm").fetchSemanticsNodes().isNotEmpty() }
         ui.onNodeWithTag("live_start_confirm").performClick()
