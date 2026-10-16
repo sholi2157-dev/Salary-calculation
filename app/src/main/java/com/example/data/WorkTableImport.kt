@@ -53,7 +53,9 @@ object WorkTableImport {
                 val job = cell("kind") in listOf("קבלנות", "job")
                 val bonus = cell("bonus").takeIf { it.isNotBlank() }?.let(::number) ?: 0.0
                 // 2.0 exports leave rate and amount empty while the rate (or job amount) is unknown.
-                val payKnown = if (job) cell("total").isNotBlank() else cell("rate").isNotBlank() || cell("total").isNotBlank()
+                // Only a 2.0 table (it has the "סוג" column) may carry an unknown rate; older tables still require one.
+                val modern = columns.getValue("kind") >= 0
+                val payKnown = if (!modern) true else if (job) cell("total").isNotBlank() else cell("rate").isNotBlank() || cell("total").isNotBlank()
                 val rate = if (job || !payKnown) 0.0 else number(cell("rate"))
                 val total = if (!payKnown) 0.0 else cell("total").takeIf { it.isNotBlank() }?.let(::number) ?: (hours * rate + bonus)
                 require(total.isFinite()) { "סכום לא תקין" }

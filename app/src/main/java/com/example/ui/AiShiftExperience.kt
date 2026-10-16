@@ -70,7 +70,7 @@ fun AiShiftInput(text: String, onText: (String) -> Unit, capturing: Boolean, lis
     val focus = LocalFocusManager.current
     val c = com.example.ui.kis.Kis.colors
     val accent = com.example.ui.kis.Workplaces[0].accent(c.dark)
-    Column(Modifier.fillMaxWidth().testTag("ai_experience").coachTarget(CoachTarget.AI), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxWidth().testTag("ai_experience"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(Icons.Filled.AutoAwesome, null, tint = accent, modifier = Modifier.size(26.dp))
             Column {
@@ -78,7 +78,7 @@ fun AiShiftInput(text: String, onText: (String) -> Unit, capturing: Boolean, lis
                 Text("כותבים או מכתיבים ← פענוח ← בדיקה ושמירה", color = c.muted, style = com.example.ui.kis.KisType.caption)
             }
         }
-        com.example.ui.kis.KisTextField(text, onText, "תיאור המשמרת", Modifier.fillMaxWidth().testTag("ai_free_text_input"),
+        com.example.ui.kis.KisTextField(text, onText, "תיאור המשמרת", Modifier.fillMaxWidth().coachTarget(CoachTarget.AI).testTag("ai_free_text_input"),
             placeholder = "אתמול עבדתי במסעדה מ-17 עד 23, חצי שעה הפסקה, 52 שקל לשעה", singleLine = false, minLines = 3,
             enabled = !processing && !capturing,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); focus.clearFocus() }))

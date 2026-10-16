@@ -257,7 +257,7 @@ private fun Totals(rows: List<WorkEntry>, onPending: () -> Unit) {
     val c = Kis.colors
     val totals = WorkPay.totals(rows)
     val pending = WorkPay.pending(rows).count { !WorkPay.isJob(it) }
-    KisCard(padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), radius = 18.dp, modifier = Modifier.fillMaxWidth().testTag("history_total")) {
+    KisCard(padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), radius = 18.dp, modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}.testTag("history_total")) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("${rows.size} משמרות · ${KisFormat.hours(rows.sumOf { it.hours })} שעות", style = KisType.caption, color = c.muted)

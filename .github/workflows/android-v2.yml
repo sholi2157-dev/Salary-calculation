@@ -53,6 +53,23 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$apk" | tee /tmp/release-identity.txt
           grep -F "package: name='com.aistudio.worktracker.qztvdw.distribution'" /tmp/release-identity.txt
           python3 scripts/check-local-build.py
+      - name: Print screenshots for review (compressed, base64)
+        if: ${{ always() && !contains(github.event.head_commit.message, '[compile]') }}
+        run: |
+          pip install -q pillow >/dev/null 2>&1 || true
+          python3 - <<'PY'
+          import base64, glob, io, os
+          from PIL import Image
+          files = sorted(glob.glob('/tmp/kis-*.png') + glob.glob('/tmp/onboarding-360-*.png') + glob.glob('/tmp/stage-ai-*-360.png'))
+          for f in files:
+              im = Image.open(f).convert('RGB')
+              im.thumbnail((400, 900))
+              buf = io.BytesIO(); im.save(buf, 'JPEG', quality=72)
+              data = base64.b64encode(buf.getvalue()).decode()
+              print('@@IMG ' + os.path.basename(f))
+              for i in range(0, len(data), 3000): print('@@B ' + data[i:i+3000])
+              print('@@END')
+          PY
       - name: Print exported Room schemas
         if: always()
         run: for f in app/schemas/*/*.json; do echo "=== $f"; cat "$f"; echo; done

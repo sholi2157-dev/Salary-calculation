@@ -428,7 +428,7 @@ private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color
 
 @Composable
 private fun MetaLine(d: EntryDraft, check: EntryDraft.Check, ink: Color, bg: Color) {
-    Row(Modifier.fillMaxWidth().testTag("editor_meta"), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}.testTag("editor_meta"), verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             val minutes = check.minutes
             if (d.mode != EntryMode.JOB && minutes != null && minutes > 0 && check.errors.none { it.startsWith("שעת") || it.startsWith("ההפסקה") }) {
