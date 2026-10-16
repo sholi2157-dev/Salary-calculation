@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -173,8 +174,8 @@ fun KisEditorPage(
         }
     }
 
-    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-    val imeOpen = WindowInsets.isImeVisible
+    // The keyboard's real height, not isImeVisible (which reads true before any insets arrive).
+    val imeOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     Column(Modifier.fillMaxSize().background(c.bg).imePadding().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
         // ---------------- coloured top ----------------
         Column(Modifier.fillMaxWidth().background(if (d.editing) Brush.linearGradient(listOf(topBg, topBg)) else workplace.brush)
