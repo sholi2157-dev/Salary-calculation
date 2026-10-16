@@ -5,7 +5,6 @@ import android.app.TimePickerDialog
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,11 +70,16 @@ fun PlannedCard(o: V2Plan.Occurrence, categories: List<WorkCategory>, onWorked: 
             if (o.rate != null) MoneyText(WorkPay.amount(minutes / 60.0, o.rate), o.currency, KisType.amount.copy(fontSize = 17.sp), color = c.muted)
             else Text("?", style = KisType.amount.copy(fontSize = 17.sp), color = c.muted)
         }
-        if (open) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            KisButton("עבדתי", onWorked, Modifier.weight(1f), height = 44.dp, tag = "plan_worked_${o.key}")
-            KisButton("שעות", onHours, Modifier.weight(1f), KisButtonKind.GHOST, height = 44.dp, tag = "plan_hours_${o.key}")
-            KisButton("לא עבדתי", onSkip, Modifier.weight(1f), KisButtonKind.GHOST, height = 44.dp, tag = "plan_skip_${o.key}")
-            KisButton("שיתוף", onShare, Modifier.weight(1f), KisButtonKind.GHOST, height = 44.dp, tag = "plan_share_${o.key}")
+        // Two rows of two: every label stays whole on a narrow phone and each button is a full 48dp target.
+        if (open) Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                KisButton("עבדתי", onWorked, Modifier.weight(1f), height = 48.dp, tag = "plan_worked_${o.key}")
+                KisButton("לא עבדתי", onSkip, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "plan_skip_${o.key}")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                KisButton("שינוי שעות", onHours, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "plan_hours_${o.key}")
+                KisButton("שיתוף", onShare, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "plan_share_${o.key}")
+            }
         }
     }
 }
@@ -83,7 +88,8 @@ fun PlannedCard(o: V2Plan.Occurrence, categories: List<WorkCategory>, onWorked: 
 @Composable
 fun NextUp(occurrences: List<V2Plan.Occurrence>, categories: List<WorkCategory>, onWorked: (V2Plan.Occurrence) -> Unit, onSkip: (V2Plan.Occurrence) -> Unit,
            onHours: (V2Plan.Occurrence) -> Unit, onShare: (V2Plan.Occurrence) -> Unit, onAll: () -> Unit) {
-    val waiting = occurrences.filter { it.status == V2Plan.Status.AWAITING }
+    // A short list: the rest is one tap away in History ("הכול").
+    val waiting = occurrences.filter { it.status == V2Plan.Status.AWAITING }.takeLast(3)
     val next = occurrences.filter { it.status == V2Plan.Status.PLANNED }.take(3)
     if (waiting.isEmpty() && next.isEmpty()) return
     Column(Modifier.testTag("next_up")) {
@@ -135,9 +141,16 @@ fun RepeatBlock(days: Set<Int>, until: String, preview: V2Plan.Preview?, onDays:
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("repeat_block")) {
         Text("בימים", style = KisType.label, color = c.ink)
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // All seven days share the width, so none is pushed off a narrow screen.
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             (0..6).forEach { d ->
-                KisChip(KisFormat.DAY_SHORT[d], selected = d in days, tag = "repeat_day_$d", onClick = { onDays(if (d in days) days - d else days + d) })
+                val on = d in days
+                val shape = RoundedCornerShape(12.dp)
+                Box(Modifier.weight(1f).heightIn(min = 48.dp).clip(shape).background(if (on) c.ink else c.surface)
+                    .border(1.5.dp, if (on) c.ink else c.line, shape).kisClick { onDays(if (on) days - d else days + d) }
+                    .semantics { selected = on }.testTag("repeat_day_$d"), contentAlignment = Alignment.Center) {
+                    Text(KisFormat.DAY_SHORT[d], style = KisType.label, color = if (on) c.onInk else c.ink, maxLines = 1)
+                }
             }
         }
         KisChip("עד ${KisShare.shortDate(V2Plan.startMillis(until, "12:00"))}", tag = "repeat_until", onClick = {

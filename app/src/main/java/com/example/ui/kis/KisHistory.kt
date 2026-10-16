@@ -78,6 +78,8 @@ class HistoryUi {
     var barHeight by mutableStateOf(0.dp)
     /** Showing the weekly plans instead of recorded shifts (never summed, copied or exported). */
     var planned by mutableStateOf(false)
+    /** A month to show next (HistoryFilter.monthKey), e.g. from the monthly summary notification. */
+    var showMonth by mutableStateOf<Int?>(null)
 }
 
 @Composable
@@ -110,12 +112,14 @@ fun KisHistory(
     // Changing month, filter or search drops shifts that are no longer shown from the selection, so actions
     // (delete, paid, share) only ever touch what is on screen.
     LaunchedEffect(filter, ui.query) { if (ui.selecting) ui.selection = ui.selection.filter { id -> rows.any { it.id == id } }.toSet() }
+    LaunchedEffect(ui.showMonth) { ui.showMonth?.let { filter = filter.copy(period = Period.MONTH, month = it); ui.showMonth = null } }
     val listState = rememberLazyListState()
     LaunchedEffect(filter.sort, filter.month, filter.period) { listState.scrollToItem(0) }
     LaunchedEffect(visible) { if (!visible) ui.selection = emptySet() }
     // Existing behaviour: back leaves selection first, then search.
     BackHandler(enabled = visible && ui.selecting) { ui.selection = emptySet() }
     BackHandler(enabled = visible && !ui.selecting && ui.searching) { ui.searching = false }
+    BackHandler(enabled = visible && !ui.selecting && !ui.searching && showPlans) { ui.planned = false }
     // Rows that were deleted elsewhere leave the selection.
     LaunchedEffect(entries) { ui.selection = ui.selection.filter { id -> entries.any { it.id == id } }.toSet() }
     val selectedRows = entries.filter { it.id in ui.selection }
@@ -160,8 +164,8 @@ fun KisHistory(
                         }
                     }
                     if (plans.isNotEmpty() && planActions != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        KisChip("עבדתי", selected = !ui.planned, onClick = { ui.planned = false }, tag = "history_worked", minHeight = 38.dp)
-                        KisChip("מתוכנן · ${plans.size}", selected = ui.planned, onClick = { ui.selection = emptySet(); ui.planned = true }, tag = "history_planned", minHeight = 38.dp)
+                        KisChip("עבדתי", selected = !ui.planned, onClick = { ui.planned = false }, tag = "history_worked", minHeight = 48.dp)
+                        KisChip("מתוכנן · ${plans.size}", selected = ui.planned, onClick = { ui.selection = emptySet(); ui.planned = true }, tag = "history_planned", minHeight = 48.dp)
                     }
                     if (!showPlans) {
                         AnimatedVisibility(ui.searching, enter = fadeIn(), exit = fadeOut()) { SearchBar(ui) }

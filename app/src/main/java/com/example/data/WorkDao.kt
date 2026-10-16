@@ -116,8 +116,9 @@ interface WorkDao {
 
     /** Undo of an automatic recording: the rows go and those days wait for a manual "עבדתי" instead. */
     @Transaction
-    suspend fun undoAutoConfirm(ids: List<Int>) {
-        val rows = getEntriesList().filter { it.id in ids && it.seriesKey != null }
+    suspend fun undoAutoConfirm(ids: List<Int>, onlyAuto: Boolean = true) {
+        // A shift edited meanwhile is the user's own now and is never removed by an old undo.
+        val rows = getEntriesList().filter { it.id in ids && it.seriesKey != null && (!onlyAuto || it.autoConfirmed) }
         val existing = getExceptions().associateBy { "${it.seriesId}@${it.date}" }
         for (row in rows) {
             val key = row.seriesKey!!
@@ -125,6 +126,16 @@ interface WorkDao {
             upsertException((existing[key] ?: SeriesException(seriesId, date)).copy(hold = true))
         }
         deleteEntriesById(rows.map { it.id })
+    }
+
+    /** A deleted recorded plan day stays skipped (it would otherwise be recorded again); undoing the delete clears that. */
+    @Transaction
+    suspend fun markPlanDays(keys: List<String>, skipped: Boolean) {
+        val existing = getExceptions().associateBy { "${it.seriesId}@${it.date}" }
+        for (key in keys) {
+            val seriesId = key.substringBeforeLast('@'); val date = key.substringAfterLast('@')
+            upsertException((existing[key] ?: SeriesException(seriesId, date)).copy(cancelled = skipped))
+        }
     }
 
     @Transaction
@@ -180,13 +191,16 @@ interface WorkDao {
         }
         // Weekly plans: existing ones win; a plan already here (same id) is never duplicated or overwritten.
         val knownSeries = getSeries().map { it.id }.toMutableSet()
+        val addedSeries = mutableSetOf<String>()
         for (s in backup.series) if (knownSeries.add(s.id)) {
+            addedSeries += s.id
             val name = categoryNames.getOrPut(categoryKey(s.category)) { s.category.trim() }
             if (getCategoryByName(name) == null) insertCategory(WorkCategory(name = name))
             upsertSeries(s.copy(category = name))
         }
         val knownExceptions = getExceptions().map { "${it.seriesId}@${it.date}" }.toMutableSet()
-        for (x in backup.exceptions) if (x.seriesId in knownSeries && knownExceptions.add("${x.seriesId}@${x.date}")) upsertException(x)
+        // Only plans this import added take their day changes; the user's live plans stay as they are.
+        for (x in backup.exceptions) if (x.seriesId in addedSeries && knownExceptions.add("${x.seriesId}@${x.date}")) upsertException(x)
         // Existing settings win; migration into an empty app can adopt reviewed preferences.
         val existingKeys = getLocalPreferences().map { it.name }.toSet()
         val adoptedKeys = existingKeys.toMutableSet()

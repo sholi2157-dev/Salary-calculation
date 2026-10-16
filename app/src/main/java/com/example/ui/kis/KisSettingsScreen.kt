@@ -75,7 +75,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     var quietFrom by remember { mutableStateOf(plan.quietFrom) }
     var quietTo by remember { mutableStateOf(plan.quietTo) }
     var denied by remember { mutableStateOf(false) }
-    var asking by remember { mutableStateOf<String?>(null) }
+    var asking by rememberSaveable { mutableStateOf<String?>(null) }
     fun turnOn(kind: String) {
         denied = false
         if (kind == "monthly") { plan.notifyMonthly = true; notifyMonthly = true } else { plan.notifyRate = true; notifyRate = true }
@@ -132,6 +132,9 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 Row_("תזכורת לתעריף חסר", "לכל היותר פעם בשבוע, רק כשיש משמרות בלי תעריף") {
                     KisSwitch(notifyRate, { enable("rate", it) }, Modifier.testTag("notify_rate_switch"), label = "תזכורת לתעריף חסר")
                 }
+                // Turned on, but the phone blocks this app's notifications (permission removed in the system settings).
+                if (!denied && (notifyMonthly || notifyRate) && !com.example.PlanJobs.canNotify(context)) Text("ההתראות של האפליקציה חסומות בהגדרות הטלפון, ולכן התזכורות לא יגיעו.",
+                    style = KisType.caption, color = c.pending, modifier = Modifier.padding(bottom = 8.dp).testTag("notify_blocked"))
                 if (denied) Text("בלי הרשאת התראות אי אפשר לשלוח תזכורות. אפשר לאשר בהגדרות הטלפון ולנסות שוב.", style = KisType.caption, color = c.pending,
                     modifier = Modifier.padding(bottom = 8.dp).testTag("notify_denied"))
                 KisDivider()

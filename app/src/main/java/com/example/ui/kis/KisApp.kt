@@ -50,6 +50,7 @@ import com.example.ui.CoachTarget
 import com.example.ui.WorkViewModel
 import com.example.ui.coachTarget
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** A short message at the bottom, optionally with one action (usually undo). */
@@ -97,7 +98,7 @@ fun KisApp(
     var pendingBulk by rememberSaveable { mutableStateOf(false) }
     var message by remember { mutableStateOf<KisMessage?>(null) }
     var navHeight by remember { mutableStateOf(0.dp) }
-    var hoursFor by remember { mutableStateOf<com.example.domain.V2Plan.Occurrence?>(null) }
+    var hoursFor by rememberSaveable { mutableStateOf<String?>(null) }
 
     fun say(text: String, action: String? = null, onAction: (() -> Unit)? = null) { message = KisMessage(text, action, onAction) }
     fun openNew(ai: Boolean = false) {
@@ -114,10 +115,10 @@ fun KisApp(
     val planActions = remember(viewModel) {
         PlanActions(
             worked = { o -> viewModel.confirmOccurrence(o) { id ->
-                if (id != null) { settings.haptic(KisSettings.Haptic.SUCCESS); say("נרשמה ✓", "ביטול") { viewModel.undoAutoConfirm(listOf(id)) } }
+                if (id != null) { settings.haptic(KisSettings.Haptic.SUCCESS); say("נרשמה ✓", "ביטול") { viewModel.undoWorked(id) } }
             } },
             skip = { o -> viewModel.cancelOccurrence(o); say("סומן שלא עבדת", "ביטול") { viewModel.restoreOccurrence(o) } },
-            hours = { o -> hoursFor = o },
+            hours = { o -> hoursFor = o.key },
             share = { o -> KisShare.shareOrCopy(context, com.example.data.WorkShareText.planned(o), "שיתוף משמרת מתוכננת") { say(it) } },
         )
     }
@@ -139,11 +140,18 @@ fun KisApp(
     LaunchedEffect(request) {
         when (request) {
             ShellRequest.IMPORT -> { pager.scrollToPage(2); onRequestHandled() }
-            ShellRequest.HISTORY_SEARCH -> { pager.scrollToPage(1); history.searching = true; onRequestHandled() }
-            ShellRequest.HISTORY -> { pager.scrollToPage(1); history.planned = false; onRequestHandled() }
+            ShellRequest.HISTORY_SEARCH -> { pager.scrollToPage(1); history.planned = false; history.searching = true; onRequestHandled() }
+            // The monthly summary is about last month: show that one.
+            ShellRequest.HISTORY -> {
+                pager.scrollToPage(1); history.planned = false
+                history.showMonth = HistoryFilter.monthKey(System.currentTimeMillis()) - 1
+                onRequestHandled()
+            }
             ShellRequest.RATES -> {
                 pager.scrollToPage(1); history.planned = false
-                history.selection = entries.filter { !it.payKnown && it.kind != WorkEntry.KIND_JOB }.map { it.id }.toSet()
+                // After a cold start from the notification the shifts are still loading: wait for them briefly.
+                val rows = kotlinx.coroutines.withTimeoutOrNull(4_000) { viewModel.entries.first { it.isNotEmpty() } } ?: entries
+                history.selection = rows.filter { !it.payKnown && it.kind != WorkEntry.KIND_JOB }.map { it.id }.toSet()
                 pendingBulk = history.selection.isNotEmpty()
                 onRequestHandled()
             }
@@ -156,7 +164,9 @@ fun KisApp(
     }
     LaunchedEffect(message?.id) { if (message != null) { delay(if (message?.action != null) 6000 else 2600); message = null } }
     // History handles its own Back for selection and search, but only on its page; elsewhere Back goes Home.
-    BackHandler(enabled = editorJson == null && pager.currentPage != 0 && !(pager.currentPage == 1 && (history.selecting || history.searching))) { go(0) }
+    BackHandler(enabled = editorJson == null && pager.currentPage != 0 && !(pager.currentPage == 1 && (history.selecting || history.searching || history.planned))) { go(0) }
+    // A plan whose time ends while the app is open turns to "waiting" without leaving the screen.
+    LaunchedEffect(Unit) { while (true) { delay(60_000); viewModel.tickPlans() } }
     // Leaving a page never leaves the keyboard open over the next one. Only the keyboard is hidden: clearing focus
     // here would, after a hardware key, hand focus to the first control of the old page and scroll the pager back.
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
@@ -186,7 +196,7 @@ fun KisApp(
                     onAllHistory = { go(1) },
                     onSettings = { go(2) },
                     plans = plans, planActions = planActions,
-                    onAllPlans = { history.planned = true; go(1) })
+                    onAllPlans = { history.selection = emptySet(); history.searching = false; history.planned = true; go(1) })
                 1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) },
                     plans = plans, planActions = planActions)
                 else -> Box(Modifier.onFocusChanged { settingsHasFocus = it.hasFocus }) {
@@ -254,7 +264,7 @@ fun KisApp(
             say(if (n == 1) "תעריף הושלם למשמרת אחת ✓" else "תעריף הושלם ל-$n משמרות ✓")
         }
     }
-    hoursFor?.let { o ->
+    hoursFor?.let { key -> plans.firstOrNull { it.key == key } }?.let { o ->
         PlanHoursSheet(o, onDismiss = { hoursFor = null }) { start, end, fromNowOn ->
             hoursFor = null
             viewModel.editOccurrence(o, start, end, fromNowOn)

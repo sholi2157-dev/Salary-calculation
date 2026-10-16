@@ -57,6 +57,12 @@ adb shell am force-stop "$pkg"
 adb shell am instrument -w -e class com.example.ReportKeyboardTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/keyboard-ui.txt
 grep -F 'OK (1 test)' release-evidence/keyboard-ui.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/keyboard-ui.txt
+adb shell am force-stop "$pkg"
+# Stage C: a synthetic weekly plan is recorded once even with concurrent recorders, then removed again.
+adb shell am instrument -w -e class com.example.PlanAutoRecordTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/plan-auto-record.txt
+grep -F 'OK (1 test)' release-evidence/plan-auto-record.txt
+! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/plan-auto-record.txt
+adb pull "/sdcard/Android/data/$pkg/files/v2-plan-home.png" release-evidence/v2-plan-home.png || true
 adb exec-out screencap -p > release-evidence/rc2-screen.png
 adb logcat -d -b crash > release-evidence/crash-log.txt
 ! grep -E "FATAL EXCEPTION|AndroidRuntime|Process: $pkg" release-evidence/crash-log.txt

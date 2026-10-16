@@ -69,6 +69,9 @@ object WorkBackup {
     }
 
     private val isoDate = Regex("^\\d{4}-\\d{2}-\\d{2}$")
+    /** A real calendar day from 2000 on (2026-02-30 or 1900-01-01 would make no sense as a plan day). */
+    private fun planDate(d: String) = isoDate.matches(d) && d >= "2000-01-01" &&
+        com.example.domain.V2Rules.civilFromDays(com.example.domain.V2Rules.daysFromCivil(d)) == d
     private fun JSONObject.nullableText(key: String): String? = if (!has(key) || isNull(key)) null else getString(key)
 
     fun decode(text: String): Contents {
@@ -138,7 +141,7 @@ object WorkBackup {
             val days = s.getInt("daysMask")
             require(s.getString("id").isNotBlank() && days in 1..127) { "Invalid series" }
             require(com.example.domain.V2Rules.isTime(s.getString("startTime")) && com.example.domain.V2Rules.isTime(s.getString("endTime"))) { "Invalid series time" }
-            require(isoDate.matches(s.getString("fromDate")) && isoDate.matches(s.getString("untilDate"))) { "Invalid series dates" }
+            require(planDate(s.getString("fromDate")) && planDate(s.getString("untilDate")) && s.getString("fromDate") <= s.getString("untilDate")) { "Invalid series dates" }
             val currency = s.optString("currency", "₪")
             require(currency == "₪" || currency == "$") { "Unknown currency" }
             require(s.getString("category").isNotBlank()) { "Missing category" }
@@ -148,7 +151,7 @@ object WorkBackup {
         val exceptionArray = root.optJSONArray("seriesExceptions") ?: JSONArray()
         val exceptions = (0 until exceptionArray.length()).map { i ->
             val x = exceptionArray.getJSONObject(i)
-            require(isoDate.matches(x.getString("date"))) { "Invalid exception date" }
+            require(x.getString("seriesId").isNotBlank() && planDate(x.getString("date"))) { "Invalid exception date" }
             listOf(x.nullableText("startTime"), x.nullableText("endTime")).forEach { require(it == null || com.example.domain.V2Rules.isTime(it)) { "Invalid exception time" } }
             SeriesException(x.getString("seriesId"), x.getString("date"), x.optBoolean("cancelled"), x.optBoolean("hold"),
                 x.nullableText("startTime"), x.nullableText("endTime"), x.optBoolean("rateOverridden"), x.nullableRate("hourlyRate"))

@@ -65,6 +65,8 @@ object PlanJobs {
     private const val DAILY = "kis-plan-daily"
     private const val AFTER_QUIET = "kis-plan-after-quiet"
     private const val WEEK = 7L * 24 * 60 * 60 * 1000
+    /** How far back plans are shown and recorded. */
+    const val LOOK_BACK_DAYS = 62
 
     /** One idempotent daily job (and a catch-up on every app start/resume). */
     fun schedule(context: Context) {
@@ -79,7 +81,10 @@ object PlanJobs {
         if (!settings.autoConfirm) return emptyList()
         val series = dao.getSeries()
         if (series.isEmpty()) return emptyList()
-        val occurrences = V2Plan.occurrences(series, dao.getExceptions(), dao.confirmedKeys().toSet(), series.minOf { it.fromDate }, V2Plan.dateOf(now), now)
+        // The same window the screens show: an old restored plan never floods the history with years of days.
+        val today = V2Plan.dateOf(now)
+        val from = maxOf(series.minOf { it.fromDate }, V2Rules.civilFromDays(V2Rules.daysFromCivil(today) - LOOK_BACK_DAYS))
+        val occurrences = V2Plan.occurrences(series, dao.getExceptions(), dao.confirmedKeys().toSet(), from, today, now)
         return dao.confirmOccurrences(V2Plan.toConfirm(occurrences).map { V2Plan.toEntry(it, auto = true) })
     }
 
@@ -110,6 +115,8 @@ object PlanJobs {
 
     /** The whole daily job: record finished plans, then send what is due unless it is quiet time (then retry after it). */
     suspend fun run(context: Context, now: Long = System.currentTimeMillis()): Int {
+        // Plans live in the on-device (guest) data; with a signed-in account the app shows other data, so stay idle.
+        if (BuildConfig.ACCOUNTS_ENABLED && runCatching { com.example.api.AuthManager.currentUser.value != null }.getOrDefault(false)) return 0
         val dao = com.example.data.WorkAccountScope(null).database(context).workDao()
         val settings = PlanSettings(context)
         catchUp(dao, settings, now)
@@ -130,8 +137,10 @@ object PlanJobs {
         channel(context)
         notes.forEach { n ->
             val action = if (n.kind == "monthly") ACTION_MONTH else ACTION_RATES
+            // SINGLE_TOP: an open app receives it in onNewIntent and keeps its drafts instead of being recreated.
             val open = PendingIntent.getActivity(context, n.kind.hashCode(), Intent(context, MainActivity::class.java).setAction(action)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             val note = NotificationCompat.Builder(context, CHANNEL).setSmallIcon(android.R.drawable.ic_notification_overlay).setContentTitle(n.title)
                 .setContentText(n.text).setContentIntent(open).setAutoCancel(true).build()
             runCatching { NotificationManagerCompat.from(context).notify(if (n.kind == "monthly") 2001 else 2002, note) }
@@ -153,5 +162,13 @@ object PlanJobs {
 }
 
 class PlanWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    override suspend fun doWork(): Result = try { PlanJobs.run(applicationContext); Result.success() } catch (_: Exception) { Result.retry() }
+    override suspend fun doWork(): Result = try {
+        PlanJobs.run(applicationContext); Result.success()
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.e("PlanWorker", "Daily plan job failed", e)
+        // A lasting failure is not retried forever; tomorrow's run tries again.
+        if (runAttemptCount >= 3) Result.failure() else Result.retry()
+    }
 }

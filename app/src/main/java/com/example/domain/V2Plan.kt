@@ -107,14 +107,17 @@ object V2Plan {
      * one starts there with the changes; later exceptions move to the new series so nothing is orphaned.
      */
     fun split(s: ShiftSeries, exceptions: List<SeriesException>, date: String, newId: String, start: String = s.startTime, end: String = s.endTime,
-              rate: Double? = s.hourlyRate, now: Long = System.currentTimeMillis()): Split {
+              rate: Double? = s.hourlyRate, now: Long = System.currentTimeMillis(), recorded: Set<String> = emptySet()): Split {
         val dayBefore = V2Rules.civilFromDays(V2Rules.daysFromCivil(date) - 1)
         val old = if (date <= s.fromDate) null else s.copy(untilDate = dayBefore)
         val new = s.copy(id = newId, startTime = start, endTime = end, hourlyRate = rate, fromDate = maxOf(date, s.fromDate), createdAt = now)
         val later = exceptions.filter { it.seriesId == s.id && it.date >= date }
         // Hours changed from now on: per-day hour overrides would hide the change, so only cancellations/holds move.
-        val moved = later.map { it.copy(seriesId = newId, startTime = null, endTime = null) }.filter { it.cancelled || it.hold || it.rateOverridden }
-        return Split(s.id, old, new, moved, later)
+        val kept = later.map { it.copy(seriesId = newId, startTime = null, endTime = null) }.filter { it.cancelled || it.hold || it.rateOverridden }.associateBy { it.date }
+        // Days of the old plan that were already recorded must not come back under the new plan's keys.
+        val done = recorded.filter { it.substringBeforeLast('@') == s.id }.map { dateOfKey(it) }.filter { it >= date }
+        val moved = kept + done.associateWith { d -> (kept[d] ?: SeriesException(newId, d)).copy(cancelled = true) }
+        return Split(s.id, old, new, moved.values.sortedBy { it.date }, later)
     }
 
     /**

@@ -104,6 +104,15 @@ fun KisEditorPage(
     var repeatDays by rememberSaveable { mutableStateOf(weekdayOf(initial.day).toString()) }
     var repeatUntil by rememberSaveable { mutableStateOf(isoDayPlus(initial.day, 56)) }
     val repeatSet = repeatDays.split(",").mapNotNull { it.toIntOrNull() }.toSet()
+    // A new date is always one of the plan's days, and the plan never ends before it starts.
+    LaunchedEffect(d.day) {
+        repeatDays = (repeatSet + weekdayOf(d.day)).sorted().joinToString(",")
+        val from = com.example.domain.V2Plan.dateOf(d.day)
+        if (repeatUntil < from) repeatUntil = isoDayPlus(d.day, 56)
+    }
+    val repeatPreview = if (repeatOn(d, repeat)) remember(repeatDays, repeatUntil, d.day, d.start, d.end, history) {
+        viewModel.planPreview(repeatSet, com.example.domain.V2Plan.dateOf(d.day), repeatUntil, d.start!!, d.end)
+    } else null
     val changed = d.toJson() != original
     val check = d.check()
     val workplace = workplaceOf(d.category, categories)
@@ -164,7 +173,8 @@ fun KisEditorPage(
         if (!now.canSave) { settings.haptic(KisSettings.Haptic.WARN); return }
         if (d.editing && !changed) return
         saving = true
-        if (repeatOn(d, repeat) && repeatSet.isNotEmpty()) {
+        if (repeatOn(d, repeat)) {
+            if (repeatPreview?.created.isNullOrEmpty()) { saving = false; return }
             viewModel.createSeries(d.category, repeatSet, com.example.domain.V2Plan.dateOf(d.day), repeatUntil, d.start!!, d.end, d.rateValue(), d.currency, onFailed = { saving = false }) { created, recorded ->
                 settings.haptic(KisSettings.Haptic.SUCCESS)
                 onSaved(buildString {
@@ -330,11 +340,10 @@ fun KisEditorPage(
                         KisSwitch(repeat, { repeat = it }, Modifier.testTag("repeat_switch"), label = "חוזרת כל שבוע")
                     }
                     if (repeat) {
-                        val preview = remember(repeatDays, repeatUntil, d.day, d.start, d.end) {
-                            d.start?.let { viewModel.planPreview(repeatSet, com.example.domain.V2Plan.dateOf(d.day), repeatUntil, it, d.end) }
-                        }
-                        RepeatBlock(repeatSet, repeatUntil, preview, onDays = { set -> repeatDays = set.sorted().joinToString(",") }, onUntil = { repeatUntil = it })
-                        if (d.breakMin > 0) Text("הפסקה לא נכללת במשמרת קבועה", style = KisType.caption, color = c.muted)
+                        RepeatBlock(repeatSet, repeatUntil, repeatPreview, onDays = { set -> repeatDays = set.sorted().joinToString(",") }, onUntil = { repeatUntil = it })
+                        val left = listOfNotNull("הפסקה".takeIf { d.breakMin > 0 }, "הערה".takeIf { d.notes.isNotBlank() })
+                        if (left.isNotEmpty()) Text("${left.joinToString(" ו")} לא נשמרות במשמרת קבועה", style = KisType.caption, color = c.muted,
+                            modifier = Modifier.testTag("repeat_not_kept"))
                     }
                 }
             }
@@ -366,7 +375,7 @@ fun KisEditorPage(
         if (pad) Keypad(time = target == KeyTarget.START || target == KeyTarget.END, label = keyLabel(target, d.currency), value = shown(target),
             typing = buf.isNotEmpty(), onKey = ::key, onDone = { if (commitBuf()) pad = false })
         else SaveBar(check, if (repeatOn(d, repeat)) "יצירת הסדרה" else saveLabel(d, changed),
-            check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatSet.isNotEmpty()), ::save)
+            check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatPreview?.created?.isNotEmpty() == true), ::save)
     }
 
     if (confirmLeave) KisSheet(onDismiss = { confirmLeave = false }, tag = "leave_sheet") {

@@ -758,6 +758,7 @@ class WorkViewModel(
         viewModelScope.launch {
             val uid = getActiveUserId()
             entries.forEach { repository.deleteEntry(it, uid) }
+            skipPlanDays(entries, true)
             performAutoBackup()
             onDone(entries)
         }
@@ -769,8 +770,15 @@ class WorkViewModel(
         viewModelScope.launch {
             val uid = getActiveUserId()
             entries.forEach { repository.insertEntry(it, uid) }
+            skipPlanDays(entries, false)
             performAutoBackup()
         }
+    }
+
+    /** A deleted shift that came from a weekly plan keeps that day skipped, so it is not recorded again by itself. */
+    private suspend fun skipPlanDays(rows: List<WorkEntry>, skipped: Boolean) {
+        val keys = rows.mapNotNull { it.seriesKey }
+        if (keys.isNotEmpty()) runCatching { localDao.markPlanDays(keys, skipped) }
     }
 
     /** Group workers' payment marks and bonuses live in the group JSON; nothing else changes. */
@@ -792,7 +800,7 @@ class WorkViewModel(
             val today = com.example.domain.V2Plan.dateOf(now)
             val days = com.example.domain.V2Rules.daysFromCivil(today)
             com.example.domain.V2Plan.occurrences(s, x, e.mapNotNull { it.seriesKey }.toSet(),
-                com.example.domain.V2Rules.civilFromDays(days - 62), com.example.domain.V2Rules.civilFromDays(days + 28), now)
+                com.example.domain.V2Rules.civilFromDays(days - com.example.PlanJobs.LOOK_BACK_DAYS), com.example.domain.V2Rules.civilFromDays(days + 28), now)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -808,17 +816,28 @@ class WorkViewModel(
     }
 
     fun undoAutoConfirm(ids: List<Int>) { viewModelScope.launch { localDao.undoAutoConfirm(ids); performAutoBackup() } }
+    /** Undo of a manual "עבדתי": that day waits again (held, so it is not recorded by itself right away). */
+    fun undoWorked(id: Int) { viewModelScope.launch { localDao.undoAutoConfirm(listOf(id), onlyAuto = false); performAutoBackup() } }
 
+    /** Clashes over the whole new range, against saved shifts and every other plan (not only the weeks on screen). */
     fun planPreview(days: Set<Int>, from: String, until: String, start: String, end: String): com.example.domain.V2Plan.Preview =
-        com.example.domain.V2Plan.preview(days, from, until, start, end, entries.value, occurrences.value)
+        planPreview(days, from, until, start, end, entries.value, series.value, seriesExceptions.value)
+
+    private fun planPreview(days: Set<Int>, from: String, until: String, start: String, end: String, saved: List<WorkEntry>,
+                            plans: List<com.example.data.ShiftSeries>, exceptions: List<com.example.data.SeriesException>): com.example.domain.V2Plan.Preview {
+        val others = if (from > until) emptyList() else
+            com.example.domain.V2Plan.occurrences(plans, exceptions, saved.mapNotNull { it.seriesKey }.toSet(), from, until, System.currentTimeMillis())
+        return com.example.domain.V2Plan.preview(days, from, until, start, end, saved, others)
+    }
 
     /** Creates a weekly plan from the editor; overlapping days are not created. Past days are recorded right away. */
     fun createSeries(category: String, days: Set<Int>, from: String, until: String, start: String, end: String, rate: Double?, currency: String,
                      onFailed: () -> Unit = {}, onDone: (created: Int, recorded: List<Int>) -> Unit) {
-        val preview = planPreview(days, from, until, start, end)
         val s = com.example.data.ShiftSeries(java.util.UUID.randomUUID().toString(), category, com.example.domain.V2Plan.mask(days), start, end, rate, currency, from, until)
         viewModelScope.launch {
             try {
+                // Fresh from the database: what is saved now decides which days are created.
+                val preview = planPreview(days, from, until, start, end, localDao.getEntriesList(), localDao.getSeries(), localDao.getExceptions())
                 localDao.saveSeries(s, preview.clashes)
                 val ids = com.example.PlanJobs.catchUp(localDao, planSettings).map { it.toInt() }
                 if (ids.isNotEmpty()) { lastAddedEntryIds = ids; lastAddedEntryId = ids.last() }
@@ -859,7 +878,8 @@ class WorkViewModel(
             if (!fromNowOn) localDao.upsertException(exceptionFor(o).copy(startTime = start, endTime = end))
             else {
                 val s = localDao.getSeries().firstOrNull { it.id == o.seriesId } ?: return@launch
-                localDao.applySplit(com.example.domain.V2Plan.split(s, localDao.getExceptions(), o.date, java.util.UUID.randomUUID().toString(), start = start, end = end))
+                localDao.applySplit(com.example.domain.V2Plan.split(s, localDao.getExceptions(), o.date, java.util.UUID.randomUUID().toString(), start = start, end = end,
+                    recorded = localDao.confirmedKeys().toSet()))
             }
             performAutoBackup()
         }
@@ -870,8 +890,12 @@ class WorkViewModel(
         viewModelScope.launch {
             val s = localDao.getSeries().firstOrNull { it.id == seriesId } ?: return@launch
             val today = com.example.domain.V2Plan.dateOf(System.currentTimeMillis())
-            val waiting = occurrences.value.filter { it.status == com.example.domain.V2Plan.Status.AWAITING }
-            val (updated, changes) = com.example.domain.V2Plan.applyRateFromToday(s, localDao.getExceptions(), rate, today, waiting)
+            val exceptions = localDao.getExceptions()
+            // Every ended day still waiting (fresh, not only the weeks on screen) keeps the rate it was planned with.
+            val now = System.currentTimeMillis()
+            val waiting = com.example.domain.V2Plan.occurrences(listOf(s), exceptions, localDao.confirmedKeys().toSet(), s.fromDate, today, now)
+                .filter { it.status == com.example.domain.V2Plan.Status.AWAITING }
+            val (updated, changes) = com.example.domain.V2Plan.applyRateFromToday(s, exceptions, rate, today, waiting)
             localDao.upsertSeries(updated); changes.forEach { localDao.upsertException(it) }
             performAutoBackup()
         }
@@ -911,6 +935,7 @@ class WorkViewModel(
         viewModelScope.launch {
             val uid = getActiveUserId()
             repository.deleteEntry(entry, uid)
+            skipPlanDays(listOf(entry), true)
         }
     }
 
@@ -918,6 +943,7 @@ class WorkViewModel(
         viewModelScope.launch {
             val uid = getActiveUserId()
             repository.insertEntry(entry, uid)
+            skipPlanDays(listOf(entry), false)
             performAutoBackup()
         }
     }

@@ -117,8 +117,11 @@ class KisUiTest {
         ui.onNodeWithTag("mode_clock").performClick()
         // Unknown rate: saving is allowed and the total says what is missing instead of ₪0.
         // A break is one tap: 30 minutes off the shift, then back to none.
-        ui.onNodeWithTag("break_30").performScrollTo().performClick()
-        ui.onNodeWithTag("editor_meta").assertTextContains("8:15 שעות", substring = true)
+        ui.onNodeWithTag("break_30").performScrollTo()
+        ui.waitForIdle()
+        ui.onNodeWithTag("break_30").performClick()
+        try { ui.onNodeWithTag("editor_meta").assertTextContains("8:15 שעות", substring = true) }
+        catch (e: Throwable) { shot("editor-break-failed-$suffix"); throw e }
         shot("editor-break-$suffix")
         ui.onNodeWithTag("break_0").performScrollTo().performClick()
         ui.onNodeWithTag("editor_meta").assertTextContains("8:45 שעות", substring = true)

@@ -174,4 +174,31 @@ class V2PlanTest {
             assertNull(dao.getSeries().firstOrNull { it.id == "P" })
         } finally { database.close() }
     }
+
+    @Test fun recordedOrDeletedDaysAreNeverRecordedAgain() = runBlocking {
+        val database = db()
+        try {
+            val dao = database.workDao()
+            val s = ShiftSeries("P", "מסעדה", V2Plan.mask(setOf(1)), "09:00", "17:00", 50.0, "₪", "2026-10-05", "2026-10-31", 0L)
+            dao.saveSeries(s, emptyList())
+            val now = V2Plan.startMillis("2026-10-20", "00:00")
+            fun open() = V2Plan.occurrences(runBlocking { dao.getSeries() }, runBlocking { dao.getExceptions() }, runBlocking { dao.confirmedKeys() }.toSet(), "2026-10-01", "2026-10-31", now)
+            // Monday 12th was recorded ahead with "עבדתי"; new hours from the 5th on must not bring it back under the new plan.
+            dao.confirmOccurrences(listOf(V2Plan.toEntry(open().first { it.date == "2026-10-12" }, auto = false)))
+            dao.applySplit(V2Plan.split(s, dao.getExceptions(), "2026-10-05", "N", start = "08:00", end = "16:00", now = 0L, recorded = dao.confirmedKeys().toSet()))
+            assertTrue(open().none { it.date == "2026-10-12" })
+            // A recorded day the user deletes stays skipped; undoing the delete clears that again.
+            val five = dao.confirmOccurrences(listOf(V2Plan.toEntry(open().first { it.date == "2026-10-05" }, auto = true))).single().toInt()
+            val row = dao.getEntriesList().first { it.id == five }
+            dao.deleteEntry(row); dao.markPlanDays(listOf(row.seriesKey!!), skipped = true)
+            assertTrue(V2Plan.toConfirm(open()).none { it.date == "2026-10-05" })
+            dao.markPlanDays(listOf(row.seriesKey!!), skipped = false)
+            assertTrue(open().any { it.date == "2026-10-05" })
+            // An undo never removes a shift the user edited meanwhile (it is no longer automatic).
+            val again = dao.confirmOccurrences(listOf(V2Plan.toEntry(open().first { it.date == "2026-10-05" }, auto = true))).single().toInt()
+            dao.updateEntry(dao.getEntriesList().first { it.id == again }.copy(autoConfirmed = false, notes = "ערכתי"))
+            dao.undoAutoConfirm(listOf(again))
+            assertEquals("ערכתי", dao.getEntriesList().single { it.id == again }.notes)
+        } finally { database.close() }
+    }
 }
