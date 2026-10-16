@@ -103,6 +103,9 @@ const Core = (() => {
     add(-9, 'c1', '20:00', '02:00', { bonus: 50, notes: 'סגירה של אירוע פרטי' });
     add(-6, 'c4', '18:00', '01:00', { rate: null, notes: 'חתונה — התעריף עוד לא סוכם' });
     add(-2, 'c4', '19:00', '00:30', { rate: null });
+    // Hours-only entry (the existing "ידני" mode): no clock times.
+    shifts.push({ id: uid(), cat: 'c3', date: addDays(t, -3), start: null, end: null, hours: 3.5, breakMin: 0, rate: 35, currency: '$', bonus: 0,
+      total: round2(3.5 * 35), paid: false, notes: 'תיקוני לוגו מהבית', group: null, auto: false, ruleKey: null });
     add(-12, 'c4', '17:30', '23:30', {
       rate: 45, bonus: 40,
       group: { workers: [{ name: 'נועה', bonus: 40 }, { name: 'איתי', bonus: 40 }, { name: 'מאיה', bonus: 0 }] },
@@ -116,7 +119,7 @@ const Core = (() => {
       from: addDays(t, 1), until: addDays(t, 40),
     }];
     return {
-      v: 1, cats: CATS.map(c => ({ ...c })), workers: [...WORKERS], shifts, rules, exceptions: {},
+      v: 2, cats: CATS.map(c => ({ ...c })), workers: [...WORKERS], shifts, rules, exceptions: {},
       settings: {
         autoConfirm: true, notifyMonthly: true, notifyRate: true, rateFrequency: 'weekly',
         planningView: 'unified', defaultCat: 'c1', aiKey: false, theme: 'system',
@@ -128,7 +131,7 @@ const Core = (() => {
   function load(direction) {
     KEY = 'salary-v2-proto-' + direction;
     try { state = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { state = null; }
-    if (!state || state.v !== 1) state = seed();
+    if (!state || state.v !== 2) state = seed();
     clockOffset = state.clockOffset || 0;
     return state;
   }
@@ -139,6 +142,19 @@ const Core = (() => {
   function advance(minutes) { clockOffset += minutes; state.clockOffset = clockOffset; const done = catchUp(); commit(); return done; }
 
   const cat = id => state.cats.find(c => c.id === id) || state.cats[0];
+
+  const shiftMinutes = s => s.start ? span(s.start, s.end, s.breakMin).minutes : Math.round((s.hours || 0) * 60);
+  const timeLabel = s => s.start ? `${s.start}–${s.end}` : `${hours(shiftMinutes(s))} שעות`;
+
+  /* ---------- live timer (persists like the current app's active shift) ---------- */
+  function startTimer(catId) { state.timer = { date: today(), start: fromMin(nowMin()), cat: catId || state.settings.defaultCat, at: now().getTime() }; commit(); }
+  function timerElapsed() { return state.timer ? Math.max(0, Math.floor((now().getTime() - state.timer.at) / 1000)) : 0; }
+  function stopTimer() {
+    const t = state.timer; state.timer = null; commit();
+    const d = newDraft({ start: t.start, end: fromMin(nowMin()), date: t.date }); setDraftCat(d, t.cat); d.start = t.start; return d;
+  }
+  function cancelTimer() { const t = state.timer; state.timer = null; commit(); return t; }
+  function restoreTimer(t) { state.timer = t; commit(); }
 
   /* ---------- planned shifts ---------- */
   const occKey = (ruleId, date) => `${ruleId}@${date}`;
@@ -205,7 +221,7 @@ const Core = (() => {
     const dates = [];
     for (let d = rule.from; d <= rule.until; d = addDays(d, 1)) if (rule.days.includes(weekday(d))) dates.push(d);
     const occ = occurrences();
-    const clashes = dates.filter(d => occ.some(o => o.date === d && overlaps(o, rule)) || state.shifts.some(s => s.date === d && overlaps(s, rule)));
+    const clashes = dates.filter(d => occ.some(o => o.date === d && overlaps(o, rule)) || state.shifts.some(s => s.date === d && s.start && overlaps(s, rule)));
     return { dates, clashes };
   }
   function overlaps(a, b) {
@@ -217,7 +233,7 @@ const Core = (() => {
   /* ---------- drafts (add / edit shift) ---------- */
   function suggestStart(catId, date) {
     const same = state.shifts.filter(s => s.cat === catId && weekday(s.date) === weekday(date));
-    const mode = list => { const m = {}; list.forEach(s => m[s.start] = (m[s.start] || 0) + 1); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+    const mode = list => { const m = {}; list.forEach(s => { if (s.start) m[s.start] = (m[s.start] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
     const strong = mode(same);
     const chips = mode(state.shifts.filter(s => s.cat === catId)).slice(0, 3).map(x => x[0]);
     const fallback = chips.length ? chips : mode(state.shifts).slice(0, 3).map(x => x[0]);
@@ -225,23 +241,36 @@ const Core = (() => {
   }
   function newDraft(over = {}) {
     const c = cat(state.settings.defaultCat);
-    const d = { id: null, cat: c.id, date: today(), start: null, end: roundedEnd(), breakMin: 0, rate: c.rate, rateUnknown: c.rate == null,
+    const d = { id: null, mode: 'clock', hours: '', cat: c.id, date: today(), start: null, end: roundedEnd(), breakMin: 0, rate: c.rate, rateUnknown: c.rate == null,
       currency: c.currency, bonus: 0, bonusTarget: 'me', notes: '', group: null, repeat: null, ...over };
     if (!over.start) d.start = suggestStart(d.cat, d.date).start;
     return d;
   }
   function draftFromShift(s) {
-    return { id: s.id, cat: s.cat, date: s.date, start: s.start, end: s.end, breakMin: s.breakMin, rate: s.rate, rateUnknown: s.rate == null,
+    return { id: s.id, mode: !s.start ? 'hours' : s.group ? 'group' : 'clock', hours: s.hours ?? '', cat: s.cat, date: s.date, start: s.start, end: s.end || roundedEnd(), breakMin: s.breakMin, rate: s.rate, rateUnknown: s.rate == null,
       currency: s.currency, bonus: s.bonus, bonusTarget: 'me', notes: s.notes, group: s.group ? JSON.parse(JSON.stringify(s.group)) : null, repeat: null, auto: s.auto };
   }
   function setDraftCat(d, id) {
     const c = cat(id); d.cat = id; d.currency = c.currency;
     if (!d.id) { d.rate = c.rate; d.rateUnknown = c.rate == null; const s = suggestStart(id, d.date); if (s.start) d.start = s.start; }
   }
+  function setMode(d, m) {
+    d.mode = m;
+    if (m === 'group' && !d.group) d.group = { workers: [] };
+    if (m !== 'group') d.group = null;
+  }
   function evaluate(d) {
     const errors = [], warnings = [];
-    if (!d.start) errors.push('בחר שעת התחלה');
-    const sp = d.start ? span(d.start, d.end, d.breakMin) : null;
+    let sp;
+    if (d.mode === 'hours') {
+      const h = Number(d.hours);
+      if (!(h > 0)) errors.push('הזן מספר שעות');
+      else if (h > 24) errors.push('יותר מ-24 שעות ביום');
+      sp = h > 0 ? { minutes: Math.round(h * 60), overnight: false, invalid: false } : null;
+    } else {
+      if (!d.start) errors.push('בחר שעת התחלה');
+      sp = d.start ? span(d.start, d.end, d.breakMin) : null;
+    }
     if (sp && sp.invalid) errors.push(sp.reason);
     if (sp && sp.long) warnings.push('משמרת של יותר מ-16 שעות. לוודא?');
     if (sp && sp.overnight && toMin(d.end) > toMin(d.start) - 60 && sp.minutes > 20 * 60) warnings.push('נראה כמו טעות בשעות');
@@ -260,7 +289,8 @@ const Core = (() => {
       state.rules.push(r); const done = catchUp(); commit();
       return { ok: true, rule: r, auto: done };
     }
-    const rec = { cat: d.cat, date: d.date, start: d.start, end: d.end, breakMin: Number(d.breakMin) || 0, rate: d.rateUnknown ? null : Number(d.rate),
+    const hoursOnly = d.mode === 'hours';
+    const rec = { cat: d.cat, date: d.date, start: hoursOnly ? null : d.start, end: hoursOnly ? null : d.end, hours: hoursOnly ? Number(d.hours) : undefined, breakMin: Number(d.breakMin) || 0, rate: d.rateUnknown ? null : Number(d.rate),
       currency: d.currency, bonus: ev.bonus, total: ev.total, notes: d.notes, group: d.group };
     if (d.id) { const s = state.shifts.find(x => x.id === d.id); Object.assign(s, rec, { auto: false }); }
     else state.shifts.push({ id: uid(), paid: false, auto: false, ruleKey: null, ...rec });
@@ -273,19 +303,18 @@ const Core = (() => {
   function bulkRatePreview(ids, rate) {
     const list = state.shifts.filter(s => ids.includes(s.id));
     const target = list.filter(s => s.rate == null);
-    return { target: target.map(s => ({ ...s, newTotal: round2(span(s.start, s.end, s.breakMin).minutes / 60 * rate + (s.bonus || 0)) })), skipped: list.length - target.length };
+    return { target: target.map(s => ({ ...s, newTotal: round2(shiftMinutes(s) / 60 * rate + (s.bonus || 0)) })), skipped: list.length - target.length };
   }
   function bulkRateApply(ids, rate) {
     const done = [];
     for (const s of state.shifts) if (ids.includes(s.id) && s.rate == null) {
-      s.rate = rate; s.total = round2(span(s.start, s.end, s.breakMin).minutes / 60 * rate + (s.bonus || 0)); done.push(s.id);
+      s.rate = rate; s.total = round2(shiftMinutes(s) / 60 * rate + (s.bonus || 0)); done.push(s.id);
     }
     commit(); return done;
   }
   function setPaid(ids, paid) { state.shifts.forEach(s => { if (ids.includes(s.id)) s.paid = paid; }); commit(); }
 
   /* ---------- summaries ---------- */
-  const shiftMinutes = s => span(s.start, s.end, s.breakMin).minutes;
   function monthStats(k) {
     const list = state.shifts.filter(s => ym(s.date) === k);
     const byCur = {};
@@ -322,9 +351,21 @@ const Core = (() => {
     const st = monthStats(k);
     const longest = st.list.reduce((a, s) => (!a || shiftMinutes(s) > shiftMinutes(a) ? s : a), null);
     const topCat = Object.entries(st.cats).sort((a, b) => b[1] - a[1])[0];
-    const nights = st.list.filter(s => span(s.start, s.end).overnight || toMin(s.end) >= 23 * 60).length;
+    const nights = st.list.filter(s => s.start && span(s.start, s.end).overnight || toMin(s.end) >= 23 * 60).length;
     const bestDay = st.days.indexOf(Math.max(...st.days));
     return { st, longest, topCat: topCat ? { name: cat(topCat[0]).name, minutes: topCat[1] } : null, nights, bestDay: DAY[bestDay] };
+  }
+
+  /* Text for WhatsApp / copy, like the current app's share. */
+  function shareText(list) {
+    // Isolate times and amounts so they never flip inside Hebrew text (WhatsApp, notes, clipboard).
+    const L = t => '\u2066' + t + '\u2069';
+    const rows = [...list].sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || ''))).map(s =>
+      `${L(shortDate(s.date))} · ${cat(s.cat).name} · ${s.start ? L(`${s.start}–${s.end}`) + ` (${L(hours(shiftMinutes(s)))} ש׳)` : `${L(hours(shiftMinutes(s)))} שעות`} · ${s.total == null ? 'תעריף חסר' : L(money(s.total, s.currency))}${s.bonus ? ` (כולל בונוס ${L(money(s.bonus, s.currency))})` : ''}`);
+    const tot = {}; let mins = 0, pend = 0;
+    list.forEach(s => { mins += shiftMinutes(s); if (s.total == null) pend++; else tot[s.currency] = (tot[s.currency] || 0) + s.total; });
+    rows.push('', `סה״כ: ${L(hours(mins))} שעות · ${Object.entries(tot).map(([c, v]) => L(money(v, c))).join(' + ') || '—'}${pend ? ` · ${pend} בלי תעריף` : ''}`);
+    return rows.join('\n');
   }
 
   /* ---------- shared UI helpers ---------- */
@@ -394,6 +435,6 @@ const Core = (() => {
     span, endDateTime, money, pl, hours, hm, round2, esc, load, save, commit, subscribe, reset, advance, cat, get state() { return state; },
     occurrences, catchUp, undoAuto, confirmOcc, cancelOcc, restoreOcc, editOcc, futureCount, applyRateToFuture, previewRule,
     suggestStart, newDraft, draftFromShift, setDraftCat, evaluate, saveDraft, deleteShift, restoreShift, bulkRatePreview, bulkRateApply, setPaid,
-    shiftMinutes, monthStats, insights, wrapped, toast, setTheme, applyTheme, mountPanel, longPress, WORKERS,
+    shiftMinutes, timeLabel, setMode, startTimer, stopTimer, cancelTimer, restoreTimer, timerElapsed, monthStats, insights, wrapped, toast, shareText, setTheme, applyTheme, mountPanel, longPress, WORKERS,
   };
 })();

@@ -145,6 +145,55 @@ nav.pill .plus{background:var(--k0);color:#fff;width:48px;padding:0;justify-cont
 .dsel{display:flex;gap:6px}
 .dsel button{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);background:none;font-weight:600;cursor:pointer}
 .dsel button[aria-pressed=true]{background:var(--pass);color:var(--pass-ink);border-color:var(--pass)}
+
+/* Round 3: ruler, edit mode, details, share */
+.ruler{position:relative;height:58px;margin-top:4px;touch-action:none}
+.rbase{position:absolute;inset-inline:0;top:22px;height:12px;border-radius:6px;background:color-mix(in oklab,var(--pass-ink) 22%,transparent)}
+#rsegs i{position:absolute;top:22px;height:12px;border-radius:6px;background:var(--pass-ink)}
+.rh{position:absolute;top:10px;width:46px;height:36px;margin-inline-start:-23px;border-radius:12px;border:2px solid var(--pass-ink);background:var(--pass);color:var(--pass-ink);font:700 11px var(--font-body);cursor:grab;touch-action:none;box-shadow:0 3px 10px rgb(0 0 0/.18);padding:0}
+.rh[aria-pressed=true]{background:var(--pass-ink);color:var(--pass)}
+.rt{position:absolute;top:42px;font:500 10px var(--font-body);opacity:.75;transform:translateX(50%);pointer-events:none}
+.nudges{display:flex;gap:6px;align-items:center;font-weight:600;font-size:13px}
+.nudges span{opacity:.85;min-width:44px}
+.nudges button{flex:1;min-height:38px;border-radius:10px;border:0;background:color-mix(in oklab,var(--pass-ink) 16%,transparent);color:inherit;font:600 14px var(--font-body);cursor:pointer;font-variant-numeric:tabular-nums}
+.was{font-size:13px;padding:6px 10px;border-radius:10px;background:color-mix(in oklab,var(--pass-ink) 12%,transparent)}
+.was b{background:var(--k3);color:var(--k3-ink);border-radius:6px;padding:0 6px}
+.add-page.editing .cats button[aria-pressed=true]{background:var(--c);color:#fff;border-color:var(--c)}
+.cseg{display:inline-flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.chipline .cseg button{border:0;border-radius:0;flex:0 0 46px;width:46px;min-width:46px;padding:0;justify-content:center;background:var(--surface)}
+.chipline .cseg button[aria-pressed=true]{background:var(--ink);color:var(--bg);box-shadow:none}
+.hintx{font-size:13px;color:var(--muted)}
+.savebar{background:var(--surface);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-shadow:0 -8px 24px rgb(0 0 0/.06)}
+.savebar .ap-in{display:grid;gap:6px}
+.savebar .why{font-size:13px;color:var(--muted);text-align:center}
+.leave{position:absolute;inset:auto 0 0 0;background:var(--surface);padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));border-radius:22px 22px 0 0;box-shadow:0 -12px 40px rgb(0 0 0/.25);z-index:2}
+.leave .ap-in{display:grid;gap:12px}
+.row2b{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prow{display:flex;justify-content:space-between;padding:4px 0;border-radius:6px}
+.det-top{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:var(--pass);color:var(--pass-ink);border-radius:18px;padding:14px 16px}
+.det-top .av{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-family:var(--font-display);font-size:20px;background:color-mix(in oklab,var(--pass-ink) 18%,transparent)}
+.det-top small{display:block;opacity:.85;font-size:13px}
+.det-amt{font-size:30px}
+.facts{display:grid;gap:0;background:var(--bg);border-radius:16px;padding:2px 14px}
+.fact{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);min-height:50px}
+.fact:last-child{border-bottom:0}
+.fact small{color:var(--muted);font-size:14px}
+.fact span,.fact label{text-align:start;font-weight:500}
+.linkb{border:0;background:none;color:var(--warn);font-weight:700;cursor:pointer;padding:0}
+.det-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.det-acts .big-btn:first-child{grid-column:1/-1}
+.big-btn.danger{color:#C2362B}
+.sharebox{width:100%;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);padding:10px 12px;font:14px/1.5 var(--font-body);resize:none}
+a.big-btn{display:grid;place-items:center;text-decoration:none}
+.wa{background:#1F9D55!important;color:#fff!important}
+.selbar .in{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.selacts{display:flex;gap:6px;flex-wrap:wrap;width:100%}
+.selacts button{flex:1 1 auto}
+
+.modes{display:flex;background:color-mix(in oklab,var(--pass-ink) 16%,transparent);border-radius:12px;padding:3px;gap:2px}
+.modes button{flex:1;border:0;background:none;color:inherit;min-height:36px;border-radius:9px;font-weight:600;cursor:pointer;opacity:.85}
+.modes button[aria-pressed=true]{background:var(--pass-ink);color:var(--pass);opacity:1}
+.ruler{margin-inline:24px}
 /* Sheets */
 .scrim{position:fixed;inset:0;background:rgb(0 0 0/.4);z-index:70}
 .sheet{position:fixed;inset:auto 0 0 0;z-index:71;background:var(--surface);border-radius:26px 26px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-height:85%;overflow:auto;animation:up .28s}
@@ -225,7 +274,7 @@ C.load('b-kis'); C.applyTheme();
 const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="19" fill="var(--ink)"/><g stroke-linecap="round" stroke-width="7"><path d="M19 44V30" stroke="var(--k0)"/><path d="M32 44V20" stroke="var(--k3)"/><path d="M45 44V25" stroke="var(--k1)"/></g><path d="M19 44h26" stroke="var(--bg)" stroke-width="7" stroke-linecap="round"/></svg>`;
 const hue = id => C.cat(id).hue;
 const pv = id => `--pass:var(--k${hue(id)});--pass-ink:var(--k${hue(id)}-ink)`;
-let view = 'home', filter = 'all', month = C.ym(C.today()), openPass = null, openOcc = null, sel = new Set(), d = null, tgt = 'end', buf = '', more = false, timer = null;
+let view = 'home', filter = 'all', month = C.ym(C.today()), openPass = null, openOcc = null, sel = new Set(), d = null, tgt = 'end', buf = '', more = false, pad = false, confirmLeave = false, confirmCancel = false;
 const mny = (v, c) => `<span class="cur">${E(c)}</span>${E(C.money(v, "", true))}`;
 const amt = (v, c) => `<span class="num">${mny(v, c)}</span>`;
 const greet = () => { const h = C.now().getHours(); return h < 5 ? 'לילה טוב' : h < 12 ? 'בוקר טוב' : h < 17 ? 'צהריים טובים' : h < 21 ? 'ערב טוב' : 'לילה טוב'; };
@@ -243,7 +292,7 @@ function home() {
     return `<button class="pass${open ? ' open' : ''}" data-pass="${c.id}" style="${pv(c.id)}" aria-expanded="${open}">
       <span class="n">${E(c.name)}</span><span class="a">${tot ? amt(tot, c.currency) : pend ? '?' : '—'}</span>
       <span class="h"><span class="num">${C.hours(m)}</span> שעות · ${list.length} משמרות${pend ? ` · ${pend} בלי תעריף` : ''}</span>
-      ${open ? `<span class="rows">${list.slice(-4).reverse().map(s => `<span style="display:flex;justify-content:space-between"><span>${E(C.dayLabel(s.date))} · <span class="num">${s.start}–${s.end}</span></span><span>${s.total == null ? 'תעריף חסר' : amt(s.total, s.currency)}</span></span>`).join('') || '<span>אין משמרות החודש</span>'}</span>` : ''}
+      ${open ? `<span class="rows">${list.slice(-4).reverse().map(s => `<span class="prow" data-id="${s.id}"><span>${E(C.dayLabel(s.date))} · <span class="num">${E(C.timeLabel(s))}</span></span><span>${s.total == null ? 'תעריף חסר' : amt(s.total, s.currency)}</span></span>`).join('') || '<span>אין משמרות החודש</span>'}</span>` : ''}
     </button>`;
   }).join('');
   const next = C.occurrences().filter(o => o.status !== 'planned').concat(C.occurrences().filter(o => o.status === 'planned').slice(0, 2));
@@ -255,7 +304,8 @@ function home() {
       <div class="legend"><span><span class="num">${C.hours(st.minutes)}</span>&nbsp;שעות</span><span>${st.count} משמרות</span>${st.planned ? `<span>עוד ${st.planned} מתוכננות</span>` : ''}</div>
       ${st.pending ? `<button class="flag" data-act="pending">${C.pl(st.pending, 'משמרת אחת מחכה לתעריף', '# משמרות מחכות לתעריף')} ←</button>` : ''}
     </section>
-    <div class="now">${timer ? `<button class="live" data-act="stop"><span style="display:flex;gap:10px;align-items:center"><span class="dot"></span>במשמרת</span><span class="num" id="tick">0:00:00</span><span>סיום</span></button>`
+    <div class="now">${S().timer ? (confirmCancel ? `<button class="live" data-act="cancelYes" style="justify-content:center">כן, לבטל בלי לשמור</button><button data-act="cancelNo" style="flex:0 0 auto;padding-inline:18px">לא</button>`
+        : `<button class="live" data-act="stop"><span style="display:flex;gap:10px;align-items:center"><span class="dot"></span>${E(C.cat(S().timer.cat).name)}</span><span class="num" id="tick">0:00:00</span><span>סיום ושמירה</span></button><button data-act="cancelT" style="flex:0 0 auto;padding-inline:16px" aria-label="ביטול המשמרת הפעילה">ביטול</button>`)
       : `<button data-act="start"><span class="dot" style="animation:none;background:var(--k1);box-shadow:none"></span>אני מתחיל עכשיו</button>`}</div>
     ${next.length ? `<h2>הבא בתור${S().settings.planningView === 'separate' ? '<button data-go="plan">לתכנון</button>' : '<button data-go="hist" data-f="planned">הכול</button>'}</h2>${next.map(card).join('')}` : ''}
     </div><div>
@@ -264,7 +314,7 @@ function home() {
     </div></div>`;
 }
 function card(s) {
-  const m = C.span(s.start, s.end, s.breakMin || 0).minutes, c = C.cat(s.cat), ovn = C.toMin(s.end) <= C.toMin(s.start);
+  const m = s.status ? C.span(s.start, s.end).minutes : C.shiftMinutes(s), c = C.cat(s.cat), ovn = s.start && C.toMin(s.end) <= C.toMin(s.start);
   if (s.status) {
     const open = openOcc === s.key;
     return `<div class="card plan" data-occ="${E(s.key)}" style="${pv(s.cat)}" tabindex="0"><span class="av">${E(c.name[0])}</span>
@@ -276,12 +326,12 @@ function card(s) {
   return `<div class="card${sel.has(s.id) ? ' sel' : ''}" data-id="${s.id}" style="${pv(s.cat)}" tabindex="0"><span class="av">${E(c.name[0])}</span>
     <span class="t">${E(C.dayLabel(s.date))}${s.auto ? '<span class="tag" title="נרשמה אוטומטית בסוף הזמן המתוכנן">אוטו׳</span>' : ''}${s.paid ? '' : '<span class="tag">לא שולם</span>'}</span>
     <span class="m">${s.total == null ? '<span class="tag w" style="font-size:12px">תעריף חסר</span>' : amt(s.total, s.currency)}</span>
-    <span class="s"><span class="num">${s.start}–${s.end}</span>${ovn ? ' · למחרת' : ''} · ${C.hours(m)} ש׳${s.bonus ? ' · בונוס ' + E(C.money(s.bonus, s.currency)) : ''}${s.group ? ` · ${s.group.workers.length + 1} אנשים` : ''}</span></div>`;
+    <span class="s"><span class="num">${E(C.timeLabel(s))}</span>${ovn ? ' · למחרת' : ''}${s.start ? ` · ${C.hours(m)} ש׳` : ''}${s.bonus ? ' · בונוס ' + E(C.money(s.bonus, s.currency)) : ''}${s.group ? ` · ${s.group.workers.length + 1} אנשים` : ''}</span></div>`;
 }
 function hist() {
   const sep = S().settings.planningView === 'separate', f = sep ? 'done' : filter;
   const occ = C.occurrences();
-  const done = S().shifts.filter(s => C.ym(s.date) === month).sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start));
+  const done = S().shifts.filter(s => C.ym(s.date) === month).sort((a, b) => (b.date + (b.start || '')).localeCompare(a.date + (a.start || '')));
   const weeks = {};
   done.forEach(s => { const k = C.addDays(s.date, -C.weekday(s.date)); (weeks[k] ||= []).push(s); });
   const wl = k => k === C.addDays(C.today(), -C.weekday(C.today())) ? 'השבוע' : `שבוע של ${C.shortDate(k)}`;
@@ -290,7 +340,7 @@ function hist() {
     ${f !== 'done' ? `<div class="week-h"><span>מה מחכה</span><span>${occ.length}</span></div>${occ.slice(0, f === 'all' ? 3 : 40).map(card).join('') || '<div class="empty">שום דבר לא מתוכנן</div>'}` : ''}
     ${f !== 'planned' ? `<div class="week-h" style="margin-top:26px"><span style="font-family:var(--font-display);font-size:20px;color:var(--ink);font-weight:400">${E(C.monthName(month))}</span><span style="display:flex;gap:12px"><button data-act="pm" style="background:none;border:0;color:var(--muted);cursor:pointer">→ קודם</button><button data-act="nm" style="background:none;border:0;color:var(--muted);cursor:pointer">הבא ←</button></span></div>
       ${Object.keys(weeks).sort().reverse().map(k => `<div class="week-h"><span>${wl(k)}</span><span><span class="num">${C.hours(weeks[k].reduce((a, s) => a + C.shiftMinutes(s), 0))}</span> ש׳</span></div>${weeks[k].map(card).join('')}`).join('') || '<div class="empty">אין משמרות החודש</div>'}
-      <p style="text-align:center;color:var(--muted);font-size:13px">לחיצה ארוכה על משמרת לבחירה מרובה</p>` : ''}`;
+      <p style="text-align:center;color:var(--muted);font-size:13px">נגיעה לפרטים · לחיצה ארוכה לבחירה, שיתוף והעתקה</p>` : ''}`;
 }
 function plan() {
   const rules = S().rules.filter(r => r.until >= C.today());
@@ -346,61 +396,127 @@ function render() {
   $('#app').innerHTML = VIEWS[view](); nav(); selbar();
 }
 
-/* ---------- add page with keypad ---------- */
+/* ---------- add / edit page ---------- */
 const KEYS_TIME = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '⌫'];
-function openAdd(draft) { d = draft; tgt = d.start ? 'end' : 'start'; buf = ''; more = !!(d.group || d.repeat || d.bonus || d.breakMin); drawAdd(true); }
+const snap = () => JSON.stringify([d.mode, d.cat, d.date, d.start, d.end, d.hours, d.rate, d.rateUnknown, d.currency, d.bonus, d.breakMin, d.notes, d.group]);
+function openAdd(draft) {
+  d = draft; tgt = d.mode === 'hours' ? 'hours' : d.start ? 'end' : 'start'; buf = ''; pad = false; confirmLeave = false;
+  more = !!(d.repeat || d.breakMin || d.notes); d._orig = d.id ? snap() : null; drawAdd();
+}
 function shown(k) {
-  if (tgt === k && buf) { if (k === 'start' || k === 'end') { const b = buf.padEnd(4, '·'); return b.slice(0, 2) + ':' + b.slice(2); } return buf; }
+  if (tgt === k && buf && pad) { if (k === 'start' || k === 'end') { const b = buf.padEnd(4, '·'); return b.slice(0, 2) + ':' + b.slice(2); } return buf; }
   if (k === 'start') return d.start || '--:--'; if (k === 'end') return d.end;
   return d[k] ?? '';
 }
-function drawAdd(first) {
-  const ev = C.evaluate(d), c = C.cat(d.cat), sug = C.suggestStart(d.cat, d.date);
+const P = m => m / 1440 * 100;
+function rulerHtml() {
+  const ticks = [0, 6, 12, 18, 24].map(h => `<span class="rt" style="inset-inline-start:${h / 24 * 100}%">${String(h).padStart(2, '0')}</span>`).join('');
+  return `<div class="ruler" id="ruler"><div class="rbase"></div><div id="rsegs"></div>
+    ${d.start ? `<button class="rh" data-h="start" aria-label="גרירת שעת התחלה" aria-pressed="${tgt === 'start'}">התחלה</button>` : ''}<button class="rh" data-h="end" aria-label="גרירת שעת סיום" aria-pressed="${tgt === 'end'}">סיום</button>${ticks}</div>
+    <div class="nudges"><span>${tgt === 'start' && d.start ? 'התחלה' : 'סיום'}:</span>${[-30, -15, 15, 30].map(n => `<button data-nudge="${n}">${n > 0 ? '+' : '−'}${Math.abs(n)}</button>`).join('')}</div>`;
+}
+function rulerLive() {
+  const segs = $('#rsegs'); if (!segs) return;
+  if (d.start) {
+    const a = C.toMin(d.start), b = C.toMin(d.end);
+    segs.innerHTML = b > a ? `<i style="inset-inline-start:${P(a)}%;width:${P(b - a)}%"></i>` : `<i style="inset-inline-start:${P(a)}%;width:${100 - P(a)}%"></i><i style="inset-inline-start:0;width:${P(b)}%"></i>`;
+    $('.rh[data-h=start]').style.insetInlineStart = P(a) + '%';
+  } else segs.innerHTML = '';
+  $('.rh[data-h=end]').style.insetInlineStart = P(C.toMin(d.end)) + '%';
+}
+/* Handles only, and only after a deliberate move: a stray touch never changes the time. */
+function bindRuler() {
+  const el = $('#ruler'); if (!el) return;
+  let drag = null;
+  el.addEventListener('pointerdown', e => {
+    const h = e.target.closest('.rh'); if (!h) return;
+    drag = { k: h.dataset.h, x: e.clientX, live: false }; h.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  el.addEventListener('pointermove', e => {
+    if (!drag) return;
+    if (!drag.live && Math.abs(e.clientX - drag.x) < 8) return;
+    drag.live = true;
+    const r = el.getBoundingClientRect(), frac = (r.right - e.clientX) / r.width;
+    const v = C.fromMin(Math.max(0, Math.min(1425, Math.round(frac * 96) * 15)));
+    if (d[drag.k] !== v) { d[drag.k] = v; d._touched = true; navigator.vibrate?.(4); liveTop(); }
+  });
+  const end = () => { if (drag) { const k = drag.k, moved = drag.live; drag = null; tgt = k; buf = ''; if (moved) drawAdd(); else { pad = false; drawAdd(); } } };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+}
+function liveTop() {
+  const ev = C.evaluate(d);
+  const st = $('[data-t=start] .disp'), en = $('[data-t=end] .disp');
+  if (st) st.textContent = shown('start'); if (en) en.textContent = shown('end');
+  $('#apmeta').innerHTML = metaHtml(ev); rulerLive();
+}
+function metaHtml(ev) {
+  return `<span>${ev.span && !ev.span.invalid ? `<span class="num">${C.hm(ev.span.minutes)}</span> שעות ${ev.span.overnight ? '<span class="nx">עד למחרת</span>' : ''}` : ev.errors[0] ? E(ev.errors[0]) : ''}</span>
+    <span>${ev.total != null ? `<span class="disp" style="font-size:24px">${amt(ev.total, d.currency)}</span>` : d.rateUnknown ? 'תעריף חסר' : ''}</span>`;
+}
+function drawAdd() {
+  const ev = C.evaluate(d), sug = C.suggestStart(d.cat, d.date), edit = !!d.id;
   const days = Array.from({ length: 7 }, (_, i) => C.addDays(C.today(), i - 6));
   const isTime = tgt === 'start' || tgt === 'end';
+  const orig = edit ? S().shifts.find(s => s.id === d.id) : null;
+  const changed = edit && snap() !== d._orig;
   let el = $('.add-page');
-  if (!el) { el = document.createElement('div'); el.className = 'add-page'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'משמרת חדשה'); document.body.append(el); }
-  el.style.cssText = pv(d.cat);
+  if (!el) { el = document.createElement('div'); el.className = 'add-page'; el.setAttribute('role', 'dialog'); document.body.append(el); }
+  el.setAttribute('aria-label', edit ? 'עריכת משמרת' : 'משמרת חדשה');
+  el.classList.toggle('editing', edit);
+  el.style.cssText = edit ? '--pass:var(--ink);--pass-ink:var(--bg)' : pv(d.cat);
   el.innerHTML = `<div class="ap-top"><div class="ap-in">
-      <div class="ap-bar"><button data-act="closeAdd">ביטול</button><strong>${d.id ? 'עריכה' : d.repeat ? 'משמרת קבועה' : 'משמרת חדשה'}</strong>${d.id ? '<button data-act="del">מחיקה</button>' : '<span style="width:64px"></span>'}</div>
-      <div class="cats" role="group" aria-label="מקום עבודה">${S().cats.map(x => `<button data-cat="${x.id}" aria-pressed="${x.id === d.cat}">${E(x.name)}</button>`).join('')}</div>
-      <div class="clock">
+      <div class="ap-bar"><button data-act="closeAdd">${edit ? 'סגירה' : 'ביטול'}</button><strong>${edit ? 'עריכת משמרת' : d.repeat ? 'משמרת קבועה' : 'משמרת חדשה'}</strong>${edit ? '<button data-act="del">מחיקה</button>' : '<span style="width:64px"></span>'}</div>
+      ${edit ? `<div class="was">${changed ? '<b>שונה</b> · ' : ''}לפני: ${E(C.dayLabel(orig.date))} · <span class="num">${E(C.timeLabel(orig))}</span> · ${orig.total == null ? 'תעריף חסר' : amt(orig.total, orig.currency)}</div>` : ''}
+      <div class="modes" role="group" aria-label="סוג רישום">${[['clock', 'שעון'], ['hours', 'ידני'], ['group', 'קבוצה']].map(([v, l]) => `<button data-mode="${v}" aria-pressed="${d.mode === v}">${l}</button>`).join('')}</div>
+      <div class="cats" role="group" aria-label="מקום עבודה">${S().cats.map(x => `<button data-cat="${x.id}" aria-pressed="${x.id === d.cat}" ${edit ? `style="--c:var(--k${x.hue})"` : ''}>${E(x.name)}</button>`).join('')}</div>
+      ${d.mode === 'hours' ? `<div class="clock" style="grid-template-columns:1fr"><button data-t="hours" aria-pressed="${pad && tgt === 'hours'}" class="${d.hours || (tgt === 'hours' && buf) ? '' : 'empty'}"><small>כמה שעות · נגיעה להקלדה</small><span class="disp num">${E(shown('hours') || '0')}</span></button></div>
+        <div class="nudges">${[2, 4, 6, 8].map(h => `<button data-hrs="${h}">${h} ש׳</button>`).join('')}</div>`
+      : `<div class="clock">
         <button data-t="start" class="${d.start || (tgt === 'start' && buf) ? '' : 'empty'}" aria-pressed="${tgt === 'start'}"><small>התחלה</small><span class="disp num">${E(shown('start'))}</span></button>
         <span class="arrow">←</span>
         <button data-t="end" aria-pressed="${tgt === 'end'}"><small>סיום</small><span class="disp num">${E(shown('end'))}</span></button>
-      </div>
-      <div class="ap-meta"><span>${ev.span && !ev.span.invalid ? `<span class="num">${C.hm(ev.span.minutes)}</span> שעות ${ev.span.overnight ? '<span class="nx">עד למחרת</span>' : ''}` : ev.errors[0] ? E(ev.errors[0]) : ''}</span>
-        <span>${ev.total != null ? `<span class="disp" style="font-size:24px">${amt(ev.total, d.currency)}</span>` : d.rateUnknown ? 'תעריף חסר' : ''}</span></div>
+      </div>${rulerHtml()}`}
+      <div class="ap-meta" id="apmeta">${metaHtml(ev)}</div>
     </div></div>
     <div class="ap-mid"><div class="ap-in">
-      ${!d.start && isTime ? `<div class="chipline"><span style="font-size:13px;color:var(--muted)">התחלה נפוצה:</span>${sug.chips.map(h => `<button class="sug" data-start="${h}">${h}</button>`).join('')}</div>` : ''}
+      ${!d.start && d.mode !== 'hours' ? `<div class="chipline"><span class="hintx">התחלה נפוצה:</span>${sug.chips.map(h => `<button class="sug" data-start="${h}">${h}</button>`).join('')}</div>` : ''}
       <div class="days7" role="group" aria-label="יום">${days.map(x => { const dd = C.parseYmd(x); return `<button data-date="${x}" aria-pressed="${d.date === x}">${x === C.today() ? 'היום' : C.DAY_SHORT[dd.getDay()]}<b class="num">${dd.getDate()}</b></button>`; }).join('')}</div>
-      ${d.date < days[0] ? `<div class="msg err">${E(C.dayLabel(d.date))}</div>` : ''}
+      ${d.date < days[0] ? `<div class="msg err">📅 ${E(C.dayLabel(d.date))}</div>` : ''}
       <div class="chipline">
-        ${d.rateUnknown ? `<button class="w" data-act="rateKnown">תעריף חסר · להוספה</button>` : `<button data-t="rate" aria-pressed="${tgt === 'rate'}"><span class="num">${E(d.currency)}${E(shown('rate'))}</span>/שעה</button><button data-act="rateUnknown">לא יודע</button>`}
-        <button data-t="bonus" aria-pressed="${tgt === 'bonus'}">${d.bonus || (tgt === 'bonus' && buf) ? `בונוס <span class="num">${E(d.currency)}${E(shown('bonus'))}</span>` : '+ בונוס'}</button>
-        <label style="position:relative">תאריך אחר<input type="date" id="dt" value="${d.date}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0" aria-label="תאריך אחר"></label>
-        <button data-act="more" aria-expanded="${more}">${more ? 'פחות' : 'עוד'}</button>
+        ${d.rateUnknown ? `<button class="w" data-act="rateKnown">תעריף חסר · להוספה</button>` : `<button data-t="rate" aria-pressed="${pad && tgt === 'rate'}"><span class="num">${E(d.currency)}${E(shown('rate'))}</span>/שעה</button><button data-act="rateUnknown">לא יודע</button>`}
+        <span class="cseg" role="group" aria-label="מטבע">${['₪', '$'].map(c => `<button data-cur="${c}" aria-pressed="${d.currency === c}">${c}</button>`).join('')}</span>
+      </div>
+      <div class="chipline">
+        <button data-t="bonus" aria-pressed="${pad && tgt === 'bonus'}">${Number(d.bonus) || (tgt === 'bonus' && buf) ? `בונוס <span class="num">${E(d.currency)}${E(shown('bonus'))}</span>` : '+ בונוס'}</button>
+        <label style="position:relative">📅 תאריך אחר<input type="date" id="dt" value="${d.date}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0" aria-label="תאריך אחר"></label>
+        <button data-act="more" aria-expanded="${more}">${more ? 'פחות' : 'הפסקה · הערה · חזרה'}</button>
       </div>
       ${ev.warnings.map(w => `<div class="msg">${E(w)}</div>`).join('')}
+      ${d.mode === 'group' ? groupBlock() : ''}
       ${more ? moreBlock() : ''}
     </div></div>
-    <div class="keypad"><div class="keys">
+    ${pad ? `<div class="keypad"><div class="keys">
       ${KEYS_TIME.map((k, i) => { const key = !isTime && k === '00' ? '.' : k; return `<button data-k="${key}" class="${key === '00' || key === '.' || key === '⌫' ? 'alt' : ''}" style="grid-column:${i % 3 + 1}">${key}</button>`; }).join('')}
-      <button class="tgt" data-act="nextTgt" style="grid-row:1">${isTime ? (tgt === 'start' ? 'לסיום ←' : 'לתעריף ←') : 'לשעות ←'}</button>
-      <button class="save" data-act="save" style="grid-row:2 / span 3" ${ev.errors.length ? 'disabled' : ''}>${d.repeat ? 'יצירת<br>סדרה' : 'שמירה'}</button>
-    </div></div>`;
+      <button class="tgt" data-act="padDone" style="grid-row:1">סגירת מקלדת ✓</button>
+      <button class="save" data-act="save" style="grid-row:2 / span 3" ${ev.errors.length || (edit && !changed) ? 'disabled' : ''}>${edit ? 'שמירת<br>שינויים' : d.repeat ? 'יצירת<br>סדרה' : 'שמירה'}</button>
+    </div></div>`
+    : `<div class="savebar"><div class="ap-in">${ev.errors.length ? `<span class="why">${E(ev.errors[0])}</span>` : ''}<button class="big-btn" data-act="save" ${ev.errors.length || (edit && !changed) ? 'disabled' : ''}>${edit ? (changed ? 'שמירת שינויים' : 'אין שינויים') : d.repeat ? 'יצירת הסדרה' : 'שמירה'}</button></div></div>`}
+    ${confirmLeave ? `<div class="leave"><div class="ap-in"><strong>לצאת בלי לשמור את השינויים?</strong><div class="row2b"><button class="big-btn ghost" data-act="stay">להמשיך לערוך</button><button class="big-btn" data-act="leave">לצאת</button></div></div></div>` : ''}`;
+  rulerLive(); bindRuler();
+}
+function groupBlock() {
+  const ws = d.group.workers;
+  return `<div class="drawer"><strong>מי עבד איתך</strong>
+    ${ws.map((w, i) => `<div class="wk"><input type="checkbox" class="sw" data-wb="${i}" ${w.on !== false ? 'checked' : ''} aria-label="בונוס ל${E(w.name)}"><span>${E(w.name)}</span><input type="number" data-wv="${i}" value="${w.bonus || ''}" placeholder="בונוס" inputmode="decimal" aria-label="בונוס ל${E(w.name)}"></div>`).join('')}
+    <div class="chipline">${C.WORKERS.filter(n => !ws.some(w => w.name === n)).map(n => `<button data-addw="${E(n)}">+ ${E(n)}</button>`).join('')}</div>
+    ${ws.length ? `<div class="chipline"><span class="hintx">הבונוס של ${E(d.currency)}${Number(d.bonus) || 0} הולך ל:</span>${[['all', 'כולם'], ['me', 'רק אני'], ['others', 'רק הצוות']].map(([v, l]) => `<button data-bt="${v}" aria-pressed="${d.bonusTarget === v}">${l}</button>`).join('')}</div>` : ''}
+  </div>`;
 }
 function moreBlock() {
   return `<div class="drawer">
-    <div class="row2"><div class="field"><label for="brk">הפסקה (דק׳)</label><input type="number" id="brk" inputmode="numeric" value="${d.breakMin || ''}" placeholder="0"></div>
-    <div class="field"><label for="cur">מטבע</label><select id="cur"><option ${d.currency === '₪' ? 'selected' : ''}>₪</option><option ${d.currency === '$' ? 'selected' : ''}>$</option></select></div></div>
+    ${d.mode === 'hours' ? '' : `<div class="field"><label for="brk">הפסקה (דקות)</label><input type="number" id="brk" inputmode="numeric" value="${d.breakMin || ''}" placeholder="0"></div>`}
     <div class="field"><label for="nt">הערה</label><input id="nt" value="${E(d.notes)}" placeholder="לא חובה"></div>
-    <label class="tog">עבדתי עם צוות<input type="checkbox" class="sw" id="grp" ${d.group ? 'checked' : ''}></label>
-    ${d.group ? `<div style="display:grid;gap:8px">${d.group.workers.map((w, i) => `<div class="wk"><input type="checkbox" class="sw" data-wb="${i}" ${w.on !== false ? 'checked' : ''} aria-label="בונוס ל${E(w.name)}"><span>${E(w.name)}</span><input type="number" data-wv="${i}" value="${w.bonus || ''}" placeholder="בונוס" inputmode="decimal" aria-label="בונוס ל${E(w.name)}"></div>`).join('')}
-      <div class="chipline">${C.WORKERS.filter(n => !d.group.workers.some(w => w.name === n)).map(n => `<button data-addw="${E(n)}">+ ${E(n)}</button>`).join('')}</div>
-      ${d.group.workers.length ? `<div class="chipline"><span style="font-size:13px;color:var(--muted)">הבונוס של ${E(d.currency)}${d.bonus || 0} הולך ל:</span>${[['all', 'כולם'], ['me', 'רק אני'], ['others', 'רק הצוות']].map(([v, l]) => `<button data-bt="${v}" aria-pressed="${d.bonusTarget === v}">${l}</button>`).join('')}</div>` : ''}</div>` : ''}
-    ${d.id ? '' : `<label class="tog">חוזרת כל שבוע<input type="checkbox" class="sw" id="rep" ${d.repeat ? 'checked' : ''}></label>`}
+    ${d.id || d.mode === 'hours' ? '' : `<label class="tog">חוזרת כל שבוע<input type="checkbox" class="sw" id="rep" ${d.repeat ? 'checked' : ''}></label>`}
     ${d.repeat ? (() => { const p = C.previewRule({ ...d, days: d.repeat.days, from: d.date, until: d.repeat.until }); return `<div class="dsel" role="group" aria-label="ימים">${C.DAY_SHORT.map((n, i) => `<button data-day="${i}" aria-pressed="${d.repeat.days.includes(i)}">${n}</button>`).join('')}</div>
       <div class="field"><label for="until">עד תאריך</label><input type="date" id="until" value="${d.repeat.until}"></div>
       <div class="msg err"><strong class="num">${p.dates.length}</strong> משמרות ייכנסו ללוח${p.clashes.length ? ` · ${p.clashes.length} חופפות למשמרת קיימת ולא ייווצרו פעמיים` : ''}</div>`; })() : ''}
@@ -419,13 +535,54 @@ function commitBuf() {
 function key(k) {
   const isTime = tgt === 'start' || tgt === 'end';
   if (k === '⌫') { buf = buf.slice(0, -1); drawAdd(); return; }
-  if (isTime) {
-    buf = (buf + k).slice(0, 4);
-    if (buf.length === 4) { if (commitBuf()) tgt = tgt === 'start' ? 'end' : 'end'; }
-  } else { if (k === '.' && buf.includes('.')) return; buf = (buf + k).slice(0, 7); d[tgt] = Number(buf) || 0; }
+  if (isTime) { buf = (buf + k).slice(0, 4); if (buf.length === 4 && commitBuf()) { d._touched = true; if (tgt === 'start') tgt = 'end'; } }
+  else { if (k === '.' && buf.includes('.')) return; buf = (buf + k).slice(0, 7); d[tgt] = Number(buf) || 0; }
   drawAdd();
 }
-function closeAdd() { $('.add-page')?.remove(); d = null; render(); }
+function closeAdd(force) {
+  if (!force && d && d.id && snap() !== d._orig) { confirmLeave = true; drawAdd(); return; }
+  $('.add-page')?.remove(); d = null; render();
+}
+
+/* ---------- shift details (tap) ---------- */
+function openDetail(id) {
+  const s = S().shifts.find(x => x.id === id); if (!s) return;
+  const c = C.cat(s.cat), m = C.shiftMinutes(s), ovn = s.start && C.toMin(s.end) <= C.toMin(s.start);
+  const fact = (k, v) => `<div class="fact"><small>${k}</small><span>${v}</span></div>`;
+  sheet(`<div class="det-top" style="${pv(s.cat)}"><span class="av">${E(c.name[0])}</span><div><strong>${E(c.name)}</strong><small>${E(C.dayLabel(s.date))}${s.auto ? ' · נרשמה לבד בסוף הזמן המתוכנן' : ''}</small></div>
+      <span class="disp det-amt">${s.total == null ? '<span style="font-size:18px">תעריף חסר</span>' : amt(s.total, s.currency)}</span></div>
+    <div class="facts">
+      ${fact('שעות', `<span class="num">${E(C.timeLabel(s))}</span>${ovn ? ' · למחרת' : ''}${s.start ? ` · ${C.hours(m)} ש׳` : ''}`)}
+      ${fact('תעריף', s.rate == null ? '<button class="linkb" data-act="fillRate" data-id2="' + s.id + '">להשלמה ←</button>' : `${E(C.money(s.rate, s.currency))} לשעה`)}
+      ${s.bonus ? fact('בונוס', E(C.money(s.bonus, s.currency))) : ''}
+      ${s.breakMin ? fact('הפסקה', `${s.breakMin} דק׳`) : ''}
+      ${s.group ? fact('צוות', s.group.workers.map(w => E(w.name) + (w.bonus ? ` (+${E(C.money(w.bonus, s.currency))})` : '')).join(', ')) : ''}
+      ${s.notes ? fact('הערה', E(s.notes)) : ''}
+      <div class="fact"><small>תשלום</small><label class="tog" style="gap:8px">${s.paid ? 'שולם' : 'עוד לא שולם'}<input type="checkbox" class="sw" id="dpaid" data-id2="${s.id}" ${s.paid ? 'checked' : ''}></label></div>
+    </div>
+    <div class="det-acts">
+      <button class="big-btn" data-act="editShift" data-id2="${s.id}">עריכה</button>
+      <button class="big-btn ghost" data-act="share1" data-id2="${s.id}">שיתוף</button>
+      <button class="big-btn ghost" data-act="copy1" data-id2="${s.id}">העתקה</button>
+      <button class="big-btn ghost danger" data-act="del1" data-id2="${s.id}">מחיקה</button>
+    </div>`);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); C.toast('הועתק ✓'); }
+  catch { shareSheet(text, true); }
+}
+function shareSheet(text, copyFailed) {
+  sheet(`<h3>שיתוף</h3>${copyFailed ? '<p style="margin:0;color:var(--muted)">ההעתקה האוטומטית לא זמינה כאן. אפשר לסמן את הטקסט ולהעתיק.</p>' : ''}
+    <textarea class="sharebox" readonly rows="${Math.min(10, text.split('\n').length + 1)}">${E(text)}</textarea>
+    <a class="big-btn wa" href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">שליחה בוואטסאפ</a>
+    <button class="big-btn ghost" data-act="copyBox">העתקה</button>
+    <p style="margin:0;color:var(--muted);font-size:13px">באפליקציה עצמה נפתח תפריט השיתוף של אנדרואיד, כמו היום.</p>`, () => { const b = $('.sharebox'); b.focus(); b.select(); });
+}
+async function share(list) {
+  const text = C.shareText(list);
+  if (navigator.share) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  shareSheet(text);
+}
 
 /* ---------- sheets ---------- */
 function sheet(html, onMount) { $('#layer').innerHTML = `<div class="scrim" data-act="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true"><div class="in">${html}</div></div>`; onMount?.(); }
@@ -436,7 +593,8 @@ function selbar() {
   $('#nav').hidden = true;
   if (!b) { b = document.createElement('div'); b.id = 'selbar'; b.className = 'selbar'; document.body.append(b); }
   const pend = S().shifts.filter(s => sel.has(s.id) && s.rate == null).length;
-  b.innerHTML = `<div class="in"><strong>${sel.size} נבחרו</strong>${pend ? `<button data-act="bulk">השלמת תעריף · ${pend}</button>` : ''}<button data-act="paid">שולם</button><button data-act="unsel">ביטול</button></div>`;
+  b.innerHTML = `<div class="in"><strong>${sel.size} נבחרו</strong><button data-act="unsel">ביטול</button>
+    <div class="selacts"><button data-act="shareSel">שיתוף</button><button data-act="copySel">העתקה</button><button data-act="paid">שולם</button>${pend ? `<button data-act="bulk">השלמת תעריף · ${pend}</button>` : ''}<button data-act="delSel">מחיקה</button></div></div>`;
 }
 function bulk() {
   const ids = [...sel];
@@ -509,10 +667,14 @@ document.addEventListener('click', e => {
   const ds = t.dataset;
   if (d && t.closest('.add-page')) {
     if (ds.k) return key(ds.k);
-    if (ds.t) { commitBuf(); tgt = ds.t; drawAdd(); return; }
+    if (ds.t) { commitBuf(); tgt = ds.t; pad = true; buf = ''; drawAdd(); return; }
+    if (ds.mode) { commitBuf(); C.setMode(d, ds.mode); tgt = ds.mode === 'hours' ? 'hours' : d.start ? 'end' : 'start'; pad = false; drawAdd(); return; }
+    if (ds.cur) { d.currency = ds.cur; drawAdd(); return; }
+    if (ds.hrs) { d.hours = Number(ds.hrs); drawAdd(); return; }
+    if (ds.nudge) { commitBuf(); const k = tgt === 'start' && d.start ? 'start' : 'end'; d[k] = C.fromMin(C.toMin(d[k]) + Number(ds.nudge)); d._touched = true; tgt = k; drawAdd(); return; }
     if (ds.cat) { commitBuf(); C.setDraftCat(d, ds.cat); drawAdd(); return; }
     if (ds.date) { d.date = ds.date; if (!d.id && !d._touched) { const s = C.suggestStart(d.cat, d.date); if (s.start) d.start = s.start; } drawAdd(); return; }
-    if (ds.start) { d.start = ds.start; d._touched = true; tgt = 'end'; buf = ''; drawAdd(); return; }
+    if (ds.start) { d.start = ds.start; d._touched = true; tgt = 'end'; buf = ''; pad = false; drawAdd(); return; }
     if (ds.day) { const n = +ds.day, a = d.repeat.days; d.repeat.days = a.includes(n) ? a.filter(x => x !== n) : [...a, n].sort(); drawAdd(); return; }
     if (ds.addw) { d.group.workers.push({ name: ds.addw, bonus: 0 }); drawAdd(); return; }
     if (ds.bt) { d.bonusTarget = ds.bt; d.group.workers.forEach(w => { w.on = ds.bt !== 'me'; w.bonus = ds.bt === 'me' ? 0 : Number(d.bonus) || 0; }); drawAdd(); return; }
@@ -521,16 +683,35 @@ document.addEventListener('click', e => {
   if (ds.f) { filter = ds.f; render(); return; }
   if (ds.pass) { openPass = openPass === ds.pass ? null : ds.pass; render(); return; }
   if (ds.occ && !ds.act) { openOcc = openOcc === ds.occ ? null : ds.occ; render(); return; }
-  if (ds.id && !ds.act) { if (sel.size) { sel.has(ds.id) ? sel.delete(ds.id) : sel.add(ds.id); render(); return; } openAdd(C.draftFromShift(S().shifts.find(s => s.id === ds.id))); return; }
+  if (ds.id && !ds.act) { if (sel.size) { sel.has(ds.id) ? sel.delete(ds.id) : sel.add(ds.id); render(); return; } openDetail(ds.id); return; }
   const A = {
     add: () => openAdd(C.newDraft(ds.repeat ? { repeat: { days: [C.weekday(C.today())], until: C.addDays(C.today(), 56) } } : {})),
-    closeAdd, more: () => { more = !more; drawAdd(); },
-    nextTgt: () => { commitBuf(); tgt = { start: 'end', end: 'rate', rate: 'start', bonus: 'start' }[tgt]; if (tgt === 'rate' && d.rateUnknown) tgt = 'start'; drawAdd(); },
-    rateUnknown: () => { d.rateUnknown = true; if (tgt === 'rate') tgt = 'end'; drawAdd(); }, rateKnown: () => { d.rateUnknown = false; d.rate = d.rate ?? ''; tgt = 'rate'; buf = ''; drawAdd(); },
-    save: () => { commitBuf(); const was = d.id, r = C.saveDraft(d); if (!r.ok) { drawAdd(); return; } closeAdd(); C.toast(r.rule ? `נוצרו ${C.previewRule(r.rule).dates.length} משמרות קבועות` : was ? 'עודכן' : 'נשמר ✓'); },
-    del: () => { const s = C.deleteShift(d.id); closeAdd(); C.toast('נמחקה', 'ביטול', () => C.restoreShift(s)); },
-    start: () => { timer = { start: C.fromMin(C.nowMin()), at: Date.now() }; render(); },
-    stop: () => { const st = timer.start; timer = null; openAdd(C.newDraft({ start: st, end: C.fromMin(C.nowMin()) })); },
+    closeAdd: () => closeAdd(), more: () => { more = !more; drawAdd(); },
+    padDone: () => { commitBuf(); pad = false; drawAdd(); },
+    stay: () => { confirmLeave = false; drawAdd(); }, leave: () => closeAdd(true),
+    rateUnknown: () => { d.rateUnknown = true; if (tgt === 'rate') { tgt = 'end'; pad = false; } drawAdd(); }, rateKnown: () => { d.rateUnknown = false; d.rate = d.rate ?? ''; tgt = 'rate'; buf = ''; pad = true; drawAdd(); },
+    save: () => {
+      commitBuf(); const was = d.id, before = new Set(S().shifts.map(x => x.id)), r = C.saveDraft(d);
+      if (!r.ok) { drawAdd(); return; }
+      closeAdd(true);
+      if (r.rule) return C.toast(`נוצרו ${C.previewRule(r.rule).dates.length} משמרות קבועות`);
+      if (was) return C.toast('השינויים נשמרו ✓', 'פרטים', () => openDetail(was));
+      const nid = S().shifts.find(x => !before.has(x.id))?.id;
+      C.toast('המשמרת נשמרה ✓', 'ביטול', () => { C.deleteShift(nid); C.toast('הרישום בוטל'); });
+    },
+    del: () => { const s = C.deleteShift(d.id); closeAdd(true); C.toast('נמחקה', 'ביטול', () => C.restoreShift(s)); },
+    start: () => { C.startTimer(); C.toast('התחלת ✓ השעון ממשיך גם כשהאפליקציה סגורה'); },
+    stop: () => { confirmCancel = false; openAdd(C.stopTimer()); },
+    cancelT: () => { confirmCancel = true; render(); }, cancelNo: () => { confirmCancel = false; render(); },
+    cancelYes: () => { confirmCancel = false; const t = C.cancelTimer(); C.toast('המשמרת הפעילה בוטלה', 'שחזור', () => C.restoreTimer(t)); },
+    editShift: () => { closeSheet(); openAdd(C.draftFromShift(S().shifts.find(x => x.id === ds.id2))); },
+    share1: () => share([S().shifts.find(x => x.id === ds.id2)]),
+    copy1: () => copyText(C.shareText([S().shifts.find(x => x.id === ds.id2)])),
+    del1: () => { const s = C.deleteShift(ds.id2); closeSheet(); C.toast('נמחקה', 'ביטול', () => C.restoreShift(s)); },
+    fillRate: () => { sel = new Set([ds.id2]); closeSheet(); bulk(); },
+    shareSel: () => share(S().shifts.filter(x => sel.has(x.id))), copySel: () => copyText(C.shareText(S().shifts.filter(x => sel.has(x.id)))),
+    delSel: () => { const gone = S().shifts.filter(x => sel.has(x.id)); gone.forEach(x => C.deleteShift(x.id)); sel.clear(); render(); C.toast(C.pl(gone.length, 'משמרת נמחקה', '# משמרות נמחקו'), 'ביטול', () => gone.forEach(C.restoreShift)); },
+    copyBox: () => { const b = $('.sharebox'); b.select(); copyText(b.value); },
     pending: () => { view = 'hist'; filter = 'done'; sel = new Set(S().shifts.filter(s => s.rate == null).map(s => s.id)); render(); },
     pm: () => { month = C.prevMonth(month); render(); }, nm: () => { month = C.nextMonth(month); render(); },
     okOcc: () => { C.confirmOcc(openOcc); openOcc = null; C.toast('נרשמה ✓'); },
@@ -546,12 +727,11 @@ document.addEventListener('change', e => {
   if (d) {
     if (t.id === 'dt' && t.value) { d.date = t.value; drawAdd(); return; }
     if (t.id === 'until') { d.repeat.until = t.value; drawAdd(); return; }
-    if (t.id === 'grp') { d.group = t.checked ? { workers: [] } : null; drawAdd(); return; }
     if (t.id === 'rep') { d.repeat = t.checked ? { days: [C.weekday(d.date)], until: C.addDays(d.date, 56) } : null; drawAdd(); return; }
-    if (t.id === 'cur') { d.currency = t.value; drawAdd(); return; }
     if (t.dataset.wb) { d.group.workers[t.dataset.wb].on = t.checked; return; }
     if (t.id === 'brk') { d.breakMin = t.value; drawAdd(); return; }
   }
+  if (t.id === 'dpaid') { C.setPaid([t.dataset.id2], t.checked); openDetail(t.dataset.id2); C.toast(t.checked ? 'סומנה כשולמה' : 'סומנה כלא שולמה'); return; }
   const s = S().settings;
   if (t.id === 'auto') { s.autoConfirm = t.checked; C.commit(); if (t.checked) { const x = C.catchUp(); C.commit(); if (x.length) C.toast(C.pl(x.length, 'משמרת אחת נרשמה', '# משמרות נרשמו'), 'ביטול', () => C.undoAuto(x)); } }
   if (t.id === 'nmo') { s.notifyMonthly = t.checked; C.commit(); }
@@ -561,12 +741,12 @@ document.addEventListener('change', e => {
 document.addEventListener('input', e => { const t = e.target; if (!d) return; if (t.id === 'nt') d.notes = t.value; if (t.dataset.wv) d.group.workers[t.dataset.wv].bonus = Number(t.value) || 0; });
 document.addEventListener('keydown', e => {
   if (d && $('.add-page') && !/INPUT|SELECT/.test(document.activeElement.tagName)) {
-    if (/^[0-9]$/.test(e.key)) { key(e.key); e.preventDefault(); } else if (e.key === 'Backspace') { key('⌫'); e.preventDefault(); } else if (e.key === 'Enter') { $('.keys .save:not([disabled])')?.click(); }
+    if (/^[0-9]$/.test(e.key)) { pad = true; key(e.key); e.preventDefault(); } else if (e.key === 'Backspace') { key('⌫'); e.preventDefault(); } else if (e.key === 'Enter') { $('[data-act=save]:not([disabled])')?.click(); }
   }
   if (e.key === 'Escape') { if ($('#layer').innerHTML) closeSheet(); else if (d) closeAdd(); document.querySelector('.over,.brandp')?.remove(); }
 });
 C.longPress(document.body, '.card[data-id]', el => { sel.add(el.dataset.id); render(); });
-setInterval(() => { const el = $('#tick'); if (el && timer) { const s = Math.floor((Date.now() - timer.at) / 1000); el.textContent = `${Math.floor(s / 3600)}:${C.pad(Math.floor(s / 60) % 60)}:${C.pad(s % 60)}`; } }, 1000);
+setInterval(() => { const el = $('#tick'); if (el && S().timer) { const s = C.timerElapsed(); el.textContent = `${Math.floor(s / 3600)}:${C.pad(Math.floor(s / 60) % 60)}:${C.pad(s % 60)}`; } }, 1000);
 C.subscribe(() => { if (!d) render(); });
 C.mountPanel({ name: 'כיוון ב׳ · כיס', onBrand: brand, onWrapped: () => { month = C.ym(C.today()); wrapped(); } });
 render();
