@@ -1,7 +1,7 @@
 # 2.0 stage C (Android): weekly plans, auto-record, reminders, quiet hours
 
 Branch `claude/v2-android`. Owner approved stage C after rc3 ("נראה טוב ומצוין") and chose to keep everything inside the
-existing screens (no new page). Delivered as signed `2.0-rc4` / code 28 (see "Build" below once verified).
+existing screens (no new page). Delivered as signed `2.0-rc4` / code 28 (see "Build" below).
 
 ## What the user gets
 - **Editor, new clock shift:** "חוזרת כל שבוע" switch → weekdays (default: the shift's weekday) and "עד" date (default: +8 weeks).
@@ -52,3 +52,25 @@ existing screens (no new page). Delivered as signed `2.0-rc4` / code 28 (see "Bu
   planned view (never in totals/copy), Settings plan and reminder switches.
 - Device (`PlanAutoRecordTest`, run in the signed RC gate after the update/data checks): a synthetic plan whose days
   ended is recorded once with four concurrent recorders plus the daily job, shows on Home, and is removed again.
+
+## Independent review (three agents: data, screens, stability) — fixed before the RC
+- A day recorded ahead and then split "from now on" could be recorded again under the new plan → split now skips recorded days.
+- A deleted recorded plan day came back by itself → deleting marks the day skipped; undoing the delete clears it.
+- Clashes were checked only for the 4 weeks on screen → checked over the whole new range, from the database at save time.
+- Rate pins, import (day changes only for plans the import added), decode guards (real dates from 2000, from ≤ until).
+- Undo never removes a shift edited meanwhile; manual "עבדתי" undo holds the day.
+- Notification tap keeps the open app (SINGLE_TOP), opens last month, and selects shifts without a rate after they load.
+- Worker: rethrows cancellation, logs, stops retrying after 3 attempts; idle while a signed-in account is active.
+- Screens: 2×2 full-size plan buttons, seven equal day toggles, the plan follows the editor date and needs at least one
+  created day, notes/break "not kept" note, Back leaves the planned view, plans tick each minute, 48dp chips.
+- Noted, not changed: the notification icon reuses the timer's system icon (as the existing timer notification does).
+
+## Build (verified)
+- Source `ec0aca5ee653c8a9fb68534a310c35d2b4db566e`; dev CI run 38954859534 SUCCESS.
+- Signed RC run 38955233764 SUCCESS: 123 Debug + 103 Release unit tests (0 failures); identity check "same package,
+  same permanent certificate, versionCode 28 > 27 > 24"; real RC16 → delivered rc3 (exact artifact, SHA-256 checked) →
+  rc4 update with byte-identical data snapshot; device UI, keyboard, currency, `PlanAutoRecordTest`; fresh install; empty crash log.
+- APK `candidate-b.apk` SHA-256 `bc140859fa345851966333ea0c21bd81d04c790b4f24fdb19981a4817e25f71d`,
+  package `com.aistudio.worktracker.qztvdw.distribution`, `2.0-rc4` / 28. Private artifact `salary-2.0-rc4-candidate`
+  (id 12070554598). Not published; no Release, no update feed change.
+- Remaining manual gate: the owner's phone (update over rc3, create a weekly plan, see it on Home/History, a reminder).
