@@ -35,6 +35,7 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.copyExcelToClipboard
+import com.example.data.WorkShareText
 import com.example.data.WorkCategory
 import com.example.data.WorkEntry
 import com.example.data.WorkPay
@@ -65,6 +67,8 @@ class HistoryUi {
     var searching by mutableStateOf(false)
     var query by mutableStateOf("")
     val selecting get() = selection.isNotEmpty()
+    /** Height of the selection bar, so messages appear above it instead of over its buttons. */
+    var barHeight by mutableStateOf(0.dp)
 }
 
 @Composable
@@ -98,8 +102,9 @@ fun KisHistory(
     val selectedRows = entries.filter { it.id in ui.selection }
 
     Box(Modifier.fillMaxSize()) {
-        LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag("history_scroll_container"),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottomInset + if (ui.selecting) 150.dp else 24.dp),
+        // Below the status bar: the title and its tools must never sit under the system bar (it takes the taps).
+        LazyColumn(state = listState, modifier = Modifier.fillMaxSize().statusBarsPadding().testTag("history_scroll_container"),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = if (ui.selecting) ui.barHeight + 16.dp else bottomInset + 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item(key = "head") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -125,12 +130,11 @@ fun KisHistory(
                         Box {
                             ToolIcon(Icons.Rounded.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
                             DropdownMenu(copyMenu, { copyMenu = false }) {
-                                DropdownMenuItem(text = { Text("Excel (טבלה)") }, onClick = { copyMenu = false; copyExcelToClipboard(context, rows, filter.category ?: "הכל") })
+                                DropdownMenuItem(text = { Text("Excel (טבלה)") }, onClick = { copyMenu = false; copyExcelToClipboard(context, rows); onMessage("הטבלה הועתקה ✓ · מוכנה להדבקה באקסל") })
                                 DropdownMenuItem(text = { Text("WhatsApp (סיכום)") }, onClick = {
                                     copyMenu = false
                                     KisShare.copy(context, generateWhatsAppReportText(rows, filter.category ?: "הכל", ui.query), "WhatsApp Report"); onMessage("הסיכום הועתק ✓")
                                 })
-                                DropdownMenuItem(text = { Text("רשימת משמרות") }, onClick = { copyMenu = false; KisShare.copy(context, KisShare.text(rows)); onMessage("הועתק ✓") })
                             }
                         }
                     }
@@ -172,8 +176,8 @@ fun KisHistory(
         }
         AnimatedVisibility(ui.selecting, modifier = Modifier.align(Alignment.BottomCenter), enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
             SelectionBar(selectedRows, rows, ui,
-                onShare = { KisShare.share(context, KisShare.text(selectedRows), "שיתוף משמרות") },
-                onCopy = { KisShare.copy(context, KisShare.text(selectedRows)); onMessage("הועתק ✓ · מוכן להדבקה בוואטסאפ"); ui.selection = emptySet() },
+                onShare = { KisShare.shareOrCopy(context, WorkShareText.summary(selectedRows), "שיתוף משמרות", onMessage); ui.selection = emptySet() },
+                onCopy = { KisShare.copy(context, WorkShareText.summary(selectedRows)); onMessage("הועתק ✓ · מוכן להדבקה בוואטסאפ"); ui.selection = emptySet() },
                 onPaid = { paid -> viewModel.setPaid(ui.selection, paid); settings.haptic(KisSettings.Haptic.SUCCESS); onMessage(if (paid) "סומן כשולם ✓" else "סומן כלא שולם"); ui.selection = emptySet() },
                 onBulk = { bulkOpen = true },
                 onDelete = { confirmDelete = true })
@@ -272,11 +276,13 @@ private fun Totals(rows: List<WorkEntry>, onPending: () -> Unit) {
 @Composable
 private fun SelectionBar(selected: List<WorkEntry>, rows: List<WorkEntry>, ui: HistoryUi, onShare: () -> Unit, onCopy: () -> Unit, onPaid: (Boolean) -> Unit, onBulk: () -> Unit, onDelete: () -> Unit) {
     val c = Kis.colors
+    val density = androidx.compose.ui.platform.LocalDensity.current
     val pending = selected.count { !it.payKnown && !WorkPay.isJob(it) }
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(c.ink).navigationBarsPadding()
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(c.bar)
+        .onSizeChanged { ui.barHeight = with(density) { it.height.toDp() } }.navigationBarsPadding()
         .padding(horizontal = 16.dp, vertical = 12.dp).testTag("selection_bar"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("נבחרו ${selected.size}", style = KisType.title, color = c.onInk, modifier = Modifier.weight(1f).testTag("selection_count"))
+            Text("נבחרו ${selected.size}", style = KisType.title, color = c.onBar, modifier = Modifier.weight(1f).testTag("selection_count"))
             BarButton(if (selected.size < rows.size) "בחירת הכול" else "ניקוי") { ui.selection = if (selected.size < rows.size) rows.map { it.id }.toSet() else emptySet() }
             BarButton("ביטול", tag = "selection_cancel") { ui.selection = emptySet() }
         }
@@ -294,9 +300,9 @@ private fun SelectionBar(selected: List<WorkEntry>, rows: List<WorkEntry>, ui: H
 @Composable
 private fun BarButton(text: String, tag: String? = null, onClick: () -> Unit) {
     val c = Kis.colors
-    Box(Modifier.heightIn(min = 42.dp).clip(RoundedCornerShape(12.dp)).background(c.onInk.copy(alpha = 0.16f)).kisClick(onClick = onClick)
+    Box(Modifier.heightIn(min = 42.dp).clip(RoundedCornerShape(12.dp)).background(c.onBar.copy(alpha = 0.14f)).kisClick(onClick = onClick)
         .then(if (tag != null) Modifier.testTag(tag) else Modifier).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-        Text(text, style = KisType.label, color = c.onInk, maxLines = 1)
+        Text(text, style = KisType.label, color = c.onBar, maxLines = 1)
     }
 }
 

@@ -77,11 +77,11 @@ class DistributionUiTest {
         ui.onNodeWithTag("shift_detail").assertIsDisplayed()
         snap("v2-detail")
         Espresso.pressBack()
-        // Settings from the import shortcut; replay is an overlay and keeps the feedback draft.
+        // Settings (third page) from the import shortcut; replay is an overlay and keeps the feedback draft.
         ui.activity.intentActionFlow.value = "com.example.ACTION_IMPORT_EXCEL"
         ui.waitForIdle()
         ui.onNodeWithTag("settings_root").assertIsDisplayed()
-        for (section in listOf("עבודה", "ברירות מחדל", "מראה", "גיבוי ונתונים", "משוב ותקלות")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
+        for (section in listOf("עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
         snap("v2-settings")
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("Synthetic feedback draft")
         Espresso.closeSoftKeyboard()
@@ -89,7 +89,10 @@ class DistributionUiTest {
         ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
         ui.onNodeWithTag("onboarding_skip").performClick()
         ui.onNodeWithTag("feedback_message").performScrollTo().assertTextContains("Synthetic feedback draft")
-        ui.onNodeWithTag("settings_close").performClick()
+        // Settings is the third swipe page: Home leaves it.
+        ui.onNodeWithTag("settings_button").assertIsSelected()
+        ui.onNodeWithTag("tab_0").performClick()
+        ui.waitForIdle()
         ui.onNodeWithTag("settings_root").assertDoesNotExist()
         val target = InstrumentationRegistry.getInstrumentation().targetContext
         kotlinx.coroutines.runBlocking {

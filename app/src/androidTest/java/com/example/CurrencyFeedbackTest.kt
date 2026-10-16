@@ -87,6 +87,6 @@ class CurrencyFeedbackTest {
         assertEquals("₪", runBlocking { dao.getLocalPreferences() }.first { it.name == "categoryCurrency:RC15 new default" }.value)
         assertEquals(before, runBlocking { dao.getEntriesList() })
         runBlocking { dao.setLocalPreference(WorkLocalPreference("defaultCategory", "ILS category")) }
-        ui.onNodeWithTag("settings_close").performClick()
+        ui.onNodeWithTag("tab_0").performClick()
     }
 }

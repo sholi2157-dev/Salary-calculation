@@ -83,10 +83,9 @@ fun KisApp(
     val live = liveStart?.let { LiveShift(it, liveCategory, liveRate, liveCurrency) }
     val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.firstOrNull()?.name ?: ""
 
-    // Home and history stay one swipeable pager, as before (RTL swipe = next tab).
-    val pager = rememberPagerState(pageCount = { 2 })
+    // Home, history and settings are one swipeable pager (RTL swipe = next tab).
+    val pager = rememberPagerState(pageCount = { 3 })
     val history = remember { HistoryUi() }
-    var settingsOpen by rememberSaveable { mutableStateOf(false) }
     var editorJson by rememberSaveable { mutableStateOf<String?>(null) }
     var editorBaseId by rememberSaveable { mutableStateOf<Int?>(null) }
     var editorAi by rememberSaveable { mutableStateOf(false) }
@@ -113,17 +112,17 @@ fun KisApp(
 
     LaunchedEffect(request) {
         when (request) {
-            ShellRequest.IMPORT -> { settingsOpen = true; onRequestHandled() }
+            ShellRequest.IMPORT -> { pager.scrollToPage(2); onRequestHandled() }
             ShellRequest.HISTORY_SEARCH -> { pager.scrollToPage(1); history.searching = true; onRequestHandled() }
             null -> Unit
         }
     }
     LaunchedEffect(message?.id) { if (message != null) { delay(if (message?.action != null) 6000 else 2600); message = null } }
-    BackHandler(enabled = !settingsOpen && editorJson == null && pager.currentPage != 0 && !history.selecting && !history.searching) { go(0) }
+    BackHandler(enabled = editorJson == null && pager.currentPage != 0 && !history.selecting && !history.searching) { go(0) }
 
     Box(modifier.fillMaxSize().background(c.bg)) {
         HorizontalPager(state = pager, modifier = Modifier.fillMaxSize().testTag("main_screen_pager"), beyondViewportPageCount = 1,
-            key = { if (it == 0) "home" else "history" }) { page ->
+            key = { listOf("home", "history", "settings")[it] }) { page ->
             when (page) {
                 0 -> KisHome(entries, categories, live, navHeight,
                     onStartLive = { startLive = true },
@@ -137,8 +136,9 @@ fun KisApp(
                         pendingBulk = history.selection.isNotEmpty()
                     },
                     onAllHistory = { go(1) },
-                    onSettings = { settingsOpen = true })
-                else -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) })
+                    onSettings = { go(2) })
+                1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) })
+                else -> KisSettingsPage(viewModel, categories, onClose = { go(0) }, onReplayTour = onReplayTour, onSignIn = onSignIn, bottomInset = navHeight)
             }
         }
         // Floating pill navigation; hidden while choosing shifts (the selection bar takes its place).
@@ -146,32 +146,38 @@ fun KisApp(
             enter = fadeIn(tween(140)) + slideInVertically { it / 2 }, exit = fadeOut(tween(140)) + slideOutVertically { it / 2 }) {
             // Measured outside the system-bar padding: lists and messages must clear the pill on 3-button navigation too.
             Box(Modifier.onSizeChanged { navHeight = with(density) { it.height.toDp() } + 8.dp }.navigationBarsPadding().padding(bottom = 14.dp)) {
-                PillNav(pager.currentPage, onPage = { go(it) }, onSettings = { settingsOpen = true }, onAdd = { openNew() })
+                PillNav(pager.currentPage, onPage = { go(it) }, onSettings = { go(2) }, onAdd = { openNew() })
             }
         }
         message?.let { m ->
-            Row(Modifier.align(Alignment.BottomCenter).padding(bottom = navHeight, start = 16.dp, end = 16.dp)
-                .clip(RoundedCornerShape(99.dp)).background(c.ink).padding(start = 18.dp, end = 6.dp).heightIn(min = 48.dp).testTag("kis_message"),
+            // Above the selection bar while choosing shifts, so it never covers its buttons.
+            val above = if (history.selecting && pager.currentPage == 1) history.barHeight + 8.dp else navHeight
+            Row(Modifier.align(Alignment.BottomCenter).padding(bottom = above, start = 16.dp, end = 16.dp)
+                .clip(RoundedCornerShape(99.dp)).background(c.bar).padding(start = 18.dp, end = 6.dp).heightIn(min = 48.dp).testTag("kis_message"),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(m.text, style = KisType.label, color = c.onInk, modifier = Modifier.padding(vertical = 10.dp))
+                Text(m.text, style = KisType.label, color = c.onBar, modifier = Modifier.padding(vertical = 10.dp))
                 if (m.action != null) Text(m.action, style = KisType.label, color = Workplaces[3].accent(true),
                     modifier = Modifier.clip(RoundedCornerShape(99.dp)).kisClick { m.onAction?.invoke(); message = null }.testTag("kis_message_action").padding(horizontal = 12.dp, vertical = 10.dp))
                 else Spacer(Modifier.width(12.dp))
             }
-        }
-        AnimatedVisibility(settingsOpen, enter = slideInHorizontally { -it } + fadeIn(), exit = slideOutHorizontally { -it } + fadeOut()) {
-            BackHandler { settingsOpen = false }
-            KisSettingsPage(viewModel, categories, onClose = { settingsOpen = false }, onReplayTour = onReplayTour, onSignIn = onSignIn)
         }
         AnimatedVisibility(editorJson != null, enter = slideInVertically(tween(320)) { it / 6 } + fadeIn(tween(200)), exit = fadeOut(tween(160))) {
             val json = editorJson
             if (json != null) {
                 val base = editorBaseId?.let { id -> entries.firstOrNull { it.id == id } }
                 if (editorBaseId == null || base != null) key(json.hashCode(), editorBaseId) {
-                    KisEditorPage(viewModel, EntryDraft.fromJson(json), base, categories, entries, workers,
-                        onClose = { editorJson = null; editorBaseId = null },
-                        onSaved = { text, undo -> if (undo != null) say(text, "ביטול", undo) else say(text) },
-                        onDeleted = onDeleted, startInAi = editorAi)
+                    val page = @Composable {
+                        KisEditorPage(viewModel, EntryDraft.fromJson(json), base, categories, entries, workers,
+                            onClose = { editorJson = null; editorBaseId = null },
+                            onSaved = { text, undo -> if (undo != null) say(text, "ביטול", undo) else say(text) },
+                            onDeleted = onDeleted, startInAi = editorAi)
+                    }
+                    // Editing is the same page as adding, shown as a framed pop-up over the app so it is clearly an edit.
+                    if (base == null) page()
+                    else Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).systemBarsPadding().padding(horizontal = 10.dp, vertical = 10.dp)) {
+                        val frame = RoundedCornerShape(26.dp)
+                        Box(Modifier.fillMaxSize().clip(frame).border(3.dp, EditFrame, frame).testTag("edit_frame")) { page() }
+                    }
                 }
             }
         }
@@ -195,6 +201,9 @@ fun KisApp(
     }
 }
 
+/** The frame colour that marks an edit (the same amber as the "שונה" tag). */
+val EditFrame = Workplaces[3].from
+
 @Composable
 internal fun PillNav(page: Int, onPage: (Int) -> Unit, onSettings: () -> Unit, onAdd: () -> Unit) {
     val c = Kis.colors
@@ -209,7 +218,7 @@ internal fun PillNav(page: Int, onPage: (Int) -> Unit, onSettings: () -> Unit, o
         }
         item("בית", page == 0, "tab_0") { onPage(0) }
         item("היסטוריה", page == 1, "tab_1", Modifier.coachTarget(CoachTarget.HISTORY)) { onPage(1) }
-        item("הגדרות", false, "settings_button") { onSettings() }
+        item("הגדרות", page == 2, "settings_button") { onSettings() }
         Box(Modifier.size(48.dp).clip(CircleShape).background(Workplaces[0].accent(c.dark)).kisClick(onClick = onAdd).testTag("add_entry_button")
             .semantics { this.contentDescription = "משמרת חדשה" }, contentAlignment = Alignment.Center) {
             Icon(Icons.Rounded.Add, null, tint = Workplaces[0].accentInk(c.dark), modifier = Modifier.size(28.dp))

@@ -30,9 +30,8 @@ class V2PayTest {
         assertEquals(emptyMap<String, Double>(), WorkMoney.totals(listOf(shift(0.0, known = false))))
         val report = WorkMoney.report(rows)
         assertTrue(report, report.contains("2 משמרות עוד בלי תעריף"))
-        val share = KisShare.text(rows)
-        assertTrue(share, share.contains("תעריף חסר"))
-        assertTrue(share, share.contains("2 בלי תעריף"))
+        val share = com.example.data.WorkShareText.personal(rows[1])
+        assertTrue(share, share.contains("ממתין להשלמת תעריף"))
         assertFalse(share, share.contains("₪0"))
     }
 

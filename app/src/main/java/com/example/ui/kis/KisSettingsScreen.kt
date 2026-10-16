@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -26,10 +27,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,7 +46,7 @@ import com.example.ui.WorkViewModel
 import com.example.ui.coachTarget
 
 @Composable
-fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, onClose: () -> Unit, onReplayTour: () -> Unit, onSignIn: () -> Unit = {}) {
+fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, onClose: () -> Unit, onReplayTour: () -> Unit, onSignIn: () -> Unit = {}, bottomInset: Dp = 0.dp) {
     val c = Kis.colors
     val settings = Kis.settings
     val context = LocalContext.current
@@ -62,51 +65,44 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     val saveBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let { viewModel.saveBackup(context, it) } }
 
     Column(Modifier.fillMaxSize().background(c.bg).testTag("settings_root")) {
-        Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.AutoMirrored.Rounded.ArrowForward, "חזרה", tint = c.ink, modifier = Modifier.size(48.dp).clip(CircleShape).kisClick(onClick = onClose).testTag("settings_close").padding(12.dp))
-            Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.semantics { heading() })
-        }
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 32.dp).navigationBarsPadding().imePadding()) {
+        Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = bottomInset + 8.dp).imePadding()) {
             Group("עבודה") {
-                Row_("מקום ברירת מחדל", "נבחר אוטומטית במשמרת חדשה ובטיימר", tag = "default_category_picker", onClick = { pickingDefault = true }) {
-                    Text(defaultCategory, style = KisType.label, color = c.ink)
+                Row_("מקום ברירת מחדל", "נבחר אוטומטית במשמרת חדשה ובטיימר · כאן גם מוסיפים ועורכים מקומות", tag = "default_category_picker",
+                    modifier = Modifier.coachTarget(CoachTarget.CATEGORIES), onClick = { pickingDefault = true },
+                    leading = { if (defaultCategory.isNotEmpty()) Box(Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(workplaceOf(defaultCategory, categories).brush)) }) {
+                    Text(defaultCategory, style = KisType.label, color = c.ink, maxLines = 1)
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
                 }
-                Column(Modifier.coachTarget(CoachTarget.CATEGORIES)) {
-                    categories.forEach { cat ->
-                        val w = workplaceOf(cat.name, categories)
-                        Row_(cat.name, "${KisFormat.money(cat.defaultRate, viewModel.categoryCurrency(cat.name))} לשעה", tag = "category_row_${cat.name}", onClick = { editing = cat.name },
-                            leading = { Box(Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(w.brush)) }) {}
-                    }
-                    Row_("+ מקום עבודה", "שם, תעריף ומטבע", tag = "add_category_btn", onClick = { adding = true }) {}
-                }
-            }
-            Group("ברירות מחדל") {
                 Row_("מטבע ברירת מחדל", "למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה") {
                     CurrencyToggle(defaultCurrency, { viewModel.updateDefaultCurrency(it) }, "settings_currency")
                 }
-                Row_("רטט במגע", "רטט קצר בלחיצות, ורטט שונה לשמירה ולמחיקה") { KisSwitch(settings.haptics, settings::updateHaptics, Modifier.testTag("haptics_switch"), label = "רטט במגע") }
             }
-            Group("מראה") {
+            Group("מראה ותחושה") {
                 Row_("ערכת צבעים", when (settings.theme) { ThemeChoice.SYSTEM -> "לפי הגדרת הטלפון"; ThemeChoice.DARK -> "כהה תמיד"; ThemeChoice.LIGHT -> "בהיר תמיד" }) {
                     KisSegmented(ThemeChoice.entries.map { it to it.label }, settings.theme, settings::updateTheme, tagPrefix = "theme")
                 }
+                Row_("רטט במגע", "רטט קצר בלחיצות, ורטט שונה לשמירה ולמחיקה") { KisSwitch(settings.haptics, settings::updateHaptics, Modifier.testTag("haptics_switch"), label = "רטט במגע") }
             }
             Group("התראות") {
                 Row_("התראת משמרת פעילה", "טיימר וסכום שנצבר בהתראה קבועה בזמן שהשעון רץ") {
                     KisSwitch(serviceNotification, { viewModel.updateServiceNotificationEnabled(it) }, Modifier.testTag("service_notification_switch"), label = "התראת משמרת פעילה")
                 }
             }
-            Group("רישום במילים (AI)") {
-                Row_("מפתח Gemini אישי", if (hasKey) "פעיל עם המפתח שלך" else "לא חובה. בלעדיו כל השאר עובד", tag = "ai_key_row", onClick = { aiSheet = true },
+            Group("עזרה וכלים") {
+                Row_("רישום במילים (AI) · מפתח Gemini אישי", if (hasKey) "פעיל עם המפתח שלך" else "לא חובה. בלעדיו כל השאר עובד", tag = "ai_key_row", onClick = { aiSheet = true },
                     modifier = Modifier.coachTarget(CoachTarget.API)) {
                     Text("?", style = KisType.label, color = c.muted, modifier = Modifier.size(32.dp).clip(CircleShape).background(c.sunk).kisClick { aiHelp = true }
                         .semantics { contentDescription = "מה זה מפתח אישי" }.padding(top = 6.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
-            }
-            if (BuildConfig.LOCAL_DISTRIBUTION) Group("עדכונים") {
-                Column(Modifier.padding(vertical = 8.dp)) {
-                    Text("גרסה ${BuildConfig.VERSION_NAME}", style = KisType.caption, color = c.muted)
-                    WorkUpdateSettings()
+                KisDivider()
+                Row_("הצגת ההדרכה מחדש", "סיור קצר במקומות החשובים", tag = "replay_onboarding", onClick = onReplayTour) {}
+                if (BuildConfig.LOCAL_DISTRIBUTION) {
+                    KisDivider()
+                    Column(Modifier.padding(vertical = 8.dp).testTag("settings_updates")) {
+                        Text("עדכונים · גרסה ${BuildConfig.VERSION_NAME}", style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
+                        WorkUpdateSettings()
+                    }
                 }
             }
             Group("גיבוי ונתונים") {
@@ -129,9 +125,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 }, Modifier.fillMaxWidth().padding(vertical = 10.dp), height = 48.dp, tag = "settings_import_action_btn")
             }
             Group("משוב ותקלות") { Box(Modifier.padding(vertical = 10.dp)) { FeedbackForm() } }
-            Group("הדרכה") {
-                Row_("הצגת ההדרכה מחדש", "סיור קצר במקומות החשובים", tag = "replay_onboarding", onClick = onReplayTour) {}
-            }
             if (BuildConfig.ACCOUNTS_ENABLED || viewModel.owner.uid != null) Group("חשבון") {
                 val session by viewModel.currentUserSession.collectAsStateWithLifecycle()
                 Row_(if (session == null) "התחברות" else "התנתקות", session?.email ?: "שימוש מקומי — ללא סנכרון", tag = "settings_sign_out_btn", onClick = {
@@ -150,16 +143,24 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     }
 
     if (pickingDefault) KisSheet(onDismiss = { pickingDefault = false }, tag = "default_category_sheet") {
-        Text("מקום ברירת מחדל", style = KisType.title, color = c.ink)
+        Text("מקומות עבודה", style = KisType.title, color = c.ink)
+        Text("נגיעה במקום הופכת אותו לברירת המחדל. העיפרון פותח עריכה.", style = KisType.caption, color = c.muted)
         categories.forEach { cat ->
-            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(14.dp)).kisClick { viewModel.setDefaultCategory(cat.name); pickingDefault = false }
-                .testTag("default_category_option_${cat.name}").padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            val on = cat.name == defaultCategory
+            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(if (on) c.sunk else androidx.compose.ui.graphics.Color.Transparent)
+                .kisClick { viewModel.setDefaultCategory(cat.name); pickingDefault = false }.semantics { selected = on }
+                .testTag("default_category_option_${cat.name}").padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.size(24.dp).clip(RoundedCornerShape(8.dp)).background(workplaceOf(cat.name, categories).brush))
-                Text(cat.name, style = KisType.body, color = c.ink, modifier = Modifier.weight(1f))
-                if (cat.name == defaultCategory) Icon(Icons.Rounded.Check, "נבחר", tint = c.ink)
+                Column(Modifier.weight(1f)) {
+                    Text(cat.name, style = KisType.body.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), color = c.ink)
+                    Text("${KisFormat.money(cat.defaultRate, viewModel.categoryCurrency(cat.name))} לשעה${if (on) " · ברירת מחדל" else ""}", style = KisType.caption, color = c.muted)
+                }
+                if (on) Icon(Icons.Rounded.Check, "ברירת מחדל", tint = c.ink)
+                Icon(Icons.Rounded.Edit, "עריכת ${cat.name}", tint = c.ink, modifier = Modifier.size(48.dp).clip(CircleShape)
+                    .kisClick { pickingDefault = false; editing = cat.name }.testTag("category_row_${cat.name}").padding(13.dp))
             }
         }
-        KisButton("הוספת מקום ובחירה בו", { pickingDefault = false; addingDefault = true; adding = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "default_category_add")
+        KisButton("+ מקום עבודה חדש", { pickingDefault = false; addingDefault = true; adding = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "default_category_add")
     }
     editing?.let { name -> categories.firstOrNull { it.name == name }?.let { cat ->
         EditWorkplaceSheet(cat, categories, viewModel, onDismiss = { editing = null })

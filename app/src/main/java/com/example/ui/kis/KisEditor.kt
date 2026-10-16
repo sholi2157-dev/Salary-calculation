@@ -31,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -100,8 +101,9 @@ fun KisEditorPage(
     val changed = d.toJson() != original
     val check = d.check()
     val workplace = workplaceOf(d.category, categories)
-    val topBg by animateColorAsState(if (d.editing) c.edit else workplace.from, tween(250), label = "top")
-    val onTop = if (d.editing) c.editInk else workplace.on
+    // Adding and editing look the same (the workplace colours); an edit is told apart by its frame (KisApp).
+    val topBg by animateColorAsState(workplace.from, tween(250), label = "top")
+    val onTop = workplace.on
 
     fun commitBuf(): Boolean {
         if (buf.isEmpty()) return true
@@ -125,7 +127,12 @@ fun KisEditorPage(
     }
     fun key(k: String) {
         val time = target == KeyTarget.START || target == KeyTarget.END
-        if (k == "⌫") { buf = buf.dropLast(1); if (!time) setNumber(target, buf); return }
+        if (k == "⌫") {
+            // Backspace edits the shown value; it never silently wipes a saved value in one tap.
+            buf = (if (buf.isEmpty() && !time) numberValue(target) else buf).dropLast(1)
+            if (!time) setNumber(target, buf)
+            return
+        }
         if (time) {
             buf = (buf + k).take(4)
             if (buf.length == 4 && commitBuf() && target == KeyTarget.START) target = KeyTarget.END
@@ -178,7 +185,7 @@ fun KisEditorPage(
     val imeOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     Column(Modifier.fillMaxSize().background(c.bg).imePadding().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
         // ---------------- coloured top ----------------
-        Column(Modifier.fillMaxWidth().background(if (d.editing) Brush.linearGradient(listOf(topBg, topBg)) else workplace.brush)
+        Column(Modifier.fillMaxWidth().background(workplace.brush)
             .statusBarsPadding().padding(horizontal = 16.dp).padding(top = 10.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TopPill(if (d.editing) "סגירה" else "ביטול", onTop, tag = "editor_close") { close() }
@@ -193,7 +200,7 @@ fun KisEditorPage(
                 // While the system keyboard is open (note, worker name) the clock, ruler and places fold away,
                 // the mode tabs and total stay, so the form and the Save bar keep their room on small phones.
                 if (!imeOpen && d.editing && base != null) WasBanner(base, changed, onTop)
-                ModeTabs(d.mode, onTop, workplace.from.takeIf { !d.editing } ?: c.edit) { m ->
+                ModeTabs(d.mode, onTop, workplace.from) { m ->
                     commitBuf()
                     d = d.withMode(m)
                     target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> if (d.start == null && m == EntryMode.CLOCK) KeyTarget.START else KeyTarget.END }
@@ -239,8 +246,13 @@ fun KisEditorPage(
             })
             return@Column
         }
+        // A soft fade from the coloured top into the page instead of a hard edge.
+        Box(Modifier.fillMaxWidth().height(18.dp).drawBehind {
+            drawRect(workplace.brush)
+            drawRect(Brush.verticalGradient(listOf(c.bg.copy(alpha = 0f), c.bg)))
+        })
         // ---------------- details ----------------
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 14.dp).testTag("editor_scroll"),
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 2.dp, bottom = 14.dp).testTag("editor_scroll"),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (d.mode == EntryMode.JOB) JobNote(d.notes, history) { d = d.copy(notes = it) }
             if (d.start == null && d.mode == EntryMode.CLOCK) {
@@ -288,8 +300,9 @@ fun KisEditorPage(
             Spacer(Modifier.height(8.dp))
         }
         // ---------------- keypad or save bar ----------------
-        if (pad) Keypad(time = target == KeyTarget.START || target == KeyTarget.END, onKey = ::key,
-            onDone = { commitBuf(); pad = false }, saveLabel = saveLabel(d, changed), canSave = check.canSave && (!d.editing || changed) && !saving, onSave = ::save)
+        // The keypad only enters values; the shift is saved from the save bar alone.
+        if (pad) Keypad(time = target == KeyTarget.START || target == KeyTarget.END, label = keyLabel(target, d.currency), value = shown(target),
+            typing = buf.isNotEmpty(), onKey = ::key, onDone = { if (commitBuf()) pad = false })
         else SaveBar(check, saveLabel(d, changed), check.canSave && (!d.editing || changed) && !saving, ::save)
     }
 
@@ -548,12 +561,28 @@ private fun SmallNumberField(value: String, label: String, modifier: Modifier, o
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
 }
 
+private fun keyLabel(t: KeyTarget, currency: String) = when (t) {
+    KeyTarget.START -> "שעת התחלה"; KeyTarget.END -> "שעת סיום"; KeyTarget.HOURS -> "שעות"; KeyTarget.RATE -> "תעריף לשעה ($currency)"
+    KeyTarget.BONUS -> "בונוס ($currency)"; KeyTarget.AMOUNT -> "סכום ($currency)"; KeyTarget.BREAK -> "הפסקה (דקות)"
+}
+
+/** Digits with a clear display of the field and what is being typed, and one "אישור" that only closes it. */
 @Composable
-private fun Keypad(time: Boolean, onKey: (String) -> Unit, onDone: () -> Unit, saveLabel: String, canSave: Boolean, onSave: () -> Unit) {
+private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean, onKey: (String) -> Unit, onDone: () -> Unit) {
     val c = Kis.colors
     val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", if (time) "00" else ".", "0", "⌫")
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)).background(c.surface).navigationBarsPadding()
-        .padding(horizontal = 12.dp, vertical = 10.dp).testTag("keypad")) {
+        .padding(horizontal = 12.dp, vertical = 10.dp).testTag("keypad"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(14.dp)).background(c.sunk).padding(horizontal = 14.dp)
+            .semantics(mergeDescendants = true) {}.testTag("keypad_display"), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(label, style = KisType.label, color = c.ink)
+                Text(if (typing) "מקלידים ערך חדש" else if (value.isEmpty() || value == "--:--") "עוד לא הוזן" else "הקלדה מחליפה את הערך",
+                    style = KisType.micro, color = c.muted)
+            }
+            Text(value.ifEmpty { "—" }, style = KisType.amount.copy(fontSize = 26.sp, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum"),
+                color = if (typing) c.ink else c.muted, maxLines = 1, modifier = Modifier.testTag("keypad_value"))
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // RTL: the action column sits on the left edge (end), digits read 1-2-3 from the right.
             Column(Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -570,16 +599,9 @@ private fun Keypad(time: Boolean, onKey: (String) -> Unit, onDone: () -> Unit, s
                     }
                 }
             }
-            Column(Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(14.dp)).border(1.5.dp, c.line, RoundedCornerShape(14.dp))
-                    .kisClick(onClick = onDone).testTag("keypad_done"), contentAlignment = Alignment.Center) {
-                    Text("סגירת\nמקלדת ✓", style = KisType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.ink, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                }
-                Box(Modifier.fillMaxWidth().height(172.dp).clip(RoundedCornerShape(14.dp)).background(c.ink).graphicsAlpha(if (canSave) 1f else 0.35f)
-                    .kisClick(enabled = canSave, haptic = null, onClick = onSave).testTag("save_shift_button"), contentAlignment = Alignment.Center) {
-                    Text(saveLabel.replace(" ", "\n"), style = KisType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 17.sp), color = c.onInk,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                }
+            Box(Modifier.weight(1.2f).height(232.dp).clip(RoundedCornerShape(14.dp)).background(c.bar)
+                .kisClick(onClick = onDone).testTag("keypad_done").semantics { contentDescription = "אישור" }, contentAlignment = Alignment.Center) {
+                Text("אישור", style = KisType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 18.sp), color = c.onBar)
             }
         }
     }

@@ -35,6 +35,7 @@ import com.example.data.WorkCategory
 import com.example.data.WorkEntry
 import com.example.data.WorkEntryEdits
 import com.example.data.WorkPay
+import com.example.data.WorkShareText
 import com.example.ui.CoachTarget
 import com.example.ui.WorkViewModel
 import com.example.ui.coachTarget
@@ -55,11 +56,11 @@ fun ShiftDetailSheet(entry: WorkEntry, categories: List<WorkCategory>, viewModel
         ShiftDetailContent(entry, categories,
             onPaid = { viewModel.setPaid(listOf(entry.id), it) },
             onEdit = { onEdit(entry) },
-            onShare = { KisShare.share(context, KisShare.text(listOf(entry)), "שיתוף משמרת") },
-            onCopy = { KisShare.copy(context, KisShare.text(listOf(entry))); onMessage("הועתק ✓") },
+            onShare = { KisShare.shareOrCopy(context, WorkShareText.personal(entry), "שיתוף משמרת", onMessage) },
+            onCopy = { KisShare.copy(context, WorkShareText.personal(entry)); onMessage("הועתק ✓ · מוכן להדבקה") },
             onDelete = { confirmDelete = true },
             onCompleteRate = { if (WorkPay.isJob(entry)) onEdit(entry) else completing = true },
-            group = { GroupDetail(entry, viewModel) })
+            group = { GroupDetail(entry, viewModel, onMessage) })
     }
     if (confirmDelete) KisSheet(onDismiss = { confirmDelete = false }) {
         Text("למחוק את המשמרת?", style = KisType.title, color = c.ink)
@@ -138,7 +139,7 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
         if (entry.isGroupShift) group()
         Row(Modifier.fillMaxWidth().coachTarget(CoachTarget.SHARE).testTag("entry_actions_${entry.id}"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             KisAction("עריכה", Icons.Rounded.Edit, onEdit, Modifier.weight(1f), primary = true, tag = "edit_entry_btn_${entry.id}")
-            KisAction("שיתוף", Icons.Rounded.Share, onShare, Modifier.weight(1f), tag = "share_entry_btn_${entry.id}")
+            KisAction(if (entry.isGroupShift) "החלק שלי" else "שיתוף", Icons.Rounded.Share, onShare, Modifier.weight(1f), tag = "share_entry_btn_${entry.id}")
             KisAction("העתקה", Icons.Rounded.ContentCopy, onCopy, Modifier.weight(1f), tag = "copy_entry_btn_${entry.id}")
             KisAction("מחיקה", Icons.Rounded.DeleteOutline, onDelete, Modifier.weight(1f), danger = true, tag = "delete_entry_btn_${entry.id}")
         }
@@ -146,7 +147,7 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
 }
 
 @Composable
-private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel) {
+private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (String) -> Unit) {
     val c = Kis.colors
     val context = LocalContext.current
     val workers = WorkPay.workers(entry)
@@ -169,10 +170,10 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel) {
                         style = KisType.caption.copy(textDirection = TextDirection.Rtl), color = c.muted)
                 }
                 Icon(Icons.Rounded.Share, "שתף פרטי משמרת לעובד", tint = c.ink, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
-                    .kisClick { KisShare.share(context, KisShare.workerText(entry, w), "שליחה ל${w.name}") }.padding(11.dp))
+                    .kisClick { KisShare.shareOrCopy(context, WorkShareText.worker(entry, w), "שליחה ל${w.name}", onMessage) }.padding(11.dp))
             }
         }
-        KisButton("שליחת סיכום למעסיק", { KisShare.share(context, KisShare.groupSummary(entry), "סיכום לקבלן") }, Modifier.fillMaxWidth(),
+        KisButton("דו״ח לקבלן (כל הקבוצה)", { KisShare.shareOrCopy(context, WorkShareText.employer(entry), "סיכום לקבלן", onMessage) }, Modifier.fillMaxWidth(),
             KisButtonKind.GHOST, icon = Icons.Rounded.ReceiptLong, height = 48.dp, tag = "group_summary_share")
     }
 }

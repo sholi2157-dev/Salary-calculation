@@ -83,6 +83,9 @@ class KisUiTest {
         // Keypad: 0900 sets the start and moves on to the end; 1730 sets the end.
         ui.onNodeWithTag("clock_start").performClick()
         ui.onNodeWithTag("keypad").assertIsDisplayed()
+        // The keypad shows which field is being typed and has no Save of its own (no accidental saves).
+        ui.onNodeWithTag("keypad_display").assertTextContains("שעת התחלה", substring = true)
+        ui.onNodeWithTag("save_shift_button").assertDoesNotExist()
         listOf("0", "9", "0", "0", "1", "7", "3", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
         ui.onNodeWithTag("clock_start").assertTextContains("09:00", substring = true)
         ui.onNodeWithTag("clock_end").assertTextContains("17:30", substring = true)
@@ -153,7 +156,10 @@ class KisUiTest {
         // Now change the rate: the amount follows hours × rate.
         ui.runOnIdle { base = kept; open = true }
         ui.onNodeWithTag("editor_rate").performScrollTo().performClick()
+        ui.onNodeWithTag("keypad_display").assertTextContains("תעריף לשעה", substring = true)
+        ui.onNodeWithTag("keypad_value", useUnmergedTree = true).assertTextEquals("52")
         listOf("6", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
+        ui.onNodeWithTag("keypad_value", useUnmergedTree = true).assertTextEquals("60")
         ui.onNodeWithTag("keypad_done").performClick()
         ui.onNodeWithTag("save_shift_button").performClick()
         waitFor(5_000) { rows().single().hourlyRate == 60.0 }
@@ -251,8 +257,17 @@ class KisUiTest {
         shot("detail")
     }
 
-    @Test fun homeHeroWalletAndPendingLightAndDark() {
-        seed()
+    @Test fun homeShowsTodayWeekAndAllTimeWithoutFutureOrUnknownPay() {
+        val now = System.currentTimeMillis()
+        val today = EntryDraft.startOfDay(now) + 60_000L
+        runBlocking {
+            dao.insertEntry(WorkEntry(category = "מסעדה", date = today, isTimeRange = false, hours = 6.0, hourlyRate = 50.0, totalEarnings = 300.0))
+            dao.insertEntry(WorkEntry(category = "שיעורים", date = today, isTimeRange = false, hours = 2.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = false))
+            dao.insertEntry(WorkEntry(category = "הובלות", date = now - 40 * 86_400_000L, isTimeRange = false, hours = 3.0, hourlyRate = 0.0, totalEarnings = 180.0, kind = WorkEntry.KIND_JOB, currency = "$"))
+            dao.insertEntry(WorkEntry(category = "מסעדה", date = now - 50 * 86_400_000L, isTimeRange = false, hours = 2.0, hourlyRate = 50.0, totalEarnings = 100.0))
+            // Planned for later: never counted as earned.
+            dao.insertEntry(WorkEntry(category = "מסעדה", date = now + 3 * 86_400_000L, isTimeRange = false, hours = 5.0, hourlyRate = 50.0, totalEarnings = 250.0))
+        }
         var dark by mutableStateOf(false)
         ui.setContent {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
@@ -263,6 +278,11 @@ class KisUiTest {
         }
         ui.onNodeWithTag("home_hero").assertIsDisplayed()
         ui.onNodeWithTag("home_total_₪", useUnmergedTree = true).assertTextEquals("₪300")
+        ui.onNodeWithTag("home_week_count").assertTextEquals("2 משמרות השבוע")
+        ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).assertTextEquals("₪300")
+        ui.onNodeWithTag("home_all_₪", useUnmergedTree = true).assertTextEquals("₪400")
+        ui.onNodeWithTag("home_all_$", useUnmergedTree = true).assertTextEquals("$180")
+        ui.onNodeWithTag("home_all_count", useUnmergedTree = true).assertTextEquals("4 משמרות")
         ui.onNodeWithTag("pending_flag").assertIsDisplayed()
         ui.onNodeWithTag("live_shift_fab").assertIsDisplayed()
         shot("home-light")
@@ -279,7 +299,7 @@ class KisUiTest {
                 KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
             }
         }
-        listOf("עבודה", "ברירות מחדל", "מראה", "התראות", "רישום במילים (AI)", "גיבוי ונתונים", "משוב ותקלות", "הדרכה").forEach {
+        listOf("עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
         }
         ui.onNodeWithTag("theme_LIGHT").performScrollTo().performClick()

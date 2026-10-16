@@ -68,20 +68,25 @@ fun KisHome(
 ) {
     val c = Kis.colors
     val now = remember(entries) { System.currentTimeMillis() }
-    val monthKey = HistoryFilter.monthKey(now)
-    val month = remember(entries, monthKey) { entries.filter { HistoryFilter.monthKey(it.date) == monthKey } }
-    val minutesByCat = remember(month) { month.groupBy { it.category }.mapValues { (_, l) -> l.sumOf { it.hours } }.toList().sortedByDescending { it.second } }
-    val lead = minutesByCat.firstOrNull()?.first
+    // Nothing dated later than now counts as earned "until now".
+    val done = remember(entries, now) { entries.filter { it.date <= now } }
+    val week = remember(done) { val from = KisHistoryLogic.weekStart(now); done.filter { it.date >= from } }
+    val today = remember(done) { val from = EntryDraft.startOfDay(now); done.filter { it.date >= from } }
+    val month = remember(done) { val key = HistoryFilter.monthKey(now); done.filter { HistoryFilter.monthKey(it.date) == key } }
+    val hoursByCat = remember(week) { week.groupBy { it.category }.mapValues { (_, l) -> l.sumOf { it.hours } }.toList().sortedByDescending { it.second } }
+    val lead = hoursByCat.firstOrNull()?.first ?: done.maxByOrNull { it.date }?.category
     val glow = lead?.let { workplaceOf(it, categories).accent(c.dark) } ?: Workplaces[0].accent(c.dark)
     Box(Modifier.fillMaxSize()) {
-        Canvas(Modifier.fillMaxWidth().height(380.dp)) {
-            drawRect(Brush.radialGradient(listOf(glow.copy(alpha = if (c.dark) 0.42f else 0.24f), Color.Transparent),
-                center = Offset(size.width * 0.15f, 0f), radius = size.width * 1.1f))
+        // A soft glow that fades out completely inside the screen: no visible edge anywhere.
+        Canvas(Modifier.fillMaxSize()) {
+            val radius = minOf(size.width * 1.1f, size.height * 0.75f)
+            drawRect(Brush.radialGradient(listOf(glow.copy(alpha = if (c.dark) 0.40f else 0.22f), glow.copy(alpha = if (c.dark) 0.12f else 0.06f), Color.Transparent),
+                center = Offset(size.width * 0.15f, 0f), radius = radius))
         }
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 16.dp)
-            .padding(top = 12.dp, bottom = bottomInset + 24.dp).testTag("dashboard_scroll_container")) {
-            Hello(onSettings)
-            Hero(month, minutesByCat, categories, onPending)
+            .padding(top = 12.dp, bottom = bottomInset).testTag("dashboard_scroll_container")) {
+            Hello()
+            Hero(week, today, done, hoursByCat, categories, onPending)
             NowRow(live, onStartLive, onStopLive, onCancelLive, onLiveCurrency)
             val recent = remember(entries) { entries.sortedByDescending { it.createdAt }.take(3) }
             if (recent.isNotEmpty()) {
@@ -102,7 +107,7 @@ private fun greeting(): String = when (Calendar.getInstance().get(Calendar.HOUR_
 }
 
 @Composable
-private fun Hello(onSettings: () -> Unit) {
+private fun Hello() {
     val c = Kis.colors
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         KisLogo()
@@ -114,36 +119,53 @@ private fun Hello(onSettings: () -> Unit) {
 }
 
 @Composable
-private fun Hero(month: List<WorkEntry>, minutesByCat: List<Pair<String, Double>>, categories: List<WorkCategory>, onPending: () -> Unit) {
+private fun Hero(week: List<WorkEntry>, today: List<WorkEntry>, all: List<WorkEntry>, hoursByCat: List<Pair<String, Double>>, categories: List<WorkCategory>, onPending: () -> Unit) {
     val c = Kis.colors
-    val totals = WorkPay.totals(month).toList().sortedByDescending { it.second }
-    val pending = WorkPay.pending(month).count { !WorkPay.isJob(it) }
+    val totals = WorkPay.totals(week).toList().sortedByDescending { it.second }
+    val pending = WorkPay.pending(all).count { !WorkPay.isJob(it) }
     Column(Modifier.padding(top = 22.dp, bottom = 4.dp).testTag("home_hero")) {
-        Text("${KisFormat.MONTHS[Calendar.getInstance().get(Calendar.MONTH)]} עד עכשיו", style = KisType.label.copy(fontWeight = FontWeight.Medium), color = c.muted)
+        Text("השבוע", style = KisType.label.copy(fontWeight = FontWeight.Medium), color = c.muted)
         Row(Modifier.padding(top = 6.dp).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-            if (totals.isEmpty()) MoneyText(0.0, "₪", KisType.hero, modifier = Modifier.testTag("home_total"))
+            if (totals.isEmpty()) MoneyText(0.0, "₪", KisType.hero, modifier = Modifier.testTag("home_total"), color = c.ink)
             totals.forEachIndexed { i, (cur, v) ->
                 MoneyText(v, cur, if (i == 0) KisType.hero else KisType.hero.copy(fontSize = 30.sp), color = if (i == 0) c.ink else c.muted,
                     modifier = Modifier.testTag("home_total_$cur"))
             }
         }
-        val total = minutesByCat.sumOf { it.second }
+        val total = hoursByCat.sumOf { it.second }
         if (total > 0) Row(Modifier.padding(top = 16.dp, bottom = 10.dp).fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            minutesByCat.forEach { (cat, h) ->
+            hoursByCat.forEach { (cat, h) ->
                 Box(Modifier.weight((h / total).toFloat().coerceAtLeast(0.01f)).fillMaxHeight().clip(RoundedCornerShape(3.dp)).background(workplaceOf(cat, categories).accent(c.dark)))
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("${KisFormat.hours(month.sumOf { it.hours })} שעות", style = KisType.caption, color = c.muted)
-            Text("${month.size} משמרות", style = KisType.caption, color = c.muted)
-            minutesByCat.take(3).forEach { (cat, _) ->
+        Row(Modifier.padding(top = if (total > 0) 0.dp else 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(if (week.size == 1) "משמרת אחת השבוע" else "${week.size} משמרות השבוע", style = KisType.caption, color = c.muted, modifier = Modifier.testTag("home_week_count"))
+            hoursByCat.take(3).forEach { (cat, _) ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     Box(Modifier.size(9.dp).clip(RoundedCornerShape(3.dp)).background(workplaceOf(cat, categories).accent(c.dark)))
                     Text(cat, style = KisType.caption, color = c.muted, maxLines = 1)
                 }
             }
         }
+        Row(Modifier.padding(top = 16.dp).fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatTile("היום", today, null, Modifier.weight(1f).fillMaxHeight(), "home_today")
+            StatTile("מכל הזמנים", all, if (all.size == 1) "משמרת אחת" else "${all.size} משמרות", Modifier.weight(1f).fillMaxHeight(), "home_all")
+        }
         if (pending > 0) PendingFlag(pending, onPending, Modifier.padding(top = 12.dp))
+    }
+}
+
+/** A small total: one line per currency (₪ and $ are never added together). */
+@Composable
+private fun StatTile(label: String, rows: List<WorkEntry>, caption: String?, modifier: Modifier, tag: String) {
+    val c = Kis.colors
+    val totals = WorkPay.totals(rows).toList().sortedByDescending { it.second }
+    Column(modifier.clip(RoundedCornerShape(18.dp)).background(c.surface.copy(alpha = if (c.dark) 0.72f else 0.86f)).border(1.dp, c.line, RoundedCornerShape(18.dp))
+        .padding(horizontal = 14.dp, vertical = 12.dp).semantics(mergeDescendants = true) {}.testTag(tag), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, style = KisType.caption, color = c.muted)
+        if (totals.isEmpty()) MoneyText(0.0, "₪", KisType.title, modifier = Modifier.testTag("${tag}_₪"), color = c.ink)
+        totals.forEach { (cur, v) -> MoneyText(v, cur, KisType.title, modifier = Modifier.testTag("${tag}_$cur"), color = c.ink) }
+        if (caption != null) Text(caption, style = KisType.caption, color = c.muted, modifier = Modifier.testTag("${tag}_count"))
     }
 }
 

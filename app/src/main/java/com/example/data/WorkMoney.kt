@@ -19,7 +19,8 @@ object WorkMoney {
     }
     fun report(entries: List<WorkEntry>, workerName: String? = null): String {
         if (workerName == null) return entries.groupBy { it.category }.entries.joinToString("\n\n") { (name, rows) ->
-            "$name | ${rows.sumOf { it.hours }} שעות\n${summary(rows)}${pendingLine(rows)}"
+            // A category whose pay is all still unknown gets no amount line (never "0.00").
+            "$name | ${WorkShareText.hours(rows.sumOf { it.hours })} שעות" + (if (totals(rows).isEmpty()) "" else "\n${summary(rows)}") + pendingLine(rows)
         }
         val rows = entries.flatMap { entry ->
             WorkPay.workers(entry).filter { it.name == workerName }.map {
@@ -27,7 +28,7 @@ object WorkMoney {
                 entry.copy(hours = it.hours, totalEarnings = pay ?: 0.0, isPaid = it.isPaid, payKnown = pay != null)
             }
         }
-        return "$workerName | ${rows.sumOf { it.hours }} שעות\n${summary(rows)}\n" +
+        return "$workerName | ${WorkShareText.hours(rows.sumOf { it.hours })} שעות\n" + (if (totals(rows).isEmpty()) "" else "${summary(rows)}\n") +
             rows.joinToString("\n") { "${it.category}: ${if (it.payKnown) format(it.totalEarnings, it.currency) else "תעריף חסר"} — ${if (it.isPaid) "שולם" else "ממתין"}" }
     }
 }

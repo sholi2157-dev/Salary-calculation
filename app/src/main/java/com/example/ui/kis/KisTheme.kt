@@ -40,6 +40,8 @@ data class KisColors(
     val bg: Color, val surface: Color, val sunk: Color, val ink: Color, val muted: Color, val line: Color,
     val pending: Color, val pendingSoft: Color, val paid: Color, val danger: Color,
     val edit: Color, val editInk: Color, val nav: Color, val navInk: Color, val navOn: Color, val navOnInk: Color,
+    /** Floating bars and messages: dark in both themes (never a white slab in dark mode). */
+    val bar: Color, val onBar: Color,
 ) {
     /** Text/icon colour on an ink (primary action) surface. */
     val onInk get() = bg
@@ -50,6 +52,7 @@ val KisLight = KisColors(
     bg = Color(0xFFEDF0F5), surface = Color.White, sunk = Color(0xFFE2E6EE), ink = Color(0xFF0D1015), muted = Color(0xFF5D6573), line = Color(0xFFD6DBE4),
     pending = Color(0xFF9A5000), pendingSoft = Color(0xFFFFEBC7), paid = Color(0xFF0B7F60), danger = Color(0xFFC2362B),
     edit = Color(0xFF0D1015), editInk = Color.White, nav = Color(0xFF0D1015), navInk = Color(0xB3EDF0F5), navOn = Color(0xFFEDF0F5), navOnInk = Color(0xFF0D1015),
+    bar = Color(0xFF0D1015), onBar = Color(0xFFEDF0F5),
 )
 
 val KisDark = KisColors(
@@ -57,6 +60,7 @@ val KisDark = KisColors(
     bg = Color(0xFF121212), surface = Color(0xFF1E1E1E), sunk = Color(0xFF2A2A2A), ink = Color.White, muted = Color(0xFFB3B3B3), line = Color(0xFF303030),
     pending = Color(0xFFFFC266), pendingSoft = Color(0xFF3A2D12), paid = Color(0xFF34C79A), danger = Color(0xFFFF8A7A),
     edit = Color(0xFF2A2A2A), editInk = Color(0xFFF1F3F7), nav = Color(0xFF181818), navInk = Color(0xFFB3B3B3), navOn = Color.White, navOnInk = Color(0xFF121212),
+    bar = Color(0xFF2C2E33), onBar = Color(0xFFF1F3F7),
 )
 
 /** The 8 fixed workplace colours. Blocks run from [from] (amount side) to the darker [to] (name side). */
