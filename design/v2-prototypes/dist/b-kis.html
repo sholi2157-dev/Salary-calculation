@@ -7,8 +7,10 @@
 :root{
   --bg:#EDF0F5; --surface:#FFFFFF; --sunk:#E2E6EE; --ink:#0D1015; --muted:#5D6573; --line:#D6DBE4;
   --accent:#0D1015; --on-accent:#FFFFFF;
-  --k0:#CC4224; --k1:#0B7F60; --k2:#2F4FC4; --k3:#F2B32B; --k4:#8A3FA8; --k5:#0F7891; --k6:#C93767; --k7:#5E7A1F;
+  --k0:#3F51D4; --k1:#0B7F60; --k2:#C93767; --k3:#F2B32B; --k4:#8A3FA8; --k5:#0F7891; --k6:#5E7A1F; --k7:#8B5A3C;
   --k0-ink:#FFFFFF; --k1-ink:#FFFFFF; --k2-ink:#FFFFFF; --k3-ink:#2A1C00; --k4-ink:#FFFFFF; --k5-ink:#FFFFFF; --k6-ink:#FFFFFF; --k7-ink:#FFFFFF;
+  --k0-bg:var(--k0); --k1-bg:var(--k1); --k2-bg:var(--k2); --k3-bg:var(--k3); --k4-bg:var(--k4); --k5-bg:var(--k5); --k6-bg:var(--k6); --k7-bg:var(--k7);
+  --k0-on:var(--k0-ink); --k1-on:var(--k1-ink); --k2-on:var(--k2-ink); --k3-on:var(--k3-ink); --k4-on:var(--k4-ink); --k5-on:var(--k5-ink); --k6-on:var(--k6-ink); --k7-on:var(--k7-ink);
   --edit:#0D1015; --edit-ink:#FFFFFF; --nav:#0D1015; --nav-ink:rgb(237 240 245/.7); --nav-on:#EDF0F5; --nav-on-ink:#0D1015;
   --warn:#B25E00; --warn-soft:#FFEBC7;
   --font-body:"Rubik",system-ui,"Segoe UI",Arial,sans-serif;
@@ -16,17 +18,21 @@
   --toast-radius:99px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#090B10; --surface:#14181F; --sunk:#1D222B; --ink:#F1F3F7; --muted:#98A1AF; --line:#262C37; --accent:#F1F3F7; --on-accent:#090B10;
-  --k0:#FF7A5C; --k1:#34C79A; --k2:#7D96FF; --k3:#FFC54D; --k4:#C88BE6; --k5:#4FC3DB; --k6:#FF7FA6; --k7:#A6C95A;
-  --k0-ink:#1A0B06; --k1-ink:#03140E; --k2-ink:#0A0F24; --k3-ink:#2A1C00; --k4-ink:#1E0B27; --k5-ink:#04171C; --k6-ink:#280812; --k7-ink:#141A05;
-  --edit:#232934; --edit-ink:#F1F3F7; --nav:#1A1F28; --nav-ink:#98A1AF; --nav-on:#F1F3F7; --nav-on-ink:#090B10;
-  --warn:#FFC266; --warn-soft:#3A2808; color-scheme:dark}}
+  --bg:#1E222B; --surface:#272C37; --sunk:#313744; --ink:#F2F4F8; --muted:#A9B1BF; --line:#3B4250; --accent:#F2F4F8; --on-accent:#1E222B;
+  --k0:#9DABFF; --k1:#5FD3AE; --k2:#FF8FB2; --k3:#FFCF6B; --k4:#D2A0EC; --k5:#6CCFE4; --k6:#B5D46E; --k7:#E0B08E;
+  --k0-ink:#141833; --k1-ink:#05211A; --k2-ink:#2E0A18; --k3-ink:#2A1C00; --k4-ink:#24102E; --k5-ink:#06222A; --k6-ink:#1A2206; --k7-ink:#2A180C;
+  --k0-bg:#464D6B; --k1-bg:#365756; --k2-bg:#5F4657; --k3-bg:#5F5645; --k4-bg:#534A66; --k5-bg:#395664; --k6-bg:#4C5845; --k7-bg:#574E4E;
+  --k0-on:#F4F6FA; --k1-on:#F4F6FA; --k2-on:#F4F6FA; --k3-on:#F4F6FA; --k4-on:#F4F6FA; --k5-on:#F4F6FA; --k6-on:#F4F6FA; --k7-on:#F4F6FA;
+  --edit:#323846; --edit-ink:#F2F4F8; --nav:#2B303C; --nav-ink:#A9B1BF; --nav-on:#F2F4F8; --nav-on-ink:#1E222B;
+  --warn:#FFC266; --warn-soft:#4A3A1E; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#090B10; --surface:#14181F; --sunk:#1D222B; --ink:#F1F3F7; --muted:#98A1AF; --line:#262C37; --accent:#F1F3F7; --on-accent:#090B10;
-  --k0:#FF7A5C; --k1:#34C79A; --k2:#7D96FF; --k3:#FFC54D; --k4:#C88BE6; --k5:#4FC3DB; --k6:#FF7FA6; --k7:#A6C95A;
-  --k0-ink:#1A0B06; --k1-ink:#03140E; --k2-ink:#0A0F24; --k3-ink:#2A1C00; --k4-ink:#1E0B27; --k5-ink:#04171C; --k6-ink:#280812; --k7-ink:#141A05;
-  --edit:#232934; --edit-ink:#F1F3F7; --nav:#1A1F28; --nav-ink:#98A1AF; --nav-on:#F1F3F7; --nav-on-ink:#090B10;
-  --warn:#FFC266; --warn-soft:#3A2808; color-scheme:dark}
+  --bg:#1E222B; --surface:#272C37; --sunk:#313744; --ink:#F2F4F8; --muted:#A9B1BF; --line:#3B4250; --accent:#F2F4F8; --on-accent:#1E222B;
+  --k0:#9DABFF; --k1:#5FD3AE; --k2:#FF8FB2; --k3:#FFCF6B; --k4:#D2A0EC; --k5:#6CCFE4; --k6:#B5D46E; --k7:#E0B08E;
+  --k0-ink:#141833; --k1-ink:#05211A; --k2-ink:#2E0A18; --k3-ink:#2A1C00; --k4-ink:#24102E; --k5-ink:#06222A; --k6-ink:#1A2206; --k7-ink:#2A180C;
+  --k0-bg:#464D6B; --k1-bg:#365756; --k2-bg:#5F4657; --k3-bg:#5F5645; --k4-bg:#534A66; --k5-bg:#395664; --k6-bg:#4C5845; --k7-bg:#574E4E;
+  --k0-on:#F4F6FA; --k1-on:#F4F6FA; --k2-on:#F4F6FA; --k3-on:#F4F6FA; --k4-on:#F4F6FA; --k5-on:#F4F6FA; --k6-on:#F4F6FA; --k7-on:#F4F6FA;
+  --edit:#323846; --edit-ink:#F2F4F8; --nav:#2B303C; --nav-ink:#A9B1BF; --nav-on:#F2F4F8; --nav-on-ink:#1E222B;
+  --warn:#FFC266; --warn-soft:#4A3A1E; color-scheme:dark}
 /* Shared prototype chrome: toast + test panel. Uses each direction's tokens. */
 #core-toast{position:fixed;inset-inline:0;margin-inline:auto;bottom:calc(96px + env(safe-area-inset-bottom,0px));width:max-content;max-width:calc(100% - 32px);display:flex;gap:16px;align-items:center;padding:12px 16px;border-radius:var(--toast-radius,12px);background:var(--ink);color:var(--bg);font:500 14px/1.4 var(--font-body);box-shadow:0 8px 30px rgb(0 0 0/.25);transform:translateY(16px);opacity:0;pointer-events:none;transition:transform .25s,opacity .25s;z-index:80}
 #core-toast.show{transform:none;opacity:1;pointer-events:auto}
@@ -94,8 +100,8 @@ h2 button{font:500 14px var(--font-body);background:none;border:0;color:var(--mu
 .card .t{font-weight:600}
 .card .s{color:var(--muted);font-size:13px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card .m{grid-row:span 2;text-align:start;font-family:var(--font-display);font-size:19px}
-.card.plan{background:transparent;border:1.5px dashed var(--pass)}
-.card.plan .av{background:transparent;border:1.5px dashed var(--pass);color:var(--pass)}
+.card.plan{background:transparent;border:1.5px dashed var(--acc)}
+.card.plan .av{background:transparent;border:1.5px dashed var(--acc);color:var(--acc)}
 .card.sel{border-color:var(--ink);background:var(--sunk)}
 .card .acts{grid-column:1/-1;display:flex;gap:8px;margin-top:10px}
 .card .acts button{flex:1;min-height:42px;border-radius:12px;border:0;background:var(--sunk);font-weight:600;cursor:pointer}
@@ -169,15 +175,19 @@ nav.pill .plus{background:var(--k0);color:var(--k0-ink);width:48px;padding:0;jus
 .wk input[type=number]{min-height:38px;border:1.5px solid var(--line);border-radius:10px;padding-inline:8px;background:var(--bg)}
 .dsel{display:flex;gap:6px}
 .dsel button{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);background:none;font-weight:600;cursor:pointer}
-.dsel button[aria-pressed=true]{background:var(--pass);color:var(--pass-ink);border-color:var(--pass)}
+.dsel button[aria-pressed=true]{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
 
 /* Round 3: ruler, edit mode, details, share */
-.ruler{position:relative;height:58px;margin-top:4px;touch-action:none}
-.rbase{position:absolute;inset-inline:0;top:22px;height:12px;border-radius:6px;background:color-mix(in oklab,var(--pass-ink) 22%,transparent)}
-#rsegs i{position:absolute;top:22px;height:12px;border-radius:6px;background:var(--pass-ink)}
-.rh{position:absolute;top:10px;width:46px;height:36px;margin-inline-start:-23px;border-radius:12px;border:2px solid var(--pass-ink);background:var(--pass);color:var(--pass-ink);font:700 11px var(--font-body);cursor:grab;touch-action:none;box-shadow:0 3px 10px rgb(0 0 0/.18);padding:0}
+.ruler{position:relative;height:86px;margin-top:2px;touch-action:none}
+.rbase{position:absolute;inset-inline:0;top:32px;height:12px;border-radius:6px;background:color-mix(in oklab,var(--pass-ink) 22%,transparent)}
+#rsegs i{position:absolute;top:32px;height:12px;border-radius:6px;background:var(--pass-ink)}
+.rh{position:absolute;top:0;width:52px;height:28px;margin-inline-start:-26px;border-radius:12px;border:2px solid var(--pass-ink);background:var(--pass);color:var(--pass-ink);font:700 11px var(--font-body);cursor:grab;touch-action:none;box-shadow:0 3px 10px rgb(0 0 0/.18);padding:0}
+.rh[data-h=end]{top:46px}
+.rh::after{content:"";position:absolute;inset-inline-start:50%;width:2px;height:6px;background:currentColor;opacity:.6;transform:translateX(50%)}
+.rh[data-h=start]::after{top:100%}
+.rh[data-h=end]::after{bottom:100%}
 .rh[aria-pressed=true]{background:var(--pass-ink);color:var(--pass)}
-.rt{position:absolute;top:42px;font:500 10px var(--font-body);opacity:.75;transform:translateX(50%);pointer-events:none}
+.rt{position:absolute;top:72px;font:500 10px var(--font-body);opacity:.75;transform:translateX(50%);pointer-events:none}
 .nudges{display:flex;gap:6px;align-items:center;font-weight:600;font-size:13px}
 .nudges span{opacity:.85;min-width:44px}
 .nudges button{flex:1;min-height:38px;border-radius:10px;border:0;background:color-mix(in oklab,var(--pass-ink) 16%,transparent);color:inherit;font:600 14px var(--font-body);cursor:pointer;font-variant-numeric:tabular-nums}
@@ -767,7 +777,7 @@ const Core = (() => {
 (() => {
 const C = Core, $ = s => document.querySelector(s), E = C.esc, S = () => C.state;
 C.load('b-kis'); C.applyTheme();
-const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="19" fill="var(--ink)"/><g stroke-linecap="round" stroke-width="7"><path d="M19 44V30" stroke="var(--k0)"/><path d="M32 44V20" stroke="var(--k3)"/><path d="M45 44V25" stroke="var(--k1)"/></g><path d="M19 44h26" stroke="var(--bg)" stroke-width="7" stroke-linecap="round"/></svg>`;
+const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="19" fill="#0D1015"/><g stroke-linecap="round" stroke-width="7"><path d="M19 44V30" stroke="#7C8CFF"/><path d="M32 44V20" stroke="#FFC54D"/><path d="M45 44V25" stroke="#34C79A"/></g><path d="M19 44h26" stroke="#EDF0F5" stroke-width="7" stroke-linecap="round"/></svg>`;
 const IC = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
   share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
@@ -775,7 +785,7 @@ const IC = {
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
 };
 const hue = id => C.cat(id).hue;
-const pv = id => `--pass:var(--k${hue(id)});--pass-ink:var(--k${hue(id)}-ink)`;
+const pv = id => { const h = hue(id); return `--pass:var(--k${h}-bg);--pass-ink:var(--k${h}-on);--acc:var(--k${h});--acc-ink:var(--k${h}-ink)`; };
 let view = 'home', filter = 'all', month = C.ym(C.today()), openPass = null, openOcc = null, sel = new Set(), d = null, tgt = 'end', buf = '', more = false, pad = false, confirmLeave = false, confirmCancel = false;
 const mny = (v, c) => `<span class="cur">${E(c)}</span>${E(C.money(v, "", true))}`;
 const amt = (v, c) => `<span class="num">${mny(v, c)}</span>`;
