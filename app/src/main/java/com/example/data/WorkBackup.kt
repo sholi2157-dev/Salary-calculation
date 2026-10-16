@@ -5,7 +5,8 @@ import org.json.JSONObject
 
 /** Versioned transfer format shared with the website; legacy exports remain readable. */
 object WorkBackup {
-    data class Contents(val categories: List<WorkCategory>, val entries: List<WorkEntry>, val workers: List<WorkerDirectory>, val localPreferences: Map<String, String> = emptyMap())
+    data class Contents(val categories: List<WorkCategory>, val entries: List<WorkEntry>, val workers: List<WorkerDirectory>, val localPreferences: Map<String, String> = emptyMap(),
+                        val series: List<ShiftSeries> = emptyList(), val exceptions: List<SeriesException> = emptyList())
 
     /**
      * Version 3 only when a 2.0 feature is actually used (unknown pay, bonus, fixed-price job,
@@ -17,8 +18,10 @@ object WorkBackup {
             WorkPay.workers(e).any { it.bonus > 0 }
     }
 
-    fun encode(categories: List<WorkCategory>, entries: List<WorkEntry>, workers: List<WorkerDirectory>, localPreferences: Map<String, String> = emptyMap()): String {
-        val v3 = needsVersion3(entries)
+    fun encode(categories: List<WorkCategory>, entries: List<WorkEntry>, workers: List<WorkerDirectory>, localPreferences: Map<String, String> = emptyMap(),
+               series: List<ShiftSeries> = emptyList(), exceptions: List<SeriesException> = emptyList()): String {
+        // Weekly plans are a 2.0 feature: their presence alone makes the file version 3.
+        val v3 = needsVersion3(entries) || series.isNotEmpty() || exceptions.isNotEmpty()
         return JSONObject().apply {
             put("formatVersion", if (v3) 3 else 2)
             if (localPreferences.isNotEmpty()) put("androidLocalPreferences", JSONObject(localPreferences))
@@ -54,8 +57,19 @@ object WorkBackup {
                     }
                 }) }
             })
+            if (v3) {
+                put("series", JSONArray().apply { series.forEach { s -> put(JSONObject().put("id", s.id).put("category", s.category).put("daysMask", s.daysMask)
+                    .put("startTime", s.startTime).put("endTime", s.endTime).put("hourlyRate", s.hourlyRate ?: JSONObject.NULL).put("currency", s.currency)
+                    .put("fromDate", s.fromDate).put("untilDate", s.untilDate).put("createdAt", s.createdAt)) } })
+                put("seriesExceptions", JSONArray().apply { exceptions.forEach { x -> put(JSONObject().put("seriesId", x.seriesId).put("date", x.date)
+                    .put("cancelled", x.cancelled).put("hold", x.hold).put("startTime", x.startTime ?: JSONObject.NULL).put("endTime", x.endTime ?: JSONObject.NULL)
+                    .put("rateOverridden", x.rateOverridden).put("hourlyRate", x.hourlyRate ?: JSONObject.NULL)) } })
+            }
         }.toString(2)
     }
+
+    private val isoDate = Regex("^\\d{4}-\\d{2}-\\d{2}$")
+    private fun JSONObject.nullableText(key: String): String? = if (!has(key) || isNull(key)) null else getString(key)
 
     fun decode(text: String): Contents {
         val root = JSONObject(text)
@@ -118,9 +132,30 @@ object WorkBackup {
             if (key == "defaultCategory") require(value.isNotBlank())
             else require(value in listOf("₪", "$")) { "Invalid preference currency" }
         }
+        val seriesArray = root.optJSONArray("series") ?: JSONArray()
+        val series = (0 until seriesArray.length()).map { i ->
+            val s = seriesArray.getJSONObject(i)
+            val days = s.getInt("daysMask")
+            require(s.getString("id").isNotBlank() && days in 1..127) { "Invalid series" }
+            require(com.example.domain.V2Rules.isTime(s.getString("startTime")) && com.example.domain.V2Rules.isTime(s.getString("endTime"))) { "Invalid series time" }
+            require(isoDate.matches(s.getString("fromDate")) && isoDate.matches(s.getString("untilDate"))) { "Invalid series dates" }
+            val currency = s.optString("currency", "₪")
+            require(currency == "₪" || currency == "$") { "Unknown currency" }
+            require(s.getString("category").isNotBlank()) { "Missing category" }
+            ShiftSeries(s.getString("id"), s.getString("category"), days, s.getString("startTime"), s.getString("endTime"), s.nullableRate("hourlyRate"),
+                currency, s.getString("fromDate"), s.getString("untilDate"), s.optLong("createdAt", 0L))
+        }
+        val exceptionArray = root.optJSONArray("seriesExceptions") ?: JSONArray()
+        val exceptions = (0 until exceptionArray.length()).map { i ->
+            val x = exceptionArray.getJSONObject(i)
+            require(isoDate.matches(x.getString("date"))) { "Invalid exception date" }
+            listOf(x.nullableText("startTime"), x.nullableText("endTime")).forEach { require(it == null || com.example.domain.V2Rules.isTime(it)) { "Invalid exception time" } }
+            SeriesException(x.getString("seriesId"), x.getString("date"), x.optBoolean("cancelled"), x.optBoolean("hold"),
+                x.nullableText("startTime"), x.nullableText("endTime"), x.optBoolean("rateOverridden"), x.nullableRate("hourlyRate"))
+        }
         return Contents(categories, entries, (0 until workers.length()).map {
             WorkerDirectory(name = workers.getJSONObject(it).getString("name"))
-        }, preferences)
+        }, preferences, series, exceptions)
     }
 
     private fun JSONObject.nullableRate(key: String): Double? {

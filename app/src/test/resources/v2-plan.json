@@ -1,0 +1,453 @@
+{
+ "about": "Expected weekly-plan behaviour for חישוב שכר 2.0 (Android V2PlanTest; the website must match). Times are local wall-clock. Where Android deliberately differs from the old prototype engine the case says so in 'note'.",
+ "occurrences": [
+  {
+   "name": "exceptions_cancel_override_confirmed_and_status",
+   "series": [
+    {
+     "id": "S1",
+     "category": "מסעדה",
+     "days": [
+      0,
+      2
+     ],
+     "start": "09:00",
+     "end": "17:00",
+     "rate": 50,
+     "currency": "₪",
+     "from": "2026-10-04",
+     "until": "2026-10-13"
+    }
+   ],
+   "exceptions": [
+    {
+     "seriesId": "S1",
+     "date": "2026-10-06",
+     "cancelled": true
+    },
+    {
+     "seriesId": "S1",
+     "date": "2026-10-11",
+     "start": "10:00",
+     "end": "14:00",
+     "rateOverridden": true,
+     "rate": null
+    }
+   ],
+   "confirmed": [
+    "S1@2026-10-13"
+   ],
+   "range": [
+    "2026-10-01",
+    "2026-10-31"
+   ],
+   "now": "2026-10-11 12:00",
+   "expected": [
+    {
+     "key": "S1@2026-10-04",
+     "start": "09:00",
+     "end": "17:00",
+     "rate": 50,
+     "status": "AWAITING",
+     "edited": false
+    },
+    {
+     "key": "S1@2026-10-11",
+     "start": "10:00",
+     "end": "14:00",
+     "rate": null,
+     "status": "PLANNED",
+     "edited": true
+    }
+   ]
+  },
+  {
+   "name": "overnight_ends_next_morning_before",
+   "series": [
+    {
+     "id": "S2",
+     "category": "בר",
+     "days": [
+      5
+     ],
+     "start": "22:00",
+     "end": "06:00",
+     "rate": 40,
+     "currency": "$",
+     "from": "2026-10-09",
+     "until": "2026-10-09"
+    }
+   ],
+   "exceptions": [],
+   "confirmed": [],
+   "range": [
+    "2026-10-01",
+    "2026-10-31"
+   ],
+   "now": "2026-10-10 05:59",
+   "expected": [
+    {
+     "key": "S2@2026-10-09",
+     "start": "22:00",
+     "end": "06:00",
+     "rate": 40,
+     "status": "PLANNED",
+     "edited": false
+    }
+   ]
+  },
+  {
+   "name": "overnight_ends_next_morning_at_end",
+   "series": [
+    {
+     "id": "S2",
+     "category": "בר",
+     "days": [
+      5
+     ],
+     "start": "22:00",
+     "end": "06:00",
+     "rate": 40,
+     "currency": "$",
+     "from": "2026-10-09",
+     "until": "2026-10-09"
+    }
+   ],
+   "exceptions": [],
+   "confirmed": [],
+   "range": [
+    "2026-10-01",
+    "2026-10-31"
+   ],
+   "now": "2026-10-10 06:00",
+   "expected": [
+    {
+     "key": "S2@2026-10-09",
+     "start": "22:00",
+     "end": "06:00",
+     "rate": 40,
+     "status": "AWAITING",
+     "edited": false
+    }
+   ]
+  },
+  {
+   "name": "range_limits_and_series_bounds",
+   "series": [
+    {
+     "id": "S5",
+     "category": "מסעדה",
+     "days": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "start": "08:00",
+     "end": "09:00",
+     "rate": null,
+     "currency": "₪",
+     "from": "2026-10-30",
+     "until": "2026-11-02"
+    }
+   ],
+   "exceptions": [],
+   "confirmed": [],
+   "range": [
+    "2026-10-31",
+    "2026-11-01"
+   ],
+   "now": "2026-10-01 00:00",
+   "expected": [
+    {
+     "key": "S5@2026-10-31",
+     "start": "08:00",
+     "end": "09:00",
+     "rate": null,
+     "status": "PLANNED",
+     "edited": false
+    },
+    {
+     "key": "S5@2026-11-01",
+     "start": "08:00",
+     "end": "09:00",
+     "rate": null,
+     "status": "PLANNED",
+     "edited": false
+    }
+   ]
+  }
+ ],
+ "toConfirm": [
+  {
+   "name": "held_days_wait_for_manual",
+   "series": [
+    {
+     "id": "S6",
+     "category": "מסעדה",
+     "days": [
+      1
+     ],
+     "start": "09:00",
+     "end": "10:00",
+     "rate": 50,
+     "currency": "₪",
+     "from": "2026-10-05",
+     "until": "2026-10-12"
+    }
+   ],
+   "exceptions": [
+    {
+     "seriesId": "S6",
+     "date": "2026-10-05",
+     "hold": true
+    }
+   ],
+   "confirmed": [],
+   "range": [
+    "2026-10-01",
+    "2026-10-31"
+   ],
+   "now": "2026-10-20 00:00",
+   "expected": [
+    "S6@2026-10-12"
+   ]
+  }
+ ],
+ "toEntry": [
+  {
+   "name": "overnight_known_rate",
+   "occurrence": {
+    "key": "S2@2026-10-09",
+    "seriesId": "S2",
+    "category": "בר",
+    "date": "2026-10-09",
+    "start": "22:00",
+    "end": "06:00",
+    "rate": 40,
+    "currency": "$"
+   },
+   "auto": true,
+   "expected": {
+    "hours": 8.0,
+    "hourlyRate": 40,
+    "totalEarnings": 320,
+    "payKnown": true,
+    "isTimeRange": true,
+    "startTime": "22:00",
+    "endTime": "06:00",
+    "seriesKey": "S2@2026-10-09",
+    "autoConfirmed": true,
+    "currency": "$",
+    "category": "בר",
+    "dateLocal": "2026-10-09 22:00"
+   }
+  },
+  {
+   "name": "unknown_rate_is_not_zero_pay",
+   "occurrence": {
+    "key": "S5@2026-10-31",
+    "seriesId": "S5",
+    "category": "מסעדה",
+    "date": "2026-10-31",
+    "start": "08:00",
+    "end": "09:30",
+    "rate": null,
+    "currency": "₪"
+   },
+   "auto": false,
+   "expected": {
+    "hours": 1.5,
+    "hourlyRate": 0,
+    "totalEarnings": 0,
+    "payKnown": false,
+    "isTimeRange": true,
+    "startTime": "08:00",
+    "endTime": "09:30",
+    "seriesKey": "S5@2026-10-31",
+    "autoConfirmed": false,
+    "currency": "₪",
+    "category": "מסעדה",
+    "dateLocal": "2026-10-31 08:00"
+   }
+  }
+ ],
+ "preview": [
+  {
+   "name": "overlapping_day_is_not_created",
+   "note": "The prototype only counted clashes; Android does not create them.",
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "from": "2026-10-14",
+   "until": "2026-10-16",
+   "start": "09:00",
+   "end": "12:00",
+   "saved": [
+    {
+     "dateLocal": "2026-10-15 11:00",
+     "start": "11:00",
+     "end": "13:00"
+    },
+    {
+     "dateLocal": "2026-10-16 12:00",
+     "start": "12:00",
+     "end": "13:00"
+    }
+   ],
+   "expected": {
+    "dates": [
+     "2026-10-14",
+     "2026-10-15",
+     "2026-10-16"
+    ],
+    "clashes": [
+     "2026-10-15"
+    ]
+   }
+  }
+ ],
+ "split": [
+  {
+   "name": "from_now_on_moves_later_exceptions",
+   "note": "The prototype left later exceptions on the old series.",
+   "series": {
+    "id": "S3",
+    "category": "מסעדה",
+    "days": [
+     1
+    ],
+    "start": "09:00",
+    "end": "17:00",
+    "rate": 50,
+    "currency": "₪",
+    "from": "2026-10-01",
+    "until": "2026-10-31"
+   },
+   "exceptions": [
+    {
+     "seriesId": "S3",
+     "date": "2026-10-05",
+     "cancelled": true
+    },
+    {
+     "seriesId": "S3",
+     "date": "2026-10-19",
+     "cancelled": true
+    },
+    {
+     "seriesId": "S3",
+     "date": "2026-10-26",
+     "start": "10:00",
+     "end": "12:00"
+    }
+   ],
+   "date": "2026-10-19",
+   "newId": "N",
+   "start": "08:00",
+   "end": "16:00",
+   "expected": {
+    "oldUntil": "2026-10-18",
+    "newFrom": "2026-10-19",
+    "newStart": "08:00",
+    "newEnd": "16:00",
+    "moved": [
+     {
+      "seriesId": "N",
+      "date": "2026-10-19",
+      "cancelled": true
+     }
+    ],
+    "dropped": [
+     "2026-10-19",
+     "2026-10-26"
+    ]
+   }
+  },
+  {
+   "name": "split_on_first_day_removes_old",
+   "series": {
+    "id": "S3",
+    "category": "מסעדה",
+    "days": [
+     1
+    ],
+    "start": "09:00",
+    "end": "17:00",
+    "rate": 50,
+    "currency": "₪",
+    "from": "2026-10-01",
+    "until": "2026-10-31"
+   },
+   "exceptions": [],
+   "date": "2026-10-01",
+   "newId": "N",
+   "start": "08:00",
+   "end": "16:00",
+   "expected": {
+    "oldUntil": null,
+    "newFrom": "2026-10-01",
+    "newStart": "08:00",
+    "newEnd": "16:00",
+    "moved": [],
+    "dropped": []
+   }
+  }
+ ],
+ "applyRate": [
+  {
+   "name": "past_waiting_days_keep_old_rate",
+   "note": "The prototype re-priced past waiting days.",
+   "series": {
+    "id": "S4",
+    "category": "מסעדה",
+    "days": [
+     1
+    ],
+    "start": "09:00",
+    "end": "17:00",
+    "rate": 50,
+    "currency": "₪",
+    "from": "2026-10-01",
+    "until": "2026-10-31"
+   },
+   "exceptions": [
+    {
+     "seriesId": "S4",
+     "date": "2026-10-20",
+     "rateOverridden": true,
+     "rate": 60
+    }
+   ],
+   "today": "2026-10-15",
+   "waiting": [
+    "2026-10-12"
+   ],
+   "rate": 70,
+   "expected": {
+    "rate": 70,
+    "changes": [
+     {
+      "date": "2026-10-12",
+      "rateOverridden": true,
+      "rate": 50
+     },
+     {
+      "date": "2026-10-20",
+      "rateOverridden": false,
+      "rate": null
+     }
+    ]
+   }
+  }
+ ]
+}

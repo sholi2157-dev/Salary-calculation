@@ -24,6 +24,7 @@ interface WorkDao {
         val fallback = categories.firstOrNull { it.name == chosen && it.id != category.id }
             ?: categories.first { it.id != category.id }
         updateCategoryForEntries(category.name, fallback.name)
+        updateCategoryForSeries(category.name, fallback.name)
         if (chosen == category.name || chosen == null) setLocalPreference(WorkLocalPreference("defaultCategory", fallback.name))
         removeLocalPreference("categoryCurrency:${category.name}")
         deleteCategoryById(category.id)
@@ -36,6 +37,7 @@ interface WorkDao {
         require(getCategoriesList().none { it.id != category.id && it.name.equals(name.trim(), true) })
         updateCategory(category.copy(name = name.trim(), defaultRate = rate))
         updateCategoryForEntries(category.name, name.trim())
+        updateCategoryForSeries(category.name, name.trim())
         if (getLocalPreferences().any { it.name == "defaultCategory" && it.value == category.name })
             setLocalPreference(WorkLocalPreference("defaultCategory", name.trim()))
         removeLocalPreference("categoryCurrency:${category.name}")
@@ -67,7 +69,72 @@ interface WorkDao {
     }
 
     @Transaction
-    suspend fun exportSnapshot(): String = WorkBackup.encode(getCategoriesList(), getEntriesList(), getWorkersList(), getLocalPreferences().associate { it.name to it.value })
+    suspend fun exportSnapshot(): String = WorkBackup.encode(getCategoriesList(), getEntriesList(), getWorkersList(), getLocalPreferences().associate { it.name to it.value },
+        getSeries(), getExceptions())
+
+    // ---- Weekly plans (2.0 stage C) ----
+
+    @Query("SELECT * FROM shift_series ORDER BY fromDate ASC, startTime ASC")
+    suspend fun getSeries(): List<ShiftSeries>
+    @Query("SELECT * FROM shift_series ORDER BY fromDate ASC, startTime ASC")
+    fun observeSeries(): Flow<List<ShiftSeries>>
+    @Query("SELECT * FROM series_exceptions")
+    suspend fun getExceptions(): List<SeriesException>
+    @Query("SELECT * FROM series_exceptions")
+    fun observeExceptions(): Flow<List<SeriesException>>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSeries(series: ShiftSeries)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertException(exception: SeriesException)
+    @Query("DELETE FROM series_exceptions WHERE seriesId = :seriesId AND date = :date")
+    suspend fun deleteException(seriesId: String, date: String)
+    @Query("DELETE FROM shift_series WHERE id = :id")
+    suspend fun deleteSeriesRow(id: String)
+    @Query("DELETE FROM series_exceptions WHERE seriesId = :id")
+    suspend fun deleteExceptionsOf(id: String)
+    @Query("UPDATE shift_series SET category = :newName WHERE category = :oldName")
+    suspend fun updateCategoryForSeries(oldName: String, newName: String)
+    @Query("SELECT seriesKey FROM work_entries WHERE seriesKey IS NOT NULL")
+    suspend fun confirmedKeys(): List<String>
+
+    /** Recording a planned occurrence never replaces anything: a key that is already recorded is simply skipped. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertPlanned(entry: WorkEntry): Long
+
+    /** All-or-nothing; running twice (background job and app at once) still records each occurrence once. */
+    @Transaction
+    suspend fun confirmOccurrences(entries: List<WorkEntry>): List<Long> = entries.map { insertPlanned(it) }.filter { it > 0 }
+
+    @Transaction
+    suspend fun saveSeries(series: ShiftSeries, cancelledDates: List<String>) {
+        upsertSeries(series)
+        cancelledDates.forEach { upsertException(SeriesException(series.id, it, cancelled = true)) }
+    }
+
+    @Transaction
+    suspend fun deleteSeries(id: String) { deleteExceptionsOf(id); deleteSeriesRow(id) }
+
+    /** Undo of an automatic recording: the rows go and those days wait for a manual "עבדתי" instead. */
+    @Transaction
+    suspend fun undoAutoConfirm(ids: List<Int>) {
+        val rows = getEntriesList().filter { it.id in ids && it.seriesKey != null }
+        val existing = getExceptions().associateBy { "${it.seriesId}@${it.date}" }
+        for (row in rows) {
+            val key = row.seriesKey!!
+            val seriesId = key.substringBeforeLast('@'); val date = key.substringAfterLast('@')
+            upsertException((existing[key] ?: SeriesException(seriesId, date)).copy(hold = true))
+        }
+        deleteEntriesById(rows.map { it.id })
+    }
+
+    @Transaction
+    suspend fun applySplit(split: com.example.domain.V2Plan.Split) {
+        split.dropped.forEach { deleteException(it.seriesId, it.date) }
+        // Split on the first day: the old plan has no days left and goes away entirely.
+        if (split.old == null) deleteSeries(split.oldId) else upsertSeries(split.old)
+        upsertSeries(split.new)
+        split.moved.forEach { upsertException(it) }
+    }
 
     @Query("SELECT * FROM work_entries ORDER BY date DESC, createdAt DESC")
     suspend fun getEntriesList(): List<WorkEntry>
@@ -107,9 +174,19 @@ interface WorkDao {
         // replace a row already recorded here, so a clashing key is dropped instead.
         val seriesKeys = getEntriesList().mapNotNull { it.seriesKey }.toMutableSet()
         for (entry in missing) {
-            val key = entry.seriesKey?.takeIf { seriesKeys.add(it) }
-            insertEntry(entry.copy(id = 0, seriesKey = key))
+            // An occurrence that is already recorded here is the same shift: it is not added a second time.
+            if (entry.seriesKey != null && !seriesKeys.add(entry.seriesKey)) continue
+            insertEntry(entry.copy(id = 0))
         }
+        // Weekly plans: existing ones win; a plan already here (same id) is never duplicated or overwritten.
+        val knownSeries = getSeries().map { it.id }.toMutableSet()
+        for (s in backup.series) if (knownSeries.add(s.id)) {
+            val name = categoryNames.getOrPut(categoryKey(s.category)) { s.category.trim() }
+            if (getCategoryByName(name) == null) insertCategory(WorkCategory(name = name))
+            upsertSeries(s.copy(category = name))
+        }
+        val knownExceptions = getExceptions().map { "${it.seriesId}@${it.date}" }.toMutableSet()
+        for (x in backup.exceptions) if (x.seriesId in knownSeries && knownExceptions.add("${x.seriesId}@${x.date}")) upsertException(x)
         // Existing settings win; migration into an empty app can adopt reviewed preferences.
         val existingKeys = getLocalPreferences().map { it.name }.toSet()
         val adoptedKeys = existingKeys.toMutableSet()

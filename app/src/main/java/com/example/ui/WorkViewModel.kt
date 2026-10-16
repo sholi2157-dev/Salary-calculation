@@ -777,6 +777,115 @@ class WorkViewModel(
     /** Forgets a saved worker name (suggestion list only). History keeps every worker it recorded. */
     fun forgetWorker(name: String) { viewModelScope.launch { repository.forgetWorker(name) } }
 
+    // ---------------- Weekly plans (2.0 stage C) ----------------
+
+    val planSettings = com.example.PlanSettings(application)
+    val series: StateFlow<List<com.example.data.ShiftSeries>> = localDao.observeSeries()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val seriesExceptions: StateFlow<List<com.example.data.SeriesException>> = localDao.observeExceptions()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val planClock = kotlinx.coroutines.flow.MutableStateFlow(System.currentTimeMillis())
+
+    /** Occurrences from two months back (still waiting to be recorded) to four weeks ahead. Never stored, never summed. */
+    val occurrences: StateFlow<List<com.example.domain.V2Plan.Occurrence>> = kotlinx.coroutines.flow.combine(series, seriesExceptions, entries, planClock) { s, x, e, now ->
+        if (s.isEmpty()) emptyList() else {
+            val today = com.example.domain.V2Plan.dateOf(now)
+            val days = com.example.domain.V2Rules.daysFromCivil(today)
+            com.example.domain.V2Plan.occurrences(s, x, e.mapNotNull { it.seriesKey }.toSet(),
+                com.example.domain.V2Rules.civilFromDays(days - 62), com.example.domain.V2Rules.civilFromDays(days + 28), now)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun tickPlans() { planClock.value = System.currentTimeMillis() }
+
+    /** On open/resume: records finished plans (if enabled) and reports the new rows so the screen can offer undo. */
+    fun catchUpPlans(onRecorded: (List<Int>) -> Unit = {}) {
+        tickPlans()
+        viewModelScope.launch {
+            val ids = runCatching { com.example.PlanJobs.catchUp(localDao, planSettings) }.getOrDefault(emptyList()).map { it.toInt() }
+            if (ids.isNotEmpty()) { lastAddedEntryIds = ids; lastAddedEntryId = ids.last(); performAutoBackup(); onRecorded(ids) }
+        }
+    }
+
+    fun undoAutoConfirm(ids: List<Int>) { viewModelScope.launch { localDao.undoAutoConfirm(ids); performAutoBackup() } }
+
+    fun planPreview(days: Set<Int>, from: String, until: String, start: String, end: String): com.example.domain.V2Plan.Preview =
+        com.example.domain.V2Plan.preview(days, from, until, start, end, entries.value, occurrences.value)
+
+    /** Creates a weekly plan from the editor; overlapping days are not created. Past days are recorded right away. */
+    fun createSeries(category: String, days: Set<Int>, from: String, until: String, start: String, end: String, rate: Double?, currency: String,
+                     onDone: (created: Int, recorded: List<Int>) -> Unit) {
+        val preview = planPreview(days, from, until, start, end)
+        val s = com.example.data.ShiftSeries(java.util.UUID.randomUUID().toString(), category, com.example.domain.V2Plan.mask(days), start, end, rate, currency, from, until)
+        viewModelScope.launch {
+            try {
+                localDao.saveSeries(s, preview.clashes)
+                val ids = com.example.PlanJobs.catchUp(localDao, planSettings).map { it.toInt() }
+                if (ids.isNotEmpty()) { lastAddedEntryIds = ids; lastAddedEntryId = ids.last() }
+                performAutoBackup()
+                tickPlans()
+                onDone(preview.created.size, ids)
+            } catch (e: Exception) {
+                android.util.Log.e("WorkViewModel", "Saving a plan failed", e)
+                Toast.makeText(getApplication(), "המשמרת הקבועה לא נשמרה. אפשר לנסות שוב", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    /** "עבדתי": records one occurrence now, exactly as planned (never twice). */
+    fun confirmOccurrence(o: com.example.domain.V2Plan.Occurrence, onDone: (Int?) -> Unit = {}) {
+        viewModelScope.launch {
+            val id = localDao.confirmOccurrences(listOf(com.example.domain.V2Plan.toEntry(o, auto = false))).firstOrNull()?.toInt()
+            if (id != null) { lastAddedEntryIds = listOf(id); lastAddedEntryId = id; performAutoBackup() }
+            onDone(id)
+        }
+    }
+
+    private suspend fun exceptionFor(o: com.example.domain.V2Plan.Occurrence): com.example.data.SeriesException =
+        localDao.getExceptions().firstOrNull { it.seriesId == o.seriesId && it.date == o.date } ?: com.example.data.SeriesException(o.seriesId, o.date)
+
+    /** "לא עבדתי": that day is skipped (and can be restored). */
+    fun cancelOccurrence(o: com.example.domain.V2Plan.Occurrence) {
+        viewModelScope.launch { localDao.upsertException(exceptionFor(o).copy(cancelled = true)); performAutoBackup() }
+    }
+    fun restoreOccurrence(o: com.example.domain.V2Plan.Occurrence) {
+        viewModelScope.launch { localDao.upsertException(exceptionFor(o).copy(cancelled = false)); performAutoBackup() }
+    }
+
+    /** New hours for just this day, or from this day on (the plan is split there). */
+    fun editOccurrence(o: com.example.domain.V2Plan.Occurrence, start: String, end: String, fromNowOn: Boolean) {
+        viewModelScope.launch {
+            if (!fromNowOn) localDao.upsertException(exceptionFor(o).copy(startTime = start, endTime = end))
+            else {
+                val s = localDao.getSeries().firstOrNull { it.id == o.seriesId } ?: return@launch
+                localDao.applySplit(com.example.domain.V2Plan.split(s, localDao.getExceptions(), o.date, java.util.UUID.randomUUID().toString(), start = start, end = end))
+            }
+            performAutoBackup()
+        }
+    }
+
+    /** A new rate from today on; days that already ended keep the rate they were planned with, recorded shifts never change. */
+    fun applySeriesRate(seriesId: String, rate: Double?) {
+        viewModelScope.launch {
+            val s = localDao.getSeries().firstOrNull { it.id == seriesId } ?: return@launch
+            val today = com.example.domain.V2Plan.dateOf(System.currentTimeMillis())
+            val waiting = occurrences.value.filter { it.status == com.example.domain.V2Plan.Status.AWAITING }
+            val (updated, changes) = com.example.domain.V2Plan.applyRateFromToday(s, localDao.getExceptions(), rate, today, waiting)
+            localDao.upsertSeries(updated); changes.forEach { localDao.upsertException(it) }
+            performAutoBackup()
+        }
+    }
+
+    /** Ends a plan after today (recorded shifts stay). */
+    fun endSeries(seriesId: String) {
+        viewModelScope.launch {
+            val s = localDao.getSeries().firstOrNull { it.id == seriesId } ?: return@launch
+            val today = com.example.domain.V2Plan.dateOf(System.currentTimeMillis())
+            if (s.fromDate > today) localDao.deleteSeries(s.id) else localDao.upsertSeries(s.copy(untilDate = minOf(s.untilDate, today)))
+            performAutoBackup()
+        }
+    }
+
     /** Toggles one worker's paid mark on the row as stored now, so quick taps on two workers never undo each other. */
     fun toggleWorkerPaid(entryId: Int, index: Int) {
         viewModelScope.launch {

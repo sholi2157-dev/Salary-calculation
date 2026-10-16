@@ -37,6 +37,8 @@ object WorkEntryEdits {
         id = original.id,
         createdAt = original.createdAt,
         seriesKey = original.seriesKey,
+        // A shift the user has corrected is no longer "recorded by itself".
+        autoConfirmed = false,
         totalEarnings = when {
             !proposed.payKnown -> 0.0
             proposed.kind == WorkEntry.KIND_JOB -> proposed.totalEarnings

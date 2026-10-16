@@ -143,6 +143,8 @@ class MainActivity : ComponentActivity() {
         // Only a fresh launch acts on its intent: a recreated Activity (theme, font, process restore) must not
         // start the shortcut's shift again.
         if (savedInstanceState == null) handleIntent(intent)
+        // Weekly plans: one daily job records finished plans and sends the reminders the user turned on.
+        PlanJobs.schedule(this)
 
         // Notification permission is requested only when starting a live shift.
 
