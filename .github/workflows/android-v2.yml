@@ -75,7 +75,8 @@ jobs:
         run: for f in app/schemas/*/*.json; do echo "=== $f"; cat "$f"; echo; done
       - name: List failed tests
         if: failure()
-        run: grep -l '<failure\|<error' app/build/test-results/*/TEST-*.xml | xargs -r -I{} sh -c 'echo "== {}"; grep -A 15 "<failure\|<error" {} | head -60'
+        run: |
+          grep -l '<failure\|<error' app/build/test-results/*/TEST-*.xml | xargs -r -I{} sh -c 'echo "== {}"; grep -A 15 "<failure\|<error" {} | head -60; grep -E "^(E|W)/|Exception|Caused by" {} | head -60'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

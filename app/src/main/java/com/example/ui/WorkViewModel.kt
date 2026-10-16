@@ -698,7 +698,8 @@ class WorkViewModel(
                 performAutoBackup()
                 onSaved(id)
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (_: Exception) {
+            catch (e: Exception) {
+                android.util.Log.e("WorkViewModel", "Saving a new entry failed", e)
                 Toast.makeText(getApplication(), "המשמרת לא נשמרה. הפרטים נשארו בטופס; אפשר לנסות שוב", Toast.LENGTH_LONG).show()
                 onFailed()
             }
@@ -709,15 +710,16 @@ class WorkViewModel(
     fun saveEditedEntry(id: Int, proposed: WorkEntry, onSaved: () -> Unit = {}, onFailed: () -> Unit = {}) {
         viewModelScope.launch {
             try {
-                val original = repository.getEntryById(id) ?: run { onFailed(); return@launch }
+                val original = repository.getEntryById(id) ?: run { android.util.Log.w("WorkViewModel", "Edit target $id is gone"); onFailed(); return@launch }
                 val updated = com.example.data.WorkEntryEdits.apply(original, proposed)
-                if (!valid(updated)) { onFailed(); return@launch }
+                if (!valid(updated)) { android.util.Log.w("WorkViewModel", "Edit rejected as invalid: $updated"); onFailed(); return@launch }
                 repository.updateEntry(updated, getActiveUserId())
                 rememberWorkers(updated)
                 performAutoBackup()
                 onSaved()
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (_: Exception) {
+            catch (e: Exception) {
+                android.util.Log.e("WorkViewModel", "Saving an edit failed", e)
                 Toast.makeText(getApplication(), "השינוי לא נשמר. אפשר לנסות שוב", Toast.LENGTH_LONG).show()
                 onFailed()
             }

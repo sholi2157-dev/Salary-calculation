@@ -40,7 +40,10 @@ class KisUiTest {
     private fun model() = WorkViewModel(app, WorkRepository(dao))
 
     /** The account database is a process-wide singleton; every test starts from empty tables. */
-    @org.junit.Before fun clean() = runBlocking(kotlinx.coroutines.Dispatchers.IO) { db.clearAllTables() }
+    @org.junit.Before fun clean() {
+        org.robolectric.shadows.ShadowLog.stream = System.out
+        runBlocking(kotlinx.coroutines.Dispatchers.IO) { db.clearAllTables() }
+    }
     private val categories = listOf(WorkCategory(id = 1, name = "מסעדה", defaultRate = 50.0), WorkCategory(id = 2, name = "שיעורים", defaultRate = 120.0), WorkCategory(id = 3, name = "הובלות", defaultRate = 60.0))
     private val day = EntryDraft.startOfDay(System.currentTimeMillis())
     /** The 15th of this month, so seeded rows (up to 4 days earlier) always fall in the month shown by default. */

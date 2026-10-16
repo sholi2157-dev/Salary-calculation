@@ -99,6 +99,6 @@ class DistributionUiTest {
     }
 
     private fun hasTestTagPrefix(prefix: String) = SemanticsMatcher("TestTag starts with $prefix") { node ->
-        node.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.TestTag)?.startsWith(prefix) == true
+        node.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { null }?.startsWith(prefix) == true
     }
 }
