@@ -134,6 +134,7 @@ class KisUiTest {
         ui.onNodeWithTag("was_banner").assertIsDisplayed()
         ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
         shot("edit-unchanged")
+        ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪299.97")
         // A saved note opens the note drawer by itself.
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("רק ההערה השתנתה")
         ui.onNodeWithTag("save_shift_button").assertIsEnabled().performClick()

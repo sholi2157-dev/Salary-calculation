@@ -219,7 +219,9 @@ fun KisEditorPage(
                             modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick { d = d.copy(start = null); target = KeyTarget.HOURS }.padding(vertical = 4.dp))
                     }
                 }
-                MetaLine(d, check, onTop, topBg)
+                // On an edit, show exactly what will be stored (an untouched imported amount stays as it is).
+                val shownTotal = if (base != null && check.canSave) com.example.data.WorkPay.pay(com.example.data.WorkEntryEdits.apply(base, d.toEntry(base))) else check.total
+                MetaLine(d, check.copy(total = shownTotal), onTop, topBg)
             }
         }
         if (aiMode) {
