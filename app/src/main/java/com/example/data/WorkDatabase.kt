@@ -8,7 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 
-@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class, WorkLocalReceipt::class, WorkLocalPreference::class], version = 8, exportSchema = false)
+@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class, WorkLocalReceipt::class, WorkLocalPreference::class], version = 8, exportSchema = true)
 abstract class WorkDatabase : RoomDatabase() {
     abstract fun workDao(): WorkDao
     abstract fun syncDao(): WorkSyncDao

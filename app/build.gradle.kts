@@ -161,6 +161,9 @@ dependencies {
   "ksp"(libs.moshi.kotlin.codegen)
 }
 
+// Room schema history is kept in the repository so every migration can be tested.
+ksp { arg("room.schemaLocation", "$projectDir/schemas") }
+
 // Distribution versions are independent of the historical original/preview identity.
 androidComponents {
   onVariants(selector().withBuildType("release")) { variant ->

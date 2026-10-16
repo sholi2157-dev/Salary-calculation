@@ -1,0 +1,61 @@
+name: Android 2.0 development (no signing, no publishing)
+# Runs only on the 2.0 work branch. Never signs, never publishes, never touches release channels.
+on:
+  push:
+    branches: ['claude/v2-android']
+    paths: ['app/**', 'gradle/**', 'build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'scripts/**', '.github/workflows/android-v2.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-v2-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          cache-read-only: false
+      - name: Full unit regression, release build and instrumentation APK (unsigned)
+        run: >-
+          gradle :app:compileDebugKotlin :app:testDebugUnitTest :app:testReleaseUnitTest
+          :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true
+          -Proborazzi.test.record=true --continue --console=plain
+      - name: Count actual Android test results
+        if: always()
+        run: python3 scripts/summarize-android-tests.py
+      - name: Verify release identity and local gates
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$apk" | tee /tmp/release-identity.txt
+          grep -F "package: name='com.aistudio.worktracker.qztvdw.distribution'" /tmp/release-identity.txt
+          python3 scripts/check-local-build.py
+      - name: Print exported Room schemas
+        if: always()
+        run: for f in app/schemas/*/*.json; do echo "=== $f"; cat "$f"; echo; done
+      - name: List failed tests
+        if: failure()
+        run: grep -l '<failure\|<error' app/build/test-results/*/TEST-*.xml | xargs -r -I{} sh -c 'echo "== {}"; grep -A 15 "<failure\|<error" {} | head -60'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-v2-evidence
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            app/schemas/
+            /tmp/release-identity.txt
+            release-evidence/unit-tests.json
