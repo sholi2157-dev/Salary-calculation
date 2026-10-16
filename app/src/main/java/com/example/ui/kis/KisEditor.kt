@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -181,8 +182,20 @@ fun KisEditorPage(
         }
     }
 
+    // Status-bar icons stay readable on the coloured header (light icons over the dim frame of an edit).
+    val view = androidx.compose.ui.platform.LocalView.current
+    val lightBar = base == null && workplace.on.luminance() < 0.5f
+    DisposableEffect(lightBar) {
+        val activity = generateSequence(view.context) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull()
+        val controller = activity?.window?.let { androidx.core.view.WindowCompat.getInsetsController(it, view) }
+        val previous = controller?.isAppearanceLightStatusBars
+        controller?.isAppearanceLightStatusBars = lightBar
+        onDispose { if (previous != null) controller.isAppearanceLightStatusBars = previous }
+    }
     // The keyboard's real height, not isImeVisible (which reads true before any insets arrive).
     val imeOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    // The system keyboard and our keypad are never open together: typing in a text field closes the keypad.
+    LaunchedEffect(imeOpen) { if (imeOpen && pad) { commitBuf(); pad = false } }
     Column(Modifier.fillMaxSize().background(c.bg).imePadding().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
         // ---------------- coloured top ----------------
         Column(Modifier.fillMaxWidth().background(workplace.brush)
@@ -202,7 +215,9 @@ fun KisEditorPage(
                 if (!imeOpen && d.editing && base != null) WasBanner(base, changed, onTop)
                 ModeTabs(d.mode, onTop, workplace.from) { m ->
                     commitBuf()
-                    d = d.withMode(m)
+                    // Clock → hours keeps the length already entered instead of starting from 0.
+                    val carried = if (m == EntryMode.HOURS && d.hours.isBlank()) check.minutes?.takeIf { it > 0 }?.let { KisFormat.hours(it / 60.0) } else null
+                    d = d.withMode(m).let { n -> if (carried != null) n.copy(hours = carried) else n }
                     target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> if (d.start == null && m == EntryMode.CLOCK) KeyTarget.START else KeyTarget.END }
                     if (m == EntryMode.GROUP && d.start == null && !d.editing) d = d.copy(start = EntryDraft.suggestStart(d.category, d.day, history).start)
                 }
@@ -220,11 +235,12 @@ fun KisEditorPage(
                                 ClockDisplay(shown(KeyTarget.START), shown(KeyTarget.END), d.start == null && !(pad && target == KeyTarget.START && buf.isNotEmpty()), target, onTop,
                                     onStart = { open(KeyTarget.START) }, onEnd = { open(KeyTarget.END) })
                             }
-                            TimeRuler(d.start, d.end, if (target == KeyTarget.START && d.start != null) TimeHandle.START else TimeHandle.END, onTop, topBg,
+                            // While the keypad is open the ruler and nudges fold away (the keypad shows the value), so it fits a 360dp phone.
+                            if (!pad) TimeRuler(d.start, d.end, if (target == KeyTarget.START && d.start != null) TimeHandle.START else TimeHandle.END, onTop, topBg,
                                 onChange = { h, v -> buf = ""; d = if (h == TimeHandle.START) d.copy(start = v) else d.copy(end = v) },
                                 onSelect = { h -> target = if (h == TimeHandle.START) KeyTarget.START else KeyTarget.END; buf = "" })
                             val nudgeStart = target == KeyTarget.START && d.start != null
-                            TimeNudges(if (nudgeStart) "התחלה" else "סיום", onTop) { n ->
+                            if (!pad) TimeNudges(if (nudgeStart) "התחלה" else "סיום", onTop) { n ->
                                 commitBuf()
                                 d = if (nudgeStart) d.copy(start = nudge(d.start!!, n)) else d.copy(end = nudge(d.end, n))
                             }
@@ -290,7 +306,7 @@ fun KisEditorPage(
             if (d.mode == EntryMode.GROUP) GroupBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
             if (more && d.mode != EntryMode.JOB) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (d.start != null) Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("break_block")) {
+                    if (d.start != null && d.mode != EntryMode.HOURS && !d.groupByHours) Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("break_block")) {
                         Text("הפסקה", style = KisType.label, color = c.ink)
                         Text("השעות והסכום מחושבים אחרי ההפסקה", style = KisType.caption, color = c.muted)
                         val quick = listOf(0, 15, 30, 45, 60)
@@ -407,7 +423,8 @@ private fun CategoryChips(categories: List<WorkCategory>, selected: String, ink:
 private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, target: KeyTarget, ink: Color, onStart: () -> Unit, onEnd: () -> Unit) {
     // The digits scale with the width so "00:00" always fits whole (360dp phones included).
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val digits = (maxWidth.value * 0.125f).coerceIn(38f, 60f).sp
+        // Sized from the width in dp, so a large system font cannot push the digits out of the box.
+        val digits = ((maxWidth.value * 0.125f).coerceIn(38f, 60f) / LocalDensity.current.fontScale).sp
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             @Composable fun cell(label: String, value: String, on: Boolean, empty: Boolean, tag: String, click: () -> Unit) {
                 Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (on) ink.copy(alpha = 0.16f) else Color.Transparent)
@@ -429,7 +446,7 @@ private fun HoursDisplay(value: String, active: Boolean, ink: Color, onOpen: () 
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (active) ink.copy(alpha = 0.16f) else Color.Transparent)
         .kisClick(onClick = onOpen).testTag("hours_display").padding(horizontal = 8.dp, vertical = 6.dp)) {
         Text("כמה שעות · נגיעה להקלדה", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
-        Text(value.ifEmpty { "0" }, color = ink.copy(alpha = if (value.isEmpty()) 0.45f else 1f), style = KisType.hero.copy(fontSize = 54.sp, textDirection = TextDirection.Ltr))
+        Text(value.ifEmpty { "0" }, color = ink.copy(alpha = if (value.isEmpty()) 0.45f else 1f), style = KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp, textDirection = TextDirection.Ltr))
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(2, 4, 6, 8).forEach { h ->
@@ -452,7 +469,7 @@ private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (active) ink.copy(alpha = 0.16f) else Color.Transparent)
             .kisClick(onClick = onOpen).testTag("job_amount").padding(horizontal = 8.dp, vertical = 6.dp)) {
             Text("כמה הרווחת · נגיעה להקלדה", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
-            MoneyText(amount.toDoubleOrNull() ?: 0.0, d.currency, KisType.hero.copy(fontSize = 54.sp), color = ink.copy(alpha = if (amount.isEmpty()) 0.45f else 1f))
+            MoneyText(amount.toDoubleOrNull() ?: 0.0, d.currency, KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp), color = ink.copy(alpha = if (amount.isEmpty()) 0.45f else 1f))
         }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -595,9 +612,9 @@ private fun keyLabel(t: KeyTarget, currency: String) = when (t) {
 private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean, onKey: (String) -> Unit, onDone: () -> Unit) {
     val c = Kis.colors
     val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", if (time) "00" else ".", "0", "⌫")
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)).background(c.surface).navigationBarsPadding()
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)).background(c.bg).navigationBarsPadding()
         .padding(horizontal = 12.dp, vertical = 10.dp).testTag("keypad"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(14.dp)).background(c.sunk).padding(horizontal = 14.dp)
+        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(14.dp)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(14.dp)).padding(horizontal = 14.dp)
             .semantics(mergeDescendants = true) {}.testTag("keypad_display"), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(label, style = KisType.label, color = c.ink)
@@ -610,10 +627,12 @@ private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean,
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // RTL: the action column sits on the left edge (end), digits read 1-2-3 from the right.
             Column(Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Digits are laid out like the phone's own dialer and calculator (1 on the left), also in Hebrew.
+                CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
                 keys.chunked(3).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         row.forEach { k ->
-                            Box(Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(14.dp)).background(c.sunk)
+                            Box(Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(14.dp)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(14.dp))
                                 .kisClick(haptic = KisSettings.Haptic.TICK) { onKey(k) }.semantics { contentDescription = if (k == "⌫") "מחיקה" else k }.testTag("key_$k"),
                                 contentAlignment = Alignment.Center) {
                                 Text(k, style = KisType.body.copy(fontSize = if (k.length > 1 || k == "." || k == "⌫") 17.sp else 22.sp, fontWeight = FontWeight.Medium,
@@ -621,6 +640,7 @@ private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean,
                             }
                         }
                     }
+                }
                 }
             }
             Box(Modifier.weight(1.2f).height(232.dp).clip(RoundedCornerShape(14.dp)).background(c.ink)

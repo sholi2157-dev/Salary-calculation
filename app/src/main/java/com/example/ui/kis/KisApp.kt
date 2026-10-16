@@ -27,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -118,6 +119,10 @@ fun KisApp(
             null -> Unit
         }
     }
+    // An edit whose shift was deleted meanwhile closes instead of leaving an invisible editor behind.
+    LaunchedEffect(editorBaseId, entries) {
+        if (editorBaseId != null && entries.isNotEmpty() && entries.none { it.id == editorBaseId }) { editorJson = null; editorBaseId = null }
+    }
     LaunchedEffect(message?.id) { if (message != null) { delay(if (message?.action != null) 6000 else 2600); message = null } }
     // History handles its own Back for selection and search, but only on its page; elsewhere Back goes Home.
     BackHandler(enabled = editorJson == null && pager.currentPage != 0 && !(pager.currentPage == 1 && (history.selecting || history.searching))) { go(0) }
@@ -160,7 +165,11 @@ fun KisApp(
             enter = fadeIn(tween(140)) + slideInVertically { it / 2 }, exit = fadeOut(tween(140)) + slideOutVertically { it / 2 }) {
             // Measured outside the system-bar padding: lists and messages must clear the pill on 3-button navigation too.
             Box(Modifier.onSizeChanged { navHeight = with(density) { it.height.toDp() } + 8.dp }.navigationBarsPadding().padding(bottom = 14.dp)) {
-                PillNav(pager.currentPage, onPage = { go(it) }, onSettings = { go(2) }, onAdd = { openNew() })
+                // The navigation keeps its shape with very large system fonts (labels cap at 1.3×), so "+" never disappears.
+                val d = LocalDensity.current
+                CompositionLocalProvider(LocalDensity provides androidx.compose.ui.unit.Density(d.density, d.fontScale.coerceAtMost(1.3f))) {
+                    PillNav(pager.currentPage, onPage = { go(it) }, onSettings = { go(2) }, onAdd = { openNew() })
+                }
             }
         }
         message?.let { m ->
@@ -168,7 +177,7 @@ fun KisApp(
             val above = if (history.selecting && pager.currentPage == 1) history.barHeight + 8.dp else navHeight
             Row(Modifier.align(Alignment.BottomCenter).padding(bottom = above, start = 16.dp, end = 16.dp)
                 .shadow(14.dp, RoundedCornerShape(99.dp), ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.25f))
-                .clip(RoundedCornerShape(99.dp)).background(c.bar).border(1.dp, c.line, RoundedCornerShape(99.dp)).padding(start = 18.dp, end = 6.dp).heightIn(min = 48.dp).testTag("kis_message"),
+                .clip(RoundedCornerShape(99.dp)).background(c.bar).border(1.dp, c.line, RoundedCornerShape(99.dp)).padding(start = 18.dp, end = 6.dp).heightIn(min = 48.dp).semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite }.testTag("kis_message"),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(m.text, style = KisType.label, color = c.onBar, modifier = Modifier.padding(vertical = 10.dp))
                 if (m.action != null) Text(m.action, style = KisType.label, color = if (c.dark) Workplaces[3].accent(true) else Workplaces[0].from,
@@ -188,12 +197,13 @@ fun KisApp(
                             onDeleted = onDeleted, startInAi = editorAi)
                     }
                     // Editing is the same page as adding, shown as a framed pop-up over the app so it is clearly an edit.
-                    if (base == null) page()
-                    else Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f))
+                    // Neither way can a tap or swipe reach the pages behind the editor.
+                    if (base == null) Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { } }) { page() }
+                    else Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f))
                         .pointerInput(Unit) { detectTapGestures { } } // the app behind is not touchable while editing
                         .systemBarsPadding().padding(horizontal = 10.dp, vertical = 10.dp)) {
                         val frame = RoundedCornerShape(26.dp)
-                        Box(Modifier.fillMaxSize().clip(frame).border(3.dp, c.ink, frame).testTag("edit_frame")) { page() }
+                        Box(Modifier.fillMaxSize().clip(frame).border(2.dp, if (c.dark) Color.White.copy(alpha = 0.85f) else Color.White, frame).testTag("edit_frame")) { page() }
                     }
                 }
             }
@@ -228,7 +238,7 @@ internal fun PillNav(page: Int, onPage: (Int) -> Unit, onSettings: () -> Unit, o
         @Composable fun item(label: String, on: Boolean, tag: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
             Box(modifier.heightIn(min = 48.dp).clip(shape).background(if (on) c.navOn else Color.Transparent).kisClick(role = Role.Tab, onClick = onClick)
                 .semantics { selected = on }.testTag(tag).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                Text(label, style = KisType.label, color = if (on) c.navOnInk else c.navInk)
+                Text(label, style = KisType.label, color = if (on) c.navOnInk else c.navInk, maxLines = 1)
             }
         }
         item("בית", page == 0, "tab_0") { onPage(0) }

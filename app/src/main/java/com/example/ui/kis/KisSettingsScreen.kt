@@ -60,7 +60,8 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     var addingDefault by rememberSaveable { mutableStateOf(false) }
     var aiSheet by rememberSaveable { mutableStateOf(false) }
     var aiHelp by rememberSaveable { mutableStateOf(false) }
-    var importText by rememberSaveable { mutableStateOf("") }
+    // Not saveable: a pasted backup can be far larger than what Android may keep in saved state.
+    var importText by remember { mutableStateOf("") }
     val hasKey = remember(aiSheet) { runCatching { PersonalAiKey.read(context, viewModel.owner.uid).isNotBlank() }.getOrDefault(false) }
     val saveBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let { viewModel.saveBackup(context, it) } }
 

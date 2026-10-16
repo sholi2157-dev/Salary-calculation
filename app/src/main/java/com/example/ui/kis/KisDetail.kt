@@ -57,7 +57,8 @@ fun ShiftDetailSheet(entry: WorkEntry, categories: List<WorkCategory>, viewModel
             onPaid = { viewModel.setPaid(listOf(entry.id), it) },
             onEdit = { onEdit(entry) },
             onShare = { KisShare.shareOrCopy(context, WorkShareText.personal(entry), "שיתוף משמרת", onMessage) },
-            onCopy = { KisShare.copy(context, WorkShareText.personal(entry)); onMessage("הועתק ✓ · מוכן להדבקה") },
+            // Close the sheet so the confirmation is visible above it.
+            onCopy = { KisShare.copy(context, WorkShareText.personal(entry)); onDismiss(); onMessage("הועתק ✓ · מוכן להדבקה") },
             onDelete = { confirmDelete = true },
             onCompleteRate = { if (WorkPay.isJob(entry)) onEdit(entry) else completing = true },
             group = { GroupDetail(entry, viewModel, onMessage) })

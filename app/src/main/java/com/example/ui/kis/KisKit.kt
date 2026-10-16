@@ -170,7 +170,7 @@ fun KisAction(label: String, icon: ImageVector, onClick: () -> Unit, modifier: M
 
 @Composable
 fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifier: Modifier = Modifier, dashed: Boolean = false, warn: Boolean = false,
-            leading: ImageVector? = null, tag: String? = null, minHeight: Dp = 40.dp, onLongClick: (() -> Unit)? = null) {
+            leading: ImageVector? = null, tag: String? = null, minHeight: Dp = 44.dp, onLongClick: (() -> Unit)? = null) {
     val c = Kis.colors
     val shape = RoundedCornerShape(12.dp)
     val bg = when { warn -> c.pendingSoft; else -> c.surface }
@@ -203,7 +203,8 @@ fun KisSwitch(checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier 
     Switch(checked = checked, onCheckedChange = { settings.haptic(KisSettings.Haptic.TAP); onChange(it) },
         modifier = modifier.then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier),
         colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Workplaces[1].accent(c.dark), checkedBorderColor = Color.Transparent,
-            uncheckedThumbColor = Color.White, uncheckedTrackColor = c.line, uncheckedBorderColor = Color.Transparent))
+            // A visible edge when off (a white thumb on a pale track disappears on a white card).
+            uncheckedThumbColor = if (c.dark) Color.White else c.muted, uncheckedTrackColor = c.sunk, uncheckedBorderColor = c.muted))
 }
 
 /** Segmented control (tseg): a sunk track with a raised surface for the chosen option. */

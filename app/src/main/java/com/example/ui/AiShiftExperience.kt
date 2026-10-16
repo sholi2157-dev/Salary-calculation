@@ -131,7 +131,7 @@ fun AiShiftReview(shifts: List<ParsedShift>, onEdit: () -> Unit, onSave: () -> U
                     Column(Modifier.fillMaxWidth().background(c.sunk, RoundedCornerShape(14.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(shift.category, color = c.ink, fontWeight = FontWeight.Bold)
                         Text(SimpleDateFormat("dd.MM.yyyy", Locale.US).format(Date(shift.date)), color = c.muted, style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr))
-                        Text("${shift.hours} שעות · תעריף \u2066${WorkMoney.format(shift.hourlyRate, shift.currency)}\u2069 לשעה", color = c.ink)
+                        Text("${com.example.ui.kis.KisFormat.hours(shift.hours)} שעות · תעריף \u2066${WorkMoney.format(shift.hourlyRate, shift.currency)}\u2069 לשעה", color = c.ink)
                         if (shift.isGroup) Text("קבוצה: ${shift.groupMembers.joinToString(", ")}", color = c.muted)
                         if (shift.notes.isNotBlank()) Text(shift.notes, color = c.muted)
                     }

@@ -164,7 +164,7 @@ private fun Hero(week: List<WorkEntry>, today: List<WorkEntry>, all: List<WorkEn
 private fun StatTile(label: String, rows: List<WorkEntry>, caption: String?, modifier: Modifier, tag: String) {
     val c = Kis.colors
     val totals = WorkPay.totals(rows).toList().sortedByDescending { it.second }
-    Column(modifier.clip(RoundedCornerShape(18.dp)).background(c.surface.copy(alpha = if (c.dark) 0.72f else 0.86f)).border(1.dp, c.line, RoundedCornerShape(18.dp))
+    Column(modifier.clip(RoundedCornerShape(18.dp)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(18.dp))
         .padding(horizontal = 14.dp, vertical = 12.dp).semantics(mergeDescendants = true) {}.testTag(tag), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(label, style = KisType.caption, color = c.muted)
         if (totals.isEmpty() && rows.isNotEmpty()) Text("עוד לא ידוע", style = KisType.title, color = c.pending, modifier = Modifier.testTag("${tag}_pending"))
@@ -178,6 +178,7 @@ private fun StatTile(label: String, rows: List<WorkEntry>, caption: String?, mod
 private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, onCancel: () -> Unit, onCurrency: (String) -> Unit) {
     val c = Kis.colors
     var confirmCancel by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(live?.start) { confirmCancel = false }
     var confirmShort by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(live?.start) { confirmShort = false }
     Column(Modifier.padding(top = 22.dp).coachTarget(CoachTarget.SHIFT), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -197,7 +198,7 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
             }
         } else if (confirmCancel) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KisButton("כן, לבטל בלי לשמור", { confirmCancel = false; onCancel() }, Modifier.weight(1f), KisButtonKind.DANGER, height = 56.dp, haptic = KisSettings.Haptic.WARN, tag = "confirm_cancel_active_shift")
+                KisButton("לבטל בלי לשמור", { confirmCancel = false; onCancel() }, Modifier.weight(1f), KisButtonKind.DANGER, height = 56.dp, haptic = KisSettings.Haptic.WARN, tag = "confirm_cancel_active_shift")
                 KisButton("המשך במשמרת", { confirmCancel = false }, Modifier.weight(1f), KisButtonKind.GHOST, height = 56.dp)
             }
         } else {

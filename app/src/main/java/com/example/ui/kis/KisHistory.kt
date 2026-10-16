@@ -97,7 +97,12 @@ fun KisHistory(
     var showFilters by rememberSaveable { mutableStateOf(false) }
     var bulkOpen by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    // After a recreation the selection is gone: never show "delete 0 shifts" or an empty rate sheet.
+    if (!ui.selecting) { bulkOpen = false; confirmDelete = false }
     val rows = remember(entries, filter, ui.query) { KisHistoryLogic.apply(entries, filter, ui.query) }
+    // Changing month, filter or search drops shifts that are no longer shown from the selection, so actions
+    // (delete, paid, share) only ever touch what is on screen.
+    LaunchedEffect(filter, ui.query) { if (ui.selecting) ui.selection = ui.selection.filter { id -> rows.any { it.id == id } }.toSet() }
     val listState = rememberLazyListState()
     LaunchedEffect(filter.sort, filter.month, filter.period) { listState.scrollToItem(0) }
     LaunchedEffect(visible) { if (!visible) ui.selection = emptySet() }
@@ -137,7 +142,7 @@ fun KisHistory(
                         Box {
                             ToolIcon(Icons.Rounded.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
                             DropdownMenu(copyMenu, { copyMenu = false }) {
-                                DropdownMenuItem(text = { Text("Excel (טבלה)") }, onClick = { copyMenu = false; copyExcelToClipboard(context, rows); onMessage("הטבלה הועתקה ✓ · מוכנה להדבקה באקסל") })
+                                DropdownMenuItem(text = { Text("Excel (טבלה)") }, onClick = { copyMenu = false; if (rows.isEmpty()) onMessage("אין שורות להעתקה") else { copyExcelToClipboard(context, rows); onMessage("הטבלה הועתקה ✓ · מוכנה להדבקה באקסל") } })
                                 DropdownMenuItem(text = { Text("WhatsApp (סיכום)") }, onClick = {
                                     copyMenu = false
                                     KisShare.copy(context, generateWhatsAppReportText(rows, filter.category ?: "הכל", ui.query), "WhatsApp Report"); onMessage("הסיכום הועתק ✓")
