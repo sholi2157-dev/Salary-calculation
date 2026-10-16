@@ -58,6 +58,11 @@ class KisUiTest {
     }
     private fun shot(name: String) = ui.onRoot().captureRoboImage(filePath = "/tmp/kis-$name.png")
     private fun rows() = runBlocking { dao.getEntriesList() }
+    /** Robolectric's paused main looper must run the view-model continuations (Room resumes on Main) while we wait. */
+    private fun waitFor(timeoutMs: Long, condition: () -> Boolean) = ui.waitUntil(timeoutMs) {
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+        condition()
+    }
 
     @Test fun editorClockKeypadRulerDraftAndUnknownRate360() = editorFlow(false)
     @Test @Config(qualifiers = "w390dp-h844dp-xhdpi") fun editorClockKeypadRulerDraftAndUnknownRateDark390() = editorFlow(true)
@@ -113,7 +118,7 @@ class KisUiTest {
         ui.onNodeWithTag("save_shift_button").assertIsEnabled()
         shot("editor-rate-unknown-$suffix")
         ui.onNodeWithTag("save_shift_button").performClick()
-        ui.waitUntil(5_000) { rows().size == 1 }
+        waitFor(5_000) { rows().size == 1 }
         val e = rows().single()
         assertEquals("מסעדה", e.category)
         assertTrue(e.isTimeRange); assertEquals("09:00", e.startTime); assertEquals("17:45", e.endTime)
@@ -121,7 +126,7 @@ class KisUiTest {
         assertFalse(e.payKnown); assertEquals(0.0, e.hourlyRate, 0.0); assertEquals(0.0, e.totalEarnings, 0.0)
         assertEquals("טיוטה שנשמרת במעבר", e.notes)
         assertEquals(WorkEntry.KIND_SHIFT, e.kind)
-        ui.waitUntil(10_000) { closed }
+        waitFor(10_000) { closed }
         assertTrue(saved.contains("התעריף"))
     }
 
@@ -141,7 +146,7 @@ class KisUiTest {
         // A saved note opens the note drawer by itself.
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("רק ההערה השתנתה")
         ui.onNodeWithTag("save_shift_button").assertIsEnabled().performClick()
-        ui.waitUntil(5_000) { rows().single().notes == "רק ההערה השתנתה" }
+        waitFor(5_000) { rows().single().notes == "רק ההערה השתנתה" }
         val kept = rows().single()
         assertEquals(299.97, kept.totalEarnings, 0.0)
         assertEquals(5.5, kept.hours, 0.0); assertEquals(52.0, kept.hourlyRate, 0.0); assertEquals(base.date, kept.date)
@@ -151,7 +156,7 @@ class KisUiTest {
         listOf("6", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
         ui.onNodeWithTag("keypad_done").performClick()
         ui.onNodeWithTag("save_shift_button").performClick()
-        ui.waitUntil(5_000) { rows().single().hourlyRate == 60.0 }
+        waitFor(5_000) { rows().single().hourlyRate == 60.0 }
         assertEquals(330.0, rows().single().totalEarnings, 0.0)
         assertEquals(id, rows().single().id)
     }
@@ -190,7 +195,7 @@ class KisUiTest {
         ui.onNodeWithTag("rate_sheet").assertExists()
         shot("history-bulk-rate")
         ui.onNodeWithTag("bulk_rate_apply").performClick()
-        ui.waitUntil(5_000) { rows().count { it.payKnown } == 4 }
+        waitFor(5_000) { rows().count { it.payKnown } == 4 }
         val after = rows().associateBy { it.id }
         val restaurant = after.getValue(pendingShift.id)
         assertEquals(280.0, restaurant.totalEarnings, 0.0); assertEquals(40.0, restaurant.hourlyRate, 0.0)
