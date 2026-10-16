@@ -120,9 +120,10 @@ fun KisApp(
     LaunchedEffect(message?.id) { if (message != null) { delay(if (message?.action != null) 6000 else 2600); message = null } }
     // History handles its own Back for selection and search, but only on its page; elsewhere Back goes Home.
     BackHandler(enabled = editorJson == null && pager.currentPage != 0 && !(pager.currentPage == 1 && (history.selecting || history.searching))) { go(0) }
-    // Leaving a page never leaves a field focused (and the keyboard open) behind it.
-    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
-    LaunchedEffect(pager.currentPage) { focusManager.clearFocus() }
+    // Leaving a page never leaves the keyboard open over the next one. Only the keyboard is hidden: clearing focus
+    // here would, after a hardware key, hand focus to the first control of the old page and scroll the pager back.
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    LaunchedEffect(pager.currentPage) { keyboard?.hide() }
 
     Box(modifier.fillMaxSize().background(c.bg)) {
         HorizontalPager(state = pager, modifier = Modifier.fillMaxSize().testTag("main_screen_pager"), beyondViewportPageCount = 1,
