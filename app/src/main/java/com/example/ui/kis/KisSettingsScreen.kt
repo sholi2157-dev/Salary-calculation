@@ -68,7 +68,8 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
         // With the keyboard open the floating navigation is covered anyway: pad for the keyboard only, not both.
         val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = if (imeOpen) 8.dp else bottomInset + 8.dp).imePadding()) {
+        // The scroll area ends above the floating navigation, so no row can sit (and be tapped) under it.
+        Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
             Group("עבודה") {
                 Row_("מקום ברירת מחדל", "נבחר אוטומטית במשמרת חדשה ובטיימר · כאן גם מוסיפים ועורכים מקומות", tag = "default_category_picker",
                     modifier = Modifier.coachTarget(CoachTarget.CATEGORIES), onClick = { pickingDefault = true },
