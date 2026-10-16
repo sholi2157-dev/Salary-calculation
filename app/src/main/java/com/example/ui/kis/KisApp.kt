@@ -27,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
@@ -123,7 +124,13 @@ fun KisApp(
     // Leaving a page never leaves the keyboard open over the next one. Only the keyboard is hidden: clearing focus
     // here would, after a hardware key, hand focus to the first control of the old page and scroll the pager back.
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
-    LaunchedEffect(pager.currentPage) { keyboard?.hide() }
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    var settingsHasFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(pager.currentPage) {
+        keyboard?.hide()
+        // A field typed in Settings would otherwise keep that page pinned (composed) behind Home.
+        if (pager.currentPage != 2 && settingsHasFocus) focusManager.clearFocus(force = true)
+    }
 
     Box(modifier.fillMaxSize().background(c.bg)) {
         HorizontalPager(state = pager, modifier = Modifier.fillMaxSize().testTag("main_screen_pager"), beyondViewportPageCount = 1,
@@ -143,7 +150,9 @@ fun KisApp(
                     onAllHistory = { go(1) },
                     onSettings = { go(2) })
                 1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) })
-                else -> KisSettingsPage(viewModel, categories, onClose = { go(0) }, onReplayTour = onReplayTour, onSignIn = onSignIn, bottomInset = navHeight)
+                else -> Box(Modifier.onFocusChanged { settingsHasFocus = it.hasFocus }) {
+                    KisSettingsPage(viewModel, categories, onClose = { go(0) }, onReplayTour = onReplayTour, onSignIn = onSignIn, bottomInset = navHeight)
+                }
             }
         }
         // Floating pill navigation; hidden while choosing shifts (the selection bar takes its place).
