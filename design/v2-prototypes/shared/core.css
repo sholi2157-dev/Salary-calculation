@@ -1,0 +1,18 @@
+/* Shared prototype chrome: toast + test panel. Uses each direction's tokens. */
+#core-toast{position:fixed;inset-inline:0;margin-inline:auto;bottom:calc(96px + env(safe-area-inset-bottom,0px));width:max-content;max-width:calc(100% - 32px);display:flex;gap:16px;align-items:center;padding:12px 16px;border-radius:var(--toast-radius,12px);background:var(--ink);color:var(--bg);font:500 14px/1.4 var(--font-body);box-shadow:0 8px 30px rgb(0 0 0/.25);transform:translateY(16px);opacity:0;pointer-events:none;transition:transform .25s,opacity .25s;z-index:80}
+#core-toast.show{transform:none;opacity:1;pointer-events:auto}
+#core-toast button{background:none;border:0;color:inherit;font:700 14px var(--font-body);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:4px}
+[hidden]{display:none!important}
+#proto-fab{position:fixed;bottom:calc(86px + env(safe-area-inset-bottom,0px));left:max(8px,env(safe-area-inset-left,0px));z-index:90;font:600 11px var(--font-body);letter-spacing:.02em;padding:6px 10px;border-radius:99px;border:1px dashed var(--muted);background:var(--bg);color:var(--muted);cursor:pointer;opacity:.85}
+#proto-panel{position:fixed;bottom:calc(122px + env(safe-area-inset-bottom,0px));max-height:calc(100% - 140px);overflow:auto;left:max(8px,env(safe-area-inset-left,0px));z-index:91;width:min(320px,calc(100% - 16px));padding:14px;border-radius:14px;background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:0 18px 50px rgb(0 0 0/.25);font:14px/1.4 var(--font-body);display:grid;gap:8px}
+#proto-panel .pp-head{display:flex;justify-content:space-between;align-items:center}
+#proto-panel .pp-head button{background:none;border:0;color:var(--muted);font-size:16px;cursor:pointer}
+#proto-panel .pp-note{margin:0;color:var(--muted);font-size:12px}
+#proto-panel .pp-l{font-size:12px;color:var(--muted);margin-top:4px;display:flex;justify-content:space-between}
+#proto-panel .pp-clock{font-variant-numeric:tabular-nums;color:var(--ink)}
+#proto-panel .pp-seg,#proto-panel .pp-actions{display:flex;gap:6px;flex-wrap:wrap}
+#proto-panel .pp-seg button,#proto-panel .pp-actions button{flex:1;min-height:36px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:500 13px var(--font-body);cursor:pointer}
+#proto-panel [aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+body:has(.sheet.on) #proto-fab,body:has(.add-page) #proto-fab,body:has(.over) #proto-fab{display:none}

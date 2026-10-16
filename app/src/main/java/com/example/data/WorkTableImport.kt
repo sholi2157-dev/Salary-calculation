@@ -1,0 +1,171 @@
+package com.example.data
+
+import java.text.SimpleDateFormat
+import java.text.ParsePosition
+import java.util.Locale
+import java.util.Calendar
+
+/** Clipboard tables: columns are identified by headers, never by a guessed position. */
+object WorkTableImport {
+    private fun clean(s: String) = s.replace(Regex("[\\u200e\\u200f\\u202a-\\u202e\\ufeff]"), "").trim()
+    private fun key(s: String) = clean(s).lowercase(Locale.ROOT).replace(Regex("[\\s\"׳״'_:/-]"), "")
+    private val aliases = mapOf(
+        "category" to listOf("קטגוריה", "מעסיק", "מעסיק/קטגוריה", "category", "employer", "שם קטגוריה", "שם מעסיק"),
+        "date" to listOf("תאריך", "date", "תאריך עבודה", "תאריך משמרת", "work date"),
+        "hours" to listOf("שעות", "משך", "משך שעות", "hours", "duration", "שעות עבודה", "מספר שעות", "משך עבודה", "work hours"),
+        "rate" to listOf("תעריף", "תעריף שעתי", "שכר לשעה", "hourlyRate", "rate", "hourly rate", "תעריף לשעה"),
+        "total" to listOf("שכר לתשלום", "סהכ רווח", "סהכ", "סך הכל", "סכום", "totalEarnings", "total"),
+        "paid" to listOf("סטטוס", "סטטוס תשלום", "שולם", "isPaid", "paid", "status"),
+        "notes" to listOf("הערות", "notes"),
+        "currency" to listOf("מטבע", "currency"),
+        "start" to listOf("שעת כניסה", "התחלה", "startTime", "start", "שעת התחלה", "start time"),
+        "end" to listOf("שעת יציאה", "סיום", "endTime", "end", "שעת סיום", "end time")
+    ).mapValues { (_, v) -> v.map(::key) }
+
+    fun decode(input: String): WorkBackup.Contents {
+        val raw = input.replace("\uFEFF", "").trim('\r', '\n')
+        // Excel can prepend a separator declaration to exported text.
+        val declaration = Regex("^sep=([,;|\\t])(?:\\r\\n|\\n|\\r)", RegexOption.IGNORE_CASE).find(raw)
+        val text = if (declaration != null) raw.substring(declaration.range.last + 1) else raw
+        val delimiters = declaration?.groupValues?.get(1)?.single()?.let { listOf(it) } ?: listOf('\t', ',', ';', '|')
+        val candidates = delimiters.mapNotNull { d ->
+            try { table(text, d).takeIf { it.isNotEmpty() } } catch (_: IllegalArgumentException) { null }
+        }
+        val rows = candidates.maxByOrNull { row -> row.first().count { h -> aliases.values.any { key(h) in it } } }
+            ?: error("לא נמצאה טבלה תקינה")
+        val header = rows.first().map(::key)
+        require(aliases.values.none { names -> header.count { it in names } > 1 }) { "כותרת מופיעה יותר מפעם אחת" }
+        val columns = aliases.mapValues { (_, names) -> header.indexOfFirst { it in names } }
+        require(listOf("category", "date", "hours", "rate").all { columns.getValue(it) >= 0 }) {
+            "יש להעתיק גם כותרות: קטגוריה, תאריך, שעות ותעריף שעתי"
+        }
+        require(rows.size > 1) { "הטבלה מכילה כותרות בלבד" }
+        val entries = rows.drop(1).mapIndexed { i, row ->
+            try {
+                // Clipboard tools sometimes trim final empty cells or include blank columns.
+                require(row.size <= header.size || row.drop(header.size).all { clean(it).isEmpty() }) { "מספר העמודות אינו תואם לכותרות" }
+                fun cell(name: String) = row.getOrNull(columns.getValue(name))?.let(::clean).orEmpty()
+                val category = cell("category"); require(category.isNotBlank()) { "חסרה קטגוריה" }
+                val hoursText = cell("hours")
+                val hours = duration(hoursText)
+                val rate = number(cell("rate"))
+                val total = cell("total").takeIf { it.isNotBlank() }?.let(::number) ?: hours * rate
+                require(total.isFinite()) { "סכום לא תקין" }
+                val currencies = listOf(cell("currency"), cell("rate"), cell("total")).mapNotNull { value ->
+                    when {
+                        value.contains('$') || value.contains("USD", true) -> "$"
+                        value.contains('₪') || value.contains("ILS", true) || value == "שקל" || value == "שקלים" -> "₪"
+                        else -> null
+                    }
+                }.distinct()
+                require(currencies.size <= 1) { "נמצאו מטבעות סותרים" }
+                require(cell("currency").isBlank() || cell("currency").uppercase(Locale.ROOT) in listOf("₪", "$", "ILS", "USD", "שקל", "שקלים")) { "מטבע לא מזוהה" }
+                val paid = when (cell("paid").lowercase(Locale.ROOT)) {
+                    "שולם", "כן", "true", "paid", "yes", "1" -> true
+                    "", "ממתין", "לא", "לא שולם", "false", "unpaid", "no", "0" -> false
+                    else -> error("סטטוס תשלום לא מזוהה")
+                }
+                val start = cell("start").takeIf { it.isNotBlank() }?.let(::clock); val end = cell("end").takeIf { it.isNotBlank() }?.let(::clock)
+                require((start == null) == (end == null)) { "חסרה שעת התחלה או סיום" }
+                val date = date(cell("date"))
+                WorkEntry(category=category, date=date, createdAt=date, isTimeRange=start != null,
+                    startTime=start, endTime=end, hours=hours, hourlyRate=rate, totalEarnings=total,
+                    isPaid=paid, notes=cell("notes"), currency=currencies.firstOrNull() ?: "₪")
+            } catch (e: Exception) { throw IllegalArgumentException("שורה ${i+2}: ${e.message}", e) }
+        }
+        val categories = entries.distinctBy { it.category }.map { WorkCategory(name=it.category,defaultRate=it.hourlyRate) }
+        return WorkBackup.Contents(categories, entries, emptyList())
+    }
+
+    private fun duration(text: String): Double {
+        val match = Regex("(\\d+):([0-5]\\d)(?::([0-5]\\d))?").matchEntire(text)
+        if (match != null) {
+            val (hours, minutes, seconds) = match.destructured
+            val value = hours.toDouble() + minutes.toInt() / 60.0 + (seconds.toIntOrNull() ?: 0) / 3600.0
+            require(value.isFinite()) { "משך לא תקין" }
+            return value
+        }
+        return number(text)
+    }
+
+    /** Normalize spreadsheet clock cells without silently discarding seconds. */
+    private fun clock(text: String): String {
+        val match = Regex("(\\d{1,2}):([0-5]\\d)(?::(00))?(?:\\s*([AP]M))?", RegexOption.IGNORE_CASE).matchEntire(text)
+        val minutes = if (match != null) {
+            var hour = match.groupValues[1].toInt()
+            val meridiem = match.groupValues[4].uppercase(Locale.ROOT)
+            if (meridiem.isNotEmpty()) {
+                require(hour in 1..12) { "שעה לא תקינה" }
+                hour = hour % 12 + if (meridiem == "PM") 12 else 0
+            } else require(hour in 0..23) { "שעה לא תקינה" }
+            hour * 60 + match.groupValues[2].toInt()
+        } else {
+            // Numeric values in an explicitly labelled clock column are Excel day fractions.
+            require(text.matches(Regex("\\d+(?:[.,]\\d+)?"))) { "שעה לא תקינה" }
+            val fraction = number(text)
+            require(fraction < 1) { "שעה לא תקינה" }
+            val exactMinutes = fraction * 1440
+            val rounded = kotlin.math.round(exactMinutes).toInt()
+            require(kotlin.math.abs(exactMinutes - rounded) < 0.00001 && rounded in 0..1439) {
+                "שעה כוללת שניות או אינה תקינה; השתמש בשעות ודקות"
+            }
+            rounded
+        }
+        return String.format(Locale.ROOT, "%02d:%02d", minutes / 60, minutes % 60)
+    }
+
+    fun number(text: String): Double {
+        var s = clean(text).replace(Regex("(?i)USD|ILS|₪|\\$|\\s|\\u00a0"), "")
+        if (s.contains(',') && s.contains('.')) {
+            require(s.matches(Regex("\\d{1,3}(,\\d{3})+\\.\\d+")) || s.matches(Regex("\\d{1,3}(\\.\\d{3})+,\\d+"))) { "מפרידי מספר לא תקינים: $text" }
+            s = if (s.lastIndexOf(',') > s.lastIndexOf('.')) s.replace(".", "").replace(',', '.') else s.replace(",", "")
+        } else if (s.contains(',')) {
+            // Three trailing digits are ambiguous (decimal or thousands): request clarification.
+            require(!s.matches(Regex("[+-]?\\d{1,3},\\d{3}"))) { "מספר עמום: $text — השתמש בנקודה עשרונית וללא מפריד אלפים" }
+            s = s.replace(',', '.')
+        }
+        val n = s.toDoubleOrNull()
+        require(n != null && n.isFinite() && n >= 0) { "מספר לא תקין: $text" }
+        return n
+    }
+
+    private fun date(text: String): Long {
+        for ((format, pattern) in listOf(
+            "yyyy-MM-dd" to "\\d{4}-\\d{1,2}-\\d{1,2}",
+            "dd/MM/yyyy" to "\\d{1,2}/\\d{1,2}/\\d{4}",
+            "dd.MM.yyyy" to "\\d{1,2}\\.\\d{1,2}\\.\\d{4}",
+            "dd-MM-yyyy" to "\\d{1,2}-\\d{1,2}-\\d{4}")) {
+            if (!text.matches(Regex(pattern))) continue
+            val f=SimpleDateFormat(format,Locale.ROOT).apply { isLenient=false }
+            val pos=ParsePosition(0); val parsed=f.parse(text,pos)
+            if (parsed != null && pos.index == text.length && text.matches(Regex(".*\\d{4}.*"))) return parsed.time
+        }
+        if (text.matches(Regex("\\d{13}"))) return text.toLong()
+        if (text.matches(Regex("\\d{5}(?:[.,]0+)?"))) {
+            val serial=text.substringBefore('.').substringBefore(',').toInt(); require(serial in 20000..100000) { "תאריך אקסל מחוץ לטווח" }
+            return Calendar.getInstance().apply { clear(); set(1899,11,30); add(Calendar.DAY_OF_MONTH,serial) }.timeInMillis
+        }
+        error("תאריך לא מזוהה: $text. השתמש ביום/חודש/שנה או שנה-חודש-יום")
+    }
+
+    fun table(text: String, delimiter: Char): List<List<String>> {
+        val rows=mutableListOf<List<String>>(); var row=mutableListOf<String>(); val cell=StringBuilder()
+        var quoted=false; var closedQuote=false; var i=0
+        fun endCell() { row.add(cell.toString()); cell.setLength(0); closedQuote=false }
+        fun endRow() { endCell(); if(row.any { it.isNotBlank() }) rows.add(row); row=mutableListOf() }
+        while(i<text.length) {
+            val c=text[i]
+            require(!closedQuote || c == delimiter || c == '\n' || c == '\r' || c == ' ' || c == '\t') { "תו לא צפוי אחרי סגירת מרכאות" }
+            when {
+                c=='"' && quoted && i+1<text.length && text[i+1]=='"' -> { cell.append('"'); i++ }
+                c=='"' && quoted -> { quoted=false; closedQuote=true }
+                c=='"' && cell.isEmpty() && !closedQuote -> quoted=true
+                c==delimiter && !quoted -> endCell()
+                (c=='\n' || c=='\r') && !quoted -> { endRow(); if(c=='\r' && i+1<text.length && text[i+1]=='\n') i++ }
+                closedQuote -> Unit
+                else -> cell.append(c)
+            }; i++
+        }
+        require(!quoted) { "מרכאות לא סגורות" }; endRow(); return rows
+    }
+}

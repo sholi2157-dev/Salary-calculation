@@ -1,0 +1,13 @@
+{
+  "sourceSha": "c0d655365cfd35e2bba11807cb4fe3c0ff27af93",
+  "runId": 38591694409,
+  "artifactId": 11908187232,
+  "versionCode": 24,
+  "versionName": "1.5-rc16",
+  "sha256": "400e11bccd9a46e7911c498137da9ba5d23b3b86cee50f0f1ea6400f40e7cc30",
+  "size": 19231375,
+  "permanentSignatureVerifiedByCI": true,
+  "originalRC15DataPreservedExactly": true,
+  "nativeStagesPassed": 9,
+  "crashLogsClean": true
+}

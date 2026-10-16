@@ -1,0 +1,294 @@
+<title>מערכת העיצוב · כיס</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Secular+One&family=Rubik:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one reading column of specimen sections; every specimen is a live component built from the same tokens it documents. */
+:root{
+  --bg:#EDF0F5; --surface:#FFFFFF; --sunk:#E2E6EE; --ink:#0D1015; --muted:#5D6573; --line:#D6DBE4;
+  --pending:#9A5000; --pending-soft:#FFEBC7; --paid:#0B7F60; --danger:#C2362B;
+  --w1:#5145E8; --w1o:#FFFFFF; --w2:#0E8059; --w2o:#FFFFFF; --w3:#D6336C; --w3o:#FFFFFF; --w4:#F5B82E; --w4o:#1A1200; --w5:#7D3CF0; --w5o:#FFFFFF; --w6:#1F72E0; --w6o:#FFFFFF; --w7:#0E8A86; --w7o:#FFFFFF; --w8:#B5294E; --w8o:#FFFFFF;
+  --font-body:"Rubik","Heebo",system-ui,sans-serif; --font-display:"Secular One","Rubik",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121212; --surface:#1E1E1E; --sunk:#2A2A2A; --ink:#FFFFFF; --muted:#B3B3B3; --line:#303030;
+  --pending:#FFC266; --pending-soft:#3A2D12; --paid:#3DDC97; --danger:#FF8A7A;
+  --w1:#5145E8; --w1o:#FFFFFF; --w2:#0E8059; --w2o:#FFFFFF; --w3:#D6336C; --w3o:#FFFFFF; --w4:#F5B82E; --w4o:#1A1200; --w5:#7D3CF0; --w5o:#FFFFFF; --w6:#1F72E0; --w6o:#FFFFFF; --w7:#0E8A86; --w7o:#FFFFFF; --w8:#B5294E; --w8o:#FFFFFF; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121212; --surface:#1E1E1E; --sunk:#2A2A2A; --ink:#FFFFFF; --muted:#B3B3B3; --line:#303030;
+  --pending:#FFC266; --pending-soft:#3A2D12; --paid:#3DDC97; --danger:#FF8A7A;
+  --w1:#5145E8; --w1o:#FFFFFF; --w2:#0E8059; --w2o:#FFFFFF; --w3:#D6336C; --w3o:#FFFFFF; --w4:#F5B82E; --w4o:#1A1200; --w5:#7D3CF0; --w5o:#FFFFFF; --w6:#1F72E0; --w6o:#FFFFFF; --w7:#0E8A86; --w7o:#FFFFFF; --w8:#B5294E; --w8o:#FFFFFF; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--font-body);direction:rtl;margin:0;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 64px;display:grid;gap:40px}
+.wrap>*{min-width:0}
+.num{font-variant-numeric:tabular-nums;unicode-bidi:isolate;direction:ltr;display:inline-block}
+.cur{font-family:var(--font-body);font-weight:600;font-size:.6em;margin-inline-end:.08em;vertical-align:.12em}
+.disp{font-family:var(--font-display);font-weight:400}
+header.top{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center}
+header.top svg{width:64px;height:64px}
+header.top h1{font-family:var(--font-display);font-weight:400;font-size:clamp(30px,8vw,44px);line-height:1.05;margin:0;text-wrap:balance}
+header.top p{margin:4px 0 0;color:var(--muted)}
+.themebtn{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;min-height:40px;padding-inline:14px;font:600 14px var(--font-body);cursor:pointer;color:var(--ink)}
+h2{font-family:var(--font-display);font-weight:400;font-size:26px;margin:0 0 6px}
+.lead{margin:0 0 16px;color:var(--muted);max-width:60ch}
+section{display:grid;gap:4px}
+.card{background:var(--surface);border-radius:18px;padding:18px}
+.grid{display:grid;gap:10px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.principles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))}
+.principles div{background:var(--surface);border-radius:18px;padding:16px}
+.principles b{display:block;font-family:var(--font-display);font-weight:400;font-size:19px;margin-bottom:4px}
+.principles span{color:var(--muted);font-size:14px}
+.sw{border-radius:16px;padding:14px;display:grid;gap:2px;min-height:96px;align-content:end;font-size:13px}
+.sw b{font-size:15px}
+.sw code{font:500 12px ui-monospace,monospace;opacity:.85;direction:ltr;text-align:right}
+.wp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.wp div{border-radius:14px;padding:12px 10px 10px;display:grid;gap:2px;font-size:13px}
+.wp b{font-weight:600}
+.wp small{opacity:.9;font-variant-numeric:tabular-nums}
+.typerow{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line)}
+.typerow:last-child{border-bottom:0}
+.typerow small{color:var(--muted);font-size:12px;line-height:1.4}
+.space{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.space div{display:grid;justify-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.space i{display:block;background:var(--w3);border-radius:3px;width:28px}
+.radii{display:flex;gap:12px;flex-wrap:wrap}
+.radii div{width:76px;height:64px;background:var(--sunk);border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--muted)}
+/* Live components */
+.demo{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{min-height:52px;border-radius:16px;border:0;padding-inline:22px;font:600 16px var(--font-body);cursor:pointer;background:var(--ink);color:var(--bg);transition:transform .08s}
+.btn.ghost{background:var(--sunk);color:var(--ink)}
+.btn.go{background:var(--paid);color:#fff}
+.btn:active{transform:scale(.97)}
+.btn[disabled]{opacity:.35;cursor:not-allowed}
+.chip{min-height:40px;padding-inline:14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font:600 14px var(--font-body);cursor:pointer;color:var(--ink)}
+.chip[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.chip.sug{border-style:dashed}
+.chip.pend{background:var(--pending-soft);color:var(--pending);border-color:transparent}
+.seg{display:inline-flex;background:var(--sunk);border-radius:12px;padding:3px;gap:2px}
+.seg button{border:0;background:none;min-height:38px;padding-inline:16px;border-radius:9px;font:600 14px var(--font-body);color:var(--muted);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgb(0 0 0/.08)}
+.cseg{display:inline-flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.cseg button{width:46px;min-height:40px;border:0;background:var(--surface);font:600 16px var(--font-body);color:var(--ink);cursor:pointer}
+.cseg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.switch{appearance:none;width:46px;height:28px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;margin:0}
+.switch::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:inset-inline-start .2s}
+.switch:checked{background:var(--paid)}
+.switch:checked::after{inset-inline-start:21px}
+.shift{display:grid;grid-template-columns:44px 1fr auto;gap:2px 12px;align-items:center;background:var(--surface);border-radius:14px;padding:12px 14px;border:1.5px solid var(--line);max-width:420px}
+.shift .av{grid-row:span 2;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-family:var(--font-display);font-size:18px}
+.shift .t{font-weight:600}
+.shift .s{color:var(--muted);font-size:13px}
+.shift .m{grid-row:span 2;font-family:var(--font-display);font-size:19px}
+.shift.plan{background:transparent;border-style:dashed}
+.tag{font:600 11px var(--font-body);padding:1px 7px;border-radius:6px;background:var(--sunk);color:var(--muted);margin-inline-start:6px}
+.tag.w{background:var(--pending-soft);color:var(--pending)}
+.pass{border-radius:18px;padding:16px 18px;display:grid;grid-template-columns:1fr auto;gap:2px 12px;max-width:420px}
+.pass .a{font-family:var(--font-display);font-size:26px;grid-row:span 2;align-self:center}
+.pass small{opacity:.85}
+.navbar{display:flex;gap:4px;padding:6px;border-radius:99px;background:var(--ink);width:max-content;max-width:100%;flex-wrap:wrap}
+.navbar button{border:0;background:none;color:color-mix(in oklab,var(--bg) 70%,transparent);min-height:44px;padding-inline:14px;border-radius:99px;font:600 14px var(--font-body);cursor:pointer}
+.navbar button[aria-current=page]{background:var(--bg);color:var(--ink)}
+.navbar .plus{background:var(--w1);color:#fff;width:44px;padding:0;font-size:24px}
+.toast{display:inline-flex;gap:16px;align-items:center;padding:12px 18px;border-radius:99px;background:var(--ink);color:var(--bg);font-weight:500}
+.toast u{font-weight:700;text-underline-offset:3px}
+.keys{display:grid;grid-template-columns:repeat(3,64px);gap:8px}
+.keys button{min-height:52px;border-radius:14px;border:0;background:var(--sunk);font:500 22px var(--font-body);color:var(--ink);cursor:pointer}
+.ruler{position:relative;height:58px;margin-inline:24px;max-width:380px}
+.rhead{background:var(--w1);color:var(--w1o);border-radius:18px;padding:12px 0 8px;max-width:430px}
+.rbase{position:absolute;inset-inline:0;top:22px;height:12px;border-radius:6px;background:color-mix(in oklab,currentColor 22%,transparent)}
+.rseg{position:absolute;top:22px;height:12px;border-radius:6px;background:currentColor}
+.rh{position:absolute;top:10px;width:46px;height:36px;margin-inline-start:-23px;border-radius:12px;border:2px solid currentColor;background:var(--w1);color:inherit;font:700 11px var(--font-body);display:grid;place-items:center}
+.rh.on{background:var(--w1o);color:var(--w1)}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:420px}
+.acts button{display:grid;justify-items:center;gap:4px;min-height:64px;border-radius:14px;border:0;background:var(--sunk);font:600 13px var(--font-body);color:var(--ink);cursor:pointer}
+.acts svg{width:22px;height:22px}
+.acts .go{background:var(--ink);color:var(--bg)}
+.acts .danger{color:var(--danger)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:start;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px}
+td code{font:500 12px ui-monospace,monospace;direction:ltr;unicode-bidi:isolate}
+.tablewrap{overflow-x:auto;background:var(--surface);border-radius:18px;padding:6px 12px}
+.motion{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.ball{width:44px;height:44px;border-radius:14px;background:var(--w3)}
+.icons{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end}
+.icons figure{margin:0;display:grid;justify-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.mask-circle{border-radius:50%;overflow:hidden}
+.mask-squircle{border-radius:32%;overflow:hidden}
+.mask-rounded{border-radius:18%;overflow:hidden}
+.home{border-radius:28px;padding:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px;max-width:340px;background:linear-gradient(160deg,#FFD9CC,#C8D4FF)}
+.home div{display:grid;justify-items:center;gap:6px;font-size:11px;color:#1d2433}
+.home .ph{width:56px;height:56px;border-radius:50%;background:rgb(255 255 255/.55)}
+.decide{background:var(--pending-soft);color:var(--ink);border-radius:18px;padding:16px 18px;display:grid;gap:8px}
+.decide b{color:var(--pending)}
+.decide ol{margin:0;padding-inline-start:20px;display:grid;gap:6px}
+:focus-visible{outline:2px solid var(--w3);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@keyframes up{from{transform:translateY(18px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <svg viewBox="0 0 108 108" aria-hidden="true" id="logo"><rect width="108" height="108" rx="30" fill="var(--ink)"/><g stroke-linecap="round" stroke-width="11"><path d="M33 72V50" stroke="#7C8CFF"/><path d="M54 72V32" stroke="#FFC54D"/><path d="M75 72V41" stroke="#34C79A"/></g><path d="M33 74h42" stroke="var(--bg)" stroke-width="11" stroke-linecap="round"/></svg>
+  <div><h1>כיס · מערכת העיצוב</h1><p>חישוב שכר 2.0 · טיוטה לאישור</p></div>
+  <button class="themebtn" id="theme" type="button">כהה / בהיר</button>
+</header>
+
+<section>
+  <h2>עקרונות</h2>
+  <div class="principles">
+    <div><b>צבע = מקום עבודה</b><span>הצבע מסמן איפה עבדת. פעולות וממשק נשארים בשחור ולבן.</span></div>
+    <div><b>מהר ביד אחת</b><span>כל פעולה נפוצה בהישג אגודל. אזור מגע של 48 לפחות.</span></div>
+    <div><b>מספרים קודם</b><span>סכום ושעות גדולים וברורים. הסבר רק כשאין ברירה.</span></div>
+    <div><b>אף פעם לא בטעות</b><span>מחיקה עם ביטול, עריכה שנראית אחרת, וסרגל שלא זז מנגיעה.</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>צבעי בסיס</h2>
+  <p class="lead">בהיר וכהה מוגדרים יחד. כל צירוף טקסט ורקע עומד בתקן הנגישות AA (יחס של 4.5 לפחות).</p>
+  <div class="grid g4">
+    <div class="sw" style="background:var(--bg);border:1.5px solid var(--line)"><b>רקע</b><code>bg</code></div>
+    <div class="sw" style="background:var(--surface);border:1.5px solid var(--line)"><b>משטח</b><code>surface</code></div>
+    <div class="sw" style="background:var(--sunk)"><b>שקוע</b><code>sunk</code></div>
+    <div class="sw" style="background:var(--ink);color:var(--bg)"><b>דיו</b><code>ink · 16.7:1</code></div>
+    <div class="sw" style="background:var(--surface);color:var(--muted);border:1.5px solid var(--line)"><b>טקסט משני</b><code>muted · 5.1:1</code></div>
+    <div class="sw" style="background:var(--pending-soft);color:var(--pending)"><b>ממתין לתעריף</b><code>pending · 5.1:1</code></div>
+    <div class="sw" style="background:var(--paid);color:#fff"><b>שולם</b><code>paid · 5.0:1</code></div>
+    <div class="sw" style="background:var(--surface);color:var(--danger);border:1.5px solid var(--line)"><b>מחיקה</b><code>danger</code></div>
+  </div>
+</section>
+
+<section>
+  <h2>צבעי מקומות עבודה</h2>
+  <p class="lead">8 צבעים חיים, בלי כתום, בגרדיאנט שמתכהה לכיוון השם, כך שהטקסט נשאר קריא. המצב הכהה בהשראת Spotify: רקע כמעט שחור והצבעים נשארים חיים. הצבעים מתחלקים לפי הסדר. מקום עבודה תשיעי מקבל שוב צבע 1 עם סימון נוסף. כל צבע מגיע עם צבע טקסט משלו.</p>
+  <div class="wp" id="wp"></div>
+</section>
+
+<section>
+  <h2>טיפוגרפיה</h2>
+  <p class="lead">Secular One לסכומים ולכותרות, Rubik לכל השאר. סימני המטבע ₪ ו-$ תמיד ב-Rubik, כי Secular One מצייר את ₪ כאותיות. מספרים תמיד ברוחב קבוע ומבודדים בתוך הטקסט העברי.</p>
+  <div class="card">
+    <div class="typerow"><small>סכום ראשי<br>64 · Secular One</small><span class="disp num" style="font-size:clamp(44px,12vw,64px);line-height:1"><span class="cur">₪</span>3,400</span></div>
+    <div class="typerow"><small>סכום<br>26 · Secular One</small><span class="disp num" style="font-size:26px"><span class="cur">₪</span>286</span></div>
+    <div class="typerow"><small>כותרת<br>22 · Secular One</small><span class="disp" style="font-size:22px">הכיס של החודש</span></div>
+    <div class="typerow"><small>גוף<br>16 · Rubik</small><span>מסעדת הנמל · 17:00–22:30</span></div>
+    <div class="typerow"><small>תווית<br>14 · Rubik 600</small><span style="font-size:14px;font-weight:600">תעריף לשעה</span></div>
+    <div class="typerow"><small>הערה<br>13 · Rubik</small><span style="font-size:13px;color:var(--muted)">2 משמרות מחכות לתעריף</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>ריווח ופינות</h2>
+  <p class="lead">ריווח בקפיצות של 4. אזור מגע מינימלי 48. ככל שרכיב גדול יותר, הפינות שלו עגולות יותר.</p>
+  <div class="card grid" style="gap:18px">
+    <div class="space"></div>
+    <div class="radii"><div style="border-radius:10px">10 · תג</div><div style="border-radius:14px">14 · כפתור</div><div style="border-radius:18px">18 · כרטיס</div><div style="border-radius:24px">24 · חלון</div><div style="border-radius:99px">גלולה</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>רכיבים</h2>
+  <p class="lead">כל אלה אמיתיים: אפשר ללחוץ, להחליף ולנסות.</p>
+  <div class="grid" style="gap:14px">
+    <div class="card grid" style="gap:12px"><strong>כפתורים</strong>
+      <div class="demo"><button class="btn" type="button">שמירה</button><button class="btn go" type="button">אני מתחיל עכשיו</button><button class="btn ghost" type="button">ביטול</button><button class="btn" type="button" disabled>בחר שעת התחלה</button></div></div>
+    <div class="card grid" style="gap:12px"><strong>בחירות</strong>
+      <div class="demo"><div class="seg" role="group" aria-label="סוג רישום" data-one><button type="button" aria-pressed="true">שעון</button><button type="button" aria-pressed="false">ידני</button><button type="button" aria-pressed="false">קבוצה</button></div>
+        <div class="cseg" role="group" aria-label="מטבע" data-one><button type="button" aria-pressed="true">₪</button><button type="button" aria-pressed="false">$</button></div>
+        <input type="checkbox" class="switch" checked aria-label="שולם"></div>
+      <div class="demo"><button class="chip" type="button" aria-pressed="true"><span class="num"><span>₪</span>52</span>/שעה</button><button class="chip sug" type="button">17:00</button><button class="chip pend" type="button">תעריף חסר · להוספה</button><button class="chip" type="button">+ בונוס</button></div></div>
+    <div class="card grid" style="gap:12px"><strong>משמרות</strong>
+      <div class="shift" style="--c:var(--w1);--co:var(--w1o)"><span class="av" style="background:var(--w1);color:var(--w1o)">מ</span><span class="t">היום<span class="tag">לא שולם</span></span><span class="m num"><span class="cur">₪</span>286</span><span class="s"><span class="num">17:00–22:30</span> · 5.5 ש׳</span></div>
+      <div class="shift"><span class="av" style="background:var(--w4);color:var(--w4o)">ג</span><span class="t">יום ד׳ 14.10</span><span class="m"><span class="tag w">תעריף חסר</span></span><span class="s"><span class="num">19:00–00:30</span> · למחרת</span></div>
+      <div class="shift plan" style="border-color:var(--w2)"><span class="av" style="border:1.5px dashed var(--w2);color:var(--w2)">ש</span><span class="t">יום ב׳ 19.10<span class="tag">מתוכנן</span></span><span class="m num" style="color:var(--muted)"><span class="cur">₪</span>240</span><span class="s"><span class="num">16:00–18:00</span> · שיעורים פרטיים</span></div>
+      <div class="pass" style="background:var(--w3);color:var(--w3o)"><strong>פרילנס — עיצוב</strong><span class="a num"><span class="cur">$</span>263</span><small>7.5 שעות · 2 משמרות</small></div></div>
+    <div class="card grid" style="gap:12px"><strong>סרגל זמן</strong>
+      <div class="rhead"><div class="ruler" aria-hidden="true"><div class="rbase"></div><i class="rseg" style="inset-inline-start:70.8%;width:22.9%"></i><span class="rh" style="inset-inline-start:70.8%">התחלה</span><span class="rh on" style="inset-inline-start:93.7%">סיום</span></div></div>
+      <span style="font-size:14px;color:var(--muted)">זז רק בגרירת ידית ואחרי תנועה ברורה, בקפיצות של 15 דקות, עם רטט קטן בכל קפיצה.</span></div>
+    <div class="card grid" style="gap:12px"><strong>פעולות משמרת</strong>
+      <div class="acts"><button class="go" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>עריכה</button><button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>שיתוף</button><button type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>העתקה</button><button class="danger" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>מחיקה</button></div></div>
+    <div class="card grid" style="gap:12px"><strong>ניווט, הודעה ומקלדת</strong>
+      <div class="navbar" role="group" aria-label="ניווט" data-one><button type="button" aria-current="page">בית</button><button type="button">היסטוריה</button><button class="plus" type="button" aria-label="משמרת חדשה">+</button><button type="button">סיכום</button><button type="button">הגדרות</button></div>
+      <div><span class="toast">המשמרת נשמרה ✓ <u>ביטול</u></span></div>
+      <div class="keys"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>תנועה</h2>
+  <p class="lead">תנועה קצרה עם תפקיד ברור: לחיצה, פתיחה או חגיגה. כשמבקשים במכשיר פחות תנועה, נשאר רק מעבר שקיפות.</p>
+  <div class="card grid" style="gap:14px">
+    <div class="motion"><button class="btn ghost" type="button" data-anim="press">לחיצה · 80ms</button><button class="btn ghost" type="button" data-anim="up">חלון עולה · 320ms</button><button class="btn ghost" type="button" data-anim="pop">Wrapped · 500ms</button><span class="ball" id="ball"></span></div>
+  </div>
+</section>
+
+<section>
+  <h2>רטט</h2>
+  <p class="lead">חמישה סוגים בלבד, וכל אחד עם תפקיד קבוע. אפשר לכבות בהגדרות. באנדרואיד משתמשים ברטט המובנה של המערכת. בדף הזה הרטט עובד רק כשפותחים אותו ישירות בכרום בטלפון.</p>
+  <div class="tablewrap"><table>
+    <tr><th>סוג</th><th>מתי</th><th>אנדרואיד</th><th></th></tr>
+    <tr><td>נגיעה</td><td>כל כפתור</td><td><code>VIRTUAL_KEY</code></td><td><button class="chip" type="button" data-vib="6">לנסות</button></td></tr>
+    <tr><td>קפיצה</td><td>כל 15 דקות בסרגל</td><td><code>CLOCK_TICK</code></td><td><button class="chip" type="button" data-vib="4">לנסות</button></td></tr>
+    <tr><td>בחירה</td><td>לחיצה ארוכה, תחילת בחירה מרובה</td><td><code>LONG_PRESS</code></td><td><button class="chip" type="button" data-vib="14">לנסות</button></td></tr>
+    <tr><td>הצלחה</td><td>שמירה, אישור משמרת מתוכננת</td><td><code>CONFIRM</code></td><td><button class="chip" type="button" data-vib="12,60,22">לנסות</button></td></tr>
+    <tr><td>אזהרה</td><td>מחיקה, ביטול משמרת פעילה</td><td><code>REJECT</code></td><td><button class="chip" type="button" data-vib="35,50,35">לנסות</button></td></tr>
+  </table></div>
+</section>
+
+<section>
+  <h2>לוגו ואייקון</h2>
+  <p class="lead">שלושה קווים שעולים, כמו גרף, ויחד הם יוצרים את האות ש׳. האייקון בנוי לפי הכללים של אנדרואיד לאייקון מסתגל: רקע וחזית נפרדים, אזור בטוח באמצע, וגרסה חד-צבעית לאייקונים בערכת נושא.</p>
+  <div class="card grid" style="gap:20px">
+    <div class="icons" id="icons"></div>
+    <div class="grid g2" style="align-items:start">
+      <div class="home" id="home"></div>
+      <div class="grid" style="gap:10px;align-content:start"><strong>גדלים קטנים</strong><div class="icons" id="small"></div>
+        <span style="font-size:14px;color:var(--muted)">בגודל 24 נשארים רק שלושת הקווים, בלי הבסיס, כדי שהסמל יישאר קריא.</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="decide" style="background:var(--surface)">
+    <strong>אושר ב-16.10</strong>
+    <ol>
+      <li><b>גופן:</b> Rubik ו-Secular One. Heebo נשאר גיבוי.</li>
+      <li><b>צבע למקום עבודה:</b> 8 צבעים קבועים לפי הסדר.</li>
+      <li><b>ערכת צבעים:</b> אוטומטי, בהיר או כהה, בחירה בהגדרות. שתי הערכות מעוצבות במלואן.</li>
+      <li><b>מצב שינה להתראות:</b> בוחרים שעות (ברירת מחדל 22:00–07:00). התראה שנופלת בזמן הזה מחכה לסופו ולא נמחקת.</li>
+    </ol>
+  </div>
+</section>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const names = ["אינדיגו", "ירוק", "ורד", "חרדל", "סגול", "תכלת", "טורקיז", "בורדו"];
+  const GB = ["#1E1873", "#073D2C", "#5C1230", "#C98A10", "#2E1466", "#0C2F66", "#063B3A", "#4A0F21"];
+  const ratios = { light: [6.24, 4.6, 4.62, 10.42, 5.56, 4.62, 4.2, 6.19], dark: [6.24, 4.6, 4.62, 10.42, 5.56, 4.62, 4.2, 6.19] };
+  const dark = () => document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+  const drawWp = () => { const r = ratios[dark() ? 'dark' : 'light']; $('#wp').innerHTML = names.map((n, i) => `<div style="background:linear-gradient(90deg,var(--w${i + 1}),${GB[i]});color:var(--w${i + 1}o)"><b>${i + 1} · ${n}</b><small>${r[i]}:1</small></div>`).join(''); };
+  drawWp();
+  document.querySelector('.space').innerHTML = [4, 8, 12, 16, 20, 24, 32, 40].map(v => `<div><i style="height:${v}px"></i>${v}</div>`).join('');
+  document.querySelector('.keys').innerHTML = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '⌫'].map(k => `<button type="button">${k}</button>`).join('');
+  const mark = (s, opts = {}) => `<svg viewBox="0 0 108 108" width="${s}" height="${s}" aria-hidden="true">${opts.mono ? '<rect width="108" height="108" fill="#DCE3F5"/>' : '<rect width="108" height="108" fill="var(--ink)"/>'}<g stroke-linecap="round" stroke-width="11">${opts.mono ? '<path d="M33 72V50M54 72V32M75 72V41" stroke="#2B3550"/>' : '<path d="M33 72V50" stroke="#7C8CFF"/><path d="M54 72V32" stroke="#FFC54D"/><path d="M75 72V41" stroke="#34C79A"/>'}</g>${opts.nobase ? '' : `<path d="M33 74h42" stroke="${opts.mono ? '#2B3550' : 'var(--bg)'}" stroke-width="11" stroke-linecap="round"/>`}</svg>`;
+  $('#icons').innerHTML = [['mask-circle', 'עיגול'], ['mask-squircle', 'סקוויקל'], ['mask-rounded', 'מרובע מעוגל']].map(([c, l]) => `<figure><span class="${c}" style="display:block;width:72px;height:72px">${mark(72)}</span><figcaption>${l}</figcaption></figure>`).join('') + `<figure><span class="mask-circle" style="display:block;width:72px;height:72px">${mark(72, { mono: true })}</span><figcaption>ערכת נושא</figcaption></figure>`;
+  $('#small').innerHTML = [48, 32, 24].map(s => `<figure><span class="mask-circle" style="display:block;width:${s}px;height:${s}px">${mark(s, { nobase: s < 32 })}</span><figcaption>${s}</figcaption></figure>`).join('');
+  $('#home').innerHTML = '<div><span class="ph"></span>&nbsp;</div>'.repeat(5) + `<div><span class="mask-circle" style="display:block;width:56px;height:56px">${mark(56)}</span>חישוב שכר</div>` + '<div><span class="ph"></span>&nbsp;</div>'.repeat(2);
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    try { navigator.vibrate?.(b.dataset.vib ? b.dataset.vib.split(',').map(Number) : 6); } catch {}
+    const grp = b.closest('[data-one]');
+    if (grp && !b.classList.contains('plus')) grp.querySelectorAll('button').forEach(x => { if (grp.classList.contains('navbar')) { x === b ? x.setAttribute('aria-current', 'page') : x.removeAttribute('aria-current'); } else x.setAttribute('aria-pressed', x === b); });
+    if (b.classList.contains('chip') && !b.dataset.vib && !grp) b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true');
+    if (b.dataset.anim) { const ball = $('#ball'); ball.style.animation = 'none'; void ball.offsetWidth; ball.style.animation = b.dataset.anim === 'press' ? '' : `${b.dataset.anim} ${b.dataset.anim === 'up' ? '.32s cubic-bezier(.2,.8,.2,1)' : '.5s cubic-bezier(.2,1.4,.4,1)'}`; if (b.dataset.anim === 'press') { ball.style.transition = 'transform .08s'; ball.style.transform = 'scale(.9)'; setTimeout(() => ball.style.transform = '', 100); } }
+    if (b.id === 'theme') { document.documentElement.dataset.theme = dark() ? 'light' : 'dark'; drawWp(); }
+  });
+})();
+</script>

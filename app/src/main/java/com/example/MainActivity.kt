@@ -6,6 +6,10 @@ import android.app.TimePickerDialog
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import com.example.ui.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
@@ -47,6 +51,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -78,6 +83,10 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import com.example.ui.coachTarget
+import com.example.ui.CoachTarget
+import com.example.ui.LocalCoachStep
+import com.example.ui.CoachScreen
 import com.example.data.WorkCategory
 import com.example.data.WorkEntry
 import com.example.ui.theme.MyApplicationTheme
@@ -118,9 +127,9 @@ fun Modifier.pressScale(
 ): Modifier {
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled) 0.94f else 1f,
+        targetValue = if (isPressed && enabled) 0.96f else 1f,
         animationSpec = spring(
-            dampingRatio = 0.5f,
+            dampingRatio = 1f,
             stiffness = 300f
         ),
         label = "pressScale"
@@ -179,56 +188,9 @@ fun getWorkerNamesFromEntry(json: String): List<String> {
 }
 
 fun generateWhatsAppReportText(filteredEntries: List<WorkEntry>, selectedCategoryFilter: String, searchQuery: String): String {
-    if (filteredEntries.isEmpty()) return ""
-    val uniqueCategories = filteredEntries.map { it.category }.distinct()
-    val allWorkers = filteredEntries.flatMap { getWorkerNamesFromEntry(it.groupWorkersJson) }.distinct()
-    
-    val isSingleCategory = selectedCategoryFilter != "הכל" || uniqueCategories.size == 1
-    val isSingleWorker = allWorkers.size == 1
-    
-    val isWorkerQuery = isSingleWorker || (searchQuery.isNotBlank() && allWorkers.any { it.contains(searchQuery, ignoreCase = true) })
-    
-    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("he", "IL"))
-    val totalHours = filteredEntries.sumOf { it.hours }
-    val totalPay = filteredEntries.sumOf { it.totalEarnings }
-    
-    val minDate = filteredEntries.minOfOrNull { it.date } ?: System.currentTimeMillis()
-    val dateStr = sdf.format(Date(minDate))
-    
-    val hasUnpaid = filteredEntries.any { !it.isPaid }
-    val statusStr = if (hasUnpaid) "לא שולם" else "שולם"
-    
-    return if (isWorkerQuery) {
-        val workerName = when {
-            isSingleWorker -> allWorkers.first()
-            searchQuery.isNotBlank() && allWorkers.any { it.contains(searchQuery, ignoreCase = true) } -> allWorkers.first { it.contains(searchQuery, ignoreCase = true) }
-            else -> allWorkers.firstOrNull() ?: searchQuery
-        }
-        
-        val grouped = filteredEntries.groupBy { it.category }
-        val categoriesText = if (grouped.size > 1) {
-            val catsStr = grouped.map { "${it.key}: ${String.format(Locale.US, "%.1f", it.value.sumOf { entry -> entry.hours })} שעות" }.joinToString("... ") + "..."
-            " ($catsStr)"
-        } else {
-            ""
-        }
-        
-        val endSentence = if (hasUnpaid) "\nאיך אתה מעדיף שאשלם לך?" else ""
-        
-        "היי $workerName, להלן פירוט שעות עבודה שלך מיום $dateStr:\n" +
-                "עבדת ${String.format(Locale.US, "%.1f", totalHours)} שעות$categoriesText. מגיע לך: ₪${String.format(Locale.US, "%,.2f", totalPay)}.\n" +
-                "סטטוס תשלום: $statusStr.$endSentence"
-    } else {
-        // Employer (Category Report)
-        val grouped = filteredEntries.groupBy { it.category }
-        val invoiceLines = grouped.map { (catName, catEntries) ->
-            val catHours = catEntries.sumOf { it.hours }
-            val catPay = catEntries.sumOf { it.totalEarnings }
-            "קטגוריה: $catName | סך שעות: ${String.format(Locale.US, "%.1f", catHours)} | סה\"כ לתשלום: ₪${String.format(Locale.US, "%,.2f", catPay)}."
-        }.joinToString("\n")
-        
-        invoiceLines
-    }
+    val names = filteredEntries.flatMap { getWorkerNamesFromEntry(it.groupWorkersJson) }.distinct()
+    val worker = names.singleOrNull { searchQuery.isNotBlank() && it.equals(searchQuery.trim(), ignoreCase = true) }
+    return com.example.data.WorkMoney.report(filteredEntries, worker)
 }
 
 fun copyWhatsAppToClipboard(context: Context, filteredEntries: List<WorkEntry>, selectedCategoryFilter: String, searchQuery: String) {
@@ -240,7 +202,7 @@ fun copyWhatsAppToClipboard(context: Context, filteredEntries: List<WorkEntry>, 
 }
 
 fun copyExcelToClipboard(context: Context, filteredEntries: List<WorkEntry>, selectedCategoryFilter: String) {
-    val headers = listOf("קטגוריה", "תאריך", "שעות", "תעריף שעתי", "שכר לתשלום", "סטטוס", "הערות")
+    val headers = listOf("קטגוריה", "תאריך", "שעות", "תעריף שעתי", "שכר לתשלום", "סטטוס", "הערות", "מטבע")
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("he", "IL"))
     val rows = filteredEntries.map { entry ->
         val dateStr = sdf.format(Date(entry.date))
@@ -252,11 +214,14 @@ fun copyExcelToClipboard(context: Context, filteredEntries: List<WorkEntry>, sel
             String.format(Locale.US, "%.2f", entry.hourlyRate),
             String.format(Locale.US, "%.2f", entry.totalEarnings),
             statusStr,
-            entry.notes
-        ).joinToString("\t")
+            entry.notes,
+            entry.currency
+        ).joinToString("\t") { cell ->
+            if (cell.any { it == '\t' || it == '\n' || it == '\r' || it == '"' }) "\"" + cell.replace("\"", "\"\"") + "\"" else cell
+        }
     }
     val tsvContent = (listOf(headers.joinToString("\t")) + rows).joinToString("\n")
-    
+
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val clipData = ClipData.newPlainText("Excel Report", tsvContent)
     clipboardManager.setPrimaryClip(clipData)
@@ -264,20 +229,23 @@ fun copyExcelToClipboard(context: Context, filteredEntries: List<WorkEntry>, sel
 }
 
 fun formatSelectedShiftsForWhatsApp(selectedEntries: List<WorkEntry>): String {
-    val allWorkers = selectedEntries.flatMap { getWorkerNamesFromEntry(it.groupWorkersJson) }.distinct()
-    val isWorker = allWorkers.isNotEmpty()
-    return generateWhatsAppReportText(selectedEntries, if (isWorker) "הכל" else "קטגוריה", if (isWorker) allWorkers.first() else "")
+    return com.example.data.WorkMoney.report(selectedEntries)
 }
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: WorkViewModel by viewModels {
-        WorkViewModelFactory(application)
+    private fun modelFor(uid: String?): WorkViewModel {
+        val owner = com.example.data.WorkAccountScope(uid)
+        return androidx.lifecycle.ViewModelProvider(this, WorkViewModelFactory(application, owner))
+            .get(owner.storageKey, WorkViewModel::class.java)
     }
+    private val viewModel: WorkViewModel
+        get() = modelFor(com.example.api.AuthManager.currentUser.value?.uid)
 
     val intentActionFlow = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.example.ui.WorkOnboardingStore(this).initialize()
         try {
             com.example.api.FirebaseSafeInitializer.init(applicationContext)
             com.example.api.AuthManager.init(applicationContext)
@@ -292,16 +260,10 @@ class MainActivity : ComponentActivity() {
         )
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
-        
+
         handleIntent(intent)
-        
-        // Request notification permission for Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permission = android.Manifest.permission.POST_NOTIFICATIONS
-            if (checkSelfPermission(permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(permission), 101)
-            }
-        }
+
+        // Notification permission is requested only when starting a live shift.
 
         setContent {
             MyApplicationTheme {
@@ -319,12 +281,14 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.TopCenter
                         ) {
-                            MainAppContent(
-                                viewModel = viewModel,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .widthIn(max = 680.dp)
-                            )
+                            val session by com.example.api.AuthManager.currentUser.collectAsStateWithLifecycle()
+                            // All remembered form/selection/AI review state is confined to this owner.
+                            androidx.compose.runtime.key(session?.uid) {
+                                MainAppContent(
+                                    viewModel = modelFor(session?.uid),
+                                    modifier = Modifier.fillMaxSize().widthIn(max = 680.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -347,8 +311,7 @@ class MainActivity : ComponentActivity() {
         intentActionFlow.value = intent?.action
         if (intent?.action == "com.example.ACTION_START_SHIFT") {
             // Need to retrieve default rate for "עצמאי" if it exists, otherwise use 40.0
-            val rate = viewModel.categories.value.find { it.name == "עצמאי" }?.defaultRate ?: 40.0
-            viewModel.startActiveShift("עצמאי", rate)
+            viewModel.startDefaultActiveShift()
             intentActionFlow.value = null
         }
     }
@@ -361,9 +324,9 @@ fun MainAppContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val onboarding = com.example.ui.rememberOnboardingController()
+    if (!onboarding.active) com.example.ui.WorkUpdateSettings(automatic = true)
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-    
-    val authUser by viewModel.currentUserSession.collectAsStateWithLifecycle()
 
     val googleSignInLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -377,9 +340,7 @@ fun MainAppContent(
         }
     }
 
-    if (authUser == null) {
-        LoginOverlay(
-            onGoogleSignInClick = {
+    val signInWithGoogle: () -> Unit = {
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                 if (com.example.api.WebPlatformBridge.isWebTarget) {
                     com.example.api.WebPlatformBridge.signInWithWebOAuthPopup(context) { success, errorMsg ->
@@ -389,25 +350,23 @@ fun MainAppContent(
                             Toast.makeText(context, errorMsg ?: "ההתחברות בוטלה", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    return@LoginOverlay
-                }
-                try {
+                } else try {
                     val client = com.example.api.AuthManager.getGoogleSignInClient(context)
                     if (client != null) {
                         googleSignInLauncher.launch(client.signInIntent)
                     } else {
-                        com.example.api.AuthManager.performSafeFallbackSignIn()
-                        Toast.makeText(context, "התחברת בהצלחה למערכת", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "החיבור לחשבון עדיין לא הוגדר. אפשר להמשיך להשתמש באפליקציה.", Toast.LENGTH_LONG).show()
                     }
                 } catch (t: Throwable) {
-                    com.example.api.AuthManager.performSafeFallbackSignIn()
-                    Toast.makeText(context, "התחברת בהצלחה למערכת", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "לא ניתן להתחבר כעת. אפשר להמשיך להשתמש באפליקציה.", Toast.LENGTH_LONG).show()
                 }
-            },
-            modifier = modifier
-        )
-        return
     }
+
+    var showAccountDialog by remember { mutableStateOf(false) }
+    val signInForSync: () -> Unit = { showAccountDialog = true }
+    if (showAccountDialog && BuildConfig.ACCOUNTS_ENABLED) com.example.ui.WorkAccountDialog(
+        onDismiss = { showAccountDialog = false }, onGoogle = signInWithGoogle
+    )
 
     // Runtime permission launcher for POST_NOTIFICATIONS
     val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -423,35 +382,44 @@ fun MainAppContent(
     val distinctCategories = remember(categories) { categories.distinctBy { it.name.trim() } }
     val stats by viewModel.stats.collectAsStateWithLifecycle()
 
-    var selectedTab by androidx.compose.runtime.saveable.rememberSaveable { mutableIntStateOf(0) }
+    // Pager is the single navigation state: tab presses and RTL swipes stay in sync.
+    val mainPagerState = rememberPagerState(pageCount = { 2 })
+    val navigationScope = rememberCoroutineScope()
+    val selectedTab = mainPagerState.currentPage
+    val navigateToTab: (Int) -> Unit = { page ->
+        navigationScope.launch { mainPagerState.animateScrollToPage(page) }
+    }
+    val accountSession by viewModel.currentUserSession.collectAsStateWithLifecycle()
+    // Optional personal AI setup is now introduced by the tour and available in Settings.
     var showSettings by remember { mutableStateOf(false) }
     var entryToEdit by remember { mutableStateOf<WorkEntry?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchDialogOpen by remember { mutableStateOf(false) }
-
-    val activeShiftStartTime by viewModel.activeShiftStartTime.collectAsStateWithLifecycle()
-    
-    var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
-    var isFocusedMode by remember { mutableStateOf(false) }
-
-    LaunchedEffect(activeShiftStartTime, lastInteractionTime) {
-        if (activeShiftStartTime != null && selectedTab == 0) {
-            isFocusedMode = false
-            kotlinx.coroutines.delay(7000)
-            isFocusedMode = true
-        } else {
-            isFocusedMode = false
-        }
+    var isContentScrolling by remember { mutableStateOf(false) }
+    var historyNavigationHeight by remember { mutableStateOf(0.dp) }
+    val navigationDensity = androidx.compose.ui.platform.LocalDensity.current
+    val isImeVisible = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
+    LaunchedEffect(selectedTab) {
+        isContentScrolling = false
     }
 
-    val focusAlpha by animateFloatAsState(targetValue = if (isFocusedMode) 0.15f else 1f, label = "focusAlpha")
+    val activeShiftStartTime by viewModel.activeShiftStartTime.collectAsStateWithLifecycle()
+
+    // Keep every interactive control readable during an active shift.
+    val focusAlpha = 1f
 
     val intentAction by (context as MainActivity).intentActionFlow.collectAsStateWithLifecycle()
     LaunchedEffect(intentAction) {
-        if (intentAction == "com.example.ACTION_IMPORT_EXCEL") {
-            showSettings = true
-            (context as MainActivity).intentActionFlow.value = null
+        when (intentAction) {
+            "com.example.ACTION_IMPORT_EXCEL" -> {
+                showSettings = true
+                (context as MainActivity).intentActionFlow.value = null
+            }
+            "com.example.ACTION_OPEN_HISTORY_SEARCH" -> {
+                if (selectedTab == 1) isSearchDialogOpen = true
+                (context as MainActivity).intentActionFlow.value = null
+            }
         }
     }
 
@@ -459,31 +427,72 @@ fun MainAppContent(
         if (showSettings) {
             showSettings = false
         } else {
-            selectedTab = 0
+            navigateToTab(0)
         }
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
+    val bottomNavigation: @Composable () -> Unit = {
+        NavigationBar(
+            containerColor = Color.Transparent,
+            tonalElevation = 0.dp,
+            modifier = Modifier
+                .heightIn(min = 58.dp)
+                .testTag("bottom_navigation")
+                .graphicsLayer { alpha = focusAlpha },
+            windowInsets = if (selectedTab == 1) WindowInsets.navigationBars else WindowInsets(0, 0, 0, 0)
+        ) {
+            NavigationBarItem(
+                selected = selectedTab == 0,
+                onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    navigateToTab(0)
+                },
+                icon = { Icon(imageVector = Icons.Outlined.GridView, contentDescription = "ראשי", modifier = Modifier.size(20.dp)) },
+                label = { Text("ראשי", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color(0xFF6366F1),
+                    unselectedIconColor = Color(0xFF8E8E93),
+                    selectedTextColor = Color(0xFF6366F1),
+                    unselectedTextColor = Color(0xFF8E8E93),
+                    indicatorColor = Color(0xFF1E1E1E)
+                ),
+                modifier = Modifier.testTag("tab_0")
+            )
+            NavigationBarItem(
+                selected = selectedTab == 1,
+                onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    navigateToTab(1)
+                },
+                icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = "היסטוריה", modifier = Modifier.size(20.dp)) },
+                label = { Text("היסטוריה", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color(0xFF6366F1),
+                    unselectedIconColor = Color(0xFF8E8E93),
+                    selectedTextColor = Color(0xFF6366F1),
+                    unselectedTextColor = Color(0xFF8E8E93),
+                    indicatorColor = Color(0xFF1E1E1E)
+                ),
+                modifier = Modifier.testTag("tab_1")
+            )
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Transparent)
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
-                        lastInteractionTime = System.currentTimeMillis()
-                    }
-                }
-            }
     ) {
         Scaffold(
             modifier = Modifier
                 .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .imePadding(),
             containerColor = Color.Transparent,
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            // IME is owned by the outer imePadding; scaffold owns system bars only.
+            contentWindowInsets = WindowInsets.systemBars,
             topBar = {
                 Box(modifier = Modifier.graphicsLayer { alpha = focusAlpha }) {
                     TopAppBar(
@@ -514,7 +523,8 @@ fun MainAppContent(
                                     onClick = {
                                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                         isSearchDialogOpen = true
-                                    }
+                                    },
+                                    modifier = Modifier.testTag("history_search_button")
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Search,
@@ -524,10 +534,11 @@ fun MainAppContent(
                                 }
                             }
                             IconButton(
-                                onClick = { 
+                                onClick = {
                                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                    showSettings = true 
-                                }
+                                    showSettings = true
+                                },
+                                modifier = Modifier.testTag("settings_button")
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Settings,
@@ -544,55 +555,12 @@ fun MainAppContent(
                     )
                 }
             },
-            bottomBar = {
-                Box(modifier = Modifier.graphicsLayer { alpha = focusAlpha }) {
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        tonalElevation = 0.dp,
-                        modifier = Modifier.height(58.dp),
-                        windowInsets = WindowInsets(0.dp)
-                    ) {
-                        NavigationBarItem(
-                            selected = selectedTab == 0,
-                            onClick = { 
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                selectedTab = 0 
-                            },
-                            icon = { Icon(imageVector = Icons.Outlined.GridView, contentDescription = "ראשי", modifier = Modifier.size(20.dp)) },
-                            label = { Text("ראשי", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color(0xFF6366F1),
-                                unselectedIconColor = Color(0xFF8E8E93),
-                                selectedTextColor = Color(0xFF6366F1),
-                                unselectedTextColor = Color(0xFF8E8E93),
-                                indicatorColor = Color(0xFF1E1E1E)
-                            ),
-                            modifier = Modifier.testTag("tab_0").pressScale()
-                        )
-                        NavigationBarItem(
-                            selected = selectedTab == 1,
-                            onClick = { 
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                selectedTab = 1 
-                            },
-                            icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = "היסטוריה", modifier = Modifier.size(20.dp)) },
-                            label = { Text("היסטוריה", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color(0xFF6366F1),
-                                unselectedIconColor = Color(0xFF8E8E93),
-                                selectedTextColor = Color(0xFF6366F1),
-                                unselectedTextColor = Color(0xFF8E8E93),
-                                indicatorColor = Color(0xFF1E1E1E)
-                            ),
-                            modifier = Modifier.testTag("tab_1").pressScale()
-                        )
-                    }
-                }
-            }
+            bottomBar = {}
         ) { padding ->
             Column(
                 modifier = Modifier
                     .padding(padding)
+                    .consumeWindowInsets(padding)
                     .fillMaxSize()
             ) {
                 Box(
@@ -600,10 +568,11 @@ fun MainAppContent(
                         .fillMaxSize()
                         .weight(1f)
                 ) {
-                    Crossfade(
-                        targetState = selectedTab,
-                        label = "tab_crossfade",
-                        animationSpec = tween(durationMillis = 200)
+                    HorizontalPager(
+                        state = mainPagerState,
+                        modifier = Modifier.fillMaxSize().testTag("main_screen_pager"),
+                        beyondViewportPageCount = 1,
+                        key = { page -> if (page == 0) "dashboard" else "history" }
                     ) { currentTab ->
                         when (currentTab) {
                             0 -> {
@@ -619,7 +588,7 @@ fun MainAppContent(
                                     activeShiftCategory = activeShiftCategory,
                                     activeShiftRate = activeShiftRate,
                                     focusAlpha = focusAlpha,
-                                    onStartShift = { cat, rate ->
+                                    onStartShift = { cat, rate, currency ->
                                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                             val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
                                                 context,
@@ -629,28 +598,17 @@ fun MainAppContent(
                                                 permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                                             }
                                         }
-                                        viewModel.startActiveShift(cat, rate)
+                                        viewModel.startActiveShift(cat, rate, currency)
                                     },
-                                    onStopShift = { viewModel.stopActiveShift() },
                                     onSaveShift = { cat, hrs, rate ->
-                                        viewModel.addEntry(
-                                            category = cat,
-                                            dateMillis = System.currentTimeMillis(),
-                                            isTimeRange = false,
-                                            startTime = null,
-                                            endTime = null,
-                                            hours = hrs,
-                                            rate = rate,
-                                            notes = "משמרת פעילה (טיימר החישוב)"
-                                        )
-                                        viewModel.stopActiveShift()
+                                        viewModel.finishActiveShift()
                                     },
                                     recentEntries = entries,
                                     onTogglePaid = { entry ->
                                         triggerHapticFeedback(context, isDestructive = false)
                                         viewModel.togglePaymentStatus(entry)
                                     },
-                                    onViewAll = { selectedTab = 1 },
+                                    onViewAll = { navigateToTab(1) },
                                     onAddEntry = { category, date, isRange, start, end, hours, rate, notes, isGroupShift, empRate, workerRate, groupJson, currency ->
                                         viewModel.addEntry(category, date, isRange, start, end, hours, rate, notes, false, isGroupShift, empRate, workerRate, groupJson, currency)
                                     },
@@ -661,10 +619,16 @@ fun MainAppContent(
                                         triggerHapticFeedback(context, isDestructive = true)
                                         viewModel.deleteCategory(category)
                                     },
-                                    selectedTab = selectedTab
+                                    bottomNavigation = { if (selectedTab == 0) bottomNavigation() },
+                                    selectedTab = selectedTab,
+                                    onScrollStateChanged = { scrolling ->
+                                        if (selectedTab == 0) isContentScrolling = scrolling
+                                    }
                                 )
                             }
                             1 -> ShiftsScreen(
+                                isVisible = selectedTab == 1,
+                                navigationBottomInset = historyNavigationHeight,
                                 viewModel = viewModel,
                                 entries = entries,
                                 categories = distinctCategories,
@@ -678,9 +642,21 @@ fun MainAppContent(
                                 onDelete = { entry ->
                                     triggerHapticFeedback(context, isDestructive = true)
                                     viewModel.deleteEntry(entry)
+                                },
+                                onScrollStateChanged = { scrolling ->
+                                    if (selectedTab == 1) isContentScrolling = scrolling
                                 }
                             )
                         }
+                    }
+                    androidx.compose.animation.AnimatedVisibility(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        visible = selectedTab == 1 && !isImeVisible && !isContentScrolling,
+                        enter = fadeIn(tween(140)), exit = fadeOut(tween(140))
+                    ) {
+                        Box(Modifier.onSizeChanged { size ->
+                            if (size.height > 0) historyNavigationHeight = with(navigationDensity) { size.height.toDp() }
+                        }) { bottomNavigation() }
                     }
                 }
             }
@@ -707,7 +683,7 @@ fun MainAppContent(
             categories = distinctCategories,
             viewModel = viewModel,
             onDismiss = { entryToEdit = null },
-            onSave = { category, date, isRange, start, end, hours, rate, notes, isPaid, isGroup, empRate, workerRate, groupJson ->
+            onSave = { category, date, isRange, start, end, hours, rate, notes, isPaid, isGroup, empRate, workerRate, groupJson, currency ->
                 entryToEdit?.let { old ->
                     viewModel.editEntry(
                         id = old.id,
@@ -723,7 +699,8 @@ fun MainAppContent(
                         isGroupShift = isGroup,
                         employerRate = empRate,
                         workerRate = workerRate,
-                        groupWorkersJson = groupJson
+                        groupWorkersJson = groupJson,
+                        currency = currency
                     )
                 }
                 entryToEdit = null
@@ -745,11 +722,8 @@ fun MainAppContent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { showSettings = false }
-                    )
+                    .testTag("settings_root")
+                    .pointerInput(Unit) { detectTapGestures(onTap = { showSettings = false }) }
             ) {
                 Box(
                     modifier = Modifier
@@ -762,16 +736,14 @@ fun MainAppContent(
                         .clip(RoundedCornerShape(24.dp))
                         .background(Color(0xE6121212))
                         .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(24.dp))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {} // Consume click inside dialog
-                        )
+                        .pointerInput(Unit) { detectTapGestures(onTap = {}) }
                 ) {
                     ManagementScreen(
                         viewModel = viewModel,
                         categories = distinctCategories,
-                        onNavigateBack = { showSettings = false }
+                        onNavigateBack = { showSettings = false },
+                        onSignIn = signInForSync,
+                        onReplayTutorial = { onboarding.replay() }
                     )
                 }
             }
@@ -783,7 +755,7 @@ fun MainAppContent(
             onDismissRequest = { isSearchDialogOpen = false }
         ) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                 border = BorderStroke(1.dp, Color(0xFF2D2D2D)),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -801,7 +773,7 @@ fun MainAppContent(
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = Color.White,
-                        textAlign = TextAlign.Right,
+                        textAlign = TextAlign.Start,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
@@ -814,13 +786,18 @@ fun MainAppContent(
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "חיפוש", tint = Color.Gray, modifier = Modifier.size(18.dp)) },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
+                                IconButton(
+                                    onClick = { searchQuery = "" },
+                                    modifier = Modifier.testTag("history_search_clear")
+                                ) {
                                     Icon(Icons.Default.Close, contentDescription = "נקה", tint = Color.Gray, modifier = Modifier.size(18.dp))
                                 }
                             }
                         },
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { isSearchDialogOpen = false }),
+                        colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                             focusedBorderColor = Color(0xFF5C6BC0),
                             unfocusedBorderColor = Color(0x33FFFFFF),
                             focusedTextColor = Color.White,
@@ -835,13 +812,15 @@ fun MainAppContent(
                         TextButton(
                             onClick = { isSearchDialogOpen = false }
                         ) {
-                            Text("אישור", color = Color(0xFF5C6BC0), fontWeight = FontWeight.Bold)
+                            Text("הצג תוצאות", color = Color(0xFF5C6BC0), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
         }
     }
+    com.example.ui.WorkOnboarding(onboarding, viewModel, distinctCategories, entries)
+
 
 
 }
@@ -898,13 +877,6 @@ fun AnimatedGlowingEarnings(
         fontSize = fontSize,
         fontWeight = FontWeight.Bold,
         color = Color.White,
-        style = androidx.compose.ui.text.TextStyle(
-            shadow = androidx.compose.ui.graphics.Shadow(
-                color = glowColor.copy(alpha = 0.8f),
-                offset = androidx.compose.ui.geometry.Offset(0f, 0f),
-                blurRadius = 10f
-            )
-        ),
         modifier = modifier
     )
 }
@@ -947,8 +919,7 @@ fun DashboardScreen(
     activeShiftCategory: String,
     activeShiftRate: Double,
     focusAlpha: Float,
-    onStartShift: (String, Double) -> Unit,
-    onStopShift: () -> Unit,
+    onStartShift: (String, Double, String) -> Unit,
     onSaveShift: (String, Double, Double) -> Unit,
     recentEntries: List<WorkEntry>,
     onTogglePaid: (WorkEntry) -> Unit,
@@ -956,11 +927,16 @@ fun DashboardScreen(
     onAddEntry: (String, Long, Boolean, String?, String?, Double, Double, String, Boolean, Double?, Double?, String, String) -> Unit,
     onAddCategory: (String, Double) -> Unit,
     onDeleteCategory: (WorkCategory) -> Unit,
-    selectedTab: Int = 0
+    bottomNavigation: @Composable () -> Unit = {},
+    selectedTab: Int = 0,
+    onScrollStateChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-    
+    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val isImeVisible = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
+
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 3 })
     val runCountAnimationTrigger = viewModel.runCountAnimationTrigger.value
 
@@ -982,59 +958,80 @@ fun DashboardScreen(
     }
 
     val defaultCurr by viewModel.defaultCurrency.collectAsStateWithLifecycle()
-    var selectedCurrency by remember(defaultCurr) { mutableStateOf(defaultCurr) }
+    var selectedCurrency by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(defaultCurr) }
 
-    var hourlyRateStr by remember { mutableStateOf("40") }
-    var selectedCategory by remember { mutableStateOf("עצמאי") }
-    var isReportCardExpanded by remember { mutableStateOf(false) }
-
-    val scrollState = rememberScrollState()
-    val scope = rememberCoroutineScope()
-    var showQuickShiftDialog by remember { mutableStateOf(false) }
-    var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
-
-    var isManualMode by remember { mutableStateOf(false) } // false = שעון, true = ידני
-    var isAiMode by remember { mutableStateOf(false) }
-    var aiInputText by remember { mutableStateOf("") }
-    var isAiParsing by remember { mutableStateOf(false) }
-    var selectedDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
-    var startTimeStr by remember { mutableStateOf("09:00") }
-    var endTimeStr by remember { mutableStateOf("17:00") }
-    var breakMinutesStr by remember { mutableStateOf("0") }
-    var notesText by remember { mutableStateOf("") }
-    var manualHoursStr by remember { mutableStateOf("8.0") }
-
-    var showErrorHours by remember { mutableStateOf(false) }
-    var showErrorRate by remember { mutableStateOf(false) }
-
-    var isGroupShift by remember { mutableStateOf(false) }
-    var employerRateStr by remember { mutableStateOf("") }
-    var workerRateStr by remember { mutableStateOf("") }
-    var showSeparateRates by remember { mutableStateOf(false) }
-
-    val groupWorkers = remember { mutableStateListOf<WorkViewModel.GroupWorkerState>() }
-    var currentWorkerName by remember { mutableStateOf("") }
-    var currentWorkerHours by remember { mutableStateOf("0.0") }
-    var showWorkerAutocomplete by remember { mutableStateOf(false) }
-    var showAddCategoryDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(isGroupShift) {
-        if (isGroupShift) {
-            groupWorkers.clear()
-            currentWorkerName = ""
-            val hDouble = manualHoursStr.toDoubleOrNull() ?: 0.0
-            currentWorkerHours = if (hDouble > 0) String.format(Locale.US, "%.2f", hDouble) else "0.0"
-            showWorkerAutocomplete = false
-        } else {
-            groupWorkers.clear()
-            currentWorkerName = ""
-            currentWorkerHours = "0.0"
-            showWorkerAutocomplete = false
+    var hourlyRateStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("40") }
+    val localPreferences by viewModel.localPreferences.collectAsStateWithLifecycle()
+    val defaultCategory = localPreferences["defaultCategory"] ?: categories.firstOrNull()?.name ?: "עצמאי"
+    var selectedCategory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(defaultCategory, categories) {
+        if (categories.isNotEmpty() && categories.none { it.name == selectedCategory }) selectedCategory = defaultCategory
+    }
+    val selectedDefaultRate = categories.firstOrNull { it.name == selectedCategory }?.defaultRate
+    var appliedCategoryDefaults by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(selectedCategory, selectedDefaultRate) {
+        if (selectedDefaultRate != null && appliedCategoryDefaults != selectedCategory) {
+            selectedCurrency = viewModel.categoryCurrency(selectedCategory)
+            hourlyRateStr = selectedDefaultRate.toString()
+            appliedCategoryDefaults = selectedCategory
         }
     }
+    val coachStep = LocalCoachStep.current
+    var isReportCardExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(coachStep?.screen in listOf(CoachScreen.FORM, CoachScreen.AI)) }
+    var reportSubmitted by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+
+    val scrollState = rememberScrollState()
+    val dashboardIsScrolling = scrollState.isScrollInProgress
+    LaunchedEffect(dashboardIsScrolling, selectedTab) {
+        if (selectedTab == 0) onScrollStateChanged(dashboardIsScrolling)
+        // Do not dismiss the IME from scrollState changes. Android may report a brief
+        // scroll while bringing a newly focused field into view, which previously made
+        // the keyboard flash open and immediately close.
+    }
+    val scope = rememberCoroutineScope()
+    var showQuickShiftDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var showStopConfirmationDialog by remember { mutableStateOf(false) }
+    var cancelShiftStart by remember { mutableStateOf<Long?>(null) }
+    var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
+
+    var isManualMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) } // false = שעון, true = ידני
+    var isAiMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(coachStep?.screen == CoachScreen.AI) }
+    var aiInputText by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var isAiParsing by remember { mutableStateOf(false) }
+    var aiError by remember { mutableStateOf<String?>(null) }
+    var isAiSaving by remember { mutableStateOf(false) }
+    var aiProposal by remember { mutableStateOf<List<com.example.api.GeminiParser.ParsedShift>?>(null) }
+    var selectedDateMillis by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
+    var startTimeStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("09:00") }
+    var endTimeStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("17:00") }
+    var breakMinutesStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("0") }
+    var notesText by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var manualHoursStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("8.0") }
+
+    var showErrorHours by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var showErrorRate by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+
+    var isGroupShift by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var employerRateStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var workerRateStr by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var showSeparateRates by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+
+    val groupWorkers = androidx.compose.runtime.saveable.rememberSaveable(
+        saver = androidx.compose.runtime.saveable.Saver<androidx.compose.runtime.snapshots.SnapshotStateList<WorkViewModel.GroupWorkerState>, String>(
+            save = { viewModel.stringifyGroupWorkers(it) },
+            restore = { mutableStateListOf(*viewModel.parseGroupWorkers(it).toTypedArray()) }
+        )
+    ) { mutableStateListOf<WorkViewModel.GroupWorkerState>() }
+    var currentWorkerName by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var currentWorkerHours by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("0.0") }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    var isListening by remember { mutableStateOf(false) }
+    val voiceSession = remember {
+        com.example.ui.VoiceTranscriptSession({ aiInputText = it; aiError = null }, { aiError = it })
+    }
+    val aiScreenActive by rememberUpdatedState(isAiMode && isReportCardExpanded && selectedTab == 0)
+
 
     val speechRecognizer = remember { android.speech.SpeechRecognizer.createSpeechRecognizer(context) }
     val speechRecognizerIntent = remember {
@@ -1043,416 +1040,248 @@ fun DashboardScreen(
             putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "he-IL")
             putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "he-IL")
             putExtra(android.speech.RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "he-IL")
+            putExtra(android.speech.RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         }
     }
 
+    fun startVoice() {
+        if (!aiScreenActive || isAiParsing) return
+        if (!android.speech.SpeechRecognizer.isRecognitionAvailable(context)) {
+            aiError = "זיהוי קולי אינו זמין במכשיר הזה. אפשר להקליד את התיאור."
+            return
+        }
+        aiError = null
+        voiceSession.begin(aiInputText)
+        try { speechRecognizer.startListening(speechRecognizerIntent) }
+        catch (_: Exception) { voiceSession.interrupt(); aiError = "לא ניתן להתחיל הקלטה כרגע. אפשר לנסות שוב או להקליד." }
+    }
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            try {
-                speechRecognizer.startListening(speechRecognizerIntent)
-                isListening = true
-            } catch (e: Exception) {
-                Toast.makeText(context, "שגיאה בהפעלת הקלטה: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            scope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = "הקלטה קולית דורשת אישור הרשאה",
-                    actionLabel = "הגדרות",
-                    duration = SnackbarDuration.Long
-                )
-                if (result == SnackbarResult.ActionPerformed) {
-                    try {
-                        val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = android.net.Uri.fromParts("package", context.packageName, null)
-                        }
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "לא ניתן לפתוח הגדרות", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        }
+    ) { granted ->
+        if (granted) startVoice()
+        else aiError = "הקלטה דורשת הרשאת מיקרופון. אפשר לאשר בהגדרות המכשיר או להקליד."
     }
-
     val processAIInput: suspend (String) -> Unit = { text ->
-        if (text.isBlank()) {
-            Toast.makeText(context, "נא להזין או להקליט טקסט לפענוח", Toast.LENGTH_SHORT).show()
-        } else if (!isAiParsing) {
+        if (text.isNotBlank() && !isAiParsing && !voiceSession.active) {
             isAiParsing = true
+            aiError = null
             try {
-                val cats = viewModel.categories.value.map { it.name }
-                val currentModel = viewModel.geminiModel.value
-                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, cats, currentModel)
-                if (!results.isNullOrEmpty()) {
-                    viewModel.addShifts(results)
-
-                    aiInputText = ""
-                    triggerHapticFeedback(context, isDestructive = false)
-
-                    val msg = if (results.size > 1) "נוספו ${results.size} משמרות בהצלחה!" else "המשמרת נוספה!"
-                    scope.launch {
-                        val snackbarResult = snackbarHostState.showSnackbar(
-                            message = msg,
-                            actionLabel = "בטל",
-                            duration = SnackbarDuration.Long
-                        )
-                        if (snackbarResult == SnackbarResult.ActionPerformed) {
-                            viewModel.undoLastAddedEntry()
-                            Toast.makeText(context, "הוספת המשמרות בוטלה", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                } else {
-                    isManualMode = true
-                    isAiMode = false
-                    isGroupShift = false
-                    Toast.makeText(context, "לא הצלחנו לפענח את המשמרת אוטומטית. אנא הזן ידנית.", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                isManualMode = true
-                isAiMode = false
-                isGroupShift = false
-                Toast.makeText(context, "AI Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-            } finally {
-                isAiParsing = false
-            }
+                val categoriesNow = viewModel.categories.value
+                val results = com.example.api.GeminiParser.parseNaturalLanguageToShifts(text, categoriesNow.map { it.name }, categoriesNow.associate { it.name to it.defaultRate }, com.example.api.PersonalAiKey.read(context, viewModel.owner.uid))
+                if (results.isNotEmpty()) aiProposal = results
+                else aiError = "לא הצלחנו להבין את פרטי המשמרת. נסה להוסיף תאריך, שעות ותעריף ולפענח שוב."
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                aiError = "הפענוח לא הושלם. בדוק את החיבור ואת המפתח האישי בהגדרות, או תקן את התיאור ונסה שוב."
+            } finally { isAiParsing = false }
         }
     }
-
-    val recognitionListener = remember {
-        object : android.speech.RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {
-                isListening = true
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(speechRecognizer, lifecycleOwner) {
+        speechRecognizer.setRecognitionListener(voiceSession)
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP && voiceSession.active) {
+                voiceSession.interrupt()
+                speechRecognizer.cancel()
             }
-            override fun onBeginningOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {}
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {
-                isListening = false
-            }
-            override fun onError(error: Int) {
-                isListening = false
-                val errorMsg = when (error) {
-                    android.speech.SpeechRecognizer.ERROR_AUDIO -> "שגיאת שמע"
-                    android.speech.SpeechRecognizer.ERROR_CLIENT -> "שגיאת לקוח"
-                    android.speech.SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "חוסר הרשאות"
-                    android.speech.SpeechRecognizer.ERROR_NETWORK -> "שגיאת רשת"
-                    android.speech.SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "פסק זמן לרשת"
-                    android.speech.SpeechRecognizer.ERROR_NO_MATCH -> "לא נמצאה התאמה"
-                    android.speech.SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "מזהה קולי עסוק"
-                    android.speech.SpeechRecognizer.ERROR_SERVER -> "שגיאת שרת"
-                    android.speech.SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "לא זוהה דיבור"
-                    else -> "שגיאה לא ידועה"
-                }
-                Toast.makeText(context, "שגיאת זיהוי: $errorMsg", Toast.LENGTH_SHORT).show()
-            }
-            override fun onResults(results: Bundle?) {
-                val matches = results?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    val text = matches[0]
-                    aiInputText = text
-                    scope.launch {
-                        processAIInput(text)
-                    }
-                } else if (aiInputText.isNotBlank()) {
-                    scope.launch {
-                        processAIInput(aiInputText)
-                    }
-                }
-            }
-            override fun onPartialResults(partialResults: Bundle?) {
-                val matches = partialResults?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    aiInputText = matches[0]
-                }
-            }
-            override fun onEvent(eventType: Int, params: Bundle?) {}
         }
-    }
-
-    DisposableEffect(Unit) {
-        speechRecognizer.setRecognitionListener(recognitionListener)
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            voiceSession.interrupt()
             speechRecognizer.destroy()
         }
     }
-
-    Box(modifier = Modifier.fillMaxSize().imePadding().navigationBarsPadding()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .testTag("dashboard_scroll_container")
-                .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            
-            // Auto-Snap when shift becomes active
-            LaunchedEffect(activeShiftStartTime) {
-                if (activeShiftStartTime != null) {
-                    pagerState.animateScrollToPage(2)
-                }
-            }
-
-            Column(modifier = Modifier.fillMaxWidth()) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxWidth()
-                ) { page ->
-                    val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                    val scale = 1f - (kotlin.math.abs(pageOffset) * 0.05f)
-                    val alpha = 1f - (kotlin.math.abs(pageOffset) * 0.3f)
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp)
-                            .height(200.dp) // Fixed height to prevent layout jumping
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                                this.alpha = alpha
-                            }
-                            .then(
-                                if (page == 2 && activeShiftStartTime != null) {
-                                    Modifier.background(
-                                        brush = Brush.linearGradient(colors = listOf(Color(0x80064E3B), Color(0x331E293B))),
-                                        shape = RoundedCornerShape(16.dp)
-                                    )
-                                } else {
-                                    Modifier
-                                }
-                            ),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (page == 2 && activeShiftStartTime != null) Color.Transparent else Color(0x331E293B)
-                        ),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = if (page == 2 && activeShiftStartTime != null) Color(0xFF10B981) else Color(0x26FFFFFF)
-                        )
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Transparent)
-                                .padding(16.dp)
-                        ) {
-                            when (page) {
-                                0 -> {
-                                    // Page 1 - Current Effort
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Text(text = "השבוע והחודש", color = Color(0xFF8E8E93), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text("שבוע", color = Color(0xFF818CF8), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = stats.thisWeek.totalEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 22.sp, glowColor = Color(0xFF818CF8))
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                AnimatedGlowingEarnings(targetValue = stats.thisWeek.totalHours, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 13.sp, glowColor = Color(0xFF818CF8), isCurrency = false, isHours = true)
-                                            }
-                                            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-                                                Text("חודש", color = Color(0xFF34D399), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = stats.thisMonth.totalEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 22.sp, glowColor = Color(0xFF34D399))
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                AnimatedGlowingEarnings(targetValue = stats.thisMonth.totalHours, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 13.sp, glowColor = Color(0xFF34D399), isCurrency = false, isHours = true)
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        val currentMonthEarnings = stats.thisMonth.totalEarnings.toFloat()
-                                        val monthlyTarget = 10000f
-                                        val progress = if (monthlyTarget > 0) (currentMonthEarnings / monthlyTarget).coerceIn(0f, 1f) else 0f
-
-                                        if (currentMonthEarnings > 0f) {
-                                            BoxWithConstraints(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(12.dp),
-                                                contentAlignment = Alignment.CenterStart
-                                            ) {
-                                                val maxWidth = maxWidth
-                                                // Track background
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(4.dp)
-                                                        .background(Color(0xFF2C2C2E), RoundedCornerShape(2.dp))
-                                                )
-                                                // Progress line
-                                                Box(
-                                                    modifier = Modifier
-                                                        .width(maxWidth * progress)
-                                                        .height(4.dp)
-                                                        .background(Color(0xFF34D399), RoundedCornerShape(2.dp))
-                                                )
-                                                // Green dot indicating current progress
-                                                Box(
-                                                    modifier = Modifier
-                                                        .offset(x = (maxWidth * progress) - 6.dp)
-                                                        .size(12.dp)
-                                                        .background(Color(0xFF34D399), CircleShape)
-                                                )
-                                            }
-                                        } else {
-                                            // If currentMonthEarnings == 0f, draw the progress line as entirely empty and keep design clean
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(4.dp)
-                                                    .background(Color(0xFF2C2C2E), RoundedCornerShape(2.dp))
-                                            )
-                                        }
-                                    }
-                                }
-                                1 -> {
-                                    // Page 2 - Financial Summary
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Text(text = "סיכום כל הזמנים", color = Color(0xFF8E8E93), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        val totalEarnings = stats.total.totalEarnings
-                                        val paidEarnings = stats.total.paidEarnings
-                                        
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                            Column {
-                                                Text("סה\"כ הכנסות", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = totalEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 24.sp, glowColor = Color(0xFF34D399))
-                                            }
-                                            Column(horizontalAlignment = Alignment.End) {
-                                                Text("שולם", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = paidEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 20.sp, glowColor = Color(0xFF6366F1))
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                            Column {
-                                                Text("סה\"כ שעות עבודה", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = stats.total.totalHours, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 18.sp, glowColor = Color(0xFF10B981), isCurrency = false, isHours = true)
-                                            }
-                                            Column(horizontalAlignment = Alignment.End) {
-                                                Text("ממתין לתשלום", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                AnimatedGlowingEarnings(targetValue = stats.total.unpaidEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 18.sp, glowColor = Color(0xFFF59E0B))
-                                            }
-                                        }
-                                        
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        // Minimalist Sparkline Chart
-                                        Canvas(modifier = Modifier.fillMaxWidth().height(36.dp)) {
-                                            val path = androidx.compose.ui.graphics.Path()
-                                            val dataPoints = listOf(0.2f, 0.5f, 0.4f, 0.7f, 0.6f, 0.9f, 0.8f, 1.0f)
-                                            val width = size.width
-                                            val height = size.height
-                                            val stepX = width / (dataPoints.size - 1)
-                                            
-                                            dataPoints.forEachIndexed { index, point ->
-                                                val x = index * stepX
-                                                val y = height - (point * height)
-                                                if (index == 0) {
-                                                    path.moveTo(x, y)
-                                                } else {
-                                                    // Add cubic bezier for smooth curve
-                                                    val prevX = (index - 1) * stepX
-                                                    val prevY = height - (dataPoints[index - 1] * height)
-                                                    val cx1 = prevX + stepX / 2f
-                                                    val cy1 = prevY
-                                                    val cx2 = prevX + stepX / 2f
-                                                    val cy2 = y
-                                                    path.cubicTo(cx1, cy1, cx2, cy2, x, y)
-                                                }
-                                            }
-                                            drawPath(
-                                                path = path,
-                                                color = Color(0xFF6366F1),
-                                                style = androidx.compose.ui.graphics.drawscope.Stroke(
-                                                    width = 4f,
-                                                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                                                    join = androidx.compose.ui.graphics.StrokeJoin.Round
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-                                2 -> {
-                                    // Page 3 - Today & Active Clock
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        val isRunning = activeShiftStartTime != null
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(text = "היום", color = if (isRunning) Color(0xFF10B981) else Color(0xFF8E8E93), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                            if (isRunning) {
-                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                    Box(modifier = Modifier.size(8.dp).background(Color(0xFF10B981), CircleShape))
-                                                    Text("עובד כעת", color = Color(0xFF10B981), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                                }
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        
-                                        if (isRunning) {
-                                            val currentSystemTimeSeconds = System.currentTimeMillis() / 1000L
-                                            val startSystemTimeSeconds = activeShiftStartTime / 1000L
-                                            val liveEarnings = (currentSystemTimeSeconds - startSystemTimeSeconds) * (activeShiftRate / 3600.0)
-                                            val accumulatedEarnings = Math.round(liveEarnings * 100.0) / 100.0
-                                            val hours = tickerSeconds / 3600
-                                            val mins = (tickerSeconds % 3600) / 60
-                                            val secs = tickerSeconds % 60
-                                            val timeString = String.format(Locale.US, "%02d:%02d:%02d", hours, mins, secs)
-
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                                                Column {
-                                                    Text("נצבר", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                    AnimatedGlowingEarnings(targetValue = accumulatedEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 28.sp, glowColor = Color(0xFF10B981))
-                                                }
-                                                Column(horizontalAlignment = Alignment.End) {
-                                                    Text("זמן", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                    Text(timeString, fontSize = 36.sp, fontWeight = FontWeight.Black, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = Color(0xFF34D399))
-                                                }
-                                            }
-                                        } else {
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                Column {
-                                                    Text("הכנסות היום", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                    AnimatedGlowingEarnings(targetValue = stats.today.totalEarnings, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 28.sp, glowColor = Color(0xFF34D399))
-                                                }
-                                                Column(horizontalAlignment = Alignment.End) {
-                                                    Text("סה\"כ שעות היום", color = Color(0xFF8E8E93), fontSize = 12.sp)
-                                                    AnimatedGlowingEarnings(targetValue = stats.today.totalHours, runCountAnimationTrigger = runCountAnimationTrigger, fontSize = 24.sp, glowColor = Color(0xFF10B981), isCurrency = false, isHours = true)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+    LaunchedEffect(isAiMode, isReportCardExpanded, selectedTab) {
+        if (!aiScreenActive && voiceSession.active) {
+            voiceSession.interrupt()
+            speechRecognizer.cancel()
+        }
+    }
+    if (aiScreenActive) aiProposal?.let { proposal ->
+        com.example.ui.AiShiftReview(proposal,
+            onEdit = { if (!isAiSaving) aiProposal = null },
+            onSave = {
+                if (aiProposal != null && !isAiSaving) {
+                    isAiSaving = true
+                    viewModel.addShifts(proposal) { saved ->
+                        isAiSaving = false
+                        if (saved) {
+                            aiProposal = null
+                            aiInputText = ""
+                            Toast.makeText(context, "המשמרות נשמרו", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                // Pager Indicator
-                Row(
-                    modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = focusAlpha },
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    repeat(3) { iteration ->
-                        val isSelected = pagerState.currentPage == iteration
-                        val color = if (isSelected) Color(0xFF6366F1) else Color(0xFF44444F)
-                        val width = if (isSelected) 24.dp else 8.dp
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 4.dp)
-                                .height(8.dp)
-                                .width(width)
-                                .background(color, RoundedCornerShape(4.dp))
+            }, saving = isAiSaving)
+    }
+
+    val saveInteractionSource = remember { MutableInteractionSource() }
+    val saveReport: @Composable () -> Unit = {
+        Button(
+            interactionSource = saveInteractionSource,
+            onClick = {
+                if (reportSubmitted) return@Button
+                val testHours = if (isManualMode) manualHoursStr.toDoubleOrNull() ?: 0.0 else 1.0
+                val testRate = hourlyRateStr.toDoubleOrNull() ?: 0.0
+
+                showErrorHours = isManualMode && (manualHoursStr.isBlank() || testHours <= 0.0)
+                showErrorRate = hourlyRateStr.isBlank() || testRate <= 0.0
+
+                if (showErrorHours || showErrorRate) {
+                    triggerHapticFeedback(context, isDestructive = true)
+                    Toast.makeText(context, "נא לתקן את השדות המסומנים באדום", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                val finalHours = if (isManualMode) {
+                    manualHoursStr.toDoubleOrNull() ?: 8.0
+                } else {
+                    val sParts = startTimeStr.split(":")
+                    val sMin = (sParts.getOrNull(0)?.toIntOrNull() ?: 9) * 60 + (sParts.getOrNull(1)?.toIntOrNull() ?: 0)
+                    val eParts = endTimeStr.split(":")
+                    val eMin = (eParts.getOrNull(0)?.toIntOrNull() ?: 17) * 60 + (eParts.getOrNull(1)?.toIntOrNull() ?: 0)
+                    val bMins = breakMinutesStr.toDoubleOrNull() ?: 0.0
+                    val durationVal = (if (eMin < sMin) eMin + 1440 - sMin else eMin - sMin) - bMins
+                    maxOf(0.0, durationVal / 60.0)
+                }
+                val finalRate = hourlyRateStr.toDoubleOrNull() ?: 40.0
+                val eRate = if (isGroupShift && showSeparateRates) employerRateStr.toDoubleOrNull() ?: finalRate else finalRate
+                val wRate = if (isGroupShift && showSeparateRates) workerRateStr.toDoubleOrNull() ?: finalRate else finalRate
+                if (!finalHours.isFinite() || finalHours <= 0 || !finalRate.isFinite() || finalRate < 0 ||
+                    !eRate.isFinite() || eRate < 0 || !wRate.isFinite() || wRate < 0 ||
+                    (breakMinutesStr.toDoubleOrNull()?.let { !it.isFinite() || it < 0 } != false)) {
+                    Toast.makeText(context, "נא להזין שעות, הפסקה ותעריפים תקינים", Toast.LENGTH_LONG).show()
+                    return@Button
+                }
+                val gJson = if (isGroupShift && groupWorkers.isNotEmpty()) {
+                    // Simple JSON Array construction for Workers
+                    val arr = org.json.JSONArray()
+                    groupWorkers.forEach { w ->
+                        val obj = if (w.sourceJson.isBlank()) org.json.JSONObject() else org.json.JSONObject(w.sourceJson)
+                        obj.put("name", w.name)
+                        obj.put("hours", w.hours)
+                        obj.put("isPaid", w.isPaid)
+                        arr.put(obj)
+                    }
+                    arr.toString()
+                } else ""
+
+                reportSubmitted = true
+                keyboardController?.hide()
+                focusManager.clearFocus(force = true)
+                onAddEntry(
+                    selectedCategory,
+                    selectedDateMillis,
+                    !isManualMode,
+                    if (!isManualMode) startTimeStr else null,
+                    if (!isManualMode) endTimeStr else null,
+                    finalHours,
+                    finalRate,
+                    notesText,
+                    isGroupShift,
+                    eRate,
+                    wRate,
+                    gJson,
+                    selectedCurrency
+                )
+                isReportCardExpanded = false
+                notesText = ""
+                breakMinutesStr = "0"
+                if (isGroupShift) {
+                    groupWorkers.clear()
+                    isGroupShift = false
+                    employerRateStr = ""
+                    workerRateStr = ""
+                }
+                triggerHapticFeedback(context, isDestructive = false)
+                Toast.makeText(context, "הדיווח נשמר בהצלחה!", Toast.LENGTH_SHORT).show()
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = Color.White
+            ),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .pressScale(interactionSource = saveInteractionSource)
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color(0xFF4F46E5), Color(0xFF6366F1))
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .testTag("save_shift_button"),
+            contentPadding = PaddingValues(0.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Save,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "שמור",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .testTag("dashboard_scroll_container")
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+
+            WorkSummaryCarousel(recentEntries, defaultCurr)
+            if (activeShiftStartTime != null) {
+                Card(colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                        Text("משמרת פעילה · $activeShiftCategory", color = Color(0xFF34D399))
+                        val time = String.format(Locale.US, "%02d:%02d:%02d", tickerSeconds / 3600, (tickerSeconds % 3600) / 60, tickerSeconds % 60)
+                        Text(time, fontSize = 28.sp, modifier = Modifier.widthIn(min = 148.dp).testTag("active_shift_timer"),
+                            style = LocalTextStyle.current.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr, fontFeatureSettings = "tnum"))
+                        Text(com.example.data.WorkMoney.format(tickerSeconds * activeShiftRate / 3600.0, viewModel.activeShiftCurrency.collectAsStateWithLifecycle().value),
+                            modifier = Modifier.widthIn(min = 120.dp), style = LocalTextStyle.current.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr, fontFeatureSettings = "tnum"))
+                        com.example.ui.ShiftCurrencyPicker(
+                            viewModel.activeShiftCurrency.collectAsStateWithLifecycle().value,
+                            { viewModel.updateActiveShiftCurrency(it, activeShiftStartTime) }, "active_shift_currency"
                         )
+                        TextButton(onClick = { cancelShiftStart = activeShiftStartTime }, modifier = Modifier.testTag("cancel_active_shift")) {
+                            Text("בטל משמרת פעילה", color = Color(0xFFF87171))
+                        }
                     }
                 }
             }
 
+            if (!isReportCardExpanded && !showQuickShiftDialog && !isImeVisible) {
+                OutlinedButton(
+                    onClick = {
+                        triggerHapticFeedback(context, isDestructive = false)
+                        if (activeShiftStartTime != null) showStopConfirmationDialog = true else showQuickShiftDialog = true
+                    },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("live_shift_fab"),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(if (activeShiftStartTime != null) Icons.Outlined.Stop else Icons.Outlined.PlayArrow, null, tint = Color(0xFFC7D2FE))
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (activeShiftStartTime != null) "סיים משמרת פעילה" else "התחל משמרת פעילה", color = Color(0xFFF1F5F9))
+                }
+            }
 
         // Form Card Block: "+ דיווח חדש"
 
@@ -1471,7 +1300,7 @@ fun DashboardScreen(
                                 label = { Text("שם מעסיק / קטגוריה") },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                     focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
                                     focusedLabelColor = Color(0xFF5C6BC0)
@@ -1484,7 +1313,7 @@ fun DashboardScreen(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                     focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
                                     focusedLabelColor = Color(0xFF5C6BC0)
@@ -1499,7 +1328,7 @@ fun DashboardScreen(
                                     val rVal = newCatRate.toDoubleOrNull() ?: 40.0
                                     onAddCategory(newCatName, rVal)
                                     selectedCategory = newCatName
-                                    hourlyRateStr = rVal.toInt().toString()
+                                    hourlyRateStr = rVal.toString()
                                     showAddCategoryDialog = false
                                 }
                             },
@@ -1522,34 +1351,31 @@ fun DashboardScreen(
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .animateContentSize()
                     .testTag("add_shift_form_card")
                     .graphicsLayer { alpha = focusAlpha }
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Title Header Row
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .coachTarget(CoachTarget.SHIFT)
                             .clickable {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                if (!isReportCardExpanded) reportSubmitted = false
+                                else {
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus(force = true)
+                                }
                                 isReportCardExpanded = !isReportCardExpanded
                             }
                             .padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Left item: expand/collapse icon
-                        Icon(
-                            imageVector = if (isReportCardExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = if (isReportCardExpanded) "כווץ" else "הרחב",
-                            tint = Color(0xFF5C6BC0),
-                            modifier = Modifier.size(28.dp)
-                        )
-
                         // Right item: "דיווח חדש"
                         Text(
                             text = "דיווח חדש",
@@ -1558,22 +1384,31 @@ fun DashboardScreen(
                             color = Color.White,
                             fontFamily = com.example.ui.theme.AssistantFontFamily
                         )
+                        // Left item: expand/collapse icon
+                        Icon(
+                            imageVector = if (isReportCardExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = if (isReportCardExpanded) "כווץ" else "הרחב",
+                            tint = Color(0xFF5C6BC0),
+                            modifier = Modifier.size(28.dp)
+                        )
+
+
                     }
 
                     AnimatedVisibility(
                         visible = isReportCardExpanded,
-                        enter = expandVertically(),
-                        exit = shrinkVertically()
+                        enter = expandVertically(animationSpec = tween(180)),
+                        exit = shrinkVertically(animationSpec = tween(120))
                     ) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
 
                     // 1.5. Unified Mode Selector (שעון / ידני / קבוצה / AI)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(44.dp)
+                            .height(56.dp)
                             .background(Color(0xFF161922), shape = RoundedCornerShape(22.dp))
                             .border(1.dp, Color(0x1FFFFFFF), shape = RoundedCornerShape(22.dp))
                             .padding(4.dp),
@@ -1593,9 +1428,9 @@ fun DashboardScreen(
                                     if (isClockSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                                     else Modifier
                                 )
-                                .clickable { 
+                                .clickable {
                                     isManualMode = false
-                                    isGroupShift = false 
+                                    isGroupShift = false
                                     isAiMode = false
                                 },
                             contentAlignment = Alignment.Center
@@ -1607,7 +1442,7 @@ fun DashboardScreen(
                                 color = if (isClockSelected) Color(0xFFF1F5F9) else Color(0xFF94A3B8)
                             )
                         }
-                        
+
                         // Part B: "ידני"
                         val isManualSelected = isManualMode && !isGroupShift && !isAiMode
                         Box(
@@ -1622,9 +1457,9 @@ fun DashboardScreen(
                                     if (isManualSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                                     else Modifier
                                 )
-                                .clickable { 
+                                .clickable {
                                     isManualMode = true
-                                    isGroupShift = false 
+                                    isGroupShift = false
                                     isAiMode = false
                                 },
                             contentAlignment = Alignment.Center
@@ -1651,9 +1486,9 @@ fun DashboardScreen(
                                     if (isGroupSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                                     else Modifier
                                 )
-                                .clickable { 
+                                .clickable {
                                     isManualMode = true
-                                    isGroupShift = true 
+                                    isGroupShift = true
                                     isAiMode = false
                                     val hDouble = manualHoursStr.toDoubleOrNull() ?: 0.0
                                     currentWorkerHours = if (hDouble > 0) String.format(Locale.US, "%.2f", hDouble) else "0.0"
@@ -1681,7 +1516,7 @@ fun DashboardScreen(
                                     if (isAiMode) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                                     else Modifier
                                 )
-                                .clickable { 
+                                .clickable {
                                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                                     isAiMode = true
                                 },
@@ -1708,702 +1543,47 @@ fun DashboardScreen(
                     }
 
                     if (isAiMode) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(
-                                text = "הקלד את פרטי המשמרת שלך בטקסט חופשי (עברית או אנגלית):",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF8E8E93),
-                                modifier = Modifier.align(Alignment.End)
-                            )
-                            
-                            OutlinedTextField(
-                                value = aiInputText,
-                                onValueChange = { aiInputText = it },
-                                placeholder = { 
-                                    Text(
-                                        text = "לדוגמה: אתמול עבדתי עצמאי 8 שעות בתעריף 50 ש\"ח, הערה: הדרכה וישיבת צוות",
-                                        color = Color(0xFF64748B),
-                                        fontSize = 13.sp,
-                                        textAlign = TextAlign.Right,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) 
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(110.dp)
-                                    .testTag("ai_free_text_input"),
-                                shape = RoundedCornerShape(12.dp),
-                                textStyle = TextStyle(textAlign = TextAlign.Right, color = Color.White, fontSize = 14.sp),
-                                trailingIcon = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(end = 4.dp)
-                                    ) {
-                                        if (isListening) {
-                                            Text(
-                                                text = "מקשיב...",
-                                                color = Color(0xFFEF4444),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(end = 4.dp)
-                                            )
-                                            IconButton(
-                                                onClick = {
-                                                    speechRecognizer.stopListening()
-                                                    isListening = false
-                                                },
-                                                modifier = Modifier.testTag("ai_mic_btn")
-                                            ) {
-                                                Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.Filled.Stop,
-                                                    contentDescription = "עצור הקלטה",
-                                                    tint = Color(0xFFEF4444)
-                                                )
-                                            }
-                                        } else {
-                                            IconButton(
-                                                onClick = {
-                                                    val permission = android.Manifest.permission.RECORD_AUDIO
-                                                    val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
-                                                        context,
-                                                        permission
-                                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                                    
-                                                    if (isGranted) {
-                                                        speechRecognizer.startListening(speechRecognizerIntent)
-                                                        isListening = true
-                                                    } else {
-                                                        requestPermissionLauncher.launch(permission)
-                                                    }
-                                                },
-                                                modifier = Modifier.testTag("ai_mic_btn")
-                                            ) {
-                                                Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.Outlined.Mic,
-                                                    contentDescription = "הקלטה קולית",
-                                                    tint = Color(0xFF8E8E93)
-                                                )
-                                            }
-                                        }
-                                    }
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF5C6BC0),
-                                    unfocusedBorderColor = Color(0xFF3F3F46),
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                )
-                            )
-
-                            if (isListening) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                                    horizontalArrangement = Arrangement.End,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "מקשיב... דבר כעת",
-                                        color = Color(0xFFEF4444),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .background(Color(0xFFEF4444), shape = CircleShape)
-                                    )
-                                }
-                            }
-
-                            // Quick examples suggestion row
-                            Text(
-                                text = "הצעות מהירות (לחץ לבדיקה):",
-                                fontSize = 11.sp,
-                                color = Color(0xFF8E8E93),
-                                modifier = Modifier.align(Alignment.End)
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
-                            ) {
-                                val examples = listOf(
-                                    "אתמול עבדתי 6.5 שעות עצמאי",
-                                    "היום עבדתי 8 שעות בתעריף 60",
-                                    "יום ראשון שעבר 7 שעות, הערה: בדיקות"
-                                )
-                                examples.forEach { example ->
-                                    SuggestionChip(
-                                        onClick = { aiInputText = example },
-                                        label = { Text(example, fontSize = 11.sp, color = Color.White) },
-                                        border = BorderStroke(1.dp, Color(0xFF3F3F46)),
-                                        colors = SuggestionChipDefaults.suggestionChipColors(
-                                            containerColor = Color(0xFF1C1C1E)
-                                        )
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            val savedGeminiModel by viewModel.geminiModel.collectAsStateWithLifecycle()
-                            val normalizedSavedGeminiModel = remember(savedGeminiModel) {
-                                when (savedGeminiModel) {
-                                    "gemini-1.5-flash" -> "Gemini 3.5 Flash"
-                                    "gemini-1.5-flash-8b", "gemini-1.5-flash-lite" -> "Gemini 3.1 Flash-Lite"
-                                    else -> if (savedGeminiModel.isBlank()) "Gemini 3.5 Flash" else savedGeminiModel
-                                }
-                            }
-                            Text(
-                                text = "מודל פעיל: $normalizedSavedGeminiModel",
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.5f),
-                                fontFamily = com.example.ui.theme.AssistantFontFamily,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 6.dp)
-                            )
-
-                            Button(
-                                onClick = {
-                                    if (aiInputText.isBlank()) {
-                                        Toast.makeText(context, "נא להזין טקסט לפענוח", Toast.LENGTH_SHORT).show()
-                                        return@Button
-                                    }
-                                    scope.launch {
-                                        processAIInput(aiInputText)
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth().height(48.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C6BC0)),
-                                enabled = !isAiParsing
-                            ) {
-                                if (isAiParsing) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("מפענח משמרת...", fontWeight = FontWeight.Bold, color = Color.White)
-                                } else {
-                                    Text("שמור משמרת עם AI", fontWeight = FontWeight.Bold, color = Color.White)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Icon(imageVector = Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                                }
-                            }
-                        }
+                        com.example.ui.AiShiftInput(
+                            text = aiInputText, onText = { aiInputText = it; aiError = null },
+                            capturing = voiceSession.active, listening = voiceSession.listening,
+                            processing = isAiParsing, error = aiError,
+                            onRecord = {
+                                val permission = android.Manifest.permission.RECORD_AUDIO
+                                if (androidx.core.content.ContextCompat.checkSelfPermission(context, permission) == android.content.pm.PackageManager.PERMISSION_GRANTED) startVoice()
+                                else requestPermissionLauncher.launch(permission)
+                            },
+                            onStop = { voiceSession.stop(); speechRecognizer.stopListening() },
+                            onCancel = { voiceSession.cancel(); speechRecognizer.cancel() },
+                            onParse = { scope.launch { processAIInput(aiInputText) } }
+                        )
                     } else {
-                        // 3. "תאריך" Box Selection
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                        Text(
-                            text = "תאריך",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF8E8E93),
-                            modifier = Modifier.align(Alignment.End)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        val sdfDate = remember { SimpleDateFormat("dd.MM.yyyy", Locale.US) }
-                        val dateStr = sdfDate.format(Date(selectedDateMillis))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
-                                .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                .clickable {
-                                    val cal = Calendar.getInstance().apply { timeInMillis = selectedDateMillis }
-                                    DatePickerDialog(
-                                        context,
-                                        { _, y, m, d ->
-                                            val newCal = Calendar.getInstance().apply {
-                                                set(Calendar.YEAR, y)
-                                                set(Calendar.MONTH, m)
-                                                set(Calendar.DAY_OF_MONTH, d)
-                                            }
-                                            selectedDateMillis = newCal.timeInMillis
-                                        },
-                                        cal.get(Calendar.YEAR),
-                                        cal.get(Calendar.MONTH),
-                                        cal.get(Calendar.DAY_OF_MONTH)
-                                    ).show()
-                                }
-                                .padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.ArrowDropDown,
-                                    contentDescription = null,
-                                    tint = Color(0xFF8E8E93)
-                                )
-                                Text(
-                                    text = dateStr,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color.White
-                                )
+                    CompactReportFields(
+                        ReportFieldValues(selectedDateMillis, isManualMode, isGroupShift, startTimeStr, endTimeStr,
+                            manualHoursStr, breakMinutesStr, hourlyRateStr, selectedCurrency, selectedCategory, notesText,
+                            showSeparateRates, employerRateStr, workerRateStr, showErrorHours, showErrorRate),
+                        categories = categories,
+                        onDate = { selectedDateMillis = it }, onStart = { startTimeStr = it }, onEnd = { endTimeStr = it },
+                        onHours = { value ->
+                            manualHoursStr = value
+                            if (isGroupShift) {
+                                val hours = value.toDoubleOrNull() ?: 0.0
+                                for (i in groupWorkers.indices) groupWorkers[i] = groupWorkers[i].copy(hours = hours)
+                                currentWorkerHours = value
                             }
-                        }
-                    }
-
-                    // 4. Entry/Exit Dropdown Selectors (Side-by-side)
-                    if (!isManualMode) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            // Left item: יציאה
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "יציאה",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF8E8E93),
-                                    modifier = Modifier.align(Alignment.End)
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
-                                        .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                        .clickable {
-                                            val t = endTimeStr.split(":")
-                                            val h = t.getOrNull(0)?.toIntOrNull() ?: 17
-                                            val m = t.getOrNull(1)?.toIntOrNull() ?: 0
-                                            TimePickerDialog(context, { _, hour, minute ->
-                                                endTimeStr = String.format(Locale.US, "%02d:%02d", hour, minute)
-                                            }, h, m, true).show()
-                                        }
-                                        .padding(horizontal = 12.dp),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
-                                        Text(endTimeStr, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White)
-                                    }
-                                }
-                            }
-
-                            // Right item: כניסה
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "כניסה",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF8E8E93),
-                                    modifier = Modifier.align(Alignment.End)
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
-                                        .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                        .clickable {
-                                            val t = startTimeStr.split(":")
-                                            val h = t.getOrNull(0)?.toIntOrNull() ?: 9
-                                            val m = t.getOrNull(1)?.toIntOrNull() ?: 0
-                                            TimePickerDialog(context, { _, hour, minute ->
-                                                startTimeStr = String.format(Locale.US, "%02d:%02d", hour, minute)
-                                            }, h, m, true).show()
-                                        }
-                                        .padding(horizontal = 12.dp),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
-                                        Text(startTimeStr, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White)
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // Manual hours input field if selected "ידני"
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                "שעות עבודה",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF8E8E93),
-                                modifier = Modifier.align(Alignment.End)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            val currentHoursDouble = manualHoursStr.toDoubleOrNull() ?: 0.0
-                            val hVal = currentHoursDouble.toInt()
-                            val mVal = Math.round((currentHoursDouble - hVal) * 60).toInt()
-                            val displayHoursText = if (manualHoursStr.isBlank()) {
-                                "לחץ לבחירת שעות עבודה..."
-                            } else {
-                                formatCleanHours(currentHoursDouble)
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
-                                    .border(1.dp, if (showErrorHours) Color.Red else Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        TimePickerDialog(context, { _, hour, minute ->
-                                            val calculatedHours = hour + (minute / 60.0)
-                                            manualHoursStr = String.format(Locale.US, "%.2f", calculatedHours)
-                                            if (isGroupShift) {
-                                                for (i in groupWorkers.indices) {
-                                                    groupWorkers[i] = groupWorkers[i].copy(hours = calculatedHours)
-                                                }
-                                                currentWorkerHours = String.format(Locale.US, "%.2f", calculatedHours)
-                                            }
-                                            showErrorHours = false
-                                        }, hVal, mVal, true).show()
-                                    }
-                                    .padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.AccessTime,
-                                        contentDescription = null,
-                                        tint = Color(0xFF5C6BC0)
-                                    )
-                                    Text(
-                                        text = displayHoursText,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = if (manualHoursStr.isBlank()) Color(0xFF64748B) else Color.White
-                                    )
-                                }
-                            }
-                            if (showErrorHours) {
-                                Text(
-                                    text = "נא להזין כמות שעות תקינה",
-                                    color = Color.Red,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.align(Alignment.End).padding(top = 2.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // 5. "הפסקה (דקות)" Standard Input Card
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            "הפסקה",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF8E8E93),
-                            modifier = Modifier.align(Alignment.End)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        val totalMinutes = breakMinutesStr.toIntOrNull() ?: 0
-                        val bHours = totalMinutes / 60
-                        val bMins = totalMinutes % 60
-                        val displayBreakText = if (breakMinutesStr.isBlank() || breakMinutesStr == "0") {
-                            "0 שעות"
-                        } else {
-                            formatCleanHours(totalMinutes / 60.0)
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
-                                .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                .clickable {
-                                    TimePickerDialog(context, { _, hour, minute ->
-                                        val totalMins = hour * 60 + minute
-                                        breakMinutesStr = totalMins.toString()
-                                    }, bHours, bMins, true).show()
-                                }
-                                .padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.AccessTime,
-                                    contentDescription = null,
-                                    tint = Color(0xFF5C6BC0)
-                                )
-                                Text(
-                                    text = displayBreakText,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color.White
-                                )
-                            }
-                        }
-                    }
-
-                    // 6. "תעריף שעתי" Input Card
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Micro-toggle chip adjacent to Hourly Rate input to switch between "₪" and "$"
-                            Row(
-                                modifier = Modifier
-                                    .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
-                                    .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                    .padding(2.dp),
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .background(
-                                            if (selectedCurrency == "₪") Color(0xFF5C6BC0) else Color.Transparent,
-                                            RoundedCornerShape(10.dp)
-                                        )
-                                        .clickable { selectedCurrency = "₪" }
-                                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("₪", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (selectedCurrency == "₪") Color.White else Color(0xFF8E8E93))
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .background(
-                                            if (selectedCurrency == "$") Color(0xFF5C6BC0) else Color.Transparent,
-                                            RoundedCornerShape(10.dp)
-                                        )
-                                        .clickable { selectedCurrency = "$" }
-                                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("$", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (selectedCurrency == "$") Color.White else Color(0xFF8E8E93))
-                                }
-                            }
-
-                            Text(
-                                "תעריף לשעה",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF8E8E93)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                                value = hourlyRateStr,
-                                onValueChange = { newValue ->
-                                    val filtered = newValue.filter { it.isDigit() || it == '.' }
-                                    val dotCount = filtered.count { it == '.' }
-                                    if (dotCount <= 1) {
-                                        hourlyRateStr = filtered
-                                        showErrorRate = filtered.isBlank()
-                                    }
-                                },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxWidth().testTag("add_rate_input"),
-                                isError = showErrorRate,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = if (showErrorRate) Color.Red else Color(0xFF5C6BC0),
-                                    unfocusedBorderColor = if (showErrorRate) Color.Red else Color(0xFF3F3F46),
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                )
-                        )
-                        if (showErrorRate) {
-                            Text(
-                                text = "נא להזין תעריף תקין",
-                                color = Color.Red,
-                                fontSize = 10.sp,
-                                modifier = Modifier.align(Alignment.End).padding(top = 2.dp)
-                            )
-                        }
-                        
-                        if (isGroupShift) {
-                            Text(
-                                text = "+ הגדר תעריפים נפרדים לקבוצה",
-                                color = Color(0xFF8E8E93),
-                                fontSize = 12.sp,
-                                modifier = Modifier
-                                    .padding(top = 8.dp)
-                                    .align(Alignment.Start)
-                                    .clickable { showSeparateRates = !showSeparateRates }
-                            )
-                            
-                            AnimatedVisibility(visible = showSeparateRates) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = employerRateStr,
-                                        onValueChange = { employerRateStr = it },
-                                        label = { Text("תעריף מעסיק (לקבלן)", fontSize = 12.sp) },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF5C6BC0), unfocusedBorderColor = Color(0xFF44444F), focusedTextColor = Color.White, unfocusedTextColor = Color.White)
-                                    )
-                                    OutlinedTextField(
-                                        value = workerRateStr,
-                                        onValueChange = { workerRateStr = it },
-                                        label = { Text("תעריף לעובד", fontSize = 12.sp) },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF5C6BC0), unfocusedBorderColor = Color(0xFF44444F), focusedTextColor = Color.White, unfocusedTextColor = Color.White)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // 7. Employer ("מעסיק") Dropdown Selector inside custom container Card with integrated addition / delete
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "+ חדש",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF5C6BC0),
-                                modifier = Modifier
-                                    .clickable { showAddCategoryDialog = true }
-                                    .padding(vertical = 2.dp, horizontal = 4.dp)
-                            )
-                            Text(
-                                "מעסיק",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF8E8E93)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Delete current category button
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(Color(0xFF3A1C1C), shape = RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        val matched = categories.find { it.name == selectedCategory }
-                                        if (matched != null) {
-                                            categoryToDelete = matched
-                                        }
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Delete,
-                                    contentDescription = null,
-                                    tint = Color(0xFFEF4444),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
-                            // Dynamic dropdown box selector
-                            var expandedDropdown by remember { mutableStateOf(false) }
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
-                                    .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
-                                    .clickable { expandedDropdown = true }
-                                    .padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
-                                    Text(
-                                        text = selectedCategory,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color.White
-                                    )
-                                }
-
-                                DropdownMenu(
-                                    expanded = expandedDropdown,
-                                    onDismissRequest = { expandedDropdown = false }
-                                ) {
-                                    categories.forEach { cat ->
-                                        DropdownMenuItem(
-                                            text = { Text(cat.name, fontSize = 14.sp) },
-                                            onClick = {
-                                                selectedCategory = cat.name
-                                                val matchedRate = cat.defaultRate
-                                                hourlyRateStr = matchedRate.toString()
-                                                expandedDropdown = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 8. "הערות" Description Field
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            "הערות",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF8E8E93),
-                            modifier = Modifier.align(Alignment.End)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = notesText,
-                            onValueChange = { notesText = it },
-                            placeholder = { Text("מה עשית במשמרת?", color = Color(0xFF64748B)) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF5C6BC0),
-                                unfocusedBorderColor = Color(0xFF3F3F46),
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedPlaceholderColor = Color(0xFF64748B),
-                                unfocusedPlaceholderColor = Color(0xFF64748B)
-                            )
-                        )
-                    }
+                            showErrorHours = false
+                        },
+                        onBreak = { breakMinutesStr = it },
+                        onRate = { value ->
+                            val filtered = value.filter { it.isDigit() || it == '.' }
+                            if (filtered.count { it == '.' } <= 1) { hourlyRateStr = filtered; showErrorRate = filtered.isBlank() }
+                        },
+                        onCurrency = { selectedCurrency = it },
+                        onCategory = { selectedCategory = it.name; hourlyRateStr = it.defaultRate.toString() },
+                        onNotes = { notesText = it }, onAddCategory = { showAddCategoryDialog = true },
+                        onDeleteCategory = { categories.firstOrNull { it.name == selectedCategory }?.let { categoryToDelete = it } },
+                        onSeparateRates = { showSeparateRates = !showSeparateRates },
+                        onEmployerRate = { employerRateStr = it }, onWorkerRate = { workerRateStr = it }
+                    )
 
                     // --- Group Shift Dynamic Inputs ---
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -2415,7 +1595,7 @@ fun DashboardScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
+                                    .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
                                     .padding(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
@@ -2438,7 +1618,7 @@ fun DashboardScreen(
                                             singleLine = true,
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(12.dp),
-                                            colors = OutlinedTextFieldDefaults.colors(
+                                            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                                 focusedBorderColor = Color(0xFF5C6BC0),
                                                 unfocusedBorderColor = Color(0xFF44444F),
                                                 focusedTextColor = Color.White,
@@ -2459,7 +1639,7 @@ fun DashboardScreen(
                                             singleLine = true,
                                             modifier = Modifier.width(80.dp),
                                             shape = RoundedCornerShape(12.dp),
-                                            colors = OutlinedTextFieldDefaults.colors(
+                                            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                                 focusedBorderColor = Color(0xFF5C6BC0),
                                                 unfocusedBorderColor = Color(0xFF44444F),
                                                 focusedTextColor = Color.White,
@@ -2467,7 +1647,7 @@ fun DashboardScreen(
                                             )
                                         )
                                         IconButton(onClick = { groupWorkers.removeAt(index) }) {
-                                            Icon(Icons.Outlined.Delete, contentDescription = "Remove", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
+                                            Icon(Icons.Outlined.Delete, contentDescription = "הסר עובד", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
                                         }
                                     }
                                 }
@@ -2480,14 +1660,14 @@ fun DashboardScreen(
                                     Box(modifier = Modifier.weight(1f)) {
                                         OutlinedTextField(
                                             value = currentWorkerName,
-                                            onValueChange = { 
+                                            onValueChange = {
                                                 currentWorkerName = it
                                             },
                                             label = { Text("שם", fontSize = 12.sp) },
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier.fillMaxWidth().testTag("worker_name_input"),
                                             singleLine = true,
                                             shape = RoundedCornerShape(12.dp),
-                                            colors = OutlinedTextFieldDefaults.colors(
+                                            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                                 focusedBorderColor = Color(0xFF5C6BC0),
                                                 unfocusedBorderColor = Color(0xFF44444F),
                                                 focusedTextColor = Color.White,
@@ -2500,9 +1680,9 @@ fun DashboardScreen(
                                         onValueChange = { currentWorkerHours = it },
                                         label = { Text("שעות", fontSize = 12.sp) },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        modifier = Modifier.width(80.dp),
+                                        modifier = Modifier.width(80.dp).testTag("worker_hours_input"),
                                         shape = RoundedCornerShape(12.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(
+                                        colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                             focusedBorderColor = Color(0xFF5C6BC0),
                                             unfocusedBorderColor = Color(0xFF44444F),
                                             focusedTextColor = Color.White,
@@ -2517,124 +1697,18 @@ fun DashboardScreen(
                                                 currentWorkerName = ""
                                                 val hDouble = manualHoursStr.toDoubleOrNull() ?: 0.0
                                                 currentWorkerHours = if (hDouble > 0) String.format(Locale.US, "%.2f", hDouble) else "0.0"
-                                                showWorkerAutocomplete = false
                                             }
                                         },
                                         modifier = Modifier.background(Color(0xFF5C6BC0), CircleShape)
                                     ) {
-                                        Icon(Icons.Outlined.Add, contentDescription = "Add", tint = Color.White)
+                                        Icon(Icons.Outlined.Add, contentDescription = "הוסף עובד", tint = Color.White)
                                     }
                                 }
                             }
                         }
                     }
 
-                    // Spacer before save button
-                    Spacer(modifier = Modifier.height(6.dp))
 
-                    // 9. Full width navy-blue "שמור" button
-                    Button(
-                        onClick = {
-                            val testHours = if (isManualMode) manualHoursStr.toDoubleOrNull() ?: 0.0 else 1.0
-                            val testRate = hourlyRateStr.toDoubleOrNull() ?: 0.0
-                            
-                            showErrorHours = isManualMode && (manualHoursStr.isBlank() || testHours <= 0.0)
-                            showErrorRate = hourlyRateStr.isBlank() || testRate <= 0.0
-                            
-                            if (showErrorHours || showErrorRate) {
-                                triggerHapticFeedback(context, isDestructive = true)
-                                Toast.makeText(context, "נא לתקן את השדות המסומנים באדום", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-                            
-                            val finalHours = if (isManualMode) {
-                                manualHoursStr.toDoubleOrNull() ?: 8.0
-                            } else {
-                                val sParts = startTimeStr.split(":")
-                                val sMin = (sParts.getOrNull(0)?.toIntOrNull() ?: 9) * 60 + (sParts.getOrNull(1)?.toIntOrNull() ?: 0)
-                                val eParts = endTimeStr.split(":")
-                                val eMin = (eParts.getOrNull(0)?.toIntOrNull() ?: 17) * 60 + (eParts.getOrNull(1)?.toIntOrNull() ?: 0)
-                                val bMins = breakMinutesStr.toDoubleOrNull() ?: 0.0
-                                val durationVal = eMin - sMin - bMins
-                                maxOf(0.0, durationVal / 60.0)
-                            }
-                            val finalRate = hourlyRateStr.toDoubleOrNull() ?: 40.0
-                            val eRate = if (isGroupShift && showSeparateRates) employerRateStr.toDoubleOrNull() ?: finalRate else finalRate
-                            val wRate = if (isGroupShift && showSeparateRates) workerRateStr.toDoubleOrNull() ?: finalRate else finalRate
-                            val gJson = if (isGroupShift && groupWorkers.isNotEmpty()) {
-                                // Simple JSON Array construction for Workers
-                                val arr = org.json.JSONArray()
-                                groupWorkers.forEach { w ->
-                                    val obj = org.json.JSONObject()
-                                    obj.put("name", w.name)
-                                    obj.put("hours", w.hours)
-                                    obj.put("isPaid", w.isPaid)
-                                    arr.put(obj)
-                                }
-                                arr.toString()
-                            } else ""
-
-                            onAddEntry(
-                                selectedCategory,
-                                selectedDateMillis,
-                                !isManualMode,
-                                if (!isManualMode) startTimeStr else null,
-                                if (!isManualMode) endTimeStr else null,
-                                finalHours,
-                                finalRate,
-                                notesText,
-                                isGroupShift,
-                                eRate,
-                                wRate,
-                                gJson,
-                                selectedCurrency
-                            )
-                            notesText = ""
-                            breakMinutesStr = "0"
-                            if (isGroupShift) {
-                                groupWorkers.clear()
-                                isGroupShift = false
-                                employerRateStr = ""
-                                workerRateStr = ""
-                            }
-                            triggerHapticFeedback(context, isDestructive = false)
-                            Toast.makeText(context, "הדיווח נשמר בהצלחה!", Toast.LENGTH_SHORT).show()
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .pressScale()
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(Color(0xFF4F46E5), Color(0xFF6366F1))
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .testTag("save_shift_button"),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Save,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "שמור",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
                         }
                     }
                 }
@@ -2646,7 +1720,6 @@ fun DashboardScreen(
             }
 
             if (latestThreeShifts.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(24.dp))
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = Color(0x331E293B)
@@ -2668,9 +1741,9 @@ fun DashboardScreen(
                             color = Color.White,
                             fontFamily = com.example.ui.theme.AssistantFontFamily,
                             modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Right
+                            textAlign = TextAlign.Start
                         )
-                        
+
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -2688,52 +1761,14 @@ fun DashboardScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .align(if (LocalLayoutDirection.current == LayoutDirection.Rtl) Alignment.BottomEnd else Alignment.BottomStart)
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-    ) {
-        val isRunning = activeShiftStartTime != null
-        var showStopConfirmationDialog by remember { mutableStateOf(false) }
-
-        AnimatedVisibility(
-            visible = !showQuickShiftDialog,
-            enter = scaleIn(initialScale = 0.8f) + fadeIn(),
-            exit = scaleOut(targetScale = 0.8f) + fadeOut()
-        ) {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    triggerHapticFeedback(context, isDestructive = false)
-                    if (isRunning) {
-                        showStopConfirmationDialog = true
-                    } else {
-                        showQuickShiftDialog = true
-                    }
-                },
-                containerColor = if (isRunning) Color(0xFF10B981) else Color(0xFF1E2235),
-                contentColor = if (isRunning) Color.White else Color(0xFFF1F5F9),
-                modifier = Modifier
-                    .testTag("live_shift_fab")
-                    .border(
-                        1.dp,
-                        if (isRunning) Color(0x6610B981) else Color(0x33818CF8),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-            ) {
-                Icon(
-                    imageVector = if (isRunning) Icons.Outlined.Stop else Icons.Outlined.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (isRunning) "סיים משמרת פעילה" else "התחל משמרת פעילה",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            // This footer is a sibling of the weighted scroll viewport, never an overlay.
+            if (isReportCardExpanded && !isAiMode) {
+                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    saveReport()
+                }
             }
-        }
-        
+            if (!isImeVisible) bottomNavigation()
+
         if (showStopConfirmationDialog) {
             AlertDialog(
                 onDismissRequest = { showStopConfirmationDialog = false },
@@ -2756,60 +1791,85 @@ fun DashboardScreen(
                         Text("ביטול", color = Color(0xFF8E8E93))
                     }
                 },
-                containerColor = Color(0xFF1E1E1E)
+                containerColor = com.example.ui.theme.FormSurface
             )
         }
     }
 
-    var dialogCategory by remember { mutableStateOf("עצמאי") }
-    var dialogRateStr by remember(dialogCategory) { 
-        val recentRate = recentEntries.firstOrNull { it.category == dialogCategory }?.hourlyRate ?: 40.0
-        mutableStateOf(recentRate.toString()) 
+    if (cancelShiftStart != null) {
+        AlertDialog(
+            onDismissRequest = { cancelShiftStart = null },
+            title = { Text("ביטול משמרת פעילה") },
+            text = { Text("האם אתה בטוח שברצונך לבטל? הזמן שנצבר במשמרת זו לא יישמר. דיווחים קודמים לא יימחקו.") },
+            confirmButton = { TextButton(onClick = {
+                viewModel.cancelActiveShift(cancelShiftStart)
+                cancelShiftStart = null
+            }, modifier = Modifier.testTag("confirm_cancel_active_shift")) { Text("כן, בטל את המשמרת") } },
+            dismissButton = { TextButton(onClick = { cancelShiftStart = null }) { Text("המשך במשמרת") } }
+        )
+    }
+
+    var dialogCategory by remember(defaultCategory) { mutableStateOf(defaultCategory) }
+    val dialogDefaultRate = categories.firstOrNull { it.name == dialogCategory }?.defaultRate ?: 40.0
+    var dialogRateStr by remember(dialogCategory, dialogDefaultRate, showQuickShiftDialog) {
+        mutableStateOf(dialogDefaultRate.toString())
+    }
+    val dialogDefaultCurrency = viewModel.categoryCurrency(dialogCategory)
+    var dialogCurrency by androidx.compose.runtime.saveable.rememberSaveable(dialogCategory, dialogDefaultCurrency, showQuickShiftDialog) {
+        mutableStateOf(dialogDefaultCurrency)
     }
     var expanded by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = if (LocalLayoutDirection.current == LayoutDirection.Rtl) Alignment.BottomEnd else Alignment.BottomStart
-    ) {
-        AnimatedVisibility(
-            visible = showQuickShiftDialog,
-            enter = androidx.compose.animation.expandIn(
-                expandFrom = if (LocalLayoutDirection.current == LayoutDirection.Rtl) Alignment.BottomEnd else Alignment.BottomStart,
-                animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f)
-            ) + fadeIn(),
-            exit = androidx.compose.animation.shrinkOut(
-                shrinkTowards = if (LocalLayoutDirection.current == LayoutDirection.Rtl) Alignment.BottomEnd else Alignment.BottomStart,
-                animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f)
-            ) + fadeOut(),
-            modifier = Modifier.padding(16.dp)
+    if (showQuickShiftDialog) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showQuickShiftDialog = false },
+            properties = androidx.compose.ui.window.DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                usePlatformDefaultWidth = false
+            )
         ) {
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-                border = BorderStroke(1.dp, Color(0xFF2D2D2D)),
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .pointerInput(Unit) { /* intercept touches */ }
+                    .fillMaxSize()
+                    .testTag("quick_shift_scrim")
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) { showQuickShiftDialog = false },
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
+                    border = BorderStroke(1.dp, Color(0xFF2D2D2D)),
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .widthIn(max = 520.dp)
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) { /* consume card taps so only the outside scrim dismisses */ }
                 ) {
-                    Text("הגדרת משמרת מהירה ⏱️", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
-                    
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                    Text("הגדרת משמרת פעילה", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = !expanded }
                     ) {
                         OutlinedTextField(
                             value = dialogCategory,
+                            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
                             onValueChange = {},
                             readOnly = true,
                             label = { Text("קטגוריה / מעסיק") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                             modifier = Modifier.menuAnchor().fillMaxWidth(),
-                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface),
                             shape = RoundedCornerShape(12.dp)
                         )
                         ExposedDropdownMenu(
@@ -2827,14 +1887,17 @@ fun DashboardScreen(
                             }
                         }
                     }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = dialogRateStr,
                         onValueChange = { dialogRateStr = it },
                         label = { Text("תעריף שעתי") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     )
+                        com.example.ui.ShiftCurrencyPicker(dialogCurrency, { dialogCurrency = it }, "quick_shift_currency", Modifier.weight(1f), compact = true)
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
@@ -2843,9 +1906,9 @@ fun DashboardScreen(
                         TextButton(
                             onClick = {
                                 val lastEntry = recentEntries.firstOrNull()
-                                val cat = lastEntry?.category ?: "עצמאי"
-                                val rate = lastEntry?.hourlyRate ?: 40.0
-                                onStartShift(cat, rate)
+                                val cat = lastEntry?.category ?: defaultCategory
+                                val rate = categories.firstOrNull { it.name == cat }?.defaultRate ?: WorkViewModel.DEFAULT_RATE
+                                onStartShift(cat, rate, viewModel.categoryCurrency(cat))
                                 showQuickShiftDialog = false
                             }
                         ) {
@@ -2855,7 +1918,7 @@ fun DashboardScreen(
                         Button(
                             onClick = {
                                 val rateVal = dialogRateStr.toDoubleOrNull() ?: 40.0
-                                onStartShift(dialogCategory, rateVal)
+                                onStartShift(dialogCategory, rateVal, dialogCurrency)
                                 showQuickShiftDialog = false
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5C6BC0)),
@@ -2864,16 +1927,14 @@ fun DashboardScreen(
                             Text("אישור", color = Color.White)
                         }
                     }
+                    }
                 }
             }
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
-        )
     }
-    
+    SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
+
     if (categoryToDelete != null) {
         AlertDialog(
             onDismissRequest = { categoryToDelete = null },
@@ -2882,11 +1943,11 @@ fun DashboardScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        categoryToDelete?.let { 
+                        categoryToDelete?.let {
                             onDeleteCategory(it)
                             Toast.makeText(context, "מעסיק נמחק בהצלחה", Toast.LENGTH_SHORT).show()
                             if (categories.isNotEmpty()) {
-                                selectedCategory = "עצמאי"
+                                selectedCategory = defaultCategory
                             }
                         }
                         categoryToDelete = null
@@ -2951,7 +2012,7 @@ fun RecentShiftCompactCard(
                 Box(
                     modifier = Modifier
                         .size(30.dp)
-                        .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(8.dp))
+                        .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(8.dp))
                         .border(1.dp, Color(0x11FFFFFF), shape = RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -2975,8 +2036,8 @@ fun RecentShiftCompactCard(
                     )
                     Text(
                         text = formattedDate,
-                        fontWeight = FontWeight.Light,
-                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 12.sp,
                         color = Color(0xFF8E8E93),
                         fontFamily = com.example.ui.theme.AssistantFontFamily
                     )
@@ -2991,7 +2052,7 @@ fun RecentShiftCompactCard(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = String.format(Locale.US, "₪%,.1f", entry.totalEarnings),
+                            text = com.example.data.WorkMoney.format(entry.totalEarnings, entry.currency),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFE5E5EA)
@@ -3004,15 +2065,12 @@ fun RecentShiftCompactCard(
                     ) {
                         Text(
                             text = String.format(Locale.US, "%.1f ש'", entry.hours),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Light,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Normal,
                             color = Color(0xFF8E8E93)
                         )
-                        Box(
-                            modifier = Modifier
-                                .size(5.dp)
-                                .background(statusColor, shape = CircleShape)
-                        )
+                        Text(if (entry.isPaid) "שולם" else "ממתין", color = statusColor, fontSize = 12.sp,
+                            modifier = Modifier.testTag("recent_payment_status_${entry.id}"), maxLines = 1)
                     }
                 }
 
@@ -3039,34 +2097,34 @@ fun RecentShiftCompactCard(
                             if (entry.isTimeRange && entry.startTime != null && entry.endTime != null) {
                                 Text(
                                     text = "שעות עבודה: ${entry.startTime} - ${entry.endTime} (${String.format(Locale.US, "%.1f", entry.hours)} שעות)",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Light,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Normal,
                                     color = Color(0xFF8E8E93),
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
                                 )
                             } else {
                                 Text(
                                     text = "שעות שהוזנו ידנית: ${String.format(Locale.US, "%.1f", entry.hours)} שעות",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Light,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Normal,
                                     color = Color(0xFF8E8E93),
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
                                 )
                             }
 
                             Text(
-                                text = "תעריף שעתי: ₪${entry.hourlyRate}",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Light,
+                                text = "תעריף שעתי: ${entry.currency}${entry.hourlyRate}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Normal,
                                 color = Color(0xFF8E8E93),
                                 fontFamily = com.example.ui.theme.AssistantFontFamily
                             )
-                            
+
                             if (entry.notes.isNotBlank()) {
                                 Text(
                                     text = "הערות: ${entry.notes}",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Light,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Normal,
                                     color = Color(0xFF8E8E93),
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
                                 )
@@ -3078,6 +2136,7 @@ fun RecentShiftCompactCard(
                             shape = RoundedCornerShape(6.dp),
                             border = BorderStroke(1.dp, statusColor.copy(alpha = 0.3f)),
                             modifier = Modifier
+                                .heightIn(min = 48.dp)
                                 .clickable {
                                     triggerHapticFeedback(context, isDestructive = false)
                                     onTogglePaid()
@@ -3097,7 +2156,7 @@ fun RecentShiftCompactCard(
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = if (entry.isPaid) "שולם" else "חוב (שנה)",
-                                    fontSize = 9.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = statusColor,
                                     fontFamily = com.example.ui.theme.AssistantFontFamily
@@ -3118,7 +2177,7 @@ fun StatsCard(
     accentColor: Color
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF121212)),
+        colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
         border = BorderStroke(1.dp, Color(0x22FFFFFF)),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
@@ -3137,9 +2196,9 @@ fun StatsCard(
                 textAlign = TextAlign.Start
             )
             Spacer(modifier = Modifier.height(4.dp))
-            
+
             Text(
-                text = String.format(Locale.US, "₪%,.2f", stats.totalEarnings),
+                text = stats.money.entries.joinToString("\n") { com.example.data.WorkMoney.format(it.value, it.key) },
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Start,
@@ -3151,7 +2210,7 @@ fun StatsCard(
                     )
                 )
             )
-            
+
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = String.format(Locale.US, "%.1f שעות", stats.totalHours),
@@ -3178,7 +2237,7 @@ fun RecentShiftItemRow(
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF121212)
+            containerColor = com.example.ui.theme.FormSurface
         ),
         border = BorderStroke(1.dp, Color(0x22FFFFFF)),
         shape = RoundedCornerShape(16.dp),
@@ -3219,7 +2278,7 @@ fun RecentShiftItemRow(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
-                    
+
                     Spacer(modifier = Modifier.height(2.dp))
 
                     Text(
@@ -3236,7 +2295,7 @@ fun RecentShiftItemRow(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = String.format(Locale.US, "₪%,.0f", entry.totalEarnings),
+                    text = com.example.data.WorkMoney.format(entry.totalEarnings, entry.currency),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White
@@ -3265,9 +2324,11 @@ fun RecentShiftItemRow(
 }
 
 // ================= SHIFTS SCREEN =================
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun ShiftsScreen(
+    isVisible: Boolean = true,
+    navigationBottomInset: androidx.compose.ui.unit.Dp = 0.dp,
     viewModel: WorkViewModel,
     entries: List<WorkEntry>,
     categories: List<WorkCategory>,
@@ -3275,7 +2336,8 @@ fun ShiftsScreen(
     onSearchQueryChange: (String) -> Unit,
     onTogglePaid: (WorkEntry) -> Unit,
     onEdit: (WorkEntry) -> Unit,
-    onDelete: (WorkEntry) -> Unit
+    onDelete: (WorkEntry) -> Unit,
+    onScrollStateChanged: (Boolean) -> Unit = {}
 ) {
     var selectedCategoryFilter by remember { mutableStateOf("הכל") }
     var sortOption by remember { mutableStateOf("newest") } // "newest", "oldest", "latest_added"
@@ -3283,10 +2345,24 @@ fun ShiftsScreen(
     var currencyFilter by remember { mutableStateOf("הכל") } // "הכל", "₪", "$"
 
     var categoryDropdownExpanded by remember { mutableStateOf(false) }
-    var showCopyMenu by remember { mutableStateOf(false) }
-    var showSortDropdown by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
+    val historyDensity = androidx.compose.ui.platform.LocalDensity.current
+    var selectionActionsHeight by remember { mutableStateOf(0.dp) }
+    val scrollCallback by rememberUpdatedState(onScrollStateChanged)
+    LaunchedEffect(lazyListState, isVisible) {
+        if (!isVisible) return@LaunchedEffect
+        var previous = lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
+        var moved = false
+        snapshotFlow { Triple(lazyListState.firstVisibleItemIndex, lazyListState.firstVisibleItemScrollOffset, lazyListState.isScrollInProgress) }
+            .collect { (index, offset, scrolling) ->
+                val position = index to offset
+                if (!scrolling) moved = false
+                else if (position != previous) moved = true
+                scrollCallback(moved && scrolling && lazyListState.canScrollForward)
+                previous = position
+            }
+    }
 
     LaunchedEffect(sortOption) {
         lazyListState.scrollToItem(0)
@@ -3311,340 +2387,39 @@ fun ShiftsScreen(
     // Backup states for swipe undo
     var lastDeletedEntry by remember { mutableStateOf<WorkEntry?>(null) }
     var lastToggledEntry by remember { mutableStateOf<WorkEntry?>(null) }
-    
+
     // Multi-select mode and exact delete rule states
     var isMultiSelectMode by remember { mutableStateOf(false) }
     var selectedShiftIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    BackHandler(enabled = isVisible && isMultiSelectMode) {
+        isMultiSelectMode = false
+        selectedShiftIds = emptySet()
+    }
+    LaunchedEffect(isVisible) {
+        if (!isVisible) {
+            isMultiSelectMode = false
+            selectedShiftIds = emptySet()
+            onScrollStateChanged(false)
+        }
+    }
+    var showFilters by remember { mutableStateOf(false) }
+
     var showShiftDeleteConfirm by remember { mutableStateOf<WorkEntry?>(null) }
     var showBulkDeleteConfirm by remember { mutableStateOf(false) }
 
     // Map categories names using "כל הקטגוריות" as "הכל"
     val filterOptions = listOf("הכל") + categories.map { it.name.trim() }.distinct()
 
-    // Filter list including both search, categories, status, date and currency filters
-    val filteredEntries = remember(entries, selectedCategoryFilter, searchQuery, filterType, selectedMonthYear, customStartDate, customEndDate, statusFilter, currencyFilter) {
-        entries.filter { entry ->
-            val matchesCurrency = currencyFilter == "הכל" || entry.currency == currencyFilter
-            val matchesCategory = selectedCategoryFilter == "הכל" || entry.category == selectedCategoryFilter
-            val matchesSearch = searchQuery.isBlank() || run {
-                val categoryMatch = entry.category.contains(searchQuery, ignoreCase = true)
-                val notesMatch = entry.notes.contains(searchQuery, ignoreCase = true)
-                val earningsString = String.format(Locale.US, "%.2f", entry.totalEarnings)
-                val earningsStringFormatted = String.format(Locale.US, "%,.2f", entry.totalEarnings)
-                val earningsMatch = earningsString.contains(searchQuery) || earningsStringFormatted.contains(searchQuery) || entry.totalEarnings.toString().contains(searchQuery)
-                
-                val workersNames = viewModel.parseGroupWorkers(entry.groupWorkersJson).map { it.name }
-                val workerMatch = workersNames.any { it.contains(searchQuery, ignoreCase = true) }
-                
-                categoryMatch || notesMatch || earningsMatch || workerMatch
-            }
-            val matchesStatus = when (statusFilter) {
-                "הכל" -> true
-                "ממתין" -> !entry.isPaid
-                "שולם" -> entry.isPaid
-                else -> true
-            }
-            val matchesDateRange = when (filterType) {
-                "הכל" -> true
-                "חודש" -> {
-                    val entryCal = Calendar.getInstance().apply { timeInMillis = entry.date }
-                    entryCal.get(Calendar.YEAR) == selectedMonthYear.get(Calendar.YEAR) &&
-                    entryCal.get(Calendar.MONTH) == selectedMonthYear.get(Calendar.MONTH)
-                }
-                "טווח" -> {
-                    val entryDayStart = Calendar.getInstance().apply { 
-                        timeInMillis = entry.date
-                        set(Calendar.HOUR_OF_DAY, 0)
-                        set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }.timeInMillis
-                    
-                    val rangeStart = Calendar.getInstance().apply {
-                        timeInMillis = customStartDate
-                        set(Calendar.HOUR_OF_DAY, 0)
-                        set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }.timeInMillis
-                    
-                    val rangeEnd = Calendar.getInstance().apply {
-                        timeInMillis = customEndDate
-                        set(Calendar.HOUR_OF_DAY, 23)
-                        set(Calendar.MINUTE, 59)
-                        set(Calendar.SECOND, 59)
-                        set(Calendar.MILLISECOND, 999)
-                    }.timeInMillis
-                    
-                    entryDayStart in rangeStart..rangeEnd
-                }
-                else -> true
-            }
-
-            matchesCategory && matchesSearch && matchesStatus && matchesDateRange && matchesCurrency
-        }
-    }
-
-    val sortedEntries = remember(filteredEntries, sortOption) {
-        when (sortOption) {
-            "newest" -> filteredEntries.sortedByDescending { it.date }
-            "oldest" -> filteredEntries.sortedBy { it.date }
-            "latest_added" -> filteredEntries.sortedByDescending { it.id }
-            else -> filteredEntries
-        }
-    }
-
-    val totalFilteredSum = remember(filteredEntries) {
-        filteredEntries.sumOf { it.totalEarnings }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            if (isMultiSelectMode) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row {
-                        TextButton(onClick = { selectedShiftIds = emptySet() }) { Text("בטל הכל", color = Color(0xFFC7D2FE)) }
-                        TextButton(onClick = { selectedShiftIds = filteredEntries.map { it.id }.toSet() }) { Text("בחר הכל", color = Color(0xFFC7D2FE)) }
-                    }
-                    Text("נבחרו ${selectedShiftIds.size} משמרות", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = {
-                                val selectedEntries = entries.filter { selectedShiftIds.contains(it.id) }
-                                if (selectedEntries.isNotEmpty()) {
-                                    val formattedText = formatSelectedShiftsForWhatsApp(selectedEntries)
-                                    clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(formattedText))
-                                    Toast.makeText(context, "המשמרות הועתקו! מוכן להדבקה בוואטסאפ.", Toast.LENGTH_SHORT).show()
-                                    isMultiSelectMode = false
-                                    selectedShiftIds = emptySet()
-                                }
-                            },
-                            enabled = selectedShiftIds.isNotEmpty()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.ContentCopy,
-                                contentDescription = "העתק לקליפבורד עבור וואטסאפ",
-                                tint = if (selectedShiftIds.isNotEmpty()) Color.White else Color.Gray
-                            )
-                        }
-                        IconButton(onClick = { 
-                            isMultiSelectMode = false
-                            selectedShiftIds = emptySet()
-                        }) {
-                            Icon(Icons.Outlined.Close, "סגור", tint = Color.White)
-                        }
-                    }
-                }
-            }
-
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                contentPadding = PaddingValues(bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                if (!isMultiSelectMode) {
-                    item {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (searchQuery.isNotBlank()) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp, horizontal = 4.dp)
-                                        .background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp))
-                                        .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
-                                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "תוצאות חיפוש עבור: $searchQuery",
-                                        fontSize = 12.sp,
-                                        color = Color(0xFFC7D2FE),
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    IconButton(
-                                        onClick = {
-                                            onSearchQueryChange("")
-                                        },
-                                        modifier = Modifier.size(24.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Close,
-                                            contentDescription = "נקה",
-                                            tint = Color.LightGray,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        // Title / Action Row
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "יומן עבודה (${filteredEntries.size})",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 15.sp,
-                                color = Color.White
-                            )
-
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Copy menu
-                                Box {
-                                    var showCopyMenuLocal by remember { mutableStateOf(false) }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .background(Color(0xFF121212), shape = RoundedCornerShape(10.dp))
-                                            .border(1.dp, Color(0x22FFFFFF), shape = RoundedCornerShape(10.dp))
-                                            .clickable {
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                showCopyMenuLocal = true
-                                            }
-                                            .testTag("copy_menu_btn"),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.ContentCopy,
-                                            contentDescription = "שתף דוח",
-                                            tint = Color(0xFFC7D2FE),
-                                            modifier = Modifier.size(15.dp)
-                                        )
-                                    }
-                                    DropdownMenu(
-                                        expanded = showCopyMenuLocal,
-                                        onDismissRequest = { showCopyMenuLocal = false },
-                                        modifier = Modifier.background(Color(0xFF1E1E1E))
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text("Excel (ייצוא)", color = Color.White, fontSize = 12.sp) },
-                                            onClick = {
-                                                showCopyMenuLocal = false
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                copyExcelToClipboard(context, filteredEntries, selectedCategoryFilter)
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("WhatsApp", color = Color.White, fontSize = 12.sp) },
-                                            onClick = {
-                                                showCopyMenuLocal = false
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                copyWhatsAppToClipboard(context, filteredEntries, selectedCategoryFilter, searchQuery)
-                                            }
-                                        )
-                                    }
-                                }
-
-                                // Sort Dropdown button
-                                Box {
-                                    var showSortDropdownLocal by remember { mutableStateOf(false) }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .background(Color(0xFF121212), shape = RoundedCornerShape(10.dp))
-                                            .border(1.dp, Color(0x22FFFFFF), shape = RoundedCornerShape(10.dp))
-                                            .clickable { showSortDropdownLocal = true },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.Sort,
-                                            contentDescription = "מיון",
-                                            tint = Color(0xFFC7D2FE),
-                                            modifier = Modifier.size(15.dp)
-                                        )
-                                    }
-
-                                    DropdownMenu(
-                                        expanded = showSortDropdownLocal,
-                                        onDismissRequest = { showSortDropdownLocal = false },
-                                        modifier = Modifier.background(Color(0xFF1E1E1E))
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text("תאריך: מהחדש לישן", color = Color.White, fontSize = 12.sp) },
-                                            onClick = {
-                                                sortOption = "newest"
-                                                showSortDropdownLocal = false
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("תאריך: מהישן לחדש", color = Color.White, fontSize = 12.sp) },
-                                            onClick = {
-                                                sortOption = "oldest"
-                                                showSortDropdownLocal = false
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("נוסף לאחרונה", color = Color.White, fontSize = 12.sp) },
-                                            onClick = {
-                                                sortOption = "latest_added"
-                                                showSortDropdownLocal = false
-                                            }
-                                        )
-                                    }
-                                }
-
-                                // Cyclic Filter Button: Place a single compact Micro-Button next to the Sort/Copy action icons. Tapping cycles through states: "הכל" -> "₪" -> "$" -> "הכל".
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .background(Color(0xFF121212), shape = RoundedCornerShape(10.dp))
-                                        .border(1.dp, Color(0x22FFFFFF), shape = RoundedCornerShape(10.dp))
-                                        .clickable {
-                                            triggerHapticFeedback(context, isDestructive = false)
-                                            currencyFilter = when (currencyFilter) {
-                                                "הכל" -> "₪"
-                                                "₪" -> "$"
-                                                else -> "הכל"
-                                            }
-                                        }
-                                        .testTag("currency_filter_btn"),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = currencyFilter,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = when (currencyFilter) {
-                                            "$" -> Color(0xFF60A5FA)
-                                            "₪" -> Color(0xFF34D399)
-                                            else -> Color(0xFFC7D2FE)
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
+    if (showFilters) {
+        ModalBottomSheet(onDismissRequest = { showFilters = false }, containerColor = com.example.ui.theme.FormSurface) {
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("סינון היסטוריה", style = MaterialTheme.typography.titleLarge)
                         // Compact Filter Row: Date selection chips & Category Dropdown Filter
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -3659,7 +2434,7 @@ fun ShiftsScreen(
                                     Box(
                                         modifier = Modifier
                                             .background(
-                                                if (isSelected) Color(0xFF5C6BC0) else Color(0xFF1C1C1E),
+                                                if (isSelected) Color(0xFF5C6BC0) else com.example.ui.theme.FormSurface,
                                                 shape = RoundedCornerShape(8.dp)
                                             )
                                             .border(
@@ -3690,7 +2465,7 @@ fun ShiftsScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(34.dp)
-                                        .background(Color(0xFF121212), shape = RoundedCornerShape(8.dp))
+                                        .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(8.dp))
                                         .border(1.dp, Color(0x22FFFFFF), shape = RoundedCornerShape(8.dp))
                                         .clickable { categoryDropdownExpanded = true }
                                         .padding(horizontal = 8.dp),
@@ -3701,20 +2476,20 @@ fun ShiftsScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.ArrowDropDown,
-                                            contentDescription = null,
-                                            tint = Color(0xFF8E8E93),
-                                            modifier = Modifier.size(16.dp)
-                                        )
                                         Text(
                                             text = if (selectedCategoryFilter == "הכל") "כל הקטגוריות" else selectedCategoryFilter,
                                             color = Color.White,
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
-                                            textAlign = TextAlign.Right,
+                                            textAlign = TextAlign.Start,
                                             maxLines = 1,
                                             modifier = Modifier.weight(1f)
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Outlined.ArrowDropDown,
+                                            contentDescription = null,
+                                            tint = Color(0xFF8E8E93),
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 }
@@ -3722,7 +2497,7 @@ fun ShiftsScreen(
                                 DropdownMenu(
                                     expanded = categoryDropdownExpanded,
                                     onDismissRequest = { categoryDropdownExpanded = false },
-                                    modifier = Modifier.background(Color(0xFF1E1E1E))
+                                    modifier = Modifier.background(com.example.ui.theme.FormSurface)
                                 ) {
                                     filterOptions.forEach { filter ->
                                         DropdownMenuItem(
@@ -3756,7 +2531,7 @@ fun ShiftsScreen(
                                         .weight(1f)
                                         .height(30.dp)
                                         .background(
-                                            if (isSelected) Color(0xFF5C6BC0) else Color(0xFF121212),
+                                            if (isSelected) Color(0xFF5C6BC0) else com.example.ui.theme.FormSurface,
                                             shape = RoundedCornerShape(15.dp)
                                         )
                                         .border(
@@ -3767,7 +2542,7 @@ fun ShiftsScreen(
                                         .clickable {
                                             triggerHapticFeedback(context, isDestructive = false)
                                             statusFilter = statusVal
-                                        },
+                                        }.testTag("history_status_$statusVal"),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -3780,33 +2555,10 @@ fun ShiftsScreen(
                             }
                         }
 
-                        // Display text for filtered sum
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp, horizontal = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "סה\"כ מוצג:",
-                                color = Color(0xFF8E8E93),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            AnimatedGlowingEarnings(
-                                targetValue = totalFilteredSum,
-                                runCountAnimationTrigger = viewModel.runCountAnimationTrigger.value,
-                                fontSize = 16.sp,
-                                glowColor = Color(0xFF34D399),
-                                currencySymbol = if (currencyFilter == "$") "$" else "₪"
-                            )
-                        }
-
                         // Month Selector
                         if (filterType == "חודש") {
                             Card(
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF121212)),
+                                colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                                 border = BorderStroke(1.dp, Color(0x22FFFFFF)),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -3830,7 +2582,7 @@ fun ShiftsScreen(
                                         modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Outlined.ArrowBack,
+                                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                             contentDescription = "חודש הבא",
                                             tint = Color.White,
                                             modifier = Modifier.size(16.dp)
@@ -3855,7 +2607,7 @@ fun ShiftsScreen(
                                         modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Outlined.ArrowForward,
+                                            imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
                                             contentDescription = "חודש קודם",
                                             tint = Color.White,
                                             modifier = Modifier.size(16.dp)
@@ -3868,7 +2620,7 @@ fun ShiftsScreen(
                         // Range Selector
                         if (filterType == "טווח") {
                             Card(
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF121212)),
+                                colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                                 border = BorderStroke(1.dp, Color(0x22FFFFFF)),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -3894,7 +2646,7 @@ fun ShiftsScreen(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .height(34.dp)
-                                                .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(8.dp))
+                                                .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(8.dp))
                                                 .border(1.dp, Color(0x22FFFFFF), shape = RoundedCornerShape(8.dp))
                                                 .clickable {
                                                     val cal = Calendar.getInstance().apply { timeInMillis = customEndDate }
@@ -3937,7 +2689,7 @@ fun ShiftsScreen(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .height(34.dp)
-                                                .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(8.dp))
+                                                .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(8.dp))
                                                 .border(1.dp, Color(0x22FFFFFF), shape = RoundedCornerShape(8.dp))
                                                 .clickable {
                                                     val cal = Calendar.getInstance().apply { timeInMillis = customStartDate }
@@ -3969,6 +2721,197 @@ fun ShiftsScreen(
                                 }
                             }
                         }
+
+                TextButton(onClick = { filterType = "הכל"; statusFilter = "הכל"; selectedCategoryFilter = "הכל"; currencyFilter = "הכל" }) { Text("איפוס סינון") }
+                Button(onClick = { showFilters = false }) { Text("הצג תוצאות") }
+            }
+        }
+    }
+
+    // Filter list including both search, categories, status, date and currency filters
+    val filteredEntries = remember(entries, selectedCategoryFilter, searchQuery, filterType, selectedMonthYear, customStartDate, customEndDate, statusFilter, currencyFilter) {
+        entries.filter { entry ->
+            val matchesCurrency = currencyFilter == "הכל" || entry.currency == currencyFilter
+            val matchesCategory = selectedCategoryFilter == "הכל" || entry.category == selectedCategoryFilter
+            val matchesSearch = searchQuery.isBlank() || run {
+                val categoryMatch = entry.category.contains(searchQuery, ignoreCase = true)
+                val notesMatch = entry.notes.contains(searchQuery, ignoreCase = true)
+                val earningsString = String.format(Locale.US, "%.2f", entry.totalEarnings)
+                val earningsStringFormatted = String.format(Locale.US, "%,.2f", entry.totalEarnings)
+                val earningsMatch = earningsString.contains(searchQuery) || earningsStringFormatted.contains(searchQuery) || entry.totalEarnings.toString().contains(searchQuery)
+
+                val workersNames = viewModel.parseGroupWorkers(entry.groupWorkersJson).map { it.name }
+                val workerMatch = workersNames.any { it.contains(searchQuery, ignoreCase = true) }
+
+                categoryMatch || notesMatch || earningsMatch || workerMatch
+            }
+            val matchesStatus = when (statusFilter) {
+                "הכל" -> true
+                "ממתין" -> !entry.isPaid
+                "שולם" -> entry.isPaid
+                else -> true
+            }
+            val matchesDateRange = when (filterType) {
+                "הכל" -> true
+                "חודש" -> {
+                    val entryCal = Calendar.getInstance().apply { timeInMillis = entry.date }
+                    entryCal.get(Calendar.YEAR) == selectedMonthYear.get(Calendar.YEAR) &&
+                    entryCal.get(Calendar.MONTH) == selectedMonthYear.get(Calendar.MONTH)
+                }
+                "טווח" -> {
+                    val entryDayStart = Calendar.getInstance().apply {
+                        timeInMillis = entry.date
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }.timeInMillis
+
+                    val rangeStart = Calendar.getInstance().apply {
+                        timeInMillis = customStartDate
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }.timeInMillis
+
+                    val rangeEnd = Calendar.getInstance().apply {
+                        timeInMillis = customEndDate
+                        set(Calendar.HOUR_OF_DAY, 23)
+                        set(Calendar.MINUTE, 59)
+                        set(Calendar.SECOND, 59)
+                        set(Calendar.MILLISECOND, 999)
+                    }.timeInMillis
+
+                    entryDayStart in rangeStart..rangeEnd
+                }
+                else -> true
+            }
+
+            matchesCategory && matchesSearch && matchesStatus && matchesDateRange && matchesCurrency
+        }
+    }
+
+    val sortedEntries = remember(filteredEntries, sortOption) {
+        when (sortOption) {
+            "newest" -> filteredEntries.sortedByDescending { it.date }
+            "oldest" -> filteredEntries.sortedBy { it.date }
+            "latest_added" -> filteredEntries.sortedByDescending { it.id }
+            else -> filteredEntries
+        }
+    }
+
+
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            if (isMultiSelectMode) {
+                androidx.compose.foundation.layout.FlowRow(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(Modifier.height(48.dp), contentAlignment = Alignment.Center) {
+                        Text("נבחרו ${selectedShiftIds.size} משמרות", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                    Row {
+                        TextButton(onClick = { selectedShiftIds = emptySet() }) { Text("בטל הכל", color = Color(0xFFC7D2FE)) }
+                        TextButton(onClick = { selectedShiftIds = filteredEntries.map { it.id }.toSet() }) { Text("בחר הכל", color = Color(0xFFC7D2FE)) }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = {
+                                val selectedEntries = entries.filter { selectedShiftIds.contains(it.id) }
+                                if (selectedEntries.isNotEmpty()) {
+                                    val formattedText = formatSelectedShiftsForWhatsApp(selectedEntries)
+                                    clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(formattedText))
+                                    Toast.makeText(context, "המשמרות הועתקו! מוכן להדבקה בוואטסאפ.", Toast.LENGTH_SHORT).show()
+                                    isMultiSelectMode = false
+                                    selectedShiftIds = emptySet()
+                                }
+                            },
+                            enabled = selectedShiftIds.isNotEmpty()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ContentCopy,
+                                contentDescription = "העתק לקליפבורד עבור וואטסאפ",
+                                tint = if (selectedShiftIds.isNotEmpty()) Color.White else Color.Gray
+                            )
+                        }
+                        IconButton(onClick = {
+                            isMultiSelectMode = false
+                            selectedShiftIds = emptySet()
+                        }) {
+                            Icon(Icons.Outlined.Close, "סגור", tint = Color.White)
+                        }
+                    }
+                }
+            }
+
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag("history_scroll_container")
+                    .weight(1f),
+                contentPadding = PaddingValues(bottom = (if (isMultiSelectMode) maxOf(navigationBottomInset, selectionActionsHeight) else navigationBottomInset) + 16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (!isMultiSelectMode) {
+                    item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (searchQuery.isNotBlank()) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp, horizontal = 4.dp)
+                                        .background(com.example.ui.theme.FormSurface, RoundedCornerShape(8.dp))
+                                        .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "תוצאות חיפוש עבור: $searchQuery",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFFC7D2FE),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            onSearchQueryChange("")
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "נקה",
+                                            tint = Color.LightGray,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            HistoryToolbar(
+                                entries = filteredEntries,
+                                currencyFilter = currencyFilter,
+                                activeFilterCount = listOf(filterType != "הכל", statusFilter != "הכל", selectedCategoryFilter != "הכל", currencyFilter != "הכל").count { it },
+                                onFilters = { showFilters = true },
+                                onCurrencyFilterChange = { triggerHapticFeedback(context, isDestructive = false); currencyFilter = it },
+                                onSort = { sortOption = it },
+                                onCopyExcel = { triggerHapticFeedback(context, isDestructive = false); copyExcelToClipboard(context, filteredEntries, selectedCategoryFilter) },
+                                onCopyWhatsApp = { triggerHapticFeedback(context, isDestructive = false); copyWhatsAppToClipboard(context, filteredEntries, selectedCategoryFilter, searchQuery) }
+                            )
                     }
                 }
             }
@@ -4037,12 +2980,14 @@ fun ShiftsScreen(
                 }
             }
         } // Close outer Column
-        
+
         if (isMultiSelectMode) {
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .onSizeChanged { selectionActionsHeight = with(historyDensity) { it.height.toDp() } }
+                    .padding(bottom = navigationBottomInset)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 shape = RoundedCornerShape(20.dp),
                 color = Color(0xCC1E293B),
@@ -4064,7 +3009,7 @@ fun ShiftsScreen(
                     ) {
                         Text("מחק", color = Color.White, fontWeight = FontWeight.Bold)
                     }
-                    
+
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = {
@@ -4171,11 +3116,11 @@ fun ShiftsScreen(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
+                .padding(bottom = navigationBottomInset + 16.dp)
         ) { data ->
             Snackbar(
                 snackbarData = data,
-                containerColor = Color(0xFF1E1E1E),
+                containerColor = com.example.ui.theme.FormSurface,
                 contentColor = Color.White,
                 actionColor = Color(0xFFEF4444) // Bold Red as requested!
             )
@@ -4183,7 +3128,7 @@ fun ShiftsScreen(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun WorkEntryRowCard(
     entry: WorkEntry,
@@ -4196,7 +3141,8 @@ fun WorkEntryRowCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    val tutorialShare = LocalCoachStep.current?.screen == CoachScreen.SHARE
+    var isExpanded by remember { mutableStateOf(tutorialShare) }
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
@@ -4217,11 +3163,11 @@ fun WorkEntryRowCard(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = { 
+                onClick = {
                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    if (isMultiSelectMode) onToggleSelect() else isExpanded = !isExpanded 
+                    if (isMultiSelectMode) onToggleSelect() else isExpanded = !isExpanded
                 },
-                onLongClick = { 
+                onLongClick = {
                     if (!isMultiSelectMode) onLongClick() else onToggleSelect()
                 }
             )
@@ -4240,7 +3186,7 @@ fun WorkEntryRowCard(
                 Box(
                     modifier = Modifier
                         .size(36.dp)
-                        .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(10.dp))
+                        .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(10.dp))
                         .border(1.dp, Color(0x33FFFFFF), shape = RoundedCornerShape(10.dp)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -4265,10 +3211,24 @@ fun WorkEntryRowCard(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = entry.category,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = Color(0xFFE5E5EA)
                         )
+                        if (isMultiSelectMode) {
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = com.example.data.WorkMoney.format(entry.totalEarnings, entry.currency),
+                                modifier = Modifier.testTag("selection_amount_${entry.id}"),
+                                style = MaterialTheme.typography.bodyMedium.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr),
+                                maxLines = 1,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFE5E5EA)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -4304,7 +3264,7 @@ fun WorkEntryRowCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = String.format(Locale.US, "%s%,.2f", entry.currency, entry.totalEarnings),
+                                text = com.example.data.WorkMoney.format(entry.totalEarnings, entry.currency),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color(0xFFE5E5EA)
@@ -4327,11 +3287,8 @@ fun WorkEntryRowCard(
                                 fontWeight = FontWeight.Light,
                                 color = Color(0xFF8E8E93)
                             )
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .background(statusColor, shape = CircleShape)
-                            )
+                            Text(if (entry.isPaid) "שולם" else "ממתין", color = statusColor, fontSize = 12.sp,
+                                modifier = Modifier.testTag("payment_status_${entry.id}"), maxLines = 1)
                         }
                     }
                 }
@@ -4387,7 +3344,7 @@ fun WorkEntryRowCard(
                         Spacer(modifier = Modifier.height(8.dp))
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFF1C1C1E)
+                                containerColor = com.example.ui.theme.FormSurface
                             ),
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, Color(0x22FFFFFF))
@@ -4404,11 +3361,11 @@ fun WorkEntryRowCard(
 
                     if (entry.isGroupShift && entry.groupWorkersJson.isNotBlank()) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        
+
                         val workersArray = try {
                             org.json.JSONArray(entry.groupWorkersJson)
                         } catch(e: Exception) { org.json.JSONArray() }
-                        
+
                         val employerRate = entry.employerRate ?: 0.0
                         val workerRate = entry.workerRate ?: 0.0
                         val sholiOwnPay = entry.totalEarnings
@@ -4418,8 +3375,8 @@ fun WorkEntryRowCard(
 
                         for (i in 0 until workersArray.length()) {
                             val h = workersArray.getJSONObject(i).optDouble("hours", 0.0)
-                            contractorProfit += h * (employerRate - workerRate)
-                            totalWorkersBossPay += h * employerRate
+                            contractorProfit += h * (com.example.data.WorkMoney.employerRate(workersArray.getJSONObject(i), entry) - com.example.data.WorkMoney.workerRate(workersArray.getJSONObject(i), entry))
+                            totalWorkersBossPay += h * com.example.data.WorkMoney.employerRate(workersArray.getJSONObject(i), entry)
                         }
 
                         val grandTotalBoss = sholiOwnPay + totalWorkersBossPay
@@ -4427,21 +3384,21 @@ fun WorkEntryRowCard(
 
                         Text("סה\"כ לתשלום (כולל כולם): ${entry.currency}${String.format(Locale.US, "%.2f", grandTotalBoss)}", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("שולי (המשתמש): ${entry.currency}${String.format(Locale.US, "%.2f", sholiNetTotal)}", color = Color(0xFFE2E8F0), fontSize = 13.sp)
+                        Text("ההכנסה שלי (כולל עמלה): ${entry.currency}${String.format(Locale.US, "%.2f", sholiNetTotal)}", color = Color(0xFFE2E8F0), fontSize = 13.sp)
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             for (i in 0 until workersArray.length()) {
                                 val obj = workersArray.getJSONObject(i)
                                 val wName = obj.optString("name", "")
                                 val wHours = obj.optDouble("hours", 0.0)
                                 val wPaid = obj.optBoolean("isPaid", false)
-                                val wPay = wHours * (entry.workerRate ?: 0.0)
-                                
+                                val wPay = wHours * com.example.data.WorkMoney.workerRate(obj, entry)
+
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .background(Color(0xFF1C1C1E), RoundedCornerShape(8.dp))
+                                        .background(com.example.ui.theme.FormSurface, RoundedCornerShape(8.dp))
                                         .border(1.dp, if (wPaid) Color(0xFF34D399).copy(alpha = 0.3f) else Color(0x22FFFFFF), RoundedCornerShape(8.dp))
                                         .clickable {
                                             try {
@@ -4456,11 +3413,11 @@ fun WorkEntryRowCard(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Column {
+                                    Column(Modifier.weight(1f)) {
                                         Text(wName, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                                         Text("${wHours} שעות • ${entry.currency}${String.format(Locale.US, "%.2f", wPay)}", color = Color(0xFF8E8E93), fontSize = 11.sp)
                                     }
-                                    
+
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         // Individual WhatsApp share
                                         IconButton(
@@ -4469,18 +3426,18 @@ fun WorkEntryRowCard(
                                                 val textToSend = "היי ${wName}, להלן פירוט שעות עבודה שלך מיום ${dateStr}:\n" +
                                                         "עבדת ${wHours} שעות. מגיע לך: ${entry.currency}${String.format(Locale.US, "%.2f", wPay)}.\n" +
                                                         "סטטוס תשלום: ${if (wPaid) "שולם" else "ממתין"}"
-                                                
+
                                                 val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                                     type = "text/plain"
                                                     putExtra(android.content.Intent.EXTRA_TEXT, textToSend)
                                                 }
-                                                context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת לעובד"))
+                                                if (!tutorialShare) context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת לעובד"))
                                             },
-                                            modifier = Modifier.size(28.dp)
+                                            modifier = Modifier.size(48.dp)
                                         ) {
-                                            Icon(Icons.Outlined.Share, contentDescription = "Share WhatsApp", tint = Color(0xFF34D399), modifier = Modifier.size(14.dp))
+                                            Icon(Icons.Outlined.Share, contentDescription = "שתף פרטי משמרת לעובד", tint = Color(0xFF34D399), modifier = Modifier.size(14.dp))
                                         }
-                                        
+
                                         // Checkbox for payment
                                         androidx.compose.material3.Checkbox(
                                             checked = wPaid,
@@ -4500,10 +3457,10 @@ fun WorkEntryRowCard(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Buttons/Actions Row in expanded view
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth().testTag("entry_actions_${entry.id}"),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         // Payment status toggle badge
                         Surface(
@@ -4511,6 +3468,7 @@ fun WorkEntryRowCard(
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, statusColor.copy(alpha = 0.3f)),
                             modifier = Modifier
+                                .heightIn(min = 48.dp)
                                 .clickable { onTogglePaid() }
                                 .testTag("toggle_payment_badge_${entry.id}")
                         ) {
@@ -4527,121 +3485,121 @@ fun WorkEntryRowCard(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = if (entry.isPaid) "שולם" else "חוב (לחץ לשינוי)",
-                                    fontSize = 10.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = statusColor
                                 )
                             }
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Every single shift card displays this generic share button when expanded
+                        // Individual actions wrap independently at their full touch size.
+                        // Every single shift card displays this generic share button when expanded
+                        IconButton(
+                            onClick = {
+                                val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(entry.date))
+                                val textToSend = "היי, להלן פרטי המשמרת שלי מיום $dateStr:\n" +
+                                        "קטגוריה: ${entry.category}\n" +
+                                        "שעות עבודה: ${entry.hours} שעות\n" +
+                                        "תעריף שעתי: ${entry.currency}${String.format(Locale.US, "%.2f", entry.hourlyRate)}\n" +
+                                        "סה\"כ לתשלום: ${entry.currency}${String.format(Locale.US, "%.2f", entry.totalEarnings)}"
+
+                                val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(android.content.Intent.EXTRA_TEXT, textToSend)
+                                }
+                                if (!tutorialShare) context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת"))
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF064E3B), shape = RoundedCornerShape(8.dp))
+                                .testTag("global_share_btn_${entry.id}")
+                                .coachTarget(CoachTarget.SHARE)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Share,
+                                contentDescription = "שתף פרטי משמרת",
+                                tint = Color(0xFF34D399),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+
+                        if (entry.isGroupShift) {
                             IconButton(
                                 onClick = {
                                     val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(entry.date))
-                                    val textToSend = "היי, להלן פרטי המשמרת שלי מיום $dateStr:\n" +
-                                            "קטגוריה: ${entry.category}\n" +
-                                            "שעות עבודה: ${entry.hours} שעות\n" +
-                                            "תעריף שעתי: ₪${String.format(Locale.US, "%.2f", entry.hourlyRate)}\n" +
-                                            "סה\"כ לתשלום: ₪${String.format(Locale.US, "%.2f", entry.totalEarnings)}"
-                                            
+                                    val workersArray = try { org.json.JSONArray(entry.groupWorkersJson) } catch(e: Exception) { org.json.JSONArray() }
+
+                                    val empRate = entry.employerRate ?: 0.0
+                                    val sholiBossPay = entry.totalEarnings
+                                    var totalPay = sholiBossPay
+                                    var workersLines = "החלק שלי: ${entry.hours} שעות (${entry.currency}${String.format(Locale.US, "%.2f", sholiBossPay)})\n"
+
+                                    for (i in 0 until workersArray.length()) {
+                                        val obj = workersArray.getJSONObject(i)
+                                        val wName = obj.optString("name", "")
+                                        val wHours = obj.optDouble("hours", 0.0)
+                                        val wPay = wHours * com.example.data.WorkMoney.employerRate(obj, entry)
+                                        totalPay += wPay
+                                        workersLines += "${wName}: ${wHours} שעות (${entry.currency}${String.format(Locale.US, "%.2f", wPay)})\n"
+                                    }
+
+                                    val textToSend = "היי, להלן סיכום שעות עבודה ליום ${dateStr}:\n" +
+                                            "**סה\"כ לתשלום (כולל כולם): ${entry.currency}${String.format(Locale.US, "%.2f", totalPay)}**\n" +
+                                            "---\n" +
+                                            "פירוט:\n" +
+                                            workersLines +
+                                            "---"
+
                                     val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                         type = "text/plain"
                                         putExtra(android.content.Intent.EXTRA_TEXT, textToSend)
                                     }
-                                    context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף פרטי משמרת"))
+                                    if (!tutorialShare) context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף חשבונית לקבלן"))
                                 },
                                 modifier = Modifier
-                                    .size(34.dp)
-                                    .background(Color(0xFF064E3B), shape = RoundedCornerShape(8.dp))
-                                    .testTag("global_share_btn_${entry.id}")
+                                    .size(48.dp)
+                                    .background(Color(0xFF1E293B), shape = RoundedCornerShape(8.dp))
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.Share,
-                                    contentDescription = "שתף פרטי משמרת ב-WhatsApp",
+                                    imageVector = Icons.Outlined.ReceiptLong,
+                                    contentDescription = "שתף סיכום לקבלן",
                                     tint = Color(0xFF34D399),
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
+                        }
 
-                            if (entry.isGroupShift) {
-                                IconButton(
-                                    onClick = {
-                                        val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(entry.date))
-                                        val workersArray = try { org.json.JSONArray(entry.groupWorkersJson) } catch(e: Exception) { org.json.JSONArray() }
-                                        
-                                        val empRate = entry.employerRate ?: 0.0
-                                        val sholiBossPay = entry.totalEarnings
-                                        var totalPay = sholiBossPay
-                                        var workersLines = "שולי: ${entry.hours} שעות (₪${String.format(Locale.US, "%.2f", sholiBossPay)})\n"
-                                        
-                                        for (i in 0 until workersArray.length()) {
-                                            val obj = workersArray.getJSONObject(i)
-                                            val wName = obj.optString("name", "")
-                                            val wHours = obj.optDouble("hours", 0.0)
-                                            val wPay = wHours * empRate
-                                            totalPay += wPay
-                                            workersLines += "${wName}: ${wHours} שעות (₪${String.format(Locale.US, "%.2f", wPay)})\n"
-                                        }
-                                        
-                                        val textToSend = "היי, להלן סיכום שעות עבודה ליום ${dateStr}:\n" +
-                                                "**סה\"כ לתשלום (כולל כולם): ₪${String.format(Locale.US, "%.2f", totalPay)}**\n" +
-                                                "---\n" +
-                                                "פירוט:\n" +
-                                                workersLines +
-                                                "---"
-                                                
-                                        val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                            type = "text/plain"
-                                            putExtra(android.content.Intent.EXTRA_TEXT, textToSend)
-                                        }
-                                        context.startActivity(android.content.Intent.createChooser(sendIntent, "שתף חשבונית לקבלן"))
-                                    },
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .background(Color(0xFF1E293B), shape = RoundedCornerShape(8.dp))
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.ReceiptLong,
-                                        contentDescription = "שתף סיכום לקבלן",
-                                        tint = Color(0xFF34D399),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
+                        IconButton(
+                            onClick = onEdit,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(8.dp))
+                                .testTag("edit_entry_btn_${entry.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = "ערוך משמרת",
+                                tint = Color(0xFF6366F1),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
 
-                            IconButton(
-                                onClick = onEdit,
-                                modifier = Modifier
-                                    .size(34.dp)
-                                    .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(8.dp))
-                                    .testTag("edit_entry_btn_${entry.id}")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Edit,
-                                    contentDescription = "ערוך משמרת",
-                                    tint = Color(0xFF6366F1),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-
-                            IconButton(
-                                onClick = {
-                                    triggerHapticFeedback(context, isDestructive = true)
-                                    onDelete()
-                                },
-                                modifier = Modifier
-                                    .size(34.dp)
-                                    .background(Color(0xFF451A1A), shape = RoundedCornerShape(8.dp))
-                                    .testTag("delete_entry_btn_${entry.id}")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Delete,
-                                    contentDescription = "מחק משמרת",
-                                    tint = Color(0xFFF87171),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                        IconButton(
+                            onClick = {
+                                triggerHapticFeedback(context, isDestructive = true)
+                                onDelete()
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF451A1A), shape = RoundedCornerShape(8.dp))
+                                .testTag("delete_entry_btn_${entry.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = "מחק משמרת",
+                                tint = Color(0xFFF87171),
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 }
@@ -4650,42 +3608,141 @@ fun WorkEntryRowCard(
     }
 }
 
+/** The secret is only entered here; never restored into a visible field or saved UI state. */
+@Composable
+private fun PersonalAiKeyDialog(onDismiss: () -> Unit, isFirstSetup: Boolean = true, ownerUid: String?) {
+    val context = LocalContext.current
+    var draft by remember { mutableStateOf("") }
+    var showExplanation by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf<String?>(null) }
+    var hasKey by remember {
+        mutableStateOf(runCatching { com.example.api.PersonalAiKey.read(context, ownerUid).isNotBlank() }.getOrDefault(false))
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("שמירת משמרות בעזרת ג׳מיני", modifier = Modifier.weight(1f))
+                IconButton(onClick = { showExplanation = !showExplanation }) {
+                    Icon(Icons.Outlined.Info, contentDescription = "הסבר על המפתח האישי")
+                }
+            }
+        },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(if (hasKey) "מפתח אישי כבר שמור. אפשר להחליף או להסיר אותו כאן." else "אפשר להוסיף מפתח אישי עכשיו, או לדלג ולהוסיף בהגדרות בהמשך.")
+                AnimatedVisibility(visible = showExplanation) {
+                    Text("מפתח אישי מאפשר לתאר עבודה במילים ולקבל משמרות לבדיקה לפני שמירה. בלי מפתח אפשר להשתמש בכל הפעולות הרגילות. המפתח נשמר מוצפן במכשיר הזה, אינו מוצג במסכים ואינו נכלל בגיבוי המשמרות. הוא לא מסתנכרן למכשירים אחרים. הפענוח נשלח לגוגל ומשתמש במכסת הפרויקט שאליו שייך המפתח.")
+                }
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it; status = null },
+                    label = { Text(if (hasKey) "מפתח אישי חדש" else "מפתח אישי (לא חובה)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+                )
+                status?.let { Text(it) }
+                if (hasKey) {
+                    TextButton(onClick = {
+                        try {
+                            com.example.api.PersonalAiKey.remove(context, ownerUid)
+                            draft = ""
+                            hasKey = false
+                            status = "המפתח הוסר. המשמרות וכל שאר הנתונים נשמרו."
+                        } catch (_: Exception) {
+                            status = "הסרת המפתח לא הצליחה. אפשר לנסות שוב."
+                        }
+                    }) { Text("הסרת המפתח האישי") }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = draft.isNotBlank(),
+                onClick = {
+                    try {
+                        com.example.api.PersonalAiKey.save(context, draft, ownerUid)
+                        draft = ""
+                        Toast.makeText(context, "המפתח נשמר במכשיר. החיבור ייבדק בזמן הפענוח.", Toast.LENGTH_LONG).show()
+                        onDismiss()
+                    } catch (_: Exception) {
+                        status = "שמירת המפתח לא הצליחה. יש לבדוק את המפתח ולנסות שוב."
+                    }
+                }
+            ) { Text("שמירת המפתח") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(if (isFirstSetup) "לא עכשיו" else "סגירה") }
+        }
+    )
+}
+
 // ================= MANAGEMENT & BACKUP SCREEN =================
 @Composable
 fun ManagementScreen(
     viewModel: WorkViewModel,
     categories: List<WorkCategory>,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onSignIn: () -> Unit = {},
+    onReplayTutorial: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val accountSession by viewModel.currentUserSession.collectAsStateWithLifecycle()
+    var showPersonalKeySettings by remember { mutableStateOf(false) }
+    if (showPersonalKeySettings) {
+        key(accountSession?.uid) {
+            PersonalAiKeyDialog(onDismiss = { showPersonalKeySettings = false }, isFirstSetup = false, ownerUid = viewModel.owner.uid)
+        }
+    }
     var newCategoryText by remember { mutableStateOf("") }
+    var defaultCategoryMenu by remember { mutableStateOf(false) }
+    var addingDefaultCategory by remember { mutableStateOf(false) }
+    var defaultCategoryName by remember { mutableStateOf("") }
+    var defaultCategoryRate by remember { mutableStateOf("40") }
     var categoryToDelete by remember { mutableStateOf<WorkCategory?>(null) }
     var categoryToEditByRate by remember { mutableStateOf<WorkCategory?>(null) }
     var editRateText by remember { mutableStateOf("") }
     var importText by remember { mutableStateOf("") }
 
-    val savedNotificationEnabled by viewModel.serviceNotificationEnabled.collectAsStateWithLifecycle()
-    val savedGeminiModel by viewModel.geminiModel.collectAsStateWithLifecycle()
-    val savedDefaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
-    val normalizedSavedGeminiModel = remember(savedGeminiModel) {
-        when (savedGeminiModel) {
-            "gemini-1.5-flash" -> "Gemini 3.5 Flash"
-            "gemini-1.5-flash-8b", "gemini-1.5-flash-lite" -> "Gemini 3.1 Flash-Lite"
-            else -> savedGeminiModel
-        }
+    val localPreferences by viewModel.localPreferences.collectAsStateWithLifecycle()
+    if (addingDefaultCategory) {
+        var error by remember { mutableStateOf("") }
+        AlertDialog(onDismissRequest = { addingDefaultCategory = false }, containerColor = com.example.ui.theme.FormSurface,
+            title = { Text("הוספת קטגוריה") }, text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(defaultCategoryName, { defaultCategoryName = it }, label = { Text("שם קטגוריה") }, singleLine = true, modifier = Modifier.testTag("default_category_new_name"))
+                    OutlinedTextField(defaultCategoryRate, { defaultCategoryRate = it }, label = { Text("תעריף לשעה") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.testTag("default_category_new_rate"))
+                    Text("המטבע יהיה מטבע ברירת המחדל שלך.", style = MaterialTheme.typography.bodySmall)
+                    if (error.isNotEmpty()) Text(error, color = Color(0xFFF87171))
+                }
+            }, confirmButton = { TextButton(onClick = {
+                val name = defaultCategoryName.trim()
+                val rate = defaultCategoryRate.toDoubleOrNull()
+                if (name.isBlank() || categories.any { it.name == name } || rate == null || !rate.isFinite() || rate < 0) error = "יש להזין שם חדש ותעריף תקין"
+                else { viewModel.addDefaultCategory(name, rate); addingDefaultCategory = false }
+            }) { Text("הוסף ובחר") } }, dismissButton = { TextButton(onClick = { addingDefaultCategory = false }) { Text("ביטול") } })
     }
 
+    val saveBackupLauncher = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri?.let { viewModel.saveBackup(context, it) }
+    }
+    val savedNotificationEnabled by viewModel.serviceNotificationEnabled.collectAsStateWithLifecycle()
+    val savedDefaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
     var draftNotificationEnabled by remember(savedNotificationEnabled) { mutableStateOf(savedNotificationEnabled) }
-    var draftGeminiModel by remember(normalizedSavedGeminiModel) { mutableStateOf(normalizedSavedGeminiModel) }
     var draftDefaultCurrency by remember(savedDefaultCurrency) { mutableStateOf(savedDefaultCurrency) }
 
     // Accordion state - default to all closed (-1)
-    var expandedSection by remember { mutableStateOf(-1) }
+    val coachStep = LocalCoachStep.current
+    var expandedSection by remember { mutableStateOf(if (coachStep?.screen == CoachScreen.API) 3 else -1) }
 
     Box(modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // During guidance, scroll targets must remain above the real sticky actions.
+                .padding(bottom = if (coachStep != null) 88.dp else 0.dp)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(top = 16.dp, bottom = 100.dp),
@@ -4701,36 +3758,29 @@ fun ManagementScreen(
                 )
             }
 
+            OutlinedButton(onClick = onReplayTutorial, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("replay_onboarding"), shape = RoundedCornerShape(12.dp)) {
+                Icon(Icons.Outlined.Info, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("הצג שוב את ההדרכה")
+            }
+
             // Category 1: ניהול עבודה וקטגוריות
             Box(modifier = Modifier.fillMaxWidth()) {
                 val isExpanded = expandedSection == 0
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                    colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                     border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 0
-                        }
+                        .coachTarget(CoachTarget.CATEGORIES)
+
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (isExpanded) "צמצם" else "הרחב",
-                                tint = if (isExpanded) Color(0xFF6366F1) else Color(0xFF8E8E93)
-                            )
-                            Text(
-                                text = "ניהול עבודה וקטגוריות",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isExpanded) Color(0xFF818CF8) else Color.White
-                            )
+                        Box(Modifier.fillMaxWidth().clickable {
+                            expandedSection = if (isExpanded) -1 else 0
+                        }.testTag("settings_section_עבודה וקטגוריות")) {
+                            SettingsSectionHeader("עבודה וקטגוריות", isExpanded)
                         }
 
                         androidx.compose.animation.AnimatedVisibility(
@@ -4740,10 +3790,10 @@ fun ManagementScreen(
                         ) {
                             Column(modifier = Modifier.padding(top = 16.dp)) {
                                 Text(
-                                    text = "קטגוריות אלו משמשות סיווג לכל משמרת. קטגוריות ברירת המחדל הן: קריאייטיב, עצמאי, צאח.",
+                                    text = "קטגוריות מסווגות את המשמרות. שינוי ברירת מחדל אינו משנה סכומים שנשמרו.",
                                     fontSize = 12.sp,
                                     color = Color(0xFF8E8E93),
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
 
@@ -4772,8 +3822,8 @@ fun ManagementScreen(
                                                 unfocusedTextColor = Color.White,
                                                 focusedBorderColor = Color(0xFF5C6BC0),
                                                 unfocusedBorderColor = Color(0xFF3F3F46),
-                                                focusedContainerColor = Color(0xFF1C1C1E),
-                                                unfocusedContainerColor = Color(0xFF1C1C1E)
+                                                focusedContainerColor = com.example.ui.theme.FormSurface,
+                                                unfocusedContainerColor = com.example.ui.theme.FormSurface
                                             )
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
@@ -4789,8 +3839,8 @@ fun ManagementScreen(
                                                 unfocusedTextColor = Color.White,
                                                 focusedBorderColor = Color(0xFF5C6BC0),
                                                 unfocusedBorderColor = Color(0xFF3F3F46),
-                                                focusedContainerColor = Color(0xFF1C1C1E),
-                                                unfocusedContainerColor = Color(0xFF1C1C1E)
+                                                focusedContainerColor = com.example.ui.theme.FormSurface,
+                                                unfocusedContainerColor = com.example.ui.theme.FormSurface
                                             )
                                         )
                                     }
@@ -4823,7 +3873,7 @@ fun ManagementScreen(
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
 
@@ -4838,7 +3888,7 @@ fun ManagementScreen(
                                     categories.forEach { cat ->
                                         Box(
                                             modifier = Modifier
-                                                .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(8.dp))
+                                                .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(8.dp))
                                                 .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(8.dp))
                                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                                         ) {
@@ -4852,7 +3902,7 @@ fun ManagementScreen(
                                                     modifier = Modifier.clickable {
                                                         triggerHapticFeedback(context, isDestructive = false)
                                                         categoryToEditByRate = cat
-                                                        editRateText = String.format(Locale.US, "%.0f", cat.defaultRate)
+                                                        editRateText = cat.defaultRate.toString()
                                                     }
                                                 ) {
                                                     Icon(
@@ -4862,7 +3912,7 @@ fun ManagementScreen(
                                                         modifier = Modifier.size(12.dp)
                                                     )
                                                     Text(
-                                                        text = "${cat.name} (₪${String.format(Locale.US, "%.0f", cat.defaultRate)})",
+                                                        text = "${cat.name} (${viewModel.categoryCurrency(cat.name)}${cat.defaultRate})",
                                                         fontSize = 12.sp,
                                                         color = Color.White
                                                     )
@@ -4893,43 +3943,18 @@ fun ManagementScreen(
             Box(modifier = Modifier.fillMaxWidth()) {
                 val isExpanded = expandedSection == 1
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                    colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                     border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 1
-                        }
+
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (isExpanded) "צמצם" else "הרחב",
-                                tint = if (isExpanded) Color(0xFF6366F1) else Color(0xFF8E8E93)
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = draftDefaultCurrency,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF6366F1)
-                                )
-                                Text(
-                                    text = "הגדרת מטבע ראשי",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isExpanded) Color(0xFF818CF8) else Color.White
-                                )
-                            }
+                        Box(Modifier.fillMaxWidth().clickable {
+                            expandedSection = if (isExpanded) -1 else 1
+                        }.testTag("settings_section_מטבע וברירות מחדל")) {
+                            SettingsSectionHeader("מטבע וברירות מחדל", isExpanded)
                         }
 
                         androidx.compose.animation.AnimatedVisibility(
@@ -4938,11 +3963,25 @@ fun ManagementScreen(
                             exit = shrinkVertically() + fadeOut()
                         ) {
                             Column(modifier = Modifier.padding(top = 16.dp)) {
+                Text("קטגוריית ברירת מחדל")
+                Box(Modifier.fillMaxWidth()) {
+                    OutlinedButton(onClick = { defaultCategoryMenu = true }, modifier = Modifier.fillMaxWidth().testTag("default_category_picker")) {
+                        Text((localPreferences["defaultCategory"]?.takeIf { name -> categories.any { it.name == name } } ?: categories.firstOrNull()?.name ?: "עצמאי"))
+                        Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
+                    }
+                    DropdownMenu(expanded = defaultCategoryMenu, onDismissRequest = { defaultCategoryMenu = false }) {
+                        categories.forEach { cat ->
+                            DropdownMenuItem(text = { Text(cat.name) }, onClick = { viewModel.setDefaultCategory(cat.name); defaultCategoryMenu = false }, modifier = Modifier.testTag("default_category_option_${cat.name}"))
+                        }
+                        DropdownMenuItem(text = { Text("הוספת קטגוריה") }, onClick = { defaultCategoryMenu = false; defaultCategoryName = ""; defaultCategoryRate = "40"; addingDefaultCategory = true })
+                    }
+                }
+
                                 Text(
                                     text = "בחר את מטבע ברירת המחדל לחישוב וניהול משמרות ברחבי האפליקציה.",
                                     fontSize = 12.sp,
                                     color = Color(0xFF8E8E93),
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 Spacer(modifier = Modifier.height(14.dp))
@@ -4952,6 +3991,20 @@ fun ManagementScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    Column(horizontalAlignment = Alignment.Start) {
+                                        Text(
+                                            text = "מטבע ברירת מחדל",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = "יחול אוטומטית בהוספת משמרות",
+                                            color = Color(0xFF8E8E93),
+                                            fontSize = 11.sp
+                                        )
+                                    }
+
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         listOf("₪", "$").forEach { curr ->
                                             val isSelected = draftDefaultCurrency == curr
@@ -4980,112 +4033,6 @@ fun ManagementScreen(
                                             }
                                         }
                                     }
-
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text(
-                                            text = "מטבע ברירת מחדל",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 14.sp
-                                        )
-                                        Text(
-                                            text = "יחול אוטומטית בהוספת משמרות",
-                                            color = Color(0xFF8E8E93),
-                                            fontSize = 11.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Category 3: הגדרות בינה מלאכותית
-            Box(modifier = Modifier.fillMaxWidth()) {
-                val isExpanded = expandedSection == 2
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
-                    border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 2
-                        }
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (isExpanded) "צמצם" else "הרחב",
-                                tint = if (isExpanded) Color(0xFF6366F1) else Color(0xFF8E8E93)
-                            )
-                            Text(
-                                text = "הגדרות בינה מלאכותית",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isExpanded) Color(0xFF818CF8) else Color.White
-                            )
-                        }
-
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = isExpanded,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut()
-                        ) {
-                            Column(modifier = Modifier.padding(top = 16.dp)) {
-                                Text(
-                                    text = "בחר את מודל ה-AI שישמש לפענוח שעות העבודה והמשמרות שלך מטקסט חופשי או מהקלטה קולית.",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF8E8E93),
-                                    textAlign = TextAlign.End,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                val models = listOf(
-                                    "Gemini 3.5 Flash" to "Gemini 3.5 Flash",
-                                    "Gemini 3.1 Flash-Lite" to "Gemini 3.1 Flash-Lite"
-                                )
-
-                                models.forEach { (modelId, modelName) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                draftGeminiModel = modelId
-                                            }
-                                            .padding(vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        RadioButton(
-                                            selected = (draftGeminiModel == modelId),
-                                            onClick = {
-                                                triggerHapticFeedback(context, isDestructive = false)
-                                                draftGeminiModel = modelId
-                                            },
-                                            colors = RadioButtonDefaults.colors(
-                                                selectedColor = Color(0xFF6366F1),
-                                                unselectedColor = Color(0xFF8E8E93)
-                                            )
-                                        )
-                                        Text(
-                                            text = modelName,
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .padding(start = 8.dp),
-                                            textAlign = TextAlign.End
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -5097,32 +4044,18 @@ fun ManagementScreen(
             Box(modifier = Modifier.fillMaxWidth()) {
                 val isExpanded = expandedSection == 3
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                    colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                     border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 3
-                        }
+
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (isExpanded) "צמצם" else "הרחב",
-                                tint = if (isExpanded) Color(0xFF6366F1) else Color(0xFF8E8E93)
-                            )
-                            Text(
-                                text = "התראות מערכת",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isExpanded) Color(0xFF818CF8) else Color.White
-                            )
+                        Box(Modifier.fillMaxWidth().clickable {
+                            expandedSection = if (isExpanded) -1 else 3
+                        }.testTag("settings_section_מערכת ומשוב")) {
+                            SettingsSectionHeader("מערכת ומשוב", isExpanded)
                         }
 
                         androidx.compose.animation.AnimatedVisibility(
@@ -5130,12 +4063,20 @@ fun ManagementScreen(
                             enter = expandVertically() + fadeIn(),
                             exit = shrinkVertically() + fadeOut()
                         ) {
-                            Column(modifier = Modifier.padding(top = 16.dp)) {
+                            Column(
+                                modifier = Modifier.padding(top = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text("עדכונים", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                WorkUpdateSettings()
+                                HorizontalDivider(color = Color(0xFF334155))
+
+                                Text("התראות משמרת", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                                 Text(
                                     text = "ניהול הגדרות התראה, טיימר פעיל במכשיר, ושומר מסך כהה.",
                                     fontSize = 12.sp,
                                     color = Color(0xFF8E8E93),
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
 
@@ -5147,6 +4088,27 @@ fun ManagementScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 16.dp),
+                                        horizontalAlignment = Alignment.Start
+                                    ) {
+                                        Text(
+                                            text = "התראת משמרת פעילה",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            textAlign = TextAlign.Start
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "הצגת טיימר פעיל ועדכון שכר שנצבר בהתראת רקע קבועה במכשיר בזמן שהשעון רץ.",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF8E8E93),
+                                            textAlign = TextAlign.Start
+                                        )
+                                    }
                                     Switch(
                                         checked = draftNotificationEnabled,
                                         onCheckedChange = { newValue ->
@@ -5157,33 +4119,20 @@ fun ManagementScreen(
                                             checkedThumbColor = Color.White,
                                             checkedTrackColor = Color(0xFF6366F1),
                                             uncheckedThumbColor = Color(0xFF8E8E93),
-                                            uncheckedTrackColor = Color(0xFF1C1C1E)
+                                            uncheckedTrackColor = com.example.ui.theme.FormSurface
                                         ),
                                         modifier = Modifier.testTag("service_notification_switch")
                                     )
-
-                                    Column(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(start = 16.dp),
-                                        horizontalAlignment = Alignment.End
-                                    ) {
-                                        Text(
-                                            text = "התראת משמרת פעילה",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            textAlign = TextAlign.End
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "הצגת טיימר פעיל ועדכון שכר שנצבר בהתראת רקע קבועה במכשיר בזמן שהשעון רץ.",
-                                            fontSize = 12.sp,
-                                            color = Color(0xFF8E8E93),
-                                            textAlign = TextAlign.End
-                                        )
-                                    }
                                 }
+
+                                HorizontalDivider(color = Color(0xFF334155))
+                                Text("בינה מלאכותית", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                Text("שימוש אופציונלי בג׳מיני באמצעות המפתח האישי שלך")
+                                TextButton(onClick = { showPersonalKeySettings = true }, modifier = Modifier.coachTarget(CoachTarget.API)) { Text("מפתח אישי") }
+
+                                HorizontalDivider(color = Color(0xFF334155))
+                                Text("משוב ודיווח על תקלה", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                FeedbackForm()
                             }
                         }
                     }
@@ -5194,32 +4143,18 @@ fun ManagementScreen(
             Box(modifier = Modifier.fillMaxWidth()) {
                 val isExpanded = expandedSection == 4
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
+                    colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.FormSurface),
                     border = BorderStroke(1.dp, if (isExpanded) Color(0xFF6366F1) else Color(0x26FFFFFF)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            expandedSection = if (isExpanded) -1 else 4
-                        }
+
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (isExpanded) "צמצם" else "הרחב",
-                                tint = if (isExpanded) Color(0xFF6366F1) else Color(0xFF8E8E93)
-                            )
-                            Text(
-                                text = "תחזוקה וגיבוי נתונים",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isExpanded) Color(0xFF818CF8) else Color.White
-                            )
+                        Box(Modifier.fillMaxWidth().clickable {
+                            expandedSection = if (isExpanded) -1 else 4
+                        }.testTag("settings_section_גיבוי ונתונים")) {
+                            SettingsSectionHeader("גיבוי ונתונים", isExpanded)
                         }
 
                         androidx.compose.animation.AnimatedVisibility(
@@ -5228,11 +4163,14 @@ fun ManagementScreen(
                             exit = shrinkVertically() + fadeOut()
                         ) {
                             Column(modifier = Modifier.padding(top = 16.dp)) {
+                                Text("הנתונים נשמרים במכשיר. שמור גיבוי גם מחוץ לאפליקציה.")
+                                Button(onClick = { saveBackupLauncher.launch("salary-backup.json") }) { Text("שמור קובץ גיבוי") }
+
                                 Text(
                                     text = "ייבוא וייצוא נתונים לצורך גיבוי ושחזור.",
                                     fontSize = 12.sp,
                                     color = Color(0xFF8E8E93),
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
 
@@ -5244,7 +4182,7 @@ fun ManagementScreen(
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -5252,7 +4190,7 @@ fun ManagementScreen(
                                     text = "הדבק שורות מאקסל (מופרד באמצעות Tabs/פסיקים) או טקסט גיבוי JSON:",
                                     fontSize = 12.sp,
                                     color = Color(0xFF8E8E93),
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -5271,8 +4209,8 @@ fun ManagementScreen(
                                         unfocusedTextColor = Color.White,
                                         focusedBorderColor = Color(0xFF5C6BC0),
                                         unfocusedBorderColor = Color(0xFF3F3F46),
-                                        focusedContainerColor = Color(0xFF1C1C1E),
-                                        unfocusedContainerColor = Color(0xFF1C1C1E)
+                                        focusedContainerColor = com.example.ui.theme.FormSurface,
+                                        unfocusedContainerColor = com.example.ui.theme.FormSurface
                                     )
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -5285,9 +4223,7 @@ fun ManagementScreen(
                                             if (success) {
                                                 importText = ""
                                                 triggerHapticFeedback(context, isDestructive = false)
-                                                Toast.makeText(context, "הנתונים יובאו בהצלחה!", Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                Toast.makeText(context, "שגיאה: טקסט הגיבוי או שורות האקסל אינם תקינים!", Toast.LENGTH_LONG).show()
+                                                // The confirmation dialog owns the actual import.
                                             }
                                         }
                                     },
@@ -5313,7 +4249,7 @@ fun ManagementScreen(
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Start,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -5351,8 +4287,19 @@ fun ManagementScreen(
                 }
             }
 
+            if (viewModel.owner.uid != null) {
+                val syncStatus by viewModel.cloudStatus.collectAsStateWithLifecycle()
+                Text(syncStatus)
+                if (BuildConfig.VERSIONED_SYNC_ENABLED) {
+                    TextButton(onClick = { viewModel.syncNow() }) { Text("סנכרון עכשיו") }
+                    TextButton(onClick = { viewModel.reviewSyncConflicts(context) }) { Text("סקירת שינויים מתנגשים") }
+                }
+                TextButton(onClick = { viewModel.reviewLegacyData(context) }) {
+                    Text("העתקה חד־פעמית של הנתונים המקומיים לחשבון")
+                }
+            }
             // Sign Out row option
-            Box(modifier = Modifier.fillMaxWidth()) {
+            if (BuildConfig.ACCOUNTS_ENABLED) Box(modifier = Modifier.fillMaxWidth()) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0x331E293B)),
                     border = BorderStroke(1.dp, Color(0x26FFFFFF)),
@@ -5369,16 +4316,27 @@ fun ManagementScreen(
                         Button(
                             onClick = {
                                 triggerHapticFeedback(context, isDestructive = true)
-                                viewModel.signOut(context)
-                                onNavigateBack()
-                                Toast.makeText(context, "התנתקת מהמערכת בהצלחה", Toast.LENGTH_SHORT).show()
+                                if (accountSession == null) {
+                                    onSignIn()
+                                } else {
+                                    android.app.AlertDialog.Builder(context)
+                                        .setTitle("התנתקות מהחשבון")
+                                        .setMessage("הנתונים השמורים יישארו בחשבון במכשיר. טפסים שלא נשמרו ייסגרו. לאחר ההתנתקות יוצגו נתוני השימוש המקומי.")
+                                        .setNegativeButton("ביטול", null)
+                                        .setPositiveButton("התנתקות") { _, _ ->
+                                            if (viewModel.signOut(context)) {
+                                                onNavigateBack()
+                                                Toast.makeText(context, "התנתקת מהמערכת בהצלחה", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }.show()
+                                }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.testTag("settings_sign_out_btn")
                         ) {
                             Text(
-                                text = "התנתק",
+                                text = if (accountSession == null) "התחברות" else "התנתק",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp
@@ -5391,15 +4349,15 @@ fun ManagementScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
-                                textAlign = TextAlign.End
+                                textAlign = TextAlign.Start
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             val sessionUser by viewModel.currentUserSession.collectAsStateWithLifecycle()
                             Text(
-                                text = sessionUser?.email ?: sessionUser?.displayName ?: "משתמש מחובר",
+                                text = sessionUser?.email ?: sessionUser?.displayName ?: "שימוש מקומי — ללא סנכרון",
                                 fontSize = 12.sp,
                                 color = Color(0xFF8E8E93),
-                                textAlign = TextAlign.End
+                                textAlign = TextAlign.Start
                             )
                         }
                     }
@@ -5411,10 +4369,11 @@ fun ManagementScreen(
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .testTag("settings_action_bar")
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0xFF121212).copy(alpha = 0.95f), Color(0xFF121212))
+                        colors = listOf(Color.Transparent, com.example.ui.theme.FormSurface.copy(alpha = 0.95f), com.example.ui.theme.FormSurface)
                     )
                 )
                 .padding(horizontal = 16.dp, vertical = 20.dp),
@@ -5447,7 +4406,6 @@ fun ManagementScreen(
             Button(
                 onClick = {
                     viewModel.updateServiceNotificationEnabled(draftNotificationEnabled)
-                    viewModel.updateGeminiModel(draftGeminiModel)
                     viewModel.updateDefaultCurrency(draftDefaultCurrency)
                     Toast.makeText(context, "ההגדרות נשמרו בהצלחה!", Toast.LENGTH_SHORT).show()
                     onNavigateBack()
@@ -5499,9 +4457,11 @@ fun ManagementScreen(
 
     if (categoryToEditByRate != null) {
         var errorEditRate by remember { mutableStateOf(false) }
+        var editName by remember(categoryToEditByRate) { mutableStateOf(categoryToEditByRate?.name ?: "") }
+        var editCurrency by remember(categoryToEditByRate) { mutableStateOf(viewModel.categoryCurrency(categoryToEditByRate?.name ?: "")) }
         AlertDialog(
             onDismissRequest = { categoryToEditByRate = null },
-            title = { Text("עדכון תעריף שעתי ברירת מחדל", color = Color.White, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth()) },
+            title = { Text("עדכון תעריף שעתי ברירת מחדל", color = Color.White, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth()) },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -5512,9 +4472,13 @@ fun ManagementScreen(
                         text = "עדכון תעריף ברירת המחדל עבור '${categoryToEditByRate?.name}'. שינוי זה ישפיע רק על משמרות עתידיות ולא ישנה נתונים קודמים.",
                         color = Color(0xFFE2E8F0),
                         fontSize = 14.sp,
-                        textAlign = TextAlign.End,
+                        textAlign = TextAlign.Start,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    OutlinedTextField(value = editName, onValueChange = { editName = it }, label = { Text("שם קטגוריה") })
+                    Row { listOf("₪", "$").forEach { currency ->
+                        TextButton(onClick = { editCurrency = currency }) { Text(if (currency == editCurrency) "✓ $currency" else currency) }
+                    } }
                     OutlinedTextField(
                         value = editRateText,
                         onValueChange = {
@@ -5530,8 +4494,8 @@ fun ManagementScreen(
                             unfocusedTextColor = Color.White,
                             focusedBorderColor = Color(0xFF5C6BC0),
                             unfocusedBorderColor = Color(0xFF3F3F46),
-                            focusedContainerColor = Color(0xFF1C1C1E),
-                            unfocusedContainerColor = Color(0xFF1C1C1E)
+                            focusedContainerColor = com.example.ui.theme.FormSurface,
+                            unfocusedContainerColor = com.example.ui.theme.FormSurface
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -5546,7 +4510,7 @@ fun ManagementScreen(
                         val parsedRate = editRateText.toDoubleOrNull()
                         if (parsedRate != null && parsedRate > 0.0) {
                             categoryToEditByRate?.let { cat ->
-                                viewModel.updateCategoryRate(cat, parsedRate)
+                                viewModel.editCategory(cat, editName, parsedRate, editCurrency)
                             }
                             categoryToEditByRate = null
                             Toast.makeText(context, "תעריף שעתי עודכן בהצלחה", Toast.LENGTH_SHORT).show()
@@ -5630,10 +4594,10 @@ fun ShiftFormDialog(
     var startTime by remember { mutableStateOf(entry?.startTime ?: "09:00") }
     var endTime by remember { mutableStateOf(entry?.endTime ?: "17:00") }
     var manualHoursText by remember {
-        mutableStateOf(entry?.let { if (!it.isTimeRange) String.format(Locale.US, "%.1f", it.hours) else "" } ?: "")
+        mutableStateOf(entry?.let { it.hours.toString() } ?: "")
     }
     var rateText by remember {
-        mutableStateOf(String.format(Locale.US, "%.0f", entry?.hourlyRate ?: WorkViewModel.DEFAULT_RATE))
+        mutableStateOf((entry?.hourlyRate ?: WorkViewModel.DEFAULT_RATE).toString())
     }
     var notesText by remember { mutableStateOf(entry?.notes ?: "") }
     var isDropdownExpanded by remember { mutableStateOf(false) }
@@ -5797,7 +4761,7 @@ fun ShiftFormDialog(
                                 readOnly = true,
                                 enabled = false,
                                 label = { Text("שעת התחלה") },
-                                colors = OutlinedTextFieldDefaults.colors(
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                     disabledTextColor = Color.White,
                                     disabledBorderColor = Color(0xFF3F3F46),
                                     disabledLabelColor = Color(0xFF8E8E93)
@@ -5827,7 +4791,7 @@ fun ShiftFormDialog(
                                 readOnly = true,
                                 enabled = false,
                                 label = { Text("שעת סיום") },
-                                colors = OutlinedTextFieldDefaults.colors(
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                     disabledTextColor = Color.White,
                                     disabledBorderColor = Color(0xFF3F3F46),
                                     disabledLabelColor = Color(0xFF8E8E93)
@@ -5864,7 +4828,7 @@ fun ShiftFormDialog(
                             readOnly = true,
                             enabled = false,
                             label = { Text("כמות שעות עבודה") },
-                            colors = OutlinedTextFieldDefaults.colors(
+                            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                 disabledTextColor = Color.White,
                                 disabledBorderColor = Color(0xFF3F3F46),
                                 disabledLabelColor = Color(0xFF8E8E93)
@@ -5880,7 +4844,7 @@ fun ShiftFormDialog(
                 OutlinedTextField(
                     value = rateText,
                     onValueChange = { rateText = it },
-                    label = { Text("תעריף שעתי (₪)") },
+                    label = { Text("תעריף שעתי (${entry?.currency ?: "₪"})") },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Next
@@ -5916,6 +4880,11 @@ fun ShiftFormDialog(
                         }
                     }
 
+                    if (isTimeRange) {
+                        hours = if (entry != null && entry.isTimeRange && startTime == entry.startTime && endTime == entry.endTime) {
+                            entry.hours
+                        } else com.example.data.WorkEntryEdits.rangeHours(startTime, endTime)
+                    }
                     // Save shift
                     onSave(
                         selectedCategory,
@@ -5972,26 +4941,28 @@ fun EditShiftBottomSheet(
         isGroupShift: Boolean,
         employerRate: Double?,
         workerRate: Double?,
-        groupWorkersJson: String
+        groupWorkersJson: String,
+        currency: String
     ) -> Unit
 ) {
+    var selectedCurrency by androidx.compose.runtime.saveable.rememberSaveable(entry.id) { mutableStateOf(entry.currency) }
     val context = LocalContext.current
     var isManualMode by remember { mutableStateOf(!entry.isTimeRange || entry.isGroupShift) }
     var selectedDateMillis by remember { mutableStateOf(entry.date) }
     var startTimeStr by remember { mutableStateOf(entry.startTime ?: "09:00") }
     var endTimeStr by remember { mutableStateOf(entry.endTime ?: "17:00") }
-    var breakMinutesStr by remember { mutableStateOf("0") }
-    var hourlyRateStr by remember { mutableStateOf(String.format(Locale.US, "%.0f", entry.hourlyRate)) }
+    var breakMinutesStr by remember { mutableStateOf(com.example.data.WorkEntryEdits.breakMinutes(entry).toString()) }
+    var hourlyRateStr by remember { mutableStateOf(entry.hourlyRate.toString()) }
     var selectedCategory by remember { mutableStateOf(entry.category) }
     var notesText by remember { mutableStateOf(entry.notes) }
-    var manualHoursStr by remember { mutableStateOf(if (!entry.isTimeRange) String.format(Locale.US, "%.1f", entry.hours) else "8.0") }
-    
+    var manualHoursStr by remember { mutableStateOf(entry.hours.toString()) }
+
     var isGroupShift by remember { mutableStateOf(entry.isGroupShift) }
-    var employerRateStr by remember { mutableStateOf(entry.employerRate?.let { String.format(Locale.US, "%.0f", it) } ?: "") }
-    var workerRateStr by remember { mutableStateOf(entry.workerRate?.let { String.format(Locale.US, "%.0f", it) } ?: "") }
+    var employerRateStr by remember { mutableStateOf(entry.employerRate?.toString() ?: "") }
+    var workerRateStr by remember { mutableStateOf(entry.workerRate?.toString() ?: "") }
     var showSeparateRates by remember { mutableStateOf(entry.employerRate != null || entry.workerRate != null) }
-    
-    val groupWorkers = remember { 
+
+    val groupWorkers = remember {
         mutableStateListOf<WorkViewModel.GroupWorkerState>().apply {
             addAll(viewModel.parseGroupWorkers(entry.groupWorkersJson))
         }
@@ -6003,11 +4974,11 @@ fun EditShiftBottomSheet(
     var showErrorRate by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color(0xFF121212),
+        containerColor = com.example.ui.theme.FormSurface,
         contentColor = Color.White,
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
@@ -6028,7 +4999,9 @@ fun EditShiftBottomSheet(
                 color = Color.White,
                 modifier = Modifier.align(Alignment.End)
             )
-            
+
+            Text("שינוי המטבע מתקן את סימון הדיווח; הסכום אינו מומר לפי שער חליפין.", style = MaterialTheme.typography.bodySmall)
+
             // Replicate same layout as "דיווח חדש"
             // 2. Pill Toggle Switch (שעון / ידני / קבוצה)
             Row(
@@ -6054,7 +5027,7 @@ fun EditShiftBottomSheet(
                             if (isClockSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                             else Modifier
                         )
-                        .clickable { 
+                        .clickable {
                             isManualMode = false
                             isGroupShift = false
                         },
@@ -6093,7 +5066,7 @@ fun EditShiftBottomSheet(
                             if (isManualSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                             else Modifier
                         )
-                        .clickable { 
+                        .clickable {
                             isManualMode = true
                             isGroupShift = false
                         },
@@ -6132,7 +5105,7 @@ fun EditShiftBottomSheet(
                             if (isGroupSelected) Modifier.border(1.dp, Color(0x66818CF8), RoundedCornerShape(18.dp))
                             else Modifier
                         )
-                        .clickable { 
+                        .clickable {
                             isManualMode = true
                             isGroupShift = true
                             val hDouble = manualHoursStr.toDoubleOrNull() ?: 0.0
@@ -6176,7 +5149,7 @@ fun EditShiftBottomSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
+                        .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
                         .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
                         .clickable {
                             val cal = Calendar.getInstance().apply { timeInMillis = selectedDateMillis }
@@ -6238,7 +5211,7 @@ fun EditShiftBottomSheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp)
-                                .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
+                                .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
                                 .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
                                 .clickable {
                                     val t = endTimeStr.split(":")
@@ -6276,7 +5249,7 @@ fun EditShiftBottomSheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp)
-                                .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
+                                .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
                                 .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
                                 .clickable {
                                     val t = startTimeStr.split(":")
@@ -6323,7 +5296,7 @@ fun EditShiftBottomSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
-                            .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
+                            .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
                             .border(1.dp, if (showErrorHours) Color.Red else Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
                             .clickable {
                                 TimePickerDialog(context, { _, hour, minute ->
@@ -6386,7 +5359,7 @@ fun EditShiftBottomSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
+                        .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
                         .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
                         .clickable {
                             TimePickerDialog(context, { _, hour, minute ->
@@ -6427,6 +5400,7 @@ fun EditShiftBottomSheet(
                     modifier = Modifier.align(Alignment.End)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = hourlyRateStr,
                     onValueChange = { newValue ->
@@ -6440,15 +5414,17 @@ fun EditShiftBottomSheet(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().testTag("edit_rate_input"),
+                    modifier = Modifier.weight(1f).testTag("edit_rate_input"),
                     isError = showErrorRate,
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                         focusedBorderColor = if (showErrorRate) Color.Red else Color(0xFF5C6BC0),
                         unfocusedBorderColor = if (showErrorRate) Color.Red else Color(0xFF3F3F46),
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White
                     )
                 )
+                    com.example.ui.ShiftCurrencyPicker(selectedCurrency, { selectedCurrency = it }, "edit_shift_currency", Modifier.weight(1f), compact = true)
+                }
                 if (showErrorRate) {
                     Text(
                         text = "נא להזין תעריף תקין",
@@ -6457,7 +5433,7 @@ fun EditShiftBottomSheet(
                         modifier = Modifier.align(Alignment.End)
                     )
                 }
-                
+
                 if (isGroupShift) {
                     Text(
                         text = if (showSeparateRates) "- בטל תעריפים נפרדים לקבוצה" else "+ הגדר תעריפים נפרדים לקבוצה",
@@ -6468,7 +5444,7 @@ fun EditShiftBottomSheet(
                             .align(Alignment.Start)
                             .clickable { showSeparateRates = !showSeparateRates }
                     )
-                    
+
                     AnimatedVisibility(visible = showSeparateRates) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -6481,7 +5457,7 @@ fun EditShiftBottomSheet(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                     focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
                                     focusedTextColor = Color.White,
@@ -6495,7 +5471,7 @@ fun EditShiftBottomSheet(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                     focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
                                     focusedTextColor = Color.White,
@@ -6517,13 +5493,13 @@ fun EditShiftBottomSheet(
                     modifier = Modifier.align(Alignment.End)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 var expandedDropdown by remember { mutableStateOf(false) }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
+                        .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
                         .border(1.dp, Color(0xFF3F3F46), shape = RoundedCornerShape(12.dp))
                         .clickable { expandedDropdown = true }
                         .padding(horizontal = 12.dp),
@@ -6537,6 +5513,8 @@ fun EditShiftBottomSheet(
                         Icon(Icons.Outlined.ArrowDropDown, null, tint = Color(0xFF8E8E93))
                         Text(
                             text = selectedCategory,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
@@ -6577,7 +5555,7 @@ fun EditShiftBottomSheet(
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                         focusedBorderColor = Color(0xFF5C6BC0),
                         unfocusedBorderColor = Color(0xFF3F3F46),
                         focusedTextColor = Color.White,
@@ -6596,7 +5574,7 @@ fun EditShiftBottomSheet(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF1C1C1E), shape = RoundedCornerShape(12.dp))
+                            .background(com.example.ui.theme.FormSurface, shape = RoundedCornerShape(12.dp))
                             .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -6619,7 +5597,7 @@ fun EditShiftBottomSheet(
                                     singleLine = true,
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = OutlinedTextFieldDefaults.colors(
+                                    colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                         focusedBorderColor = Color(0xFF5C6BC0),
                                         unfocusedBorderColor = Color(0xFF44444F),
                                         focusedTextColor = Color.White,
@@ -6640,7 +5618,7 @@ fun EditShiftBottomSheet(
                                     singleLine = true,
                                     modifier = Modifier.width(80.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = OutlinedTextFieldDefaults.colors(
+                                    colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                         focusedBorderColor = Color(0xFF5C6BC0),
                                         unfocusedBorderColor = Color(0xFF44444F),
                                         focusedTextColor = Color.White,
@@ -6648,7 +5626,7 @@ fun EditShiftBottomSheet(
                                     )
                                 )
                                 IconButton(onClick = { groupWorkers.removeAt(index) }) {
-                                    Icon(Icons.Outlined.Delete, contentDescription = "Remove", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
+                                    Icon(Icons.Outlined.Delete, contentDescription = "הסר עובד", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
                                 }
                             }
                         }
@@ -6660,14 +5638,14 @@ fun EditShiftBottomSheet(
                         ) {
                             OutlinedTextField(
                                 value = currentWorkerName,
-                                onValueChange = { 
+                                onValueChange = {
                                     currentWorkerName = it
                                 },
                                 label = { Text("שם", fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                     focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
                                     focusedTextColor = Color.White,
@@ -6681,7 +5659,7 @@ fun EditShiftBottomSheet(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.width(80.dp),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = com.example.ui.theme.FormSurface, unfocusedContainerColor = com.example.ui.theme.FormSurface,
                                     focusedBorderColor = Color(0xFF5C6BC0),
                                     unfocusedBorderColor = Color(0xFF44444F),
                                     focusedTextColor = Color.White,
@@ -6700,7 +5678,7 @@ fun EditShiftBottomSheet(
                                 },
                                 modifier = Modifier.background(Color(0xFF5C6BC0), CircleShape)
                             ) {
-                                Icon(Icons.Outlined.Add, contentDescription = "Add", tint = Color.White)
+                                Icon(Icons.Outlined.Add, contentDescription = "הוסף עובד", tint = Color.White)
                             }
                         }
                     }
@@ -6714,34 +5692,41 @@ fun EditShiftBottomSheet(
                 onClick = {
                     val testHours = if (isManualMode) manualHoursStr.toDoubleOrNull() ?: 0.0 else 1.0
                     val testRate = hourlyRateStr.toDoubleOrNull() ?: 0.0
-                    
-                    showErrorHours = isManualMode && (manualHoursStr.isBlank() || testHours <= 0.0)
-                    showErrorRate = hourlyRateStr.isBlank() || testRate <= 0.0
-                    
+
+                    showErrorHours = isManualMode && (manualHoursStr.isBlank() || !testHours.isFinite() || testHours <= 0.0)
+                    showErrorRate = hourlyRateStr.isBlank() || !testRate.isFinite() || testRate <= 0.0
+
                     if (showErrorHours || showErrorRate) {
                         triggerHapticFeedback(context, isDestructive = true)
                         Toast.makeText(context, "נא לתקן את השדות המסומנים באדום", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
-                    
+
                     val finalHours = if (isManualMode) {
                         manualHoursStr.toDoubleOrNull() ?: 8.0
                     } else {
-                        val sParts = startTimeStr.split(":")
-                        val sMin = (sParts.getOrNull(0)?.toIntOrNull() ?: 9) * 60 + (sParts.getOrNull(1)?.toIntOrNull() ?: 0)
-                        val eParts = endTimeStr.split(":")
-                        val eMin = (eParts.getOrNull(0)?.toIntOrNull() ?: 17) * 60 + (eParts.getOrNull(1)?.toIntOrNull() ?: 0)
-                        val bMins = breakMinutesStr.toDoubleOrNull() ?: 0.0
-                        val durationVal = eMin - sMin - bMins
-                        maxOf(0.0, durationVal / 60.0)
+                        com.example.data.WorkEntryEdits.netHours(
+                            entry, startTimeStr, endTimeStr, breakMinutesStr.toDoubleOrNull() ?: 0.0
+                        )
                     }
                     val finalRate = hourlyRateStr.toDoubleOrNull() ?: 40.0
-                    val eRate = if (isGroupShift && showSeparateRates) employerRateStr.toDoubleOrNull() ?: finalRate else finalRate
-                    val wRate = if (isGroupShift && showSeparateRates) workerRateStr.toDoubleOrNull() ?: finalRate else finalRate
+                    val separateSettingsUnchanged = isGroupShift == entry.isGroupShift &&
+                        showSeparateRates == (entry.employerRate != null || entry.workerRate != null)
+                    val eRate = if (separateSettingsUnchanged && employerRateStr == (entry.employerRate?.toString() ?: "")) entry.employerRate
+                        else if (isGroupShift && showSeparateRates) employerRateStr.toDoubleOrNull() ?: finalRate else null
+                    val wRate = if (separateSettingsUnchanged && workerRateStr == (entry.workerRate?.toString() ?: "")) entry.workerRate
+                        else if (isGroupShift && showSeparateRates) workerRateStr.toDoubleOrNull() ?: finalRate else null
+                    if (!finalHours.isFinite() || finalHours <= 0.0 ||
+                        (eRate != null && (!eRate.isFinite() || eRate < 0.0)) ||
+                        (wRate != null && (!wRate.isFinite() || wRate < 0.0)) ||
+                        (breakMinutesStr.toDoubleOrNull()?.let { !it.isFinite() || it < 0.0 } == true)) {
+                        Toast.makeText(context, "נא להזין שעות ותעריפים תקינים", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
                     val gJson = if (isGroupShift && groupWorkers.isNotEmpty()) {
                         val arr = org.json.JSONArray()
                         groupWorkers.forEach { w ->
-                            val obj = org.json.JSONObject()
+                            val obj = if (w.sourceJson.isBlank()) org.json.JSONObject() else org.json.JSONObject(w.sourceJson)
                             obj.put("name", w.name)
                             obj.put("hours", w.hours)
                             obj.put("isPaid", w.isPaid)
@@ -6749,7 +5734,7 @@ fun EditShiftBottomSheet(
                         }
                         arr.toString()
                     } else ""
-                    
+
                     onSave(
                         selectedCategory,
                         selectedDateMillis,
@@ -6763,7 +5748,8 @@ fun EditShiftBottomSheet(
                         isGroupShift,
                         eRate,
                         wRate,
-                        gJson
+                        gJson,
+                        selectedCurrency
                     )
                 },
                 colors = ButtonDefaults.buttonColors(
@@ -6814,7 +5800,7 @@ fun DashboardBarChart(entries: List<WorkEntry>) {
             .fillMaxWidth()
             .padding(horizontal = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF000000)), // Pitch-black
-        border = BorderStroke(1.dp, Color(0xFF1E1E1E)),
+        border = BorderStroke(1.dp, com.example.ui.theme.FormSurface),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
@@ -6827,9 +5813,9 @@ fun DashboardBarChart(entries: List<WorkEntry>) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.align(Alignment.End)
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Standard scroll structure
             Box(
                 modifier = Modifier
@@ -6846,10 +5832,10 @@ fun DashboardBarChart(entries: List<WorkEntry>) {
                     val paddingRight = 10.dp.toPx()
                     val paddingTop = 20.dp.toPx()
                     val paddingBottom = 25.dp.toPx()
-                    
+
                     val chartWidth = size.width - paddingLeft - paddingRight
                     val chartHeight = size.height - paddingTop - paddingBottom
-                    
+
                     // Draw horizontal grid lines & Y axis values (0, max/2, max)
                     val gridYLevels = listOf(0f, maxHours / 2f, maxHours)
                     val paintText = android.graphics.Paint().apply {
@@ -6857,11 +5843,11 @@ fun DashboardBarChart(entries: List<WorkEntry>) {
                         textSize = 10.sp.toPx()
                         textAlign = android.graphics.Paint.Align.RIGHT
                     }
-                    
+
                     for (level in gridYLevels) {
                         val y = paddingTop + chartHeight - (level / maxHours) * chartHeight
                         drawLine(
-                            color = Color(0xFF1E1E1E),
+                            color = com.example.ui.theme.FormSurface,
                             start = Offset(paddingLeft, y),
                             end = Offset(size.width - paddingRight, y),
                             strokeWidth = 1.dp.toPx()
@@ -6873,17 +5859,17 @@ fun DashboardBarChart(entries: List<WorkEntry>) {
                             paintText
                         )
                     }
-                    
+
                     // Draw bars and day labels
                     val barWidth = 16.dp.toPx()
                     val daySpacing = 32.dp.toPx()
-                    
+
                     for (day in 1..actualDays) {
                         val hours = dailyHours[day]
                         val x = paddingLeft + (day - 1) * daySpacing + (daySpacing - barWidth) / 2f
                         val barHeight = (hours / maxHours) * chartHeight
                         val y = paddingTop + chartHeight - barHeight
-                        
+
                         if (hours > 0) {
                             // Vibrant purple / indigo gradient
                             drawRoundRect(
@@ -6894,7 +5880,7 @@ fun DashboardBarChart(entries: List<WorkEntry>) {
                                 size = Size(barWidth, barHeight),
                                 cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
                             )
-                            
+
                             // Tiny label on top of the bar for non-zero hours
                             val textPaintHours = android.graphics.Paint().apply {
                                 color = android.graphics.Color.WHITE
@@ -6915,7 +5901,7 @@ fun DashboardBarChart(entries: List<WorkEntry>) {
                                 size = Size(barWidth, chartHeight)
                             )
                         }
-                        
+
                         // Day Label (X-axis)
                         val paintDayText = android.graphics.Paint().apply {
                             color = android.graphics.Color.parseColor("#94A3B8")
@@ -7023,4 +6009,8 @@ fun LoginOverlay(
     }
 }
 
-
+@Composable
+fun MoneySummary(values: Map<String, Double>, fontSize: androidx.compose.ui.unit.TextUnit) {
+    Text(values.entries.joinToString("\n") { com.example.data.WorkMoney.format(it.value, it.key) }.ifEmpty { "0.00" },
+        color = Color.White, fontWeight = FontWeight.Bold, fontSize = fontSize)
+}

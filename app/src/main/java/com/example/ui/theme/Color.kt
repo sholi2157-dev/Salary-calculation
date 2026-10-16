@@ -28,3 +28,5 @@ val DarkOnPrimary = Color(0xFF002E6C)
 val DarkPrimaryContainer = Color(0xFF1E3F8F)
 val DarkBackground = Color(0xFF111318)
 val DarkSurface = Color(0xFF1A1C1E)
+
+val FormSurface = Color(0xE6222B49)

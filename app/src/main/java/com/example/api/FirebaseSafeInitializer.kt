@@ -27,10 +27,11 @@ object FirebaseSafeInitializer {
     private val _isMockModeActive = MutableStateFlow(true)
     val isMockModeActive: StateFlow<Boolean> = _isMockModeActive.asStateFlow()
 
-    private val _currentUser = MutableStateFlow<MockUser?>(MockUser())
+    private val _currentUser = MutableStateFlow<MockUser?>(null)
     val currentUser: StateFlow<MockUser?> = _currentUser.asStateFlow()
 
     fun init(context: Context) {
+        if (com.example.BuildConfig.LOCAL_DISTRIBUTION) return
         try {
             // Attempt dynamic reflection or safe initialization for FirebaseApp / FirebaseAuth / Firestore
             val firebaseAppClass = try {
@@ -44,7 +45,11 @@ object FirebaseSafeInitializer {
                 val apps = getAppsMethod.invoke(null, context) as? List<*>
                 if (apps.isNullOrEmpty()) {
                     val initMethod = firebaseAppClass.getMethod("initializeApp", Context::class.java)
-                    initMethod.invoke(null, context)
+                    val initialized = initMethod.invoke(null, context)
+                    if (initialized == null) {
+                        enableOfflineMockMode("Firebase configuration is missing")
+                        return
+                    }
                 }
                 _isFirebaseAvailable.value = true
                 _isMockModeActive.value = false
@@ -61,7 +66,7 @@ object FirebaseSafeInitializer {
     private fun enableOfflineMockMode(reason: String) {
         _isFirebaseAvailable.value = false
         _isMockModeActive.value = true
-        _currentUser.value = MockUser()
+        _currentUser.value = null
         Log.i(TAG, "Running in robust Offline Mock Mode ($reason). UI and local data operations remain 100% active.")
     }
 

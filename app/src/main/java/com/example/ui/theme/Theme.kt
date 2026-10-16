@@ -29,7 +29,7 @@ private val GlassmorphicDarkColorScheme = darkColorScheme(
     onBackground = Color(0xFFE5E5EA),
     surface = Color(0x331E293B), // Translucent glassmorphic surface
     onSurface = Color(0xFFE5E5EA),
-    surfaceVariant = Color(0x40181824), // Translucent card variant
+    surfaceVariant = FormSurface, // Translucent card variant
     onSurfaceVariant = Color(0xFF94A3B8),
     surfaceTint = Color.Transparent, // Wipe out elevation color overlays completely
     outline = Color(0x26FFFFFF),
@@ -114,7 +114,8 @@ fun MyApplicationTheme(
     ) {
         MaterialTheme(
             colorScheme = GlassmorphicDarkColorScheme,
-            typography = Typography
+            typography = Typography,
+            shapes = androidx.compose.material3.Shapes(extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), small = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), medium = androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
         ) {
             AnimatedDarkBackground {
                 content()
