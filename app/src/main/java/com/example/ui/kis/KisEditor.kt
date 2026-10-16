@@ -612,9 +612,9 @@ private fun keyLabel(t: KeyTarget, currency: String) = when (t) {
 private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean, onKey: (String) -> Unit, onDone: () -> Unit) {
     val c = Kis.colors
     val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", if (time) "00" else ".", "0", "⌫")
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)).background(c.bg).navigationBarsPadding()
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)).background(c.surface).navigationBarsPadding()
         .padding(horizontal = 12.dp, vertical = 10.dp).testTag("keypad"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(14.dp)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(14.dp)).padding(horizontal = 14.dp)
+        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(14.dp)).background(c.sunk).padding(horizontal = 14.dp)
             .semantics(mergeDescendants = true) {}.testTag("keypad_display"), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(label, style = KisType.label, color = c.ink)
@@ -625,14 +625,13 @@ private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean,
                 color = if (typing) c.ink else c.muted, maxLines = 1, modifier = Modifier.testTag("keypad_value"))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // RTL: the action column sits on the left edge (end), digits read 1-2-3 from the right.
+            // RTL: the action column sits on the left edge (end).
             Column(Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Digits are laid out like the phone's own dialer and calculator (1 on the left), also in Hebrew.
-                CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+                // Digits read like the phone's own dialer and calculator (1 on the left), also in Hebrew: RTL rows are reversed.
                 keys.chunked(3).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        row.forEach { k ->
-                            Box(Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(14.dp)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(14.dp))
+                        row.reversed().forEach { k ->
+                            Box(Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(14.dp)).background(c.sunk)
                                 .kisClick(haptic = KisSettings.Haptic.TICK) { onKey(k) }.semantics { contentDescription = if (k == "⌫") "מחיקה" else k }.testTag("key_$k"),
                                 contentAlignment = Alignment.Center) {
                                 Text(k, style = KisType.body.copy(fontSize = if (k.length > 1 || k == "." || k == "⌫") 17.sp else 22.sp, fontWeight = FontWeight.Medium,
@@ -640,7 +639,6 @@ private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean,
                             }
                         }
                     }
-                }
                 }
             }
             Box(Modifier.weight(1.2f).height(232.dp).clip(RoundedCornerShape(14.dp)).background(c.ink)
