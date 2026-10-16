@@ -8,7 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 
-@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class, WorkLocalReceipt::class, WorkLocalPreference::class], version = 8, exportSchema = true)
+@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class, WorkLocalReceipt::class, WorkLocalPreference::class, ShiftSeries::class, SeriesException::class], version = 9, exportSchema = true)
 abstract class WorkDatabase : RoomDatabase() {
     abstract fun workDao(): WorkDao
     abstract fun syncDao(): WorkSyncDao
@@ -64,6 +64,35 @@ abstract class WorkDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 2.0: additive only. New columns get defaults that describe every existing row exactly
+         * (a normal shift, pay known, no bonus, not from a series). No row is updated, so the
+         * sync journal triggers do not fire and no stored amount is touched.
+         */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Skip a column that already exists, so a retried or partially-applied upgrade cannot fail.
+                val existing = mutableSetOf<String>()
+                db.query("PRAGMA table_info(work_entries)").use { c -> while (c.moveToNext()) existing += c.getString(c.getColumnIndexOrThrow("name")) }
+                fun add(column: String, definition: String) {
+                    if (column !in existing) db.execSQL("ALTER TABLE work_entries ADD COLUMN $column $definition")
+                }
+                add("kind", "TEXT NOT NULL DEFAULT 'shift'")
+                add("payKnown", "INTEGER NOT NULL DEFAULT 1")
+                add("bonus", "REAL NOT NULL DEFAULT 0")
+                add("seriesKey", "TEXT")
+                add("autoConfirmed", "INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_work_entries_seriesKey ON work_entries (seriesKey)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS shift_series (id TEXT NOT NULL, category TEXT NOT NULL,
+                    daysMask INTEGER NOT NULL, startTime TEXT NOT NULL, endTime TEXT NOT NULL, hourlyRate REAL,
+                    currency TEXT NOT NULL, fromDate TEXT NOT NULL, untilDate TEXT NOT NULL, createdAt INTEGER NOT NULL,
+                    PRIMARY KEY(id))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS series_exceptions (seriesId TEXT NOT NULL, date TEXT NOT NULL,
+                    cancelled INTEGER NOT NULL DEFAULT 0, hold INTEGER NOT NULL DEFAULT 0, startTime TEXT, endTime TEXT,
+                    rateOverridden INTEGER NOT NULL DEFAULT 0, hourlyRate REAL, PRIMARY KEY(seriesId, date))""")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): WorkDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: build(context, WorkAccountStorage.GUEST_DATABASE).also { INSTANCE = it }
@@ -80,7 +109,7 @@ abstract class WorkDatabase : RoomDatabase() {
 
         private fun build(context: Context, name: String): WorkDatabase =
             Room.databaseBuilder(context.applicationContext, WorkDatabase::class.java, name)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                 .addCallback(DatabaseCallback())
                 .build()
     }

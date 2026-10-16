@@ -73,7 +73,7 @@ class WorkDistributionTest {
                 it.execSQL("DROP TABLE work_local_preferences")
                 it.version = 7
             }
-            db = Room.databaseBuilder(context, WorkDatabase::class.java, name).addMigrations(WorkDatabase.MIGRATION_7_8).build()
+            db = Room.databaseBuilder(context, WorkDatabase::class.java, name).addMigrations(WorkDatabase.MIGRATION_7_8, WorkDatabase.MIGRATION_8_9).build()
             assertEquals(rows, db.workDao().getEntriesList())
             assertEquals(identities, db.syncDao().pending())
             assertTrue(db.workDao().getLocalPreferences().isEmpty())
