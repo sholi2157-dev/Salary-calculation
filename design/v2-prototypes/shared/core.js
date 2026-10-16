@@ -123,6 +123,7 @@ const Core = (() => {
       settings: {
         autoConfirm: true, notifyMonthly: true, notifyRate: true, rateFrequency: 'weekly',
         planningView: 'unified', defaultCat: 'c1', aiKey: false, theme: 'system',
+        quiet: true, quietFrom: '22:00', quietTo: '07:00',
       },
       lastAuto: [], clockOffset: 0,
     };
@@ -368,6 +369,14 @@ const Core = (() => {
     return rows.join('\n');
   }
 
+  /* Quiet hours: a notification due inside the window waits until the window ends; it is never dropped. */
+  function quietDelay(atMin) {
+    const st = state.settings; if (!st.quiet) return null;
+    const f = toMin(st.quietFrom), t = toMin(st.quietTo);
+    const inside = f === t ? false : f < t ? atMin >= f && atMin < t : atMin >= f || atMin < t;
+    return inside ? st.quietTo : null;
+  }
+
   /* Haptics: short, distinct patterns. The Android app uses native HapticFeedback for the same moments. */
   const HAPTIC = { tap: 6, tick: 4, select: 14, success: [12, 60, 22], warn: [35, 50, 35] };
   function haptic(kind = 'tap') {
@@ -442,6 +451,6 @@ const Core = (() => {
     span, endDateTime, money, pl, hours, hm, round2, esc, load, save, commit, subscribe, reset, advance, cat, get state() { return state; },
     occurrences, catchUp, undoAuto, confirmOcc, cancelOcc, restoreOcc, editOcc, futureCount, applyRateToFuture, previewRule,
     suggestStart, newDraft, draftFromShift, setDraftCat, evaluate, saveDraft, deleteShift, restoreShift, bulkRatePreview, bulkRateApply, setPaid,
-    shiftMinutes, timeLabel, setMode, startTimer, stopTimer, cancelTimer, restoreTimer, timerElapsed, monthStats, insights, wrapped, toast, haptic, shareText, setTheme, applyTheme, mountPanel, longPress, WORKERS,
+    shiftMinutes, timeLabel, setMode, startTimer, stopTimer, cancelTimer, restoreTimer, timerElapsed, monthStats, insights, wrapped, toast, haptic, quietDelay, shareText, setTheme, applyTheme, mountPanel, longPress, WORKERS,
   };
 })();

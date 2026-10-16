@@ -7,8 +7,9 @@
 :root{
   --bg:#EDF0F5; --surface:#FFFFFF; --sunk:#E2E6EE; --ink:#0D1015; --muted:#5D6573; --line:#D6DBE4;
   --accent:#0D1015; --on-accent:#FFFFFF;
-  --k0:#FF5A36; --k1:#10A87A; --k2:#3A63F5; --k3:#F5A300;
-  --k0-ink:#FFFFFF; --k1-ink:#FFFFFF; --k2-ink:#FFFFFF; --k3-ink:#2A1C00;
+  --k0:#CC4224; --k1:#0B7F60; --k2:#2F4FC4; --k3:#F2B32B; --k4:#8A3FA8; --k5:#0F7891; --k6:#C93767; --k7:#5E7A1F;
+  --k0-ink:#FFFFFF; --k1-ink:#FFFFFF; --k2-ink:#FFFFFF; --k3-ink:#2A1C00; --k4-ink:#FFFFFF; --k5-ink:#FFFFFF; --k6-ink:#FFFFFF; --k7-ink:#FFFFFF;
+  --edit:#0D1015; --edit-ink:#FFFFFF; --nav:#0D1015; --nav-ink:rgb(237 240 245/.7); --nav-on:#EDF0F5; --nav-on-ink:#0D1015;
   --warn:#B25E00; --warn-soft:#FFEBC7;
   --font-body:"Rubik",system-ui,"Segoe UI",Arial,sans-serif;
   --font-display:"Secular One","Rubik",system-ui,sans-serif;
@@ -16,10 +17,16 @@
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#090B10; --surface:#14181F; --sunk:#1D222B; --ink:#F1F3F7; --muted:#98A1AF; --line:#262C37; --accent:#F1F3F7; --on-accent:#090B10;
-  --k0:#FF7152; --k1:#2CC796; --k2:#6B8BFF; --k3:#FFBD33; --k3-ink:#2A1C00; --warn:#FFC266; --warn-soft:#3A2808; color-scheme:dark}}
+  --k0:#FF7A5C; --k1:#34C79A; --k2:#7D96FF; --k3:#FFC54D; --k4:#C88BE6; --k5:#4FC3DB; --k6:#FF7FA6; --k7:#A6C95A;
+  --k0-ink:#1A0B06; --k1-ink:#03140E; --k2-ink:#0A0F24; --k3-ink:#2A1C00; --k4-ink:#1E0B27; --k5-ink:#04171C; --k6-ink:#280812; --k7-ink:#141A05;
+  --edit:#232934; --edit-ink:#F1F3F7; --nav:#1A1F28; --nav-ink:#98A1AF; --nav-on:#F1F3F7; --nav-on-ink:#090B10;
+  --warn:#FFC266; --warn-soft:#3A2808; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#090B10; --surface:#14181F; --sunk:#1D222B; --ink:#F1F3F7; --muted:#98A1AF; --line:#262C37; --accent:#F1F3F7; --on-accent:#090B10;
-  --k0:#FF7152; --k1:#2CC796; --k2:#6B8BFF; --k3:#FFBD33; --k3-ink:#2A1C00; --warn:#FFC266; --warn-soft:#3A2808; color-scheme:dark}
+  --k0:#FF7A5C; --k1:#34C79A; --k2:#7D96FF; --k3:#FFC54D; --k4:#C88BE6; --k5:#4FC3DB; --k6:#FF7FA6; --k7:#A6C95A;
+  --k0-ink:#1A0B06; --k1-ink:#03140E; --k2-ink:#0A0F24; --k3-ink:#2A1C00; --k4-ink:#1E0B27; --k5-ink:#04171C; --k6-ink:#280812; --k7-ink:#141A05;
+  --edit:#232934; --edit-ink:#F1F3F7; --nav:#1A1F28; --nav-ink:#98A1AF; --nav-on:#F1F3F7; --nav-on-ink:#090B10;
+  --warn:#FFC266; --warn-soft:#3A2808; color-scheme:dark}
 /*CORE_CSS*/
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -83,10 +90,10 @@ h2 button{font:500 14px var(--font-body);background:none;border:0;color:var(--mu
 .filters button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .empty{color:var(--muted);text-align:center;padding:28px;font-size:15px}
 /* Nav */
-nav.pill{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));inset-inline:0;margin-inline:auto;width:max-content;max-width:calc(100% - 32px);display:flex;gap:4px;padding:6px;border-radius:99px;background:var(--ink);z-index:40;box-shadow:0 10px 30px rgb(0 0 0/.25)}
-nav.pill button{border:0;background:none;color:color-mix(in oklab,var(--bg) 70%,transparent);min-height:48px;padding-inline:14px;border-radius:99px;font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px}
-nav.pill button[aria-current=page]{background:var(--bg);color:var(--ink)}
-nav.pill .plus{background:var(--k0);color:#fff;width:48px;padding:0;justify-content:center;font-size:26px;line-height:1}
+nav.pill{border:1px solid var(--line);position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));inset-inline:0;margin-inline:auto;width:max-content;max-width:calc(100% - 32px);display:flex;gap:4px;padding:6px;border-radius:99px;background:var(--nav);z-index:40;box-shadow:0 10px 30px rgb(0 0 0/.25)}
+nav.pill button{border:0;background:none;color:var(--nav-ink);min-height:48px;padding-inline:14px;border-radius:99px;font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px}
+nav.pill button[aria-current=page]{background:var(--nav-on);color:var(--nav-on-ink)}
+nav.pill .plus{background:var(--k0);color:var(--k0-ink);width:48px;padding:0;justify-content:center;font-size:26px;line-height:1}
 /* Add page */
 .add-page{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;grid-template-rows:auto 1fr auto;animation:up .32s cubic-bezier(.2,.8,.2,1)}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
@@ -199,6 +206,15 @@ a.big-btn{display:grid;place-items:center;text-decoration:none}
 .ruler{margin-inline:24px}
 button{-webkit-tap-highlight-color:transparent;transition:transform .08s ease}
 button:active:not([disabled]){transform:scale(.97)}
+
+.tseg{display:inline-flex;background:var(--sunk);border-radius:12px;padding:3px;gap:2px;flex:0 0 auto}
+.tseg button{border:0;background:none;min-height:36px;padding-inline:10px;border-radius:9px;font:600 13px var(--font-body);color:var(--muted);cursor:pointer}
+.tseg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgb(0 0 0/.1)}
+.srow.quiet{gap:10px}
+.qt{position:relative;flex:1;display:grid;gap:2px;background:var(--sunk);border-radius:14px;padding:8px 12px;font-size:12px;color:var(--muted);font-weight:600;cursor:pointer}
+.qt .num{font-family:var(--font-display);font-size:24px;color:var(--ink);justify-self:start}
+.qt input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0}
+.moon{color:var(--muted)}
 /* Sheets */
 .scrim{position:fixed;inset:0;background:rgb(0 0 0/.4);z-index:70}
 .sheet{position:fixed;inset:auto 0 0 0;z-index:71;background:var(--surface);border-radius:26px 26px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-height:85%;overflow:auto;animation:up .28s}
@@ -374,7 +390,7 @@ function sum() {
     <h2>מתי עבדת</h2>
     <div class="tile"><div class="bars">${st.days.map((m, i) => `<div><i class="${i === top && m ? 'top' : ''}" style="height:calc(${(m / mx).toFixed(3)} * (100% - 26px))"></i><span>${C.DAY_SHORT[i]}</span></div>`).join('')}</div></div>
     ${ins.length ? `<h2>שמנו לב</h2><div class="ins">${ins.map(x => `<div>${E(x.text)}</div>`).join('')}</div>` : ''}
-    <button class="big-btn" style="margin-top:20px;background:var(--k0);color:#fff" data-act="wrapped">הסיפור של ${E(C.MONTH[Number(month.slice(5)) - 1])} ✦</button>`;
+    <button class="big-btn" style="margin-top:20px;background:var(--k0);color:var(--k0-ink)" data-act="wrapped">הסיפור של ${E(C.MONTH[Number(month.slice(5)) - 1])} ✦</button>`;
 }
 function settings() {
   const s = S().settings;
@@ -384,8 +400,13 @@ function settings() {
     <div class="srow"><div class="l">רישום אוטומטי של משמרות קבועות<small>כשהזמן נגמר המשמרת נרשמת. תמיד אפשר לבטל.</small></div><input type="checkbox" class="sw" id="auto" ${s.autoConfirm ? 'checked' : ''} aria-label="רישום אוטומטי"></div>
   </div>
   <div class="sgroup" style="margin-top:10px"><div class="srow"><div class="l">רטט במגע<small>רטט קצר בלחיצות, ורטט שונה לשמירה ולמחיקה</small></div><input type="checkbox" class="sw" id="hap" ${s.haptics !== false ? 'checked' : ''} aria-label="רטט במגע"></div></div>
+  <h2>מראה</h2>
+  <div class="sgroup"><div class="srow"><div class="l">ערכת צבעים<small>${s.theme === 'system' ? 'לפי הגדרת הטלפון' : s.theme === 'dark' ? 'כהה תמיד' : 'בהיר תמיד'}</small></div>
+    <span class="tseg" role="group" aria-label="ערכת צבעים">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button data-theme-set="${v}" aria-pressed="${(s.theme || 'system') === v}">${l}</button>`).join('')}</span></div></div>
   <h2>התראות</h2>
   <div class="sgroup">
+    <div class="srow"><div class="l">מצב שינה 🌙<small>${s.quiet ? `בין ${s.quietFrom} ל-${s.quietTo} אין התראות. מה שמגיע בזמן הזה יחכה ל-${s.quietTo}.` : 'התראות בכל שעה'}</small></div><input type="checkbox" class="sw" id="qon" ${s.quiet ? 'checked' : ''} aria-label="מצב שינה"></div>
+    ${s.quiet ? `<div class="srow quiet"><label class="qt">משעה<span class="num">${E(s.quietFrom)}</span><input type="time" id="qf" value="${E(s.quietFrom)}" aria-label="תחילת מצב שינה"></label><span class="moon" aria-hidden="true">←</span><label class="qt">עד שעה<span class="num">${E(s.quietTo)}</span><input type="time" id="qt" value="${E(s.quietTo)}" aria-label="סוף מצב שינה"></label></div>` : ''}
     <div class="srow"><div class="l">הסיכום החודשי מוכן<small>בתחילת כל חודש</small></div><input type="checkbox" class="sw" id="nmo" ${s.notifyMonthly ? 'checked' : ''} aria-label="סיכום חודשי"></div>
     <div class="srow"><div class="l">תזכורת לתעריף חסר<small>${s.rateFrequency === 'weekly' ? 'לכל היותר פעם בשבוע' : 'לכל היותר פעם בחודש'}, רק כשצריך</small></div><input type="checkbox" class="sw" id="nr" ${s.notifyRate ? 'checked' : ''} aria-label="תזכורת תעריף"></div>
   </div>
@@ -476,7 +497,7 @@ function drawAdd() {
   if (!el) { el = document.createElement('div'); el.className = 'add-page'; el.setAttribute('role', 'dialog'); document.body.append(el); }
   el.setAttribute('aria-label', edit ? 'עריכת משמרת' : 'משמרת חדשה');
   el.classList.toggle('editing', edit);
-  el.style.cssText = edit ? '--pass:var(--ink);--pass-ink:var(--bg)' : pv(d.cat);
+  el.style.cssText = edit ? '--pass:var(--edit);--pass-ink:var(--edit-ink)' : pv(d.cat);
   el.innerHTML = `<div class="ap-top"><div class="ap-in">
       <div class="ap-bar"><button data-act="closeAdd">${edit ? 'סגירה' : 'ביטול'}</button><strong>${edit ? 'עריכת משמרת' : d.repeat ? 'משמרת קבועה' : 'משמרת חדשה'}</strong>${edit ? '<button data-act="del">מחיקה</button>' : '<span style="width:64px"></span>'}</div>
       ${edit ? `<div class="was">${changed ? '<b>שונה</b> · ' : ''}לפני: ${E(C.dayLabel(orig.date))} · <span class="num">${E(C.timeLabel(orig))}</span> · ${orig.total == null ? 'תעריף חסר' : amt(orig.total, orig.currency)}</div>` : ''}
@@ -695,6 +716,7 @@ document.addEventListener('click', e => {
     if (ds.addw) { d.group.workers.push({ name: ds.addw, bonus: 0 }); drawAdd(); return; }
     if (ds.bt) { d.bonusTarget = ds.bt; d.group.workers.forEach(w => { w.on = ds.bt !== 'me'; w.bonus = ds.bt === 'me' ? 0 : Number(d.bonus) || 0; }); drawAdd(); return; }
   }
+  if (ds.themeSet) { C.setTheme(ds.themeSet); return; }
   if (ds.go) { view = ds.go; if (ds.f) filter = ds.f; sel.clear(); openOcc = null; render(); scrollTo(0, 0); return; }
   if (ds.f) { filter = ds.f; render(); return; }
   if (ds.pass) { openPass = openPass === ds.pass ? null : ds.pass; render(); return; }
@@ -750,7 +772,9 @@ document.addEventListener('change', e => {
   if (t.id === 'dpaid') { C.setPaid([t.dataset.id2], t.checked); openDetail(t.dataset.id2); C.toast(t.checked ? 'סומנה כשולמה' : 'סומנה כלא שולמה'); return; }
   const s = S().settings;
   if (t.id === 'auto') { s.autoConfirm = t.checked; C.commit(); if (t.checked) { const x = C.catchUp(); C.commit(); if (x.length) C.toast(C.pl(x.length, 'משמרת אחת נרשמה', '# משמרות נרשמו'), 'ביטול', () => C.undoAuto(x)); } }
-  if (t.id === 'hap') { s.haptics = t.checked; C.commit(); if (t.checked) C.haptic('success'); }
+  if (t.id === 'qon') { s.quiet = t.checked; C.commit(); C.toast(t.checked ? `מצב שינה פעיל: ${s.quietFrom}–${s.quietTo}` : 'מצב שינה כבוי'); return; }
+  if ((t.id === 'qf' || t.id === 'qt') && t.value) { s[t.id === 'qf' ? 'quietFrom' : 'quietTo'] = t.value; C.commit(); return; }
+    if (t.id === 'hap') { s.haptics = t.checked; C.commit(); if (t.checked) C.haptic('success'); }
   if (t.id === 'nmo') { s.notifyMonthly = t.checked; C.commit(); }
   if (t.id === 'nr') { s.notifyRate = t.checked; C.commit(); }
   if (t.id === 'defcat') { s.defaultCat = t.value; C.commit(); }
