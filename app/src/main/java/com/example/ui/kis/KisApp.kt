@@ -144,12 +144,13 @@ fun KisApp(
         // Floating pill navigation; hidden while choosing shifts (the selection bar takes its place).
         AnimatedVisibility(!history.selecting || pager.currentPage != 1, modifier = Modifier.align(Alignment.BottomCenter),
             enter = fadeIn(tween(140)) + slideInVertically { it / 2 }, exit = fadeOut(tween(140)) + slideOutVertically { it / 2 }) {
-            Box(Modifier.navigationBarsPadding().padding(bottom = 14.dp).onSizeChanged { navHeight = with(density) { it.height.toDp() } + 28.dp }) {
+            // Measured outside the system-bar padding: lists and messages must clear the pill on 3-button navigation too.
+            Box(Modifier.onSizeChanged { navHeight = with(density) { it.height.toDp() } + 8.dp }.navigationBarsPadding().padding(bottom = 14.dp)) {
                 PillNav(pager.currentPage, onPage = { go(it) }, onSettings = { settingsOpen = true }, onAdd = { openNew() })
             }
         }
         message?.let { m ->
-            Row(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = navHeight + 4.dp, start = 16.dp, end = 16.dp)
+            Row(Modifier.align(Alignment.BottomCenter).padding(bottom = navHeight, start = 16.dp, end = 16.dp)
                 .clip(RoundedCornerShape(99.dp)).background(c.ink).padding(start = 18.dp, end = 6.dp).heightIn(min = 48.dp).testTag("kis_message"),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(m.text, style = KisType.label, color = c.onInk, modifier = Modifier.padding(vertical = 10.dp))
