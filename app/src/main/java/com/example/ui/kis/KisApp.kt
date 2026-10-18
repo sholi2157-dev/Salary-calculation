@@ -114,7 +114,7 @@ fun KisApp(
     fun openNew(ai: Boolean = false) {
         val cat = categories.firstOrNull { it.name == defaultCategory }
         editorBaseId = null; editorAi = ai
-        editorJson = EntryDraft.new(cat, cat?.let { viewModel.categoryCurrency(it.name) } ?: defaultCurrency, entries).toJson()
+        editorJson = EntryDraft.new(cat, cat?.let { viewModel.categoryCurrency(it.name) } ?: defaultCurrency).toJson()
     }
     fun openEdit(e: WorkEntry) { detailId = null; editorBaseId = e.id; editorAi = false; editorJson = EntryDraft.from(e).toJson() }
     fun go(page: Int) { scope.launch { pager.animateScrollToPage(page) } }

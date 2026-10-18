@@ -34,6 +34,10 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import com.example.R
 import com.example.data.WorkCategory
 import com.example.data.WorkEntry
@@ -212,23 +216,31 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
             LaunchedEffect(live.start) { while (true) { seconds = ((System.currentTimeMillis() - live.start) / 1000).coerceAtLeast(0); delay(1000) } }
             val pulse = rememberInfiniteTransition(label = "live")
             val a by pulse.animateFloat(1f, 0.35f, infiniteRepeatable(tween(800), RepeatMode.Reverse), label = "dot")
+            val time = String.format(Locale.US, "%d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+            // With a rate, the bar counts the money earned so far (to the agora, by the second); the clock moves to the line below.
+            val earning = live.rate > 0
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(18.dp)).background(c.ink).kisClick(haptic = KisSettings.Haptic.SUCCESS) {
                     if (System.currentTimeMillis() - live.start < 60_000L) confirmShort = true else onStop()
                 }
                     .testTag("live_shift_stop").padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(10.dp).clip(CircleShape).background(Workplaces[1].accent(true).copy(alpha = a)))
-                    Spacer(Modifier.width(8.dp))
-                    Text(live.category, style = KisType.label, color = c.onInk, maxLines = 1, modifier = Modifier.weight(1f))
-                    Text(String.format(Locale.US, "%d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60), style = KisType.body.copy(fontFeatureSettings = "tnum",
-                        textDirection = TextDirection.Ltr, fontWeight = FontWeight.SemiBold), color = c.onInk, modifier = Modifier.testTag("active_shift_timer").padding(horizontal = 10.dp))
+                    Spacer(Modifier.width(10.dp))
+                    val big = KisType.body.copy(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum", textDirection = TextDirection.Ltr)
+                    Box(Modifier.weight(1f)) {
+                        if (earning) Text(liveMoney(seconds * live.rate / 3600.0, live.currency), style = big, color = c.onInk, maxLines = 1, softWrap = false,
+                            modifier = Modifier.testTag("active_shift_money"))
+                        else Text(time, style = big, color = c.onInk, maxLines = 1, modifier = Modifier.testTag("active_shift_timer"))
+                    }
                     Text("סיום ושמירה", style = KisType.label, color = c.onInk)
                 }
                 KisButton("ביטול", { confirmCancel = true }, Modifier, KisButtonKind.OUTLINE, height = 56.dp, tag = "cancel_active_shift")
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("נצבר עד עכשיו:", style = KisType.caption, color = c.muted)
-                MoneyText(seconds * live.rate / 3600.0, live.currency, KisType.label.copy(fontSize = 16.sp), modifier = Modifier.weight(1f))
+                Text(live.category, style = KisType.caption, color = c.muted, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                if (earning) Text(time, style = KisType.label.copy(fontFeatureSettings = "tnum", textDirection = TextDirection.Ltr), color = c.ink,
+                    modifier = Modifier.testTag("active_shift_timer"))
+                Spacer(Modifier.weight(1f))
                 CurrencyToggle(live.currency, onCurrency, "active_shift_currency")
             }
         }
@@ -291,6 +303,12 @@ private fun EmptyHome() {
         Text("ברוך הבא", style = KisType.title, color = c.ink)
         Text("לחיצה על + מוסיפה משמרת. השעה מוצעת לבד, והסכום מחושב מיד. אפשר גם להתחיל טיימר כשמגיעים לעבודה.", style = KisType.body, color = c.muted)
     }
+}
+
+/** Money with its agorot always shown, so a live count ticks without jumping between "₪12" and "₪12.01". */
+private fun liveMoney(amount: Double, currency: String) = buildAnnotatedString {
+    withStyle(SpanStyle(fontFamily = Rubik, fontWeight = FontWeight.SemiBold, fontSize = 0.7.em)) { append(currency) }
+    append(String.format(Locale.US, "%,.2f", Math.floor(amount * 100) / 100))
 }
 
 /** "Where are you working?" before the live timer starts: one tap with the default workplace. */

@@ -45,7 +45,7 @@ class ReportKeyboardTest {
         val dao = WorkDatabase.getDatabase(context, CoroutineScope(Dispatchers.IO)).workDao()
         val original = runBlocking { dao.getEntriesList() }
         openAdd()
-        ui.onNodeWithTag("clock_start").performClick()
+        ui.onNodeWithTag("clock_start_hh").performClick()
         listOf("0", "9", "0", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
         ui.onNodeWithTag("keypad_display").assertIsDisplayed()
         snapshot("v2-keypad")
@@ -143,6 +143,8 @@ class ReportKeyboardTest {
         ui.waitUntil(5_000) { ui.onAllNodesWithTag("live_start_confirm").fetchSemanticsNodes().isNotEmpty() }
         ui.onNodeWithTag("live_start_confirm").performClick()
         ui.onNodeWithTag("live_shift_stop").assertIsDisplayed()
+        // The category's rate is known, so the bar counts the money earned so far.
+        ui.onNodeWithTag("active_shift_money", useUnmergedTree = true).assertIsDisplayed()
         snapshot("v2-live")
         ui.onNodeWithTag("cancel_active_shift").performClick()
         ui.onNodeWithTag("confirm_cancel_active_shift").performClick()

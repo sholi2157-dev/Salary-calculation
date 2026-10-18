@@ -4,14 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -127,21 +124,5 @@ fun TimeRuler(start: String?, end: String, selected: TimeHandle, ink: Color, sur
     }
 }
 
-/** −30 −15 +15 +30 for the selected handle. Times wrap around midnight. */
-@Composable
-fun TimeNudges(label: String, ink: Color, onNudge: (Int) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text("$label:", color = ink.copy(alpha = 0.85f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, fontFamily = Rubik, maxLines = 1)
-        listOf(-30, -15, 15, 30).forEach { n ->
-            Box(Modifier.weight(1f).heightIn(min = 38.dp).clip(RoundedCornerShape(10.dp)).background(ink.copy(alpha = 0.16f))
-                .kisClick(haptic = KisSettings.Haptic.TICK) { onNudge(n) }.semantics { contentDescription = if (n > 0) "$n דקות קדימה" else "${-n} דקות אחורה" }
-                .testTag("nudge_$n"), contentAlignment = Alignment.Center) {
-                // One line, left-to-right ("−15", never "15−" or a wrapped "1−/5"), even with a large system font.
-                Text(if (n > 0) "+$n" else "−${-n}", color = ink, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
-                    style = androidx.compose.ui.text.TextStyle(fontFamily = Rubik, fontSize = 14.sp, textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
-            }
-        }
-    }
-}
-
+/** [time] moved by [minutes], wrapping around midnight. */
 fun nudge(time: String, minutes: Int): String = V2Rules.fromMinutes(V2Rules.toMinutes(time) + minutes)

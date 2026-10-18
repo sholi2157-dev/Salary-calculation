@@ -194,9 +194,7 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
                                     CoachScreen.HOME -> com.example.ui.kis.KisHome(entries, categories, null, 0.dp, {}, {}, {}, {}, {}, {}, {}, {})
                                     CoachScreen.FORM, CoachScreen.AI -> {
                                         val cat = categories.firstOrNull()
-                                        com.example.ui.kis.KisEditorPage(viewModel, com.example.ui.kis.EntryDraft.new(cat, cat?.let { viewModel.categoryCurrency(it.name) } ?: "₪", entries).let {
-                                            if (it.start == null) it.copy(start = com.example.domain.V2Rules.fromMinutes(com.example.domain.V2Rules.toMinutes(it.end) - 8 * 60)) else it
-                                        }, null, categories, entries, emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}, startInAi = step.screen == CoachScreen.AI, interactive = false)
+                                        com.example.ui.kis.KisEditorPage(viewModel, com.example.ui.kis.EntryDraft.new(cat, cat?.let { viewModel.categoryCurrency(it.name) } ?: "₪"), null, categories, entries, emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}, startInAi = step.screen == CoachScreen.AI, interactive = false)
                                     }
                                     CoachScreen.HISTORY -> com.example.ui.kis.KisHistory(remember { com.example.ui.kis.HistoryUi() }, false, entries, categories, viewModel, 0.dp, {}, {}, {})
                                     CoachScreen.SHARE -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {

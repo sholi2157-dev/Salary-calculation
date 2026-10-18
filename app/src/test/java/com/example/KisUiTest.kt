@@ -89,24 +89,28 @@ class KisUiTest {
         ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
         shot("editor-empty-$suffix")
         // Keypad: 0900 sets the start and moves on to the end; 1730 sets the end.
-        ui.onNodeWithTag("clock_start").performClick()
+        ui.onNodeWithTag("clock_start_hh").performClick()
         ui.onNodeWithTag("keypad").assertIsDisplayed()
         // The keypad shows which field is being typed and has no Save of its own (no accidental saves).
         ui.onNodeWithTag("keypad_display").assertTextContains("שעת התחלה", substring = true)
         ui.onNodeWithTag("save_shift_button").assertDoesNotExist()
         listOf("0", "9", "0", "0", "1", "7", "3", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
-        ui.onNodeWithTag("clock_start").assertTextContains("09:00", substring = true)
-        ui.onNodeWithTag("clock_end").assertTextContains("17:30", substring = true)
+        assertTime("start", "09:00")
+        assertTime("end", "17:30")
         ui.onNodeWithTag("editor_meta").assertTextContains("8:30 שעות", substring = true)
         ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪425")
         shot("editor-keypad-$suffix")
         ui.onNodeWithTag("keypad_done").performClick()
         ui.onNodeWithTag("keypad").assertDoesNotExist()
-        // Ruler and nudges change the selected handle (end) in 15-minute steps.
+        // Both handles are on the ruler, and each time has its own ±15.
         ui.onNodeWithTag("ruler_start").assertExists()
         ui.onNodeWithTag("ruler_end").assertExists()
-        ui.onNodeWithTag("nudge_15").performClick()
-        ui.onNodeWithTag("clock_end").assertTextContains("17:45", substring = true)
+        ui.onNodeWithTag("nudge_end_15").performClick()
+        assertTime("end", "17:45")
+        ui.onNodeWithTag("nudge_start_-15").performClick()
+        assertTime("start", "08:45")
+        ui.onNodeWithTag("nudge_start_15").performClick()
+        assertTime("start", "09:00")
         ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪437.50")
         shot("editor-clock-$suffix")
         // A note survives every mode switch (draft is kept).
@@ -343,6 +347,52 @@ class KisUiTest {
         shot("home-light")
         ui.runOnIdle { dark = true }
         shot("home-dark")
+    }
+
+    private fun assertTime(which: String, hhmm: String) {
+        ui.onNodeWithTag("clock_${which}_hh", useUnmergedTree = true).assertTextEquals(hhmm.take(2))
+        ui.onNodeWithTag("clock_${which}_mm", useUnmergedTree = true).assertTextEquals(hhmm.drop(3))
+    }
+
+    /** One digit of a time changes in place (05:30 → 05:35 without typing the whole time again); a new shift shows both times, 4 hours apart. */
+    @Test fun aTimeIsEditedDigitByDigitAndANewShiftShowsBothTimes() {
+        val fresh = EntryDraft.new(categories[0], "₪", day)
+        assertEquals(EntryDraft.defaultStart(fresh.end), fresh.start)
+        assertEquals(240, (com.example.domain.V2Rules.toMinutes(fresh.end) - com.example.domain.V2Rules.toMinutes(fresh.start!!) + 1440) % 1440)
+        val vm = model()
+        host {
+            KisEditorPage(vm, fresh.copy(start = "05:30", end = "09:30"), null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {})
+        }
+        ui.onNodeWithTag("clock_start_mm").performClick()
+        ui.onNodeWithTag("keypad_display").assertTextContains("שעת התחלה", substring = true)
+        ui.onNodeWithTag("keypad_digit_2", useUnmergedTree = true).assertIsSelected()
+        ui.onNodeWithTag("keypad_digit_3", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("key_5").performClick()
+        assertTime("start", "05:35")
+        // The last digit moves on to the end time, on its first digit: "1", "0" makes 10:30.
+        ui.onNodeWithTag("keypad_display").assertTextContains("שעת סיום", substring = true)
+        listOf("1", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
+        assertTime("end", "10:30")
+        ui.onNodeWithTag("editor_meta").assertTextContains("4:55 שעות", substring = true)
+        shot("editor-digit-keypad")
+        ui.onNodeWithTag("keypad_done").performClick()
+        ui.onNodeWithTag("nudge_start_15").assertIsDisplayed()
+        shot("editor-both-times")
+    }
+
+    /** With a rate the live bar counts money to the agora; the clock moves below it. Without one, the bar keeps the clock. */
+    @Test fun liveShiftShowsTheMoneyEarnedSoFar() {
+        var live by mutableStateOf(LiveShift(System.currentTimeMillis() - 90 * 60_000L, "מסעדה", 40.0, "₪"))
+        host { KisHome(emptyList(), categories, live, 80.dp, {}, {}, {}, {}, {}, {}, {}, {}) }
+        ui.mainClock.autoAdvance = false
+        ui.mainClock.advanceTimeBy(1_500)
+        ui.onNodeWithTag("active_shift_money", useUnmergedTree = true).assertTextContains("₪60.0", substring = true)
+        ui.onNodeWithTag("active_shift_timer", useUnmergedTree = true).assertTextContains("1:30:", substring = true)
+        shot("home-live-money")
+        ui.runOnIdle { live = live.copy(rate = 0.0) }
+        ui.mainClock.advanceTimeBy(1_500)
+        ui.onNodeWithTag("active_shift_money", useUnmergedTree = true).assertDoesNotExist()
+        ui.onNodeWithTag("active_shift_timer", useUnmergedTree = true).assertTextContains("1:30:", substring = true)
     }
 
     @Test fun weeklyPlanFromEditorIsCreatedWithItsDaysAndPreview() {

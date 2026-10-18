@@ -74,11 +74,17 @@ data class EntryDraft(
 
         private fun clean(v: Double) = KisFormat.hours(v)
 
-        /** A fresh draft for [category] with its saved rate and currency and a start suggested from history. */
-        fun new(category: WorkCategory?, currency: String, history: List<WorkEntry>, day: Long = startOfDay(System.currentTimeMillis())): EntryDraft {
-            val name = category?.name ?: ""
-            return EntryDraft(category = name, day = day, rate = category?.defaultRate?.let(::clean) ?: "", currency = currency,
-                start = suggestStart(name, day, history).start)
+        /** A new shift's length until the user moves it: both times are always shown, never an empty start. */
+        const val DEFAULT_MINUTES = 4 * 60
+
+        /** [DEFAULT_MINUTES] before [end]. */
+        fun defaultStart(end: String): String = V2Rules.fromMinutes(V2Rules.toMinutes(end) - DEFAULT_MINUTES)
+
+        /** A fresh draft for [category] with its saved rate and currency, ending now (rounded) and starting [DEFAULT_MINUTES] earlier. */
+        fun new(category: WorkCategory?, currency: String, day: Long = startOfDay(System.currentTimeMillis())): EntryDraft {
+            val end = V2Rules.roundedEnd(nowMinutes())
+            return EntryDraft(category = category?.name ?: "", day = day, rate = category?.defaultRate?.let(::clean) ?: "", currency = currency,
+                start = defaultStart(end), end = end)
         }
 
         /** The editable form of a saved entry. Break minutes are inferred exactly as before (range − saved hours). */
@@ -215,14 +221,47 @@ data class EntryDraft(
     /** Changing the mode keeps everything the user typed that still applies. */
     fun withMode(m: EntryMode): EntryDraft = copy(mode = m)
 
-    /** A different workplace brings its rate and currency on a new entry, never on an edit. */
-    fun withCategory(c: WorkCategory, currencyOf: (String) -> String, history: List<WorkEntry>): EntryDraft =
+    /** A different workplace brings its rate and currency on a new entry, never on an edit. The times stay as they are. */
+    fun withCategory(c: WorkCategory, currencyOf: (String) -> String): EntryDraft =
         if (editing) copy(category = c.name)
-        else copy(category = c.name, rate = clean(c.defaultRate), rateUnknown = false, currency = currencyOf(c.name),
-            start = suggestStart(c.name, day, history).start ?: start)
+        else copy(category = c.name, rate = clean(c.defaultRate), rateUnknown = false, currency = currencyOf(c.name))
 
     /** Spreads the bonus to the team according to the target; each worker's field stays editable. */
     fun withBonusTarget(t: BonusTarget): EntryDraft = copy(bonusTarget = t, workers = workers.map {
         when (t) { BonusTarget.ME -> it.copy(bonus = ""); else -> it.copy(bonus = if (it.bonus.isBlank()) bonus else it.bonus) }
     })
+}
+
+// ---------------------------------------------------------------- typing a time digit by digit
+
+/** "17:30" → "1730"; no time yet → "····" (four unset digits). */
+fun timeDigits(time: String?): String = if (V2Rules.isTime(time)) V2Rules.fromMinutes(V2Rules.toMinutes(time!!)).replace(":", "") else "····"
+
+/** Four digits (unset ones count as 0) → "HH:MM", or null when it is not a time of day. */
+fun parseTime(digits: String): String? {
+    val s = digits.replace('·', '0')
+    if (s.length != 4 || s.any { !it.isDigit() }) return null
+    val h = s.take(2).toInt(); val m = s.drop(2).toInt()
+    return if (h > 23 || m > 59) null else V2Rules.fromMinutes(h * 60 + m)
+}
+
+/**
+ * One key on a time being edited in place: the digit at [cursor] (0–1 hours, 2–3 minutes) is replaced and the cursor
+ * moves on; 4 means the value is complete. So 05:30 → 05:35 is "tap the last digit, type 5", never the whole time again.
+ * A first digit that can only start a one-digit hour (3–9) becomes 0X and jumps to the minutes; likewise 6–9 for minutes.
+ */
+fun typeTime(digits: String, cursor: Int, key: String): Pair<String, Int> {
+    val b = digits.padEnd(4, '·').take(4).toCharArray()
+    var at = if (cursor in 0..3) cursor else 0
+    if (key == "⌫") { if (at > 0) { at--; b[at] = '·' }; return String(b) to at }
+    for (k in key) {
+        if (!k.isDigit()) continue
+        if (at >= 4) break
+        when (at) {
+            0 -> if (k > '2') { b[0] = '0'; b[1] = k; at = 2 } else { b[0] = k; if (k == '2' && b[1].isDigit() && b[1] > '3') b[1] = '0'; at = 1 }
+            2 -> if (k > '5') { b[2] = '0'; b[3] = k; at = 4 } else { b[2] = k; at = 3 }
+            else -> { b[at] = k; at++ }
+        }
+    }
+    return String(b) to at
 }
