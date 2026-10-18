@@ -63,3 +63,10 @@ and cloud sync stay off (`WEB_ACCOUNTS_ENABLED=false`) and are not loaded. The o
 ## Owner change: explanations behind ⓘ, bell and profile on Home
 - Source `1637e2e` on `claude/v2-web`; CI `web-v2.yml` run 39101248180 SUCCESS (72 unit tests, browser flows incl. bell/profile/ⓘ).
 - Vercel Preview `dpl_FoeCNd5Ud2DG6Sj2iaV4TpWmNVEr` READY, `build-info.json` reports exactly that commit. Production unchanged.
+
+## Stage D on the website (summaries)
+- `web/v2/summary.js` (same rules as Android `V2Summary`, shared `web-tests/fixtures/v2-summary.json`), `web/kis/summary.js`
+  ("החודש שלך" and the story recap of the month or year with a card image without amounts). Details on the Android
+  branch in `docs/v2-stage-d.md`.
+- Source `d820fa9`; CI `web-v2.yml` run 39145054859 SUCCESS (75 unit tests, browser flows incl. section 9);
+  Vercel Preview `dpl_9dckoWy7wNoHv84hmrzEu8inbzgs` READY on that commit. Production unchanged.
