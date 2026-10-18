@@ -1,5 +1,17 @@
 # Current project state
 
+## October 18 — 2.0-rc6 and website preview: explanations behind ⓘ, bell and profile on Home (not published)
+
+Owner request, same change in the app and the site: screens show titles only, and every explanation sits behind an ⓘ next to its title. Home has a bell (recent notifications with a dot for new ones, plus their switches) and a profile icon at the top. The name is typed once, then shown with an edit option. Settings no longer has profile or notifications, so the immediate settings come first. Bottom hints are removed.
+- **Android:** signed `2.0-rc6` / code 30 from `c0607fe`, run 39101786881 SUCCESS.
+  - Tests: 129 Debug + 103 Release.
+  - Identity: same package and permanent certificate, versionCode 30 > 29 > 24.
+  - Update gate: real RC16 → delivered rc5 → rc6 update, device tests and crash log checks passed.
+  - APK SHA-256 `7c3f8fb4fcda6c3b106bf500ed727879bb3758926f044faca6c4bbf4c37620cc`.
+  - Private artifact `salary-2.0-rc6-candidate`. Includes the History panel change (`81790f2`). The next delivered build must use a code higher than 30.
+- **Website:** `claude/v2-web` at `1637e2e`, CI web-v2 run 39101248180 SUCCESS. Vercel Preview `dpl_FoeCNd5Ud2DG6Sj2iaV4TpWmNVEr` READY on that exact commit; production is unchanged.
+  - Also fixed: on the site, a right click no longer re-selects a card after the selection is cancelled.
+
 ## October 18 — website 2.0 (stage E) as a Preview on `claude/v2-web` (not published)
 
 Separate branch `claude/v2-web` from `codex/web-rc15-live`. Same design, rules (shared fixtures checked byte-for-byte), data and backup format (v2/v3 both ways) as Android 2.0. Source `4a0c23d`, CI run 39094056873 SUCCESS, Vercel Preview `dpl_HJNexNKY2UXN8xfQtjEbUynPSmzf` READY on that exact commit; production unchanged (`562a7a5`). Details: `docs/v2-stage-e.md` on that branch. Publishing (stage F) only with explicit approval.

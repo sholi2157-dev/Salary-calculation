@@ -105,3 +105,10 @@ existing screens (no new page). Delivered as signed `2.0-rc4` / code 28 (see "Bu
   that says how many shifts it will show. A line under the toggle says what is shown ("מוצג: כל התאריכים · מהחדש לישן")
   with "הצגת הכול" to return to the default; the separate sort menu is gone. Source `81790f2`, dev CI run 39092134771
   SUCCESS (128 Debug tests). Goes into the next delivered RC.
+
+## rc6 — explanations only behind ⓘ, bell and profile on Home (owner request)
+- `InfoDot` (KisInbox.kt): an ⓘ next to a title opens its explanation. All how-to captions moved there or were removed (settings rows and groups, editor rate/break/repeat/separate rate, plan auto-record, live start, History planned caption and bottom hint).
+- Home header: a bell (`home_bell`, with a dot when `PlanSettings.recent` has something newer than `seenAt`) opens `NotificationsSheet` (recent items, monthly summary reopens; switches for the active-shift notification, monthly summary, missing rate, quiet hours, each with ⓘ).
+- Profile icon (`home_profile`) opens `ProfileSheet`: the name is typed once, then shown with "עריכה".
+- Settings start with work, look, help, backup.
+- Signed `2.0-rc6` / code 30 from `c0607fe`, run 39101786881 SUCCESS: 129 Debug + 103 Release tests, identity 30 > 29 > 24, real RC16 → rc5 → rc6 update gate, device tests, crash logs. APK SHA-256 `7c3f8fb4fcda6c3b106bf500ed727879bb3758926f044faca6c4bbf4c37620cc`.
