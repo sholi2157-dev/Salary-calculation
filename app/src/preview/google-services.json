@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "998899976228",
+    "project_id": "workshiftsapp",
+    "storage_bucket": "workshiftsapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:998899976228:android:3b5406564d6a5db6ffb0b1",
+        "android_client_info": {
+          "package_name": "com.aistudio.worktracker.qztvdw.preview"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "998899976228-lv9pc4f4qs0gfcj9rt76uhorkptjoa2u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDiHKzqgOqGwMopvJJ07JWhsnd971I2sI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "998899976228-lv9pc4f4qs0gfcj9rt76uhorkptjoa2u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

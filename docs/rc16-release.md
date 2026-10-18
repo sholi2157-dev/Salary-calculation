@@ -1,0 +1,16 @@
+# RC16 audit-fix redistribution — 2026-10-14
+
+Owner authorized merging and redistributing all known platforms: Android GitHub Release/update feed, existing Drive APK, existing Vercel website origin.
+
+Android: merge PR #4, increment distribution version to 1.5-rc16 / 24 only. Preserve application ID, permanent certificate, storage schema and existing feature flags. Previous installed binary is exact RC15 from run37993791019, SHA2569935eb6d49c971832653a207186e64392c93ba65da271d839684c5b624ff0bcc.
+
+Release gates: consolidated regression/build; signed original RC15 to RC16 upgrade with exact synthetic data comparison and empty crash log; fresh onboarding; verify identity/hash/certificate; publish the exact tested artifact without rebuilding; exercise the real live update button/download/Android installer; replace existing Drive file in place preserving permissions and parent.
+
+Website: merge tested PR #3 on separate web branch, retain existing origin/local storage and feature flags; verify deployed commit and public browser flow. Vercel connector reports HTTP403 for the existing sholi team, no accessible teams, and no CLI credentials available. Web PR #3 merged; the Git integration built Preview https://salary-calculation-hggp2rgsn-sholi.vercel.app from docs-only head562a7a568558d6fba22bd6aac2fe173ed85ff971. Public eta origin remains d4feadd0cdf053906c70d6b76e6b9651c57e455e. Production promotion remains blocked until the owner reconnects Vercel with team access.
+
+Status: signed candidate verified. Source `c0d655365cfd35e2bba11807cb4fe3c0ff27af93`; run38591694409/job115947937994 SUCCESS; artifact11908187232. 91 Debug + 73 Release tests passed with zero failures/errors/skips. Nine native stages passed, exact RC15 snapshots match after upgrade, crash logs clean. APK SHA256 `400e11bccd9a46e7911c498137da9ba5d23b3b86cee50f0f1ea6400f40e7cc30`, size19231375. Public update run38593112482 succeeded (publish job115952845650, live job115953091708, live artifact11909270380). Original installed RC15 found code24 through the actual button, downloaded the exact APK, completed the Android installer, retained identical synthetic snapshots and offered no same-code update. Crash log clean. Public anonymous download matches the tested APK. Existing Drive APK replaced in place; roundtrip SHA256 identical, parent and all eight permissions unchanged. Android distribution is complete. Physical phone, native sharing, live AI with owner key remain manual gates. General simultaneous full-snapshot web localStorage writes remain a known limitation described in the audit report.
+
+
+## Website follow-up — completed
+
+Vercel team access restored. Exact source562a7a568558d6fba22bd6aac2fe173ed85ff971 is now production at the existing eta origin, deploymentdpl_A7zWpmd7PTFsaorrZKEQzDZhvGWn. Public provenance confirmed; actual public-site run38595391853/job115960660993 and both browser suites passed at four widths. Artifact11908872883. This supersedes the earlier Vercel-blocked status above; all known distribution targets are updated. Physical-device and audit limitations remain.

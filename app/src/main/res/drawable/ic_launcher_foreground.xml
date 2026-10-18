@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:width="108dp"
-        android:height="108dp"
-        android:drawable="@drawable/app_icon_asset_1782145543505"
-        android:gravity="center" />
-</layer-list>
+<!-- 2.0 "כיס" mark: three rising bars (indigo, mustard, green) on a base line. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:pathData="M35.8,70.8V51.2" android:strokeColor="#7C8CFF" android:strokeWidth="9.8" android:strokeLineCap="round" />
+    <path android:pathData="M54,70.8V37.2" android:strokeColor="#FFC54D" android:strokeWidth="9.8" android:strokeLineCap="round" />
+    <path android:pathData="M72.2,70.8V44.2" android:strokeColor="#34C79A" android:strokeWidth="9.8" android:strokeLineCap="round" />
+    <path android:pathData="M35.8,70.8H72.2" android:strokeColor="#EDF0F5" android:strokeWidth="9.8" android:strokeLineCap="round" />
+</vector>

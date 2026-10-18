@@ -1,0 +1,86 @@
+{
+  "formatVersion": 2,
+  "androidLocalPreferences": {
+    "defaultCategory": "USD category",
+    "default_currency": "$",
+    "categoryCurrency:USD category": "$"
+  },
+  "categories": [
+    {
+      "name": "עצמאי",
+      "defaultRate": 40
+    },
+    {
+      "name": "ILS category",
+      "defaultRate": 40
+    },
+    {
+      "name": "USD category",
+      "defaultRate": 45.75
+    }
+  ],
+  "workers": [
+    {
+      "name": "Synthetic worker"
+    }
+  ],
+  "entries": [
+    {
+      "id": 3,
+      "category": "USD category",
+      "date": 1700200000000,
+      "createdAt": 1791262615019,
+      "isTimeRange": false,
+      "startTime": null,
+      "endTime": null,
+      "hours": 2,
+      "hourlyRate": 50,
+      "totalEarnings": 100,
+      "isPaid": false,
+      "notes": "group",
+      "currency": "$",
+      "isGroupShift": true,
+      "employerRate": 65,
+      "workerRate": 30,
+      "groupWorkersJson": "[{\"name\":\"Synthetic worker\",\"hours\":3,\"isPaid\":false,\"workerRate\":31.25,\"employerRate\":67.5}]"
+    },
+    {
+      "id": 2,
+      "category": "USD category",
+      "date": 1700100000000,
+      "createdAt": 1791262615018,
+      "isTimeRange": true,
+      "startTime": "22:00",
+      "endTime": "06:00",
+      "hours": 7.5,
+      "hourlyRate": 45.75,
+      "totalEarnings": 343.12,
+      "isPaid": false,
+      "notes": "overnight with break",
+      "currency": "$",
+      "isGroupShift": false,
+      "employerRate": null,
+      "workerRate": null,
+      "groupWorkersJson": ""
+    },
+    {
+      "id": 1,
+      "category": "ILS category",
+      "date": 1700000000000,
+      "createdAt": 1791262615017,
+      "isTimeRange": false,
+      "startTime": null,
+      "endTime": null,
+      "hours": 2,
+      "hourlyRate": 40,
+      "totalEarnings": 79.97,
+      "isPaid": true,
+      "notes": "saved imported amount",
+      "currency": "₪",
+      "isGroupShift": false,
+      "employerRate": null,
+      "workerRate": null,
+      "groupWorkersJson": ""
+    }
+  ]
+}

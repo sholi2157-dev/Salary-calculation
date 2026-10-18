@@ -1,0 +1,18 @@
+{
+  "originalInstalledVersionCode": 21,
+  "liveManualCheckFoundVersionCode": 22,
+  "liveApkChecksumVerified": true,
+  "androidInstallerConfirmed": true,
+  "installedVersionCode": 22,
+  "syntheticDataPreservedExactly": true,
+  "sameVersionNotOfferedAgain": true,
+  "runId": 37963754070,
+  "jobId": 113932814425,
+  "artifactId": 11631484547,
+  "testSource": "d1190553b20e49c4bde2c66f81143969af8fcc57",
+  "runUrl": "https://github.com/sholi2157-dev/Salary-calculation/actions/runs/37963754070",
+  "apkSource": "4267f5e0083f1b945e7d3642d803d15d222f0bdf",
+  "apkSha256": "588e058c21f3a1a42de88d7a33028ebce2c2ec302ce3deb5d8b6d6874854f627",
+  "crashLogEmpty": true,
+  "installerCompletionScreenVerified": true
+}

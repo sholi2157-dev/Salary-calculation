@@ -1,0 +1,8 @@
+
+com.example.DistributionUiTest:.
+
+Time: 14.875
+
+OK (1 test)
+
+

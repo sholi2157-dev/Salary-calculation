@@ -1,0 +1,167 @@
+package com.example.ui.kis
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.WorkViewModel
+
+/*
+ * Screens say what things are, not how to use them. An explanation exists only behind the ⓘ next to a title.
+ * Home's bell shows what arrived; the notification switches and the profile live in Settings.
+ */
+
+/** ⓘ: the explanation of [title], shown only when asked for. */
+@Composable
+fun InfoDot(title: String, text: String, tag: String? = null) {
+    val c = Kis.colors
+    var open by rememberSaveable { mutableStateOf(false) }
+    Box(Modifier.size(40.dp).clip(CircleShape).kisClick { open = true }.semantics { contentDescription = "הסבר: $title" }
+        .then(if (tag != null) Modifier.testTag(tag) else Modifier), contentAlignment = Alignment.Center) {
+        Icon(Icons.Outlined.Info, null, tint = c.muted, modifier = Modifier.size(20.dp))
+    }
+    if (open) KisSheet(onDismiss = { open = false }, tag = "info_sheet") {
+        Text(title, style = KisType.title, color = c.ink)
+        Text(text, style = KisType.body, color = c.ink)
+        KisButton("הבנתי", { open = false }, Modifier.fillMaxWidth(), height = 48.dp)
+    }
+}
+
+/** Top-left of Home: the bell, with a dot when something new arrived. */
+@Composable
+fun HeaderActions(unread: Boolean, onBell: () -> Unit) {
+    val c = Kis.colors
+    Box(Modifier.size(44.dp).clip(CircleShape).background(c.surface).border(1.dp, c.line, CircleShape).kisClick(onClick = onBell)
+        .semantics { contentDescription = if (unread) "התראות · יש חדשות" else "התראות" }.testTag("home_bell"), contentAlignment = Alignment.Center) {
+        Icon(Icons.Outlined.Notifications, null, tint = c.ink, modifier = Modifier.size(22.dp))
+        if (unread) Box(Modifier.align(Alignment.TopEnd).padding(9.dp).size(9.dp).clip(CircleShape).background(Workplaces[0].accent(c.dark)).testTag("home_bell_dot"))
+    }
+}
+
+/** What arrived; a monthly summary opens again. The switches live in Settings. */
+@Composable
+fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSettings: () -> Unit, onDismiss: () -> Unit,
+                       update: com.example.ui.WorkUpdates.Release? = null) {
+    val c = Kis.colors
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var updating by remember { mutableStateOf(false) }
+    val plan = viewModel.planSettings
+    val recent = remember { plan.recent }
+    LaunchedEffect(Unit) { plan.seenAt = System.currentTimeMillis() }
+    KisSheet(onDismiss = onDismiss, tag = "notifications_sheet") {
+        Text("התראות", style = KisType.title, color = c.ink)
+        Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            // A new version comes first: one tap downloads, verifies and opens Android's installer.
+            update?.let { r ->
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Workplaces[0].from, Workplaces[4].from)))
+                    .testTag("update_note").padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("גרסה ${r.name} זמינה", style = KisType.title, color = Color.White)
+                    if (r.notes.isNotBlank()) Text(r.notes, style = KisType.caption, color = Color.White.copy(alpha = .9f), maxLines = 4)
+                    Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).background(Color.White)
+                        .kisClick { if (!updating) com.example.ui.startUpdate(context, scope, r, setBusy = { updating = it }) }.testTag("update_now"),
+                        contentAlignment = Alignment.Center) {
+                        Text(if (updating) "מוריד ומאמת…" else "עדכון", style = KisType.label, color = Color(0xFF121212))
+                    }
+                }
+            }
+            if (recent.isEmpty() && update == null) Text("אין התראות", style = KisType.body, color = c.muted, modifier = Modifier.padding(vertical = 6.dp).testTag("notifications_empty"))
+            recent.forEachIndexed { i, n ->
+                val month = if (n.kind == "monthly") monthKeyOf(n.month) else null
+                Column(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(c.bg)
+                    .then(if (month != null) Modifier.kisClick { onMonth(month) } else Modifier).testTag("recent_note_$i").padding(12.dp)) {
+                    Text(n.title, style = KisType.label, color = c.ink)
+                    Text(n.text, style = KisType.caption, color = c.muted)
+                    Text(KisShare.shortDate(n.time), style = KisType.micro, color = c.muted)
+                }
+            }
+        }
+        KisButton("הגדרות התראות", onSettings, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "notifications_settings")
+    }
+}
+
+/** The notification switches (a group in Settings), each explained behind its ⓘ. */
+@Composable
+fun NotificationSwitches(viewModel: WorkViewModel) {
+    val c = Kis.colors
+    val context = LocalContext.current
+    val plan = viewModel.planSettings
+    val serviceNotification by viewModel.serviceNotificationEnabled.collectAsStateWithLifecycle()
+    var notifyMonthly by remember { mutableStateOf(plan.notifyMonthly) }
+    var notifyRate by remember { mutableStateOf(plan.notifyRate) }
+    var quiet by remember { mutableStateOf(plan.quiet) }
+    var quietFrom by remember { mutableStateOf(plan.quietFrom) }
+    var quietTo by remember { mutableStateOf(plan.quietTo) }
+    var denied by remember { mutableStateOf(false) }
+    var asking by rememberSaveable { mutableStateOf<String?>(null) }
+    fun turnOn(kind: String) {
+        denied = false
+        if (kind == "monthly") { plan.notifyMonthly = true; notifyMonthly = true } else { plan.notifyRate = true; notifyRate = true }
+    }
+    // Without permission the switch stays off.
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> asking?.let { if (granted) turnOn(it) else denied = true }; asking = null }
+    fun enable(kind: String, on: Boolean) {
+        if (!on) { if (kind == "monthly") { plan.notifyMonthly = false; notifyMonthly = false } else { plan.notifyRate = false; notifyRate = false }; return }
+        if (android.os.Build.VERSION.SDK_INT >= 33 && androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED) { asking = kind; ask.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
+        else turnOn(kind)
+    }
+    @Composable fun line(title: String, info: String, tag: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(title, style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
+            InfoDot(title, info)
+            Spacer(Modifier.weight(1f))
+            KisSwitch(checked, onChange, Modifier.testTag(tag), label = title)
+        }
+    }
+    line("משמרת פעילה", "טיימר וסכום שנצבר בהתראה קבועה בזמן שהשעון רץ.", "service_notification_switch", serviceNotification) { viewModel.updateServiceNotificationEnabled(it) }
+    KisDivider()
+    line("הסיכום החודשי", "פעם בחודש, בתחילת החודש: כמה עבדת וכמה הרווחת. נגיעה בו פותחת את \"החודש שלך\".", "notify_monthly_switch", notifyMonthly) { enable("monthly", it) }
+    KisDivider()
+    line("תעריף חסר", "לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.", "notify_rate_switch", notifyRate) { enable("rate", it) }
+    if (denied) Text("אין הרשאת התראות בטלפון", style = KisType.caption, color = c.pending, modifier = Modifier.padding(bottom = 6.dp).testTag("notify_denied"))
+    else if ((notifyMonthly || notifyRate) && !com.example.PlanJobs.canNotify(context)) Text("ההתראות חסומות בהגדרות הטלפון", style = KisType.caption, color = c.pending,
+        modifier = Modifier.padding(bottom = 6.dp).testTag("notify_blocked"))
+    KisDivider()
+    line("שעות שקט", "תזכורת שנופלת בשעות האלה תגיע כשהן נגמרות.", "quiet_switch", quiet) { plan.quiet = it; quiet = it }
+    if (quiet) Row(Modifier.padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TimeChip("משעה", quietFrom, Modifier.weight(1f), "quiet_from") { plan.quietFrom = it; quietFrom = it }
+        TimeChip("עד שעה", quietTo, Modifier.weight(1f), "quiet_to") { plan.quietTo = it; quietTo = it }
+    }
+}
+
+/** Profile (bottom of Settings): first and last name, saved as typed. Only the first name is shown anywhere. */
+@Composable
+fun ProfileFields() {
+    val settings = Kis.settings
+    Column(Modifier.padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        KisTextField(settings.name, settings::updateName, "שם פרטי", Modifier.fillMaxWidth().testTag("profile_name"))
+        KisTextField(settings.lastName, settings::updateLastName, "שם משפחה", Modifier.fillMaxWidth().testTag("profile_last_name"))
+    }
+}
