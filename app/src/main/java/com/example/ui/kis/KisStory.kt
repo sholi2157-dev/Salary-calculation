@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
@@ -161,7 +162,7 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalStoryInk provides ink) {
             BackHandler(onBack = onClose)
-            Box(Modifier.fillMaxSize().background(bg).testTag("story_root")) {
+            Box(Modifier.fillMaxSize().background(bg).semantics { stateDescription = "${index + 1}/${slides.size}" }.testTag("story_root")) {
                 Blobs(place(slide.a), place(slide.b), progress.value)
                 // Tap areas under the content: the left half moves forward (RTL), the right half back; holding pauses.
                 Row(Modifier.fillMaxSize()) {

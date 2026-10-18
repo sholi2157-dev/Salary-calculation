@@ -478,7 +478,8 @@ class KisUiTest {
     }
 
     private fun shownSlide() = listOf("intro", "hours", "places", "persona", "longest", "days", "hour", "money", "card").map { "story_$it" }
-        .filter { ui.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() }
+        .filter { ui.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() } + ui.onNodeWithTag("story_root").fetchSemanticsNode().config
+            .getOrElse(androidx.compose.ui.semantics.SemanticsProperties.StateDescription) { "?" }
 
     @Test fun storyRecapMovesOnHidesTheAmountAndSharesACardWithoutIt() {
         seed()
@@ -495,7 +496,7 @@ class KisUiTest {
         repeat(10) { if (ui.onAllNodesWithTag("story_money").fetchSemanticsNodes().isEmpty()) next() }
         fun prev() { ui.onNodeWithTag("story_prev").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); ui.mainClock.advanceTimeBy(800) }
         prev()
-        assertEquals("back from the amount", listOf("story_hour"), shownSlide())
+        assertEquals("back from the amount", listOf("story_hour"), shownSlide().dropLast(1))
         next()
         assertEquals(2, ui.onAllNodesWithTag("story_money_hidden", useUnmergedTree = true).fetchSemanticsNodes().size)
         ui.onNodeWithText("₪300", substring = true).assertDoesNotExist()
@@ -505,13 +506,13 @@ class KisUiTest {
         ui.onNodeWithTag("story_card").assertExists()
         ui.onNodeWithTag("story_poster").assert(hasText("₪", substring = true).not()).assert(hasText("$", substring = true).not())
         prev()
-        assertEquals("back from the card at once", listOf("story_money"), shownSlide())
+        assertEquals("back from the card at once ${shownSlide()}", listOf("story_money"), shownSlide().dropLast(1))
         next()
         // The card waits; going back still works after a while; forward from the card closes.
         ui.mainClock.advanceTimeBy(10_000)
-        assertEquals(listOf("story_card"), shownSlide())
+        assertEquals(listOf("story_card"), shownSlide().dropLast(1))
         prev()
-        assertEquals("back from the card after waiting (closed=$closed)", listOf("story_money"), shownSlide())
+        assertEquals("back from the card after waiting (closed=$closed)", listOf("story_money"), shownSlide().dropLast(1))
         next()
         runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-card.png") }
         next()
