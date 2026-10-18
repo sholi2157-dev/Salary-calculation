@@ -49,7 +49,7 @@ fun MonthSummarySheet(month: Int, entries: List<WorkEntry>, categories: List<Wor
                 else totals.forEach { (cur, v) -> MoneyText(v, cur, KisType.hero.copy(fontSize = 40.sp, lineHeight = 44.sp), color = c.ink) }
                 Text("${rows.size} משמרות · ${KisFormat.hours(hours)} שעות", style = KisType.label, color = c.muted, modifier = Modifier.testTag("month_summary_counts"))
                 val pending = WorkPay.pending(rows).size
-                if (pending > 0) Text(if (pending == 1) "משמרת אחת עוד בלי תעריף (לא בסכום)" else "$pending משמרות עוד בלי תעריף (לא בסכום)", style = KisType.caption, color = c.pending)
+                if (pending > 0) Text(if (pending == 1) "משמרת אחת עוד בלי סכום ידוע (לא נספרת)" else "$pending משמרות עוד בלי סכום ידוע (לא נספרות)", style = KisType.caption, color = c.pending)
             }
             lead?.let { (name, h) ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -70,7 +70,7 @@ fun MonthSummarySheet(month: Int, entries: List<WorkEntry>, categories: List<Wor
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisButton("לפרטים בהיסטוריה", onHistory, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "month_summary_history")
+            KisButton("להיסטוריה", onHistory, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "month_summary_history")
             KisButton("שיתוף", { KisShare.shareOrCopy(context, WorkShareText.summary(rows), "הסיכום של ${HistoryFilter.monthName(month)}", onMessage) },
                 Modifier.weight(1f), height = 48.dp, enabled = rows.isNotEmpty(), tag = "month_summary_share")
         }

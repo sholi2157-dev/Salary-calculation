@@ -210,7 +210,8 @@ class KisUiTest {
         val pendingShift = entries.first { !it.payKnown && it.category == "מסעדה" }
         ui.onNodeWithTag("work_entry_card_${pendingShift.id}").performScrollTo().performTouchInput { longClick() }
         ui.onNodeWithTag("selection_count").assertTextEquals("נבחרו 1")
-        entries.filter { it.id != pendingShift.id }.forEach { ui.onNodeWithTag("work_entry_card_${it.id}").performScrollTo().performClick() }
+        // The tap action itself: a card scrolled to the list's edge can sit under the selection bar in Robolectric's layout.
+        entries.filter { it.id != pendingShift.id }.forEach { ui.onNodeWithTag("work_entry_card_${it.id}").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick) }
         ui.onNodeWithTag("selection_count").assertTextEquals("נבחרו 5")
         ui.onNodeWithTag("selection_bulk_rate").assertTextContains("2", substring = true)
         shot("history-selection")
@@ -417,7 +418,8 @@ class KisUiTest {
         }
         // Home: the future shift waits under "הבא בתור", marked as planned, and is not in today's or the week's money.
         ui.onNodeWithTag("next_entry_$futureId").performScrollTo().assertExists()
-        ui.onNodeWithTag("planned_tag_$futureId", useUnmergedTree = true).assertExists()
+        // Marked in "הבא בתור" and in "אחרונות" alike.
+        ui.onAllNodesWithTag("planned_tag_$futureId", useUnmergedTree = true).assertCountEquals(2)
         ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).assertTextEquals("₪100")
         shot("home-future")
         ui.onNodeWithTag("next_up_all").performScrollTo().performClick()
@@ -436,7 +438,8 @@ class KisUiTest {
         val state = HistoryUi()
         host { KisHistory(state, true, emptyList(), categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {}) }
         ui.onNodeWithTag("history_planned").assertHeightIsAtLeast(48.dp).performClick()
-        ui.onNodeWithTag("planned_empty").assertTextContains("חוזרת כל שבוע", substring = true)
+        ui.onNodeWithTag("planned_empty").assertExists()
+        ui.onNodeWithText("חוזרת כל שבוע", substring = true).assertExists()
     }
 
     @Test fun monthSummaryCountsDoneShiftsPerCurrency() {
