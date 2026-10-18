@@ -155,14 +155,15 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
             go(1)
         }
     }
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        // Read the position here, inside the dialog's own composition, so the shown slide never lags behind it.
+    run {
         val slide = slides[index.coerceIn(slides.indices)]
         val ink = if (slide.bg == place(3)) InkOnMustard else Color.White
         val bg by animateColorAsState(slide.bg, tween(450), label = "story bg")
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalStoryInk provides ink) {
             BackHandler(onBack = onClose)
-            Box(Modifier.fillMaxSize().background(bg).semantics { stateDescription = "${index + 1}/${slides.size}" }.testTag("story_root")) {
+            // Covers the app: nothing underneath can be touched while the story is open.
+            Box(Modifier.fillMaxSize().background(bg).pointerInput(Unit) { detectTapGestures { } }
+                .semantics { stateDescription = "${index + 1}/${slides.size}" }.testTag("story_root")) {
                 Blobs(place(slide.a), place(slide.b), progress.value)
                 // Tap areas under the content: the left half moves forward (RTL), the right half back; holding pauses.
                 Row(Modifier.fillMaxSize()) {

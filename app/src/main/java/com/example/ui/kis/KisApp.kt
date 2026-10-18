@@ -262,6 +262,8 @@ fun KisApp(
                 }
             }
         }
+        // The story covers the whole app (drawn here, in the app's own screen, not in a separate window).
+        storyScope?.let { sc -> KisStory(sc, entries, categories, onClose = { storyScope = null }, onMessage = { say(it) }) }
     }
 
     detailId?.let { id -> entries.firstOrNull { it.id == id } }?.let { e ->
@@ -279,9 +281,6 @@ fun KisApp(
     monthSheet?.let { m ->
         MonthSummarySheet(m, entries, categories, onHistory = { monthSheet = null; history.planned = false; history.showMonth = m; go(1) },
             onDismiss = { monthSheet = null }, onMessage = { say(it) }, onStory = { monthSheet = null; storyScope = it })
-    }
-    storyScope?.let { sc ->
-        KisStory(sc, entries, categories, onClose = { storyScope = null }, onMessage = { say(it) })
     }
     hoursFor?.let { key -> plans.firstOrNull { it.key == key } }?.let { o ->
         PlanHoursSheet(o, onDismiss = { hoursFor = null }) { start, end, fromNowOn ->
