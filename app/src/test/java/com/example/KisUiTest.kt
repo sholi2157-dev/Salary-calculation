@@ -546,6 +546,17 @@ class KisUiTest {
         assertTrue(settings)
     }
 
+    @Test fun bellShowsANewVersionWithAnUpdateButton() {
+        val vm = model()
+        val release = com.example.ui.WorkUpdates.Release(99, "2.0.2", "https://github.com/sholi2157-dev/Salary-calculation/releases/download/x/a.apk", "0".repeat(64), "תיקונים")
+        host { NotificationsSheet(vm, onMonth = {}, onSettings = {}, onDismiss = {}, update = release) }
+        ui.onNodeWithTag("update_note").assertExists()
+        ui.onNodeWithText("גרסה 2.0.2 זמינה").assertExists()
+        ui.onNodeWithTag("update_now").assertExists()
+        ui.onNodeWithTag("notifications_empty").assertDoesNotExist()
+        shot("bell-update")
+    }
+
     @Test fun launchShowsTheSloganThenTakesFirstAndLastName() {
         lateinit var settings: KisSettings
         var done = false

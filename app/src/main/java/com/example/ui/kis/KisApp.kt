@@ -104,6 +104,11 @@ fun KisApp(
     var bellOpen by rememberSaveable { mutableStateOf(false) }
     // A dot on the bell for what arrived since it was last opened (the daily job writes it; read again on every return).
     var unread by remember { mutableStateOf(viewModel.planSettings.unread) }
+    // A new version shows on the bell too (dot + an update button inside), checked on every return to the app.
+    val appContext = androidx.compose.ui.platform.LocalContext.current
+    var update by remember { mutableStateOf(com.example.ui.WorkUpdateNotice.cached(appContext)) }
+    var resumes by remember { mutableIntStateOf(0) }
+    LaunchedEffect(resumes) { update = com.example.ui.WorkUpdateNotice.refresh(appContext) }
 
     fun say(text: String, action: String? = null, onAction: (() -> Unit)? = null) { message = KisMessage(text, action, onAction) }
     fun openNew(ai: Boolean = false) {
@@ -131,7 +136,7 @@ fun KisApp(
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycle) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) unread = viewModel.planSettings.unread
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) { unread = viewModel.planSettings.unread; resumes++ }
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) viewModel.catchUpPlans { ids ->
                 say(if (ids.size == 1) "משמרת קבועה הסתיימה ונרשמה" else "${ids.size} משמרות קבועות הסתיימו ונרשמו", "ביטול") { viewModel.undoAutoConfirm(ids) }
             }
@@ -205,7 +210,7 @@ fun KisApp(
                     onSettings = { go(2) },
                     plans = plans, planActions = planActions,
                     onAllPlans = { history.selection = emptySet(); history.searching = false; history.planned = true; go(1) },
-                    unread = unread, onBell = { bellOpen = true },
+                    unread = unread || update != null, onBell = { bellOpen = true },
                     onMonthSummary = { monthSheet = HistoryFilter.monthKey(System.currentTimeMillis()) })
                 1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) },
                     plans = plans, planActions = planActions, onMonthSummary = { monthSheet = it })
@@ -277,7 +282,7 @@ fun KisApp(
         }
     }
     if (bellOpen) NotificationsSheet(viewModel, onMonth = { bellOpen = false; unread = false; monthSheet = it },
-        onSettings = { bellOpen = false; unread = false; go(2) }, onDismiss = { bellOpen = false; unread = false })
+        onSettings = { bellOpen = false; unread = false; go(2) }, onDismiss = { bellOpen = false; unread = false }, update = update)
     monthSheet?.let { m ->
         MonthSummarySheet(m, entries, categories, onHistory = { monthSheet = null; history.planned = false; history.showMonth = m; go(1) },
             onDismiss = { monthSheet = null }, onMessage = { say(it) }, onStory = { monthSheet = null; storyScope = it })

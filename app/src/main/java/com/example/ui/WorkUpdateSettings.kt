@@ -43,7 +43,7 @@ object WorkUpdates {
         return Release(code, name, apk, hash, obj.optString("releaseNotes", "").take(8000))
     }
     @Suppress("DEPRECATION")
-    private fun installedVersion(context: Context): Long {
+    fun installedVersion(context: Context): Long {
         val info = context.packageManager.getPackageInfo(context.packageName, 0)
         return if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
     }
@@ -106,6 +106,45 @@ object WorkUpdates {
     }
 }
 
+/**
+ * The newest release the app has seen, kept on the device so Home's bell can show it (with a dot) even offline,
+ * until it is installed. Checked on every return to the app, at most once an hour.
+ */
+object WorkUpdateNotice {
+    private fun prefs(context: Context) = context.getSharedPreferences("release_updates", Context.MODE_PRIVATE)
+    fun cached(context: Context): WorkUpdates.Release? = prefs(context).getString("available", null)
+        ?.let { runCatching { WorkUpdates.parse(it) }.getOrNull() }?.takeIf { it.code > WorkUpdates.installedVersion(context) }
+    private fun save(context: Context, release: WorkUpdates.Release?) = prefs(context).edit().apply {
+        if (release == null) remove("available")
+        else putString("available", JSONObject().put("versionCode", release.code).put("versionName", release.name).put("apkUrl", release.apk)
+            .put("sha256", release.sha256).put("releaseNotes", release.notes).toString())
+    }.apply()
+    /** A fresh check (network), or the cached result when it was checked within the hour or the check fails. */
+    suspend fun refresh(context: Context): WorkUpdates.Release? {
+        if (!BuildConfig.LOCAL_DISTRIBUTION) return null
+        val now = System.currentTimeMillis()
+        if (now - prefs(context).getLong("lastBellCheck", 0) < 60 * 60 * 1000L) return cached(context)
+        return try {
+            WorkUpdates.check(context).also { save(context, it); prefs(context).edit().putLong("lastBellCheck", now).apply() }
+        } catch (_: Exception) { cached(context) }
+    }
+}
+
+/** Download, verify and hand to Android's installer (never silent). Shared by the bell and by Settings. */
+fun startUpdate(context: Context, scope: kotlinx.coroutines.CoroutineScope, release: WorkUpdates.Release, setBusy: (Boolean) -> Unit, onStarted: () -> Unit = {}) {
+    if (Build.VERSION.SDK_INT >= 26 && !context.packageManager.canRequestPackageInstalls()) {
+        Toast.makeText(context, "אפשר התקנה ממקור זה, חזור ולחץ עדכון", Toast.LENGTH_LONG).show()
+        context.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}")))
+        return
+    }
+    setBusy(true)
+    scope.launch {
+        try { WorkUpdates.install(context, WorkUpdates.download(context, release)); onStarted() }
+        catch (_: Exception) { Toast.makeText(context, "העדכון לא הותקן. ההורדה או האימות נכשלו; האפליקציה הקיימת נשמרה", Toast.LENGTH_LONG).show() }
+        finally { setBusy(false) }
+    }
+}
+
 @Composable
 fun WorkUpdateSettings(automatic: Boolean = false) {
     if (!BuildConfig.LOCAL_DISTRIBUTION) return
@@ -140,17 +179,7 @@ fun WorkUpdateSettings(automatic: Boolean = false) {
             text = { Text(if (busy) "מוריד ומאמת את העדכון…" else release.notes) },
             dismissButton = { TextButton(onClick = { dismiss() }, enabled = !busy) { Text("מאוחר יותר") } },
             confirmButton = { TextButton(enabled = !busy, onClick = {
-                if (Build.VERSION.SDK_INT >= 26 && !context.packageManager.canRequestPackageInstalls()) {
-                    Toast.makeText(context, "אפשר התקנה ממקור זה, חזור ולחץ עדכון", Toast.LENGTH_LONG).show()
-                    context.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}")))
-                } else {
-                    busy = true
-                    scope.launch {
-                        try { WorkUpdates.install(context, WorkUpdates.download(context, release)); candidate = null }
-                        catch (_: Exception) { Toast.makeText(context, "העדכון לא הותקן. ההורדה או האימות נכשלו; האפליקציה הקיימת נשמרה", Toast.LENGTH_LONG).show() }
-                        finally { busy = false }
-                    }
-                }
+                startUpdate(context, scope, release, setBusy = { busy = it }, onStarted = { candidate = null })
             }) { Text("עדכון") } })
     }
 }

@@ -20,6 +20,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -64,15 +66,32 @@ fun HeaderActions(unread: Boolean, onBell: () -> Unit) {
 
 /** What arrived; a monthly summary opens again. The switches live in Settings. */
 @Composable
-fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSettings: () -> Unit, onDismiss: () -> Unit) {
+fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSettings: () -> Unit, onDismiss: () -> Unit,
+                       update: com.example.ui.WorkUpdates.Release? = null) {
     val c = Kis.colors
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var updating by remember { mutableStateOf(false) }
     val plan = viewModel.planSettings
     val recent = remember { plan.recent }
     LaunchedEffect(Unit) { plan.seenAt = System.currentTimeMillis() }
     KisSheet(onDismiss = onDismiss, tag = "notifications_sheet") {
         Text("התראות", style = KisType.title, color = c.ink)
         Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (recent.isEmpty()) Text("אין התראות", style = KisType.body, color = c.muted, modifier = Modifier.padding(vertical = 6.dp).testTag("notifications_empty"))
+            // A new version comes first: one tap downloads, verifies and opens Android's installer.
+            update?.let { r ->
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Workplaces[0].from, Workplaces[4].from)))
+                    .testTag("update_note").padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("גרסה ${r.name} זמינה", style = KisType.title, color = Color.White)
+                    if (r.notes.isNotBlank()) Text(r.notes, style = KisType.caption, color = Color.White.copy(alpha = .9f), maxLines = 4)
+                    Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).background(Color.White)
+                        .kisClick { if (!updating) com.example.ui.startUpdate(context, scope, r, setBusy = { updating = it }) }.testTag("update_now"),
+                        contentAlignment = Alignment.Center) {
+                        Text(if (updating) "מוריד ומאמת…" else "עדכון", style = KisType.label, color = Color(0xFF121212))
+                    }
+                }
+            }
+            if (recent.isEmpty() && update == null) Text("אין התראות", style = KisType.body, color = c.muted, modifier = Modifier.padding(vertical = 6.dp).testTag("notifications_empty"))
             recent.forEachIndexed { i, n ->
                 val month = if (n.kind == "monthly") monthKeyOf(n.month) else null
                 Column(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(c.bg)
