@@ -29,9 +29,10 @@ const seed = {
   const base = `http://127.0.0.1:${server.address().port}/`;
   const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
   const errors = [];
-  async function open(viewport = { width: 390, height: 844 }, colorScheme = 'light', data = seed) {
+  async function open(viewport = { width: 390, height: 844 }, colorScheme = 'light', data = seed, launched = true) {
     const ctx = await browser.newContext({ viewport, colorScheme, locale: 'he-IL', serviceWorkers: 'block' });
-    await ctx.addInitScript(d => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.clear(); if (d) localStorage.setItem('work_complete_backup', JSON.stringify(d)); } }, data);
+    await ctx.addInitScript(([d, l]) => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.clear(); if (d) localStorage.setItem('work_complete_backup', JSON.stringify(d));
+      if (l) localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true })); } }, [data, launched]);
     const page = await ctx.newPage();
     page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
     await page.goto(base); await page.waitForSelector('[data-testid=home-hero]');
@@ -178,29 +179,44 @@ const seed = {
     await ctx.close();
   }
 
-  // 8. Home's bell and profile; Settings holds neither; explanations only behind ⓘ.
+  // 8. The 2.0 launch (once): words, then first and last name, then the tour from Home. Bell lists what arrived;
+  //    notification switches and the profile are in Settings; explanations only behind ⓘ.
   {
-    const { ctx, page } = await open();
+    const { ctx, page } = await open(undefined, 'light', seed, false);
+    await page.waitForSelector(tid('launch-line-2')); await page.waitForTimeout(1500);
+    assert.equal(await page.evaluate(() => localStorage.getItem('work_complete_backup')), JSON.stringify(seed), 'the launch never touches stored data');
+    await shot(page, 'launch');
+    await page.click(tid('launch-next'));
+    assert.ok(await page.isDisabled(tid('launch-done')), 'a first name is needed to continue (or "later")');
+    await page.fill(tid('launch-first'), 'שולי'); await page.fill(tid('launch-last'), 'כהן');
+    await shot(page, 'launch-name'); await page.click(tid('launch-done'));
+    assert.equal(await page.textContent(tid('tour-progress')), '1 מתוך 6');
+    for (let i = 1; i < 6; i++) { await page.click(tid('tour-next')); assert.equal(await page.textContent(tid('tour-progress')), `${i + 1} מתוך 6`); if (i === 3) await shot(page, 'tour-history'); }
+    await page.click(tid('tour-next'));
+    assert.equal(await page.locator(tid('tour')).count(), 0);
+    assert.match(await page.textContent(tid('home-greeting')), /שולי/);
+    assert.doesNotMatch(await page.textContent(tid('home-greeting')), /כהן/, 'only the first name is shown');
+    await page.reload(); await page.waitForSelector(tid('home-hero'));
+    assert.equal(await page.locator(tid('launch')).count(), 0, 'the launch shows once');
+    // Bell: only what arrived, with a way to its settings.
     await page.evaluate(() => localStorage.setItem('kis_web_recent_v1', JSON.stringify([{ kind: 'monthly', title: 'הסיכום מוכן', text: '3 משמרות', time: Date.now(), month: 2026 * 12 + 8 }])));
     await page.reload(); await page.waitForSelector(tid('home-hero'));
     assert.ok(await page.isVisible(tid('home-bell-dot')), 'something new is marked on the bell');
     await page.click(tid('home-bell')); assert.ok(await page.isVisible(tid('recent-note-0')));
-    await page.click(tid('notify-monthly'));
-    assert.equal(await page.getAttribute(tid('notify-monthly'), 'aria-checked'), 'true');
-    await shot(page, 'notifications'); await page.keyboard.press('Escape');
+    assert.equal(await page.locator(`${tid('notifications-sheet')} [role=switch]`).count(), 0, 'no switches in the bell');
+    await shot(page, 'notifications'); await page.click(tid('notifications-settings'));
     assert.equal(await page.locator(tid('home-bell-dot')).count(), 0, 'opened means seen');
-    await page.click(tid('home-profile')); await page.fill(tid('profile-name'), 'שולי'); await page.click(tid('profile-save'));
-    assert.match(await page.textContent(tid('home-greeting')), /שולי/);
-    await page.click(tid('home-profile')); assert.equal(await page.textContent(tid('profile-shown')), 'שולי');
-    assert.equal(await page.locator(tid('profile-name')).count(), 0, 'the name is shown, not asked again');
-    await page.click(tid('profile-edit')); assert.ok(await page.isVisible(tid('profile-name')));
-    await shot(page, 'profile'); await page.keyboard.press('Escape');
-    await page.click(tid('tab-settings'));
-    assert.equal(await page.locator(`${tid('settings-פרופיל')}, ${tid('settings-התראות')}`).count(), 0);
+    // Settings: notifications group with switches, profile last with both names.
+    assert.ok(await page.isVisible(tid('settings-התראות')));
+    await page.click(tid('notify-monthly')); assert.equal(await page.getAttribute(tid('notify-monthly'), 'aria-checked'), 'true');
+    assert.equal(await page.inputValue(tid('profile-name')), 'שולי'); assert.equal(await page.inputValue(tid('profile-last-name')), 'כהן');
+    const titles = await page.$$eval('.section-title', n => n.map(x => x.textContent));
+    assert.equal(titles[titles.length - 1], 'פרופיל', 'the profile is last');
     assert.equal(await page.locator('.caption:visible').filter({ hasText: 'נשמרים בדפדפן' }).count(), 0, 'no explanation text on the page');
     await page.click('[data-info-title="גיבוי ונתונים"]');
     assert.match(await page.textContent(tid('info-sheet')), /נשמרים בדפדפן/);
-    await shot(page, 'settings-info'); await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await page.click(tid('replay-tour')); assert.equal(await page.textContent(tid('tour-progress')), '1 מתוך 6'); await page.click(tid('tour-skip'));
     await ctx.close();
   }
 

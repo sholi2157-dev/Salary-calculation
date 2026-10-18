@@ -119,6 +119,8 @@ function start() {
   setInterval(() => { if (document.visibilityState === 'visible' && !app.editorOpen && !U().anySheet()) render(); }, 60000);
   render();
   catchUp();
+  // Once: the 2.0 launch, the name, then the tour. Reminders and a restored draft wait for the next open.
+  if (root.KisLaunch.maybeStart(app)) return;
   const notes = root.KisSettings.dueReminders(app);
   const monthly = notes.find(n => n.kind === 'monthly');
   if (monthly) U().toast(monthly.title, 'לסיכום', () => root.KisSettings.monthSummary(app, monthly.month));

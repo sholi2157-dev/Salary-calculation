@@ -1,4 +1,4 @@
-/* Settings, grouped like the app: work, look, backup & data, help & updates. Profile and notifications open from Home. */
+/* Settings, grouped like the app: work, look, notifications, backup & data, help & updates, profile last. Home's bell lists what arrived. */
 (function (root) {
 'use strict';
 const U = () => root.KisUi;
@@ -14,12 +14,23 @@ function render(el, app) {
     <div class="divider"></div>${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip" data-a="series" data-testid="series-button">ניהול</button>', 'יוצרים במסך ההוספה: "חוזרת כל שבוע". כשהזמן נגמר המשמרת נרשמת לבד, ותמיד אפשר לבטל.')}`)}
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
+  ${group('התראות', `${rowHtml('הסיכום החודשי', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyMonthly === true}" aria-label="הסיכום החודשי" data-a="monthly" data-testid="notify-monthly"></button>`, 'בתחילת החודש, כשנכנסים לאתר: כמה עבדת וכמה הרווחת. נגיעה בו פותחת את "החודש שלך". באתר התזכורות מופיעות כשהוא פתוח; באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.')}
+    <div class="divider"></div>${rowHtml('תעריף חסר', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyRate === true}" aria-label="תעריף חסר" data-a="rate" data-testid="notify-rate"></button>`, 'לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.')}`)}
   ${group('גיבוי ונתונים', `<div class="row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
     <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'הנתונים נשמרים בדפדפן הזה בלבד. כדאי לשמור גיבוי גם מחוץ לאתר. גיבוי מהאפליקציה עובר לכאן, וגיבוי מכאן עובר לאפליקציה.')}
-  ${group('עזרה ועדכונים', `${rowHtml('בדיקת עדכון', null, '<button class="chip" data-a="update">בדיקה</button>', 'האתר מתעדכן לבד ברגע בטוח, בלי לאבד טיוטה או משמרת פעילה.')}`)}
+  ${group('עזרה ועדכונים', `${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip" data-a="tour" data-testid="replay-tour">הצגה</button>')}
+    <div class="divider"></div>${rowHtml('בדיקת עדכון', null, '<button class="chip" data-a="update">בדיקה</button>', 'האתר מתעדכן לבד ברגע בטוח, בלי לאבד טיוטה או משמרת פעילה.')}`)}
+  ${group('פרופיל', `<div style="display:grid;gap:8px;padding:10px 0"><input class="input" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
+    <input class="input" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>`)}
   <div class="row" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי · 2.0 · ${esc((root.WorkBuild?.commit || 'local').slice(0, 7))}</span></div>`;
 
   const q = s => el.querySelector(s);
+  // Saved as typed, without redrawing the page (no lost taps or focus).
+  q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
+  q('[data-f=last]').addEventListener('input', e => store.setLocal('lastName', e.target.value.trim().slice(0, 40), true));
+  q('[data-a=monthly]').onclick = e => { const on = store.local.notifyMonthly !== true; store.setLocal('notifyMonthly', on, true); e.currentTarget.setAttribute('aria-checked', on); };
+  q('[data-a=rate]').onclick = e => { const on = store.local.notifyRate !== true; store.setLocal('notifyRate', on, true); e.currentTarget.setAttribute('aria-checked', on); };
+  q('[data-a=tour]').onclick = () => root.KisLaunch.tour(app);
   q('[data-a=places]').onclick = () => placesSheet(app);
   el.querySelectorAll('[data-cur]').forEach(b => b.onclick = () => store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, mainCurrency: b.dataset.cur }); }));
   q('[data-a=series]').onclick = () => root.KisPlans.seriesSheet(app);
@@ -165,43 +176,16 @@ function monthSummary(app, month) {
   });
 }
 
-/** The name, typed once. Afterwards it is just shown, with an edit for a typo. */
-function profileSheet(app) {
-  const { store } = app, { esc } = U(), me = U().PLACES[0];
-  U().sheet('profile-sheet', (el, close) => {
-    const draw = editing => {
-      const name = (store.local.name || '').trim();
-      el.innerHTML = editing ? `<h2>פרופיל</h2><input class="input" data-f="name" value="${esc(name)}" placeholder="השם שלך" aria-label="השם שלך" maxlength="40" data-testid="profile-name">
-        <button class="btn primary" data-a="save" data-testid="profile-save" ${name ? '' : 'disabled'}>שמירה</button>`
-        : `<h2>פרופיל</h2><div class="row" style="align-items:center;gap:12px"><span class="avatar" style="width:52px;height:52px;background:${U().accent(me)};color:${U().accentInk(me)};font-size:22px">${esc(name.charAt(0))}</span>
-          <b class="grow" style="font:22px/28px var(--display)" data-testid="profile-shown">${esc(name)}</b><button class="chip" data-a="edit" data-testid="profile-edit">עריכה</button></div>`;
-      const input = el.querySelector('[data-f=name]');
-      if (input) {
-        const save = el.querySelector('[data-a=save]');
-        input.addEventListener('input', () => { save.disabled = !input.value.trim(); });
-        save.onclick = () => { store.setLocal('name', input.value.trim().slice(0, 40)); close(); };
-        input.focus();
-      } else el.querySelector('[data-a=edit]').onclick = () => draw(true);
-    };
-    draw(!(store.local.name || '').trim());
-  });
-}
-
-/** What arrived (a monthly summary opens again), then the reminder switches. */
+/** What arrived (a monthly summary opens again). The switches are in Settings. */
 function notificationsSheet(app) {
   const { store } = app, list = store.recent(), { esc } = U();
   store.setLocal('seenAt', Date.now(), true);
   U().sheet('notifications-sheet', (el, close) => {
-    const sw = (title, key, info, testid) => `<div class="row" style="align-items:center;min-height:52px"><div class="title-row grow"><span style="font-weight:500">${title}</span>${U().infoDot(title, info)}</div>
-      <button class="switch" role="switch" aria-checked="${store.local[key] === true}" aria-label="${title}" data-k="${key}" data-testid="${testid}"></button></div>`;
     el.innerHTML = `<h2>התראות</h2>${list.length ? '' : '<p class="caption" data-testid="notifications-empty">אין התראות</p>'}
       <div class="list">${list.map((n, i) => `<button class="shift" data-i="${i}" data-testid="recent-note-${i}" ${n.month == null ? 'style="cursor:default"' : ''}><span class="meta"><b class="label">${esc(n.title)}</b><span class="sub">${esc(n.text)}</span><span class="caption">${U().shortDate(n.time)}</span></span></button>`).join('')}</div>
-      <div class="divider"></div>
-      ${sw('הסיכום החודשי', 'notifyMonthly', 'בתחילת החודש, כשנכנסים לאתר: כמה עבדת וכמה הרווחת. נגיעה בו פותחת את "החודש שלך". באתר התזכורות מופיעות כשהוא פתוח; באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.', 'notify-monthly')}
-      ${sw('תעריף חסר', 'notifyRate', 'לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.', 'notify-rate')}`;
+      <button class="btn ghost" data-a="settings" data-testid="notifications-settings">הגדרות התראות</button>`;
     el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const n = list[+b.dataset.i]; if (n.month != null) { close(); monthSummary(app, n.month); } });
-    // Saved in place, without redrawing (no lost taps or focus).
-    el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const on = store.local[b.dataset.k] !== true; store.setLocal(b.dataset.k, on, true); b.setAttribute('aria-checked', on); });
+    el.querySelector('[data-a=settings]').onclick = () => { close(); app.go('settings'); };
   }, { onClose: () => app.refresh() });
 }
 
@@ -224,5 +208,5 @@ function dueReminders(app) {
   return out;
 }
 
-root.KisSettings = { render, monthSummary, placeSheet, placesSheet, backupText, dueReminders, importSheet, profileSheet, notificationsSheet };
+root.KisSettings = { render, monthSummary, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet };
 })(globalThis);

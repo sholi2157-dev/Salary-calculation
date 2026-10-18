@@ -18,9 +18,10 @@ or merged; Vercel builds a Preview per push. Publishing is stage F and needs the
   clear and close, multi-select with share/copy/paid/rate completion/delete-with-undo, Excel and WhatsApp copy);
   Add/Edit (clock with keypad, ruler and ±15/30, hours, job, group, unknown rate never 0, bonus, break, weekly repeat
   with preview; edit as a framed pop-up; a new draft survives a reload); Settings (workplaces with colour, default
-  currency, theme, weekly plans, backup/import, update check); "החודש שלך". At the top of Home: a bell (recent
-  notifications with a dot for new ones, and their switches) and the profile (the name typed once, then shown with an
-  edit). Screens show titles only; every explanation sits behind an ⓘ next to its title.
+  currency, theme, weekly plans, notification switches, backup/import, tour replay, update check, and last the profile:
+  first and last name); "החודש שלך". At the top of Home a bell lists what arrived (a dot for new ones). Screens show
+  titles only; every explanation sits behind an ⓘ next to its title. Once per browser, new or returning, the 2.0 launch
+  ("עיצוב חדש. התחלה חדשה."), then the name, then a short tour from Home (`web/kis/launch.js`).
 - **Weekly plans** stored in `work_series_v1`; ended days are recorded on open and on return to the tab, once per
   `seriesKey` (re-read from storage just before writing), with undo that holds the day.
 

@@ -45,8 +45,7 @@ function render(el, app) {
   const me = U().PLACES[0];
   el.innerHTML = `
   <div class="hello">${U().logo()}<div><div class="caption" data-testid="home-greeting">${esc(name ? greeting() + ', ' + name : greeting())}</div><div class="label" style="font-size:16px">שכר עבודות אישי</div></div>
-    <div class="hello-actions"><button class="round-btn" data-act="bell" data-testid="home-bell" aria-label="${unread ? 'התראות · יש חדשות' : 'התראות'}">${U().ICON.bell}${unread ? `<span class="dot" style="background:${U().accent(me)}" data-testid="home-bell-dot"></span>` : ''}</button>
-      <button class="round-btn" data-act="profile" data-testid="home-profile" aria-label="פרופיל" ${name ? `style="background:${U().accent(me)};border-color:${U().accent(me)};color:${U().accentInk(me)}"` : ''}>${name ? esc(name.charAt(0)) : U().ICON.person}</button></div></div>
+    <div class="hello-actions"><button class="round-btn" data-act="bell" data-testid="home-bell" aria-label="${unread ? 'התראות · יש חדשות' : 'התראות'}">${U().ICON.bell}${unread ? `<span class="dot" style="background:${U().accent(me)}" data-testid="home-bell-dot"></span>` : ''}</button></div></div>
   <section class="hero-card" data-testid="home-hero">
     <div class="label" style="color:var(--muted);font-weight:500">השבוע</div>
     <div style="display:flex;gap:18px;align-items:flex-end;overflow-x:auto;margin-top:6px">${hero}</div>
@@ -66,7 +65,6 @@ function render(el, app) {
   ${entries.length ? '' : '<div class="empty"><h3>ברוך הבא</h3></div>'}`;
 
   el.querySelector('[data-act=bell]').addEventListener('click', () => root.KisSettings.notificationsSheet(app));
-  el.querySelector('[data-act=profile]').addEventListener('click', () => root.KisSettings.profileSheet(app));
   el.querySelector('[data-act=start]')?.addEventListener('click', () => app.startLive());
   el.querySelector('[data-act=pending]')?.addEventListener('click', () => app.completePending());
   el.querySelector('[data-act=all-planned]')?.addEventListener('click', () => app.go('history', { planned: true }));
