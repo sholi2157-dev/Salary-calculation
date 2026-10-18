@@ -1,5 +1,23 @@
 # Current project state
 
+## October 18 — stage D (summaries) on both platforms: 2.0-rc8 and website preview (not published)
+
+Owner approved the next stage but not the launch: stage D is done; publishing (stage F) waits for explicit approval. When it comes, the owner chose a clean "2.0" build.
+
+What stage D adds: "החודש שלך" (hourly average, unpaid, insights, busy days) and the story recap "החודש/השנה שלך בכיס" with a shareable card without amounts. Same rules on both platforms (shared `v2-summary.json`). Details: `docs/v2-stage-d.md`.
+
+**Android:** signed `2.0-rc8` / code 32 from `bdbce9e`, run 39147647288 SUCCESS.
+- Tests: 132 Debug + 105 Release.
+- Identity: 32 > 31 > 24.
+- Update gate: real RC16 → delivered rc7 → rc8, data kept; the launch screen was shown and completed on the updated install.
+- Fresh-install launch and tour, device tests, crash logs.
+- APK SHA-256 `1522b54699fd06b931caf6cdbb4dee2668398ec7103a1d5fe663b46f14d5c1f5`.
+- Private artifact `salary-2.0-rc8-candidate`.
+- The device screenshot of the launch slogan was still taken before the text rose. The cause is the test's timing, not the app; the test is fixed after rc8.
+- The next delivered build must use a code higher than 32.
+
+**Website:** `claude/v2-web` at `d820fa9`, CI web-v2 run 39145054859 SUCCESS (75 unit tests, browser flows incl. the story). Vercel Preview `dpl_9dckoWy7wNoHv84hmrzEu8inbzgs` READY on that commit. Production unchanged.
+
 ## October 18 — 2.0-rc7 and website preview: a one-time 2.0 launch, name, tour; settings back in Settings (not published)
 
 Owner request (app and site alike):
