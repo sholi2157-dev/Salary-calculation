@@ -326,15 +326,13 @@ fun KisEditorPage(
                 if (d.mode != EntryMode.JOB) KisChip(if (more) "פחות" else "הפסקה · הערה", tag = "editor_more", onClick = { more = !more })
             }
             check.warnings.forEach { Notice(it) }
-            if (d.rateUnknown && d.mode != EntryMode.JOB) Text("אפשר לשמור עכשיו ולהשלים את התעריף אחר כך — גם לכמה משמרות ביחד מההיסטוריה. עד אז היא לא נספרת בסכומים.",
-                style = KisType.caption, color = c.muted)
             if (d.mode == EntryMode.GROUP) GroupBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
             if (!d.editing && d.mode == EntryMode.CLOCK && d.start != null) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
+                        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                             Text("חוזרת כל שבוע", style = KisType.label, color = c.ink)
-                            Text("משמרת קבועה: תופיע מראש ותירשם לבד כשהזמן נגמר", style = KisType.caption, color = c.muted)
+                            InfoDot("חוזרת כל שבוע", "משמרת קבועה: היא תופיע מראש בבית ובהיסטוריה תחת \"מתוכנן\", ותירשם לבד כשהזמן שלה נגמר. תמיד אפשר לבטל.")
                         }
                         KisSwitch(repeat, { repeat = it }, Modifier.testTag("repeat_switch"), label = "חוזרת כל שבוע")
                     }
@@ -350,7 +348,6 @@ fun KisEditorPage(
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (d.start != null && d.mode != EntryMode.HOURS && !d.groupByHours) Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("break_block")) {
                         Text("הפסקה", style = KisType.label, color = c.ink)
-                        Text("השעות והסכום מחושבים אחרי ההפסקה", style = KisType.caption, color = c.muted)
                         val quick = listOf(0, 15, 30, 45, 60)
                         val custom = d.breakMin !in quick
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -492,7 +489,7 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, target
 private fun HoursDisplay(value: String, active: Boolean, ink: Color, onOpen: () -> Unit, onQuick: (Int) -> Unit, onUseClock: (() -> Unit)?) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (active) ink.copy(alpha = 0.16f) else Color.Transparent)
         .kisClick(onClick = onOpen).testTag("hours_display").padding(horizontal = 8.dp, vertical = 6.dp)) {
-        Text("כמה שעות · נגיעה להקלדה", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+        Text("כמה שעות", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
         Text(value.ifEmpty { "0" }, color = ink.copy(alpha = if (value.isEmpty()) 0.45f else 1f), style = KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp, textDirection = TextDirection.Ltr))
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -515,7 +512,7 @@ private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color
     } else {
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (active) ink.copy(alpha = 0.16f) else Color.Transparent)
             .kisClick(onClick = onOpen).testTag("job_amount").padding(horizontal = 8.dp, vertical = 6.dp)) {
-            Text("כמה הרווחת · נגיעה להקלדה", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+            Text("כמה הרווחת", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
             MoneyText(amount.toDoubleOrNull() ?: 0.0, d.currency, KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp), color = ink.copy(alpha = if (amount.isEmpty()) 0.45f else 1f))
         }
     }
@@ -629,9 +626,9 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                     Text("תעריף נפרד למעסיק ולעובדים", style = KisType.label, color = c.ink)
-                    Text("כשאתה מקבל מהמעסיק יותר ממה שאתה משלם לעובדים", style = KisType.caption, color = c.muted)
+                    InfoDot("תעריף נפרד", "כשאתה מקבל מהמעסיק יותר ממה שאתה משלם לעובדים.")
                 }
                 KisSwitch(d.separateRates, { onDraft(d.copy(separateRates = it)) }, label = "תעריף נפרד")
             }

@@ -182,9 +182,9 @@ fun SeriesSheet(series: List<ShiftSeries>, occurrences: List<V2Plan.Occurrence>,
     KisSheet(onDismiss = onDismiss, tag = "series_sheet") {
         Text("משמרות קבועות", style = KisType.title, color = c.ink)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Text("רישום אוטומטי", style = KisType.label, color = c.ink)
-                Text("כשהזמן נגמר המשמרת נרשמת לבד. תמיד אפשר לבטל.", style = KisType.caption, color = c.muted)
+                InfoDot("רישום אוטומטי", "כשהזמן נגמר המשמרת נרשמת לבד. תמיד אפשר לבטל.")
             }
             KisSwitch(autoConfirm, onAuto, Modifier.testTag("auto_confirm_switch"), label = "רישום אוטומטי")
         }

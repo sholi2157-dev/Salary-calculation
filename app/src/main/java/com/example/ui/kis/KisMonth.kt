@@ -77,23 +77,3 @@ fun MonthSummarySheet(month: Int, entries: List<WorkEntry>, categories: List<Wor
     }
 }
 
-/** "התראות אחרונות": what was sent, newest first; the monthly one opens its summary again. */
-@Composable
-fun RecentNotesSheet(recent: List<PlanSettings.Sent>, onMonth: (Int) -> Unit, onDismiss: () -> Unit) {
-    val c = Kis.colors
-    KisSheet(onDismiss = onDismiss, tag = "recent_notes_sheet") {
-        Text("התראות אחרונות", style = KisType.title, color = c.ink)
-        if (recent.isEmpty()) Text("עוד לא נשלחו התראות. אפשר להפעיל סיכום חודשי ותזכורת לתעריף חסר כאן בהגדרות.", style = KisType.body, color = c.muted)
-        Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            recent.forEachIndexed { i, n ->
-                val month = if (n.kind == "monthly") monthKeyOf(n.month) else null
-                Column(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(c.bg)
-                    .then(if (month != null) Modifier.kisClick { onMonth(month) } else Modifier).testTag("recent_note_$i").padding(12.dp)) {
-                    Text(n.title, style = KisType.label, color = c.ink)
-                    Text(n.text, style = KisType.caption, color = c.muted)
-                    Text(KisShare.shortDate(n.time) + if (month != null) " · נגיעה לסיכום" else "", style = KisType.micro, color = c.muted)
-                }
-            }
-        }
-    }
-}

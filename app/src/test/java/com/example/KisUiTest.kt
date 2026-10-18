@@ -475,15 +475,47 @@ class KisUiTest {
         shot("month-summary")
     }
 
-    @Test fun recentNotificationsAreKeptNewestFirstAndOpenTheirMonth() {
-        val plan = PlanSettings(app)
+    @Test fun notificationsSheetListsRecentOpensTheirMonthAndHoldsTheSwitches() {
+        val vm = model()
+        val plan = vm.planSettings
         (1..25).forEach { plan.addRecent(PlanSettings.Sent("monthly", "סיכום $it", "טקסט", it.toLong(), "2026-09")) }
         assertEquals(PlanSettings.RECENT_MAX, plan.recent.size)
         assertEquals("סיכום 25", plan.recent.first().title)
+        assertTrue(plan.unread)
         var opened: Int? = null
-        host { RecentNotesSheet(plan.recent, onMonth = { opened = it }, onDismiss = {}) }
-        ui.onNodeWithTag("recent_note_0").performClick()
+        host { NotificationsSheet(vm, onMonth = { opened = it }, onDismiss = {}) }
+        assertFalse(plan.unread)
+        ui.onNodeWithTag("quiet_switch").performScrollTo().assertExists()
+        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
+        assertTrue(plan.notifyMonthly)
+        ui.onNodeWithTag("notify_monthly_switch").performClick()
+        assertFalse(plan.notifyMonthly)
+        ui.onNodeWithTag("recent_note_0").performScrollTo().performClick()
         assertEquals(2026 * 12 + 8, opened)
+    }
+
+    @Test fun profileNameIsTypedOnceThenShownWithEdit() {
+        lateinit var settings: KisSettings
+        ui.setContent {
+            settings = rememberKisSettings()
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                KisTheme(settings) {
+                    var open by remember { mutableStateOf(false) }
+                    HeaderActions(unread = true, onBell = {}, onProfile = { open = true })
+                    if (open) ProfileSheet(onDismiss = { open = false })
+                }
+            }
+        }
+        ui.onNodeWithTag("home_bell_dot").assertExists()
+        ui.onNodeWithTag("home_profile").performClick()
+        ui.onNodeWithTag("profile_name").performTextReplacement("שולי")
+        ui.onNodeWithTag("profile_save").performClick()
+        assertEquals("שולי", settings.name)
+        ui.onNodeWithTag("home_profile").performClick()
+        ui.onNodeWithTag("profile_shown").assertTextEquals("שולי")
+        ui.onNodeWithTag("profile_name").assertDoesNotExist()
+        ui.onNodeWithTag("profile_edit").performClick()
+        ui.onNodeWithTag("profile_name").assertExists()
     }
 
     @Test fun settingsSectionsAndThemeChoice() {
@@ -495,10 +527,10 @@ class KisUiTest {
                 KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
             }
         }
-        // Profile: the name is kept on this device and used in the greeting.
-        ui.onNodeWithTag("profile_name").performScrollTo().performTextReplacement("שולי")
-        assertEquals("שולי", settings.name)
-        listOf("פרופיל", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות").forEach {
+        // The immediate things first; profile and notifications live on Home.
+        ui.onNodeWithTag("profile_name").assertDoesNotExist()
+        ui.onNodeWithTag("notify_monthly_switch").assertDoesNotExist()
+        listOf("עבודה", "מראה ותחושה", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
         }
         ui.onNodeWithTag("theme_LIGHT").performScrollTo().performClick()
@@ -509,14 +541,7 @@ class KisUiTest {
         shot("settings-dark")
         ui.onNodeWithTag("haptics_switch").performScrollTo().performClick()
         assertFalse(settings.haptics)
-        // Weekly plans and their reminders live here too (device-only settings).
-        ui.onNodeWithTag("quiet_switch").performScrollTo().assertExists()
-        ui.onNodeWithTag("quiet_from").performScrollTo().assertTextContains("22:00", substring = true)
-        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
-        assertTrue(vm.planSettings.notifyMonthly)
-        ui.onNodeWithTag("notify_monthly_switch").performClick()
-        assertFalse(vm.planSettings.notifyMonthly)
-        ui.onNodeWithTag("recent_notes_row").performScrollTo().assertExists()
+        // Weekly plans live here (device-only settings).
         ui.onNodeWithTag("series_row").performScrollTo().performClick()
         ui.onNodeWithTag("auto_confirm_switch").performClick()
         assertFalse(vm.planSettings.autoConfirm)

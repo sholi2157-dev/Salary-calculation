@@ -46,14 +46,12 @@ import com.example.ui.WorkViewModel
 import com.example.ui.coachTarget
 
 @Composable
-fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, onClose: () -> Unit, onReplayTour: () -> Unit, onSignIn: () -> Unit = {}, bottomInset: Dp = 0.dp,
-                    onMonthSummary: (Int) -> Unit = {}) {
+fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, onClose: () -> Unit, onReplayTour: () -> Unit, onSignIn: () -> Unit = {}, bottomInset: Dp = 0.dp) {
     val c = Kis.colors
     val settings = Kis.settings
     val context = LocalContext.current
     val prefs by viewModel.localPreferences.collectAsStateWithLifecycle()
     val defaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
-    val serviceNotification by viewModel.serviceNotificationEnabled.collectAsStateWithLifecycle()
     val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.firstOrNull()?.name ?: ""
     var pickingDefault by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
@@ -70,29 +68,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     val plans by viewModel.occurrences.collectAsStateWithLifecycle()
     var seriesSheet by rememberSaveable { mutableStateOf(false) }
     var autoConfirm by remember { mutableStateOf(plan.autoConfirm) }
-    var notifyMonthly by remember { mutableStateOf(plan.notifyMonthly) }
-    var notifyRate by remember { mutableStateOf(plan.notifyRate) }
-    var quiet by remember { mutableStateOf(plan.quiet) }
-    var quietFrom by remember { mutableStateOf(plan.quietFrom) }
-    var quietTo by remember { mutableStateOf(plan.quietTo) }
-    var denied by remember { mutableStateOf(false) }
-    var recentOpen by rememberSaveable { mutableStateOf(false) }
-    var asking by rememberSaveable { mutableStateOf<String?>(null) }
-    fun turnOn(kind: String) {
-        denied = false
-        if (kind == "monthly") { plan.notifyMonthly = true; notifyMonthly = true } else { plan.notifyRate = true; notifyRate = true }
-    }
-    val askNotify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        // Without permission the switch stays off, with a short explanation.
-        asking?.let { if (granted) turnOn(it) else denied = true }
-        asking = null
-    }
-    fun enable(kind: String, on: Boolean) {
-        if (!on) { if (kind == "monthly") { plan.notifyMonthly = false; notifyMonthly = false } else { plan.notifyRate = false; notifyRate = false }; return }
-        if (android.os.Build.VERSION.SDK_INT >= 33 && androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
-            != android.content.pm.PackageManager.PERMISSION_GRANTED) { asking = kind; askNotify.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
-        else turnOn(kind)
-    }
     val saveBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let { viewModel.saveBackup(context, it) } }
 
     Box(Modifier.fillMaxSize().background(c.bg)) {
@@ -103,72 +78,37 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
         // The scroll area ends above the floating navigation, so no row can sit (and be tapped) under it.
         Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
-            Group("פרופיל") {
-                // Only inside the app: the greeting, and my own line in a group report. Never at the top of a message.
-                var name by remember { mutableStateOf(settings.name) }
-                KisTextField(name, { name = it; settings.updateName(it) }, "השם שלך", Modifier.fillMaxWidth().padding(top = 10.dp).testTag("profile_name"),
-                    placeholder = "לא חובה")
-                Text("מופיע בברכה במסך הבית ובדו״ח קבוצה לקבלן (במקום \"החלק שלי\"). נשמר במכשיר הזה בלבד.", style = KisType.caption, color = c.muted,
-                    modifier = Modifier.padding(top = 6.dp, bottom = 10.dp))
-            }
             Group("עבודה") {
-                Row_("מקום ברירת מחדל", "נבחר אוטומטית במשמרת חדשה ובטיימר · כאן גם מוסיפים ועורכים מקומות", tag = "default_category_picker",
+                Row_("מקום ברירת מחדל", null, tag = "default_category_picker",
                     modifier = Modifier.coachTarget(CoachTarget.CATEGORIES), onClick = { pickingDefault = true },
                     leading = { if (defaultCategory.isNotEmpty()) Box(Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(workplaceOf(defaultCategory, categories).brush)) }) {
                     Text(defaultCategory, style = KisType.label, color = c.ink, maxLines = 1)
                     Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
                 }
-                Row_("מטבע ברירת מחדל", "למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה") {
+                Row_("מטבע ברירת מחדל", null, info = "למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה.") {
                     CurrencyToggle(defaultCurrency, { viewModel.updateDefaultCurrency(it) }, "settings_currency")
                 }
                 KisDivider()
-                Row_("משמרות קבועות", if (series.isEmpty()) "יוצרים במסך ההוספה: \"חוזרת כל שבוע\"" else
-                    "${series.size} פעילות · רישום אוטומטי ${if (autoConfirm) "פועל" else "כבוי"}", tag = "series_row", onClick = { seriesSheet = true }) {
+                Row_("משמרות קבועות", null, info = "משמרות שחוזרות כל שבוע. יוצרים אותן במסך ההוספה: \"חוזרת כל שבוע\". כשהזמן נגמר הן נרשמות לבד, ותמיד אפשר לבטל.",
+                    tag = "series_row", onClick = { seriesSheet = true }) {
+                    if (series.isNotEmpty()) Text("${series.size}", style = KisType.label, color = c.muted)
                     Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
                 }
             }
             Group("מראה ותחושה") {
-                Row_("ערכת צבעים", when (settings.theme) { ThemeChoice.SYSTEM -> "לפי הגדרת הטלפון"; ThemeChoice.DARK -> "כהה תמיד"; ThemeChoice.LIGHT -> "בהיר תמיד" }) {
+                Row_("ערכת צבעים", null) {
                     KisSegmented(ThemeChoice.entries.map { it to it.label }, settings.theme, settings::updateTheme, tagPrefix = "theme")
                 }
-                Row_("רטט במגע", "רטט קצר בלחיצות, ורטט שונה לשמירה ולמחיקה") { KisSwitch(settings.haptics, settings::updateHaptics, Modifier.testTag("haptics_switch"), label = "רטט במגע") }
-            }
-            Group("התראות") {
-                Row_("התראת משמרת פעילה", "טיימר וסכום שנצבר בהתראה קבועה בזמן שהשעון רץ") {
-                    KisSwitch(serviceNotification, { viewModel.updateServiceNotificationEnabled(it) }, Modifier.testTag("service_notification_switch"), label = "התראת משמרת פעילה")
-                }
-                KisDivider()
-                Row_("הסיכום החודשי מוכן", "פעם בחודש, בתחילת החודש: כמה עבדת וכמה הרווחת") {
-                    KisSwitch(notifyMonthly, { enable("monthly", it) }, Modifier.testTag("notify_monthly_switch"), label = "הסיכום החודשי מוכן")
-                }
-                Row_("תזכורת לתעריף חסר", "לכל היותר פעם בשבוע, רק כשיש משמרות בלי תעריף") {
-                    KisSwitch(notifyRate, { enable("rate", it) }, Modifier.testTag("notify_rate_switch"), label = "תזכורת לתעריף חסר")
-                }
-                // Turned on, but the phone blocks this app's notifications (permission removed in the system settings).
-                if (!denied && (notifyMonthly || notifyRate) && !com.example.PlanJobs.canNotify(context)) Text("ההתראות של האפליקציה חסומות בהגדרות הטלפון, ולכן התזכורות לא יגיעו.",
-                    style = KisType.caption, color = c.pending, modifier = Modifier.padding(bottom = 8.dp).testTag("notify_blocked"))
-                if (denied) Text("בלי הרשאת התראות אי אפשר לשלוח תזכורות. אפשר לאשר בהגדרות הטלפון ולנסות שוב.", style = KisType.caption, color = c.pending,
-                    modifier = Modifier.padding(bottom = 8.dp).testTag("notify_denied"))
-                Row_("התראות אחרונות", "הסיכום החודשי ותזכורות שנשלחו · נגיעה בסיכום פותחת אותו שוב", tag = "recent_notes_row", onClick = { recentOpen = true }) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
-                }
-                KisDivider()
-                Row_("שעות שקט", "תזכורת שנופלת בשעות האלה תגיע כשהן נגמרות") {
-                    KisSwitch(quiet, { plan.quiet = it; quiet = it }, Modifier.testTag("quiet_switch"), label = "שעות שקט")
-                }
-                if (quiet) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 12.dp)) {
-                    TimeChip("משעה", quietFrom, Modifier.weight(1f), "quiet_from") { plan.quietFrom = it; quietFrom = it }
-                    TimeChip("עד שעה", quietTo, Modifier.weight(1f), "quiet_to") { plan.quietTo = it; quietTo = it }
-                }
+                Row_("רטט במגע", null) { KisSwitch(settings.haptics, settings::updateHaptics, Modifier.testTag("haptics_switch"), label = "רטט במגע") }
             }
             Group("עזרה וכלים") {
-                Row_("רישום במילים (AI)", if (hasKey) "פעיל עם מפתח Gemini האישי שלך" else "מפתח Gemini אישי · לא חובה, בלעדיו כל השאר עובד", tag = "ai_key_row", onClick = { aiSheet = true },
+                Row_("רישום במילים (AI)", if (hasKey) "פעיל" else null, tag = "ai_key_row", onClick = { aiSheet = true },
                     modifier = Modifier.coachTarget(CoachTarget.API)) {
                     Text("?", style = KisType.label, color = c.muted, modifier = Modifier.size(32.dp).clip(CircleShape).background(c.sunk).kisClick { aiHelp = true }
                         .semantics { contentDescription = "מה זה מפתח אישי" }.padding(top = 6.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
                 KisDivider()
-                Row_("הצגת ההדרכה מחדש", "סיור קצר במקומות החשובים", tag = "replay_onboarding", onClick = onReplayTour) {}
+                Row_("הצגת ההדרכה מחדש", null, tag = "replay_onboarding", onClick = onReplayTour) {}
                 if (BuildConfig.LOCAL_DISTRIBUTION) {
                     KisDivider()
                     Column(Modifier.padding(vertical = 8.dp).testTag("settings_updates")) {
@@ -177,8 +117,8 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     }
                 }
             }
-            Group("גיבוי ונתונים") {
-                Text("הנתונים נשמרים רק במכשיר. כדאי לשמור גיבוי גם מחוץ לאפליקציה.", style = KisType.caption, color = c.muted, modifier = Modifier.padding(vertical = 10.dp))
+            Group("גיבוי ונתונים", info = "הנתונים נשמרים רק במכשיר. כדאי לשמור גיבוי גם מחוץ לאפליקציה. גיבוי מהאפליקציה עובר לאתר, וגיבוי מהאתר עובר לאפליקציה.") {
+                Row(Modifier.padding(top = 10.dp)) {}
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
                     KisButton("שמירה לקובץ", { saveBackup.launch("salary-backup.json") }, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "save_backup_btn")
                     KisButton("שיתוף", { viewModel.shareExportData(context) }, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "share_backup_btn")
@@ -188,8 +128,10 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     KisButton("אקסל (CSV)", { viewModel.exportToCsvAndShare(context) }, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "csv_export_btn")
                 }
                 KisDivider()
-                Text("ייבוא: הדבק שורות מאקסל (עם כותרות) או טקסט גיבוי. לפני השמירה תוצג בדיקה, ומשמרות שכבר קיימות לא יתווספו שוב.",
-                    style = KisType.caption, color = c.muted, modifier = Modifier.padding(top = 10.dp, bottom = 8.dp))
+                Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("ייבוא", style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
+                    InfoDot("ייבוא", "מדביקים שורות מאקסל (עם כותרות) או טקסט גיבוי. לפני השמירה תוצג בדיקה, ומשמרות שכבר קיימות לא יתווספו שוב.")
+                }
                 KisTextField(importText, { importText = it }, "הדבקת נתונים", Modifier.fillMaxWidth().heightIn(min = 90.dp).testTag("settings_import_text_field"), singleLine = false, minLines = 3)
                 KisButton("בדיקה וייבוא", {
                     if (importText.isBlank()) Toast.makeText(context, "נא להדביק נתונים לייבוא", Toast.LENGTH_SHORT).show()
@@ -217,7 +159,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
 
     if (pickingDefault) KisSheet(onDismiss = { pickingDefault = false }, tag = "default_category_sheet") {
         Text("מקומות עבודה", style = KisType.title, color = c.ink)
-        Text("נגיעה במקום הופכת אותו לברירת המחדל. העיפרון פותח עריכה.", style = KisType.caption, color = c.muted)
         Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) { categories.forEach { cat ->
             val on = cat.name == defaultCategory
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(if (on) c.sunk else androidx.compose.ui.graphics.Color.Transparent)
@@ -239,7 +180,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         EditWorkplaceSheet(cat, categories, viewModel, onDismiss = { editing = null })
     } }
     if (adding) NewWorkplaceSheet(viewModel, categories, defaultCurrency, makeDefault = addingDefault, onDismiss = { adding = false; addingDefault = false })
-    if (recentOpen) RecentNotesSheet(remember(recentOpen) { plan.recent }, onMonth = { recentOpen = false; onMonthSummary(it) }, onDismiss = { recentOpen = false })
     if (seriesSheet) SeriesSheet(series, plans, categories, autoConfirm, onAuto = { plan.autoConfirm = it; autoConfirm = it },
         onRate = { s, rate -> viewModel.applySeriesRate(s.id, rate) }, onEnd = { s -> viewModel.endSeries(s.id) }, onDismiss = { seriesSheet = false })
     if (aiSheet) AiKeySheet(viewModel.owner.uid, onDismiss = { aiSheet = false })
@@ -253,23 +193,30 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
 }
 
 @Composable
-private fun Group(title: String, content: @Composable ColumnScope.() -> Unit) {
+private fun Group(title: String, info: String? = null, content: @Composable ColumnScope.() -> Unit) {
     val c = Kis.colors
-    Text(title, style = KisType.title, color = c.ink, modifier = Modifier.padding(top = 22.dp, bottom = 10.dp).testTag("settings_section_$title").semantics { heading() })
+    Row(Modifier.padding(top = 22.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, style = KisType.title, color = c.ink, modifier = Modifier.testTag("settings_section_$title").semantics { heading() })
+        if (info != null) InfoDot(title, info)
+    }
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.surface).padding(horizontal = 16.dp, vertical = 4.dp), content = content)
 }
 
 /** A settings row: title + optional hint on the right, the control on the left (RTL). */
 @Composable
 private fun Row_(title: String, hint: String?, modifier: Modifier = Modifier, tag: String? = null, onClick: (() -> Unit)? = null,
-                 leading: (@Composable () -> Unit)? = null, trailing: @Composable () -> Unit) {
+                 leading: (@Composable () -> Unit)? = null, info: String? = null, trailing: @Composable () -> Unit) {
     val c = Kis.colors
     Row(modifier.fillMaxWidth().heightIn(min = 58.dp).then(if (onClick != null) Modifier.kisClick(onClick = onClick) else Modifier)
         .then(if (tag != null) Modifier.testTag(tag) else Modifier).padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         leading?.invoke()
         Column(Modifier.weight(1f)) {
-            Text(title, style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(title, style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
+                if (info != null) InfoDot(title, info)
+            }
+            // A short state only (e.g. "פעיל"); explanations live behind ⓘ.
             if (hint != null) Text(hint, style = KisType.caption, color = c.muted)
         }
         trailing()

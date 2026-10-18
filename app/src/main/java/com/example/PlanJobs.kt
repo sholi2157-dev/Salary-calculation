@@ -69,6 +69,11 @@ class PlanSettings(context: Context) {
         val a = org.json.JSONArray().apply { all.forEach { put(org.json.JSONObject().put("kind", it.kind).put("title", it.title).put("text", it.text).put("time", it.time).put("month", it.month)) } }
         prefs.edit().putString("recent", a.toString()).apply()
     }
+    /** When the bell sheet was last opened: anything sent after it shows a dot on the bell. */
+    var seenAt: Long
+        get() = prefs.getLong("seenAt", 0L)
+        set(v) { prefs.edit().putLong("seenAt", v).apply() }
+    val unread: Boolean get() = recent.any { it.time > seenAt }
     companion object { const val RECENT_MAX = 20 }
 }
 

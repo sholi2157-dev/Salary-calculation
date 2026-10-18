@@ -180,8 +180,7 @@ fun KisHistory(
                             ui.selection = rows.filter { !it.payKnown && !WorkPay.isJob(it) }.map { it.id }.toSet()
                             if (ui.selection.isNotEmpty()) bulkOpen = true
                         })
-                    } else Text("משמרות שעוד לא עבדת: בתאריך עתידי או קבועות שעוד לא נרשמו. הן לא נכנסות לסכומים, להעתקה או לאקסל.",
-                        style = KisType.caption, color = c.muted)
+                    }
                 }
             }
             if (showPlans) {
@@ -218,10 +217,6 @@ fun KisHistory(
                     }
                     items(list, key = { it.id }) { e -> HistoryCard(e, categories, ui, onOpen) }
                 }
-            }
-            if (!showPlans && rows.isNotEmpty() && !ui.selecting) item(key = "hint") {
-                Text("נגיעה לפרטים · לחיצה ארוכה לבחירה, שיתוף והעתקה", style = KisType.caption, color = c.muted, textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
             }
         }
         AnimatedVisibility(ui.selecting, modifier = Modifier.align(Alignment.BottomCenter), enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
@@ -424,11 +419,10 @@ private fun FiltersSheet(current: HistoryFilter, categories: List<WorkCategory>,
 }
 
 @Composable
+@Suppress("UNUSED_PARAMETER")
 private fun Section(title: String, hint: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(title, style = KisType.label.copy(fontSize = 15.sp), color = Kis.colors.ink)
-        Text(hint, style = KisType.caption, color = Kis.colors.muted)
-    }
+    // Titles only: the screen says what each part is, not how to use it.
+    Text(title, style = KisType.label.copy(fontSize = 15.sp), color = Kis.colors.ink)
 }
 
 @Composable

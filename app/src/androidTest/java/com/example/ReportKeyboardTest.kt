@@ -122,11 +122,10 @@ class ReportKeyboardTest {
         val list = ui.onNodeWithTag("history_scroll_container")
         list.performTouchInput { repeat(6) { swipeUp() } }
         ui.waitForIdle()
-        // The list ends with its hint (the oldest rows sit above it), fully above the navigation.
-        ui.onNode(hasText("נגיעה לפרטים", substring = true) and hasAnyAncestor(hasTestTag("history_scroll_container")), useUnmergedTree = true).assertIsDisplayed()
+        // The last card of the list is fully above the navigation.
         val nav = ui.onNodeWithTag("bottom_navigation").fetchSemanticsNode().boundsInRoot
-        val hint = ui.onNodeWithText("נגיעה לפרטים", substring = true).fetchSemanticsNode().boundsInRoot
-        assertTrue("The end of the list scrolls above the navigation", hint.bottom <= nav.top)
+        val end = list.fetchSemanticsNode().children.maxOf { it.boundsInRoot.bottom }
+        assertTrue("The end of the list scrolls above the navigation", end <= nav.top)
         snapshot("v2-history-final")
         runBlocking { dao.deleteEntriesById(dao.getEntriesList().filter { it.notes.startsWith("V2 scroll fixture") || it.notes == "V2 one real save" }.map { it.id }) }
         assertEquals(original, runBlocking { dao.getEntriesList() })

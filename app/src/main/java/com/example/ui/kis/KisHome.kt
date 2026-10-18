@@ -65,6 +65,9 @@ fun KisHome(
     plans: List<com.example.domain.V2Plan.Occurrence> = emptyList(),
     planActions: PlanActions? = null,
     onAllPlans: () -> Unit = {},
+    unread: Boolean = false,
+    onBell: () -> Unit = {},
+    onProfile: () -> Unit = {},
 ) {
     val c = Kis.colors
     // A clock that moves on by itself, so "today" and "this week" roll over without new data.
@@ -79,7 +82,7 @@ fun KisHome(
         KisGlow(Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 16.dp)
             .padding(top = 12.dp, bottom = bottomInset).testTag("dashboard_scroll_container")) {
-            Hello()
+            Hello(unread, onBell, onProfile)
             Hero(week, today, done, hoursByCat, categories, onPending,
                 plannedThisWeek = remember(plans, now) { val from = com.example.domain.V2Plan.dateOf(KisHistoryLogic.weekStart(now)); val to = isoDayPlus(KisHistoryLogic.weekStart(now), 6)
                     plans.count { it.status == com.example.domain.V2Plan.Status.PLANNED && it.date in from..to } })
@@ -105,7 +108,7 @@ private fun greeting(): String = when (Calendar.getInstance().get(Calendar.HOUR_
 }
 
 @Composable
-private fun Hello() {
+private fun Hello(unread: Boolean, onBell: () -> Unit, onProfile: () -> Unit) {
     val c = Kis.colors
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         KisLogo()
@@ -115,6 +118,8 @@ private fun Hello() {
                 modifier = Modifier.testTag("home_greeting"))
             Text(stringResource(R.string.app_name), style = KisType.label.copy(fontSize = 16.sp), color = c.ink)
         }
+        // Top-left (RTL end): notifications and profile.
+        HeaderActions(unread, onBell, onProfile)
     }
 }
 
@@ -306,7 +311,6 @@ fun StartLiveSheet(categories: List<WorkCategory>, defaultCategory: String, curr
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
             CurrencyToggle(currency, { currency = it }, "quick_shift_currency")
         }
-        Text("הטיימר רץ גם כשהאפליקציה סגורה, ובסיום המשמרת נשמרת לבד.", style = KisType.caption, color = c.muted)
         KisButton("התחלה", { onStart(cat, rate.toDoubleOrNull() ?: category?.defaultRate ?: 40.0, currency) }, Modifier.fillMaxWidth(),
             enabled = cat.isNotBlank(), haptic = KisSettings.Haptic.SUCCESS, tag = "live_start_confirm")
     }
