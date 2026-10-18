@@ -58,3 +58,7 @@ and cloud sync stay off (`WEB_ACCOUNTS_ENABLED=false`) and are not loaded. The o
 - Vercel Preview `dpl_HJNexNKY2UXN8xfQtjEbUynPSmzf` READY, `build-info.json` reports exactly that commit.
   Production `salary-calculation-eta.vercel.app` unchanged (`562a7a5`).
 - Remaining: the owner's look on a phone and a computer; publishing (stage F) only with explicit approval.
+
+## Owner change: explanations behind ⓘ, bell and profile on Home
+- Source `1637e2e` on `claude/v2-web`; CI `web-v2.yml` run 39101248180 SUCCESS (72 unit tests, browser flows incl. bell/profile/ⓘ).
+- Vercel Preview `dpl_FoeCNd5Ud2DG6Sj2iaV4TpWmNVEr` READY, `build-info.json` reports exactly that commit. Production unchanged.
