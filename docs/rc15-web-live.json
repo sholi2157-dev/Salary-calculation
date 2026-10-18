@@ -1,11 +1,9 @@
 {
-  "sourceSha": "562a7a568558d6fba22bd6aac2fe173ed85ff971",
-  "deploymentId": "dpl_A7zWpmd7PTFsaorrZKEQzDZhvGWn",
+  "sourceSha": "3f29f5d39d5db7a2a3dad70608d04e7654e6f386",
+  "deploymentId": "dpl_68wLnANYRU9XXVqYfazV3ABsM4SE",
   "publicOrigin": "https://salary-calculation-eta.vercel.app",
-  "ciRun": 38117622906,
-  "artifactId": 11694396601,
-  "rollbackDeployment": "dpl_2P1wBDybjGLCZmi28E7h3rYnD651",
-  "buildId": "562a7a568558d6fba22bd6aac2fe173ed85ff971-bdf044743a70b60b",
-  "liveCiRun": 38595391853,
-  "liveArtifactId": 11908872883
+  "release": "2.0",
+  "ciRun": 39152023005,
+  "rollbackDeployment": "dpl_A7zWpmd7PTFsaorrZKEQzDZhvGWn",
+  "buildId": "3f29f5d39d5db7a2a3dad70608d04e7654e6f386-978879334a7958c1"
 }
