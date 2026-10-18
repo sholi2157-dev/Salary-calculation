@@ -23,7 +23,8 @@ class DistributionUiTest {
         ui.waitForIdle()
         // First open after the update: the 2.0 launch, then the name, then the short tour from Home.
         ui.waitUntil(5_000) { ui.onAllNodesWithTag("launch_line_2").fetchSemanticsNodes().isNotEmpty() }
-        // The test clock drives Compose: let the slogan finish rising before the device screenshot.
+        // The lines wait on real time, then rise on the test clock: let both pass before the device screenshot.
+        Thread.sleep(1_000)
         ui.mainClock.advanceTimeBy(2_000)
         ui.waitForIdle()
         snap("v2-launch")
