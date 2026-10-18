@@ -69,7 +69,9 @@ function toEntry(d, base) {
   return { ...proto, category: d.category, date, isTimeRange: clock, startTime: clock ? d.start : null, endTime: clock ? d.end : null, hours,
     hourlyRate: job || !payKnown ? 0 : rate, totalEarnings: total, notes: d.notes.trim(), currency: d.currency, kind: job ? 'job' : 'shift', payKnown, bonus: myBonus,
     isGroupShift: d.mode === 'GROUP', groupWorkersJson: d.mode === 'GROUP' && was && JSON.stringify(was.workers) === JSON.stringify(d.workers) ? base.groupWorkersJson : groupJson,
-    employerRate: d.mode === 'GROUP' && d.separateRates ? num(d.employerRate) : null, workerRate: d.mode === 'GROUP' && d.separateRates ? num(d.workerRate) : null,
+    // Untouched group rates keep their stored value exactly (an imported 33.3333 is not rounded by an unrelated edit).
+    employerRate: d.mode === 'GROUP' && d.separateRates ? (was && was.employerRate === d.employerRate ? base.employerRate : num(d.employerRate)) : null,
+    workerRate: d.mode === 'GROUP' && d.separateRates ? (was && was.workerRate === d.workerRate ? base.workerRate : num(d.workerRate)) : null,
     isPaid: d.isPaid, autoConfirmed: base ? false : proto.autoConfirmed };
 }
 
@@ -82,16 +84,30 @@ function open(app, { entry = null, restore = null } = {}) {
   const host = document.createElement('div');
   host.className = 'editor' + (base ? ' framed' : '');
   host.setAttribute('data-testid', base ? 'edit-page' : 'add-page');
+  host.setAttribute('role', 'dialog'); host.setAttribute('aria-modal', 'true'); host.setAttribute('aria-label', base ? 'עריכת משמרת' : 'משמרת חדשה');
+  const opener = document.activeElement, behind = [document.getElementById('page'), document.querySelector('.nav-wrap')];
   host.innerHTML = '<div class="editor-in"><div class="kis-glow" style="position:absolute"></div><div data-top class="editor-top"></div><div data-body class="editor-body"></div><div data-bottom></div></div>';
   document.body.append(host);
+  behind.forEach(b => b && (b.inert = true));
+  const onKey = e => {
+    if (!pad || e.target.closest?.('input, textarea')) return;
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); key(e.key); }
+    else if (e.key === 'Backspace') { e.preventDefault(); key('del'); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (commitBuf()) pad = false; draw(); }
+  };
+  document.addEventListener('keydown', onKey);
   app.editorOpen = true;
   const persist = () => { if (!base) try { localStorage.setItem(DRAFT, JSON.stringify(d)); } catch {} };
   const changed = () => JSON.stringify(d) !== original;
   function close(force = false) {
     if (!force && changed()) return U().confirmSheet(base ? 'לצאת בלי לשמור את השינויים?' : 'לצאת בלי לשמור את המשמרת?', 'מה שהקלדת לא יישמר.', 'לצאת', () => close(true));
-    host.remove(); app.editorOpen = false; if (!base) localStorage.removeItem(DRAFT); app.refresh();
+    host.remove(); document.removeEventListener('keydown', onKey); behind.forEach(b => b && (b.inert = false));
+    if (opener?.isConnected) opener.focus({ preventScroll: true });
+    app.editorOpen = false; if (!base) localStorage.removeItem(DRAFT); app.refresh();
   }
   app.closeEditor = () => close();
+  // Back / Escape: the keypad closes first, then the editor (asking when something was typed).
+  app.editorBack = () => { if (pad) { commitBuf(); pad = false; draw(); } else close(); };
   const set = patch => { d = { ...d, ...patch }; persist(); draw(); };
   const shown = t => pad && t === target && buf ? fmtBuf(buf) : t === 'START' ? (d.start || '') : d.end;
   const fmtBuf = b => b.length <= 2 ? b : b.slice(0, b.length - 2) + ':' + b.slice(-2);
@@ -111,7 +127,22 @@ function open(app, { entry = null, restore = null } = {}) {
     draw();
   }
 
+  let lastRepeatBlocked = false, lastRepeatOn = false;
+  function metaHtml(c) {
+    const { moneyHtml } = U();
+    return `<span class="grow">${c.minutes > 0 && d.mode !== 'JOB' && !c.errors.some(e => e.startsWith('שעת') || e.startsWith('ההפסקה')) ? U().hm(c.minutes) + ' שעות' : ''}</span>
+      ${c.total != null ? `<b class="amount" data-testid="editor-total">${moneyHtml(c.total, d.currency)}</b>` : d.rateUnknown && d.mode !== 'JOB' ? '<b class="label">תעריף חסר</b>' : d.amountUnknown && d.mode === 'JOB' ? '<b class="label">סכום חסר</b>' : ''}`;
+  }
+  function bottomHtml(c) {
+    const { esc } = U();
+    return pad ? `<div class="keypad" data-testid="keypad"><div class="display"><span class="caption">${target === 'START' ? 'שעת התחלה' : 'שעת סיום'}</span><b>${esc(shown(target) || '--:--')}</b></div>
+        <div class="keys">${['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'].map(k => `<button data-k="${k}" data-testid="key-${k}" aria-label="${k === 'del' ? 'מחיקה' : k === 'ok' ? 'אישור' : k}">${k === 'del' ? '⌫' : k === 'ok' ? '✓' : k}</button>`).join('')}</div></div>`
+      : `<div class="save-bar">${c.canSave ? '' : `<p data-testid="save-hint">${esc(c.errors[0])}</p>`}<button class="btn primary" data-a="save" data-testid="save-shift" ${c.canSave && (!base || changed()) && !lastRepeatBlocked ? '' : 'disabled'}>${lastRepeatOn ? 'יצירת הסדרה' : base ? (changed() ? 'שמירת שינויים' : 'אין שינויים') : 'שמירה'}</button></div>`;
+  }
   function draw() {
+    const active = document.activeElement, focusKey = active && host.contains(active)
+      ? ['data-f', 'data-t', 'data-h', 'data-testid', 'data-mode', 'data-cat', 'data-k'].map(a => active.getAttribute(a) != null ? `[${a}="${CSS.escape(active.getAttribute(a))}"]` : null).find(Boolean) : null;
+    const caret = active && 'selectionStart' in active ? (() => { try { return active.selectionStart; } catch { return null; } })() : null;
     const c = evaluate(d), place = d.category ? U().placeOf(d.category, store) : U().PLACES[0];
     host.style.setProperty('--acc', U().accent(place)); host.style.setProperty('--acc-ink', U().accentInk(place));
     const { esc, moneyHtml } = U(), cats = store.data.categories;
@@ -121,7 +152,7 @@ function open(app, { entry = null, restore = null } = {}) {
       <div class="top-row"><button class="pill" data-a="close" data-testid="editor-close">${base ? 'סגירה' : 'ביטול'}</button><h1>${base ? 'עריכת משמרת' : 'משמרת חדשה'}</h1>
         ${base ? '<button class="pill" data-a="delete" data-testid="editor-delete">מחיקה</button>' : '<span style="width:64px"></span>'}</div>
       ${base ? `<div class="caption" data-testid="was-banner" style="background:color-mix(in srgb,var(--ink) 8%,transparent);border-radius:10px;padding:6px 10px">${changed() ? '<span class="tag warn">שונה</span> ' : ''}לפני: ${esc(U().dayLabel(base.date))} · ${esc(U().timeLabel(base))} · ${root.KisPay.pay(base) != null ? esc(U().money(base.totalEarnings, base.currency)) : base.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</div>` : ''}
-      <div class="modes" role="tablist">${MODES.map(([m, l]) => `<button role="tab" aria-pressed="${d.mode === m}" data-mode="${m}" data-testid="mode-${m.toLowerCase()}">${l}</button>`).join('')}</div>
+      <div class="modes" role="tablist" aria-label="סוג הרישום">${MODES.map(([m, l]) => `<button role="tab" aria-selected="${d.mode === m}" aria-pressed="${d.mode === m}" data-mode="${m}" data-testid="mode-${m.toLowerCase()}">${l}</button>`).join('')}</div>
       <div class="places">${cats.map(x => `<button aria-pressed="${x.name === d.category}" data-cat="${esc(x.name)}" data-testid="place-${esc(x.name)}">${esc(x.name)}</button>`).join('')}<button data-a="add-place" data-testid="add-place">+ מקום</button></div>
       ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">סכום (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount"></label>
           <label class="field" style="width:120px">שעות (לא חובה)<input class="input" inputmode="decimal" data-f="hours" value="${esc(d.hours)}"></label></div>
@@ -132,8 +163,7 @@ function open(app, { entry = null, restore = null } = {}) {
           ${d.mode === 'GROUP' ? '<button class="link" data-a="group-hours">הזנת שעות במקום שעון</button>' : ''}`
         : `<label class="field">שעות<input class="input" inputmode="decimal" data-f="hours" value="${esc(d.hours)}" data-testid="hours-input" style="font:28px var(--display)"></label>
           <div class="chips">${[4, 6, 8, 10, 12].map(h => `<button class="chip" data-q="${h}">${h} ש׳</button>`).join('')}${d.mode === 'GROUP' ? '<button class="chip" data-a="group-clock">לפי שעון</button>' : ''}</div>`}
-      <div class="meta-line" data-testid="editor-meta"><span class="grow">${c.minutes > 0 && d.mode !== 'JOB' && !c.errors.some(e => e.startsWith('שעת') || e.startsWith('ההפסקה')) ? U().hm(c.minutes) + ' שעות' : ''}</span>
-        ${c.total != null ? `<b class="amount" data-testid="editor-total">${moneyHtml(c.total, d.currency)}</b>` : d.rateUnknown && d.mode !== 'JOB' ? '<b class="label">תעריף חסר</b>' : d.amountUnknown && d.mode === 'JOB' ? '<b class="label">סכום חסר</b>' : ''}</div>`;
+      <div class="meta-line" data-testid="editor-meta">${metaHtml(c)}</div>`;
 
     const body = host.querySelector('[data-body]');
     const sug = d.start == null && d.mode === 'CLOCK' ? suggestStart(d.category, d.day, store.data.entries).chips : [];
@@ -168,10 +198,11 @@ function open(app, { entry = null, restore = null } = {}) {
       ${d.mode === 'JOB' ? `<label class="field">מה עשית<textarea data-f="notes" placeholder="למשל: הובלת מקרר" data-testid="notes-input">${esc(d.notes)}</textarea></label>` : ''}`;
 
     const bottom = host.querySelector('[data-bottom]');
-    const repeatBlocked = repeatOn && !(preview && created > 0);
-    bottom.innerHTML = pad ? `<div class="keypad" data-testid="keypad"><div class="display"><span class="caption">${target === 'START' ? 'שעת התחלה' : 'שעת סיום'}</span><b>${esc(shown(target) || '--:--')}</b></div>
-        <div class="keys">${['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'].map(k => `<button data-k="${k}" data-testid="key-${k}">${k === 'del' ? '⌫' : k === 'ok' ? '✓' : k}</button>`).join('')}</div></div>`
-      : `<div class="save-bar">${c.canSave ? '' : `<p data-testid="save-hint">${esc(c.errors[0])}</p>`}<button class="btn primary" data-a="save" data-testid="save-shift" ${c.canSave && (!base || changed()) && !repeatBlocked ? '' : 'disabled'}>${repeatOn ? 'יצירת הסדרה' : base ? (changed() ? 'שמירת שינויים' : 'אין שינויים') : 'שמירה'}</button></div>`;
+    lastRepeatBlocked = repeatOn && !(preview && created > 0); lastRepeatOn = repeatOn;
+    bottom.innerHTML = bottomHtml(c);
+    // Keep the keyboard where it was: the same control is focused again after a redraw.
+    if (focusKey) { const el = host.querySelector(focusKey); if (el) { el.focus({ preventScroll: true }); if (caret != null && el.setSelectionRange) try { el.setSelectionRange(caret, caret); } catch {} } }
+    host.querySelector('.days [aria-pressed=true]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     bind();
   }
 
@@ -212,7 +243,8 @@ function open(app, { entry = null, restore = null } = {}) {
       };
       if (f === 'notes') i.oninput = () => { apply(); refreshMeta(); };
       else if (f === 'date' || f === 'until') i.onchange = apply;
-      else { i.oninput = () => { d = { ...d, [f]: i.value }; persist(); refreshMeta(); }; i.onchange = () => { apply(); draw(); }; }
+      // Numbers update the totals and the save bar in place: a tap on "שמירה" right after typing is never lost.
+      else { i.oninput = () => { d = { ...d, [f]: i.value }; persist(); refreshMeta(); }; i.onchange = () => { apply(); refreshMeta(); }; }
     });
     all('[data-w]').forEach(i => { const [idx, f] = i.dataset.w.split(':'); const ev = f === 'isPaid' ? 'change' : 'input';
       i.addEventListener(ev, () => { const ws = d.workers.map((w, k) => k === +idx ? { ...w, [f]: f === 'isPaid' ? i.checked : i.value } : w); d = { ...d, workers: ws }; persist(); if (f !== 'name') refreshMeta(); }); });
@@ -223,10 +255,20 @@ function open(app, { entry = null, restore = null } = {}) {
     all('[data-bt]').forEach(b => b.onclick = () => set({ bonusTarget: b.dataset.bt }));
     rulerBind(host, d, t => { target = t; }, (h, v) => { d = h === 'START' ? { ...d, start: v } : { ...d, end: v }; persist(); draw(); });
   }
-  function refreshMeta() { const c = evaluate(d), btn = host.querySelector('[data-a=save]'); const meta = host.querySelector('[data-testid=editor-meta] .grow');
-    const tot = host.querySelector('[data-testid=editor-total]'); if (meta && d.mode !== 'JOB') meta.textContent = c.minutes > 0 ? U().hm(c.minutes) + ' שעות' : '';
-    if (tot && c.total != null) tot.innerHTML = U().moneyHtml(c.total, d.currency); else if (!tot && c.total != null || tot && c.total == null) draw();
-    if (btn) { btn.disabled = !(c.canSave && (!base || changed())); if (base) btn.textContent = changed() ? 'שמירת שינויים' : 'אין שינויים'; } }
+  function refreshMeta() {
+    const c = evaluate(d);
+    host.querySelector('[data-testid=editor-meta]').innerHTML = metaHtml(c);
+    if (pad) return;
+    // The same save button is updated in place, so a tap that lands while a field commits still saves.
+    const btn = host.querySelector('[data-a=save]'), hint = host.querySelector('[data-testid=save-hint]');
+    if (btn) {
+      btn.disabled = !(c.canSave && (!base || changed()) && !lastRepeatBlocked);
+      btn.textContent = lastRepeatOn ? 'יצירת הסדרה' : base ? (changed() ? 'שמירת שינויים' : 'אין שינויים') : 'שמירה';
+      if (c.canSave) hint?.remove();
+      else if (hint) hint.textContent = c.errors[0];
+      else btn.insertAdjacentHTML('beforebegin', `<p data-testid="save-hint">${U().esc(c.errors[0])}</p>`);
+    }
+  }
 
   function save() {
     const c = evaluate(d); if (!c.canSave) { U().haptic('warn'); return; }
@@ -240,7 +282,7 @@ function open(app, { entry = null, restore = null } = {}) {
     }
     const row = toEntry(d, base);
     try {
-      if (base) { store.replaceEntry(base.id, row); close(true); U().haptic('success'); U().toast('השינויים נשמרו ✓', 'ביטול', () => store.replaceEntry(base.id, base)); }
+      if (base) { store.replaceEntry(base.id, row, base); close(true); U().haptic('success'); U().toast('השינויים נשמרו ✓', 'ביטול', () => store.replaceEntry(base.id, base)); }
       else {
         const [id] = store.addEntries([row]); remember(d); close(true); U().haptic('success');
         U().toast(row.payKnown ? 'המשמרת נשמרה ✓' : 'נשמרה · התעריף יחכה להשלמה', 'ביטול', () => { const gone = store.data.entries.filter(e => e.id === id); store.update(x => { x.entries = x.entries.filter(e => e.id !== id); }); return gone; });
@@ -266,6 +308,7 @@ function open(app, { entry = null, restore = null } = {}) {
       ${num(dr.bonus) > 0 ? `<span class="caption">הבונוס של</span><div class="seg">${[['ME', 'שלי'], ['OTHERS', 'העובדים'], ['ALL', 'כולם']].map(([v, l]) => `<button aria-pressed="${dr.bonusTarget === v}" data-bt="${v}">${l}</button>`).join('')}</div>` : ''}</div>`;
   }
   draw();
+  host.querySelector('[data-testid=editor-close]')?.focus({ preventScroll: true });
   return { close };
 }
 
@@ -275,7 +318,7 @@ function ruler(d, target) {
   return `<div class="ruler" data-ruler><div class="track"></div>${pieces.filter(([x, y]) => y > x).map(([x, y]) => `<div class="span" style="left:${(1 - y / 1440) * 100}%;width:${(y - x) / 1440 * 100}%"></div>`).join('')}
     ${handle('START', d.start, 0, 'התחלה', target)}${handle('END', d.end, 46, 'סיום', target)}${ticks()}</div>`;
 }
-const handle = (h, v, top, label, target) => `<div class="handle${target === h ? ' on' : ''}" data-h="${h}" data-testid="ruler-${h.toLowerCase()}" role="slider" aria-label="${label}" aria-valuetext="${v}" tabindex="0" style="top:${top}px;left:${(1 - R().toMinutes(v) / 1440) * 100}%">${label}</div>`;
+const handle = (h, v, top, label, target) => `<div class="handle${target === h ? ' on' : ''}" data-h="${h}" data-testid="ruler-${h.toLowerCase()}" role="slider" aria-label="${label}" aria-valuemin="0" aria-valuemax="1439" aria-valuenow="${R().toMinutes(v)}" aria-valuetext="${v}" tabindex="0" style="top:${top}px;left:${(1 - R().toMinutes(v) / 1440) * 100}%">${label}</div>`;
 const ticks = () => `<div class="ticks">${[0, 6, 12, 18, 24].map(h => `<span style="left:${(1 - h / 24) * 100}%">${String(h).padStart(2, '0')}</span>`).join('')}</div>`;
 /** Handles move only after a deliberate 8px drag, in 15-minute steps (00 on the right, as in RTL). Arrow keys move by 15. */
 function rulerBind(host, d, select, change) {

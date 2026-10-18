@@ -145,6 +145,39 @@ const seed = {
     await ctx.close();
   }
 
+  // 7. Review fixes: selection bar is on top and the navigation returns; an early numeric id opens; no lost taps or focus.
+  {
+    const old = { ...seed, entries: [...seed.entries, legacyRow(1700000000000, 'הובלות', day(5), 2, 60, '$', { payKnown: false, totalEarnings: 0, hourlyRate: 0 }),
+      legacyRow('p', 'מסעדה', day(6), 4, 0, '₪', { payKnown: false, totalEarnings: 0 })] };
+    const { ctx, page } = await open({ width: 360, height: 740 }, 'light', old);
+    await page.click(tid('tab-history'));
+    await page.click(tid('shift-b'), { button: 'right' });
+    const onTop = await page.evaluate(() => { const b = document.querySelector('[data-s=paid]').getBoundingClientRect();
+      return document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)?.closest('[data-testid=selection-bar]') != null; });
+    assert.ok(onTop, 'selection actions are not covered by the navigation');
+    await page.click('[data-s=paid]');
+    assert.ok(await page.isVisible('.nav-wrap'), 'navigation is back after the selection');
+    await page.click(tid('shift-1700000000000')); assert.ok(await page.isVisible(tid('detail-paid')), 'an early numeric id opens');
+    await page.click(tid('detail-paid'));
+    assert.equal((await stored(page)).entries.find(e => String(e.id) === '1700000000000').isPaid, true);
+    // Rate completion never adds ₪ and $ together.
+    await page.click(tid('shift-p'), { button: 'right' }); await page.click(tid('shift-1700000000000'));
+    await page.click(tid('selection-rate')); await page.fill(tid('bulk-rate-input'), '10');
+    const preview = await page.textContent('[data-testid=rate-sheet] [data-f=p]');
+    assert.match(preview, /₪40/); assert.match(preview, /\$20/); await page.keyboard.press('Escape');
+    await page.click('[data-s=cancel]'); assert.ok(await page.isVisible('.nav-wrap'), 'navigation returns when the selection is cancelled');
+    // Typing a number keeps the field; a tap on save right after typing is not lost.
+    await page.click(tid('add-shift')); await page.click(tid('mode-hours'));
+    await page.fill(tid('hours-input'), ''); await page.type(tid('hours-input'), '85');
+    assert.equal(await page.inputValue(tid('hours-input')), '85');
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.f), 'hours');
+    await page.fill(tid('hours-input'), '6'); await page.fill(tid('rate-input'), '45');
+    const before = (await stored(page)).entries.length;
+    await page.click(tid('save-shift'));
+    assert.equal((await stored(page)).entries.length, before + 1, 'first tap saves');
+    await ctx.close();
+  }
+
   // 6. Layout: every width, both themes, no horizontal scrolling.
   for (const [w, h] of [[360, 760], [390, 844], [768, 1024], [1440, 900]]) for (const scheme of ['light', 'dark']) {
     const { ctx, page } = await open({ width: w, height: h }, scheme);

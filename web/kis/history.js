@@ -77,7 +77,7 @@ function render(el, app, opts = {}) {
     ${state.searching ? `<div class="row" style="align-items:center;margin-bottom:8px"><input class="input grow" type="search" placeholder="חיפוש: מקום, הערה, עובד, סכום" value="${esc(state.query)}" data-f="q" aria-label="חיפוש" data-testid="history-search-input">
       <button class="icon-btn" aria-label="ניקוי" data-a="clear" data-testid="history-search-clear">${ICON.close}</button><button class="chip" data-a="close-search" data-testid="history-search-close">סגירה</button></div>`
       : state.query ? `<div class="row" style="margin-bottom:8px"><button class="chip on" data-a="search" data-testid="history-query-chip">חיפוש: ${esc(state.query)}</button><button class="icon-btn" aria-label="ניקוי החיפוש" data-a="clear">${ICON.close}</button></div>` : ''}
-    <div class="row" style="align-items:center"><button class="caption grow" style="all:unset;flex:1;cursor:pointer;color:var(--muted);font-size:13px;padding:6px 0" data-a="filters" data-testid="history-scope">מוצג: ${esc(describe(f))}</button>
+    <div class="row" style="align-items:center"><button class="plain caption grow" style="flex:1;color:var(--muted);font-size:13px;min-height:44px" data-a="filters" data-testid="history-scope">מוצג: ${esc(describe(f))}</button>
       ${n ? '<button class="chip" data-a="reset" data-testid="history-reset">הצגת הכול</button>' : ''}</div>
     ${f.period === 'MONTH' ? `<div class="row" style="align-items:center"><b class="grow" style="font:22px/28px var(--display)" data-testid="history-month">${esc(U().monthName(f.month))}</b>
       <button class="icon-btn" aria-label="חודש קודם" data-a="prev">${ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-a="next">${ICON.next}</button></div>
@@ -85,13 +85,15 @@ function render(el, app, opts = {}) {
     <div class="card" style="margin-top:10px" data-testid="history-total"><div class="caption">${rows.length} משמרות · ${U().hours(rows.reduce((s, e) => s + e.hours, 0))} שעות</div>
       <div style="display:flex;gap:14px">${totals.length ? totals.map(([c, v]) => `<b class="amount">${moneyHtml(v, c)}</b>`).join('') : '<b class="amount">—</b>'}</div>
       ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}</div>`}
-  <div class="list" style="margin-top:8px" data-testid="history-list">${list}</div>
+  <div class="list" style="margin-top:8px;${sel.length ? 'padding-bottom:150px' : ''}" data-testid="history-list">${list}</div>
   ${!state.planned && rows.length && !sel.length ? '<p class="caption" style="text-align:center;margin-top:12px">נגיעה לפרטים · לחיצה ארוכה לבחירה, שיתוף והעתקה</p>' : ''}
   ${sel.length ? selectionBar(sel, rows) : ''}`;
 
-  const q = s => el.querySelector(s), redraw = () => render(el, app);
+  const q = s => el.querySelector(s), redraw = () => app.refresh();
   el.querySelectorAll('[data-a=search]').forEach(b => b.onclick = () => { state.searching = true; redraw(); q('[data-f=q]')?.focus(); });
-  q('[data-f=q]')?.addEventListener('input', e => { state.query = e.target.value; const pos = e.target.selectionStart; redraw(); const i = q('[data-f=q]'); i.focus(); i.setSelectionRange(pos, pos); });
+  // Hebrew keyboards compose words: never rebuild the field in the middle of a composition.
+  q('[data-f=q]')?.addEventListener('compositionend', e => e.target.dispatchEvent(new Event('input')));
+  q('[data-f=q]')?.addEventListener('input', e => { if (e.isComposing) return; state.query = e.target.value; const pos = e.target.selectionStart; redraw(); const i = q('[data-f=q]'); i.focus(); i.setSelectionRange(pos, pos); });
   el.querySelectorAll('[data-a=clear]').forEach(b => b.onclick = () => { state.query = ''; redraw(); q('[data-f=q]')?.focus(); });
   q('[data-a=close-search]')?.addEventListener('click', () => { state.searching = false; redraw(); });
   el.querySelectorAll('[data-a=filters]').forEach(b => b.onclick = () => filtersSheet(app, done, redraw));
@@ -148,14 +150,19 @@ function bulkRate(app, after) {
     const input = el.querySelector('[data-f=r]'), ok = el.querySelector('[data-a=ok]'), p = el.querySelector('[data-f=p]');
     const records = targets.map(e => ({ id: e.id, isJob: false, start: e.isTimeRange ? e.startTime : null, end: e.isTimeRange ? e.endTime : null,
       breakMinutes: e.isTimeRange && e.startTime && e.endTime ? Math.max(0, Math.round(root.KisRules.span(e.startTime, e.endTime).minutes - e.hours * 60)) : 0, hours: e.hours, rate: null, bonus: e.bonus || 0 }));
-    input.oninput = () => { const r = Number(input.value); ok.disabled = !(input.value.trim() && r >= 0);
-      if (!ok.disabled) { const res = root.KisRules.bulkRate(records, r); const sum = res.updated.reduce((s, x) => s + (Array.isArray(x) ? x[1] : x.amount ?? x.total ?? 0), 0); p.textContent = 'יתווסף: ' + U().money(Math.round(sum * 100) / 100, targets[0].currency); } };
+    const rateOf = () => Number(input.value.trim().replace(',', '.'));
+    input.oninput = () => { const r = rateOf(); ok.disabled = !(input.value.trim() && r >= 0);
+      if (!ok.disabled) { // ₪ and $ are never added together
+        const res = root.KisRules.bulkRate(records, r), cur = new Map(targets.map(e => [e.id, e.currency])), by = {};
+        for (const x of res.updated) by[cur.get(x.id)] = (by[cur.get(x.id)] || 0) + x.total;
+        p.textContent = 'יתווסף: ' + Object.entries(by).map(([c, v]) => U().money(Math.round(v * 100) / 100, c)).join(' · '); } };
     ok.onclick = () => {
-      const rate = Number(input.value), byId = new Map(targets.map(e => [e.id, e]));
-      store.update(d => d.entries.forEach(e => { const t = byId.get(e.id); if (!t) return;
+      const rate = rateOf(), byId = new Map(targets.map(e => [e.id, e])), before = [];
+      store.update(d => d.entries.forEach(e => { const t = byId.get(e.id); if (!t || e.payKnown || e.kind === 'job') return; before.push({ ...e });
         e.hourlyRate = rate; e.totalEarnings = root.KisPay.amount(e.hours, rate, e.bonus || 0); e.payKnown = true; }));
       state.selection.clear(); close(); U().haptic('success');
-      U().toast(targets.length === 1 ? 'תעריף הושלם למשמרת אחת ✓' : `תעריף הושלם ל-${targets.length} משמרות ✓`); after?.();
+      U().toast(before.length === 1 ? 'תעריף הושלם למשמרת אחת ✓' : `תעריף הושלם ל-${before.length} משמרות ✓`, 'ביטול', () =>
+        store.update(d => d.entries.forEach((e, i) => { const old = before.find(b => b.id === e.id); if (old) d.entries[i] = old; }))); after?.();
     };
   });
 }

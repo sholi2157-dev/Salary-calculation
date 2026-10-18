@@ -27,7 +27,8 @@ function render(el, app) {
   <div class="row" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי · 2.0 · ${esc((root.WorkBuild?.commit || 'local').slice(0, 7))}</span></div>`;
 
   const q = s => el.querySelector(s);
-  q('[data-f=name]').addEventListener('change', e => store.setLocal('name', e.target.value.trim().slice(0, 40)));
+  // Saved as typed, without redrawing the page (no lost taps or focus).
+  q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
   q('[data-a=places]').onclick = () => placesSheet(app);
   el.querySelectorAll('[data-cur]').forEach(b => b.onclick = () => store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, mainCurrency: b.dataset.cur }); }));
   q('[data-a=series]').onclick = () => root.KisPlans.seriesSheet(app);
@@ -80,17 +81,23 @@ function importSheet(app) {
     el.querySelector('[data-a=check]').onclick = check;
     save.onclick = () => {
       if (!pending) return;
-      const { data, fresh, series } = pending;
+      const { data } = pending;
       try {
+        // Decided again against what is stored right now (another tab may have imported meanwhile), in one write.
+        store.load();
+        const keys = new Set(store.data.entries.map(e => e.seriesKey).filter(Boolean));
+        const fresh = root.WorkTransfer.missing(store.data.entries, data.entries).filter(e => !e.seriesKey || !keys.has(e.seriesKey));
+        const add = fresh.map(e => ({ ...e, id: store.uid(), kind: e.kind ?? 'shift', payKnown: e.payKnown ?? true, bonus: e.bonus ?? 0, seriesKey: e.seriesKey ?? null,
+          autoConfirmed: e.autoConfirmed ?? false, createdAt: e.createdAt ?? Date.now() }));
         store.update(d => {
           for (const c of data.categories) if (!d.categories.some(x => x.name === c.name)) d.categories.push(c);
-          for (const e of fresh) if (!d.categories.some(x => x.name === e.category)) d.categories.push({ name: e.category, defaultRate: e.hourlyRate });
+          for (const e of add) if (!d.categories.some(x => x.name === e.category)) d.categories.push({ name: e.category, defaultRate: e.hourlyRate });
           for (const w of data.workers || []) if (!d.workers.some(x => x.name === w.name)) d.workers.push(w);
+          d.entries.push(...add);
         });
-        if (fresh.length) store.addEntries(fresh.map(e => ({ ...e, createdAt: e.createdAt ?? Date.now() })));
-        if (series.length) { const ids = new Set(series.map(s => s.id));
-          store.updatePlans(p => { p.series.push(...series); p.exceptions.push(...(data.exceptions || []).filter(x => ids.has(x.seriesId))); }); }
-        close(); U().toast(`נוספו ${fresh.length} משמרות ✓`);
+        const plans = root.WorkTransfer.missingPlans(store.plans.series, store.plans.exceptions, data.series || [], data.exceptions || []);
+        if (plans.series.length) store.updatePlans(p => { p.series.push(...plans.series); p.exceptions.push(...plans.exceptions); });
+        close(); U().toast(`נוספו ${add.length} משמרות ✓`);
       } catch (e) { sum.textContent = 'השמירה נכשלה. הנתונים הקיימים נשמרו. ' + e.message; }
     };
   });
@@ -125,17 +132,18 @@ function placeSheet(app, oldName, done) {
         <div class="field"><span>מטבע</span><div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${cur === c}" data-c="${c}">${c}</button>`).join('')}</div></div></div>
       <span class="caption">צבע</span><div class="chips">${U().PLACES.map((p, i) => `<button class="chip" aria-pressed="${i === color}" aria-label="${p.name}" data-col="${i}" style="width:44px;padding:0;background:${p.from}"></button>`).join('')}</div>
       <p class="caption" data-f="err" role="status"></p>
-      <div class="row">${oldName ? '<button class="btn ghost grow" data-a="del">מחיקה</button>' : ''}<button class="btn primary grow" data-a="ok" data-testid="place-save">שמירה</button></div>`;
+      <div class="row">${oldName && oldName !== root.WorkCategories.defaultName(store.data.categories, store.data.webPreferences) ? '<button class="btn ghost grow" data-a="del">מחיקה</button>' : ''}<button class="btn primary grow" data-a="ok" data-testid="place-save">שמירה</button></div>`;
     let money = cur;
     el.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { money = b.dataset.c; el.querySelectorAll('[data-c]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
     el.querySelectorAll('[data-col]').forEach(b => b.onclick = () => { color = +b.dataset.col; el.querySelectorAll('[data-col]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
     el.querySelector('[data-a=ok]').onclick = () => {
-      const name = el.querySelector('[data-f=n]').value.trim(), rate = Number(el.querySelector('[data-f=r]').value || 0);
+      const name = el.querySelector('[data-f=n]').value.trim(), rate = Number((el.querySelector('[data-f=r]').value || '0').trim().replace(',', '.'));
       try {
         const next = root.WorkCategories.rename(store.data, oldName || '', name, rate, money);
         store.update(d => { Object.assign(d, next); });
         if (oldName && oldName !== name) store.updatePlans(p => p.series.forEach(s => { if (s.category === oldName) s.category = name; }));
-        if (oldName && oldName !== name) store.setLocal('color:' + oldName, undefined);
+        if (oldName && oldName !== name) { store.setLocal('color:' + oldName, undefined);
+          const t = store.timer(); if (t && t.category === oldName) store.restoreTimer({ ...t, category: name }); }
         store.setLocal('color:' + name, color);
         close(); done?.(name);
       } catch (e) { el.querySelector('[data-f=err]').textContent = e.message; }

@@ -40,7 +40,7 @@ function card(o, store) {
   const overnight = root.KisRules.toMinutes(o.end) <= root.KisRules.toMinutes(o.start);
   const amount = o.rate != null ? `<span class="pay muted">${moneyHtml(root.KisPay.amount(mins / 60, o.rate), o.currency)}</span>` : '<span class="pay muted">?</span>';
   return `<div class="shift" style="display:grid;gap:10px" data-plan="${esc(o.key)}" data-testid="planned-${esc(o.key)}">
-    <button style="all:unset;display:flex;align-items:center;gap:12px;cursor:pointer" data-plan-open aria-expanded="false">${avatar(o.category, store, true)}
+    <button class="plain" style="display:flex;align-items:center;gap:12px;width:100%" data-plan-open aria-expanded="false">${avatar(o.category, store, true)}
       <span class="meta"><span class="top"><b class="label">${esc(dayLabel(root.KisPlan.startMillis(o.date, o.start)))}</b><span class="tag${waiting ? ' warn' : ''}">${waiting ? 'ממתין לאישור' : 'מתוכנן'}</span></span>
       <span class="sub">⁦${esc(o.start)}–${esc(o.end)}⁩${overnight ? ' · למחרת' : ''} · ${esc(o.category)}</span></span>${amount}</button>
     <div data-plan-actions hidden style="display:grid;gap:6px"><div class="row"><button class="btn small primary grow" data-pa="worked">עבדתי</button><button class="btn small ghost grow" data-pa="skip">לא עבדתי</button></div>
@@ -142,7 +142,7 @@ function rateSheet(app, id, after) {
     el.innerHTML = `<h2>תעריף חדש לסדרה</h2><p class="caption">יחול מהיום והלאה. מה שכבר נרשם לא משתנה.</p>
       <label class="field">לשעה (${U().esc(s.currency)})<input class="input" inputmode="decimal" value="${s.hourlyRate ?? ''}" data-f="r"></label><button class="btn primary" data-a="ok">החלה</button>`;
     el.querySelector('[data-a=ok]').onclick = () => {
-      const rate = Number(el.querySelector('[data-f=r]').value); if (!(rate >= 0) || el.querySelector('[data-f=r]').value.trim() === '') return;
+      const raw = el.querySelector('[data-f=r]').value.trim(), rate = Number(raw.replace(',', '.')); if (!(rate >= 0) || raw === '') return;
       const today = root.KisPlan.dateOf(Date.now());
       const waiting = root.KisPlan.occurrences([s], store.plans.exceptions, new Set(store.data.entries.map(e => e.seriesKey).filter(Boolean)), s.fromDate, today, Date.now()).filter(isAwaiting);
       const { series: updated, changes } = root.KisPlan.applyRateFromToday(s, store.plans.exceptions, rate, today, waiting);

@@ -39,7 +39,7 @@ function detail(e) {
         <span class="caption">${e.kind === 'job' ? 'קבלנות' : `${U().hours(e.hours)} שעות${e.payKnown ? ' · ' + esc(U().money(e.hourlyRate, e.currency)) + ' לשעה' : ''}`}${e.bonus > 0 ? ' · בונוס ' + esc(U().money(e.bonus, e.currency)) : ''}</span></div>
       ${e.notes ? `<p style="margin:0">${esc(e.notes)}</p>` : ''}
       ${!pay && e.kind !== 'job' ? '<button class="btn ghost small" data-a="rate">השלמת תעריף</button>' : ''}
-      <div class="row"><button class="btn ghost small grow" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small grow" data-a="share">שיתוף</button><button class="btn ghost small grow" data-a="copy">העתקה</button><button class="btn ghost small grow" data-a="del" style="color:var(--danger)">מחיקה</button></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn ghost small" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small" data-a="share">שיתוף</button><button class="btn ghost small" data-a="copy">העתקה</button><button class="btn ghost small" data-a="del" style="color:var(--danger)">מחיקה</button></div>
       <button class="btn small ${e.isPaid ? 'ghost' : 'primary'}" data-a="paid" data-testid="detail-paid">${e.isPaid ? 'שולם ✓ · נגיעה לבטל' : 'סימון כשולם'}</button>
       ${group.length ? `<div class="divider"></div><b class="label">הקבוצה</b>${sum ? `<p class="caption" style="margin:0">המעסיק משלם ${esc(U().money(sum.employerTotal, e.currency))} · נשאר לי ${esc(U().money(sum.myNet, e.currency))}</p>` : '<p class="caption" style="margin:0">חסר תעריף לחלק מהקבוצה</p>'}
         <button class="btn ghost small" data-a="employer">דו״ח לקבלן (כל הקבוצה)</button>
@@ -81,12 +81,14 @@ function startLive() {
 function stopLive() {
   const t = store.timer(); if (!t) return;
   const finish = () => {
+    // Stopped in another tab meanwhile: never add a second row.
+    if (store.timer()?.id !== t.id) return;
     const now = Date.now();
     let row;
     try { row = root.WorkRuntime.stopEntry(t, now); } catch (e) { U().toast(e.message); return; }
     const start = new Date(t.startedAt), end = new Date(now), hh = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     const unknown = t.rateUnknown === true;
-    const entry = { ...row, isTimeRange: true, startTime: hh(start), endTime: hh(end), kind: 'shift', payKnown: !unknown, bonus: 0,
+    const entry = { ...row, keepId: t.id, isTimeRange: true, startTime: hh(start), endTime: hh(end), kind: 'shift', payKnown: !unknown, bonus: 0,
       hourlyRate: unknown ? 0 : t.rate, totalEarnings: unknown ? 0 : root.KisPay.amount(row.hours, t.rate) };
     const [id] = store.addEntries([entry]); store.cancelTimer(); U().haptic('success');
     U().toast('המשמרת נשמרה ✓', 'ביטול', () => { store.update(d => { d.entries = d.entries.filter(e => e.id !== id); }); store.restoreTimer(t); });
@@ -104,7 +106,7 @@ function start() {
   store.subscribe(render);
   // Another tab changed the data: read it again (never overwrite it with an older copy).
   window.addEventListener('storage', e => { if (!e.key || ['work_complete_backup', 'work_series_v1', 'kis_web_v1'].includes(e.key) || e.key.startsWith('work_active_shift_v1')) { store.load(); render(); } });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!U().closeTopSheet() && app.editorOpen) app.closeEditor?.(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!U().closeTopSheet() && app.editorOpen) app.editorBack?.(); } });
   // Ended weekly plans are recorded on open and on every return to the tab, with an undo.
   const catchUp = () => { const ids = root.KisPlans.catchUp(store);
     if (ids.length) U().toast(ids.length === 1 ? 'משמרת קבועה הסתיימה ונרשמה' : `${ids.length} משמרות קבועות הסתיימו ונרשמו`, 'ביטול', () => {

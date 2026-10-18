@@ -74,7 +74,7 @@ function shiftCard(e, store, { selected = false, tag = 'shift' } = {}) {
 let toastTimer = null;
 function toast(text, action, onAction) {
   const host = document.getElementById('toast');
-  host.innerHTML = `<div role="status" aria-live="polite"><span>${esc(text)}</span>${action ? `<button type="button" data-testid="toast-action">${esc(action)}</button>` : ''}</div>`;
+  host.innerHTML = `<div><span>${esc(text)}</span>${action ? `<button type="button" data-testid="toast-action">${esc(action)}</button>` : ''}</div>`;
   host.hidden = false;
   if (action) host.querySelector('button').onclick = () => { host.hidden = true; onAction?.(); };
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { host.hidden = true; }, action ? 6000 : 2600);
@@ -88,10 +88,12 @@ function sheet(testid, render, { onClose } = {}) {
   scrim.className = 'scrim';
   scrim.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" data-testid="${testid}"></div>`;
   const el = scrim.firstChild;
-  const close = () => { if (!scrim.isConnected) return; scrim.remove(); sheets.splice(sheets.indexOf(close), 1); onClose?.(); };
+  const opener = document.activeElement;
+  const close = () => { if (!scrim.isConnected) return; scrim.remove(); sheets.splice(sheets.indexOf(close), 1); onClose?.(); if (opener?.isConnected) opener.focus({ preventScroll: true }); };
   scrim.addEventListener('click', e => { if (e.target === scrim) close(); });
   document.body.append(scrim); sheets.push(close);
   render(el, close);
+  const h = el.querySelector('h2'); if (h) { h.id ||= 'sheet-title-' + sheets.length; el.setAttribute('aria-labelledby', h.id); }
   el.querySelector('button, input, select, textarea')?.focus({ preventScroll: true });
   return close;
 }

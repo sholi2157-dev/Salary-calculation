@@ -10,11 +10,11 @@ function defaultName(categories,prefs){return categories.some(c=>c.name===prefs.
 function currency(name,prefs){return Object.hasOwn(prefs.categoryCurrencies,name)?prefs.categoryCurrencies[name]:prefs.mainCurrency;}
 function rename(data,oldName,newName,rate,money){
  const next=clone(data),name=newName.trim();
- if(!name)throw Error('יש להזין שם קטגוריה');
- if(next.categories.some(c=>c.name===name&&c.name!==oldName))throw Error('כבר קיימת קטגוריה בשם זה');
+ if(!name)throw Error('יש להזין שם למקום העבודה');
+ if(next.categories.some(c=>c.name===name&&c.name!==oldName))throw Error('כבר יש מקום עבודה בשם הזה');
  if(!Number.isFinite(rate)||rate<0||!['₪','$'].includes(money))throw Error('תעריף או מטבע לא תקינים');
  const old=next.categories.find(c=>c.name===oldName);
- if(oldName&&!old)throw Error('הקטגוריה השתנתה. פתח את ההגדרות מחדש');
+ if(oldName&&!old)throw Error('מקום העבודה השתנה. פתח את ההגדרות מחדש');
  next.categories=old?next.categories.map(c=>c===old?{...c,name,defaultRate:rate}:c):[...next.categories,{name,defaultRate:rate}];
  next.entries=next.entries.map(e=>oldName&&e.category===oldName?{...e,category:name}:e);
  next.webPreferences=preferences(next.webPreferences);
@@ -25,8 +25,8 @@ function rename(data,oldName,newName,rate,money){
 }
 function remove(data,name){
  const next=clone(data),target=defaultName(next.categories,next.webPreferences);
- if(name===target)throw Error('לפני מחיקת קטגוריית ברירת המחדל יש לבחור קטגוריה אחרת');
- if(!next.categories.some(c=>c.name===name))throw Error('הקטגוריה לא נמצאה');
+ if(name===target)throw Error('לפני מחיקת מקום ברירת המחדל יש לבחור מקום אחר כברירת מחדל');
+ if(!next.categories.some(c=>c.name===name))throw Error('מקום העבודה לא נמצא');
  next.categories=next.categories.filter(c=>c.name!==name);
  next.entries=next.entries.map(e=>e.category===name?{...e,category:target}:e);
  delete next.webPreferences.categoryCurrencies[name];
