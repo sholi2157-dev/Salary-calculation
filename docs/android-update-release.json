@@ -1,12 +1,12 @@
 {
-  "runId": 39151970317,
-  "sourceSha": "83a889e8fc31441996d9f024c66549069a87bce4",
-  "artifactName": "salary-2.0-candidate",
-  "tag": "android-v2.0",
-  "fileName": "Salary2.0.apk",
-  "versionCode": 33,
-  "versionName": "2.0",
-  "sha256": "55953e60457ae87ee664e1bdc327009d15fb8f2e3f97dddcc69a885b41e2d849",
+  "runId": 39168415624,
+  "sourceSha": "143564e77ce3c2ec4b9040569edcc09ed7ab5b97",
+  "artifactName": "salary-2.0.1-candidate",
+  "tag": "android-v2.0.1",
+  "fileName": "Salary2.0.1.apk",
+  "versionCode": 34,
+  "versionName": "2.0.1",
+  "sha256": "5dec6167314581c9d1e393fe987d478720b839bf4236182feea9da9f2ae62005",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "חישוב שכר 2.0 — עיצוב חדש לגמרי. מסך בית, היסטוריה והוספת משמרת חדשים; משמרות קבועות שנרשמות לבד; תעריף שאפשר להשלים אחר כך; בונוס וקבלנות; התראות על הסיכום החודשי; ו\"החודש שלך בכיס\". כל המשמרות, הסכומים וההגדרות שלך נשמרים בעדכון."
+  "releaseNotes": "תיקון מהיר: הכפתורים במסך הפתיחה של 2.0 (\"הבא\", \"המשך\") מגיבים בנגיעה אחת. כל המשמרות, הסכומים וההגדרות שלך נשמרים בעדכון."
 }
