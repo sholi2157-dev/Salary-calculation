@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -22,8 +21,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
@@ -73,21 +70,13 @@ fun KisHome(
     // A clock that moves on by itself, so "today" and "this week" roll over without new data.
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { delay(60_000); now = System.currentTimeMillis() } }
-    // By calendar day: a shift saved for today counts today (hours-only shifts are stored at noon); later days do not.
-    val done = remember(entries, now) { val end = EntryDraft.startOfDay(now); entries.filter { EntryDraft.startOfDay(it.date) <= end } }
+    val done = remember(entries, now) { KisHistoryLogic.done(entries, now) }
     val week = remember(done, now) { val from = KisHistoryLogic.weekStart(now); done.filter { it.date >= from } }
     val today = remember(done, now) { val from = EntryDraft.startOfDay(now); done.filter { it.date >= from } }
     val month = remember(done, now) { val key = HistoryFilter.monthKey(now); done.filter { HistoryFilter.monthKey(it.date) == key } }
     val hoursByCat = remember(week) { week.groupBy { it.category }.mapValues { (_, l) -> l.sumOf { it.hours } }.toList().sortedByDescending { it.second } }
-    val lead = hoursByCat.firstOrNull()?.first ?: done.maxByOrNull { it.date }?.category
-    val glow = lead?.let { workplaceOf(it, categories).accent(c.dark) } ?: Workplaces[0].accent(c.dark)
     Box(Modifier.fillMaxSize()) {
-        // A soft glow that fades out completely inside the screen: no visible edge anywhere.
-        Canvas(Modifier.fillMaxSize()) {
-            val radius = minOf(size.width * 1.1f, size.height * 0.75f)
-            drawRect(Brush.radialGradient(listOf(glow.copy(alpha = if (c.dark) 0.40f else 0.22f), glow.copy(alpha = if (c.dark) 0.12f else 0.06f), Color.Transparent),
-                center = Offset(size.width * 0.15f, 0f), radius = radius))
-        }
+        KisGlow(Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 16.dp)
             .padding(top = 12.dp, bottom = bottomInset).testTag("dashboard_scroll_container")) {
             Hello()
@@ -95,9 +84,8 @@ fun KisHome(
                 plannedThisWeek = remember(plans, now) { val from = com.example.domain.V2Plan.dateOf(KisHistoryLogic.weekStart(now)); val to = isoDayPlus(KisHistoryLogic.weekStart(now), 6)
                     plans.count { it.status == com.example.domain.V2Plan.Status.PLANNED && it.date in from..to } })
             NowRow(live, onStartLive, onStopLive, onCancelLive, onLiveCurrency)
-            if (planActions != null && plans.isNotEmpty()) Box(Modifier.padding(top = 4.dp)) {
-                NextUp(plans, categories, planActions.worked, planActions.skip, planActions.hours, planActions.share, onAllPlans)
-            }
+            val upcoming = remember(entries, now) { entries.filter { KisHistoryLogic.upcoming(it, now) } }
+            NextUp(plans, upcoming, categories, planActions, onOpen, onAllPlans)
             val recent = remember(entries) { entries.sortedByDescending { it.createdAt }.take(3) }
             if (recent.isNotEmpty()) {
                 SectionTitle("אחרונות", action = "הכול", onAction = onAllHistory, actionTag = "home_all_history")
@@ -122,7 +110,9 @@ private fun Hello() {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         KisLogo()
         Column(Modifier.weight(1f)) {
-            Text(greeting(), style = KisType.caption, color = c.muted)
+            val name = Kis.settings.name.trim()
+            Text(if (name.isEmpty()) greeting() else "${greeting()}, $name", style = KisType.caption, color = c.muted, maxLines = 1,
+                modifier = Modifier.testTag("home_greeting"))
             Text(stringResource(R.string.app_name), style = KisType.label.copy(fontSize = 16.sp), color = c.ink)
         }
     }

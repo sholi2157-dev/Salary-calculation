@@ -116,9 +116,11 @@ fun KisEditorPage(
     val changed = d.toJson() != original
     val check = d.check()
     val workplace = workplaceOf(d.category, categories)
-    // Adding and editing look the same (the workplace colours); an edit is told apart by its frame (KisApp).
-    val topBg by animateColorAsState(workplace.from, tween(250), label = "top")
-    val onTop = workplace.on
+    // A calm page like the rest of the app (the purple glow, plain background); the workplace colour only marks the chosen
+    // place and the worked span on the ruler. Adding and editing look the same; an edit is told apart by its frame (KisApp).
+    val topBg = c.surface
+    val onTop = c.ink
+    val accent by animateColorAsState(workplace.accent(c.dark), tween(250), label = "accent")
 
     fun commitBuf(): Boolean {
         if (buf.isEmpty()) return true
@@ -208,9 +210,9 @@ fun KisEditorPage(
         }
     }
 
-    // Status-bar icons stay readable on the coloured header (light icons over the dim frame of an edit).
+    // Status-bar icons follow the page (light icons over the dim frame of an edit).
     val view = androidx.compose.ui.platform.LocalView.current
-    val lightBar = base == null && workplace.on.luminance() < 0.5f
+    val lightBar = base == null && !c.dark
     DisposableEffect(lightBar) {
         val activity = generateSequence(view.context) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull()
         val controller = activity?.window?.let { androidx.core.view.WindowCompat.getInsetsController(it, view) }
@@ -222,9 +224,11 @@ fun KisEditorPage(
     val imeOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     // The system keyboard and our keypad are never open together: typing in a text field closes the keypad.
     LaunchedEffect(imeOpen) { if (imeOpen && pad) { commitBuf(); pad = false } }
-    Column(Modifier.fillMaxSize().background(c.bg).imePadding().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
-        // ---------------- coloured top ----------------
-        Column(Modifier.fillMaxWidth().background(workplace.brush)
+    Box(Modifier.fillMaxSize().background(c.bg)) {
+    KisGlow(Modifier.fillMaxSize())
+    Column(Modifier.fillMaxSize().imePadding().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
+        // ---------------- top ----------------
+        Column(Modifier.fillMaxWidth()
             .statusBarsPadding().padding(horizontal = 16.dp).padding(top = 10.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TopPill(if (d.editing) "סגירה" else "ביטול", onTop, tag = "editor_close") { close() }
@@ -239,7 +243,7 @@ fun KisEditorPage(
                 // While the system keyboard is open (note, worker name) the clock, ruler and places fold away,
                 // the mode tabs and total stay, so the form and the Save bar keep their room on small phones.
                 if (!imeOpen && d.editing && base != null) WasBanner(base, changed, onTop)
-                ModeTabs(d.mode, onTop, workplace.from) { m ->
+                ModeTabs(d.mode, onTop, c.bg) { m ->
                     commitBuf()
                     // Clock → hours keeps the length already entered instead of starting from 0.
                     val carried = if (m == EntryMode.HOURS && d.hours.isBlank()) check.minutes?.takeIf { it > 0 }?.let { KisFormat.hours(it / 60.0) } else null
@@ -248,7 +252,7 @@ fun KisEditorPage(
                     if (m == EntryMode.GROUP && d.start == null && !d.editing) d = d.copy(start = EntryDraft.suggestStart(d.category, d.day, history).start)
                 }
                 if (!imeOpen) {
-                    CategoryChips(categories, d.category, onTop, topBg, onPick = { cat -> commitBuf(); d = d.withCategory(cat, viewModel::categoryCurrency, history) }, onAdd = { addingPlace = true })
+                    CategoryChips(categories, d.category, onTop, topBg, accent, workplace.accentInk(c.dark), onPick = { cat -> commitBuf(); d = d.withCategory(cat, viewModel::categoryCurrency, history) }, onAdd = { addingPlace = true })
                     when {
                         d.mode == EntryMode.JOB -> JobAmount(d, shown(KeyTarget.AMOUNT), pad && target == KeyTarget.AMOUNT, onTop,
                             onOpen = { open(KeyTarget.AMOUNT) }, onUnknown = { pad = false; d = d.copy(amountUnknown = true, amount = "") }, onKnown = { d = d.copy(amountUnknown = false); open(KeyTarget.AMOUNT) },
@@ -262,7 +266,7 @@ fun KisEditorPage(
                                     onStart = { open(KeyTarget.START) }, onEnd = { open(KeyTarget.END) })
                             }
                             // While the keypad is open the ruler and nudges fold away (the keypad shows the value), so it fits a 360dp phone.
-                            if (!pad) TimeRuler(d.start, d.end, if (target == KeyTarget.START && d.start != null) TimeHandle.START else TimeHandle.END, onTop, topBg,
+                            if (!pad) TimeRuler(d.start, d.end, if (target == KeyTarget.START && d.start != null) TimeHandle.START else TimeHandle.END, onTop, topBg, accent = accent,
                                 onChange = { h, v -> buf = ""; d = if (h == TimeHandle.START) d.copy(start = v) else d.copy(end = v) },
                                 onSelect = { h -> target = if (h == TimeHandle.START) KeyTarget.START else KeyTarget.END; buf = "" })
                             val nudgeStart = target == KeyTarget.START && d.start != null
@@ -288,11 +292,6 @@ fun KisEditorPage(
             })
             return@Column
         }
-        // A soft fade from the coloured top into the page instead of a hard edge.
-        Box(Modifier.fillMaxWidth().height(18.dp).drawBehind {
-            drawRect(workplace.brush)
-            drawRect(Brush.verticalGradient(listOf(c.bg.copy(alpha = 0f), c.bg)))
-        })
         // ---------------- details ----------------
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 2.dp, bottom = 14.dp).testTag("editor_scroll"),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -377,6 +376,7 @@ fun KisEditorPage(
         else SaveBar(check, if (repeatOn(d, repeat)) "יצירת הסדרה" else saveLabel(d, changed),
             check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatPreview?.created?.isNotEmpty() == true), ::save)
     }
+    }
 
     if (confirmLeave) KisSheet(onDismiss = { confirmLeave = false }, tag = "leave_sheet") {
         Text(if (d.editing) "לצאת בלי לשמור את השינויים?" else "לצאת בלי לשמור את המשמרת?", style = KisType.title, color = c.ink)
@@ -448,14 +448,15 @@ private fun ModeTabs(mode: EntryMode, ink: Color, bg: Color, onMode: (EntryMode)
 }
 
 @Composable
-private fun CategoryChips(categories: List<WorkCategory>, selected: String, ink: Color, bg: Color, onPick: (WorkCategory) -> Unit, onAdd: () -> Unit) {
+private fun CategoryChips(categories: List<WorkCategory>, selected: String, ink: Color, bg: Color, accent: Color, accentInk: Color, onPick: (WorkCategory) -> Unit, onAdd: () -> Unit) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         categories.forEach { cat ->
             val on = cat.name == selected
-            Box(Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(99.dp)).background(if (on) ink else Color.Transparent)
-                .border(1.5.dp, ink.copy(alpha = if (on) 1f else 0.4f), RoundedCornerShape(99.dp))
+            // The chosen place is the one spot that carries its own colour.
+            Box(Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(99.dp)).background(if (on) accent else bg.copy(alpha = 0.6f))
+                .border(1.5.dp, if (on) accent else ink.copy(alpha = 0.25f), RoundedCornerShape(99.dp))
                 .kisClick { onPick(cat) }.semantics { this.selected = on }.testTag("editor_category_${cat.name}").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-                Text(cat.name, color = if (on) bg else ink, style = KisType.label, maxLines = 1)
+                Text(cat.name, color = if (on) accentInk else ink, style = KisType.label, maxLines = 1)
             }
         }
         Box(Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(99.dp)).border(1.5.dp, ink.copy(alpha = 0.4f), RoundedCornerShape(99.dp))

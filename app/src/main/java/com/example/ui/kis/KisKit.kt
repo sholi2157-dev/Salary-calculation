@@ -315,6 +315,21 @@ fun KisLogo(modifier: Modifier = Modifier.size(38.dp)) {
     }
 }
 
+/**
+ * The app's soft purple glow from the top corner, the same on every page (Home, History, Settings, the editor).
+ * It fades out completely inside the screen, so there is no visible edge anywhere.
+ */
+@Composable
+fun KisGlow(modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
+    val c = Kis.colors
+    val glow = Workplaces[0].accent(c.dark)
+    Canvas(modifier) {
+        val radius = minOf(size.width * 1.1f, size.height * 0.75f)
+        drawRect(androidx.compose.ui.graphics.Brush.radialGradient(listOf(glow.copy(alpha = if (c.dark) 0.40f else 0.22f), glow.copy(alpha = if (c.dark) 0.12f else 0.06f), Color.Transparent),
+            center = Offset(size.width * 0.15f, 0f), radius = radius))
+    }
+}
+
 /** A thin rule used between facts and rows. */
 @Composable
 fun KisDivider(modifier: Modifier = Modifier) {

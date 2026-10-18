@@ -70,6 +70,13 @@ object KisHistoryLogic {
         }
     }
 
+    /**
+     * Done vs planned, by calendar day: a shift saved for today counts as done (hours-only shifts are stored at
+     * noon); a later day is planned and stays out of totals, copy and Excel until its day comes.
+     */
+    fun upcoming(e: WorkEntry, now: Long = System.currentTimeMillis()): Boolean = EntryDraft.startOfDay(e.date) > EntryDraft.startOfDay(now)
+    fun done(entries: List<WorkEntry>, now: Long = System.currentTimeMillis()): List<WorkEntry> = entries.filter { !upcoming(it, now) }
+
     /** Sunday-start week of a date (the app's existing week). */
     fun weekStart(millis: Long): Long = Calendar.getInstance().apply {
         timeInMillis = EntryDraft.startOfDay(millis)

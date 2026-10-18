@@ -95,20 +95,23 @@ fun KisHistory(
     onMessage: (String) -> Unit,
     plans: List<com.example.domain.V2Plan.Occurrence> = emptyList(),
     planActions: PlanActions? = null,
+    onMonthSummary: ((Int) -> Unit)? = null,
 ) {
     val c = Kis.colors
     val settings = Kis.settings
     val context = LocalContext.current
-    // The planned view only exists while there is something planned.
-    if (plans.isEmpty() && ui.planned) ui.planned = false
-    val showPlans = ui.planned && planActions != null
+    // Done vs planned: shifts on a later day are planned, like weekly plans. They are never in totals, copy or Excel.
+    val showPlans = ui.planned
+    val doneEntries = remember(entries) { KisHistoryLogic.done(entries) }
+    val upcoming = remember(entries) { entries.filter { KisHistoryLogic.upcoming(it) }.sortedBy { it.date } }
+    val plannedCount = upcoming.size + plans.size
     var filter by rememberSaveable(stateSaver = FilterSaver) { mutableStateOf(HistoryFilter()) }
     var showFilters by rememberSaveable { mutableStateOf(false) }
     var bulkOpen by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     // After a recreation the selection is gone: never show "delete 0 shifts" or an empty rate sheet.
     if (!ui.selecting) { bulkOpen = false; confirmDelete = false }
-    val rows = remember(entries, filter, ui.query) { KisHistoryLogic.apply(entries, filter, ui.query) }
+    val rows = remember(doneEntries, filter, ui.query) { KisHistoryLogic.apply(doneEntries, filter, ui.query) }
     // Changing month, filter or search drops shifts that are no longer shown from the selection, so actions
     // (delete, paid, share) only ever touch what is on screen.
     LaunchedEffect(filter, ui.query) { if (ui.selecting) ui.selection = ui.selection.filter { id -> rows.any { it.id == id } }.toSet() }
@@ -125,6 +128,7 @@ fun KisHistory(
     val selectedRows = entries.filter { it.id in ui.selection }
 
     Box(Modifier.fillMaxSize()) {
+        KisGlow(Modifier.fillMaxSize())
         // Below the status bar: the title and its tools must never sit under the system bar (it takes the taps).
         LazyColumn(state = listState, modifier = Modifier.fillMaxSize().statusBarsPadding().testTag("history_scroll_container"),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = if (ui.selecting) ui.barHeight + 16.dp else bottomInset + 8.dp),
@@ -163,15 +167,20 @@ fun KisHistory(
                             }
                         }
                     }
-                    if (plans.isNotEmpty() && planActions != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         KisChip("עבדתי", selected = !ui.planned, onClick = { ui.planned = false }, tag = "history_worked", minHeight = 48.dp)
-                        KisChip("מתוכנן · ${plans.size}", selected = ui.planned, onClick = { ui.selection = emptySet(); ui.planned = true }, tag = "history_planned", minHeight = 48.dp)
+                        KisChip(if (plannedCount == 0) "מתוכנן" else "מתוכנן · $plannedCount", selected = ui.planned,
+                            onClick = { ui.selection = emptySet(); ui.searching = false; ui.planned = true }, tag = "history_planned", minHeight = 48.dp)
                     }
                     if (!showPlans) {
                         AnimatedVisibility(ui.searching, enter = fadeIn(), exit = fadeOut()) { SearchBar(ui) }
                         // A closed search stays visible while it filters the list: tap to edit it, ✕ to clear it.
                         if (!ui.searching && ui.query.isNotBlank()) SearchChip(ui.query, onEdit = { ui.searching = true }, onClear = { ui.query = "" })
-                        if (filter.period == Period.MONTH) MonthSwitcher(filter.month) { filter = filter.copy(month = it) }
+                        if (filter.period == Period.MONTH) {
+                            MonthSwitcher(filter.month) { filter = filter.copy(month = it) }
+                            if (onMonthSummary != null && rows.isNotEmpty() && filter.activeCount == 0 && ui.query.isBlank())
+                                KisChip("החודש שלך · סיכום", onClick = { onMonthSummary(filter.month) }, tag = "history_month_summary", minHeight = 48.dp)
+                        }
                         else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(if (filter.period == Period.ALL) "כל התאריכים" else "${KisShare.shortDate(filter.from)}–${KisShare.shortDate(filter.to)}", style = KisType.title, color = c.ink)
                             KisChip("לפי חודש", onClick = { filter = filter.copy(period = Period.MONTH) }, minHeight = 34.dp)
@@ -181,17 +190,31 @@ fun KisHistory(
                             ui.selection = rows.filter { !it.payKnown && !WorkPay.isJob(it) }.map { it.id }.toSet()
                             if (ui.selection.isNotEmpty()) bulkOpen = true
                         })
-                    } else Text("משמרות קבועות שעוד לא נרשמו. הן לא נכנסות לסכומים, להעתקה או לאקסל.", style = KisType.caption, color = c.muted)
+                    } else Text("משמרות שעוד לא עבדת: בתאריך עתידי או קבועות שעוד לא נרשמו. הן לא נכנסות לסכומים, להעתקה או לאקסל.",
+                        style = KisType.caption, color = c.muted)
                 }
             }
             if (showPlans) {
-                items(plans, key = { "p" + it.key }) { o ->
-                    PlannedCard(o, categories, { planActions!!.worked(o) }, { planActions!!.skip(o) }, { planActions!!.hours(o) }, { planActions!!.share(o) })
+                // Saved future shifts and weekly-plan days together, by date.
+                val planned: List<Pair<Long, Any>> = (upcoming.map { it.date to it } +
+                    (if (planActions != null) plans.map { com.example.domain.V2Plan.startMillis(it.date, it.start) to it } else emptyList())).sortedBy { it.first }
+                if (planned.isEmpty()) item(key = "planned_empty") {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 40.dp).testTag("planned_empty"), horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("אין משמרות מתוכננות", style = KisType.title, color = c.ink)
+                        Text("מוסיפים משמרת בתאריך עתידי, או מפעילים \"חוזרת כל שבוע\" במסך ההוספה.", style = KisType.body, color = c.muted, textAlign = TextAlign.Center)
+                    }
+                }
+                items(planned, key = { (_, v) -> if (v is WorkEntry) "e${v.id}" else "p" + (v as com.example.domain.V2Plan.Occurrence).key }) { (_, v) ->
+                    if (v is WorkEntry) ShiftCard(v, categories, onClick = { onOpen(v) }, tagPrefix = "planned_entry_")
+                    else (v as com.example.domain.V2Plan.Occurrence).let { o ->
+                        PlannedCard(o, categories, { planActions!!.worked(o) }, { planActions!!.skip(o) }, { planActions!!.hours(o) }, { planActions!!.share(o) })
+                    }
                 }
             } else if (rows.isEmpty()) item(key = "empty") {
                 Column(Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(if (entries.isEmpty()) "עוד אין משמרות" else "אין משמרות להצגה", style = KisType.title, color = c.ink)
-                    Text(if (entries.isEmpty()) "משמרת ראשונה מוסיפים בכפתור +" else "אפשר לשנות חודש, חיפוש או סינון", style = KisType.body, color = c.muted, textAlign = TextAlign.Center)
+                    Text(if (doneEntries.isEmpty()) "עוד אין משמרות" else "אין משמרות להצגה", style = KisType.title, color = c.ink)
+                    Text(if (doneEntries.isEmpty()) "משמרת ראשונה מוסיפים בכפתור +" else "אפשר לשנות חודש, חיפוש או סינון", style = KisType.body, color = c.muted, textAlign = TextAlign.Center)
                 }
             } else if (filter.sort == SortOrder.ADDED) {
                 items(rows, key = { it.id }) { e -> HistoryCard(e, categories, ui, onOpen) }

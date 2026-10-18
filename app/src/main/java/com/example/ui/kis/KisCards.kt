@@ -40,16 +40,20 @@ fun ShiftCard(entry: WorkEntry, categories: List<WorkCategory>, onClick: () -> U
         .semantics { this.selected = selected }
         .testTag("$tagPrefix${entry.id}")
         .padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Avatar(entry.category, workplace)
+        // A shift on a later day is planned: dashed avatar, "מתוכנן", muted amount (it is not earned yet).
+        val planned = KisHistoryLogic.upcoming(entry)
+        Avatar(entry.category, workplace, planned = planned)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(dayLabel(entry.date), style = KisType.label.copy(fontSize = 15.sp), color = c.ink, maxLines = 1)
+                if (planned) Tag("מתוכנן", modifier = Modifier.testTag("planned_tag_${entry.id}"))
                 if (entry.autoConfirmed) Tag("אוטו׳")
-                if (!entry.isPaid) Tag("לא שולם")
+                if (!entry.isPaid && !planned) Tag("לא שולם")
             }
             Text(subtitle(entry), style = KisType.caption, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (pay != null) MoneyText(pay, entry.currency, KisType.amount.copy(fontSize = 19.sp), modifier = Modifier.testTag("entry_amount_${entry.id}"))
+        if (pay != null) MoneyText(pay, entry.currency, KisType.amount.copy(fontSize = 19.sp), modifier = Modifier.testTag("entry_amount_${entry.id}"),
+            color = if (planned) c.muted else androidx.compose.ui.graphics.Color.Unspecified)
         else Tag(WorkPay.missingLabel(entry), warn = true, modifier = Modifier.testTag("entry_amount_${entry.id}"))
     }
 }

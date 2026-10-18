@@ -46,7 +46,8 @@ import com.example.ui.WorkViewModel
 import com.example.ui.coachTarget
 
 @Composable
-fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, onClose: () -> Unit, onReplayTour: () -> Unit, onSignIn: () -> Unit = {}, bottomInset: Dp = 0.dp) {
+fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, onClose: () -> Unit, onReplayTour: () -> Unit, onSignIn: () -> Unit = {}, bottomInset: Dp = 0.dp,
+                    onMonthSummary: (Int) -> Unit = {}) {
     val c = Kis.colors
     val settings = Kis.settings
     val context = LocalContext.current
@@ -75,6 +76,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     var quietFrom by remember { mutableStateOf(plan.quietFrom) }
     var quietTo by remember { mutableStateOf(plan.quietTo) }
     var denied by remember { mutableStateOf(false) }
+    var recentOpen by rememberSaveable { mutableStateOf(false) }
     var asking by rememberSaveable { mutableStateOf<String?>(null) }
     fun turnOn(kind: String) {
         denied = false
@@ -93,12 +95,22 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     }
     val saveBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let { viewModel.saveBackup(context, it) } }
 
-    Column(Modifier.fillMaxSize().background(c.bg).testTag("settings_root")) {
+    Box(Modifier.fillMaxSize().background(c.bg)) {
+    KisGlow(Modifier.fillMaxSize())
+    Column(Modifier.fillMaxSize().testTag("settings_root")) {
         Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
         // With the keyboard open the floating navigation is covered anyway: pad for the keyboard only, not both.
         val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
         // The scroll area ends above the floating navigation, so no row can sit (and be tapped) under it.
         Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
+            Group("פרופיל") {
+                // Only inside the app: the greeting, and my own line in a group report. Never at the top of a message.
+                var name by remember { mutableStateOf(settings.name) }
+                KisTextField(name, { name = it; settings.updateName(it) }, "השם שלך", Modifier.fillMaxWidth().padding(top = 10.dp).testTag("profile_name"),
+                    placeholder = "לא חובה")
+                Text("מופיע בברכה במסך הבית ובדו״ח קבוצה לקבלן (במקום \"החלק שלי\"). נשמר במכשיר הזה בלבד.", style = KisType.caption, color = c.muted,
+                    modifier = Modifier.padding(top = 6.dp, bottom = 10.dp))
+            }
             Group("עבודה") {
                 Row_("מקום ברירת מחדל", "נבחר אוטומטית במשמרת חדשה ובטיימר · כאן גם מוסיפים ועורכים מקומות", tag = "default_category_picker",
                     modifier = Modifier.coachTarget(CoachTarget.CATEGORIES), onClick = { pickingDefault = true },
@@ -137,6 +149,9 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     style = KisType.caption, color = c.pending, modifier = Modifier.padding(bottom = 8.dp).testTag("notify_blocked"))
                 if (denied) Text("בלי הרשאת התראות אי אפשר לשלוח תזכורות. אפשר לאשר בהגדרות הטלפון ולנסות שוב.", style = KisType.caption, color = c.pending,
                     modifier = Modifier.padding(bottom = 8.dp).testTag("notify_denied"))
+                Row_("התראות אחרונות", "הסיכום החודשי ותזכורות שנשלחו · נגיעה בסיכום פותחת אותו שוב", tag = "recent_notes_row", onClick = { recentOpen = true }) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
+                }
                 KisDivider()
                 Row_("שעות שקט", "תזכורת שנופלת בשעות האלה תגיע כשהן נגמרות") {
                     KisSwitch(quiet, { plan.quiet = it; quiet = it }, Modifier.testTag("quiet_switch"), label = "שעות שקט")
@@ -198,6 +213,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             }
         }
     }
+    }
 
     if (pickingDefault) KisSheet(onDismiss = { pickingDefault = false }, tag = "default_category_sheet") {
         Text("מקומות עבודה", style = KisType.title, color = c.ink)
@@ -223,6 +239,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         EditWorkplaceSheet(cat, categories, viewModel, onDismiss = { editing = null })
     } }
     if (adding) NewWorkplaceSheet(viewModel, categories, defaultCurrency, makeDefault = addingDefault, onDismiss = { adding = false; addingDefault = false })
+    if (recentOpen) RecentNotesSheet(remember(recentOpen) { plan.recent }, onMonth = { recentOpen = false; onMonthSummary(it) }, onDismiss = { recentOpen = false })
     if (seriesSheet) SeriesSheet(series, plans, categories, autoConfirm, onAuto = { plan.autoConfirm = it; autoConfirm = it },
         onRate = { s, rate -> viewModel.applySeriesRate(s.id, rate) }, onEnd = { s -> viewModel.endSeries(s.id) }, onDismiss = { seriesSheet = false })
     if (aiSheet) AiKeySheet(viewModel.owner.uid, onDismiss = { aiSheet = false })

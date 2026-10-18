@@ -50,7 +50,7 @@ object WorkShareText {
      * For the employer of a group shift: my part and every worker at the employer rate (a team bonus
      * is passed through, as in WorkPay.group). Never the worker rate or my margin.
      */
-    fun employer(e: WorkEntry): String {
+    fun employer(e: WorkEntry, ownName: String? = null): String {
         val own = WorkPay.pay(e)
         val workers = WorkPay.workers(e)
         val lines = workers.map { w -> w.name to WorkPay.employerPay(w, e) }
@@ -60,7 +60,8 @@ object WorkShareText {
             add("**$TOTAL (כולל כולם): ${total?.let { money(it, e.currency) } ?: "עוד חסר תעריף"}**")
             add("---")
             add("פירוט:")
-            add("החלק שלי: ${hours(e.hours)} שעות (${own?.let { money(it, e.currency) } ?: "תעריף חסר"})")
+            // With a profile name the report lists me by name like everyone else ("שולי: …"); otherwise "החלק שלי".
+            add("${ownName?.trim()?.takeIf { it.isNotEmpty() } ?: "החלק שלי"}: ${hours(e.hours)} שעות (${own?.let { money(it, e.currency) } ?: "תעריף חסר"})")
             workers.zip(lines).forEach { (w, l) -> add("${w.name}: ${hours(w.hours)} שעות (${l.second?.let { money(it, e.currency) } ?: "תעריף חסר"})") }
             add("---")
         }.joinToString("\n")

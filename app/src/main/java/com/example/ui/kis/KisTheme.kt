@@ -130,6 +130,10 @@ class KisSettings internal constructor(private val context: Context?) {
         private set
     fun updateTheme(choice: ThemeChoice) { theme = choice; prefs?.edit()?.putString("theme", choice.key)?.apply() }
     fun updateHaptics(on: Boolean) { haptics = on; prefs?.edit()?.putBoolean("haptics", on)?.apply() }
+    /** Profile: the user's own name, shown only inside the app (greeting, own line in a group report). Device-only. */
+    var name by mutableStateOf(prefs?.getString("name", "") ?: "")
+        private set
+    fun updateName(value: String) { name = value.take(40); prefs?.edit()?.putString("name", name.trim())?.apply() }
 
     /** Optional per-workplace colour picked by the user; otherwise colours follow category order. */
     fun workplaceIndex(category: String, categories: List<WorkCategory>): Int {

@@ -56,6 +56,20 @@ class PlanSettings(context: Context) {
     var lastRate: Long
         get() = prefs.getLong("lastRate", 0L)
         set(v) { prefs.edit().putLong("lastRate", v).apply() }
+
+    /** The reminders that were actually sent, newest first (at most [RECENT_MAX]), for "התראות אחרונות". */
+    data class Sent(val kind: String, val title: String, val text: String, val time: Long, val month: String)
+    val recent: List<Sent>
+        get() = runCatching {
+            val a = org.json.JSONArray(prefs.getString("recent", "[]"))
+            (0 until a.length()).map { i -> a.getJSONObject(i).let { Sent(it.getString("kind"), it.getString("title"), it.getString("text"), it.getLong("time"), it.optString("month")) } }
+        }.getOrDefault(emptyList())
+    fun addRecent(sent: Sent) {
+        val all = (listOf(sent) + recent).take(RECENT_MAX)
+        val a = org.json.JSONArray().apply { all.forEach { put(org.json.JSONObject().put("kind", it.kind).put("title", it.title).put("text", it.text).put("time", it.time).put("month", it.month)) } }
+        prefs.edit().putString("recent", a.toString()).apply()
+    }
+    companion object { const val RECENT_MAX = 20 }
 }
 
 object PlanJobs {
@@ -88,7 +102,8 @@ object PlanJobs {
         return dao.confirmOccurrences(V2Plan.toConfirm(occurrences).map { V2Plan.toEntry(it, auto = true) })
     }
 
-    data class Note(val kind: String, val title: String, val text: String)
+    /** [month] is "YYYY-MM" for the monthly summary (the month it is about). */
+    data class Note(val kind: String, val title: String, val text: String, val month: String = "")
 
     /** What is due now (pure; [run] sends and records it). */
     fun due(entries: List<WorkEntry>, settings: PlanSettings, now: Long): List<Note> {
@@ -100,7 +115,7 @@ object PlanJobs {
             if (rows.isNotEmpty()) {
                 val money = WorkPay.totals(rows).entries.joinToString(" · ") { (c, v) -> com.example.data.WorkMoney.format(v, c) }
                 out += Note("monthly", "הסיכום של ${com.example.ui.kis.KisFormat.MONTHS[cal.get(Calendar.MONTH)]} מוכן",
-                    "${rows.size} משמרות · ${com.example.data.WorkShareText.hours(rows.sumOf { it.hours })} שעות" + if (money.isNotEmpty()) " · $money" else "")
+                    "${rows.size} משמרות · ${com.example.data.WorkShareText.hours(rows.sumOf { it.hours })} שעות" + if (money.isNotEmpty()) " · $money" else "", lastMonth)
             }
         }
         val missing = WorkPay.pending(entries).filter { it.date <= now }
@@ -141,9 +156,10 @@ object PlanJobs {
             val open = PendingIntent.getActivity(context, n.kind.hashCode(), Intent(context, MainActivity::class.java).setAction(action)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            val note = NotificationCompat.Builder(context, CHANNEL).setSmallIcon(android.R.drawable.ic_notification_overlay).setContentTitle(n.title)
+            val note = NotificationCompat.Builder(context, CHANNEL).setSmallIcon(R.drawable.ic_stat_kis).setColor(0xFF5145E8.toInt()).setContentTitle(n.title)
                 .setContentText(n.text).setContentIntent(open).setAutoCancel(true).build()
             runCatching { NotificationManagerCompat.from(context).notify(if (n.kind == "monthly") 2001 else 2002, note) }
+            settings.addRecent(PlanSettings.Sent(n.kind, n.title, n.text, now, n.month))
             if (n.kind == "monthly") settings.lastMonthly = Calendar.getInstance().apply { timeInMillis = now; add(Calendar.MONTH, -1) }
                 .let { String.format(java.util.Locale.ROOT, "%04d-%02d", it.get(Calendar.YEAR), it.get(Calendar.MONTH) + 1) }
             else settings.lastRate = now

@@ -49,7 +49,7 @@ enum class TimeHandle { START, END }
  */
 @Composable
 fun TimeRuler(start: String?, end: String, selected: TimeHandle, ink: Color, surface: Color,
-              onChange: (TimeHandle, String) -> Unit, onSelect: (TimeHandle) -> Unit, modifier: Modifier = Modifier) {
+              onChange: (TimeHandle, String) -> Unit, onSelect: (TimeHandle) -> Unit, modifier: Modifier = Modifier, accent: Color = ink) {
     val density = LocalDensity.current
     val settings = Kis.settings
     val currentStart by rememberUpdatedState(start)
@@ -64,14 +64,14 @@ fun TimeRuler(start: String?, end: String, selected: TimeHandle, ink: Color, sur
         val handleW = 52.dp
         val trackTop = 32.dp
         // Track and the worked span (two pieces when it crosses midnight).
-        Box(Modifier.absoluteOffset(y = trackTop).fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).background(ink.copy(alpha = 0.22f)))
+        Box(Modifier.absoluteOffset(y = trackTop).fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).background(ink.copy(alpha = 0.12f)))
         if (start != null) {
             val a = V2Rules.toMinutes(start); val b = V2Rules.toMinutes(end)
             val pieces = if (b > a) listOf(a to b) else listOf(a to 1440, 0 to b)
             pieces.filter { it.second > it.first }.forEach { (from, to) ->
                 val left = with(density) { xOf(to).toDp() }
                 val w = with(density) { (xOf(from) - xOf(to)).toDp() }
-                Box(Modifier.absoluteOffset(x = left, y = trackTop).width(w).height(12.dp).clip(RoundedCornerShape(6.dp)).background(ink))
+                Box(Modifier.absoluteOffset(x = left, y = trackTop).width(w).height(12.dp).clip(RoundedCornerShape(6.dp)).background(accent))
             }
         }
         @Composable fun handle(h: TimeHandle, value: String, top: Dp, label: String) {

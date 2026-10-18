@@ -84,18 +84,23 @@ fun PlannedCard(o: V2Plan.Occurrence, categories: List<WorkCategory>, onWorked: 
     }
 }
 
-/** Home: what ended and waits to be recorded, then the next few planned shifts. */
+/** Home: what ended and waits to be recorded, then the next few planned days (weekly plans and saved future shifts). */
 @Composable
-fun NextUp(occurrences: List<V2Plan.Occurrence>, categories: List<WorkCategory>, onWorked: (V2Plan.Occurrence) -> Unit, onSkip: (V2Plan.Occurrence) -> Unit,
-           onHours: (V2Plan.Occurrence) -> Unit, onShare: (V2Plan.Occurrence) -> Unit, onAll: () -> Unit) {
+fun NextUp(occurrences: List<V2Plan.Occurrence>, upcoming: List<com.example.data.WorkEntry>, categories: List<WorkCategory>, actions: PlanActions?,
+           onOpen: (com.example.data.WorkEntry) -> Unit, onAll: () -> Unit) {
+    val plans = if (actions != null) occurrences else emptyList()
     // A short list: the rest is one tap away in History ("הכול").
-    val waiting = occurrences.filter { it.status == V2Plan.Status.AWAITING }.takeLast(3)
-    val next = occurrences.filter { it.status == V2Plan.Status.PLANNED }.take(3)
+    val waiting = plans.filter { it.status == V2Plan.Status.AWAITING }.takeLast(3)
+    val next: List<Pair<Long, Any>> = (plans.filter { it.status == V2Plan.Status.PLANNED }.map { V2Plan.startMillis(it.date, it.start) to it } +
+        upcoming.map { it.date to it }).sortedBy { it.first }.take(3)
     if (waiting.isEmpty() && next.isEmpty()) return
-    Column(Modifier.testTag("next_up")) {
+    Column(Modifier.padding(top = 4.dp).testTag("next_up")) {
         SectionTitle("הבא בתור", action = "הכול", onAction = onAll, actionTag = "next_up_all")
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            (waiting + next).forEach { o -> PlannedCard(o, categories, { onWorked(o) }, { onSkip(o) }, { onHours(o) }, { onShare(o) }) }
+            (waiting.map { 0L to it } + next).forEach { (_, v) ->
+                if (v is com.example.data.WorkEntry) ShiftCard(v, categories, onClick = { onOpen(v) }, tagPrefix = "next_entry_")
+                else (v as V2Plan.Occurrence).let { o -> PlannedCard(o, categories, { actions!!.worked(o) }, { actions!!.skip(o) }, { actions!!.hours(o) }, { actions!!.share(o) }) }
+            }
         }
     }
 }

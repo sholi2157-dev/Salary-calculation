@@ -192,7 +192,7 @@ class ShiftForegroundService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("משמרת פעילה: $category")
             .setContentText(notificationText)
-            .setSmallIcon(android.R.drawable.ic_notification_overlay) // Default system icon
+            .setSmallIcon(R.drawable.ic_stat_kis).setColor(0xFF5145E8.toInt()) // The app mark, tinted with the app purple
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOnlyAlertOnce(true)
             .setSilent(true)
@@ -217,7 +217,7 @@ class ShiftForegroundService : Service() {
      */
     private fun foregroundThenStop(startId: Int) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) runCatching {
-            val n = NotificationCompat.Builder(this, CHANNEL_ID).setSmallIcon(android.R.drawable.ic_notification_overlay).setContentTitle("חישוב שכר").setSilent(true).build()
+            val n = NotificationCompat.Builder(this, CHANNEL_ID).setSmallIcon(R.drawable.ic_stat_kis).setColor(0xFF5145E8.toInt()).setContentTitle("חישוב שכר").setSilent(true).build()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) startForeground(NOTIFICATION_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
             else startForeground(NOTIFICATION_ID, n)
             stopForeground(STOP_FOREGROUND_REMOVE)

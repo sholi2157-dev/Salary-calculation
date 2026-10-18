@@ -46,8 +46,16 @@ class KisUiTest {
     }
     private val categories = listOf(WorkCategory(id = 1, name = "מסעדה", defaultRate = 50.0), WorkCategory(id = 2, name = "שיעורים", defaultRate = 120.0), WorkCategory(id = 3, name = "הובלות", defaultRate = 60.0))
     private val day = EntryDraft.startOfDay(System.currentTimeMillis())
-    /** The 15th of this month, so seeded rows (up to 4 days earlier) always fall in the month shown by default. */
-    private val mid = java.util.Calendar.getInstance().apply { timeInMillis = day; set(java.util.Calendar.DAY_OF_MONTH, 15) }.timeInMillis
+    /**
+     * The 15th of this month, or of last month before the 15th: seeded rows (up to 4 days earlier) are always done
+     * (a later day is planned and stays out of History's totals) and in one month, which History is told to show.
+     */
+    private val mid = java.util.Calendar.getInstance().apply {
+        timeInMillis = day
+        if (get(java.util.Calendar.DAY_OF_MONTH) < 15) add(java.util.Calendar.MONTH, -1)
+        set(java.util.Calendar.DAY_OF_MONTH, 15)
+    }.timeInMillis
+    private fun seededHistory() = HistoryUi().apply { showMonth = HistoryFilter.monthKey(mid) }
 
     private fun host(dark: Boolean = false, content: @Composable () -> Unit) {
         ui.setContent {
@@ -191,7 +199,7 @@ class KisUiTest {
     @Test fun historySelectionBulkRateNeverTouchesKnownOrJobs() {
         val vm = model()
         seed()
-        val state = HistoryUi()
+        val state = seededHistory()
         var entries by mutableStateOf(rows())
         host {
             KisHistory(state, true, entries, categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {})
@@ -257,7 +265,7 @@ class KisUiTest {
     @Test fun searchHasSeparateClearAndClose() {
         val vm = model()
         seed()
-        val state = HistoryUi().apply { searching = true }
+        val state = seededHistory().apply { searching = true }
         host { KisHistory(state, true, rows(), categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {}) }
         ui.onNodeWithTag("history_search_input").performTextInput("ארון")
         ui.onNodeWithText("קבלנות: פירוק ארון", substring = true).assertExists()
@@ -367,7 +375,7 @@ class KisUiTest {
         val plans = com.example.domain.V2Plan.occurrences(listOf(series), emptyList(), emptySet(), isoDayPlus(now, -2), isoDayPlus(now, 10), now)
         val worked = mutableListOf<String>(); val skipped = mutableListOf<String>()
         val actions = PlanActions(worked = { worked += it.key }, skip = { skipped += it.key }, hours = {}, share = {})
-        val state = HistoryUi()
+        val state = seededHistory()
         var page by mutableStateOf(0)
         host {
             if (page == 0) KisHome(rows(), categories, null, 80.dp, {}, {}, {}, {}, {}, {}, {}, {}, plans = plans, planActions = actions, onAllPlans = { state.planned = true; page = 1 })
@@ -394,6 +402,62 @@ class KisUiTest {
         ui.onAllNodesWithTag("planned_card_${plans.last().key}").assertCountEquals(0)
     }
 
+    @Test fun futureShiftIsPlannedEverywhereAndNeverInTotals() {
+        val vm = model()
+        val now = System.currentTimeMillis()
+        val todayRow = WorkEntry(category = "מסעדה", date = day + 60_000L, isTimeRange = false, hours = 2.0, hourlyRate = 50.0, totalEarnings = 100.0)
+        val future = WorkEntry(category = "מסעדה", date = EntryDraft.startOfDay(now + 3 * 86_400_000L) + 12 * 3_600_000L, isTimeRange = false, hours = 5.0, hourlyRate = 50.0, totalEarnings = 250.0)
+        runBlocking { dao.insertEntry(todayRow); dao.insertEntry(future) }
+        val futureId = rows().first { it.totalEarnings == 250.0 }.id
+        val state = HistoryUi()
+        var page by mutableStateOf(0)
+        host {
+            if (page == 0) KisHome(rows(), categories, null, 80.dp, {}, {}, {}, {}, {}, {}, {}, {}, onAllPlans = { state.planned = true; page = 1 })
+            else KisHistory(state, true, rows(), categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {})
+        }
+        // Home: the future shift waits under "הבא בתור", marked as planned, and is not in today's or the week's money.
+        ui.onNodeWithTag("next_entry_$futureId").performScrollTo().assertExists()
+        ui.onNodeWithTag("planned_tag_$futureId", useUnmergedTree = true).assertExists()
+        ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).assertTextEquals("₪100")
+        shot("home-future")
+        ui.onNodeWithTag("next_up_all").performScrollTo().performClick()
+        // History: "מתוכנן" holds it; "עבדתי" and its total never include it.
+        ui.onNodeWithTag("history_planned").assertIsSelected()
+        ui.onNodeWithTag("planned_entry_$futureId").assertExists()
+        shot("history-planned-future")
+        ui.onNodeWithTag("history_worked").performClick()
+        ui.onAllNodesWithTag("work_entry_card_$futureId").assertCountEquals(0)
+        if (HistoryFilter.monthKey(future.date) == HistoryFilter.monthKey(now))
+            ui.onNodeWithTag("history_total").assertTextContains("₪100", substring = true)
+    }
+
+    @Test fun plannedViewIsAlwaysThereAndExplainsWhenEmpty() {
+        val vm = model()
+        val state = HistoryUi()
+        host { KisHistory(state, true, emptyList(), categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {}) }
+        ui.onNodeWithTag("history_planned").assertHeightIsAtLeast(48.dp).performClick()
+        ui.onNodeWithTag("planned_empty").assertTextContains("חוזרת כל שבוע", substring = true)
+    }
+
+    @Test fun monthSummaryCountsDoneShiftsPerCurrency() {
+        seed()
+        host { MonthSummarySheet(HistoryFilter.monthKey(mid), rows(), categories, onHistory = {}, onDismiss = {}, onMessage = {}) }
+        ui.onNodeWithTag("month_summary_money").assertTextContains("₪300", substring = true).assertTextContains("$180", substring = true)
+        ui.onNodeWithTag("month_summary_counts", useUnmergedTree = true).assertTextEquals("5 משמרות · 18.5 שעות")
+        shot("month-summary")
+    }
+
+    @Test fun recentNotificationsAreKeptNewestFirstAndOpenTheirMonth() {
+        val plan = PlanSettings(app)
+        (1..25).forEach { plan.addRecent(PlanSettings.Sent("monthly", "סיכום $it", "טקסט", it.toLong(), "2026-09")) }
+        assertEquals(PlanSettings.RECENT_MAX, plan.recent.size)
+        assertEquals("סיכום 25", plan.recent.first().title)
+        var opened: Int? = null
+        host { RecentNotesSheet(plan.recent, onMonth = { opened = it }, onDismiss = {}) }
+        ui.onNodeWithTag("recent_note_0").performClick()
+        assertEquals(2026 * 12 + 8, opened)
+    }
+
     @Test fun settingsSectionsAndThemeChoice() {
         val vm = model()
         lateinit var settings: KisSettings
@@ -403,7 +467,10 @@ class KisUiTest {
                 KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
             }
         }
-        listOf("עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות").forEach {
+        // Profile: the name is kept on this device and used in the greeting.
+        ui.onNodeWithTag("profile_name").performScrollTo().performTextReplacement("שולי")
+        assertEquals("שולי", settings.name)
+        listOf("פרופיל", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
         }
         ui.onNodeWithTag("theme_LIGHT").performScrollTo().performClick()
@@ -421,6 +488,7 @@ class KisUiTest {
         assertTrue(vm.planSettings.notifyMonthly)
         ui.onNodeWithTag("notify_monthly_switch").performClick()
         assertFalse(vm.planSettings.notifyMonthly)
+        ui.onNodeWithTag("recent_notes_row").performScrollTo().assertExists()
         ui.onNodeWithTag("series_row").performScrollTo().performClick()
         ui.onNodeWithTag("auto_confirm_switch").performClick()
         assertFalse(vm.planSettings.autoConfirm)
