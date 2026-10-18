@@ -182,16 +182,16 @@ function open(app, { entry = null, restore = null } = {}) {
       ${d.mode !== 'JOB' ? `<div class="row" style="align-items:flex-end;flex-wrap:wrap"><label class="field grow" style="min-width:140px">תעריף לשעה (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="rate" value="${esc(d.rate)}" ${d.rateUnknown ? 'disabled' : ''} data-testid="rate-input"></label>
           <button class="chip${d.rateUnknown ? ' warn' : ''}" style="min-height:52px" data-a="rate-unknown" data-testid="rate-unknown">${d.rateUnknown ? 'תעריף חסר · נגיעה להזנה' : 'לא יודע'}</button>
           <button class="chip" style="min-height:52px" data-a="more" data-testid="editor-more">${more ? 'פחות' : 'הפסקה · הערה · בונוס'}</button></div>
-          ${d.rateUnknown ? '<p class="caption">אפשר לשמור עכשיו ולהשלים את התעריף אחר כך — גם לכמה משמרות ביחד מההיסטוריה. עד אז היא לא נספרת בסכומים.</p>' : ''}` : ''}
+` : ''}
       ${d.mode === 'GROUP' ? groupBlock(d) : ''}
-      ${!base && d.mode === 'CLOCK' && d.start != null ? `<div class="card" style="display:grid;gap:10px"><div class="row" style="align-items:center"><div class="grow"><b class="label">חוזרת כל שבוע</b><div class="caption">משמרת קבועה: תופיע מראש ותירשם לבד כשהזמן נגמר</div></div>
+      ${!base && d.mode === 'CLOCK' && d.start != null ? `<div class="card" style="display:grid;gap:10px"><div class="row" style="align-items:center"><div class="grow title-row"><b class="label">חוזרת כל שבוע</b>${U().infoDot('חוזרת כל שבוע', 'משמרת קבועה: תופיע מראש ב"מתוכנן" ותירשם לבד כשהזמן נגמר. תמיד אפשר לבטל.')}</div>
           <button class="switch" role="switch" aria-checked="${d.repeat}" aria-label="חוזרת כל שבוע" data-a="repeat" data-testid="repeat-switch"></button></div>
           ${d.repeat ? `<b class="label">בימים</b><div class="weekdays">${U().DAY_SHORT.map((n, i) => `<button aria-pressed="${repeatDays.has(i)}" data-wd="${i}" data-testid="repeat-day-${i}">${n}</button>`).join('')}</div>
             <label class="chip" style="position:relative;justify-self:start">עד ${U().shortDate(root.KisPlan.startMillis(until, '12:00'))}<input type="date" data-f="until" value="${until}" aria-label="עד תאריך" style="position:absolute;inset:0;opacity:0"></label>
             <p class="caption" data-testid="repeat-preview">${!preview.dates.length ? 'אין ימים בטווח שנבחר' : (created === 1 ? 'משמרת אחת תיכנס ללוח' : created + ' משמרות ייכנסו ללוח') + (preview.clashes.length ? ` · ${preview.clashes.length} חופפות למשמרת קיימת ולא ייווצרו` : '')}</p>
             ${d.breakMin > 0 || d.notes.trim() ? `<p class="caption">${[d.breakMin > 0 ? 'הפסקה' : '', d.notes.trim() ? 'הערה' : ''].filter(Boolean).join(' ו')} לא נשמרות במשמרת קבועה</p>` : ''}` : ''}</div>` : ''}
       ${more && d.mode !== 'JOB' ? `<div class="card" style="display:grid;gap:10px">
-          ${clockMode ? `<b class="label">הפסקה</b><span class="caption">השעות והסכום מחושבים אחרי ההפסקה</span><div class="chips">${[0, 15, 30, 45, 60].map(m => `<button class="chip" aria-pressed="${d.breakMin === m}" data-b="${m}" data-testid="break-${m}">${m ? m + ' דק׳' : 'ללא'}</button>`).join('')}
+          ${clockMode ? `<b class="label">הפסקה</b><div class="chips">${[0, 15, 30, 45, 60].map(m => `<button class="chip" aria-pressed="${d.breakMin === m}" data-b="${m}" data-testid="break-${m}">${m ? m + ' דק׳' : 'ללא'}</button>`).join('')}
             <input class="input" style="width:90px;min-height:44px" inputmode="numeric" data-f="break" value="${[0, 15, 30, 45, 60].includes(d.breakMin) ? '' : d.breakMin}" placeholder="אחר" aria-label="הפסקה בדקות"></div>` : ''}
           <label class="field">בונוס (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="bonus" value="${esc(d.bonus)}" placeholder="לא חובה"></label>
           <label class="field">הערה<textarea data-f="notes" placeholder="לא חובה" data-testid="notes-input">${esc(d.notes)}</textarea></label></div>` : ''}

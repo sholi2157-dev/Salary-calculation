@@ -57,7 +57,7 @@ function render(el, app, opts = {}) {
   if (state.planned) {
     const items = [...future.map(e => ({ at: e.date, e })), ...plans.map(o => ({ at: root.KisPlan.startMillis(o.date, o.start), o }))].sort((a, b) => a.at - b.at);
     list = items.length ? items.map(x => x.e ? shiftCard(x.e, store, { tag: 'planned-entry' }) : root.KisPlans.card(x.o, store)).join('')
-      : '<div class="empty" data-testid="planned-empty"><h3>אין משמרות מתוכננות</h3><p class="caption">מוסיפים משמרת בתאריך עתידי, או מפעילים "חוזרת כל שבוע" במסך ההוספה.</p></div>';
+      : '<div class="empty" data-testid="planned-empty"><h3>אין משמרות מתוכננות</h3></div>';
   } else if (!rows.length) {
     list = `<div class="empty"><h3>${done.length ? 'אין משמרות להצגה' : 'עוד אין משמרות'}</h3><p class="caption">${done.length ? 'אפשר לשנות חיפוש או סינון' : 'משמרת ראשונה מוסיפים בכפתור +'}</p></div>`;
   } else if (f.sort === 'ADDED') list = rows.map(e => shiftCard(e, store, { selected: state.selection.has(e.id) })).join('');
@@ -73,7 +73,7 @@ function render(el, app, opts = {}) {
     <button class="icon-btn" aria-label="העתקת דוח" data-a="copy" data-testid="history-copy">${ICON.copy}</button>`}</div>
   <div class="row" style="margin:8px 0"><button class="chip" aria-pressed="${!state.planned}" data-a="worked" data-testid="history-worked" style="min-height:48px">עבדתי</button>
     <button class="chip" aria-pressed="${state.planned}" data-a="planned" data-testid="history-planned" style="min-height:48px">${plannedCount ? 'מתוכנן · ' + plannedCount : 'מתוכנן'}</button></div>
-  ${state.planned ? '<p class="caption">משמרות שעוד לא עבדת: בתאריך עתידי או קבועות שעוד לא נרשמו. הן לא נכנסות לסכומים, להעתקה או לאקסל.</p>' : `
+  ${state.planned ? '' : `
     ${state.searching ? `<div class="row" style="align-items:center;margin-bottom:8px"><input class="input grow" type="search" placeholder="חיפוש: מקום, הערה, עובד, סכום" value="${esc(state.query)}" data-f="q" aria-label="חיפוש" data-testid="history-search-input">
       <button class="icon-btn" aria-label="ניקוי" data-a="clear" data-testid="history-search-clear">${ICON.close}</button><button class="chip" data-a="close-search" data-testid="history-search-close">סגירה</button></div>`
       : state.query ? `<div class="row" style="margin-bottom:8px"><button class="chip on" data-a="search" data-testid="history-query-chip">חיפוש: ${esc(state.query)}</button><button class="icon-btn" aria-label="ניקוי החיפוש" data-a="clear">${ICON.close}</button></div>` : ''}
@@ -86,7 +86,7 @@ function render(el, app, opts = {}) {
       <div style="display:flex;gap:14px">${totals.length ? totals.map(([c, v]) => `<b class="amount">${moneyHtml(v, c)}</b>`).join('') : '<b class="amount">—</b>'}</div>
       ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}</div>`}
   <div class="list" style="margin-top:8px;${sel.length ? 'padding-bottom:150px' : ''}" data-testid="history-list">${list}</div>
-  ${!state.planned && rows.length && !sel.length ? '<p class="caption" style="text-align:center;margin-top:12px">נגיעה לפרטים · לחיצה ארוכה לבחירה, שיתוף והעתקה</p>' : ''}
+
   ${sel.length ? selectionBar(sel, rows) : ''}`;
 
   const q = s => el.querySelector(s), redraw = () => app.refresh();
@@ -107,10 +107,11 @@ function render(el, app, opts = {}) {
   q('[data-a=pending]')?.addEventListener('click', () => { state.selection = new Set(rows.filter(e => !e.payKnown && e.kind !== 'job').map(e => e.id)); redraw(); bulkRate(app, redraw); });
   el.querySelectorAll('.shift[data-id]').forEach(b => {
     let timer = null, long = false;
-    const start = () => { long = false; timer = setTimeout(() => { long = true; if (!state.planned) { state.selection.add(b.dataset.id); U().haptic('tick'); redraw(); } }, 480); };
+    // Touch/primary press only; a right click selects through contextmenu, and a redrawn (detached) card never fires.
+    const start = e => { long = false; if (e.button !== 0) return; timer = setTimeout(() => { if (!b.isConnected) return; long = true; if (!state.planned) { state.selection.add(b.dataset.id); U().haptic('tick'); redraw(); } }, 480); };
     const stop = () => clearTimeout(timer);
     b.addEventListener('pointerdown', start); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, stop));
-    b.addEventListener('contextmenu', e => { e.preventDefault(); if (!state.planned) { state.selection.add(b.dataset.id); redraw(); } });
+    b.addEventListener('contextmenu', e => { e.preventDefault(); stop(); if (!state.planned) { state.selection.add(b.dataset.id); redraw(); } });
     b.onclick = () => { if (long) return; if (state.selection.size) { state.selection.has(b.dataset.id) ? state.selection.delete(b.dataset.id) : state.selection.add(b.dataset.id); redraw(); } else app.openDetail(b.dataset.id); };
   });
   root.KisPlans.bind(el, app);
@@ -184,11 +185,11 @@ function filtersSheet(app, done, after) {
     const draw = () => {
       const count = apply(done, f, state.query).length;
       el.innerHTML = `<h2>סינון ומיון</h2>
-        <div><b class="label" style="font-size:15px">אילו תאריכים להציג</b><div class="caption">ברירת המחדל: כל המשמרות מכל הזמנים</div></div>${seg('period', PERIODS, 'period')}
+        <div><b class="label" style="font-size:15px">אילו תאריכים להציג</b></div>${seg('period', PERIODS, 'period')}
         ${f.period === 'MONTH' ? `<div class="row" style="align-items:center"><b class="grow">${esc(U().monthName(f.month))}</b><button class="icon-btn" aria-label="חודש קודם" data-m="-1">${U().ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-m="1">${U().ICON.next}</button></div>` : ''}
         ${f.period === 'RANGE' ? `<div class="row"><label class="field grow">מתאריך<input type="date" class="input" data-d="from" value="${iso(f.from)}"></label><label class="field grow">עד תאריך<input type="date" class="input" data-d="to" value="${iso(f.to)}"></label></div>` : ''}
-        <div class="divider"></div><div><b class="label" style="font-size:15px">סדר</b><div class="caption">לפי תאריך המשמרת, או לפי מתי שהוספת אותה</div></div>${seg('sort', SORTS, 'sort')}
-        <div class="divider"></div><div><b class="label" style="font-size:15px">סינון (לא חובה)</b><div class="caption">מצמצם את הרשימה ואת הסכומים למה שבחרת</div></div>
+        <div class="divider"></div><div><b class="label" style="font-size:15px">סדר</b></div>${seg('sort', SORTS, 'sort')}
+        <div class="divider"></div><div><b class="label" style="font-size:15px">סינון</b></div>
         <span class="caption">תשלום</span>${seg('pay', PAYS, 'pay')}
         <span class="caption">מקום עבודה</span><div class="chips"><button class="chip" aria-pressed="${!f.category}" data-c="">הכול</button>${store.data.categories.map(c => `<button class="chip" aria-pressed="${f.category === c.name}" data-c="${esc(c.name)}">${esc(c.name)}</button>`).join('')}</div>
         <span class="caption">מטבע</span>${seg('currency', [[null, 'הכול'], ['₪', '₪ שקל'], ['$', '$ דולר']], 'currency')}

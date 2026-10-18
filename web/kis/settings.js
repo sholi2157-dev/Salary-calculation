@@ -1,42 +1,30 @@
-/* Settings, grouped like the app: profile, work, look, reminders, backup & data, help & updates. */
+/* Settings, grouped like the app: work, look, backup & data, help & updates. Profile and notifications open from Home. */
 (function (root) {
 'use strict';
 const U = () => root.KisUi;
-const group = (title, body) => `<h2 class="section-title" style="margin:22px 0 10px;font:22px/28px var(--display)" data-testid="settings-${title}">${title}</h2><div class="card" style="display:grid;gap:4px;padding:6px 16px">${body}</div>`;
-const rowHtml = (title, hint, control, attrs = '') => `<div class="row" style="align-items:center;min-height:58px;padding:8px 0" ${attrs}><div class="grow"><div style="font-weight:500">${title}</div>${hint ? `<div class="caption">${hint}</div>` : ''}</div>${control}</div>`;
+const group = (title, body, info) => `<div class="title-row" style="margin:22px 0 10px"><h2 class="section-title" style="margin:0;font:22px/28px var(--display)" data-testid="settings-${title}">${title}</h2>${info ? U().infoDot(title, info) : ''}</div><div class="card" style="display:grid;gap:4px;padding:6px 16px">${body}</div>`;
+const rowHtml = (title, hint, control, info) => `<div class="row" style="align-items:center;min-height:58px;padding:8px 0"><div class="grow"><div class="title-row"><span style="font-weight:500">${title}</span>${info ? U().infoDot(title, info) : ''}</div>${hint ? `<div class="caption">${hint}</div>` : ''}</div>${control}</div>`;
 
 function render(el, app) {
   const { store } = app, { esc } = U(), prefs = store.data.webPreferences, def = root.WorkCategories.defaultName(store.data.categories, prefs);
   const theme = store.local.theme || 'system';
   el.innerHTML = `<h1 class="page-title">הגדרות</h1>
-  ${group('פרופיל', `<label class="field" style="padding:10px 0">השם שלך<input class="input" data-f="name" value="${esc(store.local.name || '')}" placeholder="לא חובה" maxlength="40" data-testid="profile-name"></label>
-    <p class="caption" style="margin:0 0 10px">מופיע בברכה במסך הבית ובדו״ח קבוצה לקבלן (במקום "החלק שלי"). נשמר בדפדפן הזה בלבד.</p>`)}
-  ${group('עבודה', `${rowHtml('מקום ברירת מחדל', 'נבחר אוטומטית במשמרת חדשה · כאן גם מוסיפים ועורכים מקומות', `<button class="chip" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`)}
-    <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', 'למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה', `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`)}
-    <div class="divider"></div>${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות · רישום אוטומטי ${store.local.autoConfirm === false ? 'כבוי' : 'פועל'}` : 'יוצרים במסך ההוספה: "חוזרת כל שבוע"', '<button class="chip" data-a="series" data-testid="series-button">ניהול</button>')}`)}
-  ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', theme === 'system' ? 'לפי הגדרת המכשיר' : theme === 'dark' ? 'כהה תמיד' : 'בהיר תמיד', `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
-    <div class="divider"></div>${rowHtml('רטט במגע', 'בטלפונים שתומכים בזה', `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
-  ${group('התראות', `${rowHtml('הסיכום החודשי מוכן', 'בתחילת החודש, כשנכנסים לאתר: כמה עבדת וכמה הרווחת', `<button class="switch" role="switch" aria-checked="${store.local.notifyMonthly === true}" aria-label="הסיכום החודשי" data-a="monthly" data-testid="notify-monthly"></button>`)}
-    <div class="divider"></div>${rowHtml('תזכורת לתעריף חסר', 'לכל היותר פעם בשבוע, רק כשיש משמרות בלי תעריף', `<button class="switch" role="switch" aria-checked="${store.local.notifyRate === true}" aria-label="תזכורת לתעריף חסר" data-a="rate"></button>`)}
-    <div class="divider"></div>${rowHtml('התראות אחרונות', 'מה שהוצג לאחרונה · נגיעה בסיכום פותחת אותו שוב', '<button class="chip" data-a="recent" data-testid="recent-button">פתיחה</button>')}
-    <p class="caption" style="margin:0 0 10px">באתר התזכורות מופיעות כשהוא פתוח. באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.</p>`)}
-  ${group('גיבוי ונתונים', `<p class="caption" style="margin:10px 0">הנתונים נשמרים בדפדפן הזה בלבד. כדאי לשמור גיבוי גם מחוץ לאתר. גיבוי מהאפליקציה עובר לכאן וגיבוי מכאן עובר לאפליקציה.</p>
-    <div class="row" style="flex-wrap:wrap;padding-bottom:6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
-    <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`)}
-  ${group('עזרה ועדכונים', `${rowHtml('בדיקת עדכון', 'האתר מתעדכן לבד ברגע בטוח, בלי לאבד טיוטה או משמרת פעילה', '<button class="chip" data-a="update">בדיקה</button>')}`)}
+  ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר אוטומטית במשמרת חדשה. נגיעה בכפתור פותחת את רשימת המקומות: הוספה, עריכה ובחירת ברירת מחדל.')}
+    <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', null, `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`, 'למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה, ושקלים ודולרים לא מתחברים לסכום אחד.')}
+    <div class="divider"></div>${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip" data-a="series" data-testid="series-button">ניהול</button>', 'יוצרים במסך ההוספה: "חוזרת כל שבוע". כשהזמן נגמר המשמרת נרשמת לבד, ותמיד אפשר לבטל.')}`)}
+  ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
+    <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
+  ${group('גיבוי ונתונים', `<div class="row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
+    <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'הנתונים נשמרים בדפדפן הזה בלבד. כדאי לשמור גיבוי גם מחוץ לאתר. גיבוי מהאפליקציה עובר לכאן, וגיבוי מכאן עובר לאפליקציה.')}
+  ${group('עזרה ועדכונים', `${rowHtml('בדיקת עדכון', null, '<button class="chip" data-a="update">בדיקה</button>', 'האתר מתעדכן לבד ברגע בטוח, בלי לאבד טיוטה או משמרת פעילה.')}`)}
   <div class="row" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי · 2.0 · ${esc((root.WorkBuild?.commit || 'local').slice(0, 7))}</span></div>`;
 
   const q = s => el.querySelector(s);
-  // Saved as typed, without redrawing the page (no lost taps or focus).
-  q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
   q('[data-a=places]').onclick = () => placesSheet(app);
   el.querySelectorAll('[data-cur]').forEach(b => b.onclick = () => store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, mainCurrency: b.dataset.cur }); }));
   q('[data-a=series]').onclick = () => root.KisPlans.seriesSheet(app);
   el.querySelectorAll('[data-theme]').forEach(b => b.onclick = () => { store.setLocal('theme', b.dataset.theme); app.applyTheme(); });
   q('[data-a=haptics]').onclick = () => store.setLocal('haptics', store.local.haptics === false);
-  q('[data-a=monthly]').onclick = () => store.setLocal('notifyMonthly', store.local.notifyMonthly !== true);
-  q('[data-a=rate]').onclick = () => store.setLocal('notifyRate', store.local.notifyRate !== true);
-  q('[data-a=recent]').onclick = () => recentSheet(app);
   q('[data-a=download]').onclick = () => download('salary-backup.json', backupText(store), 'application/json');
   q('[data-a=copy-backup]').onclick = async () => { if (await U().copy(backupText(store))) U().toast('הגיבוי הועתק ✓'); else U().showText(backupText(store), 'גיבוי'); };
   q('[data-a=share-backup]').onclick = () => U().shareOrCopy(backupText(store), 'גיבוי');
@@ -57,7 +45,7 @@ function importSheet(app) {
   const { store } = app;
   U().sheet('import-sheet', (el, close) => {
     let pending = null;
-    el.innerHTML = `<h2>ייבוא נתונים</h2><p class="caption">גיבוי מהאפליקציה או מהאתר, או שורות מאקסל עם כותרות. לפני השמירה תוצג בדיקה; משמרות שכבר קיימות לא יתווספו שוב.</p>
+    el.innerHTML = `<div class="title-row"><h2>ייבוא נתונים</h2>${U().infoDot('ייבוא נתונים', 'גיבוי מהאפליקציה או מהאתר, או שורות מאקסל עם כותרות. לפני השמירה תוצג בדיקה; משמרות שכבר קיימות לא יתווספו שוב.')}</div>
       <textarea class="input" rows="6" data-f="t" placeholder="הדבקת נתונים" data-testid="import-text"></textarea>
       <label class="btn ghost small" style="position:relative">בחירת קובץ<input type="file" accept=".json,.csv,.tsv,.txt" data-f="file" style="position:absolute;inset:0;opacity:0"></label>
       <button class="btn ghost" data-a="check" data-testid="import-check">בדיקה</button><p class="caption" data-f="sum" data-testid="import-summary" style="white-space:pre-line"></p>
@@ -108,7 +96,7 @@ function placesSheet(app) {
   U().sheet('places-sheet', (el, close) => {
     const draw = () => {
       const def = root.WorkCategories.defaultName(store.data.categories, store.data.webPreferences);
-      el.innerHTML = `<h2>מקומות עבודה</h2><p class="caption">נגיעה במקום הופכת אותו לברירת המחדל. "עריכה" לשם, תעריף, מטבע וצבע.</p>
+      el.innerHTML = `<div class="title-row"><h2>מקומות עבודה</h2>${U().infoDot('מקומות עבודה', 'נגיעה במקום הופכת אותו לברירת המחדל. "עריכה" לשם, תעריף, מטבע וצבע.')}</div>
         <div class="list">${store.data.categories.map(c => `<div class="row" style="align-items:center"><button class="shift grow" data-def="${esc(c.name)}" aria-pressed="${c.name === def}">${U().avatar(c.name, store, false, 32)}
           <span class="meta"><b class="label">${esc(c.name)}${c.name === def ? ' · ברירת מחדל' : ''}</b><span class="sub">${esc(U().money(c.defaultRate, root.WorkCategories.currency(c.name, store.data.webPreferences)))} לשעה</span></span></button>
           <button class="chip" data-edit="${esc(c.name)}">עריכה</button></div>`).join('')}</div>
@@ -177,13 +165,44 @@ function monthSummary(app, month) {
   });
 }
 
-function recentSheet(app) {
-  const { store } = app, list = store.recent(), { esc } = U();
-  U().sheet('recent-sheet', (el, close) => {
-    el.innerHTML = `<h2>התראות אחרונות</h2>${list.length ? '' : '<p class="caption">עוד לא הוצגו התראות. אפשר להפעיל סיכום חודשי ותזכורת לתעריף חסר כאן בהגדרות.</p>'}
-      <div class="list">${list.map((n, i) => `<button class="shift" data-i="${i}" ${n.month == null ? 'style="cursor:default"' : ''}><span class="meta"><b class="label">${esc(n.title)}</b><span class="sub">${esc(n.text)}</span><span class="caption">${U().shortDate(n.time)}${n.month != null ? ' · נגיעה לסיכום' : ''}</span></span></button>`).join('')}</div>`;
-    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const n = list[+b.dataset.i]; if (n.month != null) { close(); monthSummary(app, n.month); } });
+/** The name, typed once. Afterwards it is just shown, with an edit for a typo. */
+function profileSheet(app) {
+  const { store } = app, { esc } = U(), me = U().PLACES[0];
+  U().sheet('profile-sheet', (el, close) => {
+    const draw = editing => {
+      const name = (store.local.name || '').trim();
+      el.innerHTML = editing ? `<h2>פרופיל</h2><input class="input" data-f="name" value="${esc(name)}" placeholder="השם שלך" aria-label="השם שלך" maxlength="40" data-testid="profile-name">
+        <button class="btn primary" data-a="save" data-testid="profile-save" ${name ? '' : 'disabled'}>שמירה</button>`
+        : `<h2>פרופיל</h2><div class="row" style="align-items:center;gap:12px"><span class="avatar" style="width:52px;height:52px;background:${U().accent(me)};color:${U().accentInk(me)};font-size:22px">${esc(name.charAt(0))}</span>
+          <b class="grow" style="font:22px/28px var(--display)" data-testid="profile-shown">${esc(name)}</b><button class="chip" data-a="edit" data-testid="profile-edit">עריכה</button></div>`;
+      const input = el.querySelector('[data-f=name]');
+      if (input) {
+        const save = el.querySelector('[data-a=save]');
+        input.addEventListener('input', () => { save.disabled = !input.value.trim(); });
+        save.onclick = () => { store.setLocal('name', input.value.trim().slice(0, 40)); close(); };
+        input.focus();
+      } else el.querySelector('[data-a=edit]').onclick = () => draw(true);
+    };
+    draw(!(store.local.name || '').trim());
   });
+}
+
+/** What arrived (a monthly summary opens again), then the reminder switches. */
+function notificationsSheet(app) {
+  const { store } = app, list = store.recent(), { esc } = U();
+  store.setLocal('seenAt', Date.now(), true);
+  U().sheet('notifications-sheet', (el, close) => {
+    const sw = (title, key, info, testid) => `<div class="row" style="align-items:center;min-height:52px"><div class="title-row grow"><span style="font-weight:500">${title}</span>${U().infoDot(title, info)}</div>
+      <button class="switch" role="switch" aria-checked="${store.local[key] === true}" aria-label="${title}" data-k="${key}" data-testid="${testid}"></button></div>`;
+    el.innerHTML = `<h2>התראות</h2>${list.length ? '' : '<p class="caption" data-testid="notifications-empty">אין התראות</p>'}
+      <div class="list">${list.map((n, i) => `<button class="shift" data-i="${i}" data-testid="recent-note-${i}" ${n.month == null ? 'style="cursor:default"' : ''}><span class="meta"><b class="label">${esc(n.title)}</b><span class="sub">${esc(n.text)}</span><span class="caption">${U().shortDate(n.time)}</span></span></button>`).join('')}</div>
+      <div class="divider"></div>
+      ${sw('הסיכום החודשי', 'notifyMonthly', 'בתחילת החודש, כשנכנסים לאתר: כמה עבדת וכמה הרווחת. נגיעה בו פותחת את "החודש שלך". באתר התזכורות מופיעות כשהוא פתוח; באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.', 'notify-monthly')}
+      ${sw('תעריף חסר', 'notifyRate', 'לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.', 'notify-rate')}`;
+    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const n = list[+b.dataset.i]; if (n.month != null) { close(); monthSummary(app, n.month); } });
+    // Saved in place, without redrawing (no lost taps or focus).
+    el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const on = store.local[b.dataset.k] !== true; store.setLocal(b.dataset.k, on, true); b.setAttribute('aria-checked', on); });
+  }, { onClose: () => app.refresh() });
 }
 
 /** In-site reminders, due when the site is opened (the Android app sends them as notifications). */
@@ -205,5 +224,5 @@ function dueReminders(app) {
   return out;
 }
 
-root.KisSettings = { render, monthSummary, placeSheet, placesSheet, backupText, dueReminders, importSheet };
+root.KisSettings = { render, monthSummary, placeSheet, placesSheet, backupText, dueReminders, importSheet, profileSheet, notificationsSheet };
 })(globalThis);

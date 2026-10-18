@@ -130,11 +130,25 @@ const ICON = {
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
   close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+  person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>',
   next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 6-6 6 6 6"/></svg>',
 };
+/** ⓘ: the explanation of a title, opened only when asked for. Screens say what things are; how-to lives here. */
+const infoDot = (title, text, testid = '') => `<button type="button" class="icon-btn info-dot" data-info-title="${esc(title)}" data-info="${esc(text)}" aria-label="הסבר: ${esc(title)}"${testid ? ` data-testid="${testid}"` : ''}>${ICON.info}</button>`;
+document.addEventListener('click', e => {
+  const b = e.target.closest?.('[data-info]');
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  sheet('info-sheet', (el, close) => {
+    el.innerHTML = `<h2>${esc(b.dataset.infoTitle)}</h2><p style="margin:0">${esc(b.dataset.info)}</p><button class="btn primary">הבנתי</button>`;
+    el.querySelector('button').onclick = close;
+  });
+}, true);
 const logo = (size = 38) => `<span class="logo" style="width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 64 64" width="${size}" height="${size}"><g stroke-width="7" stroke-linecap="round"><path d="M19 44V30" stroke="#7C8CFF"/><path d="M32 44V20" stroke="#FFC54D"/><path d="M45 44V25" stroke="#34C79A"/><path d="M19 44h26" stroke="#EDF0F5"/></g></svg></span>`;
 
 root.KisUi = { DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
   isDark, placeOf, accent, accentInk, avatar, timeLabel, subtitle, upcoming, shiftCard, toast, sheet, closeTopSheet, anySheet, confirmSheet, copy, shareOrCopy,
-  showText, haptic, ICON, logo };
+  showText, haptic, ICON, logo, infoDot };
 })(globalThis);

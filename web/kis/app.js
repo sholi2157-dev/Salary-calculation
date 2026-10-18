@@ -70,7 +70,7 @@ function startLive() {
       el.innerHTML = `<h2>מתחילים משמרת</h2><div class="chips">${cats.map(x => `<button class="chip" aria-pressed="${x.name === cat}" data-c="${U().esc(x.name)}">${U().esc(x.name)}</button>`).join('')}</div>
         <div class="row" style="align-items:flex-end"><label class="field grow">תעריף לשעה<input class="input" inputmode="decimal" data-f="r" value="${c ? c.defaultRate : ''}" placeholder="לא חובה"></label>
         <div class="seg">${['₪', '$'].map(m => `<button aria-pressed="${root.WorkCategories.currency(cat, store.data.webPreferences) === m}" disabled>${m}</button>`).join('')}</div></div>
-        <p class="caption">הזמן נשמר גם אם סוגרים את הדפדפן. כשחוזרים רואים את הזמן הנכון ואפשר לסיים.</p><button class="btn primary" data-a="go" data-testid="live-go">התחלה</button>`;
+<button class="btn primary" data-a="go" data-testid="live-go">התחלה</button>`;
       el.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { cat = b.dataset.c; draw(); });
       el.querySelector('[data-a=go]').onclick = () => { const raw = el.querySelector('[data-f=r]').value.trim(), r = raw === '' ? null : Number(raw);
         if (r != null && !(r >= 0)) return; store.startTimer(cat, r, root.WorkCategories.currency(cat, store.data.webPreferences)); close(); U().haptic('success'); render(); };

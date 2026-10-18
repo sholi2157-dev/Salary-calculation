@@ -178,6 +178,32 @@ const seed = {
     await ctx.close();
   }
 
+  // 8. Home's bell and profile; Settings holds neither; explanations only behind ⓘ.
+  {
+    const { ctx, page } = await open();
+    await page.evaluate(() => localStorage.setItem('kis_web_recent_v1', JSON.stringify([{ kind: 'monthly', title: 'הסיכום מוכן', text: '3 משמרות', time: Date.now(), month: 2026 * 12 + 8 }])));
+    await page.reload(); await page.waitForSelector(tid('home-hero'));
+    assert.ok(await page.isVisible(tid('home-bell-dot')), 'something new is marked on the bell');
+    await page.click(tid('home-bell')); assert.ok(await page.isVisible(tid('recent-note-0')));
+    await page.click(tid('notify-monthly'));
+    assert.equal(await page.getAttribute(tid('notify-monthly'), 'aria-checked'), 'true');
+    await shot(page, 'notifications'); await page.keyboard.press('Escape');
+    assert.equal(await page.locator(tid('home-bell-dot')).count(), 0, 'opened means seen');
+    await page.click(tid('home-profile')); await page.fill(tid('profile-name'), 'שולי'); await page.click(tid('profile-save'));
+    assert.match(await page.textContent(tid('home-greeting')), /שולי/);
+    await page.click(tid('home-profile')); assert.equal(await page.textContent(tid('profile-shown')), 'שולי');
+    assert.equal(await page.locator(tid('profile-name')).count(), 0, 'the name is shown, not asked again');
+    await page.click(tid('profile-edit')); assert.ok(await page.isVisible(tid('profile-name')));
+    await shot(page, 'profile'); await page.keyboard.press('Escape');
+    await page.click(tid('tab-settings'));
+    assert.equal(await page.locator(`${tid('settings-פרופיל')}, ${tid('settings-התראות')}`).count(), 0);
+    assert.equal(await page.locator('.caption:visible').filter({ hasText: 'נשמרים בדפדפן' }).count(), 0, 'no explanation text on the page');
+    await page.click('[data-info-title="גיבוי ונתונים"]');
+    assert.match(await page.textContent(tid('info-sheet')), /נשמרים בדפדפן/);
+    await shot(page, 'settings-info'); await page.keyboard.press('Escape');
+    await ctx.close();
+  }
+
   // 6. Layout: every width, both themes, no horizontal scrolling.
   for (const [w, h] of [[360, 760], [390, 844], [768, 1024], [1440, 900]]) for (const scheme of ['light', 'dark']) {
     const { ctx, page } = await open({ width: w, height: h }, scheme);

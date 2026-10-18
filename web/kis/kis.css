@@ -108,6 +108,13 @@ button { cursor: pointer; }
 
 /* Home hero */
 .hello { display: flex; align-items: center; gap: 10px; }
+.hello-actions { margin-inline-start: auto; display: flex; gap: 6px; }
+.round-btn { position: relative; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: grid; place-items: center; font-weight: 700; font-size: 17px; }
+.round-btn svg { width: 22px; height: 22px; }
+.round-btn .dot { position: absolute; top: 8px; inset-inline-end: 8px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent, #5145E8); }
+.info-dot { width: 40px; height: 40px; color: var(--muted); flex: none; }
+.info-dot svg { width: 20px; height: 20px; }
+.title-row { display: flex; align-items: center; gap: 0; }
 .logo { width: 38px; height: 38px; border-radius: 12px; background: #0D1015; display: grid; place-items: center; flex: none; }
 .hero-card { margin-top: 18px; }
 .progress { height: 14px; border-radius: 7px; background: var(--sunk); overflow: hidden; display: flex; margin: 14px 0 8px; }

@@ -116,10 +116,10 @@ function seriesSheet(app) {
     const draw = () => {
       const occ = occurrences(store);
       el.innerHTML = `<h2>משמרות קבועות</h2>
-        <div class="row" style="align-items:center"><div class="grow"><div class="label">רישום אוטומטי</div><div class="caption">כשהזמן נגמר המשמרת נרשמת לבד. תמיד אפשר לבטל.</div></div>
+        <div class="row" style="align-items:center"><div class="grow title-row"><div class="label">רישום אוטומטי</div>${U().infoDot('רישום אוטומטי', 'כשהזמן נגמר המשמרת נרשמת לבד. תמיד אפשר לבטל.')}</div>
           <button class="switch" role="switch" aria-checked="${store.local.autoConfirm !== false}" data-a="auto" aria-label="רישום אוטומטי" data-testid="auto-confirm"></button></div>
         <div class="divider"></div>
-        ${store.plans.series.length ? '' : '<p class="caption">עוד אין משמרות קבועות. יוצרים אותן במסך ההוספה: "חוזרת כל שבוע".</p>'}
+        ${store.plans.series.length ? '' : '<p class="caption">אין משמרות קבועות</p>'}
         ${store.plans.series.map(s => { const left = occ.filter(o => o.seriesId === s.id && !isAwaiting(o)).length;
           return `<div class="card" style="background:var(--bg);display:grid;gap:8px"><div class="row" style="align-items:center">${avatar(s.category, store, true, 36)}<div class="grow"><b class="label">${esc(s.category)}</b>
             <div class="caption">${esc(root.KisPlan.days(s.daysMask).sort().map(d => U().DAY_SHORT[d]).join(' '))} · ⁦${s.startTime}–${s.endTime}⁩ · עד ${shortDate(root.KisPlan.startMillis(s.untilDate, '12:00'))}${left ? ' · עוד ' + left : ''}</div></div></div>
