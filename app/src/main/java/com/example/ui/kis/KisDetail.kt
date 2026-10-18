@@ -150,6 +150,7 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
 @Composable
 private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (String) -> Unit) {
     val c = Kis.colors
+    val myName = Kis.settings.name
     val context = LocalContext.current
     val workers = WorkPay.workers(entry)
     val summary = WorkPay.group(entry)
@@ -174,7 +175,7 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                     .kisClick { KisShare.shareOrCopy(context, WorkShareText.worker(entry, w), "שליחה ל${w.name}", onMessage) }.padding(11.dp))
             }
         }
-        KisButton("דו״ח לקבלן (כל הקבוצה)", { KisShare.shareOrCopy(context, WorkShareText.employer(entry, settings.name), "סיכום לקבלן", onMessage) }, Modifier.fillMaxWidth(),
+        KisButton("דו״ח לקבלן (כל הקבוצה)", { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName), "סיכום לקבלן", onMessage) }, Modifier.fillMaxWidth(),
             KisButtonKind.GHOST, icon = Icons.Rounded.ReceiptLong, height = 48.dp, tag = "group_summary_share")
     }
 }
