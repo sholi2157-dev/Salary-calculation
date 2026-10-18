@@ -49,6 +49,9 @@ const seed = {
     assert.equal(await page.evaluate(() => localStorage.getItem('work_complete_backup')), JSON.stringify(seed), 'opening never rewrites stored data');
     assert.match(await page.textContent(tid('home-all')), /₪600/); assert.match(await page.textContent(tid('home-all')), /\$180/);
     assert.ok(await page.isVisible(tid('next-f')), 'future shift waits under הבא בתור');
+    // A planned shift's letter takes the place colour (it was white on the light page).
+    const av = await page.$eval(`${tid('next-f')} .avatar`, el => ({ color: getComputedStyle(el).color, accent: getComputedStyle(el).getPropertyValue('--av').trim() }));
+    assert.notEqual(av.color, 'rgb(255, 255, 255)', 'planned avatar letter is visible in light mode');
     await shot(page, 'home-light-390');
     await page.click(tid('tab-history'));
     assert.match(await page.textContent(tid('history-scope')), /כל התאריכים/);
