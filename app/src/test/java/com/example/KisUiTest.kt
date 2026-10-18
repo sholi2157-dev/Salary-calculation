@@ -504,13 +504,17 @@ class KisUiTest {
         next()
         ui.onNodeWithTag("story_card").assertExists()
         ui.onNodeWithTag("story_poster").assert(hasText("₪", substring = true).not()).assert(hasText("$", substring = true).not())
-        runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-card.png") }
-        // The card waits; going back works; forward from the card closes.
-        ui.mainClock.advanceTimeBy(10_000)
-        ui.onNodeWithTag("story_card").assertExists()
         prev()
-        assertEquals("back from the card (closed=$closed)", listOf("story_money"), shownSlide())
-        next(); next()
+        assertEquals("back from the card at once", listOf("story_money"), shownSlide())
+        next()
+        // The card waits; going back still works after a while; forward from the card closes.
+        ui.mainClock.advanceTimeBy(10_000)
+        assertEquals(listOf("story_card"), shownSlide())
+        prev()
+        assertEquals("back from the card after waiting (closed=$closed)", listOf("story_money"), shownSlide())
+        next()
+        runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-card.png") }
+        next()
         assertTrue(closed)
     }
 
