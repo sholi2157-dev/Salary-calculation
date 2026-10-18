@@ -1,5 +1,9 @@
 # Current project state
 
+## October 18 — website 2.0 (stage E) as a Preview on `claude/v2-web` (not published)
+
+Separate branch `claude/v2-web` from `codex/web-rc15-live`. Same design, rules (shared fixtures checked byte-for-byte), data and backup format (v2/v3 both ways) as Android 2.0. Source `4a0c23d`, CI run 39094056873 SUCCESS, Vercel Preview `dpl_HJNexNKY2UXN8xfQtjEbUynPSmzf` READY on that exact commit; production unchanged (`562a7a5`). Details: `docs/v2-stage-e.md` on that branch. Publishing (stage F) only with explicit approval.
+
 ## October 18 — 2.0-rc5: one look, done vs planned, profile, recent notifications (not published)
 
 Branch `claude/v2-android` only. Signed `2.0-rc5` / code 29 from `8f77951`, run 39082570832 SUCCESS: 127 Debug + 103 Release tests, real RC16 → delivered 2.0-rc4 → rc5 update with exact data kept, device tests incl. the weekly-plan auto-record check, fresh install, empty crash logs. APK SHA-256 `c68a00a8b000ab6c12dba688780ffccd83266dfe9397c80a8c20ce17a4ff7225`, same package and permanent certificate. Private artifact `salary-2.0-rc5-candidate` only. Next delivered build must use a code higher than 29. Details in `docs/v2-stage-c.md` (rc5 section). After rc5 the owner asked for a simpler History (all dates by default, one filter/sort panel); done in `81790f2` (dev CI green), not delivered as an RC on request. Owner said to move on: next is the website (stage E) on a separate branch, no publishing or merging without approval; the phone review of rc5 is still open. PR #6 not merged.
