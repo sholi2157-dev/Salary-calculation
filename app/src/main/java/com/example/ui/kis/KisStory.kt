@@ -149,17 +149,17 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
     var paused by remember { mutableStateOf(false) }
     val progress = remember(index) { Animatable(0f) }
     fun go(d: Int) { val n = index + d; if (n < 0) return; if (n >= slides.size) onClose() else index = n }
-    val slide = slides[index.coerceIn(slides.indices)]
     LaunchedEffect(index, paused) {
-        if (!paused && slide.auto) {
+        if (!paused && slides[index.coerceIn(slides.indices)].auto) {
             progress.animateTo(1f, tween(((1f - progress.value) * SLIDE_MS).toInt().coerceAtLeast(1), easing = LinearEasing))
             go(1)
         }
     }
-    val ink = if (slide.bg == place(3)) InkOnMustard else Color.White
-    val bg by animateColorAsState(slide.bg, tween(450), label = "story bg")
-
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        // Read the position here, inside the dialog's own composition, so the shown slide never lags behind it.
+        val slide = slides[index.coerceIn(slides.indices)]
+        val ink = if (slide.bg == place(3)) InkOnMustard else Color.White
+        val bg by animateColorAsState(slide.bg, tween(450), label = "story bg")
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalStoryInk provides ink) {
             BackHandler(onBack = onClose)
             Box(Modifier.fillMaxSize().background(bg).semantics { stateDescription = "${index + 1}/${slides.size}" }.testTag("story_root")) {
