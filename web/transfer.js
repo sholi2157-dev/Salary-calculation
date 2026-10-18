@@ -65,28 +65,113 @@ function decodeTable(input) {
  }catch(e){throw Error(`שורה ${i+2}: ${e.message}`);}});
  return {formatVersion:2,entries,categories:[...new Map(entries.map(e=>[e.category,{name:e.category,defaultRate:e.hourlyRate}])).values()],workers:[]};
 }
+// ---- 2.0 (backup formatVersion 3), ported from the Android data/WorkBackup.kt ----
+// Android org.json reading rules for the 2.0 fields: optBoolean accepts true/false (or "true"/"false"),
+// anything else falls back to the default; optDouble accepts numbers or numeric strings.
+const KIND_SHIFT='shift',KIND_JOB='job';
+function optBoolean(v,fallback){if(typeof v==='boolean')return v;if(typeof v==='string'){const l=v.toLowerCase();if(l==='true')return true;if(l==='false')return false;}return fallback;}
+function jsonDouble(v){if(typeof v==='number')return v;if(typeof v==='string'){const t=v.trim();if(/^[+-]?(NaN|Infinity|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)[fFdD]?$/.test(t))return t.includes('NaN')?NaN:Number(t.replace(/[fFdD]$/,''));}return null;}
+function optDouble(v,fallback){const d=jsonDouble(v);return d===null?fallback:d;}
+function nullableRate(v,message){if(v==null)return null;const d=jsonDouble(v);check(d!==null&&Number.isFinite(d)&&d>=0,message);return d;}
+const isTime=t=>typeof t==='string'&&/^\d{1,2}:\d{2}$/.test(t.trim())&&Number(t.trim().split(':')[0])<24&&Number(t.trim().split(':')[1])<60;
+function civil(date){
+ // Proleptic Gregorian round trip (V2Rules.daysFromCivil/civilFromDays) without the Date object, so time zones never matter.
+ const [y,m,d]=date.split('-').map(Number);const dim=[31,(y%4===0&&y%100!==0)||y%400===0?29:28,31,30,31,30,31,31,30,31,30,31];
+ return m>=1&&m<=12&&d>=1&&d<=dim[m-1];
+}
+/** A real calendar day from 2000 on (2026-02-30 or 1900-01-01 would make no sense as a plan day). */
+const planDate=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&d>='2000-01-01'&&civil(d);
+const text=v=>typeof v==='string'&&v.trim()!=='';
+/** The 2.0 entry fields with Android decode defaults: kind, payKnown, bonus, seriesKey, autoConfirmed. */
+function v2Fields(e){
+ const kind=e.kind==null?KIND_SHIFT:e.kind;check(kind===KIND_SHIFT||kind===KIND_JOB,'סוג רשומה לא מוכר');
+ const bonus=optDouble(e.bonus,0);check(Number.isFinite(bonus)&&bonus>=0,'בונוס לא תקין');
+ const seriesKey=e.seriesKey==null?null:String(e.seriesKey).trim()?String(e.seriesKey):null;
+ return {kind,payKnown:optBoolean(e.payKnown,true),bonus,seriesKey,autoConfirmed:optBoolean(e.autoConfirmed,false)};
+}
+const V2_DEFAULTS={kind:KIND_SHIFT,payKnown:true,bonus:0,seriesKey:null,autoConfirmed:false};
+function workerBonus(w){const b=optDouble(w?.bonus,0);return Number.isFinite(b)&&b>0?b:0;}
 function normalize(e) {
  check(e&&typeof e.category==='string'&&e.category.trim(),'חסרה קטגוריה');
  for(const k of ['date','hours','hourlyRate','totalEarnings'])check(typeof e[k]==='number'&&Number.isFinite(e[k])&&e[k]>=0,'ערך לא תקין: '+k);
  check(e.createdAt==null||(typeof e.createdAt==='number'&&Number.isFinite(e.createdAt)&&e.createdAt>=0),'זמן יצירה לא תקין');for(const field of ['isTimeRange','isGroupShift'])check(e[field]==null||typeof e[field]==='boolean','סוג דיווח לא תקין');
  check(typeof e.isPaid==='boolean','סטטוס תשלום לא תקין');check(['₪','$'].includes(e.currency??'₪'),'מטבע לא מזוהה');
- const group=e.groupWorkersJson||'';if(group){const members=JSON.parse(group);check(Array.isArray(members),'רשימת עובדים לא תקינה');for(const w of members){check(w&&typeof w.name==='string'&&w.name.trim()&&typeof w.hours==='number'&&Number.isFinite(w.hours)&&w.hours>=0&&(w.isPaid===undefined||typeof w.isPaid==='boolean'),'פרטי עובד בקבוצה לא תקינים');for(const k of ['employerRate','workerRate'])check(w[k]==null||(typeof w[k]==='number'&&Number.isFinite(w[k])&&w[k]>=0),'תעריף עובד בקבוצה לא תקין');}}
+ const group=e.groupWorkersJson||'';if(group){const members=JSON.parse(group);check(Array.isArray(members),'רשימת עובדים לא תקינה');for(const w of members){check(w&&typeof w.name==='string'&&w.name.trim()&&typeof w.hours==='number'&&Number.isFinite(w.hours)&&w.hours>=0&&(w.isPaid===undefined||typeof w.isPaid==='boolean'),'פרטי עובד בקבוצה לא תקינים');for(const k of ['employerRate','workerRate','bonus'])check(w[k]==null||(typeof w[k]==='number'&&Number.isFinite(w[k])&&w[k]>=0),'תעריף עובד בקבוצה לא תקין');}}
  for(const k of ['employerRate','workerRate'])check(e[k]==null||(typeof e[k]==='number'&&Number.isFinite(e[k])&&e[k]>=0),'תעריף קבוצה לא תקין');
- return {category:e.category,date:e.date,createdAt:e.createdAt??e.date,isTimeRange:e.isTimeRange??false,startTime:e.startTime??null,endTime:e.endTime??null,hours:e.hours,hourlyRate:e.hourlyRate,totalEarnings:e.totalEarnings,isPaid:e.isPaid,notes:String(e.notes??''),currency:e.currency??'₪',isGroupShift:e.isGroupShift??false,employerRate:e.employerRate??null,workerRate:e.workerRate??null,groupWorkersJson:group};
+ const out={category:e.category,date:e.date,createdAt:e.createdAt??e.date,isTimeRange:e.isTimeRange??false,startTime:e.startTime??null,endTime:e.endTime??null,hours:e.hours,hourlyRate:e.hourlyRate,totalEarnings:e.totalEarnings,isPaid:e.isPaid,notes:String(e.notes??''),currency:e.currency??'₪',isGroupShift:e.isGroupShift??false,employerRate:e.employerRate??null,workerRate:e.workerRate??null,groupWorkersJson:group};
+ // Backward compatibility: a 2.0 field is added only when it differs from its default, so an entry without
+ // 2.0 data normalizes to exactly the pre-2.0 object (same keys, same order) and stored data/duplicate
+ // signatures stay unchanged. Readers treat a missing field as its default. A worker's bonus stays in groupWorkersJson.
+ const v2=v2Fields(e);for(const k of Object.keys(V2_DEFAULTS))if(v2[k]!==V2_DEFAULTS[k])out[k]=v2[k];
+ return out;
+}
+/** Version 3 only when a 2.0 feature is actually used (unknown pay, bonus, fixed-price job, series, worker bonus). */
+function needsVersion3(entries){return entries.some(e=>{const v2=v2Fields(e);if(Object.keys(V2_DEFAULTS).some(k=>v2[k]!==V2_DEFAULTS[k]))return true;
+ if(!String(e.groupWorkersJson||'').trim())return false;try{const m=JSON.parse(e.groupWorkersJson);return Array.isArray(m)&&m.some(w=>workerBonus(w)>0);}catch{return false;}});}
+function seriesOf(s){
+ check(s&&typeof s==='object','תוכנית לא תקינה');
+ const days=typeof s.daysMask==='number'?Math.trunc(s.daysMask):NaN;
+ check(text(s.id)&&days>=1&&days<=127,'תוכנית לא תקינה');
+ check(isTime(s.startTime)&&isTime(s.endTime),'שעת תוכנית לא תקינה');
+ check(planDate(s.fromDate)&&planDate(s.untilDate)&&s.fromDate<=s.untilDate,'תאריכי תוכנית לא תקינים');
+ const currency=s.currency??'₪';check(currency==='₪'||currency==='$','מטבע לא מזוהה');
+ check(text(s.category),'חסרה קטגוריה');
+ const createdAt=typeof s.createdAt==='number'&&Number.isFinite(s.createdAt)?Math.trunc(s.createdAt):0;
+ return {id:s.id,category:s.category,daysMask:days,startTime:s.startTime,endTime:s.endTime,hourlyRate:nullableRate(s.hourlyRate,'תעריף תוכנית לא תקין'),currency,fromDate:s.fromDate,untilDate:s.untilDate,createdAt};
+}
+function exceptionOf(x){
+ check(x&&typeof x==='object'&&text(x.seriesId)&&planDate(x.date),'תאריך חריגה לא תקין');
+ for(const t of [x.startTime,x.endTime])check(t==null||isTime(t),'שעת חריגה לא תקינה');
+ return {seriesId:x.seriesId,date:x.date,cancelled:optBoolean(x.cancelled,false),hold:optBoolean(x.hold,false),startTime:x.startTime??null,endTime:x.endTime??null,rateOverridden:optBoolean(x.rateOverridden,false),hourlyRate:nullableRate(x.hourlyRate,'תעריף חריגה לא תקין')};
 }
 function androidPreferences(local){const currencies={};for(const [k,v] of Object.entries(local))if(k.startsWith('categoryCurrency:')&&['₪','$'].includes(v))Object.defineProperty(currencies,k.slice(17),{value:v,enumerable:true});return {mainCurrency:local.default_currency||'₪',defaultCategory:local.defaultCategory||'עצמאי',categoryCurrencies:currencies};}
 function decode(text){
  if(!/^[\s\ufeff]*[\[{]/.test(text))return decodeTable(text);
  let root=JSON.parse(text.replace(/^\ufeff/,''));if(Array.isArray(root))root={entries:root};
- check([1,2].includes(root.formatVersion??1),'גרסת גיבוי לא נתמכת');check(Array.isArray(root.entries),'לא נמצאו משמרות בגיבוי');
+ check([1,2,3].includes(root.formatVersion??1),'גרסת גיבוי לא נתמכת');check(Array.isArray(root.entries),'לא נמצאו משמרות בגיבוי');
  const categories=(root.categories||[]).map(c=>{check(typeof c.name==='string'&&c.name.trim(),'קטגוריה לא תקינה');return {name:c.name,defaultRate:number(c.defaultRate??40)};});
  const workers=(root.workers||[]).map(w=>{check(typeof w.name==='string','עובד לא תקין');return {name:w.name};});
- return {formatVersion:2,entries:root.entries.map(normalize),categories,workers,...(root.webPreferences?{webPreferences:root.webPreferences}:root.androidLocalPreferences?{webPreferences:androidPreferences(root.androidLocalPreferences)}:{})};
+ const entries=root.entries.map(normalize);
+ // As Android (optJSONArray): a missing or non-array value means none.
+ const series=(Array.isArray(root.series)?root.series:[]).map(seriesOf),exceptions=(Array.isArray(root.seriesExceptions)?root.seriesExceptions:[]).map(exceptionOf);
+ // Like Android encode: version 3 only when 2.0 data is present; then (and only then) `series` and `exceptions` are returned.
+ const v3=needsVersion3(entries)||series.length>0||exceptions.length>0;
+ return {formatVersion:v3?3:2,entries,categories,workers,...(root.webPreferences?{webPreferences:root.webPreferences}:root.androidLocalPreferences?{webPreferences:androidPreferences(root.androidLocalPreferences)}:{}),...(v3?{series,exceptions}:{})};
 }
 function missing(existing,incoming){
  const signature=e=>JSON.stringify({...normalize(e),createdAt:0});const counts=new Map();
  for(const e of existing){const k=signature(e);counts.set(k,(counts.get(k)||0)+1);}
- return incoming.filter(e=>{const k=signature(e),n=counts.get(k)||0;if(n){counts.set(k,n-1);return false;}return true;});
+ // Like Android importBackup: an occurrence already recorded here (same seriesKey) is the same shift and is never added twice.
+ const seriesKeys=new Set(existing.map(e=>v2Fields(e).seriesKey).filter(Boolean));
+ return incoming.filter(e=>{const k=signature(e),n=counts.get(k)||0;if(n){counts.set(k,n-1);return false;}return true;})
+  .filter(e=>{const key=v2Fields(e).seriesKey;if(key==null)return true;if(seriesKeys.has(key))return false;seriesKeys.add(key);return true;});
+}
+/**
+ * Plans from an import: existing plans win (same id is never duplicated or overwritten) and only plans this
+ * import adds take their day exceptions, as Android importBackup does. Returns the plans/exceptions to add.
+ */
+function missingPlans(existingSeries,existingExceptions,incomingSeries,incomingExceptions){
+ const known=new Set(existingSeries.map(s=>s.id)),added=new Set(),series=[];
+ for(const s of incomingSeries)if(!known.has(s.id)){known.add(s.id);added.add(s.id);series.push(s);}
+ const knownX=new Set(existingExceptions.map(x=>x.seriesId+'@'+x.date)),exceptions=[];
+ for(const x of incomingExceptions){const k=x.seriesId+'@'+x.date;if(added.has(x.seriesId)&&!knownX.has(k)){knownX.add(k);exceptions.push(x);}}
+ return {series,exceptions};
+}
+/**
+ * Backup JSON text. Without 2.0 data this is formatVersion 2 with exactly the structure web/app.js backupText()
+ * writes (formatVersion, androidLocalPreferences, entries, categories, workers, webPreferences; 2-space indent).
+ * With 2.0 data (needsVersion3, or any series/exception) it is formatVersion 3: every entry also carries
+ * kind, payKnown, bonus, seriesKey, autoConfirmed, and "series"/"seriesExceptions" follow, as Android WorkBackup.encode writes them.
+ * data: {entries, categories, workers, webPreferences?, androidLocalPreferences?, series?, exceptions?}
+ */
+function encode(data){
+ const entries=(data.entries||[]).map(normalize),series=(data.series||[]).map(seriesOf),exceptions=(data.exceptions||[]).map(exceptionOf);
+ const v3=needsVersion3(entries)||series.length>0||exceptions.length>0;
+ const root={formatVersion:v3?3:2,androidLocalPreferences:data.androidLocalPreferences,
+  entries:v3?entries.map(e=>{const row={};for(const [k,v] of Object.entries(e))if(!(k in V2_DEFAULTS))row[k]=v;return Object.assign(row,v2Fields(e));}):entries,
+  categories:(data.categories||[]).map(({name,defaultRate})=>({name,defaultRate})),workers:(data.workers||[]).map(({name})=>({name})),webPreferences:data.webPreferences};
+ if(v3){root.series=series;root.seriesExceptions=exceptions;}
+ return JSON.stringify(root,null,2);
 }
 // Preserve imported net hours when only non-time fields are edited.
 function rangeDuration(start,end){
@@ -102,5 +187,5 @@ function rangeHours(start,end,breakMinutes=0,original=null){
 }
 function totals(entries){const t={};for(const e of entries)t[e.currency]=(t[e.currency]||0)+e.totalEarnings;return t;}
 function csv(entries,delimiter=','){const fields=['category','date','hours','hourlyRate','totalEarnings','isPaid','notes','currency','startTime','endTime'];const quote=s=>'"'+String(s??'').replace(/"/g,'""')+'"';return '\ufeff'+[fields.join(delimiter),...entries.map(e=>fields.map(k=>quote(k==='date'?new Date(e.date).toLocaleDateString('en-GB'):e[k])).join(delimiter))].join('\r\n');}
-const api={decode,decodeTable,normalize,missing,totals,csv,number,table,rangeHours,inferredBreak};if(typeof module!=='undefined')module.exports=api;else root.WorkTransfer=api;
+const api={decode,decodeTable,normalize,missing,missingPlans,encode,needsVersion3,planDate,totals,csv,number,table,rangeHours,inferredBreak};if(typeof module!=='undefined')module.exports=api;else root.WorkTransfer=api;
 })(globalThis);

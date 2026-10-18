@@ -9,7 +9,7 @@ test('public account switch disables config and protects dormant module before a
  vm.runInNewContext(fs.readFileSync('web/accounts.js','utf8'),{window:{WorkFeatures:features}});
  const handler=require('../api/config.js');let result;const response={setHeader(){},status(n){assert.equal(n,200);return this;},json(v){result=v;}};handler({method:'GET'},response);
  assert.deepEqual(result,{firebase:null,webAccountsEnabled:false,cloudSyncEnabled:false,webAiEnabled:false});
- const html=fs.readFileSync('index.html','utf8');assert.match(html,/<template id="account-template">/);assert.doesNotMatch(html,/<script src="web\/(accounts|cloud-sync)\.js"/);
+ const html=fs.readFileSync('index.html','utf8');/* 2.0 page: accounts are off and have no screen at all; their code must never load. */assert.doesNotMatch(html,/<script src="web\/(accounts|cloud-sync)\.js"/);
 });
 test('no notice for same/invalid builds; checks throttle for five minutes; newer build and later are side-effect free',async()=>{
  const f=fixture();await f.manager.check();assert.equal(f.state().shown,null);await f.manager.check();assert.equal(f.state().fetches,1);
