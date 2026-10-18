@@ -1,5 +1,25 @@
 # Current project state
 
+## October 18 — 2.0 launched (Android and website), owner-approved
+
+**Android 2.0** (code 33):
+- Exact tested artifact `salary-2.0-candidate` from run 39151970317 (source `83a889e`). APK SHA-256 `55953e60457ae87ee664e1bdc327009d15fb8f2e3f97dddcc69a885b41e2d849`; same package and permanent certificate.
+- Candidate gates: 132 Debug + 105 Release tests; real RC16 → rc8 → 2.0 update with data kept; fresh install with the launch and the tour; crash logs clean.
+- Published through the existing update channel: run 39157220086, release `android-v2.0`, asset `Salary2.0.apk`. The anonymous manifest and APK match.
+- Live check passed: the original RC16 install found 2.0 through the actual button, downloaded the exact APK, and installed it through the Android installer. The synthetic data came through identical, and 2.0 is not offered again.
+- `codex/android-local-distribution` now holds the 2.0 source (fast-forward from `claude/v2-android`).
+- The next delivered build must use a code higher than 33.
+
+**Website 2.0:**
+- Production deployment `dpl_68wLnANYRU9XXVqYfazV3ABsM4SE` from `3f29f5d`, at the existing origin `salary-calculation-eta.vercel.app`. `build-info.json` reports that commit.
+- Rollback deployment: `dpl_A7zWpmd7PTFsaorrZKEQzDZhvGWn` (RC15 web).
+- The public-site browser flows passed (run 39157846570).
+- `codex/web-rc15-live` now holds the 2.0 site; the RC15 parity suites are retired from that branch.
+
+**Drive:** the existing file `SalaryRC16.apk` (id `1jDiOB-ByrQFs3CBzHehJEZSgl9ZKvCY_`) is not replaced yet. The available Drive tool can change only names and descriptions, not file content. The owner uploads `Salary2.0.apk` as a new version of that file ("ניהול גרסאות"), which keeps its link and permissions.
+
+**Remaining manual checks:** physical phone review of 2.0 and the Drive upload.
+
 ## October 18 — stage D (summaries) on both platforms: 2.0-rc8 and website preview (not published)
 
 Owner approved the next stage but not the launch: stage D is done; publishing (stage F) waits for explicit approval. When it comes, the owner chose a clean "2.0" build.
