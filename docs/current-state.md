@@ -1,5 +1,14 @@
 # Current project state
 
+## October 18 — website fix after launch; Drive updated by the owner
+
+- **Website:** a planned shift's letter was invisible in light mode. The inline white text colour overrode the place colour; Android was not affected.
+  - Fixed in `4dacd57`, with a browser assertion added.
+  - Live as production `dpl_BiKB488BfxrXNK1VoTy2fztbeqEX`; the public-site browser flows passed.
+  - Rollback: `dpl_68wLnANYRU9XXVqYfazV3ABsM4SE`.
+- **Android:** no change is needed. 2.0 (code 33) stays the published build.
+- **Drive:** the owner replaced the existing file in place. It is now `Salary2.0.apk` (id `1jDiOB-ByrQFs3CBzHehJEZSgl9ZKvCY_`), and its size of 19,452,360 bytes matches the release asset.
+
 ## October 18 — 2.0 launched (Android and website), owner-approved
 
 **Android 2.0** (code 33):
