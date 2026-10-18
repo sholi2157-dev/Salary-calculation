@@ -1,5 +1,9 @@
 # Current project state
 
+## October 18 — 2.0-rc5: one look, done vs planned, profile, recent notifications (not published)
+
+Branch `claude/v2-android` only. Signed `2.0-rc5` / code 29 from `8f77951`, run 39082570832 SUCCESS: 127 Debug + 103 Release tests, real RC16 → delivered 2.0-rc4 → rc5 update with exact data kept, device tests incl. the weekly-plan auto-record check, fresh install, empty crash logs. APK SHA-256 `c68a00a8b000ab6c12dba688780ffccd83266dfe9397c80a8c20ce17a4ff7225`, same package and permanent certificate. Private artifact `salary-2.0-rc5-candidate` only. Next delivered build must use a code higher than 29. Details in `docs/v2-stage-c.md` (rc5 section). Owner said to move on: next is the website (stage E) on a separate branch, no publishing or merging without approval; the phone review of rc5 is still open. PR #6 not merged.
+
 ## October 16 — 2.0-rc4: stage C weekly plans (not published)
 
 Branch `claude/v2-android` only. Signed `2.0-rc4` / code 28 from `ec0aca5`, run 38955233764 SUCCESS: 123 Debug + 103 Release tests, real RC16 → delivered 2.0-rc3 → rc4 update with exact data kept, device UI/keyboard/currency tests plus the new weekly-plan auto-record check, fresh install, empty crash logs. APK SHA-256 `bc140859fa345851966333ea0c21bd81d04c790b4f24fdb19981a4817e25f71d`, same package and permanent certificate. Private artifact `salary-2.0-rc4-candidate` only. Next delivered build must use a code higher than 28. Stage C (weekly plans, auto-record with undo, reminders, quiet hours) inside the existing screens; details and review fixes in `docs/v2-stage-c.md`. Waiting for the owner's phone review of rc4; then website (stage E) on a separate branch, no publishing without approval. PR #6 not merged.

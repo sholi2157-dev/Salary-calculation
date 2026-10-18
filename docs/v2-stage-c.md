@@ -63,7 +63,7 @@ existing screens (no new page). Delivered as signed `2.0-rc4` / code 28 (see "Bu
 - Worker: rethrows cancellation, logs, stops retrying after 3 attempts; idle while a signed-in account is active.
 - Screens: 2×2 full-size plan buttons, seven equal day toggles, the plan follows the editor date and needs at least one
   created day, notes/break "not kept" note, Back leaves the planned view, plans tick each minute, 48dp chips.
-- Noted, not changed: the notification icon reuses the timer's system icon (as the existing timer notification does).
+- Notification icon: replaced in rc5 by the app mark (see below).
 
 ## Build (verified)
 - Source `ec0aca5ee653c8a9fb68534a310c35d2b4db566e`; dev CI run 38954859534 SUCCESS.
@@ -74,3 +74,27 @@ existing screens (no new page). Delivered as signed `2.0-rc4` / code 28 (see "Bu
   package `com.aistudio.worktracker.qztvdw.distribution`, `2.0-rc4` / 28. Private artifact `salary-2.0-rc4-candidate`
   (id 12070554598). Not published; no Release, no update feed change.
 - Remaining manual gate: the owner's phone (update over rc3, create a weekly plan, see it on Home/History, a reminder).
+
+## rc5 — one look, done vs planned, profile, recent notifications (owner review of rc4)
+- One purple glow (`KisGlow`, `Workplaces[0]`) on Home, History, Settings and the editor. The editor no longer has a
+  full workplace-colour block: plain page, ink text; the workplace colour marks only the chosen place and the ruler span.
+- Done vs planned by calendar day (`KisHistoryLogic.upcoming/done`, the rule Home already used): a shift on a later day
+  is planned. History's "עבדתי / מתוכנן" toggle is always there; "עבדתי" (totals, copy, Excel, selection) holds done
+  shifts only; "מתוכנן" lists future shifts and weekly-plan days by date, with an explanation when empty. Cards of
+  future shifts carry "מתוכנן", a dashed avatar and a muted amount; Home "הבא בתור" includes them. Display only: no
+  stored data changes.
+- Notifications (timer and reminders) use the app mark `ic_stat_kis` tinted purple instead of the system red circle.
+- Profile name (Settings → פרופיל, device-only like the plan settings): greeting "ערב טוב, שם" and my own line in the
+  group report to the contractor ("שולי: …" instead of "החלק שלי"); never at the top of a message. Shared case
+  `group_employer_report_with_profile_name`.
+- "התראות אחרונות" (last 20 sent reminders) and "החודש שלך" month summary (done shifts only, money per currency, top
+  place, change from the previous month, share). Opened from the monthly reminder, the list, and History's month view.
+- Website note for stage E: an active shift is kept in the browser as its start time and keeps counting while the tab is
+  closed; there is no persistent device notification. Reminders show inside the site while it is open; reminders while it
+  is closed need a push server and are tied to accounts/sync, so they need separate approval.
+- Build (verified): source `8f779517a6dfd17a47ef54b2f266888625749c17`, dev CI run 39082269505 SUCCESS; signed RC run
+  39082570832 SUCCESS: 127 Debug + 103 Release unit tests, "same package, same permanent certificate, versionCode
+  29 > 28 > 24", real RC16 → delivered rc4 (exact artifact) → rc5 update with identical data, device UI/keyboard/
+  currency/`PlanAutoRecordTest`, fresh install, empty crash log. APK SHA-256
+  `c68a00a8b000ab6c12dba688780ffccd83266dfe9397c80a8c20ce17a4ff7225`, `2.0-rc5` / 29, private artifact
+  `salary-2.0-rc5-candidate` (id 12119622614). Not published. Manual gate: owner's phone.
