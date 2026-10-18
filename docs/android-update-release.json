@@ -1,12 +1,12 @@
 {
-  "runId": 39168415624,
-  "sourceSha": "143564e77ce3c2ec4b9040569edcc09ed7ab5b97",
-  "artifactName": "salary-2.0.1-candidate",
-  "tag": "android-v2.0.1",
-  "fileName": "Salary2.0.1.apk",
-  "versionCode": 34,
-  "versionName": "2.0.1",
-  "sha256": "5dec6167314581c9d1e393fe987d478720b839bf4236182feea9da9f2ae62005",
+  "runId": 39171295085,
+  "sourceSha": "3c1c5f0e2a832f9f73c8b05587b1a0453e114f81",
+  "artifactName": "salary-2.0.2-candidate",
+  "tag": "android-v2.0.2",
+  "fileName": "Salary2.0.2.apk",
+  "versionCode": 35,
+  "versionName": "2.0.2",
+  "sha256": "c3c743d3dd7f1244ba8249e2d8339a66bb7db9f86618ac01e04c94aa6f943db0",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "תיקון מהיר: הכפתורים במסך הפתיחה של 2.0 (\"הבא\", \"המשך\") מגיבים בנגיעה אחת. כל המשמרות, הסכומים וההגדרות שלך נשמרים בעדכון."
+  "releaseNotes": "מעכשיו כל גרסה חדשה מופיעה בפעמון במסך הבית: נקודה על הפעמון, ובפנים כפתור \"עדכון\" שמוריד ומתקין. הבדיקה בהגדרות נשארת כמו שהייתה. כל המשמרות, הסכומים וההגדרות שלך נשמרים בעדכון."
 }
