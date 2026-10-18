@@ -506,7 +506,7 @@ class KisUiTest {
                 }
             }
         }
-        ui.onNodeWithTag("home_bell_dot").assertExists()
+        ui.onNodeWithTag("home_bell_dot", useUnmergedTree = true).assertExists()
         ui.onNodeWithTag("home_profile").performClick()
         ui.onNodeWithTag("profile_name").performTextReplacement("שולי")
         ui.onNodeWithTag("profile_save").performClick()
@@ -542,7 +542,7 @@ class KisUiTest {
         ui.onNodeWithTag("haptics_switch").performScrollTo().performClick()
         assertFalse(settings.haptics)
         // Weekly plans live here (device-only settings).
-        ui.onNodeWithTag("series_row").performScrollTo().performClick()
+        ui.onNodeWithTag("series_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
         ui.onNodeWithTag("auto_confirm_switch").performClick()
         assertFalse(vm.planSettings.autoConfirm)
         ui.onNodeWithTag("auto_confirm_switch").performClick()
