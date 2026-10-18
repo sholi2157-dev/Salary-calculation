@@ -472,7 +472,39 @@ class KisUiTest {
         host { MonthSummarySheet(HistoryFilter.monthKey(mid), rows(), categories, onHistory = {}, onDismiss = {}, onMessage = {}) }
         ui.onNodeWithTag("month_summary_money").assertTextContains("₪300", substring = true).assertTextContains("$180", substring = true)
         ui.onNodeWithTag("month_summary_counts", useUnmergedTree = true).assertTextEquals("5 משמרות · 18.5 שעות")
+        ui.onNodeWithTag("month_story").assertExists()
+        ui.onNodeWithTag("month_insight_0").assertExists()
         shot("month-summary")
+    }
+
+    @Test fun storyRecapMovesOnHidesTheAmountAndSharesACardWithoutIt() {
+        seed()
+        var closed = false
+        ui.mainClock.autoAdvance = false
+        host { KisStory(com.example.domain.V2Summary.monthScope(HistoryFilter.monthKey(mid)), rows(), categories, onClose = { closed = true }, onMessage = {}) }
+        ui.mainClock.advanceTimeBy(1_000)
+        ui.onNodeWithTag("story_intro").assertExists()
+        runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-intro.png") }
+        // It moves on by itself.
+        ui.mainClock.advanceTimeBy(6_500)
+        ui.onNodeWithTag("story_hours").assertExists()
+        fun next() { ui.onNodeWithTag("story_next").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); ui.mainClock.advanceTimeBy(800) }
+        repeat(10) { if (ui.onAllNodesWithTag("story_money").fetchSemanticsNodes().isEmpty()) next() }
+        assertEquals(2, ui.onAllNodesWithTag("story_money_hidden", useUnmergedTree = true).fetchSemanticsNodes().size)
+        ui.onNodeWithText("₪300", substring = true).assertDoesNotExist()
+        ui.onNodeWithTag("story_reveal").performClick(); ui.mainClock.advanceTimeBy(100)
+        ui.onNodeWithTag("story_money_₪", useUnmergedTree = true).assertExists()
+        next()
+        ui.onNodeWithTag("story_card").assertExists()
+        ui.onNodeWithTag("story_poster").assert(hasText("₪", substring = true).not()).assert(hasText("$", substring = true).not())
+        runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-card.png") }
+        // The card waits; going back works; forward from the card closes.
+        ui.mainClock.advanceTimeBy(10_000)
+        ui.onNodeWithTag("story_card").assertExists()
+        ui.onNodeWithTag("story_prev").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); ui.mainClock.advanceTimeBy(800)
+        ui.onNodeWithTag("story_money").assertExists()
+        next(); next()
+        assertTrue(closed)
     }
 
     @Test fun bellSheetListsRecentAndOpensTheirMonth() {

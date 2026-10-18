@@ -100,6 +100,7 @@ fun KisApp(
     var navHeight by remember { mutableStateOf(0.dp) }
     var hoursFor by rememberSaveable { mutableStateOf<String?>(null) }
     var monthSheet by rememberSaveable { mutableStateOf<Int?>(null) }
+    var storyScope by rememberSaveable { mutableStateOf<String?>(null) }
     var bellOpen by rememberSaveable { mutableStateOf(false) }
     // A dot on the bell for what arrived since it was last opened (the daily job writes it; read again on every return).
     var unread by remember { mutableStateOf(viewModel.planSettings.unread) }
@@ -204,7 +205,8 @@ fun KisApp(
                     onSettings = { go(2) },
                     plans = plans, planActions = planActions,
                     onAllPlans = { history.selection = emptySet(); history.searching = false; history.planned = true; go(1) },
-                    unread = unread, onBell = { bellOpen = true })
+                    unread = unread, onBell = { bellOpen = true },
+                    onMonthSummary = { monthSheet = HistoryFilter.monthKey(System.currentTimeMillis()) })
                 1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) },
                     plans = plans, planActions = planActions, onMonthSummary = { monthSheet = it })
                 else -> Box(Modifier.onFocusChanged { settingsHasFocus = it.hasFocus }) {
@@ -276,7 +278,10 @@ fun KisApp(
         onSettings = { bellOpen = false; unread = false; go(2) }, onDismiss = { bellOpen = false; unread = false })
     monthSheet?.let { m ->
         MonthSummarySheet(m, entries, categories, onHistory = { monthSheet = null; history.planned = false; history.showMonth = m; go(1) },
-            onDismiss = { monthSheet = null }, onMessage = { say(it) })
+            onDismiss = { monthSheet = null }, onMessage = { say(it) }, onStory = { monthSheet = null; storyScope = it })
+    }
+    storyScope?.let { sc ->
+        KisStory(sc, entries, categories, onClose = { storyScope = null }, onMessage = { say(it) })
     }
     hoursFor?.let { key -> plans.firstOrNull { it.key == key } }?.let { o ->
         PlanHoursSheet(o, onDismiss = { hoursFor = null }) { start, end, fromNowOn ->

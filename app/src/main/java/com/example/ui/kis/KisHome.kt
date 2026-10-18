@@ -67,6 +67,7 @@ fun KisHome(
     onAllPlans: () -> Unit = {},
     unread: Boolean = false,
     onBell: () -> Unit = {},
+    onMonthSummary: () -> Unit = {},
 ) {
     val c = Kis.colors
     // A clock that moves on by itself, so "today" and "this week" roll over without new data.
@@ -94,7 +95,7 @@ fun KisHome(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { recent.forEach { e -> ShiftCard(e, categories, onClick = { onOpen(e) }, tagPrefix = "recent_shift_card_") } }
             }
             if (categories.isNotEmpty() && month.isNotEmpty()) {
-                SectionTitle("הכיס של החודש")
+                SectionTitle("הכיס של החודש", action = "סיכום", onAction = onMonthSummary, actionTag = "home_month_summary")
                 Wallet(month, categories, onOpen)
             }
             if (entries.isEmpty()) EmptyHome()
