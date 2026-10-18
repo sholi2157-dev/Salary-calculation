@@ -493,6 +493,10 @@ class KisUiTest {
         ui.onNodeWithTag("story_hours").assertExists()
         fun next() { ui.onNodeWithTag("story_next").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); ui.mainClock.advanceTimeBy(800) }
         repeat(10) { if (ui.onAllNodesWithTag("story_money").fetchSemanticsNodes().isEmpty()) next() }
+        fun prev() { ui.onNodeWithTag("story_prev").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); ui.mainClock.advanceTimeBy(800) }
+        prev()
+        assertEquals("back from the amount", listOf("story_hour"), shownSlide())
+        next()
         assertEquals(2, ui.onAllNodesWithTag("story_money_hidden", useUnmergedTree = true).fetchSemanticsNodes().size)
         ui.onNodeWithText("₪300", substring = true).assertDoesNotExist()
         ui.onNodeWithTag("story_reveal").performClick(); ui.mainClock.advanceTimeBy(100)
@@ -504,8 +508,8 @@ class KisUiTest {
         // The card waits; going back works; forward from the card closes.
         ui.mainClock.advanceTimeBy(10_000)
         ui.onNodeWithTag("story_card").assertExists()
-        ui.onNodeWithTag("story_prev").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); ui.mainClock.advanceTimeBy(800)
-        assertEquals(listOf("story_money"), shownSlide())
+        prev()
+        assertEquals("back from the card (closed=$closed)", listOf("story_money"), shownSlide())
         next(); next()
         assertTrue(closed)
     }
