@@ -79,12 +79,12 @@ jobs:
           STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true --console=plain
-      - name: Fetch previous RC15 installation
+      - name: Fetch the previous public release (RC16) installation
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download 37993791019 --repo sholi2157-dev/Salary-calculation --name salary-local-release-candidate --dir previous
-          echo '9935eb6d49c971832653a207186e64392c93ba65da271d839684c5b624ff0bcc  previous/candidate-b.apk' | sha256sum --check
+          gh run download 38591694409 --repo sholi2157-dev/Salary-calculation --name salary-local-release-candidate --dir previous
+          echo '400e11bccd9a46e7911c498137da9ba5d23b3b86cee50f0f1ea6400f40e7cc30  previous/candidate-b.apk' | sha256sum --check
       - name: Enable disposable emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

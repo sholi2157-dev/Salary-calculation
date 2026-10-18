@@ -1,12 +1,12 @@
 {
-  "runId": 38591694409,
-  "sourceSha": "c0d655365cfd35e2bba11807cb4fe3c0ff27af93",
-  "artifactName": "salary-local-release-candidate",
-  "tag": "android-v1.5-rc16",
-  "fileName": "SalaryRC16.apk",
-  "versionCode": 24,
-  "versionName": "1.5-rc16",
-  "sha256": "400e11bccd9a46e7911c498137da9ba5d23b3b86cee50f0f1ea6400f40e7cc30",
+  "runId": 39151970317,
+  "sourceSha": "83a889e8fc31441996d9f024c66549069a87bce4",
+  "artifactName": "salary-2.0-candidate",
+  "tag": "android-v2.0",
+  "fileName": "Salary2.0.apk",
+  "versionCode": 33,
+  "versionName": "2.0",
+  "sha256": "55953e60457ae87ee664e1bdc327009d15fb8f2e3f97dddcc69a885b41e2d849",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "תיקוני אמינות ושמירת נתונים: שמירת משמרות AI מתבצעת בשלמותה, והטיוטה נשמרת במקרה של כשל. סימון תשלום אינו דורס שינויים חדשים במשמרת. ייבוא גיבויים מאחד שמות קטגוריה עקביים בלי לשנות סכומים שמורים. העדכון שומר על הנתונים וההגדרות הקיימים."
+  "releaseNotes": "חישוב שכר 2.0 — עיצוב חדש לגמרי. מסך בית, היסטוריה והוספת משמרת חדשים; משמרות קבועות שנרשמות לבד; תעריף שאפשר להשלים אחר כך; בונוס וקבלנות; התראות על הסיכום החודשי; ו\"החודש שלך בכיס\". כל המשמרות, הסכומים וההגדרות שלך נשמרים בעדכון."
 }

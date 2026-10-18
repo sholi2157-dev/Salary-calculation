@@ -22,7 +22,7 @@ adb logcat -c
 instrument() {
   local method="$1" output="$2"
   shift 2
-  timeout 240s adb shell am instrument -w -r -e timeout_msec 180000 -e previousVersionCode 23 -e updateVersionCode "$update_code" -e updateVersionName "$update_name" -e updateSha256 "$update_sha" -e class "$method" "$@" "$runner" | tee "live-update-evidence/$output.txt"
+  timeout 240s adb shell am instrument -w -r -e timeout_msec 180000 -e previousVersionCode 24 -e updateVersionCode "$update_code" -e updateVersionName "$update_name" -e updateSha256 "$update_sha" -e class "$method" "$@" "$runner" | tee "live-update-evidence/$output.txt"
   grep -E 'OK \(1 test\)' "live-update-evidence/$output.txt"
 }
 instrument com.example.DistributionUpdateTest seed -e stage seed
@@ -90,5 +90,5 @@ if grep -E 'FATAL EXCEPTION|Process: com.aistudio.worktracker.qztvdw.distributio
 python3 - <<'PY'
 import json,pathlib
 config=json.loads(pathlib.Path('docs/android-update-release.json').read_text())
-pathlib.Path('live-update-evidence/result.json').write_text(json.dumps({'originalInstalledVersionCode':23,'liveManualCheckFoundVersionCode':config['versionCode'],'liveApkChecksumVerified':True,'androidInstallerConfirmed':True,'installedVersionCode':config['versionCode'],'syntheticDataPreservedExactly':True,'sameVersionNotOfferedAgain':True},indent=2)+'\n')
+pathlib.Path('live-update-evidence/result.json').write_text(json.dumps({'originalInstalledVersionCode':24,'liveManualCheckFoundVersionCode':config['versionCode'],'liveApkChecksumVerified':True,'androidInstallerConfirmed':True,'installedVersionCode':config['versionCode'],'syntheticDataPreservedExactly':True,'sameVersionNotOfferedAgain':True},indent=2)+'\n')
 PY
