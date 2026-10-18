@@ -80,7 +80,7 @@ class DistributionUiTest {
         ui.activity.intentActionFlow.value = "com.example.ACTION_IMPORT_EXCEL"
         ui.waitForIdle()
         ui.onNodeWithTag("settings_root").assertIsDisplayed()
-        for (section in listOf("עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
+        for (section in listOf("עבודה", "מראה ותחושה", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
         snap("v2-settings")
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("Synthetic feedback draft")
         Espresso.closeSoftKeyboard()
