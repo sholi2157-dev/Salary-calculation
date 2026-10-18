@@ -1,5 +1,23 @@
 # Current project state
 
+## October 19 — 2.0.3: live money, both times on a new shift, digit-by-digit times, AI currency
+
+Owner requests after 2.0.2:
+- **Live shift (Home):** with a rate, the bar counts the money earned so far to the agora, every second. The clock and the place move to the line below. Without a rate, the bar keeps the clock.
+- **New shift:** always shows both times. End is now, rounded; start is 4 hours earlier (`EntryDraft.DEFAULT_MINUTES`). Changing the workplace keeps the times.
+- **Editing times:**
+  - Hours and minutes are separate taps.
+  - The keypad shows four digits with a cursor. Tapping a digit moves the cursor there, and typing replaces only that digit (`typeTime`), so 05:30 → 05:35 takes one digit.
+  - Each time has its own −15/+15, replacing the shared nudge row. The ruler is unchanged.
+- **AI currency:** the model returns no currency unless the text names one. The app then uses the workplace's currency, else the user's default (`GeminiParser.parseResponse`, `GeminiCurrencyTest`). Before this, AI shifts were always saved in ₪.
+
+**2.0.3** (code 36), source `f7d3688`:
+- Run 39173912680: 135 Debug + 105 Release tests; real RC16 → 2.0.2 → 2.0.3 update with data kept; fresh-install launch; crash logs clean.
+- APK SHA-256 `10baa2e4b1bf70ce75e61d48ef0ae57ba6dd69b1e2609eef825f117674a8a283`.
+- Published: update channel run 39174715276, release `android-v2.0.3`. The live RC16 → 2.0.3 check passed.
+
+The website still has the old editor and live view; it was not changed in this round. The next build must use a code higher than 36.
+
 ## October 19 — 2.0.2: new versions show on Home's bell
 
 Owner: every new version should show a dot on the notifications bell, with the update inside, in addition to Settings.
