@@ -1,9 +1,9 @@
 name: Web 2.0 (כיס) checks
 # The 2.0 website on its own branch: unit rules on the shared fixtures, the fixtures equal Android's, real browser flows.
-# Preview only: this workflow never deploys, aliases or touches production.
+# This workflow never deploys, aliases or touches production; codex/web-rc15-live is the published website's branch.
 on:
   push:
-    branches: ['claude/v2-web']
+    branches: ['claude/v2-web', 'codex/web-rc15-live']
   workflow_dispatch:
 permissions:
   contents: read

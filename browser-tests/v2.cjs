@@ -26,7 +26,8 @@ const seed = {
 
 (async () => {
   await new Promise(r => server.listen(0, r));
-  const base = `http://127.0.0.1:${server.address().port}/`;
+  // PUBLIC_SITE_URL checks the published site itself (each test still runs in its own empty browser profile).
+  const base = process.env.PUBLIC_SITE_URL || `http://127.0.0.1:${server.address().port}/`;
   const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
   const errors = [];
   async function open(viewport = { width: 390, height: 844 }, colorScheme = 'light', data = seed, launched = true) {

@@ -26,9 +26,7 @@ jobs:
           PLAYWRIGHT_MODULE: /tmp/browser-qa/node_modules/playwright
           SCREENSHOT_DIR: browser-evidence
           PUBLIC_SITE_URL: https://salary-calculation-eta.vercel.app/
-        run: |
-          node browser-tests/rc15.cjs
-          node browser-tests/audit.cjs
+        run: node browser-tests/v2.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
