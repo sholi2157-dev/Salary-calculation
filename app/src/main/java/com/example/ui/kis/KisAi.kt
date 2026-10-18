@@ -85,7 +85,8 @@ fun KisAiEntry(viewModel: WorkViewModel, categories: List<WorkCategory>, modifie
                     parsing = true; error = null
                     try {
                         val now = viewModel.categories.value
-                        val result = GeminiParser.parseNaturalLanguageToShifts(text, now.map { it.name }, now.associate { it.name to it.defaultRate }, PersonalAiKey.read(context, viewModel.owner.uid))
+                        val result = GeminiParser.parseNaturalLanguageToShifts(text, now.map { it.name }, now.associate { it.name to it.defaultRate }, PersonalAiKey.read(context, viewModel.owner.uid),
+                            currencyOf = viewModel::categoryCurrency)
                         if (result.isNotEmpty()) proposal = result else error = "לא הצלחנו להבין את פרטי המשמרת. נסה להוסיף תאריך, שעות ותעריף ולפענח שוב."
                     } catch (e: CancellationException) { throw e }
                     catch (_: Exception) { error = "הפענוח לא הושלם. בדוק את החיבור ואת המפתח האישי בהגדרות, או תקן את התיאור ונסה שוב." }

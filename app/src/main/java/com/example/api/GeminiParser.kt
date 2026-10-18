@@ -39,7 +39,9 @@ object GeminiParser {
         input: String,
         existingCategories: List<String>,
         categoryRates: Map<String, Double> = emptyMap(),
-        apiKey: String = ""
+        apiKey: String = "",
+        /** The currency of a shift whose description names none: its workplace's, else the user's default. */
+        currencyOf: (String) -> String = { "₪" },
     ): List<ParsedShift> = withContext(Dispatchers.IO) {
         require(apiKey.isNotBlank()) { "יש להוסיף מפתח ג׳מיני אישי בהגדרות" }
 
@@ -97,7 +99,7 @@ object GeminiParser {
               - Specific dates like "25/08" or day names like "יום ראשון" -> appropriate epoch in the current or closest relevant month.
             - "hours": Number of hours worked as a positive Double (e.g., 8.0, 4.5).
             - "hourlyRate": Rate per hour as a Double. If not specified, use the matching category hourly default above; only if absent use 40.0.
-            - "currency": If dollar / $ / דולר is mentioned for this shift, return "$". Otherwise return "₪".
+            - "currency": If dollar / $ / דולר is mentioned for this shift, return "$". If shekel / ₪ / ש"ח / שקל is mentioned, return "₪". Otherwise return "".
             - "notes": Any extra notes, descriptions, or tasks mentioned.
             - "isGroup": True if multiple people or a group is described (e.g. contains names, "צוות", "חברים", "בחורים"). Otherwise false.
             - "groupMembers": List of member names if isGroup is true, else [].
@@ -158,55 +160,60 @@ object GeminiParser {
                     .removePrefix("```")
                     .removeSuffix("```")
                     .trim()
+        parseResponse(rawResponseTemp, currencyOf)
+    }
 
-                val resultList = mutableListOf<ParsedShift>()
+    /** The model's JSON (an array, or an object holding one) as shifts; a shift naming no currency takes [currencyOf] its workplace. */
+    internal fun parseResponse(rawResponseTemp: String, currencyOf: (String) -> String): List<ParsedShift> {
+        val resultList = mutableListOf<ParsedShift>()
 
-                fun parseShiftObject(obj: JSONObject): ParsedShift {
-                    val category = obj.optString("category", "עצמאי").ifBlank { "עצמאי" }
-                    val date = obj.getLong("date").also { require(it >= 0) { "תאריך לא תקין בתשובת המודל" } }
-                    val hours = obj.getDouble("hours").also { require(it.isFinite() && it > 0) { "שעות לא תקינות בתשובת המודל" } }
-                    val hourlyRate = obj.getDouble("hourlyRate").also { require(it.isFinite() && it >= 0) { "תעריף לא תקין בתשובת המודל" } }
-                    val currency = obj.getString("currency").also { require(it in listOf("₪", "$")) { "מטבע לא מזוהה בתשובת המודל" } }
-                    val notes = obj.optString("notes", "")
+        fun parseShiftObject(obj: JSONObject): ParsedShift {
+            val category = obj.optString("category", "עצמאי").ifBlank { "עצמאי" }
+            val date = obj.getLong("date").also { require(it >= 0) { "תאריך לא תקין בתשובת המודל" } }
+            val hours = obj.getDouble("hours").also { require(it.isFinite() && it > 0) { "שעות לא תקינות בתשובת המודל" } }
+            val hourlyRate = obj.getDouble("hourlyRate").also { require(it.isFinite() && it >= 0) { "תעריף לא תקין בתשובת המודל" } }
+            // Not named in the description: the workplace's currency (else the user's default), never a fixed ₪.
+            val currency = obj.optString("currency", "").trim().ifEmpty { currencyOf(category) }
+                .also { require(it in listOf("₪", "$")) { "מטבע לא מזוהה בתשובת המודל" } }
+            val notes = obj.optString("notes", "")
 
-                    val isGroup = obj.optBoolean("isGroup", false)
-                    val groupMembersArray = obj.optJSONArray("groupMembers")
-                    val groupMembers = mutableListOf<String>()
-                    if (groupMembersArray != null) {
-                        for (i in 0 until groupMembersArray.length()) {
-                            val member = groupMembersArray.optString(i)
-                            if (member.isNotBlank()) {
-                                groupMembers.add(member)
-                            }
-                        }
+            val isGroup = obj.optBoolean("isGroup", false)
+            val groupMembersArray = obj.optJSONArray("groupMembers")
+            val groupMembers = mutableListOf<String>()
+            if (groupMembersArray != null) {
+                for (i in 0 until groupMembersArray.length()) {
+                    val member = groupMembersArray.optString(i)
+                    if (member.isNotBlank()) {
+                        groupMembers.add(member)
                     }
-                    return ParsedShift(category, date, hours, hourlyRate, notes, isGroup, groupMembers, currency)
                 }
+            }
+            return ParsedShift(category, date, hours, hourlyRate, notes, isGroup, groupMembers, currency)
+        }
 
-                try {
-                    if (rawResponseTemp.startsWith("[")) {
-                        val jsonArr = org.json.JSONArray(rawResponseTemp)
-                        for (i in 0 until jsonArr.length()) {
-                            resultList.add(parseShiftObject(jsonArr.getJSONObject(i)))
-                        }
-                    } else {
-                        val jsonObj = JSONObject(rawResponseTemp)
-                        val shiftsArr = jsonObj.optJSONArray("shifts") 
-                            ?: jsonObj.optJSONArray("entries") 
-                            ?: jsonObj.optJSONArray("items")
-                        if (shiftsArr != null) {
-                            for (i in 0 until shiftsArr.length()) {
-                                resultList.add(parseShiftObject(shiftsArr.getJSONObject(i)))
-                            }
-                        } else {
-                            resultList.add(parseShiftObject(jsonObj))
-                        }
+        try {
+            if (rawResponseTemp.startsWith("[")) {
+                val jsonArr = org.json.JSONArray(rawResponseTemp)
+                for (i in 0 until jsonArr.length()) {
+                    resultList.add(parseShiftObject(jsonArr.getJSONObject(i)))
+                }
+            } else {
+                val jsonObj = JSONObject(rawResponseTemp)
+                val shiftsArr = jsonObj.optJSONArray("shifts") 
+                    ?: jsonObj.optJSONArray("entries") 
+                    ?: jsonObj.optJSONArray("items")
+                if (shiftsArr != null) {
+                    for (i in 0 until shiftsArr.length()) {
+                        resultList.add(parseShiftObject(shiftsArr.getJSONObject(i)))
                     }
-                } catch (jsonEx: Exception) {
-                    throw IllegalArgumentException("תשובת המודל לא תקינה; לא נשמרו משמרות", jsonEx)
+                } else {
+                    resultList.add(parseShiftObject(jsonObj))
                 }
-
-        resultList
+            }
+        } catch (jsonEx: Exception) {
+            throw IllegalArgumentException("תשובת המודל לא תקינה; לא נשמרו משמרות", jsonEx)
+        }
+        return resultList
     }
 
     suspend fun parseNaturalLanguageToShift(
