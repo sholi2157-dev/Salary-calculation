@@ -1,5 +1,25 @@
 # Current project state
 
+## October 18 — 2.0-rc7 and website preview: a one-time 2.0 launch, name, tour; settings back in Settings (not published)
+
+Owner request (app and site alike):
+- Notification switches are back in Settings. Home's bell only lists what arrived, with a link to those settings.
+- The profile (first and last name) is the last group in Settings. Only the first name is ever shown.
+- Once per installation, new or updated, a launch screen in the new look appears: "עיצוב חדש. התחלה חדשה." → "הבא" → first and last name ("אחר כך" allowed) → the short tour from Home. On the site the same flow runs once per browser, with a new short tour (`web/kis/launch.js`).
+
+**Android:** signed `2.0-rc7` / code 31 from `6ca5079`, run 39133033538 SUCCESS.
+- Tests: 129 Debug + 103 Release tests.
+- Identity: 31 > 30 > 24.
+- Real RC16 → delivered rc6 → rc7 update: data kept, and the launch is shown and completed on the updated install.
+- Fresh-install launch, then the tour.
+- Device tests, crash logs.
+- APK SHA-256 `6d448664af2364df37db25b32f037926e8acc260eb3b74e77c1f671c0a3253f1`.
+- Private artifact `salary-2.0-rc7-candidate`.
+- The device screenshot of the launch was taken before the slogan finished rising: the test clock holds the animation. The test now advances the clock (commit after rc7).
+- The next delivered build must use a code higher than 31.
+
+**Website:** `claude/v2-web` at `c6f8d74`, CI web-v2 run 39132835096 SUCCESS, Vercel Preview `dpl_7fE5SWUpsbsRRyvH5W8mY83SMD4h` READY on that commit. Production unchanged.
+
 ## October 18 — 2.0-rc6 and website preview: explanations behind ⓘ, bell and profile on Home (not published)
 
 Owner request, same change in the app and the site: screens show titles only, and every explanation sits behind an ⓘ next to its title. Home has a bell (recent notifications with a dot for new ones, plus their switches) and a profile icon at the top. The name is typed once, then shown with an edit option. Settings no longer has profile or notifications, so the immediate settings come first. Bottom hints are removed.
