@@ -492,15 +492,17 @@ class KisUiTest {
         // It moves on by itself.
         ui.mainClock.advanceTimeBy(6_500)
         ui.onNodeWithTag("story_hours").assertExists()
-        fun next() { ui.onNodeWithTag("story_next").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); ui.mainClock.advanceTimeBy(800) }
+        // A state change with nothing animating reaches the screen once the main looper runs (Robolectric's paused looper).
+        fun settle() { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); ui.mainClock.advanceTimeBy(800) }
+        fun next() { ui.onNodeWithTag("story_next").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle() }
         repeat(10) { if (ui.onAllNodesWithTag("story_money").fetchSemanticsNodes().isEmpty()) next() }
-        fun prev() { ui.onNodeWithTag("story_prev").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); ui.mainClock.advanceTimeBy(800) }
+        fun prev() { ui.onNodeWithTag("story_prev").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle() }
         prev()
         assertEquals("back from the amount", listOf("story_hour"), shownSlide().dropLast(1))
         next()
         assertEquals(2, ui.onAllNodesWithTag("story_money_hidden", useUnmergedTree = true).fetchSemanticsNodes().size)
         ui.onNodeWithText("₪300", substring = true).assertDoesNotExist()
-        ui.onNodeWithTag("story_reveal").performClick(); ui.mainClock.advanceTimeBy(100)
+        ui.onNodeWithTag("story_reveal").performClick(); org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); ui.mainClock.advanceTimeBy(100)
         ui.onNodeWithTag("story_money_₪", useUnmergedTree = true).assertExists()
         next()
         ui.onNodeWithTag("story_card").assertExists()
