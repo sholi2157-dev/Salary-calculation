@@ -220,6 +220,31 @@ const seed = {
     await ctx.close();
   }
 
+  // 9. "החודש שלך" and the story recap: insights, amounts hidden until asked, a card without amounts, year too.
+  {
+    const { ctx, page } = await open();
+    await page.click(tid('home-month-summary'));
+    assert.ok(await page.isVisible(tid('month-insight-0')));
+    assert.match(await page.textContent(tid('month-rate-₪')), /₪\d/);
+    await shot(page, 'month-summary');
+    await page.click(tid('month-story'));
+    await page.waitForSelector(tid('story-intro'));
+    await page.waitForTimeout(700); await page.screenshot({ path: path.join(OUT, 'v2-story-intro.png') });
+    for (let n = 0; n < 10 && !(await page.locator(tid('story-money')).count()); n++) { await page.click(tid('story-next')); if (await page.locator(tid('story-persona')).count()) await page.screenshot({ path: path.join(OUT, 'v2-story-persona.png') }); }
+    assert.ok(await page.locator(tid('story-money-hidden')).count() >= 1, 'the amount waits behind "הצג לי"');
+    assert.doesNotMatch(await page.textContent(tid('story-money')), /\d/);
+    await page.click(tid('story-reveal')); assert.match(await page.textContent(tid('story-money')), /₪\d/);
+    await page.click(tid('story-next')); await page.waitForSelector(tid('story-card'));
+    assert.doesNotMatch(await page.textContent(tid('story-poster')), /[₪$]/, 'the card never shows amounts');
+    await page.waitForTimeout(700); await page.screenshot({ path: path.join(OUT, 'v2-story-card.png') });
+    await page.keyboard.press('Escape'); assert.equal(await page.locator(tid('story')).count(), 0);
+    // It moves on by itself.
+    await page.click(tid('home-month-summary')); await page.click(tid('year-story'));
+    await page.waitForSelector(tid('story-intro')); await page.waitForSelector(tid('story-hours'), { timeout: 9000 });
+    await page.click(tid('story-close'));
+    await ctx.close();
+  }
+
   // 6. Layout: every width, both themes, no horizontal scrolling.
   for (const [w, h] of [[360, 760], [390, 844], [768, 1024], [1440, 900]]) for (const scheme of ['light', 'dark']) {
     const { ctx, page } = await open({ width: w, height: h }, scheme);

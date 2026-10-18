@@ -156,25 +156,8 @@ function placeSheet(app, oldName, done) {
 }
 
 /** "החודש שלך": done shifts of one month, money per currency, the leading place, the change from the month before. */
-function monthSummary(app, month) {
-  const { store } = app, { esc, moneyHtml, upcoming } = U();
-  const done = store.data.entries.filter(e => !upcoming(e)), rows = done.filter(e => U().monthKey(e.date) === month), before = done.filter(e => U().monthKey(e.date) === month - 1);
-  const totals = root.KisHome.sortedTotals(rows), h = rows.reduce((s, e) => s + e.hours, 0);
-  const lead = Object.entries(rows.reduce((m, e) => (m[e.category] = (m[e.category] || 0) + e.hours, m), {})).sort((a, b) => b[1] - a[1])[0];
-  const pending = rows.filter(e => !e.payKnown).length;
-  U().sheet('month-summary-sheet', (el, close) => {
-    const diff = rows.length - before.length, hd = h - before.reduce((s, e) => s + e.hours, 0);
-    el.innerHTML = `<h2>החודש שלך · ${esc(U().monthName(month))}</h2>${rows.length ? `
-      <div class="card" style="background:var(--bg);display:grid;gap:4px" data-testid="month-summary-money">${totals.length ? totals.map(([c, v]) => `<b class="hero" style="font-size:40px;line-height:44px">${moneyHtml(v, c)}</b>`).join('') : '<b class="amount">עוד חסר תעריף</b>'}
-        <span class="label" style="color:var(--muted)">${rows.length} משמרות · ${U().hours(h)} שעות</span>${pending ? `<span class="caption" style="color:var(--pending)">${pending === 1 ? 'משמרת אחת עוד בלי סכום ידוע (לא נספרת)' : pending + ' משמרות עוד בלי סכום ידוע (לא נספרות)'}</span>` : ''}</div>
-      ${lead ? `<div class="row" style="align-items:center">${U().avatar(lead[0], store, false, 36)}<div><b class="label">הכי הרבה ב${esc(lead[0])}</b><div class="caption">${U().hours(lead[1])} שעות</div></div></div>` : ''}
-      ${before.length ? `<p style="margin:0">לעומת ${esc(U().monthName(month - 1))}: ${diff === 0 ? 'אותו מספר משמרות' : diff > 0 ? diff + ' משמרות יותר' : -diff + ' משמרות פחות'} · ${Math.abs(hd) < .01 ? 'אותן שעות' : (hd > 0 ? '+' : '−') + U().hours(Math.abs(hd)) + ' שעות'}</p>` : ''}`
-      : '<p class="caption">לא נרשמו משמרות בחודש הזה.</p>'}
-      <div class="row"><button class="btn ghost grow" data-a="h">להיסטוריה</button><button class="btn primary grow" data-a="s" ${rows.length ? '' : 'disabled'}>שיתוף</button></div>`;
-    el.querySelector('[data-a=h]').onclick = () => { close(); app.go('history', { planned: false, month }); };
-    el.querySelector('[data-a=s]').onclick = () => U().shareOrCopy(root.KisShare.summary(rows), 'הסיכום של ' + U().monthName(month));
-  });
-}
+/** "החודש שלך" lives in web/kis/summary.js; kept here for the existing callers. */
+function monthSummary(app, month) { root.KisSummaryUi.monthSummary(app, month); }
 
 /** What arrived (a monthly summary opens again). The switches are in Settings. */
 function notificationsSheet(app) {

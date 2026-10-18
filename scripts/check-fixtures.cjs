@@ -8,7 +8,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const repo = process.argv[2] || process.env.ANDROID_REPO || path.resolve(__dirname, '..');
 const ref = process.argv[3] || process.env.ANDROID_REF || 'origin/claude/v2-android';
-const names = ['v2-rules.json', 'v2-plan.json', 'v2-share-fixtures.json'];
+const names = ['v2-rules.json', 'v2-plan.json', 'v2-share-fixtures.json', 'v2-summary.json'];
 const git = args => execFileSync('git', ['-C', repo, ...args], { stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 });
 try { git(['rev-parse', '--verify', '--quiet', ref + '^{commit}']); }
 catch { console.log(`check-fixtures: skipped — ${ref} is not available in ${repo}`); process.exit(0); }

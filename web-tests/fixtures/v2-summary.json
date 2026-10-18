@@ -1,0 +1,2248 @@
+{
+ "cases": [
+  {
+   "name": "running_month_compares_same_days",
+   "today": "2026-10-15",
+   "scope": "2026-10",
+   "rows": [
+    {
+     "date": "2026-09-02",
+     "start": "17:00",
+     "end": "23:30",
+     "hours": 6.5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 325,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-04",
+     "start": "22:00",
+     "end": "06:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": true,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-05",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-09-09",
+     "start": null,
+     "end": null,
+     "hours": 3,
+     "kind": "job",
+     "payKnown": true,
+     "total": 250,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-09-10",
+     "start": "09:00",
+     "end": "13:30",
+     "hours": 4.5,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-01",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-03",
+     "start": "08:00",
+     "end": "16:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 960,
+     "currency": "₪",
+     "paid": true,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-07",
+     "start": "18:00",
+     "end": "01:00",
+     "hours": 7,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 210,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-10-09",
+     "start": "12:00",
+     "end": "15:00",
+     "hours": 3,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-14",
+     "start": "17:30",
+     "end": "23:15",
+     "hours": 5.75,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 299,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-20",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2025-12-31",
+     "start": "20:00",
+     "end": "02:00",
+     "hours": 6,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 240,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    }
+   ],
+   "expected": {
+    "scope": "2026-10",
+    "count": 5,
+    "hours": 28.75,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 1509,
+      "paid": 960,
+      "unpaid": 549,
+      "perHour": 80.48
+     },
+     {
+      "currency": "$",
+      "total": 210,
+      "paid": 0,
+      "unpaid": 210,
+      "perHour": 30
+     }
+    ],
+    "pending": 1,
+    "days": [
+     0,
+     0,
+     0,
+     12.75,
+     5,
+     3,
+     8
+    ],
+    "hourMinutes": [
+     60,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     60,
+     60,
+     60,
+     60,
+     120,
+     120,
+     120,
+     60,
+     0,
+     90,
+     180,
+     180,
+     180,
+     180,
+     120,
+     75
+    ],
+    "places": [
+     {
+      "name": "מסעדה",
+      "hours": 13.75
+     },
+     {
+      "name": "שיעורים",
+      "hours": 8
+     },
+     {
+      "name": "הובלות",
+      "hours": 7
+     }
+    ],
+    "longest": {
+     "date": "2026-10-03",
+     "start": "08:00",
+     "end": "16:00",
+     "hours": 8
+    },
+    "nights": 2,
+    "bestDay": 3,
+    "peakHour": 18,
+    "previousHours": 26,
+    "trend": 11,
+    "persona": "owl",
+    "fun": {
+     "key": "coffees",
+     "count": 431
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 549
+       },
+       {
+        "currency": "$",
+        "amount": 210
+       }
+      ]
+     },
+     {
+      "kind": "pending",
+      "count": 1
+     },
+     {
+      "kind": "trend",
+      "percent": 11,
+      "previousMonth": "2026-09"
+     }
+    ]
+   }
+  },
+  {
+   "name": "full_previous_month",
+   "today": "2026-10-15",
+   "scope": "2026-09",
+   "rows": [
+    {
+     "date": "2026-09-02",
+     "start": "17:00",
+     "end": "23:30",
+     "hours": 6.5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 325,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-04",
+     "start": "22:00",
+     "end": "06:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": true,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-05",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-09-09",
+     "start": null,
+     "end": null,
+     "hours": 3,
+     "kind": "job",
+     "payKnown": true,
+     "total": 250,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-09-10",
+     "start": "09:00",
+     "end": "13:30",
+     "hours": 4.5,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-01",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-03",
+     "start": "08:00",
+     "end": "16:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 960,
+     "currency": "₪",
+     "paid": true,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-07",
+     "start": "18:00",
+     "end": "01:00",
+     "hours": 7,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 210,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-10-09",
+     "start": "12:00",
+     "end": "15:00",
+     "hours": 3,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-14",
+     "start": "17:30",
+     "end": "23:15",
+     "hours": 5.75,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 299,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-20",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2025-12-31",
+     "start": "20:00",
+     "end": "02:00",
+     "hours": 6,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 240,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    }
+   ],
+   "expected": {
+    "scope": "2026-09",
+    "count": 5,
+    "hours": 26,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 1285,
+      "paid": 480,
+      "unpaid": 805,
+      "perHour": 69.46
+     },
+     {
+      "currency": "$",
+      "total": 250,
+      "paid": 0,
+      "unpaid": 250,
+      "perHour": null
+     }
+    ],
+    "pending": 1,
+    "days": [
+     0,
+     0,
+     0,
+     9.5,
+     4.5,
+     8,
+     4
+    ],
+    "hourMinutes": [
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     0,
+     0,
+     0,
+     60,
+     120,
+     120,
+     120,
+     90,
+     0,
+     0,
+     0,
+     60,
+     60,
+     60,
+     60,
+     60,
+     120,
+     90
+    ],
+    "places": [
+     {
+      "name": "מסעדה",
+      "hours": 14.5
+     },
+     {
+      "name": "שיעורים",
+      "hours": 8.5
+     },
+     {
+      "name": "הובלות",
+      "hours": 3
+     }
+    ],
+    "longest": {
+     "date": "2026-09-04",
+     "start": "22:00",
+     "end": "06:00",
+     "hours": 8
+    },
+    "nights": 2,
+    "bestDay": 3,
+    "peakHour": 10,
+    "previousHours": 0,
+    "trend": null,
+    "persona": "owl",
+    "fun": {
+     "key": "coffees",
+     "count": 390
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 805
+       },
+       {
+        "currency": "$",
+        "amount": 250
+       }
+      ]
+     },
+     {
+      "kind": "pending",
+      "count": 1
+     },
+     {
+      "kind": "day",
+      "day": 3
+     }
+    ]
+   }
+  },
+  {
+   "name": "whole_year",
+   "today": "2026-10-15",
+   "scope": "2026",
+   "rows": [
+    {
+     "date": "2026-09-02",
+     "start": "17:00",
+     "end": "23:30",
+     "hours": 6.5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 325,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-04",
+     "start": "22:00",
+     "end": "06:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": true,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-05",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-09-09",
+     "start": null,
+     "end": null,
+     "hours": 3,
+     "kind": "job",
+     "payKnown": true,
+     "total": 250,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-09-10",
+     "start": "09:00",
+     "end": "13:30",
+     "hours": 4.5,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-01",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-03",
+     "start": "08:00",
+     "end": "16:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 960,
+     "currency": "₪",
+     "paid": true,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-07",
+     "start": "18:00",
+     "end": "01:00",
+     "hours": 7,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 210,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-10-09",
+     "start": "12:00",
+     "end": "15:00",
+     "hours": 3,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-14",
+     "start": "17:30",
+     "end": "23:15",
+     "hours": 5.75,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 299,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-20",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2025-12-31",
+     "start": "20:00",
+     "end": "02:00",
+     "hours": 6,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 240,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    }
+   ],
+   "expected": {
+    "scope": "2026",
+    "count": 10,
+    "hours": 54.75,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 2794,
+      "paid": 1440,
+      "unpaid": 1354,
+      "perHour": 75.01
+     },
+     {
+      "currency": "$",
+      "total": 460,
+      "paid": 0,
+      "unpaid": 460,
+      "perHour": 30
+     }
+    ],
+    "pending": 2,
+    "days": [
+     0,
+     0,
+     0,
+     22.25,
+     9.5,
+     11,
+     12
+    ],
+    "hourMinutes": [
+     120,
+     60,
+     60,
+     60,
+     60,
+     60,
+     0,
+     0,
+     60,
+     120,
+     180,
+     180,
+     240,
+     210,
+     120,
+     60,
+     0,
+     150,
+     240,
+     240,
+     240,
+     240,
+     240,
+     165
+    ],
+    "places": [
+     {
+      "name": "מסעדה",
+      "hours": 28.25
+     },
+     {
+      "name": "שיעורים",
+      "hours": 16.5
+     },
+     {
+      "name": "הובלות",
+      "hours": 10
+     }
+    ],
+    "longest": {
+     "date": "2026-09-04",
+     "start": "22:00",
+     "end": "06:00",
+     "hours": 8
+    },
+    "nights": 4,
+    "bestDay": 3,
+    "peakHour": 12,
+    "previousHours": null,
+    "trend": null,
+    "persona": "owl",
+    "fun": {
+     "key": "movies",
+     "count": 25
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 1354
+       },
+       {
+        "currency": "$",
+        "amount": 460
+       }
+      ]
+     },
+     {
+      "kind": "pending",
+      "count": 2
+     },
+     {
+      "kind": "day",
+      "day": 3
+     }
+    ]
+   }
+  },
+  {
+   "name": "year_across_new_year",
+   "today": "2026-10-15",
+   "scope": "2025",
+   "rows": [
+    {
+     "date": "2026-09-02",
+     "start": "17:00",
+     "end": "23:30",
+     "hours": 6.5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 325,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-04",
+     "start": "22:00",
+     "end": "06:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": true,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-05",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-09-09",
+     "start": null,
+     "end": null,
+     "hours": 3,
+     "kind": "job",
+     "payKnown": true,
+     "total": 250,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-09-10",
+     "start": "09:00",
+     "end": "13:30",
+     "hours": 4.5,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-01",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-03",
+     "start": "08:00",
+     "end": "16:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 960,
+     "currency": "₪",
+     "paid": true,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-07",
+     "start": "18:00",
+     "end": "01:00",
+     "hours": 7,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 210,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-10-09",
+     "start": "12:00",
+     "end": "15:00",
+     "hours": 3,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-14",
+     "start": "17:30",
+     "end": "23:15",
+     "hours": 5.75,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 299,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-20",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2025-12-31",
+     "start": "20:00",
+     "end": "02:00",
+     "hours": 6,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 240,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    }
+   ],
+   "expected": {
+    "scope": "2025",
+    "count": 1,
+    "hours": 6,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 240,
+      "paid": 0,
+      "unpaid": 240,
+      "perHour": 40
+     }
+    ],
+    "pending": 0,
+    "days": [
+     0,
+     0,
+     0,
+     6,
+     0,
+     0,
+     0
+    ],
+    "hourMinutes": [
+     60,
+     60,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     60,
+     60,
+     60,
+     60
+    ],
+    "places": [
+     {
+      "name": "מסעדה",
+      "hours": 6
+     }
+    ],
+    "longest": {
+     "date": "2025-12-31",
+     "start": "20:00",
+     "end": "02:00",
+     "hours": 6
+    },
+    "nights": 1,
+    "bestDay": 3,
+    "peakHour": 0,
+    "previousHours": null,
+    "trend": null,
+    "persona": "owl",
+    "fun": {
+     "key": "movies",
+     "count": 3
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 240
+       }
+      ]
+     },
+     {
+      "kind": "day",
+      "day": 3
+     }
+    ]
+   }
+  },
+  {
+   "name": "empty_month",
+   "today": "2026-10-15",
+   "scope": "2026-08",
+   "rows": [
+    {
+     "date": "2026-09-02",
+     "start": "17:00",
+     "end": "23:30",
+     "hours": 6.5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 325,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-04",
+     "start": "22:00",
+     "end": "06:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": true,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-05",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-09-09",
+     "start": null,
+     "end": null,
+     "hours": 3,
+     "kind": "job",
+     "payKnown": true,
+     "total": 250,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-09-10",
+     "start": "09:00",
+     "end": "13:30",
+     "hours": 4.5,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-01",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-03",
+     "start": "08:00",
+     "end": "16:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 960,
+     "currency": "₪",
+     "paid": true,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-07",
+     "start": "18:00",
+     "end": "01:00",
+     "hours": 7,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 210,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-10-09",
+     "start": "12:00",
+     "end": "15:00",
+     "hours": 3,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-14",
+     "start": "17:30",
+     "end": "23:15",
+     "hours": 5.75,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 299,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-20",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2025-12-31",
+     "start": "20:00",
+     "end": "02:00",
+     "hours": 6,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 240,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    }
+   ],
+   "expected": {
+    "scope": "2026-08",
+    "count": 0,
+    "hours": 0,
+    "currencies": [],
+    "pending": 0,
+    "days": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "hourMinutes": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "places": [],
+    "longest": null,
+    "nights": 0,
+    "bestDay": null,
+    "peakHour": null,
+    "previousHours": 0,
+    "trend": null,
+    "persona": null,
+    "fun": null,
+    "insights": []
+   }
+  },
+  {
+   "name": "persona_owl",
+   "today": "2026-10-31",
+   "scope": "2026-10",
+   "rows": [
+    {
+     "date": "2026-10-02",
+     "start": "21:00",
+     "end": "03:00",
+     "hours": 6,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 240,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-06",
+     "start": "12:00",
+     "end": "16:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 160,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    }
+   ],
+   "expected": {
+    "scope": "2026-10",
+    "count": 2,
+    "hours": 10,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 400,
+      "paid": 0,
+      "unpaid": 400,
+      "perHour": 40
+     }
+    ],
+    "pending": 0,
+    "days": [
+     0,
+     0,
+     4,
+     0,
+     0,
+     6,
+     0
+    ],
+    "hourMinutes": [
+     60,
+     60,
+     60,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     60,
+     60,
+     60,
+     60,
+     0,
+     0,
+     0,
+     0,
+     0,
+     60,
+     60,
+     60
+    ],
+    "places": [
+     {
+      "name": "מסעדה",
+      "hours": 10
+     }
+    ],
+    "longest": {
+     "date": "2026-10-02",
+     "start": "21:00",
+     "end": "03:00",
+     "hours": 6
+    },
+    "nights": 1,
+    "bestDay": 5,
+    "peakHour": 0,
+    "previousHours": 0,
+    "trend": null,
+    "persona": "owl",
+    "fun": {
+     "key": "coffees",
+     "count": 150
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 400
+       }
+      ]
+     },
+     {
+      "kind": "day",
+      "day": 5
+     }
+    ]
+   }
+  },
+  {
+   "name": "persona_bird",
+   "today": "2026-10-31",
+   "scope": "2026-10",
+   "rows": [
+    {
+     "date": "2026-10-05",
+     "start": "06:00",
+     "end": "12:00",
+     "hours": 6,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 240,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-06",
+     "start": "12:00",
+     "end": "15:00",
+     "hours": 3,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 120,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    }
+   ],
+   "expected": {
+    "scope": "2026-10",
+    "count": 2,
+    "hours": 9,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 360,
+      "paid": 0,
+      "unpaid": 360,
+      "perHour": 40
+     }
+    ],
+    "pending": 0,
+    "days": [
+     0,
+     6,
+     3,
+     0,
+     0,
+     0,
+     0
+    ],
+    "hourMinutes": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "places": [
+     {
+      "name": "מסעדה",
+      "hours": 9
+     }
+    ],
+    "longest": {
+     "date": "2026-10-05",
+     "start": "06:00",
+     "end": "12:00",
+     "hours": 6
+    },
+    "nights": 0,
+    "bestDay": 1,
+    "peakHour": 6,
+    "previousHours": 0,
+    "trend": null,
+    "persona": "bird",
+    "fun": {
+     "key": "coffees",
+     "count": 135
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 360
+       }
+      ]
+     },
+     {
+      "kind": "day",
+      "day": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "persona_weekend",
+   "today": "2026-10-31",
+   "scope": "2026-10",
+   "rows": [
+    {
+     "date": "2026-10-02",
+     "start": "10:00",
+     "end": "15:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 200,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-03",
+     "start": "10:00",
+     "end": "13:00",
+     "hours": 3,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 120,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-05",
+     "start": "10:00",
+     "end": "15:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 200,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-06",
+     "start": "10:00",
+     "end": "15:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 200,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    }
+   ],
+   "expected": {
+    "scope": "2026-10",
+    "count": 4,
+    "hours": 18,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 720,
+      "paid": 0,
+      "unpaid": 720,
+      "perHour": 40
+     }
+    ],
+    "pending": 0,
+    "days": [
+     0,
+     5,
+     5,
+     0,
+     0,
+     5,
+     3
+    ],
+    "hourMinutes": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     240,
+     240,
+     240,
+     180,
+     180,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "places": [
+     {
+      "name": "מסעדה",
+      "hours": 18
+     }
+    ],
+    "longest": {
+     "date": "2026-10-02",
+     "start": "10:00",
+     "end": "15:00",
+     "hours": 5
+    },
+    "nights": 0,
+    "bestDay": 1,
+    "peakHour": 10,
+    "previousHours": 0,
+    "trend": null,
+    "persona": "weekend",
+    "fun": {
+     "key": "movies",
+     "count": 8
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 720
+       }
+      ]
+     },
+     {
+      "kind": "day",
+      "day": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "persona_marathon",
+   "today": "2026-10-31",
+   "scope": "2026-10",
+   "rows": [
+    {
+     "date": "2026-10-05",
+     "start": "10:00",
+     "end": "19:00",
+     "hours": 9,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 360,
+     "currency": "₪",
+     "paid": false,
+     "category": "א"
+    },
+    {
+     "date": "2026-10-06",
+     "start": "10:00",
+     "end": "18:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 320,
+     "currency": "₪",
+     "paid": false,
+     "category": "ב"
+    }
+   ],
+   "expected": {
+    "scope": "2026-10",
+    "count": 2,
+    "hours": 17,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 680,
+      "paid": 0,
+      "unpaid": 680,
+      "perHour": 40
+     }
+    ],
+    "pending": 0,
+    "days": [
+     0,
+     9,
+     8,
+     0,
+     0,
+     0,
+     0
+    ],
+    "hourMinutes": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     120,
+     120,
+     120,
+     120,
+     120,
+     120,
+     120,
+     120,
+     60,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "places": [
+     {
+      "name": "א",
+      "hours": 9
+     },
+     {
+      "name": "ב",
+      "hours": 8
+     }
+    ],
+    "longest": {
+     "date": "2026-10-05",
+     "start": "10:00",
+     "end": "19:00",
+     "hours": 9
+    },
+    "nights": 0,
+    "bestDay": 1,
+    "peakHour": 10,
+    "previousHours": 0,
+    "trend": null,
+    "persona": "marathon",
+    "fun": {
+     "key": "coffees",
+     "count": 255
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 680
+       }
+      ]
+     },
+     {
+      "kind": "day",
+      "day": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "persona_loyal",
+   "today": "2026-10-31",
+   "scope": "2026-10",
+   "rows": [
+    {
+     "date": "2026-10-05",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 160,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-06",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 160,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-07",
+     "start": "10:00",
+     "end": "13:00",
+     "hours": 3,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 120,
+     "currency": "₪",
+     "paid": false,
+     "category": "אחר"
+    }
+   ],
+   "expected": {
+    "scope": "2026-10",
+    "count": 3,
+    "hours": 11,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 440,
+      "paid": 0,
+      "unpaid": 440,
+      "perHour": 40
+     }
+    ],
+    "pending": 0,
+    "days": [
+     0,
+     4,
+     4,
+     3,
+     0,
+     0,
+     0
+    ],
+    "hourMinutes": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     180,
+     180,
+     180,
+     120,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "places": [
+     {
+      "name": "מסעדה",
+      "hours": 8
+     },
+     {
+      "name": "אחר",
+      "hours": 3
+     }
+    ],
+    "longest": {
+     "date": "2026-10-05",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4
+    },
+    "nights": 0,
+    "bestDay": 1,
+    "peakHour": 10,
+    "previousHours": 0,
+    "trend": null,
+    "persona": "loyal",
+    "fun": {
+     "key": "episodes",
+     "count": 30
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 440
+       }
+      ]
+     },
+     {
+      "kind": "day",
+      "day": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "persona_juggler",
+   "today": "2026-10-31",
+   "scope": "2026-10",
+   "rows": [
+    {
+     "date": "2026-10-05",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 160,
+     "currency": "₪",
+     "paid": false,
+     "category": "א"
+    },
+    {
+     "date": "2026-10-06",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 160,
+     "currency": "₪",
+     "paid": false,
+     "category": "ב"
+    },
+    {
+     "date": "2026-10-07",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 160,
+     "currency": "₪",
+     "paid": false,
+     "category": "ג"
+    }
+   ],
+   "expected": {
+    "scope": "2026-10",
+    "count": 3,
+    "hours": 12,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 480,
+      "paid": 0,
+      "unpaid": 480,
+      "perHour": 40
+     }
+    ],
+    "pending": 0,
+    "days": [
+     0,
+     4,
+     4,
+     4,
+     0,
+     0,
+     0
+    ],
+    "hourMinutes": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     180,
+     180,
+     180,
+     180,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "places": [
+     {
+      "name": "א",
+      "hours": 4
+     },
+     {
+      "name": "ב",
+      "hours": 4
+     },
+     {
+      "name": "ג",
+      "hours": 4
+     }
+    ],
+    "longest": {
+     "date": "2026-10-05",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4
+    },
+    "nights": 0,
+    "bestDay": 1,
+    "peakHour": 10,
+    "previousHours": 0,
+    "trend": null,
+    "persona": "juggler",
+    "fun": {
+     "key": "episodes",
+     "count": 33
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 480
+       }
+      ]
+     },
+     {
+      "kind": "day",
+      "day": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "future_rows_ignored",
+   "today": "2026-10-05",
+   "scope": "2026-10",
+   "rows": [
+    {
+     "date": "2026-09-02",
+     "start": "17:00",
+     "end": "23:30",
+     "hours": 6.5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 325,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-04",
+     "start": "22:00",
+     "end": "06:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": true,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-09-05",
+     "start": "10:00",
+     "end": "14:00",
+     "hours": 4,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 480,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-09-09",
+     "start": null,
+     "end": null,
+     "hours": 3,
+     "kind": "job",
+     "payKnown": true,
+     "total": 250,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-09-10",
+     "start": "09:00",
+     "end": "13:30",
+     "hours": 4.5,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-01",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-03",
+     "start": "08:00",
+     "end": "16:00",
+     "hours": 8,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 960,
+     "currency": "₪",
+     "paid": true,
+     "category": "שיעורים"
+    },
+    {
+     "date": "2026-10-07",
+     "start": "18:00",
+     "end": "01:00",
+     "hours": 7,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 210,
+     "currency": "$",
+     "paid": false,
+     "category": "הובלות"
+    },
+    {
+     "date": "2026-10-09",
+     "start": "12:00",
+     "end": "15:00",
+     "hours": 3,
+     "kind": "shift",
+     "payKnown": false,
+     "total": 0,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-14",
+     "start": "17:30",
+     "end": "23:15",
+     "hours": 5.75,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 299,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2026-10-20",
+     "start": "17:00",
+     "end": "22:00",
+     "hours": 5,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 250,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    },
+    {
+     "date": "2025-12-31",
+     "start": "20:00",
+     "end": "02:00",
+     "hours": 6,
+     "kind": "shift",
+     "payKnown": true,
+     "total": 240,
+     "currency": "₪",
+     "paid": false,
+     "category": "מסעדה"
+    }
+   ],
+   "expected": {
+    "scope": "2026-10",
+    "count": 2,
+    "hours": 13,
+    "currencies": [
+     {
+      "currency": "₪",
+      "total": 1210,
+      "paid": 960,
+      "unpaid": 250,
+      "perHour": 93.08
+     }
+    ],
+    "pending": 0,
+    "days": [
+     0,
+     0,
+     0,
+     0,
+     5,
+     0,
+     8
+    ],
+    "hourMinutes": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     0,
+     60,
+     60,
+     60,
+     60,
+     60,
+     0,
+     0
+    ],
+    "places": [
+     {
+      "name": "שיעורים",
+      "hours": 8
+     },
+     {
+      "name": "מסעדה",
+      "hours": 5
+     }
+    ],
+    "longest": {
+     "date": "2026-10-03",
+     "start": "08:00",
+     "end": "16:00",
+     "hours": 8
+    },
+    "nights": 0,
+    "bestDay": 6,
+    "peakHour": 8,
+    "previousHours": 18.5,
+    "trend": -30,
+    "persona": "owl",
+    "fun": {
+     "key": "coffees",
+     "count": 195
+    },
+    "insights": [
+     {
+      "kind": "unpaid",
+      "amounts": [
+       {
+        "currency": "₪",
+        "amount": 250
+       }
+      ]
+     },
+     {
+      "kind": "trend",
+      "percent": -30,
+      "previousMonth": "2026-09"
+     },
+     {
+      "kind": "day",
+      "day": 6
+     }
+    ]
+   }
+  }
+ ]
+}
