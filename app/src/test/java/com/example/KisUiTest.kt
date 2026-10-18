@@ -558,12 +558,13 @@ class KisUiTest {
         ui.onNodeWithTag("launch_line_1").assertTextEquals("עיצוב חדש.")
         ui.onNodeWithTag("launch_line_2").assertTextEquals("התחלה חדשה.")
         shot("launch")
-        ui.onNodeWithTag("launch_next").performClick()
+        // A real finger moves a little while tapping; the tap must still count.
+        ui.onNodeWithTag("launch_next").performTouchInput { down(center); moveBy(androidx.compose.ui.geometry.Offset(3f, 2f)); moveBy(androidx.compose.ui.geometry.Offset(-2f, 1f)); up() }
         ui.onNodeWithTag("launch_done").assertIsNotEnabled()
         ui.onNodeWithTag("launch_first").performTextReplacement("שולי")
         ui.onNodeWithTag("launch_last").performTextReplacement("כהן")
         shot("launch-name")
-        ui.onNodeWithTag("launch_done").performClick()
+        ui.onNodeWithTag("launch_done").performTouchInput { down(center); moveBy(androidx.compose.ui.geometry.Offset(2f, -2f)); up() }
         assertTrue(done)
         assertEquals("שולי", settings.name)
         assertEquals("כהן", settings.lastName)

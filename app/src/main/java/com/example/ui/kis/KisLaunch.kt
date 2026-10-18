@@ -4,7 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -32,9 +32,9 @@ fun KisLaunch(onDone: () -> Unit) {
     var first by rememberSaveable { mutableStateOf(settings.name) }
     var last by rememberSaveable { mutableStateOf(settings.lastName) }
     BackHandler(enabled = step == 1) { step = 0 }
-    // Nothing underneath is reachable while the launch is on screen.
-    Box(Modifier.fillMaxSize().background(c.bg).pointerInput(Unit) { awaitEachGesture { do { val e = awaitPointerEvent(); e.changes.forEach { it.consume() } } while (e.changes.any { it.pressed }) } }
-        .testTag("launch_root")) {
+    // Nothing underneath is reachable while the launch is on screen. A tap detector (not a consume-everything loop):
+    // consuming every move made a real finger's slight movement cancel the buttons' taps.
+    Box(Modifier.fillMaxSize().background(c.bg).pointerInput(Unit) { detectTapGestures { } }.testTag("launch_root")) {
         KisGlow(Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize().systemBarsPadding().imePadding().padding(horizontal = 24.dp, vertical = 20.dp)) {
             Spacer(Modifier.weight(1f))

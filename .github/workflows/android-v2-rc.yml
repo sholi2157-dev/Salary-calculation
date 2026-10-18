@@ -13,13 +13,13 @@ concurrency:
   group: android-v2-rc-${{ github.ref }}
   cancel-in-progress: false
 env:
-  RC_CODE: '33'
-  RC_NAME: '2.0'
+  RC_CODE: '34'
+  RC_NAME: '2.0.1'
   # The previously delivered 2.0 candidate (owner's phone): its exact bytes come from that run's artifact.
-  PREV_RUN: '39147647288'
-  PREV_SHA: '1522b54699fd06b931caf6cdbb4dee2668398ec7103a1d5fe663b46f14d5c1f5'
-  PREV_CODE: '32'
-  PREV_NAME: '2.0-rc8'
+  PREV_RUN: '39151970317'
+  PREV_SHA: '55953e60457ae87ee664e1bdc327009d15fb8f2e3f97dddcc69a885b41e2d849'
+  PREV_CODE: '33'
+  PREV_NAME: '2.0'
 jobs:
   candidate:
     if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[v2-rc]') }}
@@ -50,7 +50,7 @@ jobs:
       - name: Previously delivered 2.0 candidate (exact bytes from its own run)
         uses: actions/download-artifact@v4
         with:
-          name: salary-2.0-rc8-candidate
+          name: salary-2.0-candidate
           path: prev-rc
           run-id: ${{ env.PREV_RUN }}
           github-token: ${{ github.token }}
@@ -82,7 +82,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Real RC16 → delivered 2.0 → 2.0 updates without clearing data, then 2.0 screens and crash log
+      - name: Real RC16 → delivered 2.0 → 2.0.1 updates without clearing data, then 2.0 screens and crash log
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -117,7 +117,7 @@ jobs:
       - name: Candidate for owner review only; never publish a Release
         uses: actions/upload-artifact@v4
         with:
-          name: salary-2.0-candidate
+          name: salary-2.0.1-candidate
           path: |
             candidate-b.apk
             release-evidence/
