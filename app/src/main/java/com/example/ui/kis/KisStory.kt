@@ -21,15 +21,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
-import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -136,19 +133,13 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
         })
         add(Slide(StoryDark, 0, 3, auto = false, tag = "story_card") {
             val context = LocalContext.current
-            val scopeCo = rememberCoroutineScope()
-            val layer = rememberGraphicsLayer()
             Kick("$whose שלך בכיס")
-            Box(Modifier.drawWithContent { layer.record { this@drawWithContent.drawContent() }; drawLayer(layer) }) {
-                Poster(label, s, persona?.name)
-            }
+            Poster(label, s, persona?.name)
             val text = listOfNotNull("$whose שלי בכיס · $label", "⁦${Math.round(hrs)}⁩ שעות · ${s.count} משמרות", top?.let { "המקום המוביל: ${it.name}" },
                 persona?.let { "טיפוס: ${it.name}" }, s.bestDay?.let { "היום שלי: ${KisFormat.DAY_LONG[it]}" }).joinToString("\n")
             KisButton("שיתוף הכרטיס", {
-                scopeCo.launch {
-                    val ok = runCatching { shareImage(context, layer.toImageBitmap().asAndroidBitmap(), text) }.getOrDefault(false)
-                    if (!ok) KisShare.shareOrCopy(context, text, "$whose שלך בכיס", onMessage)
-                }
+                val ok = runCatching { shareImage(context, cardBitmap(context, label, posterCells(s, persona?.name)), text) }.getOrDefault(false)
+                if (!ok) KisShare.shareOrCopy(context, text, "$whose שלך בכיס", onMessage)
             }, Modifier.fillMaxWidth(), height = 54.dp, tag = "story_share")
         })
     }
@@ -272,8 +263,7 @@ private val LocalStoryInk = staticCompositionLocalOf { Color.White }
             Text(label, style = TextStyle(fontFamily = SecularOne, fontSize = 22.sp), color = Color.White, modifier = Modifier.weight(1f))
             KisLogo(Modifier.size(36.dp))
         }
-        val cells = listOf("שעות" to "${Math.round(s.hours)}", "משמרות" to "${s.count}", "מקום מוביל" to (s.places.firstOrNull()?.name ?: "—"),
-            "טיפוס" to (persona ?: "—"), "היום שלך" to (s.bestDay?.let { KisFormat.DAY_LONG[it] } ?: "—"), "הכי ארוכה" to (s.longest?.let { hm(it.hours) } ?: "—"))
+        val cells = posterCells(s, persona)
         cells.chunked(2).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pair.forEach { (k, v) ->
@@ -285,6 +275,38 @@ private val LocalStoryInk = staticCompositionLocalOf { Color.White }
             }
         }
     }
+}
+
+private fun posterCells(s: V2Summary.Summary, persona: String?) = listOf("שעות" to "${Math.round(s.hours)}", "משמרות" to "${s.count}",
+    "מקום מוביל" to (s.places.firstOrNull()?.name ?: "—"), "טיפוס" to (persona ?: "—"), "היום שלך" to (s.bestDay?.let { KisFormat.DAY_LONG[it] } ?: "—"),
+    "הכי ארוכה" to (s.longest?.let { hm(it.hours) } ?: "—"))
+
+/** The shared picture (1080×1080), drawn directly so it never depends on what is on screen. No amounts. */
+internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String, String>>): android.graphics.Bitmap {
+    val size = 1080f
+    val bmp = android.graphics.Bitmap.createBitmap(size.toInt(), size.toInt(), android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bmp)
+    val bg = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        shader = android.graphics.LinearGradient(0f, 0f, size, size, place(0).toArgb(), place(4).toArgb(), android.graphics.Shader.TileMode.CLAMP)
+    }
+    canvas.drawRoundRect(0f, 0f, size, size, 64f, 64f, bg)
+    val display = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, com.example.R.font.secular_one) }.getOrNull()
+    val body = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, com.example.R.font.rubik_regular) }.getOrNull()
+    fun paint(face: android.graphics.Typeface?, px: Float, alpha: Int = 255) = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE; this.alpha = alpha; textSize = px; typeface = face; textAlign = android.graphics.Paint.Align.RIGHT
+    }
+    canvas.drawText(label, size - 80f, 170f, paint(display, 64f))
+    canvas.drawText("בכיס", size - 80f, 240f, paint(display, 44f))
+    cells.forEachIndexed { n, (k, v) ->
+        val right = if (n % 2 == 0) size - 80f else size / 2 - 20f
+        val top = 380f + (n / 2) * 220f
+        canvas.drawText(k, right, top, paint(body, 36f, 205))
+        val value = paint(display, 72f)
+        var text = v
+        while (value.measureText(text) > size / 2 - 120f && text.length > 1) text = text.dropLast(1)
+        canvas.drawText(if (text == v) v else "$text…", right, top + 86f, value)
+    }
+    return bmp
 }
 
 private fun hm(hours: Double): String { val m = Math.round(hours * 60); return "${m / 60}:${"%02d".format(m % 60)}" }

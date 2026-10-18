@@ -516,6 +516,9 @@ class KisUiTest {
         runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-card.png") }
         next()
         assertTrue(closed)
+        // The shared picture is drawn on its own, without amounts.
+        val card = cardBitmap(app, "אוקטובר 2026", listOf("שעות" to "18", "משמרות" to "5"))
+        assertEquals(1080, card.width); assertEquals(1080, card.height)
     }
 
     @Test fun bellSheetListsRecentAndOpensTheirMonth() {
