@@ -16,7 +16,13 @@ Owner requests after 2.0.2:
 - APK SHA-256 `10baa2e4b1bf70ce75e61d48ef0ae57ba6dd69b1e2609eef825f117674a8a283`.
 - Published: update channel run 39174715276, release `android-v2.0.3`. The live RC16 → 2.0.3 check passed.
 
-The website still has the old editor and live view; it was not changed in this round. The next build must use a code higher than 36.
+**Website** (owner approved: "מאשר לפרסום האתר"):
+- The same live money, both times, digit-by-digit editing and ±15 per time, in commit `70fd200` on `codex/web-rc15-live`.
+- Production deployment `dpl_EzPUFNqwsoPXhWSffuWBWA19SPjj`. `build-info.json` on the public site shows 70fd200. The public-site browser check (run 39176075361) passed.
+- Rollback: `dpl_BiKB488BfxrXNK1VoTy2fztbeqEX`.
+- The website has no AI shift entry, so the currency fix is Android only.
+
+The next Android build must use a code higher than 36.
 
 ## October 19 — 2.0.2: new versions show on Home's bell
 
