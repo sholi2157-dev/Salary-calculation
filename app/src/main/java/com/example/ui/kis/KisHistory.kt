@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -139,21 +140,9 @@ fun KisHistory(
                         Text("היסטוריה", style = KisType.page, color = c.ink, modifier = Modifier.weight(1f))
                         if (!showPlans) {
                             ToolIcon(Icons.Rounded.Search, "חיפוש", "history_search_button") { ui.searching = true }
-                            Box {
-                                ToolIcon(Icons.Rounded.FilterList, if (filter.activeCount == 0) "סינון" else "סינון · ${filter.activeCount} פעילים", "history_filters") { showFilters = true }
-                                if (filter.activeCount > 0) Box(Modifier.align(Alignment.TopStart).padding(6.dp).size(16.dp).clip(CircleShape).background(c.ink), contentAlignment = Alignment.Center) {
-                                    Text(filter.activeCount.toString(), style = KisType.micro, color = c.onInk)
-                                }
-                            }
-                            var sortMenu by remember { mutableStateOf(false) }
-                            Box {
-                                ToolIcon(Icons.AutoMirrored.Rounded.Sort, "מיון", "history_sort") { sortMenu = true }
-                                DropdownMenu(sortMenu, { sortMenu = false }) {
-                                    SortOrder.entries.forEach { o ->
-                                        DropdownMenuItem(text = { Text((if (o == filter.sort) "✓ " else "") + o.label) }, onClick = { sortMenu = false; filter = filter.copy(sort = o) })
-                                    }
-                                }
-                            }
+                            // One button for everything that decides what is shown: dates, order, payment, place, currency.
+                            KisChip(if (filter.activeCount == 0) "סינון ומיון" else "סינון ומיון · ${filter.activeCount}", selected = filter.activeCount > 0,
+                                leading = Icons.Rounded.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = 44.dp)
                             var copyMenu by remember { mutableStateOf(false) }
                             Box {
                                 ToolIcon(Icons.Rounded.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
@@ -176,16 +165,17 @@ fun KisHistory(
                         AnimatedVisibility(ui.searching, enter = fadeIn(), exit = fadeOut()) { SearchBar(ui) }
                         // A closed search stays visible while it filters the list: tap to edit it, ✕ to clear it.
                         if (!ui.searching && ui.query.isNotBlank()) SearchChip(ui.query, onEdit = { ui.searching = true }, onClear = { ui.query = "" })
+                        // What is on screen, in words; a tap opens the same panel, "הכול" goes back to the default view.
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("מוצג: ${filter.describe()}", style = KisType.caption, color = c.muted, maxLines = 2,
+                                modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).kisClick { showFilters = true }.testTag("history_scope").padding(vertical = 6.dp))
+                            if (filter.activeCount > 0) KisChip("הצגת הכול", onClick = { filter = HistoryFilter() }, tag = "history_reset", minHeight = 40.dp)
+                        }
                         if (filter.period == Period.MONTH) {
                             MonthSwitcher(filter.month) { filter = filter.copy(month = it) }
-                            if (onMonthSummary != null && rows.isNotEmpty() && filter.activeCount == 0 && ui.query.isBlank())
+                            if (onMonthSummary != null && rows.isNotEmpty() && ui.query.isBlank())
                                 KisChip("החודש שלך · סיכום", onClick = { onMonthSummary(filter.month) }, tag = "history_month_summary", minHeight = 48.dp)
                         }
-                        else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(if (filter.period == Period.ALL) "כל התאריכים" else "${KisShare.shortDate(filter.from)}–${KisShare.shortDate(filter.to)}", style = KisType.title, color = c.ink)
-                            KisChip("לפי חודש", onClick = { filter = filter.copy(period = Period.MONTH) }, minHeight = 34.dp)
-                        }
-                        ActiveFilters(filter, onClear = { filter = it })
                         Totals(rows, onPending = {
                             ui.selection = rows.filter { !it.payKnown && !WorkPay.isJob(it) }.map { it.id }.toSet()
                             if (ui.selection.isNotEmpty()) bulkOpen = true
@@ -243,7 +233,7 @@ fun KisHistory(
                 onDelete = { confirmDelete = true })
         }
     }
-    if (showFilters) FiltersSheet(filter, categories, onDismiss = { showFilters = false }) { filter = it; showFilters = false }
+    if (showFilters) FiltersSheet(filter, categories, count = { KisHistoryLogic.apply(doneEntries, it, ui.query).size }, onDismiss = { showFilters = false }) { filter = it; showFilters = false }
     if (bulkOpen) RateCompletionSheet(selectedRows, viewModel, onDismiss = { bulkOpen = false }) { n ->
         bulkOpen = false
         ui.selection = emptySet()
@@ -321,18 +311,6 @@ private fun MonthSwitcher(month: Int, onMonth: (Int) -> Unit) {
 }
 
 @Composable
-private fun ActiveFilters(f: HistoryFilter, onClear: (HistoryFilter) -> Unit) {
-    val chips = buildList {
-        if (f.pay != PayFilter.ALL) add(f.pay.label to f.copy(pay = PayFilter.ALL))
-        f.category?.let { add(it to f.copy(category = null)) }
-        f.currency?.let { add(it to f.copy(currency = null)) }
-    }
-    if (chips.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        chips.forEach { (label, next) -> KisChip("$label  ✕", selected = true, onClick = { onClear(next) }, minHeight = 34.dp) }
-    }
-}
-
-@Composable
 private fun Totals(rows: List<WorkEntry>, onPending: () -> Unit) {
     val c = Kis.colors
     val totals = WorkPay.totals(rows)
@@ -398,37 +376,58 @@ private fun BarButton(text: String, tag: String? = null, onClick: () -> Unit) {
     }
 }
 
+/**
+ * The one panel for what History shows: which dates, in which order, and optional filters. Each part says what it
+ * does, and the button shows how many shifts the choice will show before applying it.
+ */
 @Composable
-private fun FiltersSheet(current: HistoryFilter, categories: List<WorkCategory>, onDismiss: () -> Unit, onApply: (HistoryFilter) -> Unit) {
+private fun FiltersSheet(current: HistoryFilter, categories: List<WorkCategory>, count: (HistoryFilter) -> Int, onDismiss: () -> Unit, onApply: (HistoryFilter) -> Unit) {
     val c = Kis.colors
     val context = LocalContext.current
     var f by remember { mutableStateOf(current) }
     KisSheet(onDismiss = onDismiss, tag = "filters_sheet") {
-        Text("סינון", style = KisType.title, color = c.ink)
-        Label("תקופה")
-        KisSegmented(Period.entries.map { it to it.label }, f.period, { f = f.copy(period = it) }, tagPrefix = "period")
-        if (f.period == Period.RANGE) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            fun pick(initial: Long, onPicked: (Long) -> Unit) {
-                val cal = Calendar.getInstance().apply { timeInMillis = initial }
-                DatePickerDialog(context, { _, y, m, d -> onPicked(Calendar.getInstance().apply { clear(); set(y, m, d) }.timeInMillis) },
-                    cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+        Text("סינון ומיון", style = KisType.title, color = c.ink)
+        Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Section("אילו תאריכים להציג", "ברירת המחדל: כל המשמרות מכל הזמנים")
+            KisSegmented(Period.entries.map { it to it.label }, f.period, { f = f.copy(period = it) }, tagPrefix = "period")
+            if (f.period == Period.MONTH) MonthSwitcher(f.month) { f = f.copy(month = it) }
+            if (f.period == Period.RANGE) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                fun pick(initial: Long, onPicked: (Long) -> Unit) {
+                    val cal = Calendar.getInstance().apply { timeInMillis = initial }
+                    DatePickerDialog(context, { _, y, m, d -> onPicked(Calendar.getInstance().apply { clear(); set(y, m, d) }.timeInMillis) },
+                        cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+                }
+                KisChip("מ-${KisShare.shortDate(f.from)}", onClick = { pick(f.from) { f = f.copy(from = it) } }, tag = "range_from", minHeight = 48.dp)
+                KisChip("עד ${KisShare.shortDate(f.to)}", onClick = { pick(f.to) { f = f.copy(to = it) } }, tag = "range_to", minHeight = 48.dp)
             }
-            KisChip("מ-${KisShare.shortDate(f.from)}", onClick = { pick(f.from) { f = f.copy(from = it) } }, tag = "range_from")
-            KisChip("עד ${KisShare.shortDate(f.to)}", onClick = { pick(f.to) { f = f.copy(to = it) } }, tag = "range_to")
+            KisDivider()
+            Section("סדר", "לפי תאריך המשמרת, או לפי מתי שהוספת אותה")
+            KisSegmented(SortOrder.entries.map { it to it.label }, f.sort, { f = f.copy(sort = it) }, tagPrefix = "sort")
+            KisDivider()
+            Section("סינון (לא חובה)", "מצמצם את הרשימה ואת הסכומים למה שבחרת")
+            Label("תשלום")
+            KisSegmented(PayFilter.entries.map { it to it.label }, f.pay, { f = f.copy(pay = it) }, tagPrefix = "history_status")
+            Label("מקום עבודה")
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                KisChip("הכול", selected = f.category == null, onClick = { f = f.copy(category = null) })
+                categories.forEach { cat -> KisChip(cat.name, selected = f.category == cat.name, onClick = { f = f.copy(category = cat.name) }, tag = "history_dropdown_cat_${cat.name}") }
+            }
+            Label("מטבע")
+            KisSegmented(listOf<Pair<String?, String>>(null to "הכול", "₪" to "₪ שקל", "$" to "$ דולר"), f.currency, { f = f.copy(currency = it) }, tagPrefix = "currency_filter")
         }
-        Label("תשלום")
-        KisSegmented(PayFilter.entries.map { it to it.label }, f.pay, { f = f.copy(pay = it) }, tagPrefix = "history_status")
-        Label("מקום עבודה")
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            KisChip("הכול", selected = f.category == null, onClick = { f = f.copy(category = null) })
-            categories.forEach { cat -> KisChip(cat.name, selected = f.category == cat.name, onClick = { f = f.copy(category = cat.name) }, tag = "history_dropdown_cat_${cat.name}") }
-        }
-        Label("מטבע")
-        KisSegmented(listOf<Pair<String?, String>>(null to "הכול", "₪" to "₪ שקל", "$" to "$ דולר"), f.currency, { f = f.copy(currency = it) }, tagPrefix = "currency_filter")
+        val n = count(f)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
-            KisButton("איפוס", { f = HistoryFilter(month = f.month, sort = f.sort) }, Modifier.weight(1f), KisButtonKind.GHOST, tag = "filters_reset")
-            KisButton("הצגת תוצאות", { onApply(f) }, Modifier.weight(2f), tag = "filters_apply")
+            KisButton("איפוס", { f = HistoryFilter() }, Modifier.weight(1f), KisButtonKind.GHOST, tag = "filters_reset")
+            KisButton(when (n) { 0 -> "אין משמרות להצגה"; 1 -> "הצגת משמרת אחת"; else -> "הצגת $n משמרות" }, { onApply(f) }, Modifier.weight(2f), tag = "filters_apply")
         }
+    }
+}
+
+@Composable
+private fun Section(title: String, hint: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(title, style = KisType.label.copy(fontSize = 15.sp), color = Kis.colors.ink)
+        Text(hint, style = KisType.caption, color = Kis.colors.muted)
     }
 }
 

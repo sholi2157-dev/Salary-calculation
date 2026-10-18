@@ -237,8 +237,11 @@ class KisUiTest {
         ui.onNodeWithTag("work_entry_card_${pendingShift.id}").assertDoesNotExist()
         ui.onNodeWithText("קבלנות: פירוק ארון", substring = true).assertExists()
         // Sort and copy menus stay reachable.
-        ui.onNodeWithTag("history_sort").performClick()
-        ui.onNodeWithText("נוסף לאחרונה", substring = true).performClick()
+        // Order lives in the same one panel.
+        ui.onNodeWithTag("history_filters").performClick()
+        ui.onNodeWithTag("sort_ADDED").performClick()
+        ui.onNodeWithTag("filters_apply").performClick()
+        ui.onNodeWithTag("history_scope").assertTextContains("לפי סדר ההוספה", substring = true)
         ui.onNodeWithTag("copy_menu_btn").performClick()
         ui.onNodeWithText("Excel (טבלה)").assertExists()
     }
@@ -431,6 +434,28 @@ class KisUiTest {
         ui.onAllNodesWithTag("work_entry_card_$futureId").assertCountEquals(0)
         if (HistoryFilter.monthKey(future.date) == HistoryFilter.monthKey(now))
             ui.onNodeWithTag("history_total").assertTextContains("₪100", substring = true)
+    }
+
+    @Test fun historyShowsAllDatesByDefaultWithOnePanelButton() {
+        val vm = model()
+        val old = WorkEntry(category = "מסעדה", date = day - 120 * 86_400_000L, isTimeRange = false, hours = 3.0, hourlyRate = 50.0, totalEarnings = 150.0)
+        val recent = WorkEntry(category = "מסעדה", date = day + 60_000L, isTimeRange = false, hours = 2.0, hourlyRate = 50.0, totalEarnings = 100.0)
+        runBlocking { dao.insertEntry(old); dao.insertEntry(recent) }
+        host { KisHistory(HistoryUi(), true, rows(), categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {}) }
+        ui.onNodeWithTag("history_scope").assertTextContains("כל התאריכים", substring = true)
+        ui.onNodeWithTag("history_total").assertTextContains("₪250", substring = true)
+        ui.onAllNodesWithTag("history_sort").assertCountEquals(0)
+        ui.onAllNodesWithTag("history_reset").assertCountEquals(0)
+        // One panel: dates, order and filters, with the count it will show.
+        ui.onNodeWithTag("history_filters").performClick()
+        ui.onNodeWithTag("period_MONTH").performClick()
+        ui.onNodeWithTag("filters_apply").assertTextContains("משמרת אחת", substring = true)
+        shot("history-filters-panel")
+        ui.onNodeWithTag("filters_apply").performClick()
+        ui.onNodeWithTag("history_total").assertTextContains("₪100", substring = true)
+        ui.onNodeWithTag("history_reset").performClick()
+        ui.onNodeWithTag("history_total").assertTextContains("₪250", substring = true)
+        shot("history-all-dates")
     }
 
     @Test fun plannedViewIsAlwaysThereAndExplainsWhenEmpty() {

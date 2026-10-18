@@ -6,13 +6,14 @@ import org.json.JSONObject
 import java.util.Calendar
 import java.util.Locale
 
-enum class Period(val label: String) { MONTH("חודש"), ALL("הכול"), RANGE("טווח") }
+enum class Period(val label: String) { ALL("כל התאריכים"), MONTH("חודש"), RANGE("טווח") }
 enum class PayFilter(val label: String) { ALL("הכול"), UNPAID("ממתין"), PAID("שולם"), PENDING("בלי תעריף") }
-enum class SortOrder(val label: String) { NEWEST("תאריך: מהחדש לישן"), OLDEST("תאריך: מהישן לחדש"), ADDED("נוסף לאחרונה") }
+enum class SortOrder(val label: String, val short: String) { NEWEST("החדש קודם", "מהחדש לישן"), OLDEST("הישן קודם", "מהישן לחדש"), ADDED("לפי הוספה", "לפי סדר ההוספה") }
 
 /** History filters. Plain values so they survive rotation and can be tested. */
 data class HistoryFilter(
-    val period: Period = Period.MONTH,
+    // All dates by default: the whole history at a glance; a month or a range is one choice away in the panel.
+    val period: Period = Period.ALL,
     val month: Int = monthKey(System.currentTimeMillis()),
     val from: Long = EntryDraft.startOfDay(System.currentTimeMillis() - 7 * 86_400_000L),
     val to: Long = EntryDraft.startOfDay(System.currentTimeMillis()),
@@ -21,8 +22,21 @@ data class HistoryFilter(
     val currency: String? = null,
     val sort: SortOrder = SortOrder.NEWEST,
 ) {
-    /** Filters beyond the period shown in the header. */
-    val activeCount get() = listOf(pay != PayFilter.ALL, category != null, currency != null, period == Period.RANGE).count { it }
+    /** Choices that differ from the default view (all dates, newest first, nothing filtered); shown on the one panel button. */
+    val activeCount get() = listOf(period != Period.ALL, pay != PayFilter.ALL, category != null, currency != null, sort != SortOrder.NEWEST).count { it }
+
+    /** What is on screen, in words: "כל התאריכים · מהחדש לישן · ממתין". */
+    fun describe(): String = buildList {
+        add(when (period) {
+            Period.ALL -> "כל התאריכים"
+            Period.MONTH -> monthName(month)
+            Period.RANGE -> "${KisShare.shortDate(from)}–${KisShare.shortDate(to)}"
+        })
+        add(sort.short)
+        if (pay != PayFilter.ALL) add(pay.label)
+        category?.let { add(it) }
+        currency?.let { add(it) }
+    }.joinToString(" · ")
 
     fun toJson(): String = JSONObject().put("period", period.name).put("month", month).put("from", from).put("to", to).put("pay", pay.name)
         .put("category", category ?: JSONObject.NULL).put("currency", currency ?: JSONObject.NULL).put("sort", sort.name).toString()
