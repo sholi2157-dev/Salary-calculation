@@ -5,5 +5,6 @@
   "release": "2.0",
   "ciRun": 39152023005,
   "rollbackDeployment": "dpl_A7zWpmd7PTFsaorrZKEQzDZhvGWn",
-  "buildId": "3f29f5d39d5db7a2a3dad70608d04e7654e6f386-978879334a7958c1"
+  "buildId": "3f29f5d39d5db7a2a3dad70608d04e7654e6f386-978879334a7958c1",
+  "androidRelease": "android-v2.0 (update channel run 39157220086)"
 }
