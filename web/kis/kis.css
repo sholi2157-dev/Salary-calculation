@@ -173,6 +173,9 @@ button { cursor: pointer; }
 .time-box.on { background: color-mix(in srgb, var(--ink) 16%, transparent); }
 .time-box b { font: 44px/48px var(--display); direction: ltr; text-align: end; }
 .time-box b.empty { color: var(--muted); }
+.time-box b button { border: 0; background: none; font: inherit; color: inherit; padding: 0 2px; border-radius: 10px; cursor: pointer; }
+.time-box b button:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.time-box .nudges button { min-height: 36px; font-size: 14px; }
 .ruler { position: relative; height: 86px; margin: 0 26px; touch-action: none; }
 .ruler .track { position: absolute; top: 32px; inset-inline: 0; height: 12px; border-radius: 6px; background: color-mix(in srgb, var(--ink) 12%, transparent); }
 .ruler .span { position: absolute; top: 32px; height: 12px; border-radius: 6px; background: var(--acc); }
@@ -202,6 +205,11 @@ button { cursor: pointer; }
 .keypad { background: var(--surface); border-radius: 22px 22px 0 0; padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); box-shadow: var(--shadow); z-index: 3; display: grid; gap: 8px; }
 .keypad .display { display: flex; justify-content: space-between; align-items: baseline; }
 .keypad .display b { font: 30px/34px var(--display); direction: ltr; }
+.keypad .display small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.keypad .digits { display: flex; align-items: center; direction: ltr; gap: 2px; font: 30px/34px var(--display); }
+.keypad .digits i { font-style: normal; color: var(--muted); }
+.keypad .digits button { width: 30px; height: 42px; border: 0; border-radius: 9px; background: none; font: inherit; color: var(--ink); }
+.keypad .digits button[aria-pressed=true] { background: var(--ink); color: var(--on-ink); }
 .keypad .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; direction: ltr; }
 .keypad .keys button { min-height: 52px; border: 0; border-radius: 14px; background: var(--sunk); font: 22px var(--display); }
 

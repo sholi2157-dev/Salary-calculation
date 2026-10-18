@@ -1,6 +1,7 @@
 /*
  * Add / edit, as on Android (KisEditor + EntryDraft): a calm page with the purple glow; the workplace colour marks only
- * the chosen place and the ruler span. Clock / hours / job / group; keypad for times; −30 −15 +15 +30; unknown rate is
+ * the chosen place and the ruler span. Clock / hours / job / group; both times always shown and edited digit by digit;
+ * −15/+15 per time; unknown rate is
  * never 0; bonus; break; weekly repeat with an honest preview. A new draft survives reloads; an edit is a framed pop-up.
  */
 (function (root) {
@@ -20,11 +21,44 @@ function suggestStart(category, day, history) {
   if (!chips.length) chips = ranked(history).slice(0, 3).map(x => x[0]);
   return { start: same[0] && same[0][1] >= 3 ? same[0][0] : null, chips };
 }
+/** A new shift's length until the user moves it: both times are always shown, never an empty start (Android: EntryDraft.DEFAULT_MINUTES). */
+const DEFAULT_MINUTES = 240;
+const defaultStart = end => R().fromMinutes(R().toMinutes(end) - DEFAULT_MINUTES);
+
+// ---- typing a time digit by digit (Android: typeTime / parseTime / timeDigits) ----
+/** "17:30" → "1730"; no time yet → "····". */
+const timeDigits = t => R().isTime(t) ? R().fromMinutes(R().toMinutes(t)).replace(':', '') : '····';
+/** Four digits (unset ones count as 0) → "HH:MM", or null when it is not a time of day. */
+function parseTime(digits) {
+  const s = String(digits).replace(/·/g, '0');
+  if (!/^\d{4}$/.test(s)) return null;
+  const h = +s.slice(0, 2), m = +s.slice(2);
+  return h > 23 || m > 59 ? null : R().fromMinutes(h * 60 + m);
+}
+/**
+ * One key on a time edited in place: the digit at [cursor] (0–1 hours, 2–3 minutes) is replaced and the cursor moves on;
+ * 4 means complete. So 05:30 → 05:35 is "tap the last digit, type 5". A first digit that can only start a one-digit hour
+ * (3–9) becomes 0X and jumps to the minutes; likewise 6–9 for the minutes.
+ */
+function typeTime(digits, cursor, key) {
+  const b = (String(digits) + '····').slice(0, 4).split('');
+  let at = cursor >= 0 && cursor <= 3 ? cursor : 0;
+  if (key === 'del') { if (at > 0) { at--; b[at] = '·'; } return [b.join(''), at]; }
+  for (const k of String(key)) {
+    if (!/\d/.test(k)) continue;
+    if (at >= 4) break;
+    if (at === 0) { if (k > '2') { b[0] = '0'; b[1] = k; at = 2; } else { b[0] = k; if (k === '2' && /\d/.test(b[1]) && b[1] > '3') b[1] = '0'; at = 1; } }
+    else if (at === 2) { if (k > '5') { b[2] = '0'; b[3] = k; at = 4; } else { b[2] = k; at = 3; } }
+    else { b[at] = k; at++; }
+  }
+  return [b.join(''), at];
+}
+
 function newDraft(store) {
   const cats = store.data.categories, prefs = store.data.webPreferences;
   const name = root.WorkCategories.defaultName(cats, prefs), cat = cats.find(c => c.name === name);
-  const day = U().startOfDay(Date.now());
-  return { id: null, mode: 'CLOCK', category: cat ? name : '', day, start: suggestStart(name, day, store.data.entries).start, end: R().roundedEnd(nowMin()), breakMin: 0,
+  const day = U().startOfDay(Date.now()), end = R().roundedEnd(nowMin());
+  return { id: null, mode: 'CLOCK', category: cat ? name : '', day, start: defaultStart(end), end, breakMin: 0,
     hours: '', rate: cat ? clean(cat.defaultRate) : '', rateUnknown: false, currency: root.WorkCategories.currency(name, prefs), bonus: '', bonusTarget: 'ME',
     amount: '', amountUnknown: false, notes: '', workers: [], separateRates: false, employerRate: '', workerRate: '', isPaid: false, repeat: false, repeatDays: null, repeatUntil: null };
 }
@@ -80,7 +114,8 @@ function open(app, { entry = null, restore = null } = {}) {
   let d = restore || (base ? fromEntry(base) : newDraft(store));
   // A restored draft is the user's typing: leaving it asks first, like any other unsaved work.
   const original = restore ? '' : JSON.stringify(d);
-  let target = d.start ? 'END' : 'START', pad = false, buf = '', more = d.breakMin > 0 || !!d.notes || !!d.bonus;
+  // Times are edited digit by digit: [buf] holds the four digits ("·" = not set) and [cursor] the one the next key writes.
+  let target = d.start ? 'END' : 'START', pad = false, buf = '', cursor = 0, more = d.breakMin > 0 || !!d.notes || !!d.bonus;
   const host = document.createElement('div');
   host.className = 'editor' + (base ? ' framed' : '');
   host.setAttribute('data-testid', base ? 'edit-page' : 'add-page');
@@ -109,21 +144,26 @@ function open(app, { entry = null, restore = null } = {}) {
   // Back / Escape: the keypad closes first, then the editor (asking when something was typed).
   app.editorBack = () => { if (pad) { commitBuf(); pad = false; draw(); } else close(); };
   const set = patch => { d = { ...d, ...patch }; persist(); draw(); };
-  const shown = t => pad && t === target && buf ? fmtBuf(buf) : t === 'START' ? (d.start || '') : d.end;
-  const fmtBuf = b => b.length <= 2 ? b : b.slice(0, b.length - 2) + ':' + b.slice(-2);
+  const timeOf = t => t === 'START' ? d.start : d.end;
+  const shown = t => pad && t === target && buf ? buf.slice(0, 2) + ':' + buf.slice(2) : t === 'START' ? (d.start || '') : d.end;
   function commitBuf() {
     if (!buf) return true;
-    const b = buf.length <= 2 ? buf.padStart(2, '0') + '00' : buf.length === 3 ? '0' + buf : buf;
-    const h = +b.slice(0, 2), m = +b.slice(2);
-    if (h > 23 || m > 59) { U().toast('שעה לא תקינה'); buf = ''; return false; }
-    const v = R().fromMinutes(h * 60 + m); buf = '';
-    d = target === 'START' ? { ...d, start: v } : { ...d, end: v }; persist(); return true;
+    if (/[0-9]/.test(buf)) {
+      const v = parseTime(buf);
+      if (!v) { U().toast('שעה לא תקינה'); buf = timeDigits(timeOf(target)); cursor = 0; return false; }
+      d = target === 'START' ? { ...d, start: v } : { ...d, end: v }; persist();
+    }
+    buf = ''; return true;
   }
+  /** Opens the keypad on [t], on digit [at] (0–1 hours, 2–3 minutes) of the value already there. */
+  function openPad(t, at = 0) { commitBuf(); target = t; pad = true; buf = timeDigits(timeOf(t)); cursor = at; draw(); }
   function key(k) {
-    if (k === 'del') { buf = buf.slice(0, -1); return draw(); }
-    if (buf.length >= 4) return;
-    buf += k;
-    if (buf.length === 4) { if (commitBuf()) { if (target === 'START') target = 'END'; else pad = false; } }
+    if (buf.length !== 4) buf = timeDigits(timeOf(target));
+    [buf, cursor] = typeTime(buf, cursor, k);
+    // A complete, valid value shows at once (total); the last digit moves on from start to end, and closes after the end.
+    const v = !buf.includes('·') && parseTime(buf);
+    if (v) { d = target === 'START' ? { ...d, start: v } : { ...d, end: v }; persist(); }
+    if (cursor === 4 && commitBuf()) { if (target === 'START') return openPad('END'); pad = false; }
     draw();
   }
 
@@ -135,13 +175,15 @@ function open(app, { entry = null, restore = null } = {}) {
   }
   function bottomHtml(c) {
     const { esc } = U();
-    return pad ? `<div class="keypad" data-testid="keypad"><div class="display"><span class="caption">${target === 'START' ? 'שעת התחלה' : 'שעת סיום'}</span><b>${esc(shown(target) || '--:--')}</b></div>
+    const digits = (buf || timeDigits(timeOf(target))).split('');
+    return pad ? `<div class="keypad" data-testid="keypad"><div class="display"><span class="caption">${target === 'START' ? 'שעת התחלה' : 'שעת סיום'}<br><small>לחיצה על ספרה משנה רק אותה</small></span>
+        <span class="digits" data-testid="keypad-value" aria-label="${esc(shown(target))}">${digits.map((x, i) => `${i === 2 ? '<i>:</i>' : ''}<button data-dig="${i}" aria-pressed="${cursor === i}" aria-label="ספרה ${i + 1}" data-testid="keypad-digit-${i}">${esc(x)}</button>`).join('')}</span></div>
         <div class="keys">${['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'].map(k => `<button data-k="${k}" data-testid="key-${k}" aria-label="${k === 'del' ? 'מחיקה' : k === 'ok' ? 'אישור' : k}">${k === 'del' ? '⌫' : k === 'ok' ? '✓' : k}</button>`).join('')}</div></div>`
       : `<div class="save-bar">${c.canSave ? '' : `<p data-testid="save-hint">${esc(c.errors[0])}</p>`}<button class="btn primary" data-a="save" data-testid="save-shift" ${c.canSave && (!base || changed()) && !lastRepeatBlocked ? '' : 'disabled'}>${lastRepeatOn ? 'יצירת הסדרה' : base ? (changed() ? 'שמירת שינויים' : 'אין שינויים') : 'שמירה'}</button></div>`;
   }
   function draw() {
     const active = document.activeElement, focusKey = active && host.contains(active)
-      ? ['data-f', 'data-t', 'data-h', 'data-testid', 'data-mode', 'data-cat', 'data-k'].map(a => active.getAttribute(a) != null ? `[${a}="${CSS.escape(active.getAttribute(a))}"]` : null).find(Boolean) : null;
+      ? ['data-f', 'data-testid', 'data-t', 'data-h', 'data-mode', 'data-cat', 'data-k'].map(a => active.getAttribute(a) != null ? `[${a}="${CSS.escape(active.getAttribute(a))}"]` : null).find(Boolean) : null;
     const caret = active && 'selectionStart' in active ? (() => { try { return active.selectionStart; } catch { return null; } })() : null;
     const c = evaluate(d), place = d.category ? U().placeOf(d.category, store) : U().PLACES[0];
     host.style.setProperty('--acc', U().accent(place)); host.style.setProperty('--acc-ink', U().accentInk(place));
@@ -157,16 +199,19 @@ function open(app, { entry = null, restore = null } = {}) {
       ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">סכום (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount"></label>
           <label class="field" style="width:120px">שעות (לא חובה)<input class="input" inputmode="decimal" data-f="hours" value="${esc(d.hours)}"></label></div>
           <button class="chip${d.amountUnknown ? ' on' : ''}" data-a="amount-unknown">${d.amountUnknown ? 'סכום חסר · נגיעה להזנה' : 'לא יודע עדיין'}</button>`
-        : clockMode ? `<div class="clock-row"><button class="time-box${target === 'START' && pad ? ' on' : ''}" data-t="START" data-testid="clock-start"><span class="caption">התחלה</span><b class="${shown('START') ? '' : 'empty'}">${esc(shown('START') || '--:--')}</b></button>
-          <button class="time-box${target === 'END' && pad ? ' on' : ''}" data-t="END" data-testid="clock-end"><span class="caption">סיום</span><b>${esc(shown('END'))}</b></button></div>
-          ${pad ? '' : ruler(d, target)}${pad || !d.start ? '' : `<div class="nudges"><span>${target === 'START' ? 'התחלה' : 'סיום'}:</span>${[-30, -15, 15, 30].map(n => `<button data-n="${n}" data-testid="nudge-${n}">${n > 0 ? '+' + n : '−' + -n}</button>`).join('')}</div>`}
+        : clockMode ? `<div class="clock-row">${[['START', 'התחלה'], ['END', 'סיום']].map(([t, label]) => { const v = shown(t) || '--:--', id = t === 'START' ? 'clock-start' : 'clock-end';
+            // Hours and minutes are separate taps: a tap on the minutes edits only them. Each time has its own −15/+15.
+            return `<div class="time-box${target === t && pad ? ' on' : ''}"><span class="caption">${label}</span>
+              <b class="${shown(t) ? '' : 'empty'}"><button data-t="${t}" data-at="0" aria-label="${label} · שעות" data-testid="${id}">${esc(v.slice(0, 2))}</button>:<button data-t="${t}" data-at="2" aria-label="${label} · דקות" data-testid="${id}-mm">${esc(v.slice(3))}</button></b>
+              ${pad || !timeOf(t) ? '' : `<div class="nudges">${[-15, 15].map(n => `<button data-nt="${t}" data-n="${n}" aria-label="${label} ${n > 0 ? n + ' דקות קדימה' : -n + ' דקות אחורה'}" data-testid="nudge-${t.toLowerCase()}-${n}">${n > 0 ? '+' + n : '−' + -n}</button>`).join('')}</div>`}</div>`; }).join('')}</div>
+          ${pad ? '' : ruler(d, target)}
           ${d.mode === 'GROUP' ? '<button class="link" data-a="group-hours">הזנת שעות במקום שעון</button>' : ''}`
         : `<label class="field">שעות<input class="input" inputmode="decimal" data-f="hours" value="${esc(d.hours)}" data-testid="hours-input" style="font:28px var(--display)"></label>
           <div class="chips">${[4, 6, 8, 10, 12].map(h => `<button class="chip" data-q="${h}">${h} ש׳</button>`).join('')}${d.mode === 'GROUP' ? '<button class="chip" data-a="group-clock">לפי שעון</button>' : ''}</div>`}
       <div class="meta-line" data-testid="editor-meta">${metaHtml(c)}</div>`;
 
     const body = host.querySelector('[data-body]');
-    const sug = d.start == null && d.mode === 'CLOCK' ? suggestStart(d.category, d.day, store.data.entries).chips : [];
+    const sug = !base && d.mode === 'CLOCK' ? suggestStart(d.category, d.day, store.data.entries).chips : [];
     const days = Array.from({ length: 7 }, (_, i) => U().startOfDay(Date.now()) - (6 - i) * 864e5);
     const repeatOn = d.repeat && !base && d.mode === 'CLOCK' && d.start != null;
     const repeatDays = new Set(d.repeatDays ?? [new Date(d.day).getDay()]);
@@ -174,7 +219,7 @@ function open(app, { entry = null, restore = null } = {}) {
     const preview = repeatOn ? root.KisPlans.previewFor(store, repeatDays, fromIso, until < fromIso ? fromIso : until, d.start, d.end) : null;
     const created = preview ? preview.dates.length - preview.clashes.length : 0;
     body.innerHTML = `
-      ${sug.length ? `<div class="chips" style="align-items:center"><span class="caption">התחלה נפוצה:</span>${sug.map(h => `<button class="chip dashed" data-s="${h}">${h}</button>`).join('')}</div>` : ''}
+      ${sug.length ? `<div class="chips" style="align-items:center"><span class="caption">התחלה נפוצה:</span>${sug.map(h => `<button class="chip dashed" aria-pressed="${d.start === h}" data-s="${h}">${h}</button>`).join('')}</div>` : ''}
       <div class="days">${days.map(ms => `<button aria-pressed="${ms === d.day}" data-day="${ms}"><small>${ms === days[6] ? 'היום' : U().DAY_SHORT[new Date(ms).getDay()]}</small>${new Date(ms).getDate()}</button>`).join('')}</div>
       <div class="row" style="align-items:center;flex-wrap:wrap"><label class="chip" style="position:relative">${days.includes(d.day) ? 'תאריך אחר' : esc(U().dayLabelLong(d.day))}
           <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
@@ -211,22 +256,24 @@ function open(app, { entry = null, restore = null } = {}) {
     q('[data-a=close]').onclick = () => close();
     q('[data-a=delete]')?.addEventListener('click', () => U().confirmSheet('למחוק את המשמרת?', 'אפשר לבטל מיד אחרי המחיקה.', 'מחיקה', () => {
       const gone = store.deleteEntries([base.id]); close(true); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); }));
-    all('[data-mode]').forEach(b => b.onclick = () => { commitBuf(); pad = false; set({ mode: b.dataset.mode }); });
+    all('[data-mode]').forEach(b => b.onclick = () => { commitBuf(); pad = false; const mode = b.dataset.mode;
+      set({ mode, ...(mode === 'CLOCK' && d.start == null && !base ? { start: defaultStart(d.end) } : {}) }); });
     all('[data-cat]').forEach(b => b.onclick = () => { commitBuf(); const cat = store.data.categories.find(x => x.name === b.dataset.cat);
-      set({ category: cat.name, rate: d.rateUnknown ? d.rate : clean(cat.defaultRate), currency: root.WorkCategories.currency(cat.name, store.data.webPreferences),
-        start: d.start ?? suggestStart(cat.name, d.day, store.data.entries).start }); });
+      set({ category: cat.name, rate: d.rateUnknown ? d.rate : clean(cat.defaultRate), currency: root.WorkCategories.currency(cat.name, store.data.webPreferences) }); });
     q('[data-a=add-place]').onclick = () => root.KisSettings.placeSheet(app, null, name => { const cat = store.data.categories.find(x => x.name === name); set({ category: name, rate: clean(cat?.defaultRate), currency: root.WorkCategories.currency(name, store.data.webPreferences) }); });
-    all('[data-t]').forEach(b => b.onclick = () => { commitBuf(); target = b.dataset.t; buf = ''; pad = true; draw(); });
+    all('[data-t]').forEach(b => b.onclick = () => openPad(b.dataset.t, +b.dataset.at || 0));
+    all('[data-dig]').forEach(b => b.onclick = () => { cursor = +b.dataset.dig; draw(); });
     all('[data-k]').forEach(b => b.onclick = () => { const k = b.dataset.k; if (k === 'ok') { if (commitBuf()) pad = false; draw(); } else key(k); });
-    all('[data-n]').forEach(b => b.onclick = () => { const n = +b.dataset.n; if (target === 'START' && d.start) set({ start: R().fromMinutes(R().toMinutes(d.start) + n) }); else set({ end: R().fromMinutes(R().toMinutes(d.end) + n) }); U().haptic('tick'); });
+    all('[data-nt]').forEach(b => b.onclick = () => { const t = b.dataset.nt, v = timeOf(t), n = +b.dataset.n; if (!v) return;
+      set(t === 'START' ? { start: R().fromMinutes(R().toMinutes(v) + n) } : { end: R().fromMinutes(R().toMinutes(v) + n) }); U().haptic('tick'); });
     all('[data-q]').forEach(b => b.onclick = () => set({ hours: b.dataset.q }));
-    all('[data-s]').forEach(b => b.onclick = () => { target = 'END'; set({ start: b.dataset.s }); });
+    all('[data-s]').forEach(b => b.onclick = () => { commitBuf(); pad = false; target = 'END'; set({ start: b.dataset.s }); });
     all('[data-day]').forEach(b => b.onclick = () => set({ day: +b.dataset.day, repeatDays: d.repeatDays ? [...new Set([...d.repeatDays, new Date(+b.dataset.day).getDay()])] : null }));
     all('[data-cur]').forEach(b => b.onclick = () => set({ currency: b.dataset.cur }));
     all('[data-b]').forEach(b => b.onclick = () => set({ breakMin: +b.dataset.b }));
     all('[data-wd]').forEach(b => b.onclick = () => { const s = new Set(d.repeatDays ?? [new Date(d.day).getDay()]); const i = +b.dataset.wd; s.has(i) ? s.delete(i) : s.add(i); set({ repeatDays: [...s].sort() }); });
     q('[data-a=group-hours]')?.addEventListener('click', () => set({ start: null }));
-    q('[data-a=group-clock]')?.addEventListener('click', () => set({ start: suggestStart(d.category, d.day, store.data.entries).chips[0] || '09:00' }));
+    q('[data-a=group-clock]')?.addEventListener('click', () => set({ start: defaultStart(d.end) }));
     q('[data-a=rate-unknown]')?.addEventListener('click', () => set({ rateUnknown: !d.rateUnknown }));
     q('[data-a=amount-unknown]')?.addEventListener('click', () => set({ amountUnknown: !d.amountUnknown }));
     q('[data-a=more]')?.addEventListener('click', () => { more = !more; draw(); });
@@ -340,5 +387,5 @@ function rulerBind(host, d, select, change) {
 }
 function pendingDraft() { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
 
-root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, suggestStart, pendingDraft, DRAFT };
+root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, suggestStart, pendingDraft, DRAFT, typeTime, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES };
 })(globalThis);

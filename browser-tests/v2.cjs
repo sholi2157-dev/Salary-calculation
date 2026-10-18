@@ -79,7 +79,11 @@ const seed = {
     for (const k of '1730') await page.click(tid('key-' + k));
     assert.match(await page.textContent(tid('editor-meta')), /8:30 שעות/);
     assert.match(await page.textContent(tid('editor-total')), /₪425/);
-    await page.click(tid('nudge-15')); assert.match(await page.textContent(tid('editor-total')), /₪437\.50/);
+    await page.click(tid('nudge-end-15')); assert.match(await page.textContent(tid('editor-total')), /₪437\.50/);
+    // Each time has its own ±15.
+    await page.click(tid('nudge-start--15')); assert.equal(await page.textContent(tid('clock-start')), '08');
+    assert.equal(await page.textContent(tid('clock-start-mm')), '45');
+    await page.click(tid('nudge-start-15')); assert.equal(await page.textContent(tid('clock-start-mm')), '00');
     await page.click(tid('rate-unknown'));
     assert.match(await page.textContent(tid('editor-meta')), /תעריף חסר/);
     await shot(page, 'editor-light-390');
@@ -93,6 +97,28 @@ const seed = {
     await page.click(tid('tab-history')); await page.click(tid('shift-b')); await page.click(tid('detail-edit'));
     await page.click(tid('editor-more')); await page.fill(tid('notes-input'), 'הערה'); await page.click(tid('save-shift'));
     const b = (await stored(page)).entries.find(e => e.id === 'b'); assert.equal(b.totalEarnings, 300); assert.equal(b.notes, 'הערה'); assert.equal(b.hours, 2.5);
+    await ctx.close();
+  }
+
+  // 2b. A new shift shows both times, 4 hours apart; one digit changes in place (05:30 → 05:35), then the end.
+  {
+    const { ctx, page } = await open();
+    await page.click(tid('add-shift'));
+    const t = async w => (await page.textContent(tid('clock-' + w))) + ':' + (await page.textContent(tid('clock-' + w + '-mm')));
+    const min = s => +s.slice(0, 2) * 60 + +s.slice(3);
+    assert.equal((min(await t('end')) - min(await t('start')) + 1440) % 1440, 240, 'start is 4 hours before the end');
+    await page.click(tid('clock-start'));
+    for (const k of '0530') await page.click(tid('key-' + k)); // the last digit moves on to the end
+    await page.click(tid('key-ok'));
+    await page.click(tid('clock-start-mm'));
+    assert.equal(await page.getAttribute(tid('keypad-digit-2'), 'aria-pressed'), 'true');
+    await page.click(tid('keypad-digit-3')); await page.click(tid('key-5'));
+    assert.equal(await t('start'), '05:35');
+    assert.match(await page.textContent(tid('keypad')), /שעת סיום/);
+    for (const k of '10') await page.click(tid('key-' + k));
+    await page.keyboard.press('Enter');
+    assert.equal(await t('end').then(v => v.slice(0, 2)), '10');
+    await shot(page, 'editor-digits-390');
     await ctx.close();
   }
 
@@ -142,6 +168,10 @@ const seed = {
     const { ctx, page } = await open();
     await page.click(tid('live-start')); await page.click(tid('live-go'));
     assert.ok(await page.isVisible(tid('live-card')));
+    // With the place's rate the card counts the money earned so far, to the agora; the clock sits below it.
+    assert.match(await page.textContent(tid('live-money')), /^[₪$][\d,]+\.\d\d$/);
+    assert.match(await page.textContent(tid('live-clock')), /^\d\d:\d\d:\d\d$/);
+    await shot(page, 'live-money-390');
     await page.click(tid('add-shift')); await page.click(tid('mode-hours')); await page.fill(tid('hours-input'), '7');
     await page.reload(); await page.waitForSelector(tid('add-page'));
     assert.equal(await page.inputValue(tid('hours-input')), '7', 'draft restored');
