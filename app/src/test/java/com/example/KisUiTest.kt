@@ -477,6 +477,9 @@ class KisUiTest {
         shot("month-summary")
     }
 
+    private fun shownSlide() = listOf("intro", "hours", "places", "persona", "longest", "days", "hour", "money", "card").map { "story_$it" }
+        .filter { ui.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() }
+
     @Test fun storyRecapMovesOnHidesTheAmountAndSharesACardWithoutIt() {
         seed()
         var closed = false
@@ -502,7 +505,7 @@ class KisUiTest {
         ui.mainClock.advanceTimeBy(10_000)
         ui.onNodeWithTag("story_card").assertExists()
         ui.onNodeWithTag("story_prev").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); ui.mainClock.advanceTimeBy(800)
-        ui.onNodeWithTag("story_money").assertExists()
+        assertEquals(listOf("story_money"), shownSlide())
         next(); next()
         assertTrue(closed)
     }

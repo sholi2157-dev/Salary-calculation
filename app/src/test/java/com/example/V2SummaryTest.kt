@@ -6,8 +6,13 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** Summaries: the shared expected results (v2-summary.json), asserted the same way by the website. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28])
 class V2SummaryTest {
     private val doc by lazy { JSONObject(javaClass.classLoader!!.getResourceAsStream("v2-summary.json").bufferedReader().readText()) }
     private fun JSONArray.objects() = (0 until length()).map { getJSONObject(it) }
