@@ -40,3 +40,19 @@ and cloud sync stay off (`WEB_ACCOUNTS_ENABLED=false`) and are not loaded. The o
   edit keeps the stored amount, future shift planned and not summed, the filter panel, weekly plan recorded once across
   a reload, Android v3 backup import and export, live shift and draft survive a reload, no horizontal scroll at
   360/390/768/1440 light and dark, no page errors.
+
+## Independent review (data and screens) — fixed
+- Data: early numeric shift ids work everywhere; untouched group rates are kept exactly; a `work_pre_v2_snapshot_v1`
+  copy is taken before the first 2.0 write and rows that use nothing from 2.0 are stored exactly as before; an older tab
+  never overwrites newer data (re-read before writing, edit conflict check, import decided at save time); a live shift is
+  saved once; rate completion per currency with undo; renaming a place renames a running shift.
+- Screens: the selection bar is above the navigation and the navigation always returns; no lost taps or focus while
+  typing (fields commit in place); the editor is a dialog (focus, inert background, Escape closes the keypad first,
+  physical digit keys feed the keypad); sheets return focus; place texts say "מקום" everywhere.
+
+## Verified
+- Source `4a0c23dd6f77764cd07faaa3df3fa90a91099c5d` on `claude/v2-web`; CI `web-v2.yml` run 39094056873 SUCCESS
+  (build, 72 unit tests, fixtures byte-identical to `claude/v2-android`, browser flows at 360–1440 light/dark).
+- Vercel Preview `dpl_HJNexNKY2UXN8xfQtjEbUynPSmzf` READY, `build-info.json` reports exactly that commit.
+  Production `salary-calculation-eta.vercel.app` unchanged (`562a7a5`).
+- Remaining: the owner's look on a phone and a computer; publishing (stage F) only with explicit approval.
