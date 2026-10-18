@@ -67,7 +67,6 @@ fun KisHome(
     onAllPlans: () -> Unit = {},
     unread: Boolean = false,
     onBell: () -> Unit = {},
-    onProfile: () -> Unit = {},
 ) {
     val c = Kis.colors
     // A clock that moves on by itself, so "today" and "this week" roll over without new data.
@@ -82,7 +81,7 @@ fun KisHome(
         KisGlow(Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 16.dp)
             .padding(top = 12.dp, bottom = bottomInset).testTag("dashboard_scroll_container")) {
-            Hello(unread, onBell, onProfile)
+            Hello(unread, onBell)
             Hero(week, today, done, hoursByCat, categories, onPending,
                 plannedThisWeek = remember(plans, now) { val from = com.example.domain.V2Plan.dateOf(KisHistoryLogic.weekStart(now)); val to = isoDayPlus(KisHistoryLogic.weekStart(now), 6)
                     plans.count { it.status == com.example.domain.V2Plan.Status.PLANNED && it.date in from..to } })
@@ -108,7 +107,7 @@ private fun greeting(): String = when (Calendar.getInstance().get(Calendar.HOUR_
 }
 
 @Composable
-private fun Hello(unread: Boolean, onBell: () -> Unit, onProfile: () -> Unit) {
+private fun Hello(unread: Boolean, onBell: () -> Unit) {
     val c = Kis.colors
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         KisLogo()
@@ -118,8 +117,8 @@ private fun Hello(unread: Boolean, onBell: () -> Unit, onProfile: () -> Unit) {
                 modifier = Modifier.testTag("home_greeting"))
             Text(stringResource(R.string.app_name), style = KisType.label.copy(fontSize = 16.sp), color = c.ink)
         }
-        // Top-left (RTL end): notifications and profile.
-        HeaderActions(unread, onBell, onProfile)
+        // Top-left (RTL end): what arrived.
+        HeaderActions(unread, onBell)
     }
 }
 

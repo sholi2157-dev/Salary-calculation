@@ -134,6 +134,10 @@ class KisSettings internal constructor(private val context: Context?) {
     var name by mutableStateOf(prefs?.getString("name", "") ?: "")
         private set
     fun updateName(value: String) { name = value.take(40); prefs?.edit()?.putString("name", name.trim())?.apply() }
+    /** Kept with the profile only; greetings and messages use the first name. */
+    var lastName by mutableStateOf(prefs?.getString("lastName", "") ?: "")
+        private set
+    fun updateLastName(value: String) { lastName = value.take(40); prefs?.edit()?.putString("lastName", lastName.trim())?.apply() }
 
     /** Optional per-workplace colour picked by the user; otherwise colours follow category order. */
     fun workplaceIndex(category: String, categories: List<WorkCategory>): Int {

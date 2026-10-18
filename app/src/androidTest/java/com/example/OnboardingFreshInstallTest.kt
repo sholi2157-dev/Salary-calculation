@@ -17,6 +17,7 @@ class OnboardingFreshInstallTest {
     @Test fun completedColdLaunchStaysHidden() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals(ONBOARDING_VERSION, WorkOnboardingStore(context).completedVersion)
+        ui.onNodeWithTag("launch_root").assertDoesNotExist()
         ui.onNodeWithTag("onboarding_card").assertDoesNotExist()
         ui.onNodeWithTag("settings_button").assertIsDisplayed()
     }
@@ -24,6 +25,12 @@ class OnboardingFreshInstallTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val device = InstrumentationRegistry.getInstrumentation().uiAutomation
         val db = WorkDatabase.getDatabase(context, CoroutineScope(Dispatchers.IO))
+        // A new installation also opens with the 2.0 launch; "later" skips the name, then the tour starts from Home.
+        assertTrue(WorkOnboardingStore(context).launchPending)
+        ui.onNodeWithTag("onboarding_card").assertDoesNotExist()
+        ui.onNodeWithTag("launch_next").performClick()
+        ui.onNodeWithTag("launch_later").performClick()
+        assertFalse(WorkOnboardingStore(context).launchPending)
         ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
         val snapshot = runBlocking { db.workDao().exportSnapshot() }
         val timer = context.getSharedPreferences("active_shift_prefs", 0).all.toMap()

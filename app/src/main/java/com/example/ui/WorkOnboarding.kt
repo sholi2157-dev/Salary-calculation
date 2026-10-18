@@ -73,7 +73,12 @@ class WorkOnboardingStore(private val context: Context) {
         return completedVersion < ONBOARDING_VERSION
     }
     fun complete() { check(prefs.edit().putInt("completedOnboardingVersion", maxOf(completedVersion, ONBOARDING_VERSION)).commit()) }
+    /** The 2.0 launch screen is shown once to everyone, new or updated (see KisLaunch). */
+    val launchPending get() = prefs.getInt("launchedVersion", 0) < LAUNCH_VERSION
+    fun launched() { check(prefs.edit().putInt("launchedVersion", LAUNCH_VERSION).commit()) }
 }
+
+const val LAUNCH_VERSION = 2
 
 const val ONBOARDING_VERSION = 1
 

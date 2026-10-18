@@ -101,6 +101,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 }
                 Row_("רטט במגע", null) { KisSwitch(settings.haptics, settings::updateHaptics, Modifier.testTag("haptics_switch"), label = "רטט במגע") }
             }
+            Group("התראות") { NotificationSwitches(viewModel) }
             Group("עזרה וכלים") {
                 Row_("רישום במילים (AI)", if (hasKey) "פעיל" else null, tag = "ai_key_row", onClick = { aiSheet = true },
                     modifier = Modifier.coachTarget(CoachTarget.API)) {
@@ -149,6 +150,8 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 }) {}
                 if (viewModel.owner.uid != null) Row_("העתקה חד־פעמית של הנתונים המקומיים", null, onClick = { viewModel.reviewLegacyData(context) }) {}
             }
+            // Set once (the launch asks for it); rarely touched again, so it sits last.
+            Group("פרופיל") { ProfileFields() }
             Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 KisLogo(Modifier.size(28.dp))
                 Text("${androidx.compose.ui.res.stringResource(com.example.R.string.app_name)} · ${BuildConfig.VERSION_NAME}", style = KisType.caption, color = c.muted)

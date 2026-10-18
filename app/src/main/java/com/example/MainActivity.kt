@@ -58,6 +58,8 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -213,7 +215,10 @@ fun MainAppContent(
 ) {
     val context = LocalContext.current
     val onboarding = com.example.ui.rememberOnboardingController()
-    if (!onboarding.active) com.example.ui.WorkUpdateSettings(automatic = true)
+    val onboardingStore = remember { com.example.ui.WorkOnboardingStore(context) }
+    // The 2.0 launch comes first (once), then the name, then the short tour from Home.
+    var launching by rememberSaveable { mutableStateOf(onboardingStore.launchPending) }
+    if (!onboarding.active && !launching) com.example.ui.WorkUpdateSettings(automatic = true)
 
     val googleSignInLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -249,15 +254,18 @@ fun MainAppContent(
         PlanJobs.ACTION_RATES -> com.example.ui.kis.ShellRequest.RATES
         else -> null
     }
-    com.example.ui.kis.KisApp(
-        viewModel = viewModel,
-        request = request,
-        onRequestHandled = { activity.intentActionFlow.value = null },
-        onReplayTour = { onboarding.replay() },
-        onSignIn = { showAccountDialog = true },
-        modifier = modifier
-    )
+    Box(modifier) {
+        com.example.ui.kis.KisApp(
+            viewModel = viewModel,
+            request = request,
+            onRequestHandled = { activity.intentActionFlow.value = null },
+            onReplayTour = { onboarding.replay() },
+            onSignIn = { showAccountDialog = true },
+            modifier = Modifier.fillMaxSize().then(if (launching) Modifier.clearAndSetSemantics { } else Modifier)
+        )
+        if (launching) com.example.ui.kis.KisLaunch(onDone = { onboardingStore.launched(); launching = false; onboarding.replay() })
+    }
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
-    com.example.ui.WorkOnboarding(onboarding, viewModel, categories.distinctBy { it.name.trim() }, entries)
+    if (!launching) com.example.ui.WorkOnboarding(onboarding, viewModel, categories.distinctBy { it.name.trim() }, entries)
 }

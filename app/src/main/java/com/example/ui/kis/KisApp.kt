@@ -101,7 +101,6 @@ fun KisApp(
     var hoursFor by rememberSaveable { mutableStateOf<String?>(null) }
     var monthSheet by rememberSaveable { mutableStateOf<Int?>(null) }
     var bellOpen by rememberSaveable { mutableStateOf(false) }
-    var profileOpen by rememberSaveable { mutableStateOf(false) }
     // A dot on the bell for what arrived since it was last opened (the daily job writes it; read again on every return).
     var unread by remember { mutableStateOf(viewModel.planSettings.unread) }
 
@@ -205,7 +204,7 @@ fun KisApp(
                     onSettings = { go(2) },
                     plans = plans, planActions = planActions,
                     onAllPlans = { history.selection = emptySet(); history.searching = false; history.planned = true; go(1) },
-                    unread = unread, onBell = { bellOpen = true }, onProfile = { profileOpen = true })
+                    unread = unread, onBell = { bellOpen = true })
                 1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) },
                     plans = plans, planActions = planActions, onMonthSummary = { monthSheet = it })
                 else -> Box(Modifier.onFocusChanged { settingsHasFocus = it.hasFocus }) {
@@ -273,8 +272,8 @@ fun KisApp(
             say(if (n == 1) "תעריף הושלם למשמרת אחת ✓" else "תעריף הושלם ל-$n משמרות ✓")
         }
     }
-    if (bellOpen) NotificationsSheet(viewModel, onMonth = { bellOpen = false; unread = false; monthSheet = it }, onDismiss = { bellOpen = false; unread = false })
-    if (profileOpen) ProfileSheet(onDismiss = { profileOpen = false })
+    if (bellOpen) NotificationsSheet(viewModel, onMonth = { bellOpen = false; unread = false; monthSheet = it },
+        onSettings = { bellOpen = false; unread = false; go(2) }, onDismiss = { bellOpen = false; unread = false })
     monthSheet?.let { m ->
         MonthSummarySheet(m, entries, categories, onHistory = { monthSheet = null; history.planned = false; history.showMonth = m; go(1) },
             onDismiss = { monthSheet = null }, onMessage = { say(it) })

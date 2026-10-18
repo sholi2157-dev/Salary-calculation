@@ -21,6 +21,20 @@ class DistributionUiTest {
     }
     @Test fun portraitScreensDraftsHistoryAndSettings() {
         ui.waitForIdle()
+        // First open after the update: the 2.0 launch, then the name, then the short tour from Home.
+        ui.waitUntil(5_000) { ui.onAllNodesWithTag("launch_line_2").fetchSemanticsNodes().isNotEmpty() }
+        Thread.sleep(1_500)
+        snap("v2-launch")
+        ui.onNodeWithTag("launch_next").performClick()
+        ui.onNodeWithTag("launch_first").performTextReplacement("בודק")
+        ui.onNodeWithTag("launch_last").performTextReplacement("בדיקה")
+        Espresso.closeSoftKeyboard()
+        snap("v2-launch-name")
+        ui.onNodeWithTag("launch_done").performClick()
+        ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
+        ui.onNodeWithTag("onboarding_skip").performClick()
+        ui.onNodeWithTag("launch_root").assertDoesNotExist()
+        ui.onNodeWithTag("home_greeting").assertTextContains("בודק", substring = true)
         assertEquals(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, ui.activity.requestedOrientation)
         assertEquals(Configuration.ORIENTATION_PORTRAIT, ui.activity.resources.configuration.orientation)
         ui.onNodeWithTag("home_hero").assertIsDisplayed()
@@ -80,7 +94,7 @@ class DistributionUiTest {
         ui.activity.intentActionFlow.value = "com.example.ACTION_IMPORT_EXCEL"
         ui.waitForIdle()
         ui.onNodeWithTag("settings_root").assertIsDisplayed()
-        for (section in listOf("עבודה", "מראה ותחושה", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
+        for (section in listOf("עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות", "פרופיל")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
         snap("v2-settings")
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("Synthetic feedback draft")
         Espresso.closeSoftKeyboard()

@@ -475,7 +475,7 @@ class KisUiTest {
         shot("month-summary")
     }
 
-    @Test fun notificationsSheetListsRecentOpensTheirMonthAndHoldsTheSwitches() {
+    @Test fun bellSheetListsRecentAndOpensTheirMonth() {
         val vm = model()
         val plan = vm.planSettings
         (1..25).forEach { plan.addRecent(PlanSettings.Sent("monthly", "סיכום $it", "טקסט", it.toLong(), "2026-09")) }
@@ -483,39 +483,41 @@ class KisUiTest {
         assertEquals("סיכום 25", plan.recent.first().title)
         assertTrue(plan.unread)
         var opened: Int? = null
-        host { NotificationsSheet(vm, onMonth = { opened = it }, onDismiss = {}) }
+        var settings = false
+        host {
+            HeaderActions(unread = true, onBell = {})
+            NotificationsSheet(vm, onMonth = { opened = it }, onSettings = { settings = true }, onDismiss = {})
+        }
+        ui.onNodeWithTag("home_bell_dot", useUnmergedTree = true).assertExists()
         assertFalse(plan.unread)
-        ui.onNodeWithTag("quiet_switch").performScrollTo().assertExists()
-        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
-        assertTrue(plan.notifyMonthly)
-        ui.onNodeWithTag("notify_monthly_switch").performClick()
-        assertFalse(plan.notifyMonthly)
+        ui.onNodeWithTag("notify_monthly_switch").assertDoesNotExist()
         ui.onNodeWithTag("recent_note_0").performScrollTo().performClick()
         assertEquals(2026 * 12 + 8, opened)
+        ui.onNodeWithTag("notifications_settings").performClick()
+        assertTrue(settings)
     }
 
-    @Test fun profileNameIsTypedOnceThenShownWithEdit() {
+    @Test fun launchShowsTheSloganThenTakesFirstAndLastName() {
         lateinit var settings: KisSettings
+        var done = false
         ui.setContent {
             settings = rememberKisSettings()
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                KisTheme(settings) {
-                    var open by remember { mutableStateOf(false) }
-                    HeaderActions(unread = true, onBell = {}, onProfile = { open = true })
-                    if (open) ProfileSheet(onDismiss = { open = false })
-                }
+                KisTheme(settings) { KisLaunch(onDone = { done = true }) }
             }
         }
-        ui.onNodeWithTag("home_bell_dot", useUnmergedTree = true).assertExists()
-        ui.onNodeWithTag("home_profile").performClick()
-        ui.onNodeWithTag("profile_name").performTextReplacement("שולי")
-        ui.onNodeWithTag("profile_save").performClick()
+        ui.onNodeWithTag("launch_line_1").assertTextEquals("עיצוב חדש.")
+        ui.onNodeWithTag("launch_line_2").assertTextEquals("התחלה חדשה.")
+        shot("launch")
+        ui.onNodeWithTag("launch_next").performClick()
+        ui.onNodeWithTag("launch_done").assertIsNotEnabled()
+        ui.onNodeWithTag("launch_first").performTextReplacement("שולי")
+        ui.onNodeWithTag("launch_last").performTextReplacement("כהן")
+        shot("launch-name")
+        ui.onNodeWithTag("launch_done").performClick()
+        assertTrue(done)
         assertEquals("שולי", settings.name)
-        ui.onNodeWithTag("home_profile").performClick()
-        ui.onNodeWithTag("profile_shown").assertTextEquals("שולי")
-        ui.onNodeWithTag("profile_name").assertDoesNotExist()
-        ui.onNodeWithTag("profile_edit").performClick()
-        ui.onNodeWithTag("profile_name").assertExists()
+        assertEquals("כהן", settings.lastName)
     }
 
     @Test fun settingsSectionsAndThemeChoice() {
@@ -527,10 +529,7 @@ class KisUiTest {
                 KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
             }
         }
-        // The immediate things first; profile and notifications live on Home.
-        ui.onNodeWithTag("profile_name").assertDoesNotExist()
-        ui.onNodeWithTag("notify_monthly_switch").assertDoesNotExist()
-        listOf("עבודה", "מראה ותחושה", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות").forEach {
+        listOf("עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות", "פרופיל").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
         }
         ui.onNodeWithTag("theme_LIGHT").performScrollTo().performClick()
@@ -541,6 +540,16 @@ class KisUiTest {
         shot("settings-dark")
         ui.onNodeWithTag("haptics_switch").performScrollTo().performClick()
         assertFalse(settings.haptics)
+        // Notification switches (device-only), and the profile at the bottom: first and last name, saved as typed.
+        ui.onNodeWithTag("quiet_switch").performScrollTo().assertExists()
+        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
+        assertTrue(vm.planSettings.notifyMonthly)
+        ui.onNodeWithTag("notify_monthly_switch").performClick()
+        assertFalse(vm.planSettings.notifyMonthly)
+        ui.onNodeWithTag("profile_name").performScrollTo().performTextReplacement("שולי")
+        ui.onNodeWithTag("profile_last_name").performScrollTo().performTextReplacement("כהן")
+        assertEquals("שולי", settings.name)
+        assertEquals("כהן", settings.lastName)
         // Weekly plans live here (device-only settings).
         ui.onNodeWithTag("series_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
         ui.onNodeWithTag("auto_confirm_switch").performClick()
