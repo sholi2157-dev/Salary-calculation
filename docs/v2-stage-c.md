@@ -98,3 +98,10 @@ existing screens (no new page). Delivered as signed `2.0-rc4` / code 28 (see "Bu
   currency/`PlanAutoRecordTest`, fresh install, empty crash log. APK SHA-256
   `c68a00a8b000ab6c12dba688780ffccd83266dfe9397c80a8c20ce17a4ff7225`, `2.0-rc5` / 29, private artifact
   `salary-2.0-rc5-candidate` (id 12119622614). Not published. Manual gate: owner's phone.
+
+## After rc5 — History view (owner request, no new RC requested)
+- History shows all dates by default. One "סינון ומיון" button opens one panel with three clear parts: which dates
+  (all / month / range), order (newest / oldest / by adding), optional filters (payment, place, currency), and a button
+  that says how many shifts it will show. A line under the toggle says what is shown ("מוצג: כל התאריכים · מהחדש לישן")
+  with "הצגת הכול" to return to the default; the separate sort menu is gone. Source `81790f2`, dev CI run 39092134771
+  SUCCESS (128 Debug tests). Goes into the next delivered RC.
