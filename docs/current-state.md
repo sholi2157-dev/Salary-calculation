@@ -1,5 +1,22 @@
 # Current project state
 
+## October 19 — 2.0.1 hotfix published (launch screen taps)
+
+Owner and users reported that "הבא" on the launch screen needed several taps.
+
+**Cause:** the launch background consumed every pointer event, including the slight moves of a real finger. The buttons' tap detectors saw those moves as consumed and cancelled. Robolectric clicks have no movement, so the tests had passed.
+
+**Fix:** the background uses a plain tap detector (commit `143564e`). A new test taps with small movements.
+
+**2.0.1** (code 34):
+- Run 39168415624: 132 Debug + 105 Release tests; real RC16 → 2.0 → 2.0.1 update with data kept; crash logs clean.
+- APK SHA-256 `5dec6167314581c9d1e393fe987d478720b839bf4236182feea9da9f2ae62005`.
+- Published through the update channel: run 39169154826, release `android-v2.0.1`. The live RC16 → 2.0.1 check through the actual button passed.
+
+**Drive:** the owner uploads `Salary2.0.1.apk` as a new version of the existing file.
+
+The website is not affected: its launch buttons are plain buttons. The next build must use a code higher than 34.
+
 ## October 18 — website fix after launch; Drive updated by the owner
 
 - **Website:** a planned shift's letter was invisible in light mode. The inline white text colour overrode the place colour; Android was not affected.
