@@ -1,5 +1,21 @@
 # Current project state
 
+## October 19 — 2.0.2: new versions show on Home's bell
+
+Owner: every new version should show a dot on the notifications bell, with the update inside, in addition to Settings.
+
+**Change** (commit `3c1c5f0`):
+- On every return to the app (at most hourly), the app checks the existing update channel.
+- A newer version puts a dot on the bell. The sheet shows "גרסה X זמינה" with an "עדכון" button that downloads, verifies the hash and certificate, then opens Android's installer (never silent).
+- The notice is remembered offline until that version is installed. Settings keeps its manual check, and both use one shared update path.
+
+**2.0.2** (code 35):
+- Run 39171295085: 133 Debug + 105 Release tests; real RC16 → 2.0.1 → 2.0.2 update with data kept; fresh-install launch; crash logs clean.
+- APK SHA-256 `c3c743d3dd7f1244ba8249e2d8339a66bb7db9f86618ac01e04c94aa6f943db0`.
+- Published through the update channel: run 39172111844, release `android-v2.0.2`. The live RC16 → 2.0.2 check through the actual button passed.
+
+Users on 2.0.1 or older get 2.0.2 through the existing popup/Settings check; from 2.0.2 on, the bell shows new versions. The website needs no change (it already updates itself). The next build must use a code higher than 35.
+
 ## October 19 — 2.0.1 hotfix published (launch screen taps)
 
 Owner and users reported that "הבא" on the launch screen needed several taps.
