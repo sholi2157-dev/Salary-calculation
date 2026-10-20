@@ -18,7 +18,7 @@ function render(el, app) {
     <div class="divider"></div>${rowHtml('תעריף חסר', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyRate === true}" aria-label="תעריף חסר" data-a="rate" data-testid="notify-rate"></button>`, 'לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.')}`)}
   ${group('גיבוי ונתונים', `<div class="row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
     <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'הנתונים נשמרים בדפדפן הזה בלבד. כדאי לשמור גיבוי גם מחוץ לאתר. גיבוי מהאפליקציה עובר לכאן, וגיבוי מכאן עובר לאפליקציה.')}
-  ${group('עזרה ועדכונים', `${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip" data-a="tour" data-testid="replay-tour">הצגה</button>')}
+  ${group('עזרה ועדכונים', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip" data-a="tour" data-testid="replay-tour">הצגה</button>')}
     <div class="divider"></div>${rowHtml('בדיקת עדכון', null, '<button class="chip" data-a="update">בדיקה</button>', 'האתר מתעדכן לבד ברגע בטוח, בלי לאבד טיוטה או משמרת פעילה.')}`)}
   ${group('פרופיל', `<div style="display:grid;gap:8px;padding:10px 0"><input class="input" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>`)}
@@ -30,6 +30,7 @@ function render(el, app) {
   q('[data-f=last]').addEventListener('input', e => store.setLocal('lastName', e.target.value.trim().slice(0, 40), true));
   q('[data-a=monthly]').onclick = e => { const on = store.local.notifyMonthly !== true; store.setLocal('notifyMonthly', on, true); e.currentTarget.setAttribute('aria-checked', on); };
   q('[data-a=rate]').onclick = e => { const on = store.local.notifyRate !== true; store.setLocal('notifyRate', on, true); e.currentTarget.setAttribute('aria-checked', on); };
+  q('[data-a=android-download]').onclick = () => root.KisDownload.open();
   q('[data-a=tour]').onclick = () => root.KisLaunch.tour(app);
   q('[data-a=places]').onclick = () => placesSheet(app);
   el.querySelectorAll('[data-cur]').forEach(b => b.onclick = () => store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, mainCurrency: b.dataset.cur }); }));

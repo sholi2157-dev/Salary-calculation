@@ -324,3 +324,15 @@ button { cursor: pointer; }
 .story .poster .pg small { display: block; opacity: .8; font-size: 13px; }
 .story .poster .pg b { font: 24px/1.15 var(--display); }
 @media (prefers-reduced-motion: reduce) { .story .blob, .story .ring, .story .slide2 > *, .story .tops li, .story .wbars i, .story .hbars i { animation: none !important; } }
+
+/* Compact public Android entry; shares the current Kis theme. */
+.apk-entry{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:12px;min-height:44px;padding:0 10px;font-size:12px;white-space:nowrap;flex-shrink:0}
+.android-download-sheet .title-row h2{margin:0;flex:1;font-family:var(--display);font-size:24px}
+.android-download-sheet .apk-download{width:100%;text-decoration:none;margin-top:8px}
+.install-steps{padding-inline-start:26px;margin:12px 0}
+.install-steps li{padding-inline-start:8px;margin:20px 0}
+.install-steps li::marker{color:var(--glow);font-weight:700}
+.install-steps p,.install-help p{font-size:14px;color:var(--muted);line-height:1.65;margin:6px 0}
+.install-help{border-top:1px solid var(--line);padding:12px 0}
+.install-help summary{min-height:44px;cursor:pointer;font-size:14px;font-weight:600;display:list-item;padding:8px 0}
+@media(max-width:359px){.apk-entry{padding:0 6px;font-size:11px}.hello{gap:6px}}

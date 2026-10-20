@@ -3,7 +3,7 @@ const BUILD='__WEB_BUILD_ID__';
 const CACHE='salary-web-'+BUILD;
 // Navigation requests reject redirected responses supplied by a worker.
 function navigationResponse(response){return response?.redirected?new Response(response.body,{status:response.status,statusText:response.statusText,headers:response.headers}):response;}
-const SHELL=['/','/index.html','/web/kis/kis.css','/web/fonts/heebo.ttf','/web/fonts/rubik_regular.ttf','/web/fonts/rubik_medium.ttf','/web/fonts/rubik_semibold.ttf','/web/fonts/rubik_bold.ttf','/web/fonts/secular_one.ttf','/web/features.js','/web/build.js','/web/updates.js','/web/transfer.js','/web/categories.js','/web/runtime.js','/web/v2/rules.js','/web/v2/pay.js','/web/v2/plan.js','/web/v2/share.js','/web/v2/summary.js','/web/kis/ui.js','/web/kis/store.js','/web/kis/plans.js','/web/kis/home.js','/web/kis/history.js','/web/kis/editor.js','/web/kis/settings.js','/web/kis/summary.js','/web/kis/launch.js','/web/kis/app.js'];
+const SHELL=['/','/index.html','/web/kis/kis.css','/web/fonts/heebo.ttf','/web/fonts/rubik_regular.ttf','/web/fonts/rubik_medium.ttf','/web/fonts/rubik_semibold.ttf','/web/fonts/rubik_bold.ttf','/web/fonts/secular_one.ttf','/web/features.js','/web/build.js','/web/updates.js','/web/transfer.js','/web/categories.js','/web/runtime.js','/web/v2/rules.js','/web/v2/pay.js','/web/v2/plan.js','/web/v2/share.js','/web/v2/summary.js','/web/kis/ui.js','/web/kis/store.js','/web/kis/plans.js','/web/kis/download.js','/web/kis/home.js','/web/kis/history.js','/web/kis/editor.js','/web/kis/settings.js','/web/kis/summary.js','/web/kis/launch.js','/web/kis/app.js'];
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
  try{
