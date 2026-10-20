@@ -1,3 +1,21 @@
+# Management redesign and anonymous request measurement — follow-up
+
+Current public application source: fd6a7418fe08102c64bc367759d6d6c072cf495f; production dpl_D1FAZC5V2dbdHBkLvAH4KCt416F3 at the same eta origin. GitHub run 39498787812 passed all 87 unit tests and current v2/download browser suites. HEAD download returned 302 without setting a measurement cookie; build-info confirmed exact source.
+
+Private dashboard source: 3cf48a45cbf4f3621fae246119ebd47ebf545266; published private version 2, deployment appgdep_6ad7da876cf881918c55891696dd8324. URL and owner-only audience are unchanged. Four sections: overview, website, application, connection/help. Added period selection (24h/7/14/28 days), real independent panels for sources/countries/devices/browsers/OS/pages, previous-period comparison within retention, trend metric toggle, CSV export, explicit loading/partial-error states and phone bottom navigation. UI fixtures exist only in the development server with a conspicuous demo banner; hosted Worker uses live upstream data and actual database only.
+
+Connection diagnosis: actual owner POST /api/connect succeeded twice before the report; subsequent /api/web returned 502. Previous code serialized a literal by=[] dimension for totals. Totals now use the official visits/count endpoint (with since/until); optional aggregate panels use Promise.allSettled and fail independently. Existing encrypted cookie and encryption key were preserved. /api/connection allows the owner to check the existing key and provides safe error/status information. No real Vercel token was obtained by the agent. Actual authenticated owner-cookie Vercel reads still require the owner to reopen the dashboard; do not claim these were verified through service access, which intentionally supplies no visitor identity or browser cookie.
+
+New measurement: Vercel /api/download creates a random first-party HttpOnly Secure SameSite=Lax browser cookie and sends only an HMAC of the identifier, random request ID and APK version to the private recorder. No names, IPs or financial data are inserted. HEAD, preview requests and known bots do not record; recorder outage does not prevent the download. The protected recorder requires both Sites platform service access and a separate secret key. Existing app distribution/first-launch/home/settings entry points are retained. Disclosure in the download guide was updated.
+
+Sites manifest now binds D1 DB, with append-only schema migration 0000_download_requests. The actual database and table were verified after deployment. Totals distinguish distinct browser hashes, first-ever requests and repeat requests, including repeat requests for newer versions. This is an estimate of browsers, NOT people/accounts/installations. History before activation cannot be reconstructed; GitHub lifetime counts remain separate and include all sources/updates/repeats. At verification, hosted GitHub stats returned 96 requests across seven versions and the new database correctly returned 0 recorded requests. No synthetic events were inserted in production.
+
+Runtime secret names (never retrieve/print values): Sites CREDENTIAL_ENCRYPTION_KEY preserved; DOWNLOAD_RECORDER_KEY added. Vercel DOWNLOAD_STATS_SITE_URL, DOWNLOAD_STATS_SITE_TOKEN, DOWNLOAD_RECORDER_KEY and DOWNLOAD_HASH_KEY configured only via native environment tools. Measurement start is stored as DOWNLOAD_MEASUREMENT_STARTED_AT. Do not rotate hashing/encryption/recorder keys during ordinary UI changes. Existing platform service credential continuity was checked; same Site bearer remains valid. Native Site access is still owner-only.
+
+Verification: exact source build, 87 unit tests, GitHub Chromium 360–1440 light/dark v2 flows, real SQLite unique/repeat/idempotency migration checks, credential encryption/identity/tamper/CSRF checks, missing-connection handling, partial upstream error isolation and managed browser phone QA at 360/390 with labeled fixtures. Hosted HTML, GitHub counts and real empty D1 queries returned 200 using supported service access. Android physical installation remains outside this web-only change.
+
+---
+
 # Android downloads and private management — 2026-10-20
 
 Owner authorized public download UI and a separate owner-private Hebrew dashboard.

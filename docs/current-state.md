@@ -1,3 +1,7 @@
+# Management follow-up — 2026-10-20
+
+Public download request measurement is now live from source `fd6a7418fe08102c64bc367759d6d6c072cf495f`. The private management Site was redesigned (version 2), and its Vercel totals query was repaired. Preserve the existing Site identity, D1 binding, recorder/hash/encryption secrets and encrypted user cookie. See the top of `docs/download-and-management-20261020.md` for exact verification and limits.
+
 # Latest delivery — 2026-10-20
 
 Public Android download guide and the owner-private Hebrew management dashboard are recorded in `docs/download-and-management-20261020.md`. App source is `bb17078deb57d9630ac7c0227722395229318899` on `codex/download-and-management-20261020`, published to the same eta origin. Existing 2.0.3 GitHub Release is reused. Vercel traffic in the private dashboard still requires the owner to connect a token there; GitHub download counts are live. No APK rebuild or data migration.
