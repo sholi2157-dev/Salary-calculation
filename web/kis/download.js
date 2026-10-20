@@ -2,7 +2,7 @@
 (function (root) {
 'use strict';
 const FALLBACK = 'https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.0.3/Salary2.0.3.apk';
-function open() {
+function open(onClose) {
   const U = root.KisUi;
   U.sheet('android-download-sheet', (el, close) => {
     el.classList.add('android-download-sheet');
@@ -28,7 +28,7 @@ function open() {
       if (!el.isConnected || !/^\d+(\.\d+)*$/.test(r.version)) return;
       el.querySelector('[data-release]').textContent = 'גרסה ' + r.version + ' · ' + (r.size / 1048576).toFixed(1) + ' MB';
     }).catch(() => { if (el.isConnected) { a.href = FALLBACK; el.querySelector('[data-release]').textContent = 'גרסה 2.0.3 · קישור גיבוי ישיר'; } });
-  });
+  }, { onClose });
 }
 root.KisDownload = { open };
 })(globalThis);

@@ -30,8 +30,9 @@ function launch(app) {
   const finish = () => { others.forEach(n => { n.inert = false; }); el.remove(); store.setLocal('launched', LAUNCH_VERSION, true); app.go('home'); tour(app); };
   const slogan = () => {
     el.innerHTML = `<div class="launch-in"><div class="grow"></div><h1 class="launch-words"><span style="--d:.15s" data-testid="launch-line-1">עיצוב חדש.</span><span style="--d:.7s" data-testid="launch-line-2">התחלה חדשה.</span></h1>
-      <div class="grow"></div><button class="btn primary" data-a="next" data-testid="launch-next">הבא</button></div>`;
+      <div class="grow"></div><button class="btn primary" data-a="next" data-testid="launch-next">הבא</button><button class="btn ghost" data-a="android" data-testid="launch-android-download">↓ הורדת האפליקציה לאנדרואיד</button></div>`;
     el.setAttribute('aria-label', 'עיצוב חדש. התחלה חדשה.');
+    el.querySelector('[data-a=android]').onclick = () => { el.hidden = true; root.KisDownload.open(() => { el.hidden = false; el.querySelector('[data-a=android]').focus({ preventScroll: true }); }); };
     el.querySelector('[data-a=next]').onclick = name;
     el.querySelector('[data-a=next]').focus({ preventScroll: true });
   };
