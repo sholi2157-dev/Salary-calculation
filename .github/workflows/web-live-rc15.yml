@@ -19,7 +19,7 @@ jobs:
           mkdir -p browser-evidence
           curl --fail --location 'https://salary-calculation-eta.vercel.app/build-info.json' -o browser-evidence/live-build.json
           node -e "const fs=require('fs'),a=JSON.parse(fs.readFileSync('docs/rc15-web-live.json')),b=JSON.parse(fs.readFileSync('browser-evidence/live-build.json'));require('assert').equal(a.sourceSha,b.commit)"
-      - run: npm install --prefix /tmp/browser-qa --no-audit --no-fund playwright@1.56.1
+      - run: npm install --prefix /tmp/browser-qa --no-audit --no-fund playwright@1.62.1
       - run: /tmp/browser-qa/node_modules/.bin/playwright install --with-deps chromium
       - name: Test actual public UI with isolated synthetic local storage
         env:

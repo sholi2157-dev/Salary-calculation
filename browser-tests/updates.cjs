@@ -16,8 +16,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  fs.writeFileSync(path.join(legacy,'index.html'),fs.readFileSync(path.join(legacy,'index.html'),'utf8').replace(/\?v=[^"]+/g,''));
  fs.writeFileSync(path.join(legacy,'web/build.js'),'window.WorkBuild={buildId:"legacy",commit:"legacy"};');
  cp.execFileSync(process.execPath,['scripts/build-web.cjs'],{stdio:'pipe'});
- let release='legacy',broken=false;
+ let release='legacy',broken=false,serverOffline=false;
  const server=http.createServer((req,res)=>{
+  if(serverOffline){req.socket.destroy();return;}
   const pathname=new URL(req.url,'http://test').pathname;
   if(pathname==='/index.html'){res.writeHead(308,{Location:'/'});return res.end();}
   const file=path.resolve(versions[release],'.'+(pathname==='/'?'/index.html':pathname));
@@ -57,11 +58,11 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  release='B';await page.evaluate(()=>window.dispatchEvent(new Event('online')));await ready(page,'B');
  assert.equal(navigations,0);assert.equal(await durationValue(page),'1:40');assert.equal(await page.evaluate(()=>WorkBuild.commit),'A'.repeat(40));
  await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(navigations,1);assert.equal(await durationValue(page),'1:40');assert.equal(await page.evaluate(()=>localStorage.getItem('work_complete_backup')),snapshot);
- await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(await durationValue(page),'1:40');await context.setOffline(false);
+ serverOffline=true;await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(await durationValue(page),'1:40');serverOffline=false;await context.setOffline(false);
  // Failed partial installation cannot replace the complete offline shell.
  release='C';broken=true;await page.evaluate(async()=>{try{await(await navigator.serviceWorker.getRegistration()).update();}catch{}});
  await waitCheck(page,async()=>!(await navigator.serviceWorker.getRegistration()).installing);await ready(page,'B');
- await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));await context.setOffline(false);broken=false;
+ serverOffline=true;await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));serverOffline=false;await context.setOffline(false);broken=false;
  // Next ordinary opening sees C even if B is still its controller.
  const reopened=await context.newPage();await reopened.goto(url);assert.equal(await reopened.evaluate(()=>WorkBuild.commit),'C'.repeat(40));await ready(reopened,'C');
  assert.equal(await durationValue(reopened),'1:40');assert.equal(await reopened.evaluate(()=>localStorage.getItem('work_complete_backup')),snapshot);
