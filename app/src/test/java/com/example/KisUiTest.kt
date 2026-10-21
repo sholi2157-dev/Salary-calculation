@@ -101,6 +101,18 @@ class KisUiTest {
         shot("manual-100-minutes-dark")
     }
 
+    @Test fun openingDurationWithoutTypingKeepsImportedPrecisionUnchanged() {
+        val vm = model()
+        val base = WorkEntry(id = 1, category = categories.first().name, date = day, isTimeRange = false,
+            hours = 1.234567, hourlyRate = 33.3333, totalEarnings = 42.12345)
+        host { KisEditorPage(vm, EntryDraft.from(base), base, categories, listOf(base), emptyList(),
+            onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
+        ui.onNodeWithTag("hours_display").performClick()
+        ui.onNodeWithTag("keypad_done").performClick()
+        ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
+    }
+
     private fun editorFlow(dark: Boolean) {
         val vm = model()
         var saved = ""

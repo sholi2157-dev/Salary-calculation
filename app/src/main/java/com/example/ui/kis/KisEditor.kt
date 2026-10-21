@@ -92,6 +92,7 @@ fun KisEditorPage(
     var target by rememberSaveable { mutableStateOf(if (initial.mode == EntryMode.JOB) KeyTarget.AMOUNT else if (initial.mode == EntryMode.HOURS) KeyTarget.HOURS else KeyTarget.START) }
     var buf by rememberSaveable { mutableStateOf("") }
     // Time fields are edited digit by digit: [buf] holds the four digits ("·" = not set yet) and [cursor] the one the next key writes.
+    var digitsDirty by rememberSaveable { mutableStateOf(false) }
     var cursor by rememberSaveable { mutableIntStateOf(0) }
     var pad by rememberSaveable { mutableStateOf(false) }
     var more by rememberSaveable { mutableStateOf(initial.breakMin > 0 || initial.notes.isNotBlank() && initial.mode != EntryMode.JOB) }
@@ -131,17 +132,17 @@ fun KisEditorPage(
     fun setTime(t: KeyTarget, v: String) { d = if (t == KeyTarget.START) d.copy(start = v) else d.copy(end = v) }
     fun commitBuf(): Boolean {
         if (buf.isEmpty()) return true
-        if (isDigits(target) && buf.any { it != '·' }) {
+        if (isDigits(target) && buf.any { it != '·' } && (!isDuration(target) || digitsDirty)) {
             val h = if (isDuration(target)) DurationInput.parseDigits(buf) else parseTime(buf)
             if (h == null) { Toast.makeText(context, if (isDuration(target)) "משך לא תקין" else "שעה לא תקינה", Toast.LENGTH_SHORT).show(); buf = fieldDigits(target); cursor = 0; return false }
             if (isDuration(target)) d = d.copy(hours = h) else setTime(target, h)
         }
-        buf = ""
+        buf = ""; digitsDirty = false
         return true
     }
     /** Opens the keypad on [t]; for a time, on digit [at] (0–1 hours, 2–3 minutes) of the value already there. */
     fun open(t: KeyTarget, at: Int = 0) {
-        if (!commitBuf()) return; focus.clearFocus(); target = t; pad = true
+        if (!commitBuf()) return; focus.clearFocus(); target = t; pad = true; digitsDirty = false
         buf = if (isDigits(t)) fieldDigits(t) else ""; cursor = at
     }
     fun numberValue(t: KeyTarget) = when (t) { KeyTarget.HOURS -> DurationInput.display(d.hours); KeyTarget.RATE -> d.rate; KeyTarget.BONUS -> d.bonus; KeyTarget.AMOUNT -> d.amount; KeyTarget.BREAK -> if (d.breakMin > 0) d.breakMin.toString() else ""; else -> "" }
@@ -153,6 +154,7 @@ fun KisEditorPage(
     }
     fun key(k: String) {
         if (isDigits(target)) {
+            digitsDirty = true
             if (buf.length != 4) buf = fieldDigits(target)
             val (next, at) = typeTime(buf, cursor, k, if (isDuration(target)) 24 else 23)
             buf = next; cursor = at

@@ -11,7 +11,7 @@ permissions:
   actions: read
 concurrency:
   group: android-v2-rc-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 env:
   RC_CODE: '38'
   RC_NAME: '2.0.5'

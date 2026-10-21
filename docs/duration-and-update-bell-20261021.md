@@ -19,3 +19,8 @@ Plan:
    validation, stage and promote same build at the existing origin.
 
 No real user data, keys, schema reset, uninstall or signing replacement.
+
+Additional invariant: opening/closing a duration without typing must not mark an
+imported exact decimal duration as changed. A dedicated UI regression guards it.
+Obsolete in-progress candidates are superseded by the latest candidate; public
+release remains a separate exact-artifact publication step.
