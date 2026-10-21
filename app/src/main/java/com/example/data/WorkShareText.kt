@@ -51,7 +51,7 @@ object WorkShareText {
     private fun workerRows(entries: List<WorkEntry>, name: String): List<WorkEntry> = entries.flatMap { e ->
         WorkPay.workers(e).filter { it.name == name }.map { w ->
             val p = WorkPay.workerPay(w, e)
-            // Owner time range, breaks and personal notes are not the worker's facts.
+            // Owner time range and break are not the worker's facts; the shift note is attached.
             e.copy(hours = w.hours, hourlyRate = WorkPay.workerRate(w, e) ?: 0.0, totalEarnings = p ?: 0.0,
                 payKnown = p != null, isPaid = w.isPaid, bonus = w.bonus, isTimeRange = false,
                 startTime = null, endTime = null, isGroupShift = false)

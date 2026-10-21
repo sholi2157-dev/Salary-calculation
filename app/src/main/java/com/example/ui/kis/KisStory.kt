@@ -288,7 +288,7 @@ private fun posterCells(s: V2Summary.Summary, persona: String?) = s.currencies.m
     "מקום מוביל" to (s.places.firstOrNull()?.name ?: "—"), "טיפוס" to (persona ?: "—"), "היום שלך" to (s.bestDay?.let { KisFormat.DAY_LONG[it] } ?: "—"),
     "הכי ארוכה" to (s.longest?.let { hm(it.hours) } ?: "—"))
 
-/** The shared picture (1080×1080), drawn directly so it never depends on what is on screen. Includes amounts per currency. */
+/** The shared picture (1080px wide, height grows with the cells), drawn directly so it never depends on what is on screen. Includes amounts per currency. */
 internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String, String>>): android.graphics.Bitmap {
     val size = 1080f
     val height = maxOf(1080, 350 + ((cells.size + 1) / 2) * 180)

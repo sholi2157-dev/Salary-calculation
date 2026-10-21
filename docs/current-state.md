@@ -4,7 +4,7 @@
 
 Separate review branches: `codex/sharing-android-20261021` and `codex/sharing-web-20261021`. Owner explicitly requested changes to both platforms. Contract: `docs/v2-sharing.md`; execution notes: `docs/sharing-20261021.md`. Technical copy and recipient-ready sharing are separate; multiple workplaces use technical blocks; worker search is wired consistently. TSV/CSV use one 14-column contract, unknown pay empty, future rows excluded from done-work exports. Monthly/yearly cards include money and the Web image action requires native file sharing, with no download/text fallback. JSON backups remain full-fidelity.
 
-Draft review PRs: #8 Android, #9 Web. No merge, production promotion, public APK release, signing change or data/schema mutation. Code verification is in progress; evidence is recorded in the execution notes when complete. Local Web build and 89 unit tests passed. Final Android build and actual WhatsApp/iPhone/physical-device checks must not be inferred from JS fixtures.
+Draft review PRs: #8 Android, #9 Web. No merge, production promotion, public APK release, signing change or data/schema mutation. Verification complete: Android run 39609123653 SUCCESS (136 Debug + 106 Release tests, unsigned Release/instrumentation builds and identity gates); Web run 39609131883 SUCCESS (build, 89 tests, shared fixtures and browser flows). Full evidence and remaining native WhatsApp/iPhone/signed-update gates: `docs/sharing-20261021.md`. Screenshots and the generated PNG were visually reviewed. No public rollout or APK delivery has taken place.
 
 
 ## October 19 — 2.0.3: live money, both times on a new shift, digit-by-digit times, AI currency
