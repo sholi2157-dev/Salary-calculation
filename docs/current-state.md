@@ -8,8 +8,9 @@ Same staged build promoted as dpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk (no rebuild).
 Origin: https://salary-calculation-eta.vercel.app/
 Build ID: 660e82ccc696bff62783d1614d8959f210cd4276-ac045d488ac19009.
 Rollback: dpl_6qGopS2toz4byUV3mZuEi8qWAShj.
-Public alias verified. Previous full public verification 39680878044 SUCCESS;
-final public verification for this source is now triggered by docs/rc15-web-live.json.
+Public alias/build verified. Final public-origin run 39683042974 SUCCESS:
+actual UI, sharing/download flows, real worker, fresh/offline reload, draft/timer
+and exact stored amount/extension retention. Metadata checks 39683043000 SUCCESS.
 
 Website: fresh online navigation, complete offline fallback, no update/version UI
 and no forced page reload. Duration hours/minutes select separately; no typing
