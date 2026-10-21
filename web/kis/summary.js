@@ -82,8 +82,7 @@ function story(app, scope) {
     return [...s.currencies.map(c => ['סכום (' + c.currency + ')', U().money(c.total,c.currency)]), ...(s.pending ? [['סכום חסר', String(s.pending) + ' משמרות']] : []), ['שעות', String(Math.round(s.hours))], ['משמרות', String(s.count)], ['מקום מוביל', top ? top.name : '—'], ['טיפוס', per ? per.name : '—'],
       ['היום שלך', s.bestDay != null ? DAY_LONG[s.bestDay] : '—'], ['הכי ארוכה', s.longest ? hm(s.longest.hours) : '—']];
   }
-  const shareText = () => [`${whose} שלי בכיס · ${label}`, ...s.currencies.map(c => 'סכום: ' + U().money(c.total,c.currency)), `⁦${Math.round(s.hours)}⁩ שעות · ${s.count} משמרות`, top ? `המקום המוביל: ${top.name}` : '',
-    per ? `טיפוס: ${per.name}` : '', s.bestDay != null ? `היום שלי: ${DAY_LONG[s.bestDay]}` : ''].filter(Boolean).join('\n');
+  const shareText = () => root.KisShare.summary(rows);
 
   const el = document.createElement('div');
   el.className = 'story'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', `${whose} שלך בכיס`); el.dataset.testid = 'story';

@@ -29,7 +29,7 @@ try{for(const supported of [false,true]){
  await page.evaluate(()=>KisSummaryUi.story(Kis,String(new Date().getFullYear())));
  for(let i=0;i<12;i++){if(await page.locator('[data-testid=story-card]').count())break;await page.click('[data-testid=story-next]');}
  assert.match(await page.textContent('[data-testid=story-poster]'),/₪240/);
- if(supported){await page.waitForFunction(()=>document.querySelector('[data-testid=story-share]')?.disabled===false);await page.click('[data-testid=story-share]');const pic=await page.evaluate(()=>shared.at(-1));assert.match(pic.text,/₪240/);assert.equal(pic.files[0].type,'image/png');assert.ok(pic.files[0].size>1000);assert.deepEqual(pic.files[0].signature,[137,80,78,71,13,10,26,10]);
+ if(supported){await page.waitForFunction(()=>document.querySelector('[data-testid=story-share]')?.disabled===false);const countBefore=await page.evaluate(()=>shared.length);await page.click('[data-testid=story-share]');await page.waitForFunction(n=>shared.length>n,countBefore);const pic=await page.evaluate(()=>shared.at(-1));assert.match(pic.text,/סכום: ₪200.00/);assert.match(pic.text,/סכום: ₪40.00/);assert.equal(pic.files[0].type,'image/png');assert.ok(pic.files[0].size>1000);assert.deepEqual(pic.files[0].signature,[137,80,78,71,13,10,26,10]);
   // Cancelling native share must not silently copy or download.
   const copied=await page.evaluate(()=>window.copied.length);await page.evaluate(()=>window.abortShare=true);await page.click('[data-testid=story-share]');assert.equal(await page.evaluate(()=>window.copied.length),copied);
  }else assert.equal(await page.locator('[data-testid=story-share]').count(),0);

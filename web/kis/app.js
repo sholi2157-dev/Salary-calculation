@@ -43,7 +43,7 @@ function detail(e) {
       <button class="btn small ${e.isPaid ? 'ghost' : 'primary'}" data-a="paid" data-testid="detail-paid">${e.isPaid ? 'שולם ✓ · נגיעה לבטל' : 'סימון כשולם'}</button>
       ${group.length ? `<div class="divider"></div><b class="label">הקבוצה</b>${sum ? `<p class="caption" style="margin:0">המעסיק משלם ${esc(U().money(sum.employerTotal, e.currency))} · נשאר לי ${esc(U().money(sum.myNet, e.currency))}</p>` : '<p class="caption" style="margin:0">חסר תעריף לחלק מהקבוצה</p>'}
         <div class="row"><button class="btn ghost small grow" data-a="employer">שיתוף לקבלן</button><button class="btn ghost small grow" data-a="employer-copy">העתקת דוח הצוות</button></div>
-        ${group.map((w, i) => `<div class="row" style="align-items:center"><span class="grow">${esc(w.name)} · ${U().hours(w.hours)} ש׳</span><button class="chip" data-w="${i}">שיתוף לעובד</button><button class="chip" data-wc="${i}">העתקה</button><button class="chip" data-wp="${i}">${w.isPaid ? 'שולם ✓' : 'לא שולם'}</button></div>`).join('')}` : ''}`;
+        ${group.map((w, i) => `<div style="display:grid;gap:6px"><div class="row" style="align-items:center"><span class="grow">${esc(w.name)} · ${U().hours(w.hours)} ש׳</span><button class="chip" data-wp="${i}">${w.isPaid ? 'שולם ✓' : 'לא שולם'}</button></div><div class="row"><button class="btn ghost small grow" data-w="${i}">שיתוף לעובד</button><button class="btn ghost small grow" data-wc="${i}">העתקה</button></div></div>`).join('')}` : ''}`;
     const q = s => el.querySelector(s);
     q('[data-a=edit]').onclick = () => { close(); root.KisEditor.open(app, { entry: e }); };
     q('[data-a=share]').onclick = () => U().shareOrCopy(root.KisShare.entry(e, false, U().upcoming(e)), 'שיתוף משמרת');
@@ -51,10 +51,10 @@ function detail(e) {
     q('[data-a=del]').onclick = () => { close(); const gone = store.deleteEntries([e.id]); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); };
     q('[data-a=paid]').onclick = () => { store.setPaid([e.id], !e.isPaid); close(); };
     q('[data-a=rate]')?.addEventListener('click', () => { close(); root.KisHistory.state.selection = new Set([e.id]); root.KisHistory.bulkRate(app, render); });
-    q('[data-a=employer]')?.addEventListener('click', () => U().shareOrCopy(root.KisShare.employer(e, (store.local.name || '').trim() || null), 'סיכום לקבלן'));
-    el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => U().shareOrCopy(root.KisShare.worker(e, group[+b.dataset.w]), 'שיתוף לעובד'));
-    q('[data-a=employer-copy]')?.addEventListener('click', async () => { const t = root.KisShare.employer(e, store.local.name, true); if (await U().copy(t)) U().toast('הדוח הועתק ✓'); else U().showText(t); });
-    el.querySelectorAll('[data-wc]').forEach(b => b.onclick = async () => { const t = root.KisShare.worker(e, group[+b.dataset.wc], true); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); });
+    q('[data-a=employer]')?.addEventListener('click', () => U().shareOrCopy(root.KisShare.employer(e, (store.local.name || '').trim() || null, false, U().upcoming(e)), 'סיכום לקבלן'));
+    el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => U().shareOrCopy(root.KisShare.worker(e, group[+b.dataset.w], false, U().upcoming(e)), 'שיתוף לעובד'));
+    q('[data-a=employer-copy]')?.addEventListener('click', async () => { const t = root.KisShare.employer(e, store.local.name, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הדוח הועתק ✓'); else U().showText(t); });
+    el.querySelectorAll('[data-wc]').forEach(b => b.onclick = async () => { const t = root.KisShare.worker(e, group[+b.dataset.wc], true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); });
     el.querySelectorAll('[data-wp]').forEach(b => b.onclick = () => {
       const i = +b.dataset.wp; store.update(d => { const row = d.entries.find(x => x.id === e.id); if (!row) return;
         const list = JSON.parse(row.groupWorkersJson || '[]'); if (list[i]) list[i].isPaid = !list[i].isPaid; row.groupWorkersJson = JSON.stringify(list); }); close(); });

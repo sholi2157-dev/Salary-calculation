@@ -77,20 +77,20 @@ function summary(entries,name=null) {
 }
 const personal=e=>summary([e]);
 const job=personal;
-function employer(e,ownName=null,technical=false) {
+function employer(e,ownName=null,technical=false,future=false) {
  const own=Pay.pay(e), ws=Pay.workers(e), pays=ws.map(w=>Pay.employerPay(w,e));
  const total=own==null||pays.some(p=>p==null)?null:Math.round((own+pays.reduce((a,b)=>a+b,0))*100)/100;
  const out=[...(technical?['עבודה: '+e.category,'כמות משמרות: 1','כמות שעות: '+hours(e.hours+ws.reduce((n,w)=>n+w.hours,0))]:['היי, סיכמתי פה את עבודת הצוות ב'+e.category+':']),
-  'תאריכים: '+date(e.date),'סה״כ לתשלום עבור הצוות: '+(total==null?'ממתין להשלמת תעריף':money(total,e.currency)),'פירוט:'];
+  'תאריכים: '+date(e.date),'סכום הצוות: '+(total==null?'ממתין להשלמת תעריף':money(total,e.currency)),'פירוט:'];
  out.push((String(ownName??'').trim()||'החלק שלי')+': '+hours(e.hours)+' שעות | '+(own==null?'תעריף חסר':money(own,e.currency)));
  ws.forEach((w,i)=>out.push(w.name+': '+hours(w.hours)+' שעות | '+(pays[i]==null?'תעריף חסר':money(pays[i],e.currency))));
  if(note(e))out.push('הערה: '+note(e));
- if(!technical)out.push('תודה!');return out.join('\n');
+ if(!technical)out.push('תודה!');return future?plannedText(out.join('\n')):out.join('\n');
 }
-function worker(e,w,technical=false) {
+function worker(e,w,technical=false,future=false) {
  // Pass one worker only, even if two workers happen to share a name.
  const single={...e,groupWorkersJson:JSON.stringify([w.source??w])};
- return technical?copy([single],w.name):summary([single],w.name);
+ const text=technical?copy([single],w.name):summary([single],w.name);return future?plannedText(text):text;
 }
 function planned(o,technical=false) {
  const h=Rules.span(o.start,o.end).minutes/60;
@@ -105,7 +105,9 @@ function planned(o,technical=false) {
 function entry(e,technical=false,future=false) {
  if(!future)return technical?copy([e]):personal(e);
  const out=[technical?copy([e]):personal(e)];
- return 'מתוכנן — עוד לא בוצע\n'+out[0].replaceAll('יתרה לתשלום:','צפי שטרם בוצע:').replaceAll('שולם:','סומן בתכנון כשולם:').replaceAll('סכום:','צפי:');
+ return plannedText(out[0]);
+}
+function plannedText(text) { return 'מתוכנן — עוד לא בוצע\n'+text.replaceAll('יתרה לתשלום:','צפי שטרם בוצע:').replaceAll('שולם:','סומן בתכנון כשולם:').replaceAll('סכום:','צפי:').replaceAll('סכום הצוות:','צפי לצוות:');
 }
 const excelHeaders=['עבודה','תאריך','שעת התחלה','שעת סיום','שעות עבודה','הפסקה בדקות','תעריף שעתי','סכום','מטבע','סטטוס תשלום','סוג','בונוס','הערה','שכר ידוע'];
 // Prevent spreadsheet formula execution from user-entered text; numeric columns stay numeric.
