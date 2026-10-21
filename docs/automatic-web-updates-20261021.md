@@ -61,3 +61,10 @@ matched the local bundle, then the same build (no rebuild) was promoted as
 dpl_6qGopS2toz4byUV3mZuEi8qWAShj to salary-calculation-eta.vercel.app.
 Public alias/build info confirmed. Rollback dpl_52v5KTd2H9dEggr8oeHsWTzkCrG6.
 Actual public-origin browser verification is triggered by docs/rc15-web-live.json.
+
+Cumulative-download audit: public /api/android-release returns2.0.5 normally. The
+API-failure cold-start fallback still pointed to2.0.3; updated it to the exact
+verified public2.0.5 APK (19485124 bytes). Resolver and download-measurement logic
+unchanged. Targeted resolver/redirect/measurement regressions verify offline
+fallback and intact privacy/counting behavior. This avoids offering an older APK
+through the fallback path and requiring another installation.
