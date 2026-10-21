@@ -150,7 +150,7 @@ const seed = {
     const { ctx, page } = await open({ width: 390, height: 844 }, 'dark');
     await page.click(tid('add-shift')); await page.click(tid('clock-start'));
     for (const k of '0600') await page.click(tid('key-' + k)); for (const k of '0630') await page.click(tid('key-' + k));
-    await page.locator('[data-day]').nth(4).click(); // two days ago
+    await page.locator('[data-day]').nth(1).click(); // today is index 3; two days ago is index 1
     await page.click(tid('repeat-switch'));
     for (let i = 0; i < 7; i++) { const b = page.locator(tid('repeat-day-' + i)); if ((await b.getAttribute('aria-pressed')) !== 'true') await b.click(); }
     assert.match(await page.textContent(tid('repeat-preview')), /ייכנסו ללוח/);

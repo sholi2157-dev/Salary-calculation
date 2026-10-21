@@ -23,3 +23,11 @@ test('unrelated edits preserve imported hours and stored amounts exactly', () =>
  const worker=JSON.parse(E.toEntry(d,group).groupWorkersJson)[0];
  assert.equal(worker.hours,1.234567);assert.equal(worker.custom,'keep');
 });
+
+test('mode switches carry the current net minutes and manual groups stay manual', () => {
+ const clock={...draft('8'),mode:'CLOCK',start:'09:00',end:'10:55',breakMin:15};
+ const manual=E.changeMode(clock,'HOURS');assert.equal(manual.hours,'1:40');assert.equal(E.toEntry(manual).totalEarnings,100);
+ const group=E.changeMode(manual,'GROUP');assert.equal(group.start,null);assert.equal(E.evaluate(group).minutes,100);
+ assert.equal(E.evaluate(E.changeMode(group,'CLOCK')).minutes,100);
+ assert.equal(E.changeMode({...clock,end:'11:55'},'HOURS').hours,'2:40');
+});

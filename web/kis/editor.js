@@ -127,6 +127,17 @@ function toEntry(d, base) {
     isPaid: d.isPaid, autoConfirmed: base ? false : proto.autoConfirmed };
 }
 
+function changeMode(d, mode) {
+  const clock = d.mode === 'CLOCK' || d.mode === 'GROUP' && d.start != null;
+  if (mode === 'HOURS' && clock) return { ...d, mode, hours: durationDisplay(String((evaluate(d).minutes || 0) / 60)) };
+  if (mode === 'GROUP' && d.mode === 'HOURS') return { ...d, mode, start: null };
+  if (mode === 'CLOCK' && (d.mode === 'HOURS' || d.mode === 'GROUP' && d.start == null)) {
+    const minutes = Math.round((durationHours(d.hours) || 0) * 60);
+    return { ...d, mode, start: minutes > 0 && minutes <= 1440 ? R().fromMinutes(R().toMinutes(d.end) - minutes) : d.start || defaultStart(d.end), breakMin: 0 };
+  }
+  return { ...d, mode };
+}
+
 function open(app, { entry = null, restore = null } = {}) {
   const { store } = app, base = entry;
   let d = restore || (base ? fromEntry(base) : newDraft(store));
@@ -274,8 +285,7 @@ function open(app, { entry = null, restore = null } = {}) {
       const gone = store.deleteEntries([base.id]); close(true); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); }));
     all('[data-mode]').forEach(b => b.onclick = () => { if (!commitBuf()) return; pad = false; const mode = b.dataset.mode;
       target = mode === 'CLOCK' || mode === 'GROUP' ? 'START' : target;
-      const carried = mode === 'HOURS' && (d.mode === 'CLOCK' || d.mode === 'GROUP' && d.start != null) ? { hours: String((evaluate(d).minutes || 0) / 60) } : {};
-      set({ mode, ...carried, ...(mode === 'CLOCK' && d.start == null && !base ? { start: defaultStart(d.end) } : {}) }); });
+      d = changeMode(d, mode); persist(); draw(); });
     all('[data-cat]').forEach(b => b.onclick = () => { commitBuf(); const cat = store.data.categories.find(x => x.name === b.dataset.cat);
       set({ category: cat.name, rate: d.rateUnknown ? d.rate : clean(cat.defaultRate), currency: root.WorkCategories.currency(cat.name, store.data.webPreferences) }); });
     q('[data-a=add-place]').onclick = () => root.KisSettings.placeSheet(app, null, name => { const cat = store.data.categories.find(x => x.name === name); set({ category: name, rate: clean(cat?.defaultRate), currency: root.WorkCategories.currency(name, store.data.webPreferences) }); });
@@ -404,5 +414,5 @@ function rulerBind(host, d, select, change) {
 }
 function pendingDraft() { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
 
-root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, suggestStart, pendingDraft, DRAFT, typeTime, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay };
+root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, suggestStart, pendingDraft, DRAFT, typeTime, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay, changeMode };
 })(globalThis);
