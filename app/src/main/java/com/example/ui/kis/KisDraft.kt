@@ -11,6 +11,13 @@ import java.util.Calendar
 
 /** UI durations use H:MM; old decimal drafts and stored hours remain decimal internally. */
 object DurationInput {
+    fun digits(text: String): String = display(text).takeIf { Regex("\\d{1,2}:\\d{2}").matches(it) }?.replace(":", "")?.padStart(4, '0') ?: "····"
+    fun parseDigits(digits: String): String? {
+        val s = digits.replace('·', '0')
+        if (s.length != 4 || s.any { !it.isDigit() }) return null
+        val h = s.take(2).toInt(); val m = s.drop(2).toInt()
+        return if (m < 60 && h * 60 + m <= 1440) "%d:%02d".format(java.util.Locale.ROOT, h, m) else null
+    }
     fun edit(text: String): String = text.replace('.', ':').replace(',', ':')
     fun hours(text: String): Double? {
         val s = text.trim()
@@ -182,7 +189,7 @@ data class EntryDraft(
             if (workers.any { w -> w.hours.isNotBlank() && (DurationInput.hours(w.hours)?.let { it < 0 || it > 24 } != false) }) errors += "שעות העובד לא תקינות"
             if (separateRates && listOf(employerRate, workerRate).any { it.isNotBlank() && num(it) == null }) errors += "תעריף לא תקין"
         }
-        if (mode == EntryMode.JOB && hours.isNotBlank() && (DurationInput.hours(hours)?.let { it < 0 || it > 24 } != false)) errors += "משך לא תקין: יש להזין שעות ודקות, למשל 1:40"
+        if (mode == EntryMode.JOB && hours.isNotBlank() && (DurationInput.hours(hours)?.let { it < 0 || it > 24 } != false)) errors += "משך לא תקין"
         // Persist decimal hours; the duration UI converts hours and minutes at this boundary.
         val payHours = if (mode == EntryMode.HOURS || groupByHours) DurationInput.hours(hours) ?: 0.0 else (ev.minutes ?: 0) / 60.0
         val total = if (mode == EntryMode.JOB) ev.total else ev.total?.let { WorkPay.amount(payHours, rateValue() ?: 0.0, ev.bonus) }
@@ -280,7 +287,7 @@ fun parseTime(digits: String): String? {
  * moves on; 4 means the value is complete. So 05:30 → 05:35 is "tap the last digit, type 5", never the whole time again.
  * A first digit that can only start a one-digit hour (3–9) becomes 0X and jumps to the minutes; likewise 6–9 for minutes.
  */
-fun typeTime(digits: String, cursor: Int, key: String): Pair<String, Int> {
+fun typeTime(digits: String, cursor: Int, key: String, maxHour: Int = 23): Pair<String, Int> {
     val b = digits.padEnd(4, '·').take(4).toCharArray()
     var at = if (cursor in 0..3) cursor else 0
     if (key == "⌫") { if (at > 0) { at--; b[at] = '·' }; return String(b) to at }
@@ -288,7 +295,7 @@ fun typeTime(digits: String, cursor: Int, key: String): Pair<String, Int> {
         if (!k.isDigit()) continue
         if (at >= 4) break
         when (at) {
-            0 -> if (k > '2') { b[0] = '0'; b[1] = k; at = 2 } else { b[0] = k; if (k == '2' && b[1].isDigit() && b[1] > '3') b[1] = '0'; at = 1 }
+            0 -> if (k > '2') { b[0] = '0'; b[1] = k; at = 2 } else { b[0] = k; if (k == '2' && b[1].isDigit() && b[1].digitToInt() > maxHour % 10) b[1] = '0'; at = 1 }
             2 -> if (k > '5') { b[2] = '0'; b[3] = k; at = 4 } else { b[2] = k; at = 3 }
             else -> { b[at] = k; at++ }
         }

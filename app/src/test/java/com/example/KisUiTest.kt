@@ -85,10 +85,19 @@ class KisUiTest {
         ui.onNodeWithTag("day_3").assertExists()
         ui.onNodeWithTag("mode_hours").performClick()
         ui.onNodeWithTag("hours_display").performClick()
-        listOf("1", ".", "4", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
+        listOf("0", "1", "4", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
         ui.onNodeWithTag("editor_meta").assertTextContains("1:40 שעות", substring = true)
         ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪100")
+        ui.onNodeWithText("לחיצה על ספרה משנה רק אותה").assertDoesNotExist()
+        ui.onNodeWithTag("keypad_digit_2", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("key_5").performClick()
+        ui.onNodeWithTag("editor_meta").assertTextContains("1:50 שעות", substring = true)
         ui.onNodeWithTag("keypad_done").performClick()
+        ui.onNodeWithTag("duration_minutes", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("keypad_digit_2", useUnmergedTree = true).assertIsSelected()
+        ui.onNodeWithTag("key_4").performClick()
+        ui.onNodeWithTag("keypad_done").performClick()
+        ui.onNodeWithTag("editor_meta").assertTextContains("1:40 שעות", substring = true)
         shot("manual-100-minutes-dark")
     }
 

@@ -301,7 +301,6 @@ private fun EmptyHome() {
     val c = Kis.colors
     KisCard(Modifier.fillMaxWidth().padding(top = 24.dp)) {
         Text("ברוך הבא", style = KisType.title, color = c.ink)
-        Text("לחיצה על + מוסיפה משמרת. השעה מוצעת לבד, והסכום מחושב מיד. אפשר גם להתחיל טיימר כשמגיעים לעבודה.", style = KisType.body, color = c.muted)
     }
 }
 

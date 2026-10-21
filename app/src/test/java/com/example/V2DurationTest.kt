@@ -13,6 +13,14 @@ import org.robolectric.annotation.Config
 @Config(sdk = [28], manifest = Config.NONE)
 class V2DurationTest {
     private fun draft(hours: String) = EntryDraft(mode = EntryMode.HOURS, category = "עבודה", hours = hours, rate = "60")
+    @Test fun durationDigitsEditMinutesWithoutChangingHoursAndAllow24Hours() {
+        assertEquals("1340", DurationInput.digits("13:40"))
+        val changed = typeTime("1340", 3, "5", 24)
+        assertEquals("13:45", DurationInput.parseDigits(changed.first))
+        assertEquals("24:00", DurationInput.parseDigits("2400"))
+        assertNull(DurationInput.parseDigits("2401"))
+        assertNull(parseTime("2400"))
+    }
     @Test fun manualMinutesAreNotDecimalFractions() {
         val d = draft(DurationInput.edit("1.40"))
         assertEquals("1:40", d.hours)

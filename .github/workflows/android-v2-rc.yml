@@ -4,7 +4,7 @@ name: Android 2.0 signed release candidate (owner testing only, never published)
 # the candidate as a private workflow artifact. It never creates a Release or touches the update feed.
 on:
   push:
-    branches: ['claude/v2-android', 'codex/sharing-android-20261021']
+    branches: ['claude/v2-android', 'codex/sharing-android-20261021', 'codex/android-local-distribution']
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,8 +13,8 @@ concurrency:
   group: android-v2-rc-${{ github.ref }}
   cancel-in-progress: false
 env:
-  RC_CODE: '37'
-  RC_NAME: '2.0.4'
+  RC_CODE: '38'
+  RC_NAME: '2.0.5'
   # The previously delivered 2.0 candidate (owner's phone): its exact bytes come from that run's artifact.
   PREV_RUN: '39173912680'
   PREV_SHA: '10baa2e4b1bf70ce75e61d48ef0ae57ba6dd69b1e2609eef825f117674a8a283'
@@ -82,7 +82,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Real RC16 → delivered 2.0 → 2.0.4 updates without clearing data, then 2.0 screens and crash log
+      - name: Real RC16 → delivered 2.0 → 2.0.5 updates without clearing data, then 2.0 screens and crash log
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -117,7 +117,7 @@ jobs:
       - name: Candidate for owner review only; never publish a Release
         uses: actions/upload-artifact@v4
         with:
-          name: salary-2.0.4-candidate
+          name: salary-2.0.5-candidate
           path: |
             candidate-b.apk
             release-evidence/

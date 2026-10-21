@@ -124,14 +124,17 @@ fun KisEditorPage(
     val accent by animateColorAsState(workplace.accent(c.dark), tween(250), label = "accent")
 
     fun isTime(t: KeyTarget) = t == KeyTarget.START || t == KeyTarget.END
+    fun isDuration(t: KeyTarget) = t == KeyTarget.HOURS
+    fun isDigits(t: KeyTarget) = isTime(t) || isDuration(t)
     fun timeOf(t: KeyTarget) = if (t == KeyTarget.START) d.start else d.end
+    fun fieldDigits(t: KeyTarget) = if (isDuration(t)) DurationInput.digits(d.hours) else timeDigits(timeOf(t))
     fun setTime(t: KeyTarget, v: String) { d = if (t == KeyTarget.START) d.copy(start = v) else d.copy(end = v) }
     fun commitBuf(): Boolean {
         if (buf.isEmpty()) return true
-        if (isTime(target) && buf.any { it != '·' }) {
-            val h = parseTime(buf)
-            if (h == null) { Toast.makeText(context, "שעה לא תקינה", Toast.LENGTH_SHORT).show(); buf = timeDigits(timeOf(target)); cursor = 0; return false }
-            setTime(target, h)
+        if (isDigits(target) && buf.any { it != '·' }) {
+            val h = if (isDuration(target)) DurationInput.parseDigits(buf) else parseTime(buf)
+            if (h == null) { Toast.makeText(context, if (isDuration(target)) "משך לא תקין" else "שעה לא תקינה", Toast.LENGTH_SHORT).show(); buf = fieldDigits(target); cursor = 0; return false }
+            if (isDuration(target)) d = d.copy(hours = h) else setTime(target, h)
         }
         buf = ""
         return true
@@ -139,7 +142,7 @@ fun KisEditorPage(
     /** Opens the keypad on [t]; for a time, on digit [at] (0–1 hours, 2–3 minutes) of the value already there. */
     fun open(t: KeyTarget, at: Int = 0) {
         if (!commitBuf()) return; focus.clearFocus(); target = t; pad = true
-        buf = if (isTime(t)) timeDigits(timeOf(t)) else ""; cursor = at
+        buf = if (isDigits(t)) fieldDigits(t) else ""; cursor = at
     }
     fun numberValue(t: KeyTarget) = when (t) { KeyTarget.HOURS -> DurationInput.display(d.hours); KeyTarget.RATE -> d.rate; KeyTarget.BONUS -> d.bonus; KeyTarget.AMOUNT -> d.amount; KeyTarget.BREAK -> if (d.breakMin > 0) d.breakMin.toString() else ""; else -> "" }
     fun setNumber(t: KeyTarget, v: String) {
@@ -149,13 +152,13 @@ fun KisEditorPage(
         }
     }
     fun key(k: String) {
-        if (isTime(target)) {
-            if (buf.length != 4) buf = timeDigits(timeOf(target))
-            val (next, at) = typeTime(buf, cursor, k)
+        if (isDigits(target)) {
+            if (buf.length != 4) buf = fieldDigits(target)
+            val (next, at) = typeTime(buf, cursor, k, if (isDuration(target)) 24 else 23)
             buf = next; cursor = at
             // Every complete, valid value shows at once (total, ruler); the last digit moves on from start to end.
-            if (buf.none { it == '·' }) parseTime(buf)?.let { setTime(target, it) }
-            if (cursor == 4 && commitBuf()) { if (target == KeyTarget.START) open(KeyTarget.END) else { buf = timeDigits(d.end); cursor = 0 } }
+            if (buf.none { it == '·' }) (if (isDuration(target)) DurationInput.parseDigits(buf) else parseTime(buf))?.let { if (isDuration(target)) d = d.copy(hours = it) else setTime(target, it) }
+            if (cursor == 4 && commitBuf()) { if (target == KeyTarget.START) open(KeyTarget.END) else { buf = fieldDigits(target); cursor = 0 } }
             return
         }
         if (k == "⌫") {
@@ -170,7 +173,7 @@ fun KisEditorPage(
     }
     fun shown(t: KeyTarget): String {
         if (pad && target == t && buf.isNotEmpty()) {
-            return if (isTime(t)) buf.take(2) + ":" + buf.drop(2) else buf
+            return if (isDigits(t)) buf.take(2) + ":" + buf.drop(2) else buf
         }
         return when (t) { KeyTarget.START -> d.start ?: "--:--"; KeyTarget.END -> d.end; else -> numberValue(t) }
     }
@@ -264,7 +267,7 @@ fun KisEditorPage(
                             onOpen = { open(KeyTarget.AMOUNT) }, onUnknown = { pad = false; d = d.copy(amountUnknown = true, amount = "") }, onKnown = { d = d.copy(amountUnknown = false); open(KeyTarget.AMOUNT) },
                             hoursLabel = shown(KeyTarget.HOURS), onHours = { open(KeyTarget.HOURS) })
                         d.mode == EntryMode.HOURS || d.groupByHours -> HoursDisplay(shown(KeyTarget.HOURS), pad && target == KeyTarget.HOURS, onTop,
-                            onOpen = { open(KeyTarget.HOURS) }, onQuick = { h -> d = d.copy(hours = h.toString()); buf = "" },
+                            onOpen = { at -> open(KeyTarget.HOURS, at) }, onQuick = { h -> d = d.copy(hours = h.toString()); buf = "" },
                             onUseClock = if (d.mode == EntryMode.GROUP) ({ d = d.copy(start = EntryDraft.defaultStart(d.end)); target = KeyTarget.START }) else null)
                         else -> {
                             Box(Modifier.coachTarget(CoachTarget.FIELDS)) {
@@ -364,8 +367,8 @@ fun KisEditorPage(
         }
         // ---------------- keypad or save bar ----------------
         // The keypad only enters values; the shift is saved from the save bar alone.
-        if (pad) Keypad(time = isTime(target), label = keyLabel(target, d.currency), value = shown(target),
-            typing = buf.isNotEmpty() && !isTime(target), cursor = cursor.takeIf { isTime(target) },
+        if (pad) Keypad(time = isDigits(target), label = keyLabel(target, d.currency), value = shown(target),
+            typing = buf.isNotEmpty() && !isTime(target), cursor = cursor.takeIf { isDigits(target) },
             onCursor = { cursor = it }, onKey = ::key, onDone = { if (commitBuf()) pad = false })
         else SaveBar(check, if (repeatOn(d, repeat)) "יצירת הסדרה" else saveLabel(d, changed),
             check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatPreview?.created?.isNotEmpty() == true), ::save)
@@ -510,11 +513,19 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
 }
 
 @Composable
-private fun HoursDisplay(value: String, active: Boolean, ink: Color, onOpen: () -> Unit, onQuick: (Int) -> Unit, onUseClock: (() -> Unit)?) {
+private fun HoursDisplay(value: String, active: Boolean, ink: Color, onOpen: (Int) -> Unit, onQuick: (Int) -> Unit, onUseClock: (() -> Unit)?) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (active) ink.copy(alpha = 0.16f) else Color.Transparent)
-        .kisClick(onClick = onOpen).testTag("hours_display").padding(horizontal = 8.dp, vertical = 6.dp)) {
-        Text("שעות ודקות · למשל 1:40 (שעה ו־40 דקות)", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
-        Text(DurationInput.display(value).ifEmpty { "0:00" }, color = ink.copy(alpha = if (value.isEmpty()) 0.45f else 1f), style = KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp, textDirection = TextDirection.Ltr))
+        .kisClick { onOpen(0) }.testTag("hours_display").padding(horizontal = 8.dp, vertical = 6.dp)) {
+        Text("שעות ודקות", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+        val parts = DurationInput.display(value).ifEmpty { "0:00" }.split(':')
+        val style = KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp, textDirection = TextDirection.Ltr)
+        CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(parts.first(), color = ink, style = style, modifier = Modifier.kisClick { onOpen(0) }.semantics { contentDescription = "משך · שעות" }.testTag("duration_hours"))
+                Text(":", color = ink, style = style)
+                Text(parts.getOrElse(1) { "00" }, color = ink, style = style, modifier = Modifier.kisClick { onOpen(2) }.semantics { contentDescription = "משך · דקות" }.testTag("duration_minutes"))
+            }
+        }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(2, 4, 6, 8).forEach { h ->
@@ -545,7 +556,7 @@ private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color
             .testTag("job_unknown").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) { Text("עוד לא יודע", color = ink, style = KisType.label) }
         Box(Modifier.weight(1f).heightIn(min = 38.dp).clip(RoundedCornerShape(10.dp)).background(ink.copy(alpha = 0.16f)).kisClick(onClick = onHours).testTag("job_hours"),
             contentAlignment = Alignment.Center) {
-            Text(if (hoursLabel.isNotEmpty() && hoursLabel != "0") "משך: ${DurationInput.display(hoursLabel)} (שעות:דקות)" else "כמה זמן לקח? (לא חובה)", color = ink, style = KisType.label)
+            Text(if (hoursLabel.isNotEmpty() && hoursLabel != "0") "משך: ${DurationInput.display(hoursLabel)}" else "כמה זמן לקח? (לא חובה)", color = ink, style = KisType.label)
         }
     }
 }
@@ -591,7 +602,7 @@ private fun JobNote(notes: String, history: List<WorkEntry>, onNotes: (String) -
     val past = remember(history) { history.filter { it.kind == WorkEntry.KIND_JOB && it.notes.isNotBlank() }.map { it.notes }.distinct().take(4) }
     KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisTextField(notes, onNotes, "מה עשית?", Modifier.fillMaxWidth().testTag("job_note"), placeholder = "למשל: פירוק ארון ספרים")
+            KisTextField(notes, onNotes, "מה עשית?", Modifier.fillMaxWidth().testTag("job_note"), placeholder = "לא חובה")
             if (past.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 past.forEach { n -> KisChip(n, dashed = true, onClick = { onNotes(n) }) }
             }
@@ -637,7 +648,6 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
             if (suggestions.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 suggestions.forEach { n -> KisChip("+ $n", onClick = { onDraft(d.copy(workers = d.workers + WorkerDraft(n, defaultHours))) }, tag = "add_worker_$n", onLongClick = { forgetting = n }) }
             }
-            if (suggestions.isNotEmpty()) Text("לחיצה ארוכה על שם מסירה אותו מהרשימה", style = KisType.micro, color = c.muted)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 KisTextField(newName, { newName = it }, "עובד חדש", Modifier.weight(1f).testTag("worker_name_input"))
                 Icon(Icons.Rounded.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(c.ink)
@@ -671,7 +681,7 @@ private fun SmallNumberField(value: String, label: String, modifier: Modifier, d
 }
 
 private fun keyLabel(t: KeyTarget, currency: String) = when (t) {
-    KeyTarget.START -> "שעת התחלה"; KeyTarget.END -> "שעת סיום"; KeyTarget.HOURS -> "שעות ודקות · למשל 1:40"; KeyTarget.RATE -> "תעריף לשעה ($currency)"
+    KeyTarget.START -> "שעת התחלה"; KeyTarget.END -> "שעת סיום"; KeyTarget.HOURS -> "שעות ודקות"; KeyTarget.RATE -> "תעריף לשעה ($currency)"
     KeyTarget.BONUS -> "בונוס ($currency)"; KeyTarget.AMOUNT -> "סכום ($currency)"; KeyTarget.BREAK -> "הפסקה (דקות)"
 }
 
@@ -689,12 +699,7 @@ private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean,
             .semantics(mergeDescendants = true) {}.testTag("keypad_display"), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(label, style = KisType.label, color = c.ink)
-                Text(when {
-                    time -> "לחיצה על ספרה משנה רק אותה"
-                    typing -> "בעריכה · ⌫ מוחק ספרה"
-                    value.isEmpty() -> "עוד לא הוזן"
-                    else -> "הקלדה מחליפה את הערך"
-                }, style = KisType.micro, color = c.muted)
+
             }
             val digitsStyle = KisType.amount.copy(fontSize = 26.sp, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum")
             if (time && cursor != null && value.length == 5) {

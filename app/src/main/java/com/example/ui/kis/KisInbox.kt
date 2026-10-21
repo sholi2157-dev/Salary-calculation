@@ -60,7 +60,7 @@ fun HeaderActions(unread: Boolean, onBell: () -> Unit) {
     Box(Modifier.size(44.dp).clip(CircleShape).background(c.surface).border(1.dp, c.line, CircleShape).kisClick(onClick = onBell)
         .semantics { contentDescription = if (unread) "התראות · יש חדשות" else "התראות" }.testTag("home_bell"), contentAlignment = Alignment.Center) {
         Icon(Icons.Outlined.Notifications, null, tint = c.ink, modifier = Modifier.size(22.dp))
-        if (unread) Box(Modifier.align(Alignment.TopEnd).padding(9.dp).size(9.dp).clip(CircleShape).background(Workplaces[0].accent(c.dark)).testTag("home_bell_dot"))
+        if (unread) Box(Modifier.align(Alignment.TopEnd).padding(9.dp).size(9.dp).clip(CircleShape).background(c.danger).testTag("home_bell_dot"))
     }
 }
 
@@ -142,7 +142,7 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
     }
     line("משמרת פעילה", "טיימר וסכום שנצבר בהתראה קבועה בזמן שהשעון רץ.", "service_notification_switch", serviceNotification) { viewModel.updateServiceNotificationEnabled(it) }
     KisDivider()
-    line("הסיכום החודשי", "פעם בחודש, בתחילת החודש: כמה עבדת וכמה הרווחת. נגיעה בו פותחת את \"החודש שלך\".", "notify_monthly_switch", notifyMonthly) { enable("monthly", it) }
+    line("הסיכום החודשי", "פעם בחודש, בתחילת החודש: כמה עבדת וכמה הרווחת.", "notify_monthly_switch", notifyMonthly) { enable("monthly", it) }
     KisDivider()
     line("תעריף חסר", "לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.", "notify_rate_switch", notifyRate) { enable("rate", it) }
     if (denied) Text("אין הרשאת התראות בטלפון", style = KisType.caption, color = c.pending, modifier = Modifier.padding(bottom = 6.dp).testTag("notify_denied"))

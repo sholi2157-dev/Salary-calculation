@@ -1,3 +1,12 @@
+# 2.0.5 in progress — 2026-10-21
+
+Owner authorized cumulative Android/Web release: concise forms, duration digit
+editing like clock, red update bell without automatic dialogs. Execution plan:
+`docs/duration-and-update-bell-20261021.md`. All 2.0.4 features retained; next code 38.
+Candidate must prove direct signed update from 2.0.3 (no intermediate 2.0.4 needed).
+Website automatic updates are being validated separately on its maintenance branch.
+No new public release has been claimed yet.
+
 # Combined 2.0.4 release — 2026-10-21
 
 Owner authorized both platforms, merge and public release. All functional changes merged:

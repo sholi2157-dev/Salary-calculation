@@ -1,5 +1,6 @@
 package com.example.ui.kis
 
+import androidx.lifecycle.repeatOnLifecycle
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -108,7 +109,18 @@ fun KisApp(
     val appContext = androidx.compose.ui.platform.LocalContext.current
     var update by remember { mutableStateOf(com.example.ui.WorkUpdateNotice.cached(appContext)) }
     var resumes by remember { mutableIntStateOf(0) }
-    LaunchedEffect(resumes) { update = com.example.ui.WorkUpdateNotice.refresh(appContext) }
+    LaunchedEffect(resumes, bellOpen) {
+        update = com.example.ui.WorkUpdateNotice.refresh(appContext)
+    }
+    val foregroundOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(foregroundOwner) {
+        foregroundOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            while (true) {
+                kotlinx.coroutines.delay(60_000)
+                update = com.example.ui.WorkUpdateNotice.refresh(appContext)
+            }
+        }
+    }
 
     fun say(text: String, action: String? = null, onAction: (() -> Unit)? = null) { message = KisMessage(text, action, onAction) }
     fun openNew(ai: Boolean = false) {
