@@ -66,6 +66,18 @@ const seed = {
     await ctx.close();
   }
 
+  // A metadata edit shows the actual persisted imported amount, matching Android.
+  {
+    const imported={...seed,entries:[{...seed.entries[1],hours:1.234567,totalEarnings:99.91}]};
+    const {ctx,page}=await open(undefined,'light',imported);
+    await page.click(tid('tab-history'));await page.click(tid('shift-b'));await page.click(tid('detail-edit'));
+    assert.match(await page.textContent(tid('editor-total')),/99\.91/);
+    await page.click(tid('editor-more'));await page.fill(tid('notes-input'),'הערה בלבד');
+    assert.match(await page.textContent(tid('editor-total')),/99\.91/);
+    await page.click(tid('save-shift'));const row=(await stored(page)).entries[0];assert.equal(row.hours,1.234567);assert.equal(row.totalEarnings,99.91);
+    await ctx.close();
+  }
+
   // 1. Existing data: shown, totals per currency, future shift not earned; nothing rewritten just by opening.
   {
     const { ctx, page } = await open();

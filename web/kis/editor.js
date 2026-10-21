@@ -199,8 +199,9 @@ function open(app, { entry = null, restore = null } = {}) {
   let lastRepeatBlocked = false, lastRepeatOn = false;
   function metaHtml(c) {
     const { moneyHtml } = U();
+    const total = base && c.canSave ? root.KisPay.pay(toEntry(d, base)) : c.total;
     return `<span class="grow">${c.minutes > 0 && d.mode !== 'JOB' && !c.errors.some(e => e.startsWith('שעת') || e.startsWith('ההפסקה')) ? U().hm(c.minutes) + ' שעות' : ''}</span>
-      ${c.total != null ? `<b class="amount" data-testid="editor-total">${moneyHtml(c.total, d.currency)}</b>` : d.rateUnknown && d.mode !== 'JOB' ? '<b class="label">תעריף חסר</b>' : d.amountUnknown && d.mode === 'JOB' ? '<b class="label">סכום חסר</b>' : ''}`;
+      ${total != null ? `<b class="amount" data-testid="editor-total">${moneyHtml(total, d.currency)}</b>` : d.rateUnknown && d.mode !== 'JOB' ? '<b class="label">תעריף חסר</b>' : d.amountUnknown && d.mode === 'JOB' ? '<b class="label">סכום חסר</b>' : ''}`;
   }
   function bottomHtml(c) {
     const { esc } = U();
