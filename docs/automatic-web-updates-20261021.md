@@ -22,3 +22,10 @@ no automatic page reload, new draft and timer retention, unchanged synthetic 22
 shifts/8 categories and dormant account data, offline reload, failed installation,
 and removal of settings update/version UI. CI/deployment results recorded after
 completion; not claimed from local unit tests.
+
+Expanded owner scope: manual/group/job duration uses selectable hours/minutes and
+the clock digit keypad. Removed always-visible typing instructions and example
+notes. Opening a rounded imported duration without typing keeps exact stored
+precision. Local build and 91 unit tests pass. First CI run 39674956960 passed
+unit/v2 browser checks then stopped because the download test still expected the
+old help heading; that selector is corrected for the requested "עזרה" heading.

@@ -1,3 +1,4 @@
+const {setDuration,durationValue}=require('./duration.cjs');
 // Real workers, same URL: legacy migration, A → B → C, offline, no forced reload.
 const assert=require('node:assert/strict'),http=require('node:http'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),cp=require('node:child_process');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -41,24 +42,24 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'A'.repeat(40));assert.deepEqual(await page.evaluate(()=>({...localStorage})),before);
  await page.click('[data-testid=tab-settings]');assert.doesNotMatch(await page.locator('#page').innerText(),/בדיקת עדכון|גרסה|2\.0|AAAAAAA|עזרה ועדכונים/);assert.equal(await page.locator('#web-update-notice').count(),0);
  await page.click('[data-testid=tab-home]');await page.click('[data-testid=live-start]');await page.click('[data-testid=live-go]');
- await page.click('[data-testid=add-shift]');await page.click('[data-testid=mode-hours]');await page.fill('[data-testid=hours-input]','1:40');
+ await page.click('[data-testid=add-shift]');await page.click('[data-testid=mode-hours]');await setDuration(page,'1:40');
  const draft=await page.evaluate(()=>localStorage.getItem('kis_web_draft_v1'));assert.ok(draft);
  let navigations=0;page.on('framenavigated',f=>{if(f===page.mainFrame())navigations++;});
  release='B';await page.evaluate(()=>window.dispatchEvent(new Event('online')));await ready(page,'B');
- assert.equal(navigations,0);assert.equal(await page.inputValue('[data-testid=hours-input]'),'1:40');assert.equal(await page.evaluate(()=>WorkBuild.commit),'A'.repeat(40));
- await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(navigations,1);assert.equal(await page.inputValue('[data-testid=hours-input]'),'1:40');assert.equal(await page.evaluate(()=>localStorage.getItem('work_complete_backup')),snapshot);
- await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(await page.inputValue('[data-testid=hours-input]'),'1:40');await context.setOffline(false);
+ assert.equal(navigations,0);assert.equal(await durationValue(page),'1:40');assert.equal(await page.evaluate(()=>WorkBuild.commit),'A'.repeat(40));
+ await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(navigations,1);assert.equal(await durationValue(page),'1:40');assert.equal(await page.evaluate(()=>localStorage.getItem('work_complete_backup')),snapshot);
+ await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(await durationValue(page),'1:40');await context.setOffline(false);
  // Failed partial installation cannot replace the complete offline shell.
  release='C';broken=true;await page.evaluate(async()=>{try{await(await navigator.serviceWorker.getRegistration()).update();}catch{}});
  await page.waitForFunction(async()=>!(await navigator.serviceWorker.getRegistration()).installing);await ready(page,'B');
  await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));await context.setOffline(false);broken=false;
  // Next ordinary opening sees C even if B is still its controller.
  const reopened=await context.newPage();await reopened.goto(url);assert.equal(await reopened.evaluate(()=>WorkBuild.commit),'C'.repeat(40));await ready(reopened,'C');
- assert.equal(await reopened.inputValue('[data-testid=hours-input]'),'1:40');assert.equal(await reopened.evaluate(()=>localStorage.getItem('work_complete_backup')),snapshot);
+ assert.equal(await durationValue(reopened),'1:40');assert.equal(await reopened.evaluate(()=>localStorage.getItem('work_complete_backup')),snapshot);
  await reopened.click('[data-testid=editor-close]');await reopened.click('[data-testid=confirm-ok]');assert.ok(await reopened.isVisible('[data-testid=live-card]'));
  await reopened.click('[data-testid=tab-settings]');await reopened.screenshot({path:path.join(out,'automatic-updates-settings.png'),fullPage:true});
  // Activation also leaves an unsaved edit in another open tab alone.
- await page.fill('[data-testid=hours-input]','2:35');assert.equal(await page.inputValue('[data-testid=hours-input]'),'2:35');assert.equal(await page.evaluate(()=>localStorage.getItem('work_account_v1:dormant')),'keep');
+ await setDuration(page,'2:35');assert.equal(await durationValue(page),'2:35');assert.equal(await page.evaluate(()=>localStorage.getItem('work_account_v1:dormant')),'keep');
  assert.deepEqual(errors,[]);await context.close();console.log('PASS automatic same-origin updates: exact shipped worker migration, A/B/C, no forced reload or update/version UI, 22/8 saved amounts, draft/timer/dormant data, offline and failed install.');
  }finally{await browser.close();server.close();fs.rmSync(temporary,{recursive:true,force:true});}
 })().catch(e=>{console.error(e);process.exitCode=1;});

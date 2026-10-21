@@ -31,3 +31,9 @@ test('mode switches carry the current net minutes and manual groups stay manual'
  assert.equal(E.evaluate(E.changeMode(group,'CLOCK')).minutes,100);
  assert.equal(E.changeMode({...clock,end:'11:55'},'HOURS').hours,'2:40');
 });
+
+test('duration digit editing preserves hours and admits 24:00 without changing clock rules', () => {
+ assert.equal(E.durationDigits('13:40'),'1340');
+ assert.equal(E.parseDuration(E.typeTime('1340',3,'5',24)[0]),'13:45');
+ assert.equal(E.parseDuration('2400'),'24:00');assert.equal(E.parseDuration('2401'),null);assert.equal(E.parseTime('2400'),null);
+});

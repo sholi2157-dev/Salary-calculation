@@ -54,20 +54,27 @@ function parseTime(digits) {
  * 4 means complete. So 05:30 → 05:35 is "tap the last digit, type 5". A first digit that can only start a one-digit hour
  * (3–9) becomes 0X and jumps to the minutes; likewise 6–9 for the minutes.
  */
-function typeTime(digits, cursor, key) {
+function typeTime(digits, cursor, key, maxHour = 23) {
   const b = (String(digits) + '····').slice(0, 4).split('');
   let at = cursor >= 0 && cursor <= 3 ? cursor : 0;
   if (key === 'del') { if (at > 0) { at--; b[at] = '·'; } return [b.join(''), at]; }
   for (const k of String(key)) {
     if (!/\d/.test(k)) continue;
     if (at >= 4) break;
-    if (at === 0) { if (k > '2') { b[0] = '0'; b[1] = k; at = 2; } else { b[0] = k; if (k === '2' && /\d/.test(b[1]) && b[1] > '3') b[1] = '0'; at = 1; } }
+    if (at === 0) { if (k > '2') { b[0] = '0'; b[1] = k; at = 2; } else { b[0] = k; if (k === '2' && /\d/.test(b[1]) && +b[1] > maxHour % 10) b[1] = '0'; at = 1; } }
     else if (at === 2) { if (k > '5') { b[2] = '0'; b[3] = k; at = 4; } else { b[2] = k; at = 3; } }
     else { b[at] = k; at++; }
   }
   return [b.join(''), at];
 }
 
+const durationDigits = value => /^\d{1,2}:\d{2}$/.test(durationDisplay(value)) ? durationDisplay(value).replace(':', '').padStart(4, '0') : '····';
+function parseDuration(digits) {
+  const s = String(digits).replace(/·/g, '0');
+  if (!/^\d{4}$/.test(s)) return null;
+  const h = +s.slice(0, 2), m = +s.slice(2);
+  return m < 60 && h * 60 + m <= 1440 ? h + ':' + String(m).padStart(2, '0') : null;
+}
 function newDraft(store) {
   const cats = store.data.categories, prefs = store.data.webPreferences;
   const name = root.WorkCategories.defaultName(cats, prefs), cat = cats.find(c => c.name === name);
@@ -95,7 +102,7 @@ function evaluate(d) {
   if (d.mode === 'GROUP' && d.workers.some(w => !w.name.trim())) errors.push('לכל עובד צריך שם');
   if (d.mode === 'GROUP' && d.workers.some(w => w.hours.trim() && (durationHours(w.hours) == null || durationHours(w.hours) < 0 || durationHours(w.hours) > 24))) errors.push('שעות העובד לא תקינות');
   if (d.mode === 'GROUP' && d.separateRates && [d.employerRate, d.workerRate].some(v => v.trim() && num(v) == null)) errors.push('תעריף לא תקין');
-  if (d.mode === 'JOB' && d.hours.trim() && (durationHours(d.hours) == null || durationHours(d.hours) < 0 || durationHours(d.hours) > 24)) errors.push('משך לא תקין: יש להזין שעות ודקות, למשל 1:40');
+  if (d.mode === 'JOB' && d.hours.trim() && (durationHours(d.hours) == null || durationHours(d.hours) < 0 || durationHours(d.hours) > 24)) errors.push('משך לא תקין');
   const total = ev.total == null || d.mode === 'JOB' || clockish ? ev.total : root.KisPay.amount(durationHours(d.hours) || 0, num(d.rate) || 0, ev.bonus);
   return { ...ev, total, errors, canSave: errors.length === 0, clock: clockish };
 }
@@ -144,7 +151,7 @@ function open(app, { entry = null, restore = null } = {}) {
   // A restored draft is the user's typing: leaving it asks first, like any other unsaved work.
   const original = restore ? '' : JSON.stringify(d);
   // Times are edited digit by digit: [buf] holds the four digits ("·" = not set) and [cursor] the one the next key writes.
-  let target = 'START', pad = false, buf = '', cursor = 0, more = d.breakMin > 0 || !!d.notes || !!d.bonus;
+  let target = 'START', pad = false, dirtyDigits = false, buf = '', cursor = 0, more = d.breakMin > 0 || !!d.notes || !!d.bonus;
   const host = document.createElement('div');
   host.className = 'editor' + (base ? ' framed' : '');
   host.setAttribute('data-testid', base ? 'edit-page' : 'add-page');
@@ -173,25 +180,29 @@ function open(app, { entry = null, restore = null } = {}) {
   // Back / Escape: the keypad closes first, then the editor (asking when something was typed).
   app.editorBack = () => { if (pad) { commitBuf(); pad = false; draw(); } else close(); };
   const set = patch => { d = { ...d, ...patch }; persist(); draw(); };
-  const timeOf = t => t === 'START' ? d.start : d.end;
-  const shown = t => pad && t === target && buf ? buf.slice(0, 2) + ':' + buf.slice(2) : t === 'START' ? (d.start || '') : d.end;
+  const timeOf = t => t === 'HOURS' ? durationDisplay(d.hours) : t === 'START' ? d.start : d.end;
+  const fieldDigits = t => t === 'HOURS' ? durationDigits(d.hours) : timeDigits(timeOf(t));
+  const parseDigits = b => target === 'HOURS' ? parseDuration(b) : parseTime(b);
+  const writeDigits = v => { d = target === 'HOURS' ? { ...d, hours: v } : target === 'START' ? { ...d, start: v } : { ...d, end: v }; persist(); };
+  const shown = t => pad && t === target && buf ? buf.slice(0, 2) + ':' + buf.slice(2) : timeOf(t) || '';
   function commitBuf() {
     if (!buf) return true;
-    if (/[0-9]/.test(buf)) {
-      const v = parseTime(buf);
-      if (!v) { U().toast('שעה לא תקינה'); buf = timeDigits(timeOf(target)); cursor = 0; return false; }
-      d = target === 'START' ? { ...d, start: v } : { ...d, end: v }; persist();
+    if (/[0-9]/.test(buf) && (target !== 'HOURS' || dirtyDigits)) {
+      const v = parseDigits(buf);
+      if (!v) { U().toast(target === 'HOURS' ? 'משך לא תקין' : 'שעה לא תקינה'); buf = fieldDigits(target); cursor = 0; return false; }
+      writeDigits(v);
     }
-    buf = ''; return true;
+    buf = ''; dirtyDigits = false; return true;
   }
   /** Opens the keypad on [t], on digit [at] (0–1 hours, 2–3 minutes) of the value already there. */
-  function openPad(t, at = 0) { if (!commitBuf()) return; target = t; pad = true; buf = timeDigits(timeOf(t)); cursor = at; draw(); }
+  function openPad(t, at = 0) { if (!commitBuf()) return; target = t; pad = true; dirtyDigits = false; buf = fieldDigits(t); cursor = at; draw(); }
   function key(k) {
-    if (buf.length !== 4) buf = timeDigits(timeOf(target));
-    [buf, cursor] = typeTime(buf, cursor, k);
+    dirtyDigits = true;
+    if (buf.length !== 4) buf = fieldDigits(target);
+    [buf, cursor] = typeTime(buf, cursor, k, target === 'HOURS' ? 24 : 23);
     // A complete, valid value shows at once (total); the last digit moves on from start to end, and closes after the end.
-    const v = !buf.includes('·') && parseTime(buf);
-    if (v) { d = target === 'START' ? { ...d, start: v } : { ...d, end: v }; persist(); }
+    const v = !buf.includes('·') && parseDigits(buf);
+    if (v) { writeDigits(v); }
     if (cursor === 4 && commitBuf()) { if (target === 'START') return openPad('END'); pad = false; }
     draw();
   }
@@ -203,10 +214,14 @@ function open(app, { entry = null, restore = null } = {}) {
     return `<span class="grow">${c.minutes > 0 && d.mode !== 'JOB' && !c.errors.some(e => e.startsWith('שעת') || e.startsWith('ההפסקה')) ? U().hm(c.minutes) + ' שעות' : ''}</span>
       ${total != null ? `<b class="amount" data-testid="editor-total">${moneyHtml(total, d.currency)}</b>` : d.rateUnknown && d.mode !== 'JOB' ? '<b class="label">תעריף חסר</b>' : d.amountUnknown && d.mode === 'JOB' ? '<b class="label">סכום חסר</b>' : ''}`;
   }
+  function durationControl(optional = false) {
+    const parts = (shown('HOURS') || '0:00').split(':');
+    return `<div class="field"><span>שעות ודקות${optional ? ' (לא חובה)' : ''}</span><div class="time-box"><b data-testid="hours-input" dir="ltr"><button data-t="HOURS" data-at="0" aria-label="משך · שעות" data-testid="duration-hours">${U().esc(/^\d+$/.test(parts[0]) ? String(+parts[0]) : parts[0])}</button>:<button data-t="HOURS" data-at="2" aria-label="משך · דקות" data-testid="duration-minutes">${U().esc(parts[1] || '00')}</button></b></div></div>`;
+  }
   function bottomHtml(c) {
     const { esc } = U();
-    const digits = (buf || timeDigits(timeOf(target))).split('');
-    return pad ? `<div class="keypad" data-testid="keypad"><div class="display"><span class="caption">${target === 'START' ? 'שעת התחלה' : 'שעת סיום'}<br><small>לחיצה על ספרה משנה רק אותה</small></span>
+    const digits = (buf || fieldDigits(target)).split('');
+    return pad ? `<div class="keypad" data-testid="keypad"><div class="display"><span class="caption">${target === 'HOURS' ? 'שעות ודקות' : target === 'START' ? 'שעת התחלה' : 'שעת סיום'}</span>
         <span class="digits" data-testid="keypad-value" aria-label="${esc(shown(target))}">${digits.map((x, i) => `${i === 2 ? '<i>:</i>' : ''}<button data-dig="${i}" aria-pressed="${cursor === i}" aria-label="ספרה ${i + 1}" data-testid="keypad-digit-${i}">${esc(x)}</button>`).join('')}</span></div>
         <div class="keys">${['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'].map(k => `<button data-k="${k}" data-testid="key-${k}" aria-label="${k === 'del' ? 'מחיקה' : k === 'ok' ? 'אישור' : k}">${k === 'del' ? '⌫' : k === 'ok' ? '✓' : k}</button>`).join('')}</div></div>`
       : `<div class="save-bar">${c.canSave ? '' : `<p data-testid="save-hint">${esc(c.errors[0])}</p>`}<button class="btn primary" data-a="save" data-testid="save-shift" ${c.canSave && (!base || changed()) && !lastRepeatBlocked ? '' : 'disabled'}>${lastRepeatOn ? 'יצירת הסדרה' : base ? (changed() ? 'שמירת שינויים' : 'אין שינויים') : 'שמירה'}</button></div>`;
@@ -227,7 +242,7 @@ function open(app, { entry = null, restore = null } = {}) {
       <div class="modes" role="tablist" aria-label="סוג הרישום">${MODES.map(([m, l]) => `<button role="tab" aria-selected="${d.mode === m}" aria-pressed="${d.mode === m}" data-mode="${m}" data-testid="mode-${m.toLowerCase()}">${l}</button>`).join('')}</div>
       <div class="places">${cats.map(x => `<button aria-pressed="${x.name === d.category}" data-cat="${esc(x.name)}" data-testid="place-${esc(x.name)}">${esc(x.name)}</button>`).join('')}<button data-a="add-place" data-testid="add-place">+ מקום</button></div>
       ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">סכום (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount"></label>
-          <label class="field" style="width:120px">שעות:דקות (לא חובה)<input class="input" inputmode="decimal" data-f="hours" value="${esc(durationDisplay(d.hours))}" dir="ltr" placeholder="1:40"></label></div>
+          <div>${durationControl(true)}</div></div>
           <button class="chip${d.amountUnknown ? ' on' : ''}" data-a="amount-unknown">${d.amountUnknown ? 'סכום חסר · נגיעה להזנה' : 'לא יודע עדיין'}</button>`
         : clockMode ? `<div class="clock-row">${[['START', 'התחלה'], ['END', 'סיום']].map(([t, label]) => { const v = shown(t) || '--:--', id = t === 'START' ? 'clock-start' : 'clock-end';
             // Hours and minutes are separate taps: a tap on the minutes edits only them. Each time has its own −15/+15.
@@ -236,7 +251,7 @@ function open(app, { entry = null, restore = null } = {}) {
               ${pad || !timeOf(t) ? '' : `<div class="nudges">${[-15, 15].map(n => `<button data-nt="${t}" data-n="${n}" aria-label="${label} ${n > 0 ? n + ' דקות קדימה' : -n + ' דקות אחורה'}" data-testid="nudge-${t.toLowerCase()}-${n}">${n > 0 ? '+' + n : '−' + -n}</button>`).join('')}</div>`}</div>`; }).join('')}</div>
           ${pad ? '' : ruler(d, target)}
           ${d.mode === 'GROUP' ? '<button class="link" data-a="group-hours">הזנת שעות במקום שעון</button>' : ''}`
-        : `<label class="field">שעות ודקות · למשל 1:40 (שעה ו־40 דקות)<input class="input" inputmode="decimal" data-f="hours" value="${esc(durationDisplay(d.hours))}" dir="ltr" placeholder="1:40" data-testid="hours-input" style="font:28px var(--display)"></label>
+        : `${durationControl()}
           <div class="chips">${[4, 6, 8, 10, 12].map(h => `<button class="chip" data-q="${h}">${h} ש׳</button>`).join('')}${d.mode === 'GROUP' ? '<button class="chip" data-a="group-clock">לפי שעון</button>' : ''}</div>`}
       <div class="meta-line" data-testid="editor-meta">${metaHtml(c)}</div>`;
 
@@ -268,7 +283,7 @@ function open(app, { entry = null, restore = null } = {}) {
             <input class="input" style="width:90px;min-height:44px" inputmode="numeric" data-f="break" value="${[0, 15, 30, 45, 60].includes(d.breakMin) ? '' : d.breakMin}" placeholder="אחר" aria-label="הפסקה בדקות"></div>` : ''}
           <label class="field">בונוס (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="bonus" value="${esc(d.bonus)}" placeholder="לא חובה"></label>
           <label class="field">הערה<textarea data-f="notes" placeholder="לא חובה" data-testid="notes-input">${esc(d.notes)}</textarea></label></div>` : ''}
-      ${d.mode === 'JOB' ? `<label class="field">מה עשית<textarea data-f="notes" placeholder="למשל: הובלת מקרר" data-testid="notes-input">${esc(d.notes)}</textarea></label>` : ''}`;
+      ${d.mode === 'JOB' ? `<label class="field">מה עשית<textarea data-f="notes" placeholder="לא חובה" data-testid="notes-input">${esc(d.notes)}</textarea></label>` : ''}`;
 
     const bottom = host.querySelector('[data-bottom]');
     lastRepeatBlocked = repeatOn && !(preview && created > 0); lastRepeatOn = repeatOn;
@@ -415,5 +430,5 @@ function rulerBind(host, d, select, change) {
 }
 function pendingDraft() { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
 
-root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, suggestStart, pendingDraft, DRAFT, typeTime, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay, changeMode };
+root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, suggestStart, pendingDraft, DRAFT, typeTime, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
 })(globalThis);

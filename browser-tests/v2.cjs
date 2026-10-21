@@ -1,3 +1,4 @@
+const {setDuration,durationValue}=require('./duration.cjs');
 /*
  * 2.0 web ("כיס") in a real browser, on the built public/ folder, with synthetic data only.
  * Proves: existing stored data is shown unchanged; add/edit; future shifts are planned and never summed; the one
@@ -51,8 +52,16 @@ const seed = {
     assert.equal(days.length,7);assert.match(days[3].text,/היום/);
     for(let i=0;i<7;i++) {const d=new Date(days[3].day);d.setDate(d.getDate()+i-3);assert.equal(days[i].day,+d);}
     assert.equal(await page.getByText('התחלה נפוצה:').count(),0);
-    await page.click(tid('mode-hours'));await page.fill(tid('hours-input'),'1.40');await page.fill(tid('rate-input'),'60');
+    await page.click(tid('mode-hours'));await setDuration(page,'1.40');await page.fill(tid('rate-input'),'60');
     assert.match(await page.textContent(tid('editor-meta')),/1:40/);
+    await page.click(tid('duration-minutes'));
+    assert.equal(await page.getAttribute(tid('keypad-digit-2'),'aria-pressed'),'true');
+    await page.click(tid('key-5'));await page.click(tid('key-0'));
+    assert.equal(await durationValue(page),'1:50');
+    await page.click(tid('duration-minutes'));await page.click(tid('key-4'));await page.click(tid('key-0'));
+    assert.equal(await durationValue(page),'1:40');
+    assert.equal(await page.getByText('לחיצה על ספרה משנה רק אותה',{exact:true}).count(),0);
+
     assert.match(await page.textContent(tid('editor-total')),/100/);
     await shot(page,'manual-100-minutes-dark-360');await page.click(tid('save-shift'));
     const saved=(await stored(page)).entries.at(-1);assert.equal(saved.hours,100/60);assert.equal(saved.totalEarnings,100);
@@ -72,6 +81,8 @@ const seed = {
     const {ctx,page}=await open(undefined,'light',imported);
     await page.click(tid('tab-history'));await page.click(tid('shift-b'));await page.click(tid('detail-edit'));
     assert.match(await page.textContent(tid('editor-total')),/99\.91/);
+    await page.click(tid('duration-minutes'));await page.click(tid('key-ok'));
+    assert.ok(await page.isDisabled(tid('save-shift')), 'opening a rounded display does not change imported hours');
     await page.click(tid('editor-more'));await page.fill(tid('notes-input'),'הערה בלבד');
     assert.match(await page.textContent(tid('editor-total')),/99\.91/);
     await page.click(tid('save-shift'));const row=(await stored(page)).entries[0];assert.equal(row.hours,1.234567);assert.equal(row.totalEarnings,99.91);
@@ -207,9 +218,9 @@ const seed = {
     assert.match(await page.textContent(tid('live-money')), /^[₪$][\d,]+\.\d\d$/);
     assert.match(await page.textContent(tid('live-clock')), /^\d\d:\d\d:\d\d$/);
     await shot(page, 'live-money-390');
-    await page.click(tid('add-shift')); await page.click(tid('mode-hours')); await page.fill(tid('hours-input'), '7');
+    await page.click(tid('add-shift')); await page.click(tid('mode-hours')); await setDuration(page,'7');
     await page.reload(); await page.waitForSelector(tid('add-page'));
-    assert.equal(await page.inputValue(tid('hours-input')), '7:00', 'draft restored');
+    assert.equal(await durationValue(page), '7:00', 'draft restored');
     await page.click(tid('editor-close')); await page.click(tid('confirm-ok'));
     assert.ok(await page.isVisible(tid('live-card')), 'timer survived the reload');
     await ctx.close();
@@ -236,12 +247,9 @@ const seed = {
     const preview = await page.textContent('[data-testid=rate-sheet] [data-f=p]');
     assert.match(preview, /₪40/); assert.match(preview, /\$20/); await page.keyboard.press('Escape');
     await page.click('[data-s=cancel]'); assert.ok(await page.isVisible('.nav-wrap'), 'navigation returns when the selection is cancelled');
-    // Typing a number keeps the field; a tap on save right after typing is not lost.
+    // Duration uses the clock keypad; typing a rate still saves on the first tap.
     await page.click(tid('add-shift')); await page.click(tid('mode-hours'));
-    await page.fill(tid('hours-input'), ''); await page.type(tid('hours-input'), '85');
-    assert.equal(await page.inputValue(tid('hours-input')), '85');
-    assert.equal(await page.evaluate(() => document.activeElement?.dataset.f), 'hours');
-    await page.fill(tid('hours-input'), '6'); await page.fill(tid('rate-input'), '45');
+    await setDuration(page, '6'); await page.fill(tid('rate-input'), '45');
     const before = (await stored(page)).entries.length;
     await page.click(tid('save-shift'));
     assert.equal((await stored(page)).entries.length, before + 1, 'first tap saves');
