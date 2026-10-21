@@ -43,8 +43,11 @@ class QuietUpdateBellTest {
                 assertTrue("Bell dot must be red", dot.red > dot.green * 1.3f && dot.red > dot.blue * 1.3f)
                 snap(context, "v2-update-bell-red")
                 ui.onNodeWithTag("home_bell").performClick()
-                ui.onNodeWithTag("update_note").assertExists()
-                ui.onNodeWithTag("update_now").assertExists()
+                ui.waitUntil(5000) {
+                    runCatching { ui.onNodeWithTag("update_note").assertIsDisplayed(); true }.getOrDefault(false)
+                }
+                ui.onNodeWithTag("update_now").assertIsDisplayed()
+                ui.waitForIdle()
                 snap(context, "v2-update-bell-card")
                 Espresso.pressBack()
                 scenario.moveToState(Lifecycle.State.CREATED)

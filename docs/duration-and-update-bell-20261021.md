@@ -33,3 +33,11 @@ APK SHA256 c45eef0c182f42e6273082c59280076271433761da41cda5c1cc5d56b4409860.
 Exact tested APK selected for publication, never rebuilt. Publication workflow
 adds test-only verification on the installed APK: synthetic cached future release,
 actual red-dot pixel, bell card, no automatic dialog, resume and offline retention.
+
+Publication/live install verification run39678748525 SUCCESS: anonymous exact APK,
+actual RC16 UI manual download/installer confirmation, installed code38, unchanged
+synthetic data and no same-version offer. Red-dot pixel, quiet cold start/resume
+and offline future-release card tests pass. Screenshot review found the bell-card
+capture preceded its sheet animation; test-only follow-up waits for the card and
+update button to be displayed before capture. APK/source/signature unchanged;
+[verify-update] reruns verification only, never republishing or rebuilding the APK.
