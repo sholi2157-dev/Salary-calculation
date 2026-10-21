@@ -59,7 +59,7 @@ function workerName(entries, query) {
 function workerRows(entries,name) {
  return entries.flatMap(e=>Pay.workers(e).filter(w=>w.name===name).map(w=>{
   const p=Pay.workerPay(w,e), r=Pay.workerRate(w,e);
-  // Do not expose the owner's time range, break or personal notes as the worker's facts.
+  // The owner's time range and break are not the worker's facts; the shift note is attached.
   return {...e,hours:w.hours,hourlyRate:r??0,totalEarnings:p??0,payKnown:p!=null,isPaid:w.isPaid,bonus:w.bonus,isTimeRange:false,startTime:null,endTime:null,isGroupShift:false};
  }));
 }

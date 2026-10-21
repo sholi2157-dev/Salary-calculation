@@ -1,3 +1,11 @@
+# Sharing review — 2026-10-21
+
+Owner requested coordinated Android and Web sharing changes. Review branches: `codex/sharing-web-20261021` and `codex/sharing-android-20261021`; draft PRs #9 Web and #8 Android. Contract: `docs/v2-sharing.md`; exact source/test evidence and remaining manual gates: `docs/sharing-20261021.md`.
+
+Technical copy is separate from recipient-ready sharing; multiple workplaces share technical blocks. Worker search is corrected. Excel/CSV use the same 14 columns and preserve unknown amounts as empty cells. Monthly/yearly images include money; Web image sharing is offered only when native file sharing works, with no download/text substitution. Full JSON backups and saved financial data are unchanged.
+
+Verification: Web run 39609131883 SUCCESS (build, all 89 tests, 28 shared examples, actual UI handlers, PNG, layouts and data preservation); Android run 39609123653 SUCCESS (136 Debug + 106 Release tests, unsigned builds, identity gates). Screenshots and the generated PNG were visually reviewed. No merge, production promotion, signed APK or public distribution. Physical WhatsApp/Safari and a signed update/data-preservation gate remain before delivery. Existing public APK and website remain unchanged.
+
 # Management follow-up — 2026-10-20
 
 Public download request measurement is now live from source `fd6a7418fe08102c64bc367759d6d6c072cf495f`. The private management Site was redesigned (version 2), and its Vercel totals query was repaired. Preserve the existing Site identity, D1 binding, recorder/hash/encryption secrets and encrypted user cookie. See the top of `docs/download-and-management-20261020.md` for exact verification and limits.
