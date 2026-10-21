@@ -89,7 +89,7 @@ fun KisEditorPage(
     val focus = LocalFocusManager.current
     var d by rememberSaveable(stateSaver = DraftSaver) { mutableStateOf(initial) }
     val original = remember(initial) { initial.toJson() }
-    var target by rememberSaveable { mutableStateOf(if (initial.mode == EntryMode.JOB) KeyTarget.AMOUNT else if (initial.mode == EntryMode.HOURS) KeyTarget.HOURS else if (initial.start == null) KeyTarget.START else KeyTarget.END) }
+    var target by rememberSaveable { mutableStateOf(if (initial.mode == EntryMode.JOB) KeyTarget.AMOUNT else if (initial.mode == EntryMode.HOURS) KeyTarget.HOURS else KeyTarget.START) }
     var buf by rememberSaveable { mutableStateOf("") }
     // Time fields are edited digit by digit: [buf] holds the four digits ("·" = not set yet) and [cursor] the one the next key writes.
     var cursor by rememberSaveable { mutableIntStateOf(0) }
@@ -138,13 +138,13 @@ fun KisEditorPage(
     }
     /** Opens the keypad on [t]; for a time, on digit [at] (0–1 hours, 2–3 minutes) of the value already there. */
     fun open(t: KeyTarget, at: Int = 0) {
-        commitBuf(); focus.clearFocus(); target = t; pad = true
+        if (!commitBuf()) return; focus.clearFocus(); target = t; pad = true
         buf = if (isTime(t)) timeDigits(timeOf(t)) else ""; cursor = at
     }
-    fun numberValue(t: KeyTarget) = when (t) { KeyTarget.HOURS -> d.hours; KeyTarget.RATE -> d.rate; KeyTarget.BONUS -> d.bonus; KeyTarget.AMOUNT -> d.amount; KeyTarget.BREAK -> if (d.breakMin > 0) d.breakMin.toString() else ""; else -> "" }
+    fun numberValue(t: KeyTarget) = when (t) { KeyTarget.HOURS -> DurationInput.display(d.hours); KeyTarget.RATE -> d.rate; KeyTarget.BONUS -> d.bonus; KeyTarget.AMOUNT -> d.amount; KeyTarget.BREAK -> if (d.breakMin > 0) d.breakMin.toString() else ""; else -> "" }
     fun setNumber(t: KeyTarget, v: String) {
         d = when (t) {
-            KeyTarget.HOURS -> d.copy(hours = v); KeyTarget.RATE -> d.copy(rate = v, rateUnknown = false); KeyTarget.BONUS -> d.copy(bonus = v)
+            KeyTarget.HOURS -> d.copy(hours = DurationInput.edit(v)); KeyTarget.RATE -> d.copy(rate = v, rateUnknown = false); KeyTarget.BONUS -> d.copy(bonus = v)
             KeyTarget.AMOUNT -> d.copy(amount = v, amountUnknown = false); KeyTarget.BREAK -> d.copy(breakMin = v.toIntOrNull()?.coerceIn(0, 600) ?: 0); else -> d
         }
     }
@@ -164,8 +164,8 @@ fun KisEditorPage(
             setNumber(target, buf)
             return
         }
-        if (k == "." && (buf.contains('.') || target == KeyTarget.BREAK)) return
-        buf = (buf + k).take(7)
+        if (k == "." && ((buf.contains('.') || buf.contains(':')) || target == KeyTarget.BREAK)) return
+        buf = (buf + if (target == KeyTarget.HOURS && k == ".") ":" else k).take(7)
         setNumber(target, buf)
     }
     fun shown(t: KeyTarget): String {
@@ -253,12 +253,12 @@ fun KisEditorPage(
                 // the mode tabs and total stay, so the form and the Save bar keep their room on small phones.
                 if (!imeOpen && d.editing && base != null) WasBanner(base, changed, onTop)
                 ModeTabs(d.mode, onTop, c.bg) { m ->
-                    commitBuf()
+                    if (!commitBuf()) return@ModeTabs
                     // Clock → hours keeps the length already entered instead of starting from 0.
-                    val carried = if (m == EntryMode.HOURS && d.hours.isBlank()) check.minutes?.takeIf { it > 0 }?.let { KisFormat.hours(it / 60.0) } else null
+                    val carried = if (m == EntryMode.HOURS && (d.mode == EntryMode.CLOCK || d.mode == EntryMode.GROUP && !d.groupByHours)) check.minutes?.takeIf { it > 0 }?.let { KisFormat.hours(it / 60.0) } else null
                     d = d.withMode(m).let { n -> if (carried != null) n.copy(hours = carried) else n }
                         .let { n -> if (m == EntryMode.CLOCK && n.start == null && !n.editing) n.copy(start = EntryDraft.defaultStart(n.end)) else n }
-                    target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> if (d.start == null && m == EntryMode.CLOCK) KeyTarget.START else KeyTarget.END }
+                    target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
                     if (m == EntryMode.GROUP && d.start == null && !d.editing) d = d.copy(start = EntryDraft.suggestStart(d.category, d.day, history).start)
                 }
                 if (!imeOpen) {
@@ -303,13 +303,6 @@ fun KisEditorPage(
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 2.dp, bottom = 14.dp).testTag("editor_scroll"),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (d.mode == EntryMode.JOB) JobNote(d.notes, history) { d = d.copy(notes = it) }
-            if (!d.editing && d.mode == EntryMode.CLOCK) {
-                val sug = remember(d.category, d.day, history) { EntryDraft.suggestStart(d.category, d.day, history) }
-                if (sug.chips.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("התחלה נפוצה:", style = KisType.caption, color = c.muted)
-                    sug.chips.forEach { h -> KisChip(h, selected = d.start == h, onClick = { commitBuf(); pad = false; d = d.copy(start = h); target = KeyTarget.END }, dashed = true, tag = "start_chip_$h") }
-                }
-            }
             DayStrip(d.day) { d = d.copy(day = it) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 KisChip(dayLabelLong(d.day).takeIf { !isWithinWeek(d.day) } ?: "תאריך אחר", leading = Icons.Rounded.CalendarMonth, tag = "editor_other_date", onClick = {
@@ -414,7 +407,7 @@ private fun saveLabel(d: EntryDraft, changed: Boolean) = if (d.editing) (if (cha
 
 private fun isWithinWeek(day: Long): Boolean {
     val today = EntryDraft.startOfDay(System.currentTimeMillis())
-    return day <= today && day > today - 7 * 86_400_000L - 3_600_000L
+    return (-3..3).any { offset -> Calendar.getInstance().apply { timeInMillis = today; add(Calendar.DAY_OF_MONTH, offset) }.timeInMillis == day }
 }
 
 // ======================================================================= pieces
@@ -524,8 +517,8 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
 private fun HoursDisplay(value: String, active: Boolean, ink: Color, onOpen: () -> Unit, onQuick: (Int) -> Unit, onUseClock: (() -> Unit)?) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (active) ink.copy(alpha = 0.16f) else Color.Transparent)
         .kisClick(onClick = onOpen).testTag("hours_display").padding(horizontal = 8.dp, vertical = 6.dp)) {
-        Text("כמה שעות", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
-        Text(value.ifEmpty { "0" }, color = ink.copy(alpha = if (value.isEmpty()) 0.45f else 1f), style = KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp, textDirection = TextDirection.Ltr))
+        Text("שעות ודקות · למשל 1:40 (שעה ו־40 דקות)", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+        Text(DurationInput.display(value).ifEmpty { "0:00" }, color = ink.copy(alpha = if (value.isEmpty()) 0.45f else 1f), style = KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp, textDirection = TextDirection.Ltr))
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(2, 4, 6, 8).forEach { h ->
@@ -556,7 +549,7 @@ private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color
             .testTag("job_unknown").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) { Text("עוד לא יודע", color = ink, style = KisType.label) }
         Box(Modifier.weight(1f).heightIn(min = 38.dp).clip(RoundedCornerShape(10.dp)).background(ink.copy(alpha = 0.16f)).kisClick(onClick = onHours).testTag("job_hours"),
             contentAlignment = Alignment.Center) {
-            Text(if (hoursLabel.isNotEmpty() && hoursLabel != "0") "לקח $hoursLabel שעות" else "כמה זמן לקח? (לא חובה)", color = ink, style = KisType.label)
+            Text(if (hoursLabel.isNotEmpty() && hoursLabel != "0") "משך: ${DurationInput.display(hoursLabel)} (שעות:דקות)" else "כמה זמן לקח? (לא חובה)", color = ink, style = KisType.label)
         }
     }
 }
@@ -584,8 +577,8 @@ private fun DayStrip(day: Long, onDay: (Long) -> Unit) {
     val c = Kis.colors
     val today = EntryDraft.startOfDay(System.currentTimeMillis())
     Row(Modifier.fillMaxWidth().testTag("day_strip"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        for (i in 6 downTo 0) {
-            val millis = EntryDraft.startOfDay(today - i * 86_400_000L + 3_600_000L)
+        for (i in -3..3) {
+            val millis = Calendar.getInstance().apply { timeInMillis = today; add(Calendar.DAY_OF_MONTH, i) }.timeInMillis
             val cal = Calendar.getInstance().apply { timeInMillis = millis }
             val on = millis == day
             Column(Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(if (on) c.ink else c.surface)
@@ -637,7 +630,7 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
             d.workers.forEachIndexed { i, w ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(w.name, style = KisType.body, color = c.ink, modifier = Modifier.weight(1f), maxLines = 1)
-                    SmallNumberField(w.hours, "שעות", Modifier.width(76.dp).testTag("worker_hours_$i")) { v -> onDraft(d.copy(workers = d.workers.toMutableList().also { it[i] = w.copy(hours = v) })) }
+                    SmallNumberField(DurationInput.display(w.hours), "שעות:דקות", Modifier.width(90.dp).testTag("worker_hours_$i"), duration = true) { v -> onDraft(d.copy(workers = d.workers.toMutableList().also { it[i] = w.copy(hours = DurationInput.edit(v)) })) }
                     SmallNumberField(w.bonus, "בונוס", Modifier.width(76.dp).testTag("worker_bonus_$i")) { v -> onDraft(d.copy(workers = d.workers.toMutableList().also { it[i] = w.copy(bonus = v) })) }
                     Icon(Icons.Rounded.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp))
                         .kisClick { onDraft(d.copy(workers = d.workers.filterIndexed { j, _ -> j != i })) }.padding(9.dp))
@@ -676,13 +669,13 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
 }
 
 @Composable
-private fun SmallNumberField(value: String, label: String, modifier: Modifier, onValue: (String) -> Unit) {
-    KisTextField(value, { v -> val f = v.filter { it.isDigit() || it == '.' }; if (f.count { it == '.' } <= 1) onValue(f) }, label, modifier,
+private fun SmallNumberField(value: String, label: String, modifier: Modifier, duration: Boolean = false, onValue: (String) -> Unit) {
+    KisTextField(value, { v -> val f = v.filter { it.isDigit() || it == '.' || duration && (it == ':' || it == ',') }; if (f.count { it == '.' || it == ':' || it == ',' } <= 1) onValue(f) }, label, modifier,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
 }
 
 private fun keyLabel(t: KeyTarget, currency: String) = when (t) {
-    KeyTarget.START -> "שעת התחלה"; KeyTarget.END -> "שעת סיום"; KeyTarget.HOURS -> "שעות"; KeyTarget.RATE -> "תעריף לשעה ($currency)"
+    KeyTarget.START -> "שעת התחלה"; KeyTarget.END -> "שעת סיום"; KeyTarget.HOURS -> "שעות ודקות · למשל 1:40"; KeyTarget.RATE -> "תעריף לשעה ($currency)"
     KeyTarget.BONUS -> "בונוס ($currency)"; KeyTarget.AMOUNT -> "סכום ($currency)"; KeyTarget.BREAK -> "הפסקה (דקות)"
 }
 

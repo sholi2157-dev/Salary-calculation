@@ -75,6 +75,22 @@ class KisUiTest {
     @Test fun editorClockKeypadRulerDraftAndUnknownRate360() = editorFlow(false)
     @Test @Config(qualifiers = "w390dp-h844dp-xhdpi") fun editorClockKeypadRulerDraftAndUnknownRateDark390() = editorFlow(true)
 
+    @Test fun manualInputUsesHoursAndMinutesAndTodayIsCentered() {
+        val vm = model()
+        host(true) { KisEditorPage(vm, EntryDraft.new(categories.first(), "₪").copy(rate = "60"), null, categories, emptyList(), emptyList(),
+            onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        ui.onNodeWithTag("day_0").assertTextContains("היום", substring = true)
+        ui.onNodeWithTag("day_-3").assertExists()
+        ui.onNodeWithTag("day_3").assertExists()
+        ui.onNodeWithTag("mode_hours").performClick()
+        ui.onNodeWithTag("hours_display").performClick()
+        listOf("1", ".", "4", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
+        ui.onNodeWithTag("editor_meta").assertTextContains("1:40 שעות", substring = true)
+        ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪100")
+        ui.onNodeWithTag("keypad_done").performClick()
+        shot("manual-100-minutes-dark")
+    }
+
     private fun editorFlow(dark: Boolean) {
         val vm = model()
         var saved = ""
@@ -445,13 +461,15 @@ class KisUiTest {
         shot("home-planned")
         ui.onNodeWithTag("next_up_all").performScrollTo().performClick()
         // History: the planned view lists plans only, without totals, copy or Excel.
-        ui.onNodeWithTag("history_planned").assertIsSelected()
+        ui.onNodeWithTag("history_filters").assertExists()
         ui.onNodeWithTag("history_total").assertDoesNotExist()
         ui.onNodeWithTag("copy_menu_btn").assertDoesNotExist()
         ui.onNodeWithTag("history_scroll_container").performScrollToNode(hasTestTag("planned_card_${plans.last().key}"))
         shot("history-planned")
         ui.onNodeWithTag("history_scroll_container").performScrollToIndex(0)
+        ui.onNodeWithTag("history_filters").performClick()
         ui.onNodeWithTag("history_worked").performClick()
+        ui.onNodeWithTag("filters_apply").performClick()
         ui.onNodeWithTag("history_total").assertTextContains("₪300", substring = true)
         ui.onAllNodesWithTag("planned_card_${plans.last().key}").assertCountEquals(0)
     }
@@ -477,10 +495,12 @@ class KisUiTest {
         shot("home-future")
         ui.onNodeWithTag("next_up_all").performScrollTo().performClick()
         // History: "מתוכנן" holds it; "עבדתי" and its total never include it.
-        ui.onNodeWithTag("history_planned").assertIsSelected()
+        ui.onNodeWithTag("history_filters").assertExists()
         ui.onNodeWithTag("planned_entry_$futureId").assertExists()
         shot("history-planned-future")
+        ui.onNodeWithTag("history_filters").performClick()
         ui.onNodeWithTag("history_worked").performClick()
+        ui.onNodeWithTag("filters_apply").performClick()
         ui.onAllNodesWithTag("work_entry_card_$futureId").assertCountEquals(0)
         if (HistoryFilter.monthKey(future.date) == HistoryFilter.monthKey(now))
             ui.onNodeWithTag("history_total").assertTextContains("₪100", substring = true)
@@ -512,7 +532,10 @@ class KisUiTest {
         val vm = model()
         val state = HistoryUi()
         host { KisHistory(state, true, emptyList(), categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {}) }
+        ui.onNodeWithTag("history_planned").assertDoesNotExist()
+        ui.onNodeWithTag("history_filters").performClick()
         ui.onNodeWithTag("history_planned").assertHeightIsAtLeast(48.dp).performClick()
+        ui.onNodeWithTag("filters_apply").performClick()
         ui.onNodeWithTag("planned_empty").assertExists()
         ui.onNodeWithText("חוזרת כל שבוע", substring = true).assertExists()
     }

@@ -1,3 +1,11 @@
+## Active combined shift-entry/sharing release — 2026-10-21
+
+Owner authorized implementation, merge and public update on both Android and Web.
+Scope/evidence: `docs/shift-entry-20261021.md`, plus `docs/sharing-20261021.md`.
+Work in isolated sharing branches; preserve all previous sharing changes. Pending final CI,
+Android 2.0.4 (37) signed upgrade gate from delivered 2.0.3 (36), Web browser verification
+and publication. No public deployment claimed at this point.
+
 # Current project state
 
 ## October 21 — copy/share parity prepared for owner wording review
