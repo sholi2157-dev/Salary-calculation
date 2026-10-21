@@ -48,8 +48,8 @@ class V2ShareTest {
         val rows = c.getJSONArray("entries").objects().map(::entry)
         return when (c.getString("type")) {
             "personal" -> WorkShareText.personal(rows.single())
-            "employer" -> WorkShareText.employer(rows.single(), c.optString("ownName").ifEmpty { null }, c.optBoolean("technical"))
-            "worker" -> rows.single().let { WorkShareText.worker(it, WorkPay.workers(it)[c.getInt("worker")], c.optBoolean("technical")) }
+            "employer" -> WorkShareText.employer(rows.single(), c.optString("ownName").ifEmpty { null }, c.optBoolean("technical"), c.optBoolean("future"))
+            "worker" -> rows.single().let { WorkShareText.worker(it, WorkPay.workers(it)[c.getInt("worker")], c.optBoolean("technical"), c.optBoolean("future")) }
             "summary" -> WorkShareText.summary(rows, c.optString("workerName").ifEmpty { null })
             "excel" -> WorkShareText.excel(rows)
             "csv" -> WorkShareText.csv(rows)

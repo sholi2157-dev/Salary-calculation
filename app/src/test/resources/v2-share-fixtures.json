@@ -475,6 +475,82 @@
       ]
     },
     {
+      "name": "future_employer_is_estimate",
+      "type": "employer",
+      "future": true,
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 5,
+          "rate": 40,
+          "total": 200,
+          "currency": "₪",
+          "isGroupShift": true,
+          "employerRate": 60,
+          "workerRate": 35,
+          "workers": [
+            {
+              "name": "דני",
+              "hours": 5,
+              "isPaid": false
+            },
+            {
+              "name": "יוסי",
+              "hours": 4,
+              "workerRate": 38,
+              "employerRate": 65,
+              "isPaid": true,
+              "bonus": 20
+            }
+          ]
+        }
+      ],
+      "forbidden": [
+        "סכום הצוות:",
+        "יתרה לתשלום:"
+      ],
+      "expected": "מתוכנן — עוד לא בוצע\nהיי, סיכמתי פה את עבודת הצוות במסעדה:\nתאריכים: 14/10/2026\nצפי לצוות: ₪780.00\nפירוט:\nהחלק שלי: 5 שעות | ₪200.00\nדני: 5 שעות | ₪300.00\nיוסי: 4 שעות | ₪280.00\nתודה!"
+    },
+    {
+      "name": "future_worker_is_estimate",
+      "type": "worker",
+      "future": true,
+      "worker": 0,
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 5,
+          "rate": 40,
+          "total": 200,
+          "currency": "₪",
+          "isGroupShift": true,
+          "employerRate": 60,
+          "workerRate": 35,
+          "workers": [
+            {
+              "name": "דני",
+              "hours": 5,
+              "isPaid": false
+            },
+            {
+              "name": "יוסי",
+              "hours": 4,
+              "workerRate": 38,
+              "employerRate": 65,
+              "isPaid": true,
+              "bonus": 20
+            }
+          ]
+        }
+      ],
+      "forbidden": [
+        "יתרה לתשלום:"
+      ],
+      "expected": "מתוכנן — עוד לא בוצע\nהיי דני, סיכמתי פה את המשמרת שלך במסעדה:\nתאריכים: 14/10/2026\nסה״כ 5 שעות עבודה.\nצפי: ₪175.00\nסומן בתכנון כשולם: ₪0.00\nצפי שטרם בוצע: ₪175.00\nתעריף לשעה: ₪35.00\nתודה!"
+    },
+    {
       "name": "copy_personal_is_technical",
       "type": "copy",
       "entries": [
