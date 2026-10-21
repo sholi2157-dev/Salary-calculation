@@ -1,18 +1,25 @@
-# Automatic website updates and cumulative 2.0.5 — 2026-10-21
+# Automatic website updates + cumulative 2.0.5 published — 2026-10-21
 
-Owner requested ordinary website navigation updates with no update/version UI,
-plus matching duration digits and concise forms. Contract and current evidence:
-`docs/automatic-web-updates-20261021.md`. Hebrew changelog: `docs/releases/2.0.5.md`.
-Local build + 91 unit tests + real Chromium legacy→A→B→C worker migration pass.
-Final consolidated CI and public-origin verification are pending; no new website
-production promotion is claimed here.
+Website source2f8f9cf5d223d05f0ea528d89ed2f6cdb8a68fc6, run39680237024 SUCCESS:
+91 units, fixture parity, exact old worker→A→B→C, true offline/failed install,
+no forced reload, preserved22/8 data/draft/timer, full v2/download/sharing flows.
+Same staged build promoted (no rebuild) as dpl_6qGopS2toz4byUV3mZuEi8qWAShj;
+public alias/build info verified at https://salary-calculation-eta.vercel.app/.
+BuildId2f8f9cf5d223d05f0ea528d89ed2f6cdb8a68fc6-b6de91227b349d3d.
+Actual public-origin verification pending; scope/evidence:
+`docs/automatic-web-updates-20261021.md`. No website update/version UI; online
+opening/refresh requests fresh code, offline uses a complete installed shell.
 
-Android cumulative 2.0.5 / code38 source 979e5b2b60933c02f98ab886384f8e3367589b78:
-run 39676466946 SUCCESS, 144 Debug +112 Release tests, real signed RC16→2.0.3→2.0.5
-data-preserving update, fresh launch and clean crashes. Exact APK SHA256:
+Android2.0.5/code38 source979e5b2b60933c02f98ab886384f8e3367589b78:
+run39676466946 SUCCESS,144 Debug+112 Release tests, signed RC16→2.0.3→2.0.5
+retained-data update, fresh launch and clean crashes. Exact APK SHA256:
 c45eef0c182f42e6273082c59280076271433761da41cda5c1cc5d56b4409860.
-Publication run39678748525 published/verified anonymous bytes successfully; actual
-online installer/data/quiet-red-bell verification is still running.
+Publication/live install run39678748525 SUCCESS; red-dot pixel/visible card/quiet
+startup+resume/offline follow-up run39679679694 SUCCESS. All2.0.4 features included,
+no intermediate install needed. Public URL:
+https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.0.5/Salary2.0.5.apk
+
+Hebrew changelog: `docs/releases/2.0.5.md`.
 
 # Combined 2.0.4 release — 2026-10-21
 

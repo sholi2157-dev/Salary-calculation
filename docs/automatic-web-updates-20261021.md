@@ -53,3 +53,11 @@ apply page offline emulation to worker-owned navigation fetches (the server was
 still reachable). The local verified driver is 1.62.1; CI now uses that version.
 The A/B/C local server also cuts its socket during offline scenarios, exercising
 an actual worker fetch failure independently of driver network emulation.
+
+Final source2f8f9cf5d223d05f0ea528d89ed2f6cdb8a68fc6, run39680237024 SUCCESS:
+91 units, fixture byte parity, real worker migration/offline/failure gate, all
+v2/download/sharing browser flows. Staged production build digestb6de91227b349d3d
+matched the local bundle, then the same build (no rebuild) was promoted as
+dpl_6qGopS2toz4byUV3mZuEi8qWAShj to salary-calculation-eta.vercel.app.
+Public alias/build info confirmed. Rollback dpl_52v5KTd2H9dEggr8oeHsWTzkCrG6.
+Actual public-origin browser verification is triggered by docs/rc15-web-live.json.

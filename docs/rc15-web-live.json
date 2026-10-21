@@ -1,9 +1,9 @@
 {
-  "sourceSha": "96e3e4bb52a6a693fb728c682295934b724fa7c3",
-  "deploymentId": "dpl_52v5KTd2H9dEggr8oeHsWTzkCrG6",
+  "sourceSha": "2f8f9cf5d223d05f0ea528d89ed2f6cdb8a68fc6",
+  "deploymentId": "dpl_6qGopS2toz4byUV3mZuEi8qWAShj",
   "publicOrigin": "https://salary-calculation-eta.vercel.app",
-  "release": "2.0.4: duration input, history filters, technical copy and human sharing",
-  "rollbackDeployment": "dpl_D1FAZC5V2dbdHBkLvAH4KCt416F3",
-  "buildId": "96e3e4bb52a6a693fb728c682295934b724fa7c3-8d45814d204db702",
-  "androidCandidateRun": 39668563320
+  "release": "Automatic website updates, duration digit editing, no version/update UI; cumulative Android 2.0.5",
+  "rollbackDeployment": "dpl_52v5KTd2H9dEggr8oeHsWTzkCrG6",
+  "buildId": "2f8f9cf5d223d05f0ea528d89ed2f6cdb8a68fc6-b6de91227b349d3d",
+  "androidCandidateRun": 39676466946
 }
