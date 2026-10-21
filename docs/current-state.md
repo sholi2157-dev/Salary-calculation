@@ -1,3 +1,10 @@
+# Automatic website updates — 2026-10-21
+
+Owner requested normal website behavior: next online opening/refresh uses the
+server's page, no update confirmation, check action or visible version in settings.
+Implementation and verification: `docs/automatic-web-updates-20261021.md`.
+Web-only; Android 2.0.4 and its update notification remain unchanged.
+
 # Combined 2.0.4 release — 2026-10-21
 
 Owner authorized both platforms, merge and public release. All functional changes merged:

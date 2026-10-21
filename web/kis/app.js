@@ -131,8 +131,6 @@ function start() {
   const draft = root.KisEditor.pendingDraft();
   if (draft && !draft.id) { root.KisEditor.open(app, { restore: draft }); U().toast('הטיוטה שוחזרה'); }
 }
-/** The update manager asks before activating a new version: drafts are already saved; an open edit must finish first. */
-root.prepareWebUpdate = () => !(app.editorOpen && document.querySelector('[data-testid=edit-page]'));
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })(globalThis);
