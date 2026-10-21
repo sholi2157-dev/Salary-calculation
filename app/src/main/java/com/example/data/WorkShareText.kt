@@ -42,7 +42,7 @@ object WorkShareText {
             else add("השכר הכולל: ${money(total,c)}. מתוכו שולם ${money(paid,c)}, ונותר לתשלום ${money(unpaid,c)}.")
         }
         val missing = WorkPay.pending(rows).size
-        if (missing > 0) add("סכום חסר עבור $missing משמרות; הן לא נכללו בסיכום הכספי.")
+        if (missing > 0) add(if (missing == 1) "סכום חסר עבור ${if (rows.all { WorkPay.isJob(it) }) "עבודה אחת" else "משמרת אחת"}; היא לא נכללה בסיכום הכספי." else "סכום חסר עבור $missing משמרות; הן לא נכללו בסיכום הכספי.")
     }
     private fun dates(rows: List<WorkEntry>) = rows.sortedBy { it.date }.map { date(it.date) }.distinct().joinToString(", ")
     fun workerName(entries: List<WorkEntry>, query: String): String? = query.trim().takeIf { it.isNotEmpty() }?.let { q ->
