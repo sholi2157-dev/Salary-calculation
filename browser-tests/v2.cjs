@@ -60,6 +60,9 @@ const seed = {
     assert.equal(await durationValue(page),'1:50');
     await page.click(tid('duration-minutes'));await page.click(tid('key-4'));await page.click(tid('key-0'));
     assert.equal(await durationValue(page),'1:40');
+    await page.click(tid('duration-minutes'));await page.click('[data-q="4"]');await page.click(tid('key-ok'));
+    assert.equal(await durationValue(page),'4:00', 'quick hours replace the active keypad value');
+    await setDuration(page,'1:40');
     assert.equal(await page.getByText('לחיצה על ספרה משנה רק אותה',{exact:true}).count(),0);
 
     assert.match(await page.textContent(tid('editor-total')),/100/);

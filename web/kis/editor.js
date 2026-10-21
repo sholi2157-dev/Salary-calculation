@@ -310,7 +310,7 @@ function open(app, { entry = null, restore = null } = {}) {
     all('[data-k]').forEach(b => b.onclick = () => { const k = b.dataset.k; if (k === 'ok') { if (commitBuf()) pad = false; draw(); } else key(k); });
     all('[data-nt]').forEach(b => b.onclick = () => { const t = b.dataset.nt, v = timeOf(t), n = +b.dataset.n; if (!v) return;
       set(t === 'START' ? { start: R().fromMinutes(R().toMinutes(v) + n) } : { end: R().fromMinutes(R().toMinutes(v) + n) }); U().haptic('tick'); });
-    all('[data-q]').forEach(b => b.onclick = () => set({ hours: b.dataset.q }));
+    all('[data-q]').forEach(b => b.onclick = () => { buf = ''; dirtyDigits = false; cursor = 0; set({ hours: b.dataset.q }); });
     all('[data-day]').forEach(b => b.onclick = () => set({ day: +b.dataset.day, repeatDays: d.repeatDays ? [...new Set([...d.repeatDays, new Date(+b.dataset.day).getDay()])] : null }));
     all('[data-cur]').forEach(b => b.onclick = () => set({ currency: b.dataset.cur }));
     all('[data-b]').forEach(b => b.onclick = () => set({ breakMin: +b.dataset.b }));

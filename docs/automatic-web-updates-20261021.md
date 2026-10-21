@@ -76,3 +76,8 @@ coalesced with registration jobs; the harness now requests an update job while
 waiting, only when there is no installing/waiting worker, with a bounded message
 reply. It still proves actual new-document HTML, automatic activation and no forced
 reload. UI callback scheduling is separately unit-tested; no clicks are added.
+
+Final parity check: choosing a quick-hours chip while the duration keypad is open
+now clears its old digit buffer, matching Android, so confirming cannot restore
+the prior duration over the chosen preset. Existing v2 browser flow covers the
+open-pad→4-hour preset→confirm→1:40 edit sequence.
