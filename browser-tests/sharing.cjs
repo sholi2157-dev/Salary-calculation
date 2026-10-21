@@ -11,7 +11,7 @@ try{for(const supported of [false,true]){
  const ctx=await browser.newContext({viewport:{width:supported?390:360,height:844},colorScheme:supported?'light':'dark',serviceWorkers:'block'});
  await ctx.addInitScript(({seed,supported})=>{localStorage.setItem('work_complete_backup',JSON.stringify(seed));localStorage.setItem('kis_web_v1',JSON.stringify({launched:2,tourDone:true}));window.copied=[];window.shared=[];
  Object.defineProperty(navigator,'clipboard',{value:{writeText:async t=>window.copied.push(t)}});
- Object.defineProperty(navigator,'share',{value:async data=>{if(window.abortShare)throw new DOMException('cancelled','AbortError');window.shared.push({text:data.text,files:await Promise.all((data.files||[]).map(async f=>({size:f.size,type:f.type,signature:Array.from(new Uint8Array(await f.arrayBuffer()).slice(0,8))})))})}});
+ Object.defineProperty(navigator,'share',{value:async data=>{if(window.abortShare)throw new DOMException('cancelled','AbortError');window.shared.push({text:data.text,files:await Promise.all((data.files||[]).map(async f=>({size:f.size,type:f.type,bytes:Array.from(new Uint8Array(await f.arrayBuffer())),signature:Array.from(new Uint8Array(await f.arrayBuffer()).slice(0,8))})))})}});
  Object.defineProperty(navigator,'canShare',{value:()=>supported});
  },{seed,supported});
  const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForSelector('[data-testid=home-hero]');
@@ -29,11 +29,11 @@ try{for(const supported of [false,true]){
  await page.evaluate(()=>KisSummaryUi.story(Kis,String(new Date().getFullYear())));
  for(let i=0;i<12;i++){if(await page.locator('[data-testid=story-card]').count())break;await page.click('[data-testid=story-next]');}
  assert.match(await page.textContent('[data-testid=story-poster]'),/₪240/);
- if(supported){await page.waitForFunction(()=>document.querySelector('[data-testid=story-share]')?.disabled===false);const countBefore=await page.evaluate(()=>shared.length);await page.click('[data-testid=story-share]');await page.waitForFunction(n=>shared.length>n,countBefore);const pic=await page.evaluate(()=>shared.at(-1));assert.match(pic.text,/סכום: ₪200.00/);assert.match(pic.text,/סכום: ₪40.00/);assert.equal(pic.files[0].type,'image/png');assert.ok(pic.files[0].size>1000);assert.deepEqual(pic.files[0].signature,[137,80,78,71,13,10,26,10]);
+ if(supported){await page.waitForFunction(()=>document.querySelector('[data-testid=story-share]')?.disabled===false);const countBefore=await page.evaluate(()=>shared.length);await page.click('[data-testid=story-share]');await page.waitForFunction(n=>shared.length>n,countBefore);const pic=await page.evaluate(()=>shared.at(-1));assert.match(pic.text,/סכום: ₪200.00/);assert.match(pic.text,/סכום: ₪40.00/);assert.equal(pic.files[0].type,'image/png');assert.ok(pic.files[0].size>1000);assert.deepEqual(pic.files[0].signature,[137,80,78,71,13,10,26,10]);fs.writeFileSync(path.join(out,'sharing-generated-card.png'),Buffer.from(pic.files[0].bytes));
   // Cancelling native share must not silently copy or download.
   const copied=await page.evaluate(()=>window.copied.length);await page.evaluate(()=>window.abortShare=true);await page.click('[data-testid=story-share]');assert.equal(await page.evaluate(()=>window.copied.length),copied);
  }else assert.equal(await page.locator('[data-testid=story-share]').count(),0);
- await page.screenshot({path:path.join(out,`sharing-recap-${supported}.png`)});
+ await page.waitForTimeout(800);await page.screenshot({path:path.join(out,`sharing-recap-${supported}.png`)});
  const bounds=await page.locator('[data-testid=story-copy]').boundingBox();assert.ok(bounds.y+bounds.height<=844,'recap controls fit the viewport');
  await page.click('[data-testid=story-copy]');assert.doesNotMatch(await page.evaluate(()=>copied.at(-1)),/היי/);assert.match(await page.evaluate(()=>copied.at(-1)),/סכום: ₪200.00/);
  assert.equal(await page.evaluate(()=>localStorage.getItem('work_complete_backup')),before,'sharing never changes financial data');await ctx.close();

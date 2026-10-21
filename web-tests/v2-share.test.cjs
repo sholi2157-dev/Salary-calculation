@@ -11,8 +11,8 @@ function entry(raw){
 function produce(c,rows){
  switch(c.type){
   case 'personal':assert.equal(rows.length,1);return S.personal(rows[0]);
-  case 'employer':assert.equal(rows.length,1);return S.employer(rows[0],c.ownName||null,c.technical===true);
-  case 'worker':assert.equal(rows.length,1);return S.worker(rows[0],Pay.workers(rows[0])[c.worker],c.technical===true);
+  case 'employer':assert.equal(rows.length,1);return S.employer(rows[0],c.ownName||null,c.technical===true,c.future===true);
+  case 'worker':assert.equal(rows.length,1);return S.worker(rows[0],Pay.workers(rows[0])[c.worker],c.technical===true,c.future===true);
   case 'summary':return S.summary(rows,c.workerName||null);
   case 'excel':return S.excel(rows);
   case 'csv':return S.csv(rows);
