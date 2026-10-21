@@ -47,7 +47,7 @@ function humanAmounts(rows, worker=false) {
   else out.push('השכר הכולל: '+money(total,c)+'. מתוכו שולם '+money(paid,c)+', ונותר לתשלום '+money(unpaid,c)+'.');
  }
  const missing=Pay.pending(rows).length;
- if(missing)out.push('סכום חסר עבור '+missing+' משמרות; הן לא נכללו בסיכום הכספי.');
+ if(missing)out.push(missing===1?'סכום חסר עבור '+(rows.every(Pay.isJob)?'עבודה אחת':'משמרת אחת')+'; היא לא נכללה בסיכום הכספי.':'סכום חסר עבור '+missing+' משמרות; הן לא נכללו בסיכום הכספי.');
  return out;
 }
 const ordered = rows => [...rows].sort((a,b)=>a.date-b.date);
