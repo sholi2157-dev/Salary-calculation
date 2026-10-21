@@ -172,13 +172,13 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                         style = KisType.caption.copy(textDirection = TextDirection.Rtl), color = c.muted)
                 }
                 Icon(Icons.Rounded.ContentCopy, "העתק פרטי משמרת לעובד", tint = c.ink, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
-                    .kisClick { KisShare.copy(context, WorkShareText.worker(entry, w, technical = true)); onMessage("הועתק ✓") }.padding(11.dp))
+                    .kisClick { KisShare.copy(context, WorkShareText.worker(entry, w, technical = true, future = KisHistoryLogic.upcoming(entry))); onMessage("הועתק ✓") }.padding(11.dp))
                 Icon(Icons.Rounded.Share, "שתף פרטי משמרת לעובד", tint = c.ink, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
-                    .kisClick { KisShare.shareOrCopy(context, WorkShareText.worker(entry, w), "שליחה ל${w.name}", onMessage) }.padding(11.dp))
+                    .kisClick { KisShare.shareOrCopy(context, WorkShareText.worker(entry, w, future = KisHistoryLogic.upcoming(entry)), "שליחה ל${w.name}", onMessage) }.padding(11.dp))
             }
         }
-        KisButton("העתקת דוח הצוות", { KisShare.copy(context, WorkShareText.employer(entry, myName, technical = true)); onMessage("הדוח הועתק ✓") }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "group_summary_copy")
-        KisButton("דו״ח לקבלן (כל הקבוצה)", { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName), "סיכום לקבלן", onMessage) }, Modifier.fillMaxWidth(),
+        KisButton("העתקת דוח הצוות", { KisShare.copy(context, WorkShareText.employer(entry, myName, technical = true, future = KisHistoryLogic.upcoming(entry))); onMessage("הדוח הועתק ✓") }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "group_summary_copy")
+        KisButton("דו״ח לקבלן (כל הקבוצה)", { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName, future = KisHistoryLogic.upcoming(entry)), "סיכום לקבלן", onMessage) }, Modifier.fillMaxWidth(),
             KisButtonKind.GHOST, icon = Icons.Rounded.ReceiptLong, height = 48.dp, tag = "group_summary_share")
     }
 }

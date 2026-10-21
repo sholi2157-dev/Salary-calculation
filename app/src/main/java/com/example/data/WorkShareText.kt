@@ -81,24 +81,26 @@ object WorkShareText {
     }
     fun personal(e: WorkEntry) = summary(listOf(e))
     fun job(e: WorkEntry) = personal(e)
-    fun employer(e: WorkEntry, ownName: String? = null, technical: Boolean = false): String {
+    fun employer(e: WorkEntry, ownName: String? = null, technical: Boolean = false, future: Boolean = false): String {
         val own = WorkPay.pay(e); val ws = WorkPay.workers(e); val pays = ws.map { WorkPay.employerPay(it, e) }
         val total = if (own == null || pays.any { it == null }) null else Math.round((own + pays.sumOf { it!! }) * 100) / 100.0
-        return buildList {
+        val text = buildList {
             if (technical) { add("עבודה: ${e.category}"); add("כמות משמרות: 1"); add("כמות שעות: ${hours(e.hours + ws.sumOf { it.hours })}") }
             else add("היי, סיכמתי פה את עבודת הצוות ב${e.category}:")
             add("תאריכים: ${date(e.date)}")
-            add("סה״כ לתשלום עבור הצוות: " + (total?.let { money(it, e.currency) } ?: "ממתין להשלמת תעריף"))
+            add("סכום הצוות: " + (total?.let { money(it, e.currency) } ?: "ממתין להשלמת תעריף"))
             add("פירוט:")
             add("${ownName?.trim()?.takeIf { it.isNotEmpty() } ?: "החלק שלי"}: ${hours(e.hours)} שעות | ${own?.let { money(it, e.currency) } ?: "תעריף חסר"}")
             ws.forEachIndexed { i, w -> add("${w.name}: ${hours(w.hours)} שעות | ${pays[i]?.let { money(it, e.currency) } ?: "תעריף חסר"}") }
             if (note(e).isNotEmpty()) add("הערה: ${note(e)}")
             if (!technical) add("תודה!")
         }.joinToString("\n")
+        return if (future) plannedText(text) else text
     }
-    fun worker(e: WorkEntry, w: WorkPay.Worker, technical: Boolean = false): String {
+    fun worker(e: WorkEntry, w: WorkPay.Worker, technical: Boolean = false, future: Boolean = false): String {
         val single = e.copy(groupWorkersJson = org.json.JSONArray().put(w.source).toString())
-        return if (technical) copy(listOf(single), w.name) else summary(listOf(single), w.name)
+        val text = if (technical) copy(listOf(single), w.name) else summary(listOf(single), w.name)
+        return if (future) plannedText(text) else text
     }
     fun planned(o: com.example.domain.V2Plan.Occurrence, technical: Boolean = false): String {
         val h = com.example.domain.V2Rules.span(o.start, o.end).minutes / 60.0
@@ -117,8 +119,9 @@ object WorkShareText {
     fun entry(e: WorkEntry, technical: Boolean = false, future: Boolean = false): String {
         val text = if (technical) copy(listOf(e)) else personal(e)
         if (!future) return text
-        return "מתוכנן — עוד לא בוצע\n" + text.replace("יתרה לתשלום:", "צפי שטרם בוצע:").replace("שולם:", "סומן בתכנון כשולם:").replace("סכום:", "צפי:")
+        return plannedText(text)
     }
+    private fun plannedText(text: String) = "מתוכנן — עוד לא בוצע\n" + text.replace("יתרה לתשלום:", "צפי שטרם בוצע:").replace("שולם:", "סומן בתכנון כשולם:").replace("סכום:", "צפי:").replace("סכום הצוות:", "צפי לצוות:")
     private val excelHeaders = listOf("עבודה", "תאריך", "שעת התחלה", "שעת סיום", "שעות עבודה", "הפסקה בדקות", "תעריף שעתי", "סכום", "מטבע", "סטטוס תשלום", "סוג", "בונוס", "הערה", "שכר ידוע")
     private fun textCell(v: String) = if (Regex("^[\\s]*[=+\\-@]").containsMatchIn(v)) "'$v" else v
     private fun table(entries: List<WorkEntry>): List<List<String>> {

@@ -136,8 +136,8 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
             val context = LocalContext.current
             Kick("$whose שלך בכיס")
             Poster(label, s, persona?.name)
-            val text = listOfNotNull("$whose שלי בכיס · $label", "⁦${Math.round(hrs)}⁩ שעות · ${s.count} משמרות", s.currencies.joinToString("\n") { "סכום: ${KisFormat.money(it.total, it.currency)}" }.takeIf { it.isNotEmpty() }, top?.let { "המקום המוביל: ${it.name}" },
-                persona?.let { "טיפוס: ${it.name}" }, s.bestDay?.let { "היום שלי: ${KisFormat.DAY_LONG[it]}" }).joinToString("\n")
+            val storyRows = KisHistoryLogic.done(entries).filter { com.example.domain.V2Summary.row(it).date.startsWith(scope) }
+            val text = com.example.data.WorkShareText.summary(storyRows)
             KisButton("העתקת סיכום", {
                 val rows = KisHistoryLogic.done(entries).filter { com.example.domain.V2Summary.row(it).date.startsWith(scope) }
                 KisShare.copy(context, com.example.data.WorkShareText.copy(rows)); onMessage("הועתק ✓")
