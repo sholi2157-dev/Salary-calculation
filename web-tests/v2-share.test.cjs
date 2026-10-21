@@ -46,8 +46,8 @@ test('copy and share differ, mixed workplaces stay technical, paid amounts are n
  assert.match(S.personal(base),/^היי, סיכמתי פה/);
  assert.doesNotMatch(S.copy([base]),/היי|תודה/);
  assert.equal(S.summary([base,{...base,category:'אחר'}]),S.copy([base,{...base,category:'אחר'}]));
- assert.match(S.personal({...base,isPaid:true}),/יתרה לתשלום: ₪0.00/);
- assert.match(S.personal({...base,isPaid:true}),/שולם: ₪320.00/);
+ assert.match(S.personal({...base,isPaid:true}),/₪320.00 שולם במלואו/);
+ assert.doesNotMatch(S.personal({...base,isPaid:true}),/לתשלום/);
  assert.equal(S.workerName([{...base,groupWorkersJson:JSON.stringify([{name:'דני',hours:2}])}],' דני '),'דני');
 });
 test('both modern spreadsheet formats can be read back without turning unknown pay into zero pay',()=>{

@@ -37,6 +37,19 @@ function amounts(rows) {
  if (missing) out.push('סכום חסר: ' + missing + ' (לא נכלל בסכומים)');
  return out;
 }
+// Sharing reads like a message: no redundant zero-payment lines or technical count labels.
+function humanAmounts(rows, worker=false) {
+ const out=[];
+ for(const [c,total] of Object.entries(Pay.totals(rows))) {
+  const paid=Pay.totals(rows.filter(e=>e.isPaid))[c]??0, unpaid=Pay.totals(rows.filter(e=>!e.isPaid))[c]??0;
+  if(!rows.some(e=>e.currency===c&&!e.isPaid&&Pay.pay(e)!=null)) out.push('השכר בסך '+money(total,c)+' שולם במלואו.');
+  else if(paid===0) out.push((worker?'מגיע לך: ':'השכר לתשלום: ')+money(total,c)+'.');
+  else out.push('השכר הכולל: '+money(total,c)+'. מתוכו שולם '+money(paid,c)+', ונותר לתשלום '+money(unpaid,c)+'.');
+ }
+ const missing=Pay.pending(rows).length;
+ if(missing)out.push('סכום חסר עבור '+missing+' משמרות; הן לא נכללו בסיכום הכספי.');
+ return out;
+}
 const ordered = rows => [...rows].sort((a,b)=>a.date-b.date);
 const dates = rows => [...new Set(ordered(rows).map(e=>date(e.date)))].join(', ');
 function workerName(entries, query) {
@@ -70,7 +83,9 @@ function summary(entries,name=null) {
  const place=rows[0].category, n=rows.length;
  const intro=name ? 'היי '+name+', סיכמתי פה את '+(n===1?'המשמרת שלך':'המשמרות שלך')+' ב'+place+':'
   : 'היי, סיכמתי פה את '+(n===1?(Pay.isJob(rows[0])?'העבודה שלי':'המשמרת שלי'):n+' המשמרות שלי')+' ב'+place+':';
- const out=[intro,'תאריכים: '+dates(rows),...(rows.some(e=>!Pay.isJob(e)||e.hours>0)?['סה״כ '+hours(rows.reduce((s,e)=>s+e.hours,0))+' שעות עבודה.']:[]),...amounts(rows)];
+ const totalHours=hours(rows.reduce((s,e)=>s+e.hours,0));
+ const who=name?'עבדת':'עבדתי';
+ const out=[intro, ...(n===1?['בתאריך '+dates(rows)+(rows.some(e=>!Pay.isJob(e)||e.hours>0)?' '+who+' '+totalHours+' שעות.':'.')]:['בתאריכים '+dates(rows)+'.','סה״כ '+who+' '+totalHours+' שעות.']),...humanAmounts(rows,!!name)];
  if (n===1) out.push(...details(rows[0]));
  else { out.push('פירוט המשמרות:');for(const e of ordered(rows)) out.push(date(e.date)+' | '+hours(e.hours)+' שעות | '+amount(e)+' | '+(e.isPaid?'שולם':'ממתין'),...details(e)); }
  out.push('תודה!');return out.join('\n');
@@ -107,7 +122,7 @@ function entry(e,technical=false,future=false) {
  const out=[technical?copy([e]):personal(e)];
  return plannedText(out[0]);
 }
-function plannedText(text) { return 'מתוכנן — עוד לא בוצע\n'+text.replaceAll('יתרה לתשלום:','צפי שטרם בוצע:').replaceAll('שולם:','סומן בתכנון כשולם:').replaceAll('סכום:','צפי:').replaceAll('סכום הצוות:','צפי לצוות:');
+function plannedText(text) { return 'מתוכנן — עוד לא בוצע\n'+text.replaceAll('יתרה לתשלום:','צפי שטרם בוצע:').replaceAll('שולם:','סומן בתכנון כשולם:').replaceAll('סכום:','צפי:').replaceAll('סכום הצוות:','צפי לצוות:').replaceAll('השכר לתשלום:','צפי השכר:').replaceAll('מגיע לך:','צפי השכר:').replaceAll('נותר לתשלום','צפי שטרם בוצע').replaceAll('השכר הכולל:','צפי השכר הכולל:').replaceAll('השכר בסך','צפי השכר בסך').replaceAll(' שולם במלואו.',' סומן בתכנון כשולם.').replaceAll('מתוכו שולם','סומן בתכנון כשולם');
 }
 const excelHeaders=['עבודה','תאריך','שעת התחלה','שעת סיום','שעות עבודה','הפסקה בדקות','תעריף שעתי','סכום','מטבע','סטטוס תשלום','סוג','בונוס','הערה','שכר ידוע'];
 // Prevent spreadsheet formula execution from user-entered text; numeric columns stay numeric.
