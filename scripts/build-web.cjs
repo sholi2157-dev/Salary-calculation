@@ -15,6 +15,8 @@ digest.update(fs.readFileSync('index.html'));digest.update(fs.readFileSync('sw.j
 const buildId=commit+'-'+digest.digest('hex').slice(0,16);
 // Pin each document's scripts/style to its own shell, including offline fallback.
 fs.writeFileSync('public/index.html', fs.readFileSync('index.html','utf8').replace(/((?:src|href)=")web\/([^"]+)"/g, '$1web/$2?v='+buildId+'"'));
+// Font requests belong to the same shell as the stylesheet, too.
+fs.writeFileSync('public/web/kis/kis.css', fs.readFileSync('web/kis/kis.css','utf8').replace(/url\((\.\.\/fonts\/[^)]+)\)/g, 'url($1?v='+buildId+')'));
 fs.writeFileSync('public/web/build.js','window.WorkBuild='+JSON.stringify({commit,buildId})+';\n');
 fs.writeFileSync('public/sw.js',fs.readFileSync('sw.js','utf8').replace('__WEB_BUILD_ID__',buildId));
 fs.writeFileSync('public/build-info.json', JSON.stringify({commit, buildId, cssSha256}, null, 2));

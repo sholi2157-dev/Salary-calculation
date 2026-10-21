@@ -29,3 +29,8 @@ notes. Opening a rounded imported duration without typing keeps exact stored
 precision. Local build and 91 unit tests pass. First CI run 39674956960 passed
 unit/v2 browser checks then stopped because the download test still expected the
 old help heading; that selector is corrected for the requested "עזרה" heading.
+
+Second CI run 39676392381 passed 91 units, v2 flows, download and sharing; its
+migration harness queried the newly active worker before activation/clients.claim
+completed. The harness now waits for the actual activated page controller. Fonts
+are pinned with the stylesheet identity, preventing stale font cache reuse too.

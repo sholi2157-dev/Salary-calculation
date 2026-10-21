@@ -9,6 +9,7 @@ test('home/history navigation remains independent of timer state', () => {
   const built=fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
   assert.equal(html, built.replace(/\?v=[^"]+/g,''));
   assert.match(built, /web\/kis\/app\.js\?v=/);
+  assert.match(fs.readFileSync('public/web/kis/kis.css','utf8'), /fonts\/rubik_regular\.ttf\?v=/);
   const app=fs.readFileSync(path.join(__dirname, '../web/app.js'),'utf8');
   const source = app.match(/function showPage\(page\)\{[^\n]+/)[0];
   const nodes = Object.fromEntries(['page-home', 'page-history', 'nav-home', 'nav-history'].map(id =>
