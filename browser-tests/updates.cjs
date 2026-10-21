@@ -8,6 +8,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  for(const version of ['A','B','C']){
   cp.execFileSync(process.execPath,['scripts/build-web.cjs'],{env:{...process.env,VERCEL_GIT_COMMIT_SHA:version.repeat(40)},stdio:'pipe'});
   const dir=path.join(temporary,version);fs.cpSync('public',dir,{recursive:true});versions[version]=dir;
+  fs.appendFileSync(path.join(dir,'sw.js'), `\nself.addEventListener('fetch',event=>event.waitUntil(fetch('/__trace?build='+BUILD+'&path='+encodeURIComponent(event.request.url)+'&mode='+event.request.mode).catch(()=>{})));\n`);
  }
  // Exact deployed cache-first worker, with the current app as a synthetic legacy shell.
  const legacy=path.join(temporary,'legacy');fs.cpSync(versions.A,legacy,{recursive:true});versions.legacy=legacy;
@@ -45,11 +46,11 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   for(const name of await caches.keys()){
    const cache=await caches.open(name),builds=[];
    for(const request of await cache.keys()) if(request.url.includes('/web/build.js')) builds.push({url:request.url,text:await(await cache.match(request)).text()});
-   cached.push({name,builds});
+   cached.push({name,builds,keys:(await cache.keys()).map(r=>r.url)});
   }
   return {build:WorkBuild,scripts:[...document.scripts].map(s=>s.src),cached};
  });
- console.log('migration diagnostic',JSON.stringify(diagnostic),JSON.stringify(requests.filter(([url])=>url==='/'||url.includes('/web/build.js'))));
+ console.log('migration diagnostic',JSON.stringify(diagnostic),JSON.stringify(requests.filter(([url])=>url==='/'||url.includes('/web/build.js')||url.includes('/__trace')||url.includes('/sw.js'))));
  assert.equal(await page.evaluate(()=>WorkBuild.commit),'A'.repeat(40));assert.deepEqual(await page.evaluate(()=>({...localStorage})),before);
  await page.click('[data-testid=tab-settings]');assert.doesNotMatch(await page.locator('#page').innerText(),/בדיקת עדכון|גרסה|2\.0|AAAAAAA|עזרה ועדכונים/);assert.equal(await page.locator('#web-update-notice').count(),0);
  await page.click('[data-testid=tab-home]');await page.click('[data-testid=live-start]');await page.click('[data-testid=live-go]');

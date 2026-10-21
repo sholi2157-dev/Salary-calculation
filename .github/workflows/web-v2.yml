@@ -23,6 +23,14 @@ jobs:
         run: git fetch --no-tags origin codex/sharing-android-20261021 && node scripts/check-fixtures.cjs . origin/codex/sharing-android-20261021
       - run: npm install --prefix /tmp/browser-qa --no-audit --no-fund playwright@1.56.1
       - run: /tmp/browser-qa/node_modules/.bin/playwright install --with-deps chromium
+      - name: Export browser for local migration diagnosis
+        if: contains(github.event.head_commit.message, '[browser-debug]')
+        run: tar czf /tmp/salary-browser.tar.gz -C "$HOME/.cache/ms-playwright" chromium_headless_shell-1194
+      - uses: actions/upload-artifact@v4
+        if: contains(github.event.head_commit.message, '[browser-debug]')
+        with:
+          name: salary-browser-debug
+          path: /tmp/salary-browser.tar.gz
       - name: Browser flows, data preservation and layout (360–1440, light and dark)
         env:
           PLAYWRIGHT_MODULE: /tmp/browser-qa/node_modules/playwright
