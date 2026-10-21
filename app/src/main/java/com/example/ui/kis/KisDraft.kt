@@ -240,7 +240,16 @@ data class EntryDraft(
     }
 
     /** Changing the mode keeps everything the user typed that still applies. */
-    fun withMode(m: EntryMode): EntryDraft = copy(mode = m)
+    fun withMode(m: EntryMode): EntryDraft {
+        val clock = mode == EntryMode.CLOCK || mode == EntryMode.GROUP && !groupByHours
+        if (m == EntryMode.HOURS && clock) return copy(mode = m, hours = check().minutes?.takeIf { it > 0 }?.let { DurationInput.display((it / 60.0).toString()) } ?: "")
+        if (m == EntryMode.GROUP && mode == EntryMode.HOURS) return copy(mode = m, start = null)
+        if (m == EntryMode.CLOCK && (mode == EntryMode.HOURS || groupByHours)) {
+            val minutes = DurationInput.hours(hours)?.let { Math.round(it * 60).toInt() }
+            return copy(mode = m, start = minutes?.takeIf { it in 1..1440 }?.let { V2Rules.fromMinutes(V2Rules.toMinutes(end) - it) } ?: start ?: defaultStart(end), breakMin = 0)
+        }
+        return copy(mode = m)
+    }
 
     /** A different workplace brings its rate and currency on a new entry, never on an edit. The times stay as they are. */
     fun withCategory(c: WorkCategory, currencyOf: (String) -> String): EntryDraft =

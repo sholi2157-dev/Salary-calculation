@@ -135,7 +135,7 @@ fun KisHistory(
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item(key = "head") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("היסטוריה", style = KisType.page, color = c.ink, modifier = Modifier.weight(1f))
                         run {
                             if (!showPlans) ToolIcon(Icons.Rounded.Search, "חיפוש", "history_search_button") { ui.searching = true }

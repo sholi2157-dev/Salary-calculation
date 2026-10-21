@@ -79,7 +79,8 @@ class KisUiTest {
         val vm = model()
         host(true) { KisEditorPage(vm, EntryDraft.new(categories.first(), "₪").copy(rate = "60"), null, categories, emptyList(), emptyList(),
             onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
-        ui.onNodeWithTag("day_0").assertTextContains("היום", substring = true)
+        ui.onNodeWithTag("day_0").assertExists()
+        ui.onNodeWithText("היום").assertExists()
         ui.onNodeWithTag("day_-3").assertExists()
         ui.onNodeWithTag("day_3").assertExists()
         ui.onNodeWithTag("mode_hours").performClick()

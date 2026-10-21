@@ -254,12 +254,8 @@ fun KisEditorPage(
                 if (!imeOpen && d.editing && base != null) WasBanner(base, changed, onTop)
                 ModeTabs(d.mode, onTop, c.bg) { m ->
                     if (!commitBuf()) return@ModeTabs
-                    // Clock → hours keeps the length already entered instead of starting from 0.
-                    val carried = if (m == EntryMode.HOURS && (d.mode == EntryMode.CLOCK || d.mode == EntryMode.GROUP && !d.groupByHours)) check.minutes?.takeIf { it > 0 }?.let { KisFormat.hours(it / 60.0) } else null
-                    d = d.withMode(m).let { n -> if (carried != null) n.copy(hours = carried) else n }
-                        .let { n -> if (m == EntryMode.CLOCK && n.start == null && !n.editing) n.copy(start = EntryDraft.defaultStart(n.end)) else n }
+                    d = d.withMode(m)
                     target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
-                    if (m == EntryMode.GROUP && d.start == null && !d.editing) d = d.copy(start = EntryDraft.suggestStart(d.category, d.day, history).start)
                 }
                 if (!imeOpen) {
                     CategoryChips(categories, d.category, onTop, topBg, accent, workplace.accentInk(c.dark), onPick = { cat -> commitBuf(); d = d.withCategory(cat, viewModel::categoryCurrency) }, onAdd = { addingPlace = true })
@@ -636,7 +632,7 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
                         .kisClick { onDraft(d.copy(workers = d.workers.filterIndexed { j, _ -> j != i })) }.padding(9.dp))
                 }
             }
-            val defaultHours = d.check().minutes?.let { KisFormat.hours(it / 60.0) } ?: d.hours
+            val defaultHours = d.check().minutes?.let { DurationInput.display((it / 60.0).toString()) } ?: d.hours
             val suggestions = directory.map { it.name.trim() }.filter { n -> n.isNotEmpty() && d.workers.none { it.name == n } }.distinct()
             if (suggestions.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 suggestions.forEach { n -> KisChip("+ $n", onClick = { onDraft(d.copy(workers = d.workers + WorkerDraft(n, defaultHours))) }, tag = "add_worker_$n", onLongClick = { forgetting = n }) }

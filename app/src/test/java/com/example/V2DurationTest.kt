@@ -24,6 +24,17 @@ class V2DurationTest {
         for (bad in listOf("1:75", "1:4", "24:01", "0:00", "1::40")) assertFalse(bad, draft(bad).check().canSave)
         assertTrue(draft("24:00").check().canSave)
     }
+    @Test fun modeSwitchesKeepMinutesWithoutRoundingOrStaleHours() {
+        val clock = draft("").copy(mode = EntryMode.CLOCK, start = "09:00", end = "10:55", breakMin = 15)
+        val manual = clock.withMode(EntryMode.HOURS)
+        assertEquals("1:40", manual.hours)
+        assertEquals(100.0, manual.toEntry().totalEarnings, 0.0)
+        val group = manual.withMode(EntryMode.GROUP)
+        assertTrue(group.groupByHours)
+        assertEquals(100, group.check().minutes)
+        assertEquals(100, group.withMode(EntryMode.CLOCK).check().minutes)
+        assertEquals("2:40", clock.copy(hours = "8", end = "11:55").withMode(EntryMode.HOURS).hours)
+    }
     @Test fun oldDecimalsAndUnrelatedEditsKeepExactValues() {
         assertEquals(1.4, DurationInput.hours("1.40")!!, 0.0)
         assertEquals("1:24", DurationInput.display("1.40"))
