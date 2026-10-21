@@ -1,10 +1,20 @@
-## Active combined shift-entry/sharing release — 2026-10-21
+# Combined 2.0.4 release — 2026-10-21
 
-Owner authorized implementation, merge and public update on both Android and Web.
-Scope/evidence: `docs/shift-entry-20261021.md`, plus `docs/sharing-20261021.md`.
-Work in isolated sharing branches; preserve all previous sharing changes. Pending final CI,
-Android 2.0.4 (37) signed upgrade gate from delivered 2.0.3 (36), Web browser verification
-and publication. No public deployment claimed at this point.
+Owner authorized both platforms, merge and public release. All functional changes merged:
+Android PR #8 → codex/android-local-distribution; Web PR #9 → codex/download-and-management-20261020.
+Full Hebrew changelog: `docs/releases/2.0.4.md`. Current evidence: `docs/shift-entry-20261021.md`.
+
+Android tested source 18ae87f9cc1285b5fc2767511a6d950859a8e00d, run 39668563320 SUCCESS:
+141 Debug + 110 Release tests; real signed previous-release update, preserved data, fresh launch,
+Release UI/keyboard/default-workplace/plan checks and clean crash logs. Package/certificate unchanged.
+Selected APK 2.0.4 (37), SHA256 54cef6ca017da5ce09bb9a3974990cc951eaf0b38d58bb7ec89e423bf967e1ee.
+
+Web tested source 96e3e4bb52a6a693fb728c682295934b724fa7c3, run 39669064791 SUCCESS:
+92 tests, shared fixtures and complete v2/download/sharing browser suites. Production deployment
+ dpl_52v5KTd2H9dEggr8oeHsWTzkCrG6 promoted to the existing stable origin; build digest 8d45814d204db702.
+Publication workflows will record public APK/channel and public-site browser results next.
+
+Earlier history follows; it does not override this owner-approved scope or release state.
 
 # Current project state
 
