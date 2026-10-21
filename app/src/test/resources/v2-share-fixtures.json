@@ -1,479 +1,739 @@
 {
- "about": "Expected share/copy texts for חישוב שכר 2.0. Android (V2ShareTest) and the website must produce exactly these strings. Dates are local calendar days; see docs/v2-sharing.md (this file lives next to v2-rules.json).",
- "entryDefaults": {
-  "payKnown": true,
-  "bonus": 0,
-  "kind": "shift",
-  "isPaid": false,
-  "notes": "",
-  "isTimeRange": false,
-  "isGroupShift": false
- },
- "cases": [
-  {
-   "name": "personal_basic",
-   "type": "personal",
-   "entries": [
-    {
-     "category": "מסעדה",
-     "date": "2026-10-14",
-     "hours": 8,
-     "rate": 40,
-     "total": 320,
-     "currency": "₪"
-    }
-   ],
-   "expected": "היי, להלן פרטי המשמרת שלי מיום 14/10/2026:\nקטגוריה: מסעדה\nשעות עבודה: 8 שעות\nתעריף שעתי: ₪40.00\nסה\"כ לתשלום: ₪320.00"
+  "about": "Exact copy/share/Excel outputs, approved behavior request 2026-10-21. Same immutable fixture on Android and Web.",
+  "entryDefaults": {
+    "payKnown": true,
+    "bonus": 0,
+    "kind": "shift",
+    "isPaid": false,
+    "notes": "",
+    "isTimeRange": false,
+    "isGroupShift": false
   },
-  {
-   "name": "personal_bonus_paid",
-   "type": "personal",
-   "entries": [
+  "cases": [
     {
-     "category": "מסעדה",
-     "date": "2026-10-13",
-     "hours": 5.5,
-     "rate": 52,
-     "total": 336,
-     "bonus": 50,
-     "currency": "₪",
-     "isPaid": true
-    }
-   ],
-   "expected": "היי, להלן פרטי המשמרת שלי מיום 13/10/2026:\nקטגוריה: מסעדה\nשעות עבודה: 5.5 שעות\nתעריף שעתי: ₪52.00\nבונוס: ₪50.00\nסה\"כ לתשלום: ₪336.00"
-  },
-  {
-   "name": "personal_unknown_rate",
-   "type": "personal",
-   "entries": [
-    {
-     "category": "שיעורים",
-     "date": "2026-10-12",
-     "hours": 2.5,
-     "rate": 0,
-     "total": 0,
-     "payKnown": false,
-     "currency": "₪"
-    }
-   ],
-   "expected": "היי, להלן פרטי המשמרת שלי מיום 12/10/2026:\nקטגוריה: שיעורים\nשעות עבודה: 2.5 שעות\nתעריף שעתי: עדיין לא ידוע\nסה\"כ לתשלום: ממתין להשלמת תעריף",
-   "forbidden": [
-    "₪0",
-    "0.00"
-   ]
-  },
-  {
-   "name": "personal_stored_amount_overnight_usd",
-   "type": "personal",
-   "entries": [
-    {
-     "category": "USD category",
-     "date": "2026-10-11",
-     "hours": 7.5,
-     "rate": 45.75,
-     "total": 343.12,
-     "currency": "$",
-     "isTimeRange": true,
-     "start": "22:00",
-     "end": "06:00"
-    }
-   ],
-   "expected": "היי, להלן פרטי המשמרת שלי מיום 11/10/2026:\nקטגוריה: USD category\nשעות עבודה: 7.5 שעות\nתעריף שעתי: $45.75\nסה\"כ לתשלום: $343.12",
-   "forbidden": [
-    "343.13",
-    "₪"
-   ]
-  },
-  {
-   "name": "job_with_time",
-   "type": "personal",
-   "entries": [
-    {
-     "category": "הובלות",
-     "date": "2026-10-10",
-     "hours": 3,
-     "rate": 0,
-     "total": 180,
-     "kind": "job",
-     "notes": "פירוק ארון",
-     "currency": "$"
-    }
-   ],
-   "expected": "היי, להלן פרטי העבודה שלי מיום 10/10/2026:\nעבודה: פירוק ארון\nקטגוריה: הובלות\nזמן עבודה: 3 שעות\nסה\"כ לתשלום: $180.00",
-   "forbidden": [
-    "תעריף",
-    "לשעה"
-   ]
-  },
-  {
-   "name": "job_unknown_no_time",
-   "type": "personal",
-   "entries": [
-    {
-     "category": "הובלות",
-     "date": "2026-10-09",
-     "hours": 0,
-     "rate": 0,
-     "total": 0,
-     "kind": "job",
-     "payKnown": false,
-     "notes": "הובלת מקרר",
-     "currency": "₪"
-    }
-   ],
-   "expected": "היי, להלן פרטי העבודה שלי מיום 09/10/2026:\nעבודה: הובלת מקרר\nקטגוריה: הובלות\nסה\"כ לתשלום: ממתין להשלמה",
-   "forbidden": [
-    "תעריף",
-    "זמן עבודה",
-    "0.00"
-   ]
-  },
-  {
-   "name": "group_my_part_only",
-   "type": "personal",
-   "entries": [
-    {
-     "category": "מסעדה",
-     "date": "2026-10-14",
-     "hours": 5,
-     "rate": 40,
-     "total": 200,
-     "currency": "₪",
-     "isGroupShift": true,
-     "employerRate": 60,
-     "workerRate": 35,
-     "workers": [
-      {
-       "name": "דני",
-       "hours": 5,
-       "isPaid": false
-      },
-      {
-       "name": "יוסי",
-       "hours": 4,
-       "workerRate": 38,
-       "employerRate": 65,
-       "isPaid": true,
-       "bonus": 20
-      }
-     ]
-    }
-   ],
-   "expected": "היי, להלן פרטי המשמרת שלי מיום 14/10/2026:\nקטגוריה: מסעדה\nשעות עבודה: 5 שעות\nתעריף שעתי: ₪40.00\nסה\"כ לתשלום: ₪200.00",
-   "forbidden": [
-    "דני",
-    "יוסי",
-    "60.00",
-    "65.00",
-    "35.00",
-    "38.00",
-    "780"
-   ]
-  },
-  {
-   "name": "group_employer_report",
-   "type": "employer",
-   "entries": [
-    {
-     "category": "מסעדה",
-     "date": "2026-10-14",
-     "hours": 5,
-     "rate": 40,
-     "total": 200,
-     "currency": "₪",
-     "isGroupShift": true,
-     "employerRate": 60,
-     "workerRate": 35,
-     "workers": [
-      {
-       "name": "דני",
-       "hours": 5,
-       "isPaid": false
-      },
-      {
-       "name": "יוסי",
-       "hours": 4,
-       "workerRate": 38,
-       "employerRate": 65,
-       "isPaid": true,
-       "bonus": 20
-      }
-     ]
-    }
-   ],
-   "expected": "היי, להלן סיכום שעות עבודה ליום 14/10/2026:\n**סה\"כ לתשלום (כולל כולם): ₪780.00**\n---\nפירוט:\nהחלק שלי: 5 שעות (₪200.00)\nדני: 5 שעות (₪300.00)\nיוסי: 4 שעות (₪280.00)\n---",
-   "forbidden": [
-    "35.00",
-    "38.00",
-    "175.00",
-    "172.00",
-    "עמלה",
-    "רווח"
-   ]
-  },
-  {
-   "name": "group_employer_report_with_profile_name",
-   "type": "employer",
-   "entries": [
-    {
-     "category": "מסעדה",
-     "date": "2026-10-14",
-     "hours": 5,
-     "rate": 40,
-     "total": 200,
-     "currency": "₪",
-     "isGroupShift": true,
-     "employerRate": 60,
-     "workerRate": 35,
-     "workers": [
-      {
-       "name": "דני",
-       "hours": 5,
-       "isPaid": false
-      },
-      {
-       "name": "יוסי",
-       "hours": 4,
-       "workerRate": 38,
-       "employerRate": 65,
-       "isPaid": true,
-       "bonus": 20
-      }
-     ]
-    }
-   ],
-   "expected": "היי, להלן סיכום שעות עבודה ליום 14/10/2026:\n**סה\"כ לתשלום (כולל כולם): ₪780.00**\n---\nפירוט:\nשולי: 5 שעות (₪200.00)\nדני: 5 שעות (₪300.00)\nיוסי: 4 שעות (₪280.00)\n---",
-   "forbidden": [
-    "35.00",
-    "38.00",
-    "175.00",
-    "172.00",
-    "עמלה",
-    "רווח",
-    "החלק שלי"
-   ],
-   "ownName": "שולי"
-  },
-  {
-   "name": "group_worker_shift_rate",
-   "type": "worker",
-   "worker": 0,
-   "entries": [
-    {
-     "category": "מסעדה",
-     "date": "2026-10-14",
-     "hours": 5,
-     "rate": 40,
-     "total": 200,
-     "currency": "₪",
-     "isGroupShift": true,
-     "employerRate": 60,
-     "workerRate": 35,
-     "workers": [
-      {
-       "name": "דני",
-       "hours": 5,
-       "isPaid": false
-      },
-      {
-       "name": "יוסי",
-       "hours": 4,
-       "workerRate": 38,
-       "employerRate": 65,
-       "isPaid": true,
-       "bonus": 20
-      }
-     ]
-    }
-   ],
-   "expected": "היי דני, להלן פירוט שעות עבודה שלך מיום 14/10/2026:\nעבדת 5 שעות. מגיע לך: ₪175.00.\nסטטוס תשלום: ממתין",
-   "forbidden": [
-    "יוסי",
-    "60.00",
-    "300.00",
-    "200.00",
-    "780"
-   ]
-  },
-  {
-   "name": "group_worker_own_rate_bonus_paid",
-   "type": "worker",
-   "worker": 1,
-   "entries": [
-    {
-     "category": "מסעדה",
-     "date": "2026-10-14",
-     "hours": 5,
-     "rate": 40,
-     "total": 200,
-     "currency": "₪",
-     "isGroupShift": true,
-     "employerRate": 60,
-     "workerRate": 35,
-     "workers": [
-      {
-       "name": "דני",
-       "hours": 5,
-       "isPaid": false
-      },
-      {
-       "name": "יוסי",
-       "hours": 4,
-       "workerRate": 38,
-       "employerRate": 65,
-       "isPaid": true,
-       "bonus": 20
-      }
-     ]
-    }
-   ],
-   "expected": "היי יוסי, להלן פירוט שעות עבודה שלך מיום 14/10/2026:\nעבדת 4 שעות. מגיע לך: ₪172.00 (כולל בונוס ₪20.00).\nסטטוס תשלום: שולם",
-   "forbidden": [
-    "דני",
-    "65.00",
-    "280.00",
-    "780"
-   ]
-  },
-  {
-   "name": "selection_summary_mixed_currency_unknown",
-   "type": "summary",
-   "entries": [
-    {
-     "category": "מסעדה",
-     "date": "2026-10-14",
-     "hours": 7.1,
-     "rate": 40,
-     "total": 284,
-     "currency": "₪"
+      "name": "personal_basic",
+      "type": "personal",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 8,
+          "rate": 40,
+          "total": 320,
+          "currency": "₪"
+        }
+      ],
+      "expected": "היי, סיכמתי פה את המשמרת שלי במסעדה:\nתאריכים: 14/10/2026\nסה״כ 8 שעות עבודה.\nסכום: ₪320.00\nשולם: ₪0.00\nיתרה לתשלום: ₪320.00\nתעריף לשעה: ₪40.00\nתודה!"
     },
     {
-     "category": "מסעדה",
-     "date": "2026-10-13",
-     "hours": 0.2,
-     "rate": 50,
-     "total": 10,
-     "currency": "$"
+      "name": "personal_bonus_paid",
+      "type": "personal",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-13",
+          "hours": 5.5,
+          "rate": 52,
+          "total": 336,
+          "bonus": 50,
+          "currency": "₪",
+          "isPaid": true
+        }
+      ],
+      "expected": "היי, סיכמתי פה את המשמרת שלי במסעדה:\nתאריכים: 13/10/2026\nסה״כ 5.5 שעות עבודה.\nסכום: ₪336.00\nשולם: ₪336.00\nיתרה לתשלום: ₪0.00\nתעריף לשעה: ₪52.00\nבונוס: ₪50.00 (כלול בסכום)\nתודה!"
     },
     {
-     "category": "שיעורים",
-     "date": "2026-10-12",
-     "hours": 2.5,
-     "rate": 0,
-     "total": 0,
-     "payKnown": false,
-     "currency": "₪"
+      "name": "personal_unknown_rate",
+      "type": "personal",
+      "entries": [
+        {
+          "category": "שיעורים",
+          "date": "2026-10-12",
+          "hours": 2.5,
+          "rate": 0,
+          "total": 0,
+          "payKnown": false,
+          "currency": "₪"
+        }
+      ],
+      "expected": "היי, סיכמתי פה את המשמרת שלי בשיעורים:\nתאריכים: 12/10/2026\nסה״כ 2.5 שעות עבודה.\nסכום חסר: 1 (לא נכלל בסכומים)\nתעריף לשעה: עדיין לא ידוע\nתודה!",
+      "forbidden": [
+        "₪0",
+        "0.00"
+      ]
     },
     {
-     "category": "מסעדה",
-     "date": "2026-10-11",
-     "hours": 1,
-     "rate": 1000.5,
-     "total": 1000.5,
-     "currency": "₪"
-    }
-   ],
-   "expected": "מסעדה | 8.3 שעות\n₪1,284.50\n$10.00\n\nשיעורים | 2.5 שעות\nמשמרת אחת עוד בלי תעריף (לא נספרה)",
-   "forbidden": [
-    "1294",
-    "7.300000",
-    "₪0"
-   ]
-  },
-  {
-   "name": "search_worker_summary",
-   "type": "summary",
-   "workerName": "דני",
-   "entries": [
+      "name": "personal_stored_amount_overnight_usd",
+      "type": "personal",
+      "entries": [
+        {
+          "category": "USD category",
+          "date": "2026-10-11",
+          "hours": 7.5,
+          "rate": 45.75,
+          "total": 343.12,
+          "currency": "$",
+          "isTimeRange": true,
+          "start": "22:00",
+          "end": "06:00"
+        }
+      ],
+      "expected": "היי, סיכמתי פה את המשמרת שלי בUSD category:\nתאריכים: 11/10/2026\nסה״כ 7.5 שעות עבודה.\nסכום: $343.12\nשולם: $0.00\nיתרה לתשלום: $343.12\nשעות: 22:00–06:00 (למחרת)\nהפסקה: 30 דקות\nתעריף לשעה: $45.75\nתודה!",
+      "forbidden": [
+        "343.13",
+        "₪"
+      ]
+    },
     {
-     "category": "מסעדה",
-     "date": "2026-10-14",
-     "hours": 5,
-     "rate": 40,
-     "total": 200,
-     "currency": "₪",
-     "isGroupShift": true,
-     "employerRate": 60,
-     "workerRate": 35,
-     "workers": [
-      {
-       "name": "דני",
-       "hours": 5,
-       "isPaid": false
+      "name": "job_with_time",
+      "type": "personal",
+      "entries": [
+        {
+          "category": "הובלות",
+          "date": "2026-10-10",
+          "hours": 3,
+          "rate": 0,
+          "total": 180,
+          "kind": "job",
+          "notes": "פירוק ארון",
+          "currency": "$"
+        }
+      ],
+      "expected": "היי, סיכמתי פה את העבודה שלי בהובלות:\nתאריכים: 10/10/2026\nסה״כ 3 שעות עבודה.\nסכום: $180.00\nשולם: $0.00\nיתרה לתשלום: $180.00\nהערה: פירוק ארון\nתודה!",
+      "forbidden": [
+        "תעריף",
+        "לשעה"
+      ]
+    },
+    {
+      "name": "job_unknown_no_time",
+      "type": "personal",
+      "entries": [
+        {
+          "category": "הובלות",
+          "date": "2026-10-09",
+          "hours": 0,
+          "rate": 0,
+          "total": 0,
+          "kind": "job",
+          "payKnown": false,
+          "notes": "הובלת מקרר",
+          "currency": "₪"
+        }
+      ],
+      "expected": "היי, סיכמתי פה את העבודה שלי בהובלות:\nתאריכים: 09/10/2026\nסכום חסר: 1 (לא נכלל בסכומים)\nהערה: הובלת מקרר\nתודה!",
+      "forbidden": [
+        "תעריף",
+        "זמן עבודה",
+        "0.00"
+      ]
+    },
+    {
+      "name": "group_my_part_only",
+      "type": "personal",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 5,
+          "rate": 40,
+          "total": 200,
+          "currency": "₪",
+          "isGroupShift": true,
+          "employerRate": 60,
+          "workerRate": 35,
+          "workers": [
+            {
+              "name": "דני",
+              "hours": 5,
+              "isPaid": false
+            },
+            {
+              "name": "יוסי",
+              "hours": 4,
+              "workerRate": 38,
+              "employerRate": 65,
+              "isPaid": true,
+              "bonus": 20
+            }
+          ]
+        }
+      ],
+      "expected": "היי, סיכמתי פה את המשמרת שלי במסעדה:\nתאריכים: 14/10/2026\nסה״כ 5 שעות עבודה.\nסכום: ₪200.00\nשולם: ₪0.00\nיתרה לתשלום: ₪200.00\nתעריף לשעה: ₪40.00\nתודה!",
+      "forbidden": [
+        "דני",
+        "יוסי",
+        "60.00",
+        "65.00",
+        "35.00",
+        "38.00",
+        "780"
+      ]
+    },
+    {
+      "name": "group_employer_report",
+      "type": "employer",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 5,
+          "rate": 40,
+          "total": 200,
+          "currency": "₪",
+          "isGroupShift": true,
+          "employerRate": 60,
+          "workerRate": 35,
+          "workers": [
+            {
+              "name": "דני",
+              "hours": 5,
+              "isPaid": false
+            },
+            {
+              "name": "יוסי",
+              "hours": 4,
+              "workerRate": 38,
+              "employerRate": 65,
+              "isPaid": true,
+              "bonus": 20
+            }
+          ]
+        }
+      ],
+      "expected": "היי, סיכמתי פה את עבודת הצוות במסעדה:\nתאריכים: 14/10/2026\nסה״כ לתשלום עבור הצוות: ₪780.00\nפירוט:\nהחלק שלי: 5 שעות | ₪200.00\nדני: 5 שעות | ₪300.00\nיוסי: 4 שעות | ₪280.00\nתודה!",
+      "forbidden": [
+        "35.00",
+        "38.00",
+        "175.00",
+        "172.00",
+        "עמלה",
+        "רווח"
+      ]
+    },
+    {
+      "name": "group_employer_report_with_profile_name",
+      "type": "employer",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 5,
+          "rate": 40,
+          "total": 200,
+          "currency": "₪",
+          "isGroupShift": true,
+          "employerRate": 60,
+          "workerRate": 35,
+          "workers": [
+            {
+              "name": "דני",
+              "hours": 5,
+              "isPaid": false
+            },
+            {
+              "name": "יוסי",
+              "hours": 4,
+              "workerRate": 38,
+              "employerRate": 65,
+              "isPaid": true,
+              "bonus": 20
+            }
+          ]
+        }
+      ],
+      "expected": "היי, סיכמתי פה את עבודת הצוות במסעדה:\nתאריכים: 14/10/2026\nסה״כ לתשלום עבור הצוות: ₪780.00\nפירוט:\nשולי: 5 שעות | ₪200.00\nדני: 5 שעות | ₪300.00\nיוסי: 4 שעות | ₪280.00\nתודה!",
+      "forbidden": [
+        "35.00",
+        "38.00",
+        "175.00",
+        "172.00",
+        "עמלה",
+        "רווח",
+        "החלק שלי"
+      ],
+      "ownName": "שולי"
+    },
+    {
+      "name": "group_worker_shift_rate",
+      "type": "worker",
+      "worker": 0,
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 5,
+          "rate": 40,
+          "total": 200,
+          "currency": "₪",
+          "isGroupShift": true,
+          "employerRate": 60,
+          "workerRate": 35,
+          "workers": [
+            {
+              "name": "דני",
+              "hours": 5,
+              "isPaid": false
+            },
+            {
+              "name": "יוסי",
+              "hours": 4,
+              "workerRate": 38,
+              "employerRate": 65,
+              "isPaid": true,
+              "bonus": 20
+            }
+          ]
+        }
+      ],
+      "expected": "היי דני, סיכמתי פה את המשמרת שלך במסעדה:\nתאריכים: 14/10/2026\nסה״כ 5 שעות עבודה.\nסכום: ₪175.00\nשולם: ₪0.00\nיתרה לתשלום: ₪175.00\nתעריף לשעה: ₪35.00\nתודה!",
+      "forbidden": [
+        "יוסי",
+        "60.00",
+        "300.00",
+        "200.00",
+        "780"
+      ]
+    },
+    {
+      "name": "group_worker_own_rate_bonus_paid",
+      "type": "worker",
+      "worker": 1,
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 5,
+          "rate": 40,
+          "total": 200,
+          "currency": "₪",
+          "isGroupShift": true,
+          "employerRate": 60,
+          "workerRate": 35,
+          "workers": [
+            {
+              "name": "דני",
+              "hours": 5,
+              "isPaid": false
+            },
+            {
+              "name": "יוסי",
+              "hours": 4,
+              "workerRate": 38,
+              "employerRate": 65,
+              "isPaid": true,
+              "bonus": 20
+            }
+          ]
+        }
+      ],
+      "expected": "היי יוסי, סיכמתי פה את המשמרת שלך במסעדה:\nתאריכים: 14/10/2026\nסה״כ 4 שעות עבודה.\nסכום: ₪172.00\nשולם: ₪172.00\nיתרה לתשלום: ₪0.00\nתעריף לשעה: ₪38.00\nבונוס: ₪20.00 (כלול בסכום)\nתודה!",
+      "forbidden": [
+        "דני",
+        "65.00",
+        "280.00",
+        "780"
+      ]
+    },
+    {
+      "name": "selection_summary_mixed_currency_unknown",
+      "type": "summary",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 7.1,
+          "rate": 40,
+          "total": 284,
+          "currency": "₪"
+        },
+        {
+          "category": "מסעדה",
+          "date": "2026-10-13",
+          "hours": 0.2,
+          "rate": 50,
+          "total": 10,
+          "currency": "$"
+        },
+        {
+          "category": "שיעורים",
+          "date": "2026-10-12",
+          "hours": 2.5,
+          "rate": 0,
+          "total": 0,
+          "payKnown": false,
+          "currency": "₪"
+        },
+        {
+          "category": "מסעדה",
+          "date": "2026-10-11",
+          "hours": 1,
+          "rate": 1000.5,
+          "total": 1000.5,
+          "currency": "₪"
+        }
+      ],
+      "expected": "עבודה: מסעדה\nכמות משמרות: 3\nכמות שעות: 8.3\nסכום: ₪1,284.50\nשולם: ₪0.00\nיתרה לתשלום: ₪1,284.50\nסכום: $10.00\nשולם: $0.00\nיתרה לתשלום: $10.00\nתאריכים: 11/10/2026, 13/10/2026, 14/10/2026\nפירוט:\n11/10/2026 | 1 שעות | ₪1,000.50 | ממתין\nתעריף לשעה: ₪1,000.50\n13/10/2026 | 0.2 שעות | $10.00 | ממתין\nתעריף לשעה: $50.00\n14/10/2026 | 7.1 שעות | ₪284.00 | ממתין\nתעריף לשעה: ₪40.00\n\nעבודה: שיעורים\nכמות משמרות: 1\nכמות שעות: 2.5\nסכום חסר: 1 (לא נכלל בסכומים)\nתאריכים: 12/10/2026\nתעריף לשעה: עדיין לא ידוע",
+      "forbidden": [
+        "1294",
+        "7.300000"
+      ]
+    },
+    {
+      "name": "search_worker_summary",
+      "type": "summary",
+      "workerName": "דני",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 5,
+          "rate": 40,
+          "total": 200,
+          "currency": "₪",
+          "isGroupShift": true,
+          "employerRate": 60,
+          "workerRate": 35,
+          "workers": [
+            {
+              "name": "דני",
+              "hours": 5,
+              "isPaid": false
+            },
+            {
+              "name": "יוסי",
+              "hours": 4,
+              "workerRate": 38,
+              "employerRate": 65,
+              "isPaid": true,
+              "bonus": 20
+            }
+          ]
+        }
+      ],
+      "expected": "היי דני, סיכמתי פה את המשמרת שלך במסעדה:\nתאריכים: 14/10/2026\nסה״כ 5 שעות עבודה.\nסכום: ₪175.00\nשולם: ₪0.00\nיתרה לתשלום: ₪175.00\nתעריף לשעה: ₪35.00\nתודה!",
+      "forbidden": [
+        "יוסי",
+        "300.00"
+      ]
+    },
+    {
+      "name": "excel_complex_notes_job_bonus",
+      "type": "excel",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 8,
+          "rate": 40,
+          "total": 320,
+          "currency": "₪",
+          "notes": "שורה א\nשורה \"ב\"\tסוף"
+        },
+        {
+          "category": "הובלות",
+          "date": "2026-10-12",
+          "hours": 0,
+          "rate": 0,
+          "total": 0,
+          "kind": "job",
+          "payKnown": false,
+          "notes": "פירוק ארון",
+          "currency": "$",
+          "isPaid": true
+        },
+        {
+          "category": "מסעדה",
+          "date": "2026-10-13",
+          "hours": 5.5,
+          "rate": 52,
+          "total": 336,
+          "bonus": 50,
+          "currency": "₪",
+          "isPaid": true
+        }
+      ],
+      "expected": "עבודה\tתאריך\tשעת התחלה\tשעת סיום\tשעות עבודה\tהפסקה בדקות\tתעריף שעתי\tסכום\tמטבע\tסטטוס תשלום\tסוג\tבונוס\tהערה\tשכר ידוע\nהובלות\t12/10/2026\t\t\t0.00\t\t\t\t$\tשולם\tקבלנות\t\tפירוק ארון\tחסר\nמסעדה\t13/10/2026\t\t\t5.50\t\t52.00\t336.00\t₪\tשולם\tמשמרת\t50.00\t\tכן\nמסעדה\t14/10/2026\t\t\t8.00\t\t40.00\t320.00\t₪\tממתין\tמשמרת\t\t\"שורה א\nשורה \"\"ב\"\"\tסוף\"\tכן"
+    },
+    {
+      "name": "planned_shift_is_marked_and_not_to_pay",
+      "type": "planned",
+      "occurrence": {
+        "key": "S1@2026-10-20",
+        "seriesId": "S1",
+        "category": "מסעדה",
+        "date": "2026-10-20",
+        "start": "22:00",
+        "end": "06:00",
+        "rate": 50,
+        "currency": "₪"
       },
-      {
-       "name": "יוסי",
-       "hours": 4,
-       "workerRate": 38,
-       "employerRate": 65,
-       "isPaid": true,
-       "bonus": 20
-      }
-     ]
-    }
-   ],
-   "expected": "דני | 5 שעות\n₪175.00\nמסעדה: ₪175.00 — ממתין",
-   "forbidden": [
-    "יוסי",
-    "300.00"
-   ]
-  },
-  {
-   "name": "excel_complex_notes_job_bonus",
-   "type": "excel",
-   "entries": [
-    {
-     "category": "מסעדה",
-     "date": "2026-10-14",
-     "hours": 8,
-     "rate": 40,
-     "total": 320,
-     "currency": "₪",
-     "notes": "שורה א\nשורה \"ב\"\tסוף"
+      "entries": [],
+      "expected": "היי, סיכמתי פה את המשמרת המתוכננת שלי במסעדה:\nמצב: מתוכנן — עוד לא בוצע\nתאריכים: 20/10/2026\nשעות: 22:00–06:00 (למחרת)\nכמות שעות: 8\nתעריף לשעה: ₪50.00\nצפי בלבד: ₪400.00\nתודה!",
+      "forbidden": [
+        "לתשלום"
+      ]
     },
     {
-     "category": "הובלות",
-     "date": "2026-10-12",
-     "hours": 0,
-     "rate": 0,
-     "total": 0,
-     "kind": "job",
-     "payKnown": false,
-     "notes": "פירוק ארון",
-     "currency": "$",
-     "isPaid": true
+      "name": "copy_personal_is_technical",
+      "type": "copy",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 8,
+          "rate": 40,
+          "total": 320,
+          "currency": "₪"
+        }
+      ],
+      "expected": "עבודה: מסעדה\nכמות משמרות: 1\nכמות שעות: 8\nסכום: ₪320.00\nשולם: ₪0.00\nיתרה לתשלום: ₪320.00\nתאריכים: 14/10/2026\nתעריף לשעה: ₪40.00"
     },
     {
-     "category": "מסעדה",
-     "date": "2026-10-13",
-     "hours": 5.5,
-     "rate": 52,
-     "total": 336,
-     "bonus": 50,
-     "currency": "₪",
-     "isPaid": true
+      "name": "copy_worker_is_technical",
+      "type": "worker",
+      "technical": true,
+      "worker": 0,
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 5,
+          "rate": 40,
+          "total": 200,
+          "currency": "₪",
+          "isGroupShift": true,
+          "employerRate": 60,
+          "workerRate": 35,
+          "workers": [
+            {
+              "name": "דני",
+              "hours": 5,
+              "isPaid": false
+            },
+            {
+              "name": "יוסי",
+              "hours": 4,
+              "workerRate": 38,
+              "employerRate": 65,
+              "isPaid": true,
+              "bonus": 20
+            }
+          ]
+        }
+      ],
+      "expected": "עובד: דני\nעבודה: מסעדה\nכמות משמרות: 1\nכמות שעות: 5\nסכום: ₪175.00\nשולם: ₪0.00\nיתרה לתשלום: ₪175.00\nתאריכים: 14/10/2026\nתעריף לשעה: ₪35.00"
+    },
+    {
+      "name": "copy_employer_is_technical",
+      "type": "employer",
+      "technical": true,
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 5,
+          "rate": 40,
+          "total": 200,
+          "currency": "₪",
+          "isGroupShift": true,
+          "employerRate": 60,
+          "workerRate": 35,
+          "workers": [
+            {
+              "name": "דני",
+              "hours": 5,
+              "isPaid": false
+            },
+            {
+              "name": "יוסי",
+              "hours": 4,
+              "workerRate": 38,
+              "employerRate": 65,
+              "isPaid": true,
+              "bonus": 20
+            }
+          ]
+        }
+      ],
+      "expected": "עבודה: מסעדה\nכמות משמרות: 1\nכמות שעות: 14\nתאריכים: 14/10/2026\nסה״כ לתשלום עבור הצוות: ₪780.00\nפירוט:\nהחלק שלי: 5 שעות | ₪200.00\nדני: 5 שעות | ₪300.00\nיוסי: 4 שעות | ₪280.00"
+    },
+    {
+      "name": "same_workplace_multiple_shifts_human",
+      "type": "summary",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 8,
+          "rate": 40,
+          "total": 320,
+          "currency": "₪"
+        },
+        {
+          "category": "מסעדה",
+          "date": "2026-10-15",
+          "hours": 2,
+          "rate": 40,
+          "total": 80,
+          "currency": "₪",
+          "isPaid": true,
+          "notes": "נסיעות"
+        }
+      ],
+      "expected": "היי, סיכמתי פה את 2 המשמרות שלי במסעדה:\nתאריכים: 14/10/2026, 15/10/2026\nסה״כ 10 שעות עבודה.\nסכום: ₪400.00\nשולם: ₪80.00\nיתרה לתשלום: ₪320.00\nפירוט המשמרות:\n14/10/2026 | 8 שעות | ₪320.00 | ממתין\nתעריף לשעה: ₪40.00\n15/10/2026 | 2 שעות | ₪80.00 | שולם\nתעריף לשעה: ₪40.00\nהערה: נסיעות\nתודה!"
+    },
+    {
+      "name": "multiple_workplaces_share_is_technical",
+      "type": "summary",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 8,
+          "rate": 40,
+          "total": 320,
+          "currency": "₪"
+        },
+        {
+          "category": "שיעורים",
+          "date": "2026-10-15",
+          "hours": 2,
+          "rate": 40,
+          "total": 80,
+          "currency": "₪"
+        }
+      ],
+      "expected": "עבודה: מסעדה\nכמות משמרות: 1\nכמות שעות: 8\nסכום: ₪320.00\nשולם: ₪0.00\nיתרה לתשלום: ₪320.00\nתאריכים: 14/10/2026\nתעריף לשעה: ₪40.00\n\nעבודה: שיעורים\nכמות משמרות: 1\nכמות שעות: 2\nסכום: ₪80.00\nשולם: ₪0.00\nיתרה לתשלום: ₪80.00\nתאריכים: 15/10/2026\nתעריף לשעה: ₪40.00"
+    },
+    {
+      "name": "future_entry_is_estimate",
+      "type": "entry",
+      "future": true,
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 8,
+          "rate": 40,
+          "total": 320,
+          "currency": "₪"
+        }
+      ],
+      "forbidden": [
+        "יתרה לתשלום:"
+      ],
+      "expected": "מתוכנן — עוד לא בוצע\nהיי, סיכמתי פה את המשמרת שלי במסעדה:\nתאריכים: 14/10/2026\nסה״כ 8 שעות עבודה.\nצפי: ₪320.00\nסומן בתכנון כשולם: ₪0.00\nצפי שטרם בוצע: ₪320.00\nתעריף לשעה: ₪40.00\nתודה!"
+    },
+    {
+      "name": "future_copy_is_estimate",
+      "type": "entry",
+      "future": true,
+      "technical": true,
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 8,
+          "rate": 40,
+          "total": 320,
+          "currency": "₪"
+        }
+      ],
+      "forbidden": [
+        "יתרה לתשלום:",
+        "היי"
+      ],
+      "expected": "מתוכנן — עוד לא בוצע\nעבודה: מסעדה\nכמות משמרות: 1\nכמות שעות: 8\nצפי: ₪320.00\nסומן בתכנון כשולם: ₪0.00\nצפי שטרם בוצע: ₪320.00\nתאריכים: 14/10/2026\nתעריף לשעה: ₪40.00"
+    },
+    {
+      "name": "copy_planned_is_technical",
+      "type": "planned",
+      "technical": true,
+      "entries": [],
+      "occurrence": {
+        "key": "S1@2026-10-20",
+        "seriesId": "S1",
+        "category": "מסעדה",
+        "date": "2026-10-20",
+        "start": "22:00",
+        "end": "06:00",
+        "rate": 50,
+        "currency": "₪"
+      },
+      "expected": "עבודה: מסעדה\nכמות משמרות: 1\nמצב: מתוכנן — עוד לא בוצע\nתאריכים: 20/10/2026\nשעות: 22:00–06:00 (למחרת)\nכמות שעות: 8\nתעריף לשעה: ₪50.00\nצפי בלבד: ₪400.00"
+    },
+    {
+      "name": "csv_modern_fields",
+      "type": "csv",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 8,
+          "rate": 40,
+          "total": 320,
+          "currency": "₪",
+          "notes": "שורה א\nשורה \"ב\"\tסוף"
+        },
+        {
+          "category": "הובלות",
+          "date": "2026-10-12",
+          "hours": 0,
+          "rate": 0,
+          "total": 0,
+          "kind": "job",
+          "payKnown": false,
+          "notes": "פירוק ארון",
+          "currency": "$",
+          "isPaid": true
+        },
+        {
+          "category": "מסעדה",
+          "date": "2026-10-13",
+          "hours": 5.5,
+          "rate": 52,
+          "total": 336,
+          "bonus": 50,
+          "currency": "₪",
+          "isPaid": true
+        }
+      ],
+      "expected": "﻿עבודה,תאריך,שעת התחלה,שעת סיום,שעות עבודה,הפסקה בדקות,תעריף שעתי,סכום,מטבע,סטטוס תשלום,סוג,בונוס,הערה,שכר ידוע\r\nהובלות,12/10/2026,,,0.00,,,,$,שולם,קבלנות,,פירוק ארון,חסר\r\nמסעדה,13/10/2026,,,5.50,,52.00,336.00,₪,שולם,משמרת,50.00,,כן\r\nמסעדה,14/10/2026,,,8.00,,40.00,320.00,₪,ממתין,משמרת,,\"שורה א\nשורה \"\"ב\"\"\tסוף\",כן"
+    },
+    {
+      "name": "excel_formula_text_is_safe",
+      "type": "excel",
+      "entries": [
+        {
+          "category": "=1+1",
+          "date": "2026-10-14",
+          "hours": 8,
+          "rate": 40,
+          "total": 320,
+          "currency": "₪",
+          "notes": "@SUM(A1:A2)"
+        }
+      ],
+      "expected": "עבודה\tתאריך\tשעת התחלה\tשעת סיום\tשעות עבודה\tהפסקה בדקות\tתעריף שעתי\tסכום\tמטבע\tסטטוס תשלום\tסוג\tבונוס\tהערה\tשכר ידוע\n'=1+1\t14/10/2026\t\t\t8.00\t\t40.00\t320.00\t₪\tממתין\tמשמרת\t\t'@SUM(A1:A2)\tכן"
+    },
+    {
+      "name": "excel_overnight_break_saved_pay",
+      "type": "excel",
+      "entries": [
+        {
+          "category": "מסעדה",
+          "date": "2026-10-14",
+          "hours": 7.5,
+          "rate": 40,
+          "total": 299.97,
+          "currency": "₪",
+          "isTimeRange": true,
+          "start": "22:00",
+          "end": "06:00"
+        }
+      ],
+      "expected": "עבודה\tתאריך\tשעת התחלה\tשעת סיום\tשעות עבודה\tהפסקה בדקות\tתעריף שעתי\tסכום\tמטבע\tסטטוס תשלום\tסוג\tבונוס\tהערה\tשכר ידוע\nמסעדה\t14/10/2026\t22:00\t06:00\t7.50\t30\t40.00\t299.97\t₪\tממתין\tמשמרת\t\t\tכן"
     }
-   ],
-   "expected": "קטגוריה\tתאריך\tשעות\tתעריף שעתי\tשכר לתשלום\tסטטוס\tהערות\tמטבע\tסוג\tשכר ידוע\tבונוס\nמסעדה\t14/10/2026\t8.00\t40.00\t320.00\tממתין\t\"שורה א\nשורה \"\"ב\"\"\tסוף\"\t₪\tמשמרת\tכן\t\nהובלות\t12/10/2026\t0.00\t\t\tשולם\tפירוק ארון\t$\tקבלנות\tחסר\t\nמסעדה\t13/10/2026\t5.50\t52.00\t336.00\tשולם\t\t₪\tמשמרת\tכן\t50.00"
-  },
-  {
-   "name": "planned_shift_is_marked_and_not_to_pay",
-   "type": "planned",
-   "occurrence": {
-    "key": "S1@2026-10-20",
-    "seriesId": "S1",
-    "category": "מסעדה",
-    "date": "2026-10-20",
-    "start": "22:00",
-    "end": "06:00",
-    "rate": 50,
-    "currency": "₪"
-   },
-   "entries": [],
-   "expected": "היי, להלן פרטי משמרת מתוכננת ליום 20/10/2026:\nקטגוריה: מסעדה\nשעות: 22:00–06:00 (8 שעות)\nתעריף שעתי: ₪50.00\nצפי (עוד לא בוצעה): ₪400.00",
-   "forbidden": [
-    "לתשלום"
-   ]
-  }
- ]
+  ]
 }

@@ -10,13 +10,13 @@ object WorkTableImport {
     private fun clean(s: String) = s.replace(Regex("[\\u200e\\u200f\\u202a-\\u202e\\ufeff]"), "").trim()
     private fun key(s: String) = clean(s).lowercase(Locale.ROOT).replace(Regex("[\\s\"׳״'_:/-]"), "")
     private val aliases = mapOf(
-        "category" to listOf("קטגוריה", "מעסיק", "מעסיק/קטגוריה", "category", "employer", "שם קטגוריה", "שם מעסיק"),
+        "category" to listOf("עבודה", "קטגוריה", "מעסיק", "מעסיק/קטגוריה", "category", "employer", "שם קטגוריה", "שם מעסיק"),
         "date" to listOf("תאריך", "date", "תאריך עבודה", "תאריך משמרת", "work date"),
         "hours" to listOf("שעות", "משך", "משך שעות", "hours", "duration", "שעות עבודה", "מספר שעות", "משך עבודה", "work hours"),
         "rate" to listOf("תעריף", "תעריף שעתי", "שכר לשעה", "hourlyRate", "rate", "hourly rate", "תעריף לשעה"),
         "total" to listOf("שכר לתשלום", "סהכ רווח", "סהכ", "סך הכל", "סכום", "totalEarnings", "total"),
         "paid" to listOf("סטטוס", "סטטוס תשלום", "שולם", "isPaid", "paid", "status"),
-        "notes" to listOf("הערות", "notes"),
+        "notes" to listOf("הערה", "הערות", "notes"),
         "currency" to listOf("מטבע", "currency"),
         "start" to listOf("שעת כניסה", "התחלה", "startTime", "start", "שעת התחלה", "start time"),
         "end" to listOf("שעת יציאה", "סיום", "endTime", "end", "שעת סיום", "end time"),

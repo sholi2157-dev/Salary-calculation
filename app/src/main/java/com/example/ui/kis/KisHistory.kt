@@ -62,7 +62,6 @@ import com.example.data.WorkShareText
 import com.example.data.WorkCategory
 import com.example.data.WorkEntry
 import com.example.data.WorkPay
-import com.example.generateWhatsAppReportText
 import com.example.ui.WorkViewModel
 import java.util.Calendar
 
@@ -148,9 +147,9 @@ fun KisHistory(
                                 ToolIcon(Icons.Rounded.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
                                 DropdownMenu(copyMenu, { copyMenu = false }) {
                                     DropdownMenuItem(text = { Text("Excel (טבלה)") }, onClick = { copyMenu = false; if (rows.isEmpty()) onMessage("אין שורות להעתקה") else { copyExcelToClipboard(context, rows); onMessage("הטבלה הועתקה ✓ · מוכנה להדבקה באקסל") } })
-                                    DropdownMenuItem(text = { Text("WhatsApp (סיכום)") }, onClick = {
+                                    DropdownMenuItem(text = { Text("סיכום טכני") }, onClick = {
                                         copyMenu = false
-                                        KisShare.copy(context, generateWhatsAppReportText(rows, filter.category ?: "הכל", ui.query), "WhatsApp Report"); onMessage("הסיכום הועתק ✓")
+                                        KisShare.copy(context, WorkShareText.copy(rows, WorkShareText.workerName(rows, ui.query)), "WhatsApp Report"); onMessage("הסיכום הועתק ✓")
                                     })
                                 }
                             }
@@ -221,8 +220,8 @@ fun KisHistory(
         }
         AnimatedVisibility(ui.selecting, modifier = Modifier.align(Alignment.BottomCenter), enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
             SelectionBar(selectedRows, rows, ui,
-                onShare = { KisShare.shareOrCopy(context, WorkShareText.summary(selectedRows), "שיתוף משמרות", onMessage); ui.selection = emptySet() },
-                onCopy = { KisShare.copy(context, WorkShareText.summary(selectedRows)); onMessage("הועתק ✓ · מוכן להדבקה בוואטסאפ"); ui.selection = emptySet() },
+                onShare = { KisShare.shareOrCopy(context, WorkShareText.summary(selectedRows, WorkShareText.workerName(selectedRows, ui.query)), "שיתוף משמרות", onMessage); ui.selection = emptySet() },
+                onCopy = { KisShare.copy(context, WorkShareText.copy(selectedRows, WorkShareText.workerName(selectedRows, ui.query))); onMessage("הועתק ✓ · מוכן להדבקה"); ui.selection = emptySet() },
                 onPaid = { paid -> viewModel.setPaid(ui.selection, paid); settings.haptic(KisSettings.Haptic.SUCCESS); onMessage(if (paid) "סומן כשולם ✓" else "סומן כלא שולם"); ui.selection = emptySet() },
                 onBulk = { bulkOpen = true },
                 onDelete = { confirmDelete = true })

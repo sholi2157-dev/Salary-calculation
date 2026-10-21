@@ -531,7 +531,7 @@ class KisUiTest {
         .filter { ui.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() } + ui.onNodeWithTag("story_root").fetchSemanticsNode().config
             .getOrElse(androidx.compose.ui.semantics.SemanticsProperties.StateDescription) { "?" }
 
-    @Test fun storyRecapMovesOnHidesTheAmountAndSharesACardWithoutIt() {
+    @Test fun storyRecapMovesOnHidesTheAmountAndSharesACardWithAmounts() {
         seed()
         var closed = false
         ui.mainClock.autoAdvance = false
@@ -556,7 +556,8 @@ class KisUiTest {
         ui.onNodeWithTag("story_money_₪", useUnmergedTree = true).assertExists()
         next()
         ui.onNodeWithTag("story_card").assertExists()
-        ui.onNodeWithTag("story_poster").assert(hasText("₪", substring = true).not()).assert(hasText("$", substring = true).not())
+        ui.onNodeWithText("₪300", substring = true).assertExists()
+        ui.onNodeWithTag("story_copy").assertExists()
         prev()
         assertEquals("back from the card at once ${shownSlide()}", listOf("story_money"), shownSlide().dropLast(1))
         next()
@@ -569,7 +570,7 @@ class KisUiTest {
         runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-card.png") }
         next()
         assertTrue(closed)
-        // The shared picture is drawn on its own, without amounts.
+        // The shared picture is drawn on its own; financial cells expand its height as needed.
         val card = cardBitmap(app, "אוקטובר 2026", listOf("שעות" to "18", "משמרות" to "5"))
         assertEquals(1080, card.width); assertEquals(1080, card.height)
     }
