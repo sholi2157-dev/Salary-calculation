@@ -14,7 +14,7 @@ try{for(const supported of [false,true]){
  Object.defineProperty(navigator,'share',{value:async data=>{if(window.abortShare)throw new DOMException('cancelled','AbortError');window.shared.push({text:data.text,files:await Promise.all((data.files||[]).map(async f=>({size:f.size,type:f.type,bytes:Array.from(new Uint8Array(await f.arrayBuffer())),signature:Array.from(new Uint8Array(await f.arrayBuffer()).slice(0,8))})))})}});
  Object.defineProperty(navigator,'canShare',{value:()=>supported});
  },{seed,supported});
- const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForSelector('[data-testid=home-hero]');
+ const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(process.env.PUBLIC_SITE_URL || `http://127.0.0.1:${server.address().port}`);await page.waitForSelector('[data-testid=home-hero]');
  const before=await page.evaluate(()=>localStorage.getItem('work_complete_backup'));
  await page.evaluate(()=>Kis.openDetail('a'));
  await page.click('[data-a=copy]');assert.match(await page.evaluate(()=>copied.at(-1)),/^עבודה: מסעדה/);assert.doesNotMatch(await page.evaluate(()=>copied.at(-1)),/היי/);
