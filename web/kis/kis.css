@@ -342,3 +342,6 @@ button { cursor: pointer; }
 .story .poster .pg { gap:10px 14px; }
 .story .poster .pg b { font-family:Rubik,sans-serif; font-size:clamp(18px,5.5vw,26px); }
 .story .poster .pg small { font-size:12px; }
+
+/* History tools share the filter button surface, outline, height and corner radius. */
+.history-tool { width:44px; height:44px; flex-shrink:0; border-radius:12px; border:1.5px solid var(--line); background:var(--surface); }

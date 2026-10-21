@@ -1,0 +1,25 @@
+const { test } = require('node:test'), assert = require('node:assert/strict');
+globalThis.KisRules = require('../web/v2/rules.js');
+globalThis.KisPay = require('../web/v2/pay.js'); require('../web/kis/editor.js');
+const E = globalThis.KisEditor;
+globalThis.KisUi = { startOfDay: ms => { const t=new Date(ms); t.setHours(0,0,0,0); return +t; } };
+const draft = hours => ({ mode:'HOURS', category:'עבודה', day:1760000000000, hours, rate:'60', bonus:'', bonusTarget:'ME', amount:'', notes:'', workers:[], start:null, end:'17:00', breakMin:0 });
+test('typed dot and comma mean minutes, historical decimals remain decimal', () => {
+ for (const input of ['1.40','1,40','1:40']) {
+  const d=draft(E.durationEdit(input)); assert.equal(d.hours,'1:40');
+  assert.equal(E.evaluate(d).minutes,100); assert.equal(E.evaluate(d).total,100);
+  assert.equal(E.toEntry(d).totalEarnings,100); assert.equal(E.toEntry(d).hours,100/60);
+ }
+ assert.equal(E.durationDisplay('1.4'),'1:24'); assert.equal(E.durationHours('1.4'),1.4);
+ for (const bad of ['1:75','1:4','24:01','0:00','1::40']) assert.equal(E.evaluate(draft(bad)).canSave,false,bad);
+ assert.equal(E.evaluate(draft('24:00')).canSave,true);
+});
+test('unrelated edits preserve imported hours and stored amounts exactly', () => {
+ const e={...E.toEntry(draft('1:40')),id:'a',hours:1.234567,hourlyRate:33.3333,totalEarnings:42.12345};
+ const updated=E.toEntry({...E.fromEntry(e),notes:'הערה'},e);
+ assert.equal(updated.hours,e.hours);assert.equal(updated.totalEarnings,e.totalEarnings);
+ const group={...e,isGroupShift:true,groupWorkersJson:JSON.stringify([{name:'דני',hours:1.234567,custom:'keep'}])};
+ const d=E.fromEntry(group);d.workers[0].name='דן';
+ const worker=JSON.parse(E.toEntry(d,group).groupWorkersJson)[0];
+ assert.equal(worker.hours,1.234567);assert.equal(worker.custom,'keep');
+});
