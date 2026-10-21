@@ -37,7 +37,26 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   while(Date.now()<deadline){if(await page.evaluate(predicate,arg))return;await page.waitForTimeout(50);}
   throw Error('Worker condition timed out');
  }
- async function ready(page,version){await waitCheck(page,async expected=>{const worker=navigator.serviceWorker.controller;if(!worker||worker.state!=='activated')return false;return new Promise(resolve=>{const c=new MessageChannel();c.port1.onmessage=e=>{c.port1.close();resolve(e.data.buildId.startsWith(expected));};worker.postMessage({type:'GET_BUILD_INFO'},[c.port2]);});},version);}
+ // Ask the browser for an update job when its navigation soft-check is coalesced
+ // with another registration. No UI action/reload is requested or simulated.
+ async function ready(page,version){await waitCheck(page,async expected=>{
+  const worker=navigator.serviceWorker.controller;
+  if(worker?.state==='activated'){
+   const matches=await new Promise(resolve=>{
+    const c=new MessageChannel(),timer=setTimeout(()=>{c.port1.close();resolve(false);},500);
+    c.port1.onmessage=e=>{clearTimeout(timer);c.port1.close();resolve(e.data.buildId.startsWith(expected));};
+    worker.postMessage({type:'GET_BUILD_INFO'},[c.port2]);
+   });
+   if(matches)return true;
+  }
+  if(Date.now()>(window.nextWorkerProbe||0)){
+   window.nextWorkerProbe=Date.now()+1000;
+   const r=await navigator.serviceWorker.getRegistration();
+   if(r&&!r.installing&&!r.waiting)try{await r.update();}catch{}
+  }
+  return false;
+ },version);}
+
 
  try{
  const context=await browser.newContext({viewport:{width:390,height:844},locale:'he-IL'});

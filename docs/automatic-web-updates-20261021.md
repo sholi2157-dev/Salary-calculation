@@ -68,3 +68,11 @@ verified public2.0.5 APK (19485124 bytes). Resolver and download-measurement log
 unchanged. Targeted resolver/redirect/measurement regressions verify offline
 fallback and intact privacy/counting behavior. This avoids offering an older APK
 through the fallback path and requiring another installation.
+
+API-only fallback commit dfef74fe383c6eb45ac39f7613aab01afd3f391e passed unit checks
+but run39681182175 hit the harness's background-controller timeout (client runtime
+unchanged from the green public build). Native navigation soft checks may be
+coalesced with registration jobs; the harness now requests an update job while
+waiting, only when there is no installing/waiting worker, with a bounded message
+reply. It still proves actual new-document HTML, automatic activation and no forced
+reload. UI callback scheduling is separately unit-tested; no clicks are added.
