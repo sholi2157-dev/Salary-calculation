@@ -1,11 +1,23 @@
-# 2.0.5 in progress — 2026-10-21
+# 2.0.5 verified candidate — publication underway
 
-Owner authorized cumulative Android/Web release: concise forms, duration digit
-editing like clock, red update bell without automatic dialogs. Execution plan:
-`docs/duration-and-update-bell-20261021.md`. All 2.0.4 features retained; next code 38.
-Candidate must prove direct signed update from 2.0.3 (no intermediate 2.0.4 needed).
-Website automatic updates are being validated separately on its maintenance branch.
-No new public release has been claimed yet.
+Owner authorized cumulative Android/Web release. Plan and exact evidence:
+`docs/duration-and-update-bell-20261021.md`; Hebrew changes: `docs/releases/2.0.5.md`.
+
+Candidate source 979e5b2b60933c02f98ab886384f8e3367589b78, run 39676466946 SUCCESS:
+144 Debug + 112 Release tests; real signed RC16 → 2.0.3 → 2.0.5 retained-data
+update, UI/keyboard/defaults/plans, fresh launch and clean crash logs. Code 38;
+permanent package/certificate unchanged. Exact APK SHA256:
+c45eef0c182f42e6273082c59280076271433761da41cda5c1cc5d56b4409860.
+
+Includes all 2.0.4 changes. Duration digits select hours/minutes; no typing hints;
+opening an untouched imported duration preserves precision. Availability refreshes
+on foreground, bell open and every minute foreground; red dot/card, no automatic
+dialog. Caches known availability offline. The installer remains user-controlled.
+
+`docs/android-update-release.json` selects the already-tested immutable APK for
+publication and actual live install/data/red-bell verification. Completion will be
+recorded after the workflow passes. Website automatic updates are on its separate
+maintenance branch and are being validated at the existing origin.
 
 # Combined 2.0.4 release — 2026-10-21
 

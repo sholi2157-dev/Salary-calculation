@@ -85,6 +85,14 @@ sleep 1
 instrument 'com.example.LiveUpdateRetainedDataTest#updatedReleaseRetainsDataAndDoesNotOfferItselfAgain' live-retained
 adb pull "$external/live-after.json" live-update-evidence/live-after.json
 cmp live-update-evidence/live-before.json live-update-evidence/live-after.json
+# Verify the actual installed 2.0.5 UI with a synthetic cached future release.
+# Stay offline: no APK is fetched and cached availability survives the quiet check.
+adb shell svc wifi disable
+adb shell svc data disable
+adb shell am force-stop "$pkg"
+instrument 'com.example.QuietUpdateBellTest#futureReleaseIsOnlyARedBellAndCardUntilUserActs' quiet-red-bell
+adb pull "$external/v2-update-bell-red.png" live-update-evidence/v2-update-bell-red.png
+adb pull "$external/v2-update-bell-card.png" live-update-evidence/v2-update-bell-card.png
 adb logcat -b crash -d > live-update-evidence/crash-log.txt
 if grep -E 'FATAL EXCEPTION|Process: com.aistudio.worktracker.qztvdw.distribution' live-update-evidence/crash-log.txt; then exit 1; fi
 python3 - <<'PY'

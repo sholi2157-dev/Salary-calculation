@@ -24,3 +24,12 @@ Additional invariant: opening/closing a duration without typing must not mark an
 imported exact decimal duration as changed. A dedicated UI regression guards it.
 Obsolete in-progress candidates are superseded by the latest candidate; public
 release remains a separate exact-artifact publication step.
+
+Android exact candidate source 979e5b2b60933c02f98ab886384f8e3367589b78:
+run 39676466946 SUCCESS. 144 Debug + 112 Release tests; real signed RC16 →
+2.0.3 → 2.0.5 update with byte-identical data snapshots, UI/keyboard/defaults/plans,
+fresh launch and clean crash logs. Code 38, permanent package/certificate unchanged.
+APK SHA256 c45eef0c182f42e6273082c59280076271433761da41cda5c1cc5d56b4409860.
+Exact tested APK selected for publication, never rebuilt. Publication workflow
+adds test-only verification on the installed APK: synthetic cached future release,
+actual red-dot pixel, bell card, no automatic dialog, resume and offline retention.
