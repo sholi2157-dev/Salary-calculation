@@ -5,10 +5,8 @@ if (!('serviceWorker' in navigator)) return;
 let registrationPromise;
 async function check() {
  try {
-  if (!registrationPromise) {
-   registrationPromise = navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
-   await registrationPromise; // Register already checks the script; do not race a second update.
-  } else await (await registrationPromise).update();
+  if (!registrationPromise) registrationPromise = navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+  await (await registrationPromise).update(); // An existing registration alone may skip a fresh script check.
  } catch { registrationPromise = null; /* Offline browsing keeps the last complete shell. */ }
 }
 if (document.readyState === 'complete') check();

@@ -13,8 +13,9 @@ Implementation:
 - Complete shells install atomically and activate automatically. A failed partial
   install is discarded; only obsolete code caches are pruned, retaining the prior
   complete shell. No financial/account storage is read or rewritten by the updater.
-- Register once per document. Registration already checks the worker; later online
-  and visibility events request an update without racing an immediate second register.
+- Keep one registration promise per document and explicitly check its script on
+  load/online/visibility. Registering the same URL/options can return an existing
+  registration without checking for a new script; explicit update is necessary.
 - Removed explicit update manager, banner styles/markup, check action and version footer.
 
 Expanded 2.0.5 parity:
@@ -39,8 +40,13 @@ Verification:
   were the old help-title selector and asynchronous truthiness polling in the new
   migration harness; the latter now explicitly awaits each predicate and settles
   the initial registration before simulating another deployment.
-- Temporary tracing/browser-export diagnostics removed. Final exact-source CI,
-  stage, promotion and live verification recorded after completion.
+- Temporary tracing/browser-export diagnostics removed. The gate exercises a real
+  next opening in a second tab while the first tab's draft remains unchanged,
+  queries the actual document controller, and confirms an unavailable C asset was
+  really requested before asserting B's offline fallback.
+- Existing-registration behavior checked against W3C register algorithm:
+  https://www.w3.org/TR/service-workers/#register-algorithm
+- Final exact-source CI, stage, promotion and live verification recorded after completion.
 
 Offline gate refinement: the older CI Playwright 1.56 driver did not consistently
 apply page offline emulation to worker-owned navigation fetches (the server was
