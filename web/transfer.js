@@ -3,11 +3,11 @@
 const clean = s => String(s ?? '').replace(/[\u200e\u200f\u202a-\u202e\ufeff]/g, '').trim();
 const key = s => clean(s).toLowerCase().replace(/[\s"׳״'_:\/-]/g, '');
 const aliases = {
- category:['קטגוריה','מעסיק','מעסיק/קטגוריה','category','employer'], date:['תאריך','date'],
- hours:['שעות','משך','משך שעות','hours','duration'], rate:['תעריף','תעריף שעתי','שכר לשעה','hourlyRate','rate'],
+ category:['עבודה','קטגוריה','מעסיק','מעסיק/קטגוריה','category','employer'], date:['תאריך','date'],
+ hours:['שעות עבודה','שעות','משך','משך שעות','hours','duration'], rate:['תעריף','תעריף שעתי','שכר לשעה','hourlyRate','rate'],
  total:['שכר לתשלום','סהכ רווח','סהכ','סך הכל','סכום','totalEarnings','total'],
- paid:['סטטוס','סטטוס תשלום','שולם','isPaid','paid','status'], notes:['הערות','notes'], currency:['מטבע','currency'],
- start:['שעת כניסה','התחלה','startTime','start'],end:['שעת יציאה','סיום','endTime','end']
+ paid:['סטטוס','סטטוס תשלום','שולם','isPaid','paid','status'], notes:['הערה','הערות','notes'], currency:['מטבע','currency'],
+ start:['שעת התחלה','שעת כניסה','התחלה','startTime','start'],end:['שעת סיום','שעת יציאה','סיום','endTime','end'], kind:['סוג','kind'], bonus:['בונוס','bonus']
 };
 for (const k in aliases) aliases[k] = aliases[k].map(key);
 function check(condition, message) { if (!condition) throw Error(message); }
@@ -55,13 +55,16 @@ function decodeTable(input) {
   check(row.length===header.length,'מספר העמודות אינו תואם לכותרות');const cell=k=>clean(row[columns[k]]);
   check(cell('category'),'חסרה קטגוריה');const duration=cell('hours');let hours;
   if(/^\d+:\d{2}$/.test(duration)){const p=duration.split(':').map(Number);check(p[1]<60,'דקות לא תקינות');hours=p[0]+p[1]/60;}else hours=number(duration);
-  const rate=number(cell('rate')),total=cell('total')?number(cell('total')):hours*rate;
+  const job=['קבלנות','job'].includes(cell('kind')), modern=columns.kind>=0;
+  const bonus=cell('bonus')?number(cell('bonus')):0;
+  const payKnown=!modern || (job?!!cell('total'):!!cell('rate')||!!cell('total'));
+  const rate=job||!payKnown?0:number(cell('rate')),total=!payKnown?0:cell('total')?number(cell('total')):hours*rate+bonus;
   const currencies=[cell('currency'),cell('rate'),cell('total')].map(s=>/\$|USD/i.test(s)?'$':/₪|ILS|^שקל(?:ים)?$/i.test(s)?'₪':null).filter(Boolean);
   check(new Set(currencies).size<=1,'נמצאו מטבעות סותרים');check(!cell('currency')||['₪','$','ILS','USD','שקל','שקלים'].includes(cell('currency').toUpperCase()),'מטבע לא מזוהה');
   const status=cell('paid').toLowerCase(),yes=['שולם','כן','true','paid','yes','1'],no=['','ממתין','לא','לא שולם','false','unpaid','no','0'];check([...yes,...no].includes(status),'סטטוס תשלום לא מזוהה');
   const start=cell('start')||null,end=cell('end')||null;check(Boolean(start)===Boolean(end),'חסרה שעת התחלה או סיום');for(const t of [start,end].filter(Boolean))check(/^(?:[01]?\d|2[0-3]):[0-5]\d$/.test(t),'שעה לא תקינה');
   const timestamp=date(cell('date'));
-  return normalize({category:cell('category'),date:timestamp,createdAt:timestamp,hours,hourlyRate:rate,totalEarnings:total,isPaid:yes.includes(status),notes:cell('notes'),currency:currencies[0]||'₪',startTime:start,endTime:end,isTimeRange:Boolean(start)});
+  return normalize({category:cell('category'),date:timestamp,createdAt:timestamp,hours,hourlyRate:rate,totalEarnings:total,isPaid:yes.includes(status),notes:cell('notes'),currency:currencies[0]||'₪',startTime:start,endTime:end,isTimeRange:Boolean(start),kind:job?'job':'shift',payKnown,bonus:job?0:bonus});
  }catch(e){throw Error(`שורה ${i+2}: ${e.message}`);}});
  return {formatVersion:2,entries,categories:[...new Map(entries.map(e=>[e.category,{name:e.category,defaultRate:e.hourlyRate}])).values()],workers:[]};
 }

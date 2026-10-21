@@ -11,6 +11,20 @@ const DRAFT = 'kis_web_draft_v1';
 const MODES = [['CLOCK', 'שעון'], ['HOURS', 'ידני'], ['JOB', 'קבלנות'], ['GROUP', 'קבוצה']];
 const num = s => { const t = String(s ?? '').trim().replace(',', '.'); if (!t) return null; const n = Number(t); return Number.isFinite(n) ? n : null; };
 const clean = v => v == null ? '' : String(Math.round(v * 100) / 100);
+// New UI typing uses H:MM; existing decimal drafts and persisted hours keep their meaning.
+const durationEdit = s => String(s).replace(/[.,]/g, ':');
+function durationHours(s) {
+  const t = String(s ?? '').trim();
+  if (!t.includes(':')) return num(t);
+  if (!/^\d{1,2}:\d{2}$/.test(t)) return null;
+  const [h, m] = t.split(':').map(Number);
+  return m < 60 ? (h * 60 + m) / 60 : null;
+}
+function durationDisplay(s) {
+  if (!String(s ?? '').trim() || String(s).includes(':')) return s ?? '';
+  const h = durationHours(s); if (h == null) return s;
+  const m = Math.round(h * 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+}
 const nowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
 
 function suggestStart(category, day, history) {
@@ -75,17 +89,21 @@ function fromEntry(e) {
 function evaluate(d) {
   const clockish = d.mode === 'CLOCK' || (d.mode === 'GROUP' && d.start != null);
   const ev = R().evaluate({ mode: d.mode === 'GROUP' && !clockish ? 'HOURS' : d.mode, start: clockish ? d.start : null, end: clockish ? d.end : null, breakMinutes: clockish ? d.breakMin : 0,
-    hours: d.hours, rate: num(d.rate), rateUnknown: d.rateUnknown, bonus: num(d.bonus) || 0, bonusTarget: d.bonusTarget, amount: d.amount, amountUnknown: d.amountUnknown });
+    hours: durationHours(d.hours) ?? 'invalid', rate: num(d.rate), rateUnknown: d.rateUnknown, bonus: num(d.bonus) || 0, bonusTarget: d.bonusTarget, amount: d.amount, amountUnknown: d.amountUnknown });
   const errors = [...ev.errors];
   if (!d.category) errors.unshift('בחר מקום עבודה');
   if (d.mode === 'GROUP' && d.workers.some(w => !w.name.trim())) errors.push('לכל עובד צריך שם');
-  return { ...ev, errors, canSave: errors.length === 0, clock: clockish };
+  if (d.mode === 'GROUP' && d.workers.some(w => w.hours.trim() && (durationHours(w.hours) == null || durationHours(w.hours) < 0 || durationHours(w.hours) > 24))) errors.push('שעות העובד לא תקינות');
+  if (d.mode === 'GROUP' && d.separateRates && [d.employerRate, d.workerRate].some(v => v.trim() && num(v) == null)) errors.push('תעריף לא תקין');
+  if (d.mode === 'JOB' && d.hours.trim() && (durationHours(d.hours) == null || durationHours(d.hours) < 0 || durationHours(d.hours) > 24)) errors.push('משך לא תקין: יש להזין שעות ודקות, למשל 1:40');
+  const total = ev.total == null || d.mode === 'JOB' || clockish ? ev.total : root.KisPay.amount(durationHours(d.hours) || 0, num(d.rate) || 0, ev.bonus);
+  return { ...ev, total, errors, canSave: errors.length === 0, clock: clockish };
 }
 /** The stored shift, exactly as Android builds it (EntryDraft.toEntry), keeping untouched stored values. */
 function toEntry(d, base) {
   const was = base ? fromEntry(base) : null, c = evaluate(d), job = d.mode === 'JOB', clock = c.clock;
   const same = was && was.mode === d.mode && was.start === d.start && (d.start == null || was.end === d.end) && was.breakMin === d.breakMin && was.hours === d.hours;
-  const hours = same ? base.hours : (job || !clock) ? (num(d.hours) || 0) : (c.minutes || 0) / 60;
+  const hours = same ? base.hours : (job || !clock) ? (durationHours(d.hours) || 0) : (c.minutes || 0) / 60;
   const rate = was && !was.rateUnknown && was.rate === d.rate ? base.hourlyRate : (num(d.rate) || 0);
   const bonusN = was && was.bonus === d.bonus ? base.bonus : (num(d.bonus) || 0);
   const myBonus = job || (d.mode === 'GROUP' && d.bonusTarget === 'OTHERS') ? 0 : bonusN;
@@ -95,7 +113,7 @@ function toEntry(d, base) {
   else if (clock) { const t = new Date(d.day), m = R().toMinutes(d.start); t.setHours(Math.floor(m / 60), m % 60, 0, 0); date = t.getTime(); }
   else date = d.day + 12 * 3600000;
   const amountN = was && was.amount === d.amount && !was.amountUnknown ? base.totalEarnings : (num(d.amount) || 0);
-  const groupJson = d.mode === 'GROUP' ? JSON.stringify(d.workers.map(w => { const o = { ...(w.source || {}), name: w.name.trim(), hours: num(w.hours) || 0, isPaid: !!w.isPaid }; const b = num(w.bonus); if (b > 0) o.bonus = b; else delete o.bonus; return o; })) : '';
+  const groupJson = d.mode === 'GROUP' ? JSON.stringify(d.workers.map(w => { const o = { ...(w.source || {}), name: w.name.trim(), hours: Number.isFinite(w.source?.hours) && clean(w.source.hours) === w.hours ? w.source.hours : durationHours(w.hours) || 0, isPaid: !!w.isPaid }; const b = num(w.bonus); if (b > 0) o.bonus = b; else delete o.bonus; return o; })) : '';
   const total = !payKnown ? 0 : job ? amountN
     : base && base.payKnown && base.kind !== 'job' && hours === base.hours && rate === base.hourlyRate && myBonus === (base.bonus || 0) ? base.totalEarnings
     : root.KisPay.amount(hours, rate, myBonus);
@@ -109,13 +127,24 @@ function toEntry(d, base) {
     isPaid: d.isPaid, autoConfirmed: base ? false : proto.autoConfirmed };
 }
 
+function changeMode(d, mode) {
+  const clock = d.mode === 'CLOCK' || d.mode === 'GROUP' && d.start != null;
+  if (mode === 'HOURS' && clock) return { ...d, mode, hours: durationDisplay(String((evaluate(d).minutes || 0) / 60)) };
+  if (mode === 'GROUP' && d.mode === 'HOURS') return { ...d, mode, start: null };
+  if (mode === 'CLOCK' && (d.mode === 'HOURS' || d.mode === 'GROUP' && d.start == null)) {
+    const minutes = Math.round((durationHours(d.hours) || 0) * 60);
+    return { ...d, mode, start: minutes > 0 && minutes <= 1440 ? R().fromMinutes(R().toMinutes(d.end) - minutes) : d.start || defaultStart(d.end), breakMin: 0 };
+  }
+  return { ...d, mode };
+}
+
 function open(app, { entry = null, restore = null } = {}) {
   const { store } = app, base = entry;
   let d = restore || (base ? fromEntry(base) : newDraft(store));
   // A restored draft is the user's typing: leaving it asks first, like any other unsaved work.
   const original = restore ? '' : JSON.stringify(d);
   // Times are edited digit by digit: [buf] holds the four digits ("·" = not set) and [cursor] the one the next key writes.
-  let target = d.start ? 'END' : 'START', pad = false, buf = '', cursor = 0, more = d.breakMin > 0 || !!d.notes || !!d.bonus;
+  let target = 'START', pad = false, buf = '', cursor = 0, more = d.breakMin > 0 || !!d.notes || !!d.bonus;
   const host = document.createElement('div');
   host.className = 'editor' + (base ? ' framed' : '');
   host.setAttribute('data-testid', base ? 'edit-page' : 'add-page');
@@ -156,7 +185,7 @@ function open(app, { entry = null, restore = null } = {}) {
     buf = ''; return true;
   }
   /** Opens the keypad on [t], on digit [at] (0–1 hours, 2–3 minutes) of the value already there. */
-  function openPad(t, at = 0) { commitBuf(); target = t; pad = true; buf = timeDigits(timeOf(t)); cursor = at; draw(); }
+  function openPad(t, at = 0) { if (!commitBuf()) return; target = t; pad = true; buf = timeDigits(timeOf(t)); cursor = at; draw(); }
   function key(k) {
     if (buf.length !== 4) buf = timeDigits(timeOf(target));
     [buf, cursor] = typeTime(buf, cursor, k);
@@ -170,8 +199,9 @@ function open(app, { entry = null, restore = null } = {}) {
   let lastRepeatBlocked = false, lastRepeatOn = false;
   function metaHtml(c) {
     const { moneyHtml } = U();
+    const total = base && c.canSave ? root.KisPay.pay(toEntry(d, base)) : c.total;
     return `<span class="grow">${c.minutes > 0 && d.mode !== 'JOB' && !c.errors.some(e => e.startsWith('שעת') || e.startsWith('ההפסקה')) ? U().hm(c.minutes) + ' שעות' : ''}</span>
-      ${c.total != null ? `<b class="amount" data-testid="editor-total">${moneyHtml(c.total, d.currency)}</b>` : d.rateUnknown && d.mode !== 'JOB' ? '<b class="label">תעריף חסר</b>' : d.amountUnknown && d.mode === 'JOB' ? '<b class="label">סכום חסר</b>' : ''}`;
+      ${total != null ? `<b class="amount" data-testid="editor-total">${moneyHtml(total, d.currency)}</b>` : d.rateUnknown && d.mode !== 'JOB' ? '<b class="label">תעריף חסר</b>' : d.amountUnknown && d.mode === 'JOB' ? '<b class="label">סכום חסר</b>' : ''}`;
   }
   function bottomHtml(c) {
     const { esc } = U();
@@ -197,7 +227,7 @@ function open(app, { entry = null, restore = null } = {}) {
       <div class="modes" role="tablist" aria-label="סוג הרישום">${MODES.map(([m, l]) => `<button role="tab" aria-selected="${d.mode === m}" aria-pressed="${d.mode === m}" data-mode="${m}" data-testid="mode-${m.toLowerCase()}">${l}</button>`).join('')}</div>
       <div class="places">${cats.map(x => `<button aria-pressed="${x.name === d.category}" data-cat="${esc(x.name)}" data-testid="place-${esc(x.name)}">${esc(x.name)}</button>`).join('')}<button data-a="add-place" data-testid="add-place">+ מקום</button></div>
       ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">סכום (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount"></label>
-          <label class="field" style="width:120px">שעות (לא חובה)<input class="input" inputmode="decimal" data-f="hours" value="${esc(d.hours)}"></label></div>
+          <label class="field" style="width:120px">שעות:דקות (לא חובה)<input class="input" inputmode="decimal" data-f="hours" value="${esc(durationDisplay(d.hours))}" dir="ltr" placeholder="1:40"></label></div>
           <button class="chip${d.amountUnknown ? ' on' : ''}" data-a="amount-unknown">${d.amountUnknown ? 'סכום חסר · נגיעה להזנה' : 'לא יודע עדיין'}</button>`
         : clockMode ? `<div class="clock-row">${[['START', 'התחלה'], ['END', 'סיום']].map(([t, label]) => { const v = shown(t) || '--:--', id = t === 'START' ? 'clock-start' : 'clock-end';
             // Hours and minutes are separate taps: a tap on the minutes edits only them. Each time has its own −15/+15.
@@ -206,21 +236,19 @@ function open(app, { entry = null, restore = null } = {}) {
               ${pad || !timeOf(t) ? '' : `<div class="nudges">${[-15, 15].map(n => `<button data-nt="${t}" data-n="${n}" aria-label="${label} ${n > 0 ? n + ' דקות קדימה' : -n + ' דקות אחורה'}" data-testid="nudge-${t.toLowerCase()}-${n}">${n > 0 ? '+' + n : '−' + -n}</button>`).join('')}</div>`}</div>`; }).join('')}</div>
           ${pad ? '' : ruler(d, target)}
           ${d.mode === 'GROUP' ? '<button class="link" data-a="group-hours">הזנת שעות במקום שעון</button>' : ''}`
-        : `<label class="field">שעות<input class="input" inputmode="decimal" data-f="hours" value="${esc(d.hours)}" data-testid="hours-input" style="font:28px var(--display)"></label>
+        : `<label class="field">שעות ודקות · למשל 1:40 (שעה ו־40 דקות)<input class="input" inputmode="decimal" data-f="hours" value="${esc(durationDisplay(d.hours))}" dir="ltr" placeholder="1:40" data-testid="hours-input" style="font:28px var(--display)"></label>
           <div class="chips">${[4, 6, 8, 10, 12].map(h => `<button class="chip" data-q="${h}">${h} ש׳</button>`).join('')}${d.mode === 'GROUP' ? '<button class="chip" data-a="group-clock">לפי שעון</button>' : ''}</div>`}
       <div class="meta-line" data-testid="editor-meta">${metaHtml(c)}</div>`;
 
     const body = host.querySelector('[data-body]');
-    const sug = !base && d.mode === 'CLOCK' ? suggestStart(d.category, d.day, store.data.entries).chips : [];
-    const days = Array.from({ length: 7 }, (_, i) => U().startOfDay(Date.now()) - (6 - i) * 864e5);
+    const days = Array.from({ length: 7 }, (_, i) => (() => { const day = new Date(U().startOfDay(Date.now())); day.setDate(day.getDate() + i - 3); return day.getTime(); })());
     const repeatOn = d.repeat && !base && d.mode === 'CLOCK' && d.start != null;
     const repeatDays = new Set(d.repeatDays ?? [new Date(d.day).getDay()]);
     const fromIso = root.KisPlan.dateOf(d.day), until = d.repeatUntil || root.KisRules.civilFromDays(root.KisRules.daysFromCivil(fromIso) + 56);
     const preview = repeatOn ? root.KisPlans.previewFor(store, repeatDays, fromIso, until < fromIso ? fromIso : until, d.start, d.end) : null;
     const created = preview ? preview.dates.length - preview.clashes.length : 0;
     body.innerHTML = `
-      ${sug.length ? `<div class="chips" style="align-items:center"><span class="caption">התחלה נפוצה:</span>${sug.map(h => `<button class="chip dashed" aria-pressed="${d.start === h}" data-s="${h}">${h}</button>`).join('')}</div>` : ''}
-      <div class="days">${days.map(ms => `<button aria-pressed="${ms === d.day}" data-day="${ms}"><small>${ms === days[6] ? 'היום' : U().DAY_SHORT[new Date(ms).getDay()]}</small>${new Date(ms).getDate()}</button>`).join('')}</div>
+      <div class="days">${days.map(ms => `<button aria-pressed="${ms === d.day}" data-day="${ms}"><small>${ms === days[3] ? 'היום' : U().DAY_SHORT[new Date(ms).getDay()]}</small>${new Date(ms).getDate()}</button>`).join('')}</div>
       <div class="row" style="align-items:center;flex-wrap:wrap"><label class="chip" style="position:relative">${days.includes(d.day) ? 'תאריך אחר' : esc(U().dayLabelLong(d.day))}
           <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
         <div class="seg">${['₪', '$'].map(cur => `<button aria-pressed="${d.currency === cur}" data-cur="${cur}">${cur}</button>`).join('')}</div></div>
@@ -256,8 +284,9 @@ function open(app, { entry = null, restore = null } = {}) {
     q('[data-a=close]').onclick = () => close();
     q('[data-a=delete]')?.addEventListener('click', () => U().confirmSheet('למחוק את המשמרת?', 'אפשר לבטל מיד אחרי המחיקה.', 'מחיקה', () => {
       const gone = store.deleteEntries([base.id]); close(true); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); }));
-    all('[data-mode]').forEach(b => b.onclick = () => { commitBuf(); pad = false; const mode = b.dataset.mode;
-      set({ mode, ...(mode === 'CLOCK' && d.start == null && !base ? { start: defaultStart(d.end) } : {}) }); });
+    all('[data-mode]').forEach(b => b.onclick = () => { if (!commitBuf()) return; pad = false; const mode = b.dataset.mode;
+      target = mode === 'CLOCK' || mode === 'GROUP' ? 'START' : target;
+      d = changeMode(d, mode); persist(); draw(); });
     all('[data-cat]').forEach(b => b.onclick = () => { commitBuf(); const cat = store.data.categories.find(x => x.name === b.dataset.cat);
       set({ category: cat.name, rate: d.rateUnknown ? d.rate : clean(cat.defaultRate), currency: root.WorkCategories.currency(cat.name, store.data.webPreferences) }); });
     q('[data-a=add-place]').onclick = () => root.KisSettings.placeSheet(app, null, name => { const cat = store.data.categories.find(x => x.name === name); set({ category: name, rate: clean(cat?.defaultRate), currency: root.WorkCategories.currency(name, store.data.webPreferences) }); });
@@ -267,7 +296,6 @@ function open(app, { entry = null, restore = null } = {}) {
     all('[data-nt]').forEach(b => b.onclick = () => { const t = b.dataset.nt, v = timeOf(t), n = +b.dataset.n; if (!v) return;
       set(t === 'START' ? { start: R().fromMinutes(R().toMinutes(v) + n) } : { end: R().fromMinutes(R().toMinutes(v) + n) }); U().haptic('tick'); });
     all('[data-q]').forEach(b => b.onclick = () => set({ hours: b.dataset.q }));
-    all('[data-s]').forEach(b => b.onclick = () => { commitBuf(); pad = false; target = 'END'; set({ start: b.dataset.s }); });
     all('[data-day]').forEach(b => b.onclick = () => set({ day: +b.dataset.day, repeatDays: d.repeatDays ? [...new Set([...d.repeatDays, new Date(+b.dataset.day).getDay()])] : null }));
     all('[data-cur]').forEach(b => b.onclick = () => set({ currency: b.dataset.cur }));
     all('[data-b]').forEach(b => b.onclick = () => set({ breakMin: +b.dataset.b }));
@@ -286,18 +314,18 @@ function open(app, { entry = null, restore = null } = {}) {
         if (f === 'date' || f === 'until') { if (!i.value) return; if (f === 'until') return set({ repeatUntil: i.value });
           const [y, m, dd] = i.value.split('-').map(Number); const day = new Date(y, m - 1, dd).getTime(); return set({ day, repeatDays: d.repeatDays ? [...new Set([...d.repeatDays, new Date(day).getDay()])] : null }); }
         if (f === 'break') return set({ breakMin: Math.max(0, Math.round(num(i.value) || 0)) });
-        d = { ...d, [f]: i.value }; persist();
+        d = { ...d, [f]: f === 'hours' ? durationEdit(i.value) : i.value }; persist();
       };
       if (f === 'notes') i.oninput = () => { apply(); refreshMeta(); };
       else if (f === 'date' || f === 'until') i.onchange = apply;
       // Numbers update the totals and the save bar in place: a tap on "שמירה" right after typing is never lost.
-      else { i.oninput = () => { d = { ...d, [f]: i.value }; persist(); refreshMeta(); }; i.onchange = () => { apply(); refreshMeta(); }; }
+      else { i.oninput = () => { d = { ...d, [f]: f === 'hours' ? durationEdit(i.value) : i.value }; persist(); refreshMeta(); }; i.onchange = () => { apply(); refreshMeta(); }; }
     });
     all('[data-w]').forEach(i => { const [idx, f] = i.dataset.w.split(':'); const ev = f === 'isPaid' ? 'change' : 'input';
-      i.addEventListener(ev, () => { const ws = d.workers.map((w, k) => k === +idx ? { ...w, [f]: f === 'isPaid' ? i.checked : i.value } : w); d = { ...d, workers: ws }; persist(); if (f !== 'name') refreshMeta(); }); });
+      i.addEventListener(ev, () => { const ws = d.workers.map((w, k) => k === +idx ? { ...w, [f]: f === 'isPaid' ? i.checked : f === 'hours' ? durationEdit(i.value) : i.value } : w); d = { ...d, workers: ws }; persist(); if (f !== 'name') refreshMeta(); }); });
     all('[data-wdel]').forEach(b => b.onclick = () => set({ workers: d.workers.filter((_, k) => k !== +b.dataset.wdel) }));
-    q('[data-a=add-worker]')?.addEventListener('click', () => set({ workers: [...d.workers, { name: '', hours: d.start ? '' : d.hours, isPaid: false, bonus: '', source: {} }] }));
-    all('[data-wname]').forEach(b => b.onclick = () => set({ workers: [...d.workers, { name: b.dataset.wname, hours: '', isPaid: false, bonus: '', source: {} }] }));
+    q('[data-a=add-worker]')?.addEventListener('click', () => set({ workers: [...d.workers, { name: '', hours: d.start ? String((evaluate(d).minutes || 0) / 60) : d.hours, isPaid: false, bonus: '', source: {} }] }));
+    all('[data-wname]').forEach(b => b.onclick = () => set({ workers: [...d.workers, { name: b.dataset.wname, hours: d.start ? String((evaluate(d).minutes || 0) / 60) : d.hours, isPaid: false, bonus: '', source: {} }] }));
     q('[data-a=sep]')?.addEventListener('click', () => set({ separateRates: !d.separateRates }));
     all('[data-bt]').forEach(b => b.onclick = () => set({ bonusTarget: b.dataset.bt }));
     rulerBind(host, d, t => { target = t; }, (h, v) => { d = h === 'START' ? { ...d, start: v } : { ...d, end: v }; persist(); draw(); });
@@ -345,7 +373,7 @@ function open(app, { entry = null, restore = null } = {}) {
     const { esc } = U(), known = store.data.workers.map(w => w.name).filter(n => !dr.workers.some(w => w.name === n));
     return `<div class="card" style="display:grid;gap:10px" data-testid="group-block"><b class="label">עובדים איתי</b>
       ${dr.workers.map((w, i) => `<div class="row" style="align-items:center"><input class="input grow" placeholder="שם" value="${esc(w.name)}" data-w="${i}:name" aria-label="שם עובד">
-        <input class="input" style="width:84px" inputmode="decimal" placeholder="שעות" value="${esc(w.hours)}" data-w="${i}:hours" aria-label="שעות">
+        <input class="input" style="width:84px" inputmode="decimal" placeholder="1:40" dir="ltr" value="${esc(durationDisplay(w.hours))}" data-w="${i}:hours" aria-label="שעות ודקות">
         <label class="caption" style="display:flex;align-items:center;gap:4px"><input type="checkbox" ${w.isPaid ? 'checked' : ''} data-w="${i}:isPaid">שולם</label>
         <button class="icon-btn" aria-label="הסרה" data-wdel="${i}">${U().ICON.close}</button></div>`).join('')}
       <div class="chips"><button class="chip" data-a="add-worker" data-testid="add-worker">+ עובד</button>${known.map(n => `<button class="chip dashed" data-wname="${esc(n)}">${esc(n)}</button>`).join('')}</div>
@@ -387,5 +415,5 @@ function rulerBind(host, d, select, change) {
 }
 function pendingDraft() { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
 
-root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, suggestStart, pendingDraft, DRAFT, typeTime, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES };
+root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, suggestStart, pendingDraft, DRAFT, typeTime, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay, changeMode };
 })(globalThis);

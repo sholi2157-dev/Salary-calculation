@@ -44,7 +44,7 @@ function card(o, store) {
       <span class="meta"><span class="top"><b class="label">${esc(dayLabel(root.KisPlan.startMillis(o.date, o.start)))}</b><span class="tag${waiting ? ' warn' : ''}">${waiting ? 'ממתין לאישור' : 'מתוכנן'}</span></span>
       <span class="sub">⁦${esc(o.start)}–${esc(o.end)}⁩${overnight ? ' · למחרת' : ''} · ${esc(o.category)}</span></span>${amount}</button>
     <div data-plan-actions hidden style="display:grid;gap:6px"><div class="row"><button class="btn small primary grow" data-pa="worked">עבדתי</button><button class="btn small ghost grow" data-pa="skip">לא עבדתי</button></div>
-      <div class="row"><button class="btn small ghost grow" data-pa="hours">שינוי שעות</button><button class="btn small ghost grow" data-pa="share">שיתוף</button></div></div></div>`;
+      <div class="row"><button class="btn small ghost grow" data-pa="hours">שינוי שעות</button><button class="btn small ghost grow" data-pa="share">שיתוף</button></div><button class="btn small ghost" data-pa="copy">העתקה</button></div></div>`;
 }
 
 function bind(el, app) {
@@ -69,6 +69,8 @@ function act(app, o, what) {
     U_.toast('סומן שלא עבדת', 'ביטול', () => setException(store, o, { cancelled: false }));
   } else if (what === 'share') {
     U_.shareOrCopy(root.KisShare.planned(o), 'שיתוף משמרת מתוכננת');
+  } else if (what === 'copy') {
+    const text=root.KisShare.planned(o,true); U_.copy(text).then(ok=>ok?U_.toast('הועתק ✓'):U_.showText(text));
   } else if (what === 'hours') hoursSheet(app, o);
 }
 

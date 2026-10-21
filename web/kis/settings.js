@@ -40,7 +40,7 @@ function render(el, app) {
   q('[data-a=download]').onclick = () => download('salary-backup.json', backupText(store), 'application/json');
   q('[data-a=copy-backup]').onclick = async () => { if (await U().copy(backupText(store))) U().toast('הגיבוי הועתק ✓'); else U().showText(backupText(store), 'גיבוי'); };
   q('[data-a=share-backup]').onclick = () => U().shareOrCopy(backupText(store), 'גיבוי');
-  q('[data-a=csv]').onclick = () => download('salary.csv', root.WorkTransfer.csv(store.data.entries.map(root.WorkTransfer.normalize)), 'text/csv');
+  q('[data-a=csv]').onclick = () => download('salary.csv', root.KisShare.csv(store.data.entries.filter(e => !U().upcoming(e))), 'text/csv');
   q('[data-a=import]').onclick = () => importSheet(app);
   q('[data-a=update]').onclick = () => { root.WebUpdateManager?.check(true); U().toast('בודקים עדכון…'); };
 }
