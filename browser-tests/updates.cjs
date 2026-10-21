@@ -8,7 +8,6 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  for(const version of ['A','B','C']){
   cp.execFileSync(process.execPath,['scripts/build-web.cjs'],{env:{...process.env,VERCEL_GIT_COMMIT_SHA:version.repeat(40)},stdio:'pipe'});
   const dir=path.join(temporary,version);fs.cpSync('public',dir,{recursive:true});versions[version]=dir;
-  fs.appendFileSync(path.join(dir,'sw.js'), `\nself.addEventListener('fetch',event=>event.waitUntil(fetch('/__trace?build='+BUILD+'&path='+encodeURIComponent(event.request.url)+'&mode='+event.request.mode).catch(()=>{})));\n`);
  }
  // Exact deployed cache-first worker, with the current app as a synthetic legacy shell.
  const legacy=path.join(temporary,'legacy');fs.cpSync(versions.A,legacy,{recursive:true});versions.legacy=legacy;
@@ -17,9 +16,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  fs.writeFileSync(path.join(legacy,'index.html'),fs.readFileSync(path.join(legacy,'index.html'),'utf8').replace(/\?v=[^"]+/g,''));
  fs.writeFileSync(path.join(legacy,'web/build.js'),'window.WorkBuild={buildId:"legacy",commit:"legacy"};');
  cp.execFileSync(process.execPath,['scripts/build-web.cjs'],{stdio:'pipe'});
- let release='legacy',broken=false;const requests=[];
+ let release='legacy',broken=false;
  const server=http.createServer((req,res)=>{
-  const pathname=new URL(req.url,'http://test').pathname;requests.push([req.url,release]);
+  const pathname=new URL(req.url,'http://test').pathname;
   if(pathname==='/index.html'){res.writeHead(308,{Location:'/'});return res.end();}
   const file=path.resolve(versions[release],'.'+(pathname==='/'?'/index.html':pathname));
   if(!file.startsWith(versions[release]+path.sep)||!fs.existsSync(file)||(broken&&pathname==='/web/kis/editor.js')){res.writeHead(503);return res.end();}
@@ -31,26 +30,24 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  const errors=[];
  const entries=Array.from({length:22},(_,i)=>({id:'kept-'+i,date:new Date(2026,8,1+i).getTime(),createdAt:100+i,category:'קטגוריה '+i%8,hours:2,hourlyRate:50,totalEarnings:100+i,currency:i%2?'₪':'$',isPaid:false,notes:'שמור '+i,groupWorkersJson:'',customExtension:'kept'}));
  const snapshot=JSON.stringify({entries,categories:Array.from({length:8},(_,i)=>({name:'קטגוריה '+i,defaultRate:50})),workers:[],webPreferences:{mainCurrency:'₪',defaultCategory:'קטגוריה 0',categoryCurrencies:{}}});
- async function ready(page,version){await page.waitForFunction(async expected=>{const r=await navigator.serviceWorker.getRegistration();if(!r?.active||r.active.state!=='activated'||navigator.serviceWorker.controller!==r.active)return false;return new Promise(resolve=>{const c=new MessageChannel();c.port1.onmessage=e=>{c.port1.close();resolve(e.data.buildId.startsWith(expected));};r.active.postMessage({type:'GET_BUILD_INFO'},[c.port2]);});},version);}
+ async function waitCheck(page, predicate, arg) {
+  const deadline=Date.now()+30000;
+  while(Date.now()<deadline){if(await page.evaluate(predicate,arg))return;await page.waitForTimeout(50);}
+  throw Error('Worker condition timed out');
+ }
+ async function ready(page,version){await waitCheck(page,async expected=>{const r=await navigator.serviceWorker.getRegistration();if(!r?.active||r.active.state!=='activated'||navigator.serviceWorker.controller!==r.active)return false;return new Promise(resolve=>{const c=new MessageChannel();c.port1.onmessage=e=>{c.port1.close();resolve(e.data.buildId.startsWith(expected));};r.active.postMessage({type:'GET_BUILD_INFO'},[c.port2]);});},version);}
+
  try{
  const context=await browser.newContext({viewport:{width:390,height:844},locale:'he-IL'});
  await context.addInitScript(snapshot=>{if(location.protocol==='http:'&&!localStorage.getItem('work_complete_backup')){localStorage.setItem('work_complete_backup',snapshot);localStorage.setItem('kis_web_v1',JSON.stringify({launched:2,tourDone:true}));localStorage.setItem('work_account_v1:dormant','keep');}},snapshot);
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(url);await ready(page,'legacy');await page.waitForFunction(()=>navigator.serviceWorker.controller);
+ // Finish the first registration job before simulating a subsequent deployment.
+ await page.evaluate(async()=>{await navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'});});
  const before=await page.evaluate(()=>({...localStorage}));
  // Migration automatically activates, without clicking a legacy update button.
  release='A';await page.evaluate(async()=>{await(await navigator.serviceWorker.getRegistration()).update();});await ready(page,'A');
  assert.equal(await page.evaluate(()=>WorkBuild.buildId),'legacy');
  await page.reload();
- const diagnostic=await page.evaluate(async()=>{
-  const cached=[];
-  for(const name of await caches.keys()){
-   const cache=await caches.open(name),builds=[];
-   for(const request of await cache.keys()) if(request.url.includes('/web/build.js')) builds.push({url:request.url,text:await(await cache.match(request)).text()});
-   cached.push({name,builds,keys:(await cache.keys()).map(r=>r.url)});
-  }
-  return {build:WorkBuild,scripts:[...document.scripts].map(s=>s.src),cached};
- });
- console.log('migration diagnostic',JSON.stringify(diagnostic),JSON.stringify(requests.filter(([url])=>url==='/'||url.includes('/web/build.js')||url.includes('/__trace')||url.includes('/sw.js'))));
  assert.equal(await page.evaluate(()=>WorkBuild.commit),'A'.repeat(40));assert.deepEqual(await page.evaluate(()=>({...localStorage})),before);
  await page.click('[data-testid=tab-settings]');assert.doesNotMatch(await page.locator('#page').innerText(),/בדיקת עדכון|גרסה|2\.0|AAAAAAA|עזרה ועדכונים/);assert.equal(await page.locator('#web-update-notice').count(),0);
  await page.click('[data-testid=tab-home]');await page.click('[data-testid=live-start]');await page.click('[data-testid=live-go]');
@@ -63,7 +60,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(await durationValue(page),'1:40');await context.setOffline(false);
  // Failed partial installation cannot replace the complete offline shell.
  release='C';broken=true;await page.evaluate(async()=>{try{await(await navigator.serviceWorker.getRegistration()).update();}catch{}});
- await page.waitForFunction(async()=>!(await navigator.serviceWorker.getRegistration()).installing);await ready(page,'B');
+ await waitCheck(page,async()=>!(await navigator.serviceWorker.getRegistration()).installing);await ready(page,'B');
  await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));await context.setOffline(false);broken=false;
  // Next ordinary opening sees C even if B is still its controller.
  const reopened=await context.newPage();await reopened.goto(url);assert.equal(await reopened.evaluate(()=>WorkBuild.commit),'C'.repeat(40));await ready(reopened,'C');

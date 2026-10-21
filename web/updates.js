@@ -2,11 +2,14 @@
 (function () {
 'use strict';
 if (!('serviceWorker' in navigator)) return;
+let registrationPromise;
 async function check() {
  try {
-  const registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
-  await registration.update();
- } catch { /* Offline browsing keeps the last complete shell. */ }
+  if (!registrationPromise) {
+   registrationPromise = navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+   await registrationPromise; // Register already checks the script; do not race a second update.
+  } else await (await registrationPromise).update();
+ } catch { registrationPromise = null; /* Offline browsing keeps the last complete shell. */ }
 }
 if (document.readyState === 'complete') check();
 else window.addEventListener('load', check, { once: true });

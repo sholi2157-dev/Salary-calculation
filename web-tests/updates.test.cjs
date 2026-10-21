@@ -36,5 +36,5 @@ test('background installation registers without UI, reload, storage or account a
   navigator:{serviceWorker:{register:async(path,options)=>{assert.equal(path,'/sw.js');assert.equal(options.updateViaCache,'none');return {update:async()=>checks++};}}},
   document:{readyState:'complete',visibilityState:'visible',addEventListener:(n,f)=>events[n]=f},window:{addEventListener:(n,f)=>events[n]=f}
  });
- await new Promise(setImmediate);assert.equal(checks,1);await events.online();await events.visibilitychange();await new Promise(setImmediate);assert.equal(checks,3);
+ await new Promise(setImmediate);assert.equal(checks,0);await events.online();await events.visibilitychange();await new Promise(setImmediate);assert.equal(checks,2);
 });
