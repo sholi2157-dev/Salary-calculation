@@ -41,3 +41,13 @@ and offline future-release card tests pass. Screenshot review found the bell-car
 capture preceded its sheet animation; test-only follow-up waits for the card and
 update button to be displayed before capture. APK/source/signature unchanged;
 [verify-update] reruns verification only, never republishing or rebuilding the APK.
+
+Visible-card follow-up run39679679694 SUCCESS: publication skipped, only the exact
+existing APK was verified again. Card and update button asserted displayed before
+screenshot; red pixel, quiet startup/resume, offline notice and preserved data pass.
+Permanent public release android-v2.0.5 is live; no APK rebuild/re-sign/republication.
+
+Visual QA note: red-dot and duration screenshots are clear. Although the card and
+button visibility assertions pass, the separate OS screenshot still lags on an
+early sheet-animation frame; do not present it as a complete card rendering.
+The standard ModalBottomSheet implementation was inspected and is unchanged.

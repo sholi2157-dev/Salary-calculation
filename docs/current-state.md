@@ -1,23 +1,31 @@
-# 2.0.5 verified candidate — publication underway
+# 2.0.5 published and verified — 2026-10-21
 
-Owner authorized cumulative Android/Web release. Plan and exact evidence:
-`docs/duration-and-update-bell-20261021.md`; Hebrew changes: `docs/releases/2.0.5.md`.
-
-Candidate source 979e5b2b60933c02f98ab886384f8e3367589b78, run 39676466946 SUCCESS:
-144 Debug + 112 Release tests; real signed RC16 → 2.0.3 → 2.0.5 retained-data
-update, UI/keyboard/defaults/plans, fresh launch and clean crash logs. Code 38;
-permanent package/certificate unchanged. Exact APK SHA256:
+Owner-approved cumulative Android release (all 2.0.4 features included):
+https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.0.5/Salary2.0.5.apk
+Code38, permanent package/certificate unchanged. Exact APK SHA256:
 c45eef0c182f42e6273082c59280076271433761da41cda5c1cc5d56b4409860.
 
-Includes all 2.0.4 changes. Duration digits select hours/minutes; no typing hints;
-opening an untouched imported duration preserves precision. Availability refreshes
-on foreground, bell open and every minute foreground; red dot/card, no automatic
-dialog. Caches known availability offline. The installer remains user-controlled.
+Candidate source979e5b2b60933c02f98ab886384f8e3367589b78, run39676466946 SUCCESS:
+144 Debug+112 Release tests; signed RC16→2.0.3→2.0.5 data preservation, UI/keyboard/
+defaults/plans, fresh launch and clean crashes. No intermediate 2.0.4 is required.
 
-`docs/android-update-release.json` selects the already-tested immutable APK for
-publication and actual live install/data/red-bell verification. Completion will be
-recorded after the workflow passes. Website automatic updates are on its separate
-maintenance branch and are being validated at the existing origin.
+Publication and actual online installer/data verification run39678748525 SUCCESS.
+Visible-card follow-up run39679679694 SUCCESS (verification only; no APK rebuild or
+republication): actual red-dot pixel, future-release card and update button visible,
+quiet startup/resume and offline retention. Exact public APK/checksum confirmed,
+Android installer completed code38, unchanged synthetic snapshot, no same-version
+update offered again. Red-dot/duration screenshots reviewed. Card visibility is asserted in the UI;
+its OS screenshot still captures an early sheet animation frame.
+
+Manual/group/job durations select hours/minutes with the clock digit keypad;
+typing instructions removed, untouched imported precision retained. Update checks
+are quiet on resume/bell-open and each minute foreground; red dot/card until
+installed, no automatic dialog. Installer remains user-controlled.
+
+Scope/evidence: `docs/duration-and-update-bell-20261021.md`.
+Hebrew changelog: `docs/releases/2.0.5.md`.
+Website automatic navigation updates are being finalized on its separate branch;
+this Android commit does not change or claim a website deployment.
 
 # Combined 2.0.4 release — 2026-10-21
 
