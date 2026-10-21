@@ -12,7 +12,20 @@ Selected APK 2.0.4 (37), SHA256 54cef6ca017da5ce09bb9a3974990cc951eaf0b38d58bb7e
 Web tested source 96e3e4bb52a6a693fb728c682295934b724fa7c3, run 39669064791 SUCCESS:
 92 tests, shared fixtures and complete v2/download/sharing browser suites. Production deployment
  dpl_52v5KTd2H9dEggr8oeHsWTzkCrG6 promoted to the existing stable origin; build digest 8d45814d204db702.
-Publication workflows will record public APK/channel and public-site browser results next.
+Public Android 2.0.4 (37) is now live at release android-v2.0.4, with the exact verified APK above.
+Publication + actual online manual-check/download/Android-installer/retained-data verification:
+run 39670906841 SUCCESS (attempt 2). First verify-live attempt failed before starting Android
+because the runner downloaded a corrupt Emulator ZIP; only the failed verification job was retried.
+Published APK bytes and signing identity were never changed or rebuilt.
+Public website full v2/download/sharing verification: run 39670920652 SUCCESS.
+Post-merge Web checks: run 39670920676 SUCCESS (same runtime files, 92 tests).
+
+Permanent URLs:
+- https://salary-calculation-eta.vercel.app/
+- https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.0.4/Salary2.0.4.apk
+
+Remaining manual limits: WhatsApp recipient/rendering on a physical Android phone and Safari/iPhone native file sharing.
+Automated fixtures and OS-sharing mocks validate payloads, image generation and cancellation; no messages were sent.
 
 Earlier history follows; it does not override this owner-approved scope or release state.
 

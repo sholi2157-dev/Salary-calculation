@@ -28,6 +28,11 @@ Both crash logs clean. Candidate screenshots inspected. PR #8 merged at ddbb3515
 Earlier run 39667966007 failed the default-workplace test after a passing update gate; the final run passed that test and all subsequent gates. The earlier candidate is not used for publication.
 
 Website promoted: dpl_52v5KTd2H9dEggr8oeHsWTzkCrG6, same tested production build (no rebuild).
-Stable origin https://salary-calculation-eta.vercel.app resolves to it; public browser verification is queued by the publication record.
-Android publication will reuse the exact verified candidate via docs/android-update-release.json; never rebuild or re-sign it.
+Stable origin https://salary-calculation-eta.vercel.app resolves to it. Public browser run 39670920652 SUCCESS: v2 flows, download guide, copy/share recipient boundaries, generated money PNG, unsupported sharing and cancellation, preserved synthetic storage. Post-merge checks 39670920676 SUCCESS.
+Android publication completed via docs/android-update-release.json: run 39670906841 SUCCESS (attempt 2).
+Public release android-v2.0.4 / Salary2.0.4.apk has the exact verified SHA above, anonymously downloaded and checked.
+Live RC16 app manual update button found code 37, downloaded the verified bytes and opened Android's actual installer.
+Installer confirmation and completed-install screen passed; installed version 37, unchanged before/after synthetic data,
+clean crash log and no same-version update offered again. No published APK rebuild or re-sign.
+The first live-verification attempt failed on a corrupt Android Emulator SDK ZIP before running the app; retry only the failed job succeeded.
 Native WhatsApp recipient/rendering and Safari file sharing remain physical-device checks; automated share/clipboard tests validate payloads and cancellation, not external app behavior.
