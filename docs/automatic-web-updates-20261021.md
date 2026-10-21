@@ -81,3 +81,10 @@ Final parity check: choosing a quick-hours chip while the duration keypad is ope
 now clears its old digit buffer, matching Android, so confirming cannot restore
 the prior duration over the chosen preset. Existing v2 browser flow covers the
 open-pad→4-hour preset→confirm→1:40 edit sequence.
+
+Final consolidated run39682231966 SUCCESS on source660e82ccc696bff62783d1614d8959f210cd4276:
+91 units, fixture parity, native worker gate, full v2/download/sharing and preset
+regression. Same staged build promoted asdpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk, build
+digestac045d488ac19009, existing stable origin verified. Includes verified2.0.5
+fallback; keep that fallback aligned with the verified APK on future releases.
+Prior full public run39680878044 SUCCESS; new-source public verification pending.

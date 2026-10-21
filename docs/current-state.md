@@ -1,22 +1,29 @@
-# Automatic website updates + cumulative 2.0.5 published — 2026-10-21
+# Website automatic updates and Android 2.0.5 published — 2026-10-21
 
-Website source2f8f9cf5d223d05f0ea528d89ed2f6cdb8a68fc6, run39680237024 SUCCESS:
-91 units, fixture parity, exact old worker→A→B→C, true offline/failed install,
-no forced reload, preserved22/8 data/draft/timer, full v2/download/sharing flows.
-Same staged build promoted (no rebuild) as dpl_6qGopS2toz4byUV3mZuEi8qWAShj;
-public alias/build info verified at https://salary-calculation-eta.vercel.app/.
-BuildId2f8f9cf5d223d05f0ea528d89ed2f6cdb8a68fc6-b6de91227b349d3d.
-Actual public-origin verification pending; scope/evidence:
-`docs/automatic-web-updates-20261021.md`. No website update/version UI; online
-opening/refresh requests fresh code, offline uses a complete installed shell.
+Website source: 660e82ccc696bff62783d1614d8959f210cd4276.
+Consolidated run 39682231966 SUCCESS: 91 units, fixture parity, native worker
+migration/offline/failed-install/data-preservation gate, full v2/download/sharing
+browser flows including selectable minutes, imported precision and quick presets.
+Same staged build promoted as dpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk (no rebuild).
+Origin: https://salary-calculation-eta.vercel.app/
+Build ID: 660e82ccc696bff62783d1614d8959f210cd4276-ac045d488ac19009.
+Rollback: dpl_6qGopS2toz4byUV3mZuEi8qWAShj.
+Public alias verified. Previous full public verification 39680878044 SUCCESS;
+final public verification for this source is now triggered by docs/rc15-web-live.json.
 
-Android2.0.5/code38 source979e5b2b60933c02f98ab886384f8e3367589b78:
-run39676466946 SUCCESS,144 Debug+112 Release tests, signed RC16→2.0.3→2.0.5
-retained-data update, fresh launch and clean crashes. Exact APK SHA256:
-c45eef0c182f42e6273082c59280076271433761da41cda5c1cc5d56b4409860.
-Publication/live install run39678748525 SUCCESS; red-dot pixel/visible card/quiet
-startup+resume/offline follow-up run39679679694 SUCCESS. All2.0.4 features included,
-no intermediate install needed. Public URL:
+Website: fresh online navigation, complete offline fallback, no update/version UI
+and no forced page reload. Duration hours/minutes select separately; no typing
+instructions; untouched imported precision retained. Quick-hour chips clear the
+old keypad buffer. Both normal and failure-fallback APK downloads point to 2.0.5.
+Evidence: `docs/automatic-web-updates-20261021.md`.
+
+Android 2.0.5 / code 38 source: 979e5b2b60933c02f98ab886384f8e3367589b78.
+Candidate run 39676466946 SUCCESS: 144 Debug + 112 Release tests, signed
+RC16 → 2.0.3 → 2.0.5 retained-data update, fresh launch and clean crash logs.
+APK SHA256: c45eef0c182f42e6273082c59280076271433761da41cda5c1cc5d56b4409860.
+Publication/live installer run 39678748525 SUCCESS. Red-dot pixel, visible card,
+quiet startup/resume and offline verification run 39679679694 SUCCESS.
+All 2.0.4 features included, no intermediate install needed. Public URL:
 https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.0.5/Salary2.0.5.apk
 
 Hebrew changelog: `docs/releases/2.0.5.md`.
