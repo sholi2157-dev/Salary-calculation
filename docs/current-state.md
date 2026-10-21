@@ -24,8 +24,13 @@ installed, no automatic dialog. Installer remains user-controlled.
 
 Scope/evidence: `docs/duration-and-update-bell-20261021.md`.
 Hebrew changelog: `docs/releases/2.0.5.md`.
-Website automatic navigation updates are being finalized on its separate branch;
-this Android commit does not change or claim a website deployment.
+Website automatic navigation updates are published at the unchanged origin:
+https://salary-calculation-eta.vercel.app/
+Runtime source660e82ccc696bff62783d1614d8959f210cd4276; deployment
+dpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk; build digestac045d488ac19009.
+CI39682231966, public-origin39683042974, metadata39683043000:SUCCESS.
+No website update/version UI; separate duration digits; normal/fallback download2.0.5.
+This Android commit updates evidence only; no additional APK is produced.
 
 # Combined 2.0.4 release — 2026-10-21
 

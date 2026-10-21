@@ -51,3 +51,10 @@ Visual QA note: red-dot and duration screenshots are clear. Although the card an
 button visibility assertions pass, the separate OS screenshot still lags on an
 early sheet-animation frame; do not present it as a complete card rendering.
 The standard ModalBottomSheet implementation was inspected and is unchanged.
+
+Website completed at https://salary-calculation-eta.vercel.app/ with source
+660e82ccc696bff62783d1614d8959f210cd4276, deploymentdpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk.
+CI39682231966, full public browser39683042974 and metadata39683043000:SUCCESS.
+Automatic online navigation/offline fallback, no version/update UI, duration digit
+parity and intact quick-hour presets. Both APK download paths select2.0.5.
+No second Android update/rebuild was needed for the website changes.
