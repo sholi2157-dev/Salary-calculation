@@ -16,9 +16,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  fs.writeFileSync(path.join(legacy,'index.html'),fs.readFileSync(path.join(legacy,'index.html'),'utf8').replace(/\?v=[^"]+/g,''));
  fs.writeFileSync(path.join(legacy,'web/build.js'),'window.WorkBuild={buildId:"legacy",commit:"legacy"};');
  cp.execFileSync(process.execPath,['scripts/build-web.cjs'],{stdio:'pipe'});
- let release='legacy',broken=false;
+ let release='legacy',broken=false;const requests=[];
  const server=http.createServer((req,res)=>{
-  const pathname=new URL(req.url,'http://test').pathname;
+  const pathname=new URL(req.url,'http://test').pathname;requests.push([req.url,release]);
   if(pathname==='/index.html'){res.writeHead(308,{Location:'/'});return res.end();}
   const file=path.resolve(versions[release],'.'+(pathname==='/'?'/index.html':pathname));
   if(!file.startsWith(versions[release]+path.sep)||!fs.existsSync(file)||(broken&&pathname==='/web/kis/editor.js')){res.writeHead(503);return res.end();}
@@ -39,7 +39,18 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  // Migration automatically activates, without clicking a legacy update button.
  release='A';await page.evaluate(async()=>{await(await navigator.serviceWorker.getRegistration()).update();});await ready(page,'A');
  assert.equal(await page.evaluate(()=>WorkBuild.buildId),'legacy');
- await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'A'.repeat(40));assert.deepEqual(await page.evaluate(()=>({...localStorage})),before);
+ await page.reload();
+ const diagnostic=await page.evaluate(async()=>{
+  const cached=[];
+  for(const name of await caches.keys()){
+   const cache=await caches.open(name),builds=[];
+   for(const request of await cache.keys()) if(request.url.includes('/web/build.js')) builds.push({url:request.url,text:await(await cache.match(request)).text()});
+   cached.push({name,builds});
+  }
+  return {build:WorkBuild,scripts:[...document.scripts].map(s=>s.src),cached};
+ });
+ console.log('migration diagnostic',JSON.stringify(diagnostic),JSON.stringify(requests.filter(([url])=>url==='/'||url.includes('/web/build.js'))));
+ assert.equal(await page.evaluate(()=>WorkBuild.commit),'A'.repeat(40));assert.deepEqual(await page.evaluate(()=>({...localStorage})),before);
  await page.click('[data-testid=tab-settings]');assert.doesNotMatch(await page.locator('#page').innerText(),/בדיקת עדכון|גרסה|2\.0|AAAAAAA|עזרה ועדכונים/);assert.equal(await page.locator('#web-update-notice').count(),0);
  await page.click('[data-testid=tab-home]');await page.click('[data-testid=live-start]');await page.click('[data-testid=live-go]');
  await page.click('[data-testid=add-shift]');await page.click('[data-testid=mode-hours]');await setDuration(page,'1:40');

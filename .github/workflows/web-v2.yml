@@ -27,7 +27,7 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: /tmp/browser-qa/node_modules/playwright
           SCREENSHOT_DIR: browser-evidence
-        run: node browser-tests/v2.cjs && node browser-tests/download.cjs && node browser-tests/sharing.cjs && node browser-tests/updates.cjs
+        run: node browser-tests/updates.cjs && node browser-tests/v2.cjs && node browser-tests/download.cjs && node browser-tests/sharing.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
