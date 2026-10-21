@@ -56,9 +56,9 @@ fun ShiftDetailSheet(entry: WorkEntry, categories: List<WorkCategory>, viewModel
         ShiftDetailContent(entry, categories,
             onPaid = { viewModel.setPaid(listOf(entry.id), it) },
             onEdit = { onEdit(entry) },
-            onShare = { KisShare.shareOrCopy(context, WorkShareText.personal(entry), "שיתוף משמרת", onMessage) },
+            onShare = { KisShare.shareOrCopy(context, WorkShareText.entry(entry, future = KisHistoryLogic.upcoming(entry)), "שיתוף משמרת", onMessage) },
             // Close the sheet so the confirmation is visible above it.
-            onCopy = { KisShare.copy(context, WorkShareText.personal(entry)); onDismiss(); onMessage("הועתק ✓ · מוכן להדבקה") },
+            onCopy = { KisShare.copy(context, WorkShareText.entry(entry, technical = true, future = KisHistoryLogic.upcoming(entry))); onDismiss(); onMessage("הועתק ✓ · מוכן להדבקה") },
             onDelete = { confirmDelete = true },
             onCompleteRate = { if (WorkPay.isJob(entry)) onEdit(entry) else completing = true },
             group = { GroupDetail(entry, viewModel, onMessage) })
@@ -171,11 +171,14 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                     Text("${KisFormat.hours(w.hours)} שעות · ${wPay?.let { KisFormat.money(it, entry.currency) } ?: "תעריף חסר"}${if (w.bonus > 0) " · בונוס ${KisFormat.money(w.bonus, entry.currency)}" else ""}",
                         style = KisType.caption.copy(textDirection = TextDirection.Rtl), color = c.muted)
                 }
+                Icon(Icons.Rounded.ContentCopy, "העתק פרטי משמרת לעובד", tint = c.ink, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
+                    .kisClick { KisShare.copy(context, WorkShareText.worker(entry, w, technical = true, future = KisHistoryLogic.upcoming(entry))); onMessage("הועתק ✓") }.padding(11.dp))
                 Icon(Icons.Rounded.Share, "שתף פרטי משמרת לעובד", tint = c.ink, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
-                    .kisClick { KisShare.shareOrCopy(context, WorkShareText.worker(entry, w), "שליחה ל${w.name}", onMessage) }.padding(11.dp))
+                    .kisClick { KisShare.shareOrCopy(context, WorkShareText.worker(entry, w, future = KisHistoryLogic.upcoming(entry)), "שליחה ל${w.name}", onMessage) }.padding(11.dp))
             }
         }
-        KisButton("דו״ח לקבלן (כל הקבוצה)", { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName), "סיכום לקבלן", onMessage) }, Modifier.fillMaxWidth(),
+        KisButton("העתקת דוח הצוות", { KisShare.copy(context, WorkShareText.employer(entry, myName, technical = true, future = KisHistoryLogic.upcoming(entry))); onMessage("הדוח הועתק ✓") }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "group_summary_copy")
+        KisButton("דו״ח לקבלן (כל הקבוצה)", { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName, future = KisHistoryLogic.upcoming(entry)), "סיכום לקבלן", onMessage) }, Modifier.fillMaxWidth(),
             KisButtonKind.GHOST, icon = Icons.Rounded.ReceiptLong, height = 48.dp, tag = "group_summary_share")
     }
 }

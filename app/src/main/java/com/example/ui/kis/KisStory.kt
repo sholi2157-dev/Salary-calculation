@@ -58,7 +58,7 @@ private const val SLIDE_MS = 6_000
 private class Slide(val bg: Color, val a: Int, val b: Int, val auto: Boolean = true, val tag: String, val content: @Composable () -> Unit)
 
 /** "החודש/השנה שלך בכיס" for [scope] ("YYYY-MM" or "YYYY"): story slides that move on by themselves; a tap on the left
- * moves forward, on the right back, holding pauses. Amounts are hidden until asked for and never in the shared card. */
+ * moves forward, on the right back, holding pauses. Amounts are hidden until asked for and included in the shared card. */
 @Composable
 fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCategory>, onClose: () -> Unit, onMessage: (String) -> Unit) {
     val s = remember(entries, scope) { V2Summary.summary(KisHistoryLogic.done(entries).map { V2Summary.row(it) }, scope, V2Summary.today()) }
@@ -129,15 +129,19 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
                 if (hidden) Text("${cur.currency}•••", style = KisType.hero.copy(fontSize = 64.sp, lineHeight = 70.sp), color = LocalStoryInk.current, modifier = Modifier.testTag("story_money_hidden"))
                 else MoneyText(cur.total, cur.currency, KisType.hero.copy(fontSize = 64.sp, lineHeight = 70.sp), color = LocalStoryInk.current, modifier = Modifier.testTag("story_money_${cur.currency}"))
             }
-            Para((if (s.pending > 0) "ועוד ${if (s.pending == 1) "משמרת אחת" else "${s.pending} משמרות"} שמחכות לתעריף. " else "") + "הסכום רק בשבילך, הוא לא מופיע בשיתוף.")
+            Para((if (s.pending > 0) "ועוד ${if (s.pending == 1) "משמרת אחת" else "${s.pending} משמרות"} שמחכות לתעריף. " else "") + "הסכומים מופיעים גם בכרטיס לשיתוף.")
             if (s.currencies.isNotEmpty()) StoryChip(if (hidden) "הצג לי" else "הסתר", "story_reveal") { hidden = !hidden }
         })
         add(Slide(StoryDark, 0, 3, auto = false, tag = "story_card") {
             val context = LocalContext.current
             Kick("$whose שלך בכיס")
             Poster(label, s, persona?.name)
-            val text = listOfNotNull("$whose שלי בכיס · $label", "⁦${Math.round(hrs)}⁩ שעות · ${s.count} משמרות", top?.let { "המקום המוביל: ${it.name}" },
-                persona?.let { "טיפוס: ${it.name}" }, s.bestDay?.let { "היום שלי: ${KisFormat.DAY_LONG[it]}" }).joinToString("\n")
+            val storyRows = KisHistoryLogic.done(entries).filter { com.example.domain.V2Summary.row(it).date.startsWith(scope) }
+            val text = com.example.data.WorkShareText.summary(storyRows)
+            KisButton("העתקת סיכום", {
+                val rows = KisHistoryLogic.done(entries).filter { com.example.domain.V2Summary.row(it).date.startsWith(scope) }
+                KisShare.copy(context, com.example.data.WorkShareText.copy(rows)); onMessage("הועתק ✓")
+            }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "story_copy")
             KisButton("שיתוף הכרטיס", {
                 val ok = runCatching { shareImage(context, cardBitmap(context, label, posterCells(s, persona?.name)), text) }.getOrDefault(false)
                 if (!ok) KisShare.shareOrCopy(context, text, "$whose שלך בכיס", onMessage)
@@ -257,10 +261,10 @@ private val LocalStoryInk = staticCompositionLocalOf { Color.White }
     }
 }
 
-/** The shareable card: no amounts, ever. */
+/** The shareable card includes the exact amounts per currency. */
 @Composable private fun Poster(label: String, s: V2Summary.Summary, persona: String?) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Brush.linearGradient(listOf(place(0), place(4)))).padding(20.dp).testTag("story_poster"),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label, style = TextStyle(fontFamily = SecularOne, fontSize = 22.sp), color = Color.White, modifier = Modifier.weight(1f))
             KisLogo(Modifier.size(36.dp))
@@ -271,7 +275,7 @@ private val LocalStoryInk = staticCompositionLocalOf { Color.White }
                 pair.forEach { (k, v) ->
                     Column(Modifier.weight(1f)) {
                         Text(k, style = TextStyle(fontFamily = Rubik, fontSize = 13.sp), color = Color.White.copy(alpha = .8f))
-                        Text(v, style = TextStyle(fontFamily = SecularOne, fontSize = 24.sp, lineHeight = 28.sp), color = Color.White, maxLines = 1)
+                        Text(v, style = TextStyle(fontFamily = Rubik, fontSize = 22.sp, lineHeight = 26.sp), color = Color.White, maxLines = 1)
                     }
                 }
             }
@@ -279,19 +283,21 @@ private val LocalStoryInk = staticCompositionLocalOf { Color.White }
     }
 }
 
-private fun posterCells(s: V2Summary.Summary, persona: String?) = listOf("שעות" to "${Math.round(s.hours)}", "משמרות" to "${s.count}",
+private fun posterCells(s: V2Summary.Summary, persona: String?) = s.currencies.map { "סכום (${it.currency})" to KisFormat.money(it.total, it.currency) } +
+    (if (s.pending > 0) listOf("סכום חסר" to "${s.pending} משמרות") else emptyList()) + listOf("שעות" to "${Math.round(s.hours)}", "משמרות" to "${s.count}",
     "מקום מוביל" to (s.places.firstOrNull()?.name ?: "—"), "טיפוס" to (persona ?: "—"), "היום שלך" to (s.bestDay?.let { KisFormat.DAY_LONG[it] } ?: "—"),
     "הכי ארוכה" to (s.longest?.let { hm(it.hours) } ?: "—"))
 
-/** The shared picture (1080×1080), drawn directly so it never depends on what is on screen. No amounts. */
+/** The shared picture (1080px wide, height grows with the cells), drawn directly so it never depends on what is on screen. Includes amounts per currency. */
 internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String, String>>): android.graphics.Bitmap {
     val size = 1080f
-    val bmp = android.graphics.Bitmap.createBitmap(size.toInt(), size.toInt(), android.graphics.Bitmap.Config.ARGB_8888)
+    val height = maxOf(1080, 350 + ((cells.size + 1) / 2) * 180)
+    val bmp = android.graphics.Bitmap.createBitmap(size.toInt(), height, android.graphics.Bitmap.Config.ARGB_8888)
     val canvas = android.graphics.Canvas(bmp)
     val bg = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
         shader = android.graphics.LinearGradient(0f, 0f, size, size, place(0).toArgb(), place(4).toArgb(), android.graphics.Shader.TileMode.CLAMP)
     }
-    canvas.drawRoundRect(0f, 0f, size, size, 64f, 64f, bg)
+    canvas.drawRoundRect(0f, 0f, size, height.toFloat(), 64f, 64f, bg)
     val display = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, com.example.R.font.secular_one) }.getOrNull()
     val body = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, com.example.R.font.rubik_regular) }.getOrNull()
     fun paint(face: android.graphics.Typeface?, px: Float, alpha: Int = 255) = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
@@ -301,9 +307,10 @@ internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String
     canvas.drawText("בכיס", size - 80f, 240f, paint(display, 44f))
     cells.forEachIndexed { n, (k, v) ->
         val right = if (n % 2 == 0) size - 80f else size / 2 - 20f
-        val top = 380f + (n / 2) * 220f
+        val top = 330f + (n / 2) * 180f
         canvas.drawText(k, right, top, paint(body, 36f, 205))
-        val value = paint(display, 72f)
+        val value = paint(body, 56f)
+        if (k.startsWith("סכום")) while (value.measureText(v) > size / 2 - 120f && value.textSize > 12f) value.textSize -= 1f
         var text = v
         while (value.measureText(text) > size / 2 - 120f && text.length > 1) text = text.dropLast(1)
         canvas.drawText(if (text == v) v else "$text…", right, top + 86f, value)

@@ -48,13 +48,16 @@ class V2ShareTest {
         val rows = c.getJSONArray("entries").objects().map(::entry)
         return when (c.getString("type")) {
             "personal" -> WorkShareText.personal(rows.single())
-            "employer" -> WorkShareText.employer(rows.single(), c.optString("ownName").ifEmpty { null })
-            "worker" -> rows.single().let { WorkShareText.worker(it, WorkPay.workers(it)[c.getInt("worker")]) }
+            "employer" -> WorkShareText.employer(rows.single(), c.optString("ownName").ifEmpty { null }, c.optBoolean("technical"), c.optBoolean("future"))
+            "worker" -> rows.single().let { WorkShareText.worker(it, WorkPay.workers(it)[c.getInt("worker")], c.optBoolean("technical"), c.optBoolean("future")) }
             "summary" -> WorkShareText.summary(rows, c.optString("workerName").ifEmpty { null })
             "excel" -> WorkShareText.excel(rows)
+            "csv" -> WorkShareText.csv(rows)
+            "copy" -> WorkShareText.copy(rows, c.optString("workerName").ifEmpty { null })
+            "entry" -> WorkShareText.entry(rows.single(), c.optBoolean("technical"), c.optBoolean("future"))
             "planned" -> c.getJSONObject("occurrence").let { o -> WorkShareText.planned(com.example.domain.V2Plan.Occurrence(o.getString("key"), o.getString("seriesId"),
                 o.getString("category"), o.getString("date"), o.getString("start"), o.getString("end"), if (o.isNull("rate")) null else o.getDouble("rate"),
-                o.getString("currency"), edited = false, hold = false, status = com.example.domain.V2Plan.Status.PLANNED)) }
+                o.getString("currency"), edited = false, hold = false, status = com.example.domain.V2Plan.Status.PLANNED), c.optBoolean("technical")) }
             else -> error("unknown type ${c.getString("type")}")
         }
     }
@@ -76,6 +79,17 @@ class V2ShareTest {
             val text = produce(c)
             assertFalse(c.getString("name"), text.any { it in '⁦'..'⁩' || it == '‏' || it == '‎' })
             assertEquals(before, rows)
+        }
+    }
+
+    @Test fun spreadsheetRoundtripKeepsUnknownPayBonusAndNotes() {
+        val c = doc.getJSONArray("cases").objects().first { it.getString("name") == "excel_complex_notes_job_bonus" }
+        val rows = c.getJSONArray("entries").objects().map(::entry)
+        listOf(WorkShareText.excel(rows), WorkShareText.csv(rows)).forEach { text ->
+            val imported = com.example.data.WorkTableImport.decode(text).entries
+            assertFalse(imported.first { it.kind == "job" }.payKnown)
+            assertEquals(336.0, imported.first { it.bonus == 50.0 }.totalEarnings, 0.0)
+            assertEquals("שורה א\nשורה \"ב\"\tסוף", imported.first { it.notes.contains("שורה") }.notes)
         }
     }
 

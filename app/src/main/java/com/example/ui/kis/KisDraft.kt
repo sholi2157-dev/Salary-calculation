@@ -9,6 +9,24 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
 
+/** UI durations use H:MM; old decimal drafts and stored hours remain decimal internally. */
+object DurationInput {
+    fun edit(text: String): String = text.replace('.', ':').replace(',', ':')
+    fun hours(text: String): Double? {
+        val s = text.trim()
+        if (!s.contains(':')) return s.replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() }
+        if (!Regex("\\d{1,2}:\\d{2}").matches(s)) return null
+        val (h, m) = s.split(':').map { it.toInt() }
+        return if (m < 60) (h * 60 + m) / 60.0 else null
+    }
+    fun display(text: String): String {
+        if (text.isBlank() || text.contains(':')) return text
+        val h = hours(text) ?: return text
+        val minutes = Math.round(h * 60).toInt()
+        return "%d:%02d".format(java.util.Locale.ROOT, minutes / 60, minutes % 60)
+    }
+}
+
 enum class EntryMode(val label: String) { CLOCK("שעון"), HOURS("ידני"), JOB("קבלנות"), GROUP("קבוצה") }
 enum class BonusTarget(val label: String) { ALL("כולם"), ME("רק אני"), OTHERS("רק הצוות") }
 
@@ -137,7 +155,7 @@ data class EntryDraft(
             mode == EntryMode.JOB -> V2Rules.Mode.JOB
             else -> V2Rules.Mode.GROUP
         },
-        start = start, end = end, breakMinutes = breakMin, hours = hours,
+        start = start, end = end, breakMinutes = breakMin, hours = DurationInput.hours(hours)?.toString() ?: hours,
         rate = rateValue(), rateUnknown = rateUnknown,
         bonus = if (groupByHours && bonusTarget == BonusTarget.OTHERS) 0.0 else bonusValue(),
         bonusTarget = when (bonusTarget) { BonusTarget.ALL -> V2Rules.BonusTarget.ALL; BonusTarget.ME -> V2Rules.BonusTarget.ME; BonusTarget.OTHERS -> V2Rules.BonusTarget.OTHERS },
@@ -161,11 +179,12 @@ data class EntryDraft(
         }
         if (mode == EntryMode.GROUP) {
             if (workers.any { it.name.isBlank() }) errors += "לכל עובד צריך שם"
-            if (workers.any { w -> num(w.hours)?.let { it < 0 || it > 24 } == true }) errors += "שעות העובד לא תקינות"
+            if (workers.any { w -> w.hours.isNotBlank() && (DurationInput.hours(w.hours)?.let { it < 0 || it > 24 } != false) }) errors += "שעות העובד לא תקינות"
             if (separateRates && listOf(employerRate, workerRate).any { it.isNotBlank() && num(it) == null }) errors += "תעריף לא תקין"
         }
-        // Typed hours are paid exactly as typed (7.33 h, not 440 minutes), the same way they are saved.
-        val payHours = if (mode == EntryMode.HOURS || groupByHours) num(hours) ?: 0.0 else (ev.minutes ?: 0) / 60.0
+        if (mode == EntryMode.JOB && hours.isNotBlank() && (DurationInput.hours(hours)?.let { it < 0 || it > 24 } != false)) errors += "משך לא תקין: יש להזין שעות ודקות, למשל 1:40"
+        // Persist decimal hours; the duration UI converts hours and minutes at this boundary.
+        val payHours = if (mode == EntryMode.HOURS || groupByHours) DurationInput.hours(hours) ?: 0.0 else (ev.minutes ?: 0) / 60.0
         val total = if (mode == EntryMode.JOB) ev.total else ev.total?.let { WorkPay.amount(payHours, rateValue() ?: 0.0, ev.bonus) }
         return Check(errors, warnings, ev.minutes, total, overnight)
     }
@@ -182,7 +201,7 @@ data class EntryDraft(
         val sameTimes = was != null && was.mode == mode && was.start == start && (start == null || was.end == end) && was.breakMin == breakMin && was.hours == hours
         val hoursValue = when {
             sameTimes -> base!!.hours
-            job || !clock -> num(hours) ?: 0.0
+            job || !clock -> DurationInput.hours(hours) ?: 0.0
             else -> (c.minutes ?: 0) / 60.0
         }
         val rateNumber = if (was != null && !was.rateUnknown && was.rate == rate) base!!.hourlyRate else rateValue() ?: 0.0
@@ -197,7 +216,9 @@ data class EntryDraft(
         }
         val amountNumber = if (was != null && was.amount == amount && !was.amountUnknown) base!!.totalEarnings else num(amount) ?: 0.0
         val groupJson = if (mode == EntryMode.GROUP) WorkPay.encodeWorkers(workers.map { w ->
-            WorkPay.Worker(w.name.trim(), num(w.hours) ?: 0.0, w.isPaid, num(w.bonus)?.takeIf { it > 0 } ?: 0.0, null, null, JSONObject(w.source))
+            val sourceHours = JSONObject(w.source).optDouble("hours", Double.NaN)
+            val originalHours = sourceHours.takeIf { it.isFinite() && clean(it) == w.hours }
+            WorkPay.Worker(w.name.trim(), originalHours ?: DurationInput.hours(w.hours) ?: 0.0, w.isPaid, num(w.bonus)?.takeIf { it > 0 } ?: 0.0, null, null, JSONObject(w.source))
         }) else ""
         val proto = base ?: WorkEntry(category = category, date = date, isTimeRange = clock, hours = 0.0, hourlyRate = 0.0, totalEarnings = 0.0)
         return proto.copy(
@@ -219,7 +240,16 @@ data class EntryDraft(
     }
 
     /** Changing the mode keeps everything the user typed that still applies. */
-    fun withMode(m: EntryMode): EntryDraft = copy(mode = m)
+    fun withMode(m: EntryMode): EntryDraft {
+        val clock = mode == EntryMode.CLOCK || mode == EntryMode.GROUP && !groupByHours
+        if (m == EntryMode.HOURS && clock) return copy(mode = m, hours = check().minutes?.takeIf { it > 0 }?.let { DurationInput.display((it / 60.0).toString()) } ?: "")
+        if (m == EntryMode.GROUP && mode == EntryMode.HOURS) return copy(mode = m, start = null)
+        if (m == EntryMode.CLOCK && (mode == EntryMode.HOURS || groupByHours)) {
+            val minutes = DurationInput.hours(hours)?.let { Math.round(it * 60).toInt() }
+            return copy(mode = m, start = minutes?.takeIf { it in 1..1440 }?.let { V2Rules.fromMinutes(V2Rules.toMinutes(end) - it) } ?: start ?: defaultStart(end), breakMin = 0)
+        }
+        return copy(mode = m)
+    }
 
     /** A different workplace brings its rate and currency on a new entry, never on an edit. The times stay as they are. */
     fun withCategory(c: WorkCategory, currencyOf: (String) -> String): EntryDraft =

@@ -1,4 +1,19 @@
+## Active combined shift-entry/sharing release — 2026-10-21
+
+Owner authorized implementation, merge and public update on both Android and Web.
+Scope/evidence: `docs/shift-entry-20261021.md`, plus `docs/sharing-20261021.md`.
+Work in isolated sharing branches; preserve all previous sharing changes. Pending final CI,
+Android 2.0.4 (37) signed upgrade gate from delivered 2.0.3 (36), Web browser verification
+and publication. No public deployment claimed at this point.
+
 # Current project state
+
+## October 21 — copy/share parity prepared for owner wording review
+
+Separate review branches: `codex/sharing-android-20261021` and `codex/sharing-web-20261021`. Owner explicitly requested changes to both platforms. Contract: `docs/v2-sharing.md`; execution notes: `docs/sharing-20261021.md`. Technical copy and recipient-ready sharing are separate; multiple workplaces use technical blocks; worker search is wired consistently. TSV/CSV use one 14-column contract, unknown pay empty, future rows excluded from done-work exports. Monthly/yearly cards include money and the Web image action requires native file sharing, with no download/text fallback. JSON backups remain full-fidelity.
+
+Draft review PRs: #8 Android, #9 Web. No merge, production promotion, public APK release, signing change or data/schema mutation. Verification complete: Android run 39609123653 SUCCESS (136 Debug + 106 Release tests, unsigned Release/instrumentation builds and identity gates); Web run 39609131883 SUCCESS (build, 89 tests, shared fixtures and browser flows). Full evidence and remaining native WhatsApp/iPhone/signed-update gates: `docs/sharing-20261021.md`. Screenshots and the generated PNG were visually reviewed. No public rollout or APK delivery has taken place.
+
 
 ## October 19 — 2.0.3: live money, both times on a new shift, digit-by-digit times, AI currency
 
