@@ -33,6 +33,17 @@ object WorkShareText {
         val missing = WorkPay.pending(rows).size
         if (missing > 0) add("סכום חסר: $missing (לא נכלל בסכומים)")
     }
+    private fun humanAmounts(rows: List<WorkEntry>, worker: Boolean): List<String> = buildList {
+        WorkPay.totals(rows).forEach { (c, total) ->
+            val paid = WorkPay.totals(rows.filter { it.isPaid })[c] ?: 0.0
+            val unpaid = WorkPay.totals(rows.filter { !it.isPaid })[c] ?: 0.0
+            if (rows.none { it.currency == c && !it.isPaid && WorkPay.pay(it) != null }) add("השכר בסך ${money(total,c)} שולם במלואו.")
+            else if (paid == 0.0) add((if (worker) "מגיע לך: " else "השכר לתשלום: ") + money(total,c) + ".")
+            else add("השכר הכולל: ${money(total,c)}. מתוכו שולם ${money(paid,c)}, ונותר לתשלום ${money(unpaid,c)}.")
+        }
+        val missing = WorkPay.pending(rows).size
+        if (missing > 0) add("סכום חסר עבור $missing משמרות; הן לא נכללו בסיכום הכספי.")
+    }
     private fun dates(rows: List<WorkEntry>) = rows.sortedBy { it.date }.map { date(it.date) }.distinct().joinToString(", ")
     fun workerName(entries: List<WorkEntry>, query: String): String? = query.trim().takeIf { it.isNotEmpty() }?.let { q ->
         entries.flatMap { WorkPay.workers(it).map { w -> w.name } }.distinct().firstOrNull { it.equals(q, ignoreCase = true) }
@@ -70,7 +81,11 @@ object WorkShareText {
         val intro = if (name != null) "היי $name, סיכמתי פה את ${if (n == 1) "המשמרת שלך" else "המשמרות שלך"} ב$place:"
             else "היי, סיכמתי פה את ${if (n == 1) (if (WorkPay.isJob(rows.first())) "העבודה שלי" else "המשמרת שלי") else "$n המשמרות שלי"} ב$place:"
         return buildList {
-            add(intro); add("תאריכים: ${dates(rows)}"); if (rows.any { !WorkPay.isJob(it) || it.hours > 0 }) add("סה״כ ${hours(rows.sumOf { it.hours })} שעות עבודה."); addAll(amounts(rows))
+            add(intro)
+            val who = if (name != null) "עבדת" else "עבדתי"
+            if (n == 1) add("בתאריך ${dates(rows)}" + if (rows.any { !WorkPay.isJob(it) || it.hours > 0 }) " $who ${hours(rows.sumOf { it.hours })} שעות." else ".")
+            else { add("בתאריכים ${dates(rows)}."); add("סה״כ $who ${hours(rows.sumOf { it.hours })} שעות.") }
+            addAll(humanAmounts(rows, name != null))
             if (n == 1) addAll(details(rows.single()))
             else { add("פירוט המשמרות:"); rows.sortedBy { it.date }.forEach { e ->
                 add("${date(e.date)} | ${hours(e.hours)} שעות | ${amount(e)} | ${if (e.isPaid) "שולם" else "ממתין"}")
@@ -121,7 +136,7 @@ object WorkShareText {
         if (!future) return text
         return plannedText(text)
     }
-    private fun plannedText(text: String) = "מתוכנן — עוד לא בוצע\n" + text.replace("יתרה לתשלום:", "צפי שטרם בוצע:").replace("שולם:", "סומן בתכנון כשולם:").replace("סכום:", "צפי:").replace("סכום הצוות:", "צפי לצוות:")
+    private fun plannedText(text: String) = "מתוכנן — עוד לא בוצע\n" + text.replace("יתרה לתשלום:", "צפי שטרם בוצע:").replace("שולם:", "סומן בתכנון כשולם:").replace("סכום:", "צפי:").replace("סכום הצוות:", "צפי לצוות:").replace("השכר לתשלום:", "צפי השכר:").replace("מגיע לך:", "צפי השכר:").replace("נותר לתשלום", "צפי שטרם בוצע").replace("השכר הכולל:", "צפי השכר הכולל:").replace("השכר בסך", "צפי השכר בסך").replace(" שולם במלואו.", " סומן בתכנון כשולם.").replace("מתוכו שולם", "סומן בתכנון כשולם")
     private val excelHeaders = listOf("עבודה", "תאריך", "שעת התחלה", "שעת סיום", "שעות עבודה", "הפסקה בדקות", "תעריף שעתי", "סכום", "מטבע", "סטטוס תשלום", "סוג", "בונוס", "הערה", "שכר ידוע")
     private fun textCell(v: String) = if (Regex("^[\\s]*[=+\\-@]").containsMatchIn(v)) "'$v" else v
     private fun table(entries: List<WorkEntry>): List<List<String>> {
