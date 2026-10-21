@@ -130,8 +130,8 @@ function bindSelection(el, app, sel, redraw) {
   const b = s => bar.querySelector(`[data-s=${s}]`), ids = sel.map(e => e.id), clear = () => { state.selection.clear(); redraw(); };
   b('cancel').onclick = clear;
   b('all').onclick = () => { const rows = [...el.querySelectorAll('.shift[data-id]')].map(x => x.dataset.id); if (sel.length === rows.length) state.selection.clear(); else state.selection = new Set(rows); redraw(); };
-  b('share').onclick = () => { U().shareOrCopy(root.KisShare.summary(sel), 'שיתוף משמרות'); clear(); };
-  b('copy').onclick = async () => { const text = root.KisShare.summary(sel); if (await U().copy(text)) U().toast('הועתק ✓ · מוכן להדבקה בוואטסאפ'); else U().showText(text); clear(); };
+  b('share').onclick = () => { U().shareOrCopy(root.KisShare.summary(sel, root.KisShare.workerName(sel, state.query)), 'שיתוף משמרות'); clear(); };
+  b('copy').onclick = async () => { const text = root.KisShare.copy(sel, root.KisShare.workerName(sel, state.query)); if (await U().copy(text)) U().toast('הועתק ✓ · מוכן להדבקה בוואטסאפ'); else U().showText(text); clear(); };
   b('paid').onclick = () => { store.setPaid(ids, true); U().toast('סומן כשולם ✓'); clear(); };
   b('unpaid').onclick = () => { store.setPaid(ids, false); U().toast('סומן כלא שולם'); clear(); };
   b('rate')?.addEventListener('click', () => bulkRate(app, redraw));
@@ -171,9 +171,9 @@ function bulkRate(app, after) {
 function copySheet(rows, f) {
   U().sheet('copy-sheet', (el, close) => {
     el.innerHTML = `<h2>העתקת הדוח המוצג</h2><p class="caption">${rows.length} משמרות לפי מה שמוצג עכשיו.</p>
-      <button class="btn ghost" data-a="xl" data-testid="copy-excel">Excel (טבלה)</button><button class="btn ghost" data-a="wa" data-testid="copy-whatsapp">WhatsApp (סיכום)</button>`;
+      <button class="btn ghost" data-a="xl" data-testid="copy-excel">Excel (טבלה)</button><button class="btn ghost" data-a="wa" data-testid="copy-whatsapp">סיכום טכני</button>`;
     el.querySelector('[data-a=xl]').onclick = async () => { close(); if (!rows.length) return U().toast('אין שורות להעתקה'); const t = root.KisShare.excel(rows); if (await U().copy(t)) U().toast('הטבלה הועתקה ✓ · מוכנה להדבקה באקסל'); else U().showText(t, 'טבלה לאקסל'); };
-    el.querySelector('[data-a=wa]').onclick = async () => { close(); const t = root.KisShare.summary(rows); if (await U().copy(t)) U().toast('הסיכום הועתק ✓'); else U().showText(t); };
+    el.querySelector('[data-a=wa]').onclick = async () => { close(); const t = root.KisShare.copy(rows, root.KisShare.workerName(rows, state.query)); if (await U().copy(t)) U().toast('הדוח הועתק ✓'); else U().showText(t); };
   });
 }
 

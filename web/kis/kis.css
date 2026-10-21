@@ -336,3 +336,9 @@ button { cursor: pointer; }
 .install-help{border-top:1px solid var(--line);padding:12px 0}
 .install-help summary{min-height:44px;cursor:pointer;font-size:14px;font-weight:600;display:list-item;padding:8px 0}
 @media(max-width:359px){.apk-entry{padding:0 6px;font-size:11px}.hello{gap:6px}}
+
+/* Financial recap: fit the amounts and statistics above the native share controls. */
+.story .poster { padding:16px; }
+.story .poster .pg { gap:10px 14px; }
+.story .poster .pg b { font-family:Rubik,sans-serif; font-size:clamp(18px,5.5vw,26px); }
+.story .poster .pg small { font-size:12px; }

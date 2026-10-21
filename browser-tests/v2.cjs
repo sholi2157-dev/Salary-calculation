@@ -269,7 +269,9 @@ const seed = {
     assert.doesNotMatch(await page.textContent(tid('story-money')), /\d/);
     await page.click(tid('story-reveal')); assert.match(await page.textContent(tid('story-money')), /₪\d/);
     await page.click(tid('story-next')); await page.waitForSelector(tid('story-card'));
-    assert.doesNotMatch(await page.textContent(tid('story-poster')), /[₪$]/, 'the card never shows amounts');
+    assert.match(await page.textContent(tid('story-poster')), /₪/, 'the shared card includes amounts');
+    assert.equal(await page.locator(tid('story-share')).count(), 0, 'unsupported file sharing has no image button');
+    assert.equal(await page.locator(tid('story-copy')).count(), 1);
     await page.waitForTimeout(700); await page.screenshot({ path: path.join(OUT, 'v2-story-card.png') });
     await page.keyboard.press('Escape'); assert.equal(await page.locator(tid('story')).count(), 0);
     // It moves on by itself.
