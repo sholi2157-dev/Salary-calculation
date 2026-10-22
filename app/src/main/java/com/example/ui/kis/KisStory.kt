@@ -105,9 +105,9 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
         })
         s.longest?.takeIf { "longest" in shows }?.let { l -> add(Slide(place(2), 4, 3, tag = "story_longest") {
             Kick("המשמרת הארוכה")
-            Huge(longLabel(l.hours))
-            Head(dayLabel(millisOf(l.date)) + (if (l.start != null && l.end != null) ", ⁦${l.start}–${l.end}⁩." else "."))
-            Para("מגיע לכם קפה. אולי שניים." + when (s.nights) { 0 -> ""; 1 -> " ופעם אחת סיימתם אחרי 23:00."; else -> " ו-${s.nights} פעמים סיימתם אחרי 23:00." })
+            Huge(KisFormat.hours(l.hours))
+            Head("שעות, " + dayLabel(millisOf(l.date)))
+            Para((if (l.start != null && l.end != null) "⁦${l.start}–${l.end}⁩. " else "") + "מגיע לכם קפה. אולי שניים." + when (s.nights) { 0 -> ""; 1 -> " ופעם אחת סיימתם אחרי 23:00."; else -> " ו-${s.nights} פעמים סיימתם אחרי 23:00." })
         }) }
         s.bestDay?.takeIf { "days" in shows }?.let { best -> add(Slide(StoryDark, 5, 1, tag = "story_days") {
             Kick("הקצב שלכם")
