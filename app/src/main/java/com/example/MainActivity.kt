@@ -4434,7 +4434,7 @@ fun WorkEntryRowCard(
 
                         Text("סה\"כ לתשלום (כולל כולם): ${entry.currency}${String.format(Locale.US, "%.2f", grandTotalBoss)}", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("שולי (המשתמש): ${entry.currency}${String.format(Locale.US, "%.2f", sholiNetTotal)}", color = Color(0xFFE2E8F0), fontSize = 13.sp)
+                        Text("המשתמש: ${entry.currency}${String.format(Locale.US, "%.2f", sholiNetTotal)}", color = Color(0xFFE2E8F0), fontSize = 13.sp)
                         Spacer(modifier = Modifier.height(8.dp))
                         
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -4580,7 +4580,7 @@ fun WorkEntryRowCard(
                                         val empRate = entry.employerRate ?: 0.0
                                         val sholiBossPay = entry.totalEarnings
                                         var totalPay = sholiBossPay
-                                        var workersLines = "שולי: ${entry.hours} שעות (₪${String.format(Locale.US, "%.2f", sholiBossPay)})\n"
+                                        var workersLines = "המשתמש: ${entry.hours} שעות (₪${String.format(Locale.US, "%.2f", sholiBossPay)})\n"
                                         
                                         for (i in 0 until workersArray.length()) {
                                             val obj = workersArray.getJSONObject(i)

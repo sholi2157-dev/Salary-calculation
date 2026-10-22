@@ -817,7 +817,7 @@ class WorkViewModel(
         }
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Sholi Gratzman - גיבוי מעקב שעות")
+            putExtra(Intent.EXTRA_SUBJECT, "גיבוי מעקב שעות")
             putExtra(Intent.EXTRA_TEXT, json)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
@@ -942,7 +942,7 @@ class WorkViewModel(
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/csv"
                 putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, "מעקב שעות עבודה - Sholi Gratzman")
+                putExtra(Intent.EXTRA_SUBJECT, "מעקב שעות עבודה")
                 putExtra(Intent.EXTRA_TEXT, "מצורף קובץ CSV של שעות מעקב העבודה שלי.")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
