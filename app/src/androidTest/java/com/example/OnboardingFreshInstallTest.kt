@@ -63,6 +63,15 @@ class OnboardingFreshInstallTest {
         }
         ui.onNodeWithTag("onboarding_card").assertDoesNotExist()
         assertEquals(ONBOARDING_VERSION, WorkOnboardingStore(context).completedVersion)
+        // Then, once, what notifications are for (before Android's own dialog); "later" never asks again.
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            ui.waitUntil(5_000) { ui.onAllNodesWithTag("notifications_prompt").fetchSemanticsNodes().isNotEmpty() }
+            Thread.sleep(600)
+            File(context.getExternalFilesDir(null), "onboarding-device-9.png").outputStream().use { device.takeScreenshot().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+            ui.onNodeWithTag("notifications_prompt_later").performClick()
+            ui.waitUntil(5_000) { ui.onAllNodesWithTag("notifications_prompt").fetchSemanticsNodes().isEmpty() }
+            assertTrue(PlanSettings(context).permissionAsked)
+        }
         ui.activityRule.scenario.recreate()
         ui.onNodeWithTag("onboarding_card").assertDoesNotExist()
         ui.onNodeWithTag("settings_button").performClick()

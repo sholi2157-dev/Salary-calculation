@@ -130,6 +130,8 @@ class MainActivity : ComponentActivity() {
         get() = modelFor(com.example.api.AuthManager.currentUser.value?.uid)
 
     val intentActionFlow = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    /** The month a monthly-summary notification is about ("YYYY-MM"). */
+    val intentMonthFlow = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -147,6 +149,8 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) handleIntent(intent)
         // Weekly plans: one daily job records finished plans and sends the reminders the user turned on.
         PlanJobs.schedule(this)
+        // A new version also reaches the phone's notifications (once per version), not only the bell.
+        AppUpdateJobs.schedule(this)
 
         // Notification permission is requested only when starting a live shift.
 
@@ -196,6 +200,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: android.content.Intent?) {
+        intentMonthFlow.value = intent?.getStringExtra(PlanJobs.EXTRA_MONTH)?.takeIf { it.isNotEmpty() }
         intentActionFlow.value = intent?.action
         if (intent?.action == "com.example.ACTION_START_SHIFT") {
             // Starts the timer with the default workplace and its saved rate.
@@ -252,12 +257,16 @@ fun MainAppContent(
         "com.example.ACTION_OPEN_HISTORY_SEARCH" -> com.example.ui.kis.ShellRequest.HISTORY_SEARCH
         PlanJobs.ACTION_MONTH -> com.example.ui.kis.ShellRequest.HISTORY
         PlanJobs.ACTION_RATES -> com.example.ui.kis.ShellRequest.RATES
+        PlanJobs.ACTION_PLANS -> com.example.ui.kis.ShellRequest.HOME
+        AppUpdateJobs.ACTION_UPDATE -> com.example.ui.kis.ShellRequest.UPDATE
         else -> null
     }
+    val requestedMonth by activity.intentMonthFlow.collectAsStateWithLifecycle()
     Box(modifier) {
         com.example.ui.kis.KisApp(
             viewModel = viewModel,
             request = request,
+            requestedMonth = requestedMonth,
             onRequestHandled = { activity.intentActionFlow.value = null },
             onReplayTour = { onboarding.replay() },
             onSignIn = { showAccountDialog = true },
@@ -268,4 +277,20 @@ fun MainAppContent(
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     if (!launching) com.example.ui.WorkOnboarding(onboarding, viewModel, categories.distinctBy { it.name.trim() }, entries)
+    // Once, after the launch and the tour (Android 13+ needs the user's permission for any notification).
+    val plan = remember { PlanSettings(context) }
+    var askNotifications by remember { mutableStateOf(false) }
+    LaunchedEffect(launching, onboarding.active) {
+        if (!launching && !onboarding.active && android.os.Build.VERSION.SDK_INT >= 33 && !plan.permissionAsked &&
+            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            kotlinx.coroutines.delay(700)
+            askNotifications = true
+        }
+    }
+    val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
+        PlanJobs.scheduleNextAsync(context)
+    }
+    if (askNotifications) com.example.ui.kis.NotificationsPrompt(
+        onAllow = { plan.permissionAsked = true; askNotifications = false; permission.launch(android.Manifest.permission.POST_NOTIFICATIONS) },
+        onLater = { plan.permissionAsked = true; askNotifications = false })
 }

@@ -11,7 +11,7 @@ adb shell svc wifi disable
 adb shell svc data disable
 adb shell am instrument -w -e class com.example.OnboardingFreshInstallTest#firstLaunchCompletionReplaySkipAndNoSideEffects \
   "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/onboarding-fresh.txt
-for n in $(seq 0 8); do
+for n in $(seq 0 9); do
   adb pull "/sdcard/Android/data/$pkg/files/onboarding-device-$n.png" "release-evidence/onboarding-device-$n.png" >/dev/null 2>&1 || true
 done
 grep -F 'OK (1 test)' release-evidence/onboarding-fresh.txt

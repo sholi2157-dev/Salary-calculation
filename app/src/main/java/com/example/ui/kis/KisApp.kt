@@ -57,12 +57,15 @@ import kotlinx.coroutines.launch
 data class KisMessage(val text: String, val action: String? = null, val onAction: (() -> Unit)? = null, val id: Long = System.nanoTime())
 
 /** Requests the shell can receive from outside (system shortcuts, notifications). */
-enum class ShellRequest { IMPORT, HISTORY_SEARCH, HISTORY, RATES }
+/** What a shortcut or a notification asks the app to open. HISTORY opens the summary of [KisApp]'s requestedMonth (else last month). */
+enum class ShellRequest { IMPORT, HISTORY_SEARCH, HISTORY, RATES, UPDATE, HOME }
 
 @Composable
 fun KisApp(
     viewModel: WorkViewModel,
     request: ShellRequest? = null,
+    /** "YYYY-MM" from a monthly-summary notification. */
+    requestedMonth: String? = null,
     onRequestHandled: () -> Unit = {},
     onReplayTour: () -> Unit = {},
     onSignIn: () -> Unit = {},
@@ -107,6 +110,7 @@ fun KisApp(
     // A new version shows on the bell too (dot + an update button inside), checked on every return to the app.
     val appContext = androidx.compose.ui.platform.LocalContext.current
     var update by remember { mutableStateOf(com.example.ui.WorkUpdateNotice.cached(appContext)) }
+    var updateSheet by remember { mutableStateOf<com.example.ui.WorkUpdates.Release?>(null) }
     var resumes by remember { mutableIntStateOf(0) }
     LaunchedEffect(resumes) { update = com.example.ui.WorkUpdateNotice.refresh(appContext) }
 
@@ -152,14 +156,21 @@ fun KisApp(
         when (request) {
             ShellRequest.IMPORT -> { pager.scrollToPage(2); onRequestHandled() }
             ShellRequest.HISTORY_SEARCH -> { pager.scrollToPage(1); history.planned = false; history.searching = true; onRequestHandled() }
-            // The monthly summary is about last month: show that one.
+            // The monthly summary of the month the notification is about (an old one, without a month: last month).
             ShellRequest.HISTORY -> {
                 pager.scrollToPage(1); history.planned = false
-                val last = HistoryFilter.monthKey(System.currentTimeMillis()) - 1
-                history.showMonth = last
-                monthSheet = last
+                val month = requestedMonth?.let(::monthKeyOf) ?: (HistoryFilter.monthKey(System.currentTimeMillis()) - 1)
+                history.showMonth = month
+                monthSheet = month
                 onRequestHandled()
             }
+            ShellRequest.UPDATE -> {
+                pager.scrollToPage(0)
+                // The notification's version, or a fresh look when the cache is empty.
+                updateSheet = update ?: com.example.ui.WorkUpdateNotice.refresh(appContext, force = true)?.also { update = it }
+                onRequestHandled()
+            }
+            ShellRequest.HOME -> { pager.scrollToPage(0); onRequestHandled() }
             ShellRequest.RATES -> {
                 pager.scrollToPage(1); history.planned = false
                 // After a cold start from the notification the shifts are still loading: wait for them briefly.
@@ -282,7 +293,9 @@ fun KisApp(
         }
     }
     if (bellOpen) NotificationsSheet(viewModel, onMonth = { bellOpen = false; unread = false; monthSheet = it },
-        onSettings = { bellOpen = false; unread = false; go(2) }, onDismiss = { bellOpen = false; unread = false }, update = update)
+        onSettings = { bellOpen = false; unread = false; go(2) }, onDismiss = { bellOpen = false; unread = false }, update = update,
+        onUpdate = { bellOpen = false; unread = false; updateSheet = it })
+    updateSheet?.let { r -> UpdateSheet(r, onDismiss = { updateSheet = null }) }
     monthSheet?.let { m ->
         MonthSummarySheet(m, entries, categories, onHistory = { monthSheet = null; history.planned = false; history.showMonth = m; go(1) },
             onDismiss = { monthSheet = null }, onMessage = { say(it) }, onStory = { monthSheet = null; storyScope = it })

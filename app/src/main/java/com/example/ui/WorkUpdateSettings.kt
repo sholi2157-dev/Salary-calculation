@@ -3,9 +3,7 @@ package com.example.ui
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
-import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,6 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import com.example.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -66,20 +65,26 @@ object WorkUpdates {
     private fun certificates(info: android.content.pm.PackageInfo): Set<String> =
         if (Build.VERSION.SDK_INT >= 28) info.signingInfo?.apkContentsSigners?.map { hash(it.toByteArray()) }?.toSet() ?: emptySet()
         else info.signatures?.map { hash(it.toByteArray()) }?.toSet() ?: emptySet()
+    /** [onProgress] gets 0..1 while the file arrives (only when the server says how big it is), then the file is verified. */
+    suspend fun download(context: Context, release: Release, onProgress: (Float) -> Unit = {}): File = downloadWithClient(context, release, client, onProgress)
     @Suppress("DEPRECATION")
-    suspend fun download(context: Context, release: Release): File = downloadWithClient(context, release, client)
-    internal suspend fun downloadWithClient(context: Context, release: Release, transport: OkHttpClient): File = withContext(Dispatchers.IO) {
+    internal suspend fun downloadWithClient(context: Context, release: Release, transport: OkHttpClient, onProgress: (Float) -> Unit = {}): File = withContext(Dispatchers.IO) {
         val file = File(context.cacheDir, "salary-update-${release.code}.apk")
         val partial = File(context.cacheDir, "salary-update-${release.code}.pending.apk")
         try {
             val digest = MessageDigest.getInstance("SHA-256")
             transport.newCall(Request.Builder().url(release.apk).build()).execute().use { response ->
                 check(response.isSuccessful)
-                checkNotNull(response.body).byteStream().use { input -> partial.outputStream().use { output ->
-                    val buffer = ByteArray(65536); var total = 0L
+                val body = checkNotNull(response.body)
+                val length = body.contentLength()
+                body.byteStream().use { input -> partial.outputStream().use { output ->
+                    val buffer = ByteArray(65536); var total = 0L; var shown = -1
                     while (true) { val size = input.read(buffer); if (size < 0) break
+                        // Leaving the screen cancels the download.
+                        ensureActive()
                         total += size; check(total <= 150L * 1024 * 1024)
                         digest.update(buffer, 0, size); output.write(buffer, 0, size)
+                        if (length > 0) { val p = (total * 100 / length).toInt().coerceIn(0, 100); if (p != shown) { shown = p; onProgress(p / 100f) } }
                     }
                 } }
             }
@@ -120,28 +125,13 @@ object WorkUpdateNotice {
             .put("sha256", release.sha256).put("releaseNotes", release.notes).toString())
     }.apply()
     /** A fresh check (network), or the cached result when it was checked within the hour or the check fails. */
-    suspend fun refresh(context: Context): WorkUpdates.Release? {
+    suspend fun refresh(context: Context, force: Boolean = false): WorkUpdates.Release? {
         if (!BuildConfig.LOCAL_DISTRIBUTION) return null
         val now = System.currentTimeMillis()
-        if (now - prefs(context).getLong("lastBellCheck", 0) < 60 * 60 * 1000L) return cached(context)
+        if (!force && now - prefs(context).getLong("lastBellCheck", 0) < 60 * 60 * 1000L) return cached(context)
         return try {
             WorkUpdates.check(context).also { save(context, it); prefs(context).edit().putLong("lastBellCheck", now).apply() }
         } catch (_: Exception) { cached(context) }
-    }
-}
-
-/** Download, verify and hand to Android's installer (never silent). Shared by the bell and by Settings. */
-fun startUpdate(context: Context, scope: kotlinx.coroutines.CoroutineScope, release: WorkUpdates.Release, setBusy: (Boolean) -> Unit, onStarted: () -> Unit = {}) {
-    if (Build.VERSION.SDK_INT >= 26 && !context.packageManager.canRequestPackageInstalls()) {
-        Toast.makeText(context, "אפשר התקנה ממקור זה, חזור ולחץ עדכון", Toast.LENGTH_LONG).show()
-        context.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}")))
-        return
-    }
-    setBusy(true)
-    scope.launch {
-        try { WorkUpdates.install(context, WorkUpdates.download(context, release)); onStarted() }
-        catch (_: Exception) { Toast.makeText(context, "העדכון לא הותקן. ההורדה או האימות נכשלו; האפליקציה הקיימת נשמרה", Toast.LENGTH_LONG).show() }
-        finally { setBusy(false) }
     }
 }
 
@@ -174,12 +164,8 @@ fun WorkUpdateSettings(automatic: Boolean = false) {
         Text(if (busy) "בודק…" else "בדוק עדכונים (${BuildConfig.VERSION_NAME})")
     }
     candidate?.let { release ->
-        fun dismiss() { if (!busy) { preferences.edit().putLong("dismissed", release.code).apply(); candidate = null } }
-        AlertDialog(onDismissRequest = { dismiss() }, title = { Text("גרסה ${release.name} זמינה") },
-            text = { Text(if (busy) "מוריד ומאמת את העדכון…" else release.notes) },
-            dismissButton = { TextButton(onClick = { dismiss() }, enabled = !busy) { Text("מאוחר יותר") } },
-            confirmButton = { TextButton(enabled = !busy, onClick = {
-                startUpdate(context, scope, release, setBusy = { busy = it }, onStarted = { candidate = null })
-            }) { Text("עדכון") } })
+        // "אחר כך" on the daily check is remembered for this version; the bell and Settings still offer it.
+        com.example.ui.kis.UpdateSheet(release, onDismiss = { candidate = null },
+            onLater = { preferences.edit().putLong("dismissed", release.code).apply(); candidate = null })
     }
 }

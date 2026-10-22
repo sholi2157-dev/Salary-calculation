@@ -45,6 +45,11 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- "עבדתי" / "לא עבדתי" from a weekly-plan notification. -->
+        <receiver
+            android:name=".PlanActionReceiver"
+            android:exported="false" />
+
         <service
             android:name=".ShiftForegroundService"
             android:enabled="true"

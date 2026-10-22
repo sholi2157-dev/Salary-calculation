@@ -811,7 +811,19 @@ class WorkViewModel(
         tickPlans()
         viewModelScope.launch {
             val ids = runCatching { com.example.PlanJobs.catchUp(localDao, planSettings) }.getOrDefault(emptyList()).map { it.toInt() }
-            if (ids.isNotEmpty()) { lastAddedEntryIds = ids; lastAddedEntryId = ids.last(); performAutoBackup(); onRecorded(ids) }
+            if (ids.isNotEmpty()) { lastAddedEntryIds = ids; lastAddedEntryId = ids.last(); toldAbout(ids); performAutoBackup(); onRecorded(ids) }
+        }
+    }
+
+    /** Days the app itself just reported ("נרשמו · ביטול") get no notification about the same thing later. */
+    private suspend fun toldAbout(ids: List<Int>) = planSettings.markNotified(localDao.getEntriesList().filter { it.id in ids }.mapNotNull { it.seriesKey })
+
+    init {
+        // Any change to the plans moves the next wake-up (a plan's end, or the monthly summary).
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(localDao.observeSeries(), localDao.observeExceptions()) { _, _ -> }.collect {
+                runCatching { com.example.PlanJobs.scheduleNext(getApplication()) }
+            }
         }
     }
 
@@ -840,7 +852,7 @@ class WorkViewModel(
                 val preview = planPreview(days, from, until, start, end, localDao.getEntriesList(), localDao.getSeries(), localDao.getExceptions())
                 localDao.saveSeries(s, preview.clashes)
                 val ids = com.example.PlanJobs.catchUp(localDao, planSettings).map { it.toInt() }
-                if (ids.isNotEmpty()) { lastAddedEntryIds = ids; lastAddedEntryId = ids.last() }
+                if (ids.isNotEmpty()) { lastAddedEntryIds = ids; lastAddedEntryId = ids.last(); toldAbout(ids) }
                 performAutoBackup()
                 tickPlans()
                 onDone(preview.created.size, ids)
