@@ -635,6 +635,29 @@ class KisUiTest {
         shot("bell-update")
     }
 
+    /** The update itself: what is new, then (on tap) the download with its percentage; "אחר כך" leaves it for later. */
+    @Test fun updateSheetOffersTheVersionAndCanWait() {
+        val release = com.example.ui.WorkUpdates.Release(99, "2.0.4", "https://github.com/sholi2157-dev/Salary-calculation/releases/download/x/a.apk", "0".repeat(64),
+            "התראות שמגיעות באמת: הסיכום החודשי ב-30 לחודש, משמרת קבועה שהסתיימה וגרסה חדשה.")
+        var later = false
+        host { UpdateSheet(release, onDismiss = {}, onLater = { later = true }) }
+        ui.onNodeWithText("גרסה 2.0.4 זמינה").assertExists()
+        ui.onNodeWithTag("update_notes").assertTextContains("הסיכום החודשי", substring = true)
+        ui.onNodeWithTag("update_start").assertExists()
+        shot("update-sheet")
+        ui.onNodeWithTag("update_later").performClick()
+        assertTrue(later)
+    }
+
+    @Test fun notificationsPromptSaysWhatTheyAreFor() {
+        var allowed = false
+        host { NotificationsPrompt(onAllow = { allowed = true }, onLater = {}) }
+        ui.onNodeWithText("הסיכום החודשי, ב-30 לכל חודש").assertExists()
+        shot("notifications-prompt")
+        ui.onNodeWithTag("notifications_prompt_allow").performClick()
+        assertTrue(allowed)
+    }
+
     @Test fun launchShowsTheSloganThenTakesFirstAndLastName() {
         lateinit var settings: KisSettings
         var done = false
