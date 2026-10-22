@@ -26,13 +26,14 @@ function hourProfile(rows) {
   return out;
 }
 
+// Addressed in the plural, as Hebrew does for everyone (the same words as Android).
 const PERSONAS = {
-  owl: { name: 'ינשוף לילה', line: 'כשכולם הולכים לישון, אתה רק מתחמם. הקפה שלך עובד משמרת כפולה.' },
-  bird: { name: 'ציפור בוקר', line: 'השעון המעורר שלך מפחד ממך. עד שכולם קמים, אתה כבר באמצע היום.' },
-  weekend: { name: 'לוחם סוף שבוע', line: 'שישי-שבת? בשבילך זה פשוט עוד יומיים בלוח.' },
-  marathon: { name: 'המרתוניסט', line: 'משמרת ממוצעת של # שעות. מישהו פה לא מכיר את המילה "הפסקה".' },
-  loyal: { name: 'הנאמן', line: 'יש לך מקום אחד בלב, ועוד יותר בלוח המשמרות.' },
-  juggler: { name: 'הלהטוטן', line: '# מקומות עבודה, ואתה מחזיק את כולם באוויר.' },
+  owl: { name: 'ינשוף לילה', line: 'כשכולם הולכים לישון, אתם רק מתחממים. הקפה שלכם עובד משמרת כפולה.' },
+  bird: { name: 'ציפור בוקר', line: 'השעון המעורר מפחד מכם. עד שכולם קמים, אתם כבר באמצע היום.' },
+  weekend: { name: 'האנרגיה של סופ״ש', line: 'שישי-שבת? אצלכם זה פשוט עוד יומיים בלוח.' },
+  marathon: { name: 'ריצת מרתון', line: 'משמרת ממוצעת של # שעות. המילה "הפסקה" כנראה לא במילון שלכם.' },
+  loyal: { name: 'נאמנות מלאה', line: 'מקום אחד בלב, ועוד יותר בלוח המשמרות.' },
+  juggler: { name: 'להטוטנות', line: '# מקומות עבודה, וכולם באוויר בבת אחת.' },
 };
 const FUN = { flights: 'טיסות לניו יורק וחזרה', episodes: 'פרקים של "חברים"', movies: 'סרטים באורך מלא', coffees: 'כוסות קפה שהספיקו להתקרר' };
 
@@ -100,6 +101,21 @@ function summary(rows, scope, today) {
   };
 }
 
-const api = { summary, hourProfile, PERSONAS, FUN, prevMonth, weekday };
+/**
+ * The story slides that have something real to say, in order (Android: V2Summary.slides, checked by the shared expected
+ * results): a type needs 4 shifts, the weekday rhythm and the busiest hour 3, the longest shift 2, the places two places.
+ */
+function slides(s) {
+  const out = ['intro', 'hours'];
+  if (s.places.length >= 2) out.push('places');
+  if (s.persona != null && s.count >= 4) out.push('persona');
+  if (s.longest != null && s.count >= 2) out.push('longest');
+  if (s.bestDay != null && s.count >= 3 && s.days.filter(d => d > 0).length >= 2) out.push('days');
+  if (s.peakHour != null && s.count >= 3) out.push('hour');
+  out.push('money', 'card');
+  return out;
+}
+
+const api = { summary, hourProfile, PERSONAS, FUN, prevMonth, weekday, slides };
 if (typeof module !== 'undefined') module.exports = api; else root.KisSummary = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
