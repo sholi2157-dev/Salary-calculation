@@ -545,7 +545,14 @@ class KisUiTest {
         // A state change with nothing animating reaches the screen once the main looper runs (Robolectric's paused looper).
         fun settle() { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); ui.mainClock.advanceTimeBy(800) }
         fun next() { ui.onNodeWithTag("story_next").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle() }
-        repeat(10) { if (ui.onAllNodesWithTag("story_money").fetchSemanticsNodes().isEmpty()) next() }
+        // Every slide on the way is kept as a picture for review.
+        repeat(10) {
+            if (ui.onAllNodesWithTag("story_money").fetchSemanticsNodes().isEmpty()) {
+                ui.mainClock.advanceTimeBy(700)
+                shownSlide().firstOrNull { it.startsWith("story_") }?.let { tag -> runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-$tag.png") } }
+                next()
+            }
+        }
         fun prev() { ui.onNodeWithTag("story_prev").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle() }
         prev()
         assertEquals("back from the amount", listOf("story_hour"), shownSlide().dropLast(1))
@@ -570,8 +577,29 @@ class KisUiTest {
         next()
         assertTrue(closed)
         // The shared picture is drawn on its own, without amounts.
-        val card = cardBitmap(app, "אוקטובר 2026", listOf("שעות" to "18", "משמרות" to "5"))
+        val s = com.example.domain.V2Summary.summary(rows().map { com.example.domain.V2Summary.row(it) }, com.example.domain.V2Summary.monthScope(HistoryFilter.monthKey(mid)),
+            com.example.domain.V2Summary.today())
+        val cells = posterCells(s, "ינשוף לילה", com.example.domain.V2Summary.slides(s).toSet())
+        assertTrue(cells.none { (_, v) -> v == "—" || v.contains("₪") || v.contains("$") })
+        val card = cardBitmap(app, "אוקטובר 2026", cells)
         assertEquals(1080, card.width); assertEquals(1080, card.height)
+        java.io.File("/tmp/kis-share-card.png").outputStream().use { card.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    /** One short shift: a short, correct story (no type, rhythm or "busiest hour" from one data point) and a card without empty cells. */
+    @Test fun aThinMonthTellsAShortTrueStory() {
+        runBlocking { dao.insertEntry(WorkEntry(category = "מסעדה", date = mid, isTimeRange = true, startTime = "17:00", endTime = "19:30", hours = 2.5, hourlyRate = 40.0, totalEarnings = 100.0)) }
+        ui.mainClock.autoAdvance = false
+        val scope = com.example.domain.V2Summary.monthScope(HistoryFilter.monthKey(mid))
+        host { KisStory(scope, rows(), categories, onClose = {}, onMessage = {}) }
+        ui.mainClock.advanceTimeBy(7_500)
+        ui.onNodeWithTag("story_hours").assertExists()
+        ui.onNodeWithTag("story_hours_value", useUnmergedTree = true).assertTextEquals("2.5")
+        ui.onNodeWithText("שעות עבודה במשמרת אחת.").assertExists()
+        runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-thin-hours.png") }
+        val s = com.example.domain.V2Summary.summary(rows().map { com.example.domain.V2Summary.row(it) }, scope, com.example.domain.V2Summary.today())
+        assertEquals(listOf("intro", "hours", "money", "card"), com.example.domain.V2Summary.slides(s))
+        assertEquals(listOf("שעות" to "2.5", "משמרות" to "1", "מקום מוביל" to "מסעדה"), posterCells(s, null, com.example.domain.V2Summary.slides(s).toSet()))
     }
 
     @Test fun bellSheetListsRecentAndOpensTheirMonth() {

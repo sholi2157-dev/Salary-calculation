@@ -33,7 +33,7 @@ fun insightText(i: com.example.domain.V2Summary.Insight): String = when (i) {
     is com.example.domain.V2Summary.Insight.Unpaid -> i.amounts.joinToString(" · ") { (cur, v) -> KisFormat.money(v, cur) } + " עדיין לא סומנו כשולמו"
     is com.example.domain.V2Summary.Insight.Pending -> if (i.count == 1) "משמרת אחת ממתינה לתעריף" else "${i.count} משמרות ממתינות לתעריף"
     is com.example.domain.V2Summary.Insight.Trend -> "${kotlin.math.abs(i.percent)}% ${if (i.percent > 0) "יותר" else "פחות"} שעות מ${KisFormat.MONTHS[(monthKeyOf(i.previousMonth) ?: 0) % 12]}"
-    is com.example.domain.V2Summary.Insight.Day -> "יום ${KisFormat.DAY_LONG[i.day]} הוא היום העמוס שלך"
+    is com.example.domain.V2Summary.Insight.Day -> "יום ${KisFormat.DAY_LONG[i.day]} הוא היום העמוס שלכם"
 }
 
 /**
@@ -76,11 +76,13 @@ fun MonthSummarySheet(month: Int, entries: List<WorkEntry>, categories: List<Wor
                     Tile("לא שולם", KisFormat.money(cur.unpaid, cur.currency), Modifier.weight(1f), "month_unpaid_${cur.currency}")
                 }
             }
-            s.insights.forEachIndexed { i, ins ->
+            // "The busy day" says something only with a few shifts on different days (the story's rule).
+            val rhythm = "days" in com.example.domain.V2Summary.slides(s)
+            s.insights.filter { rhythm || it !is com.example.domain.V2Summary.Insight.Day }.forEachIndexed { i, ins ->
                 Text(insightText(ins), style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink,
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.bg).padding(horizontal = 16.dp, vertical = 12.dp).testTag("month_insight_$i"))
             }
-            s.bestDay?.let { best -> WeekBars(s.days, best) }
+            s.bestDay?.takeIf { rhythm }?.let { best -> WeekBars(s.days, best) }
             KisButton("${scope.take(4)} שלך בכיס", { onStory(scope.take(4)) }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "year_story")
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

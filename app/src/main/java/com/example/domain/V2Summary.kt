@@ -34,16 +34,32 @@ object V2Summary {
     )
 
     data class Persona(val name: String, val line: String)
+    // Addressed in the plural, as Hebrew does for everyone (the same words on the website).
     val PERSONAS = mapOf(
-        "owl" to Persona("ינשוף לילה", "כשכולם הולכים לישון, אתה רק מתחמם. הקפה שלך עובד משמרת כפולה."),
-        "bird" to Persona("ציפור בוקר", "השעון המעורר שלך מפחד ממך. עד שכולם קמים, אתה כבר באמצע היום."),
-        "weekend" to Persona("לוחם סוף שבוע", "שישי-שבת? בשבילך זה פשוט עוד יומיים בלוח."),
-        "marathon" to Persona("המרתוניסט", "משמרת ממוצעת של # שעות. מישהו פה לא מכיר את המילה \"הפסקה\"."),
-        "loyal" to Persona("הנאמן", "יש לך מקום אחד בלב, ועוד יותר בלוח המשמרות."),
-        "juggler" to Persona("הלהטוטן", "# מקומות עבודה, ואתה מחזיק את כולם באוויר."),
+        "owl" to Persona("ינשוף לילה", "כשכולם הולכים לישון, אתם רק מתחממים. הקפה שלכם עובד משמרת כפולה."),
+        "bird" to Persona("ציפור בוקר", "השעון המעורר מפחד מכם. עד שכולם קמים, אתם כבר באמצע היום."),
+        "weekend" to Persona("האנרגיה של סופ״ש", "שישי-שבת? אצלכם זה פשוט עוד יומיים בלוח."),
+        "marathon" to Persona("ריצת מרתון", "משמרת ממוצעת של # שעות. המילה \"הפסקה\" כנראה לא במילון שלכם."),
+        "loyal" to Persona("נאמנות מלאה", "מקום אחד בלב, ועוד יותר בלוח המשמרות."),
+        "juggler" to Persona("להטוטנות", "# מקומות עבודה, וכולם באוויר בבת אחת."),
     )
     val FUN = mapOf("flights" to "טיסות לניו יורק וחזרה", "episodes" to "פרקים של \"חברים\"", "movies" to "סרטים באורך מלא",
         "coffees" to "כוסות קפה שהספיקו להתקרר")
+
+    /**
+     * The story slides that have something real to say, in order (the same on the website, checked by the shared
+     * expected results): a type needs 4 shifts, the weekday rhythm and the busiest hour 3, the longest shift 2, the
+     * places at least two places. A thin month gets a short story rather than a silly one.
+     */
+    fun slides(s: Summary): List<String> = buildList {
+        add("intro"); add("hours")
+        if (s.places.size >= 2) add("places")
+        if (s.persona != null && s.count >= 4) add("persona")
+        if (s.longest != null && s.count >= 2) add("longest")
+        if (s.bestDay != null && s.count >= 3 && s.days.count { it > 0 } >= 2) add("days")
+        if (s.peakHour != null && s.count >= 3) add("hour")
+        add("money"); add("card")
+    }
 
     fun row(e: WorkEntry, zone: ZoneId = ZoneId.systemDefault()) = Row(
         Instant.ofEpochMilli(e.date).atZone(zone).toLocalDate().toString(),

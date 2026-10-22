@@ -70,20 +70,23 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
     val top = s.places.firstOrNull()
     val persona = s.persona?.let { V2Summary.PERSONAS[it] }
     val personaLine = persona?.line?.replace("#", when (s.persona) {
-        "marathon" -> String.format(java.util.Locale.US, "%.1f", hrs / maxOf(1, s.count)); else -> s.places.size.toString() })
+        "marathon" -> KisFormat.hours(hrs / maxOf(1, s.count)); else -> s.places.size.toString() })
+    // Only the slides with something real to say (V2Summary.slides, the same rule as the website).
+    val shows = remember(s) { V2Summary.slides(s).toSet() }
     val slides = buildList {
         add(Slide(StoryDark, 0, 2, tag = "story_intro") {
             Kick("${androidx.compose.ui.res.stringResource(com.example.R.string.app_name)} · $label")
             Big("$whose שלך\nבכיס.")
-            Para("מוכן? יש לנו כמה מספרים שאתה לא יודע על עצמך.")
+            Para("מוכנים? יש כאן כמה מספרים שעוד לא ידעתם על עצמכם.")
         })
         add(Slide(place(0), 3, 4, tag = "story_hours") {
-            Kick("הזמן שלך")
-            CountUp(Math.round(hrs).toInt(), Modifier.testTag("story_hours_value"))
-            Head("שעות עבודה ב-${s.count} משמרות.")
-            s.comparison?.let { Para("זה בערך ${it.count} ${V2Summary.FUN[it.key]}. סתם שתדע.") }
+            Kick("הזמן שלכם")
+            // Under 10 hours the exact value (2.5), not a rounded 3.
+            if (hrs < 10) Huge(KisFormat.hours(hrs), Modifier.testTag("story_hours_value")) else CountUp(Math.round(hrs).toInt(), Modifier.testTag("story_hours_value"))
+            Head((if (hrs == 1.0) "שעת עבודה" else "שעות עבודה") + if (s.count == 1) " במשמרת אחת." else " ב-${s.count} משמרות.")
+            s.comparison?.let { Para("זה בערך ${it.count} ${V2Summary.FUN[it.key]}. סתם שתדעו.") }
         })
-        if (s.places.isNotEmpty()) add(Slide(StoryDark, 1, 0, tag = "story_places") {
+        if ("places" in shows) add(Slide(StoryDark, 1, 0, tag = "story_places") {
             Kick("המקומות המובילים שלך")
             s.places.forEachIndexed { i, p ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -93,34 +96,30 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
                     Text("${KisFormat.hours(p.hours)} ש׳", style = TextStyle(fontFamily = Rubik, fontSize = 16.sp), color = LocalStoryInk.current.copy(alpha = .75f))
                 }
             }
-            top?.let { Para("${it.name} קיבל ממך ${Math.round(it.hours / maxOf(0.01, hrs) * 100)}% מהזמן. שיהיה ברור מי האהוב.") }
+            top?.let { Para("${Math.round(it.hours / maxOf(0.01, hrs) * 100)}% מהזמן הלכו ל${it.name}. שיהיה ברור מי האהוב.") }
         })
-        if (persona != null) add(Slide(place(if (s.persona == "owl") 4 else if (s.persona == "bird") 3 else 2), 4, 3, tag = "story_persona") {
-            Kick("טיפוס העבודה שלך")
+        if (persona != null && "persona" in shows) add(Slide(place(if (s.persona == "owl") 4 else if (s.persona == "bird") 3 else 2), 4, 3, tag = "story_persona") {
+            Kick("טיפוס העבודה שלכם")
             Big(persona.name, Modifier.testTag("story_persona_name"))
             Para(personaLine ?: "")
         })
-        add(Slide(place(2), 4, 3, tag = "story_longest") {
-            val l = s.longest
-            if (l == null) Big("$whose רגוע.")
-            else {
-                Kick("המשמרת הארוכה")
-                Huge(hm(l.hours))
-                Head(dayLabel(millisOf(l.date)) + (if (l.start != null && l.end != null) ", ⁦${l.start}–${l.end}⁩." else "."))
-                Para("מגיע לך קפה. אולי שניים." + if (s.nights > 0) " ועוד ${s.nights} פעמים סיימת אחרי 23:00." else "")
-            }
-        })
-        s.bestDay?.let { best -> add(Slide(StoryDark, 5, 1, tag = "story_days") {
-            Kick("הקצב שלך")
-            Head("יום ${KisFormat.DAY_LONG[best]} הוא היום שלך.")
+        s.longest?.takeIf { "longest" in shows }?.let { l -> add(Slide(place(2), 4, 3, tag = "story_longest") {
+            Kick("המשמרת הארוכה")
+            Huge(hm(l.hours))
+            Head(dayLabel(millisOf(l.date)) + (if (l.start != null && l.end != null) ", ⁦${l.start}–${l.end}⁩." else "."))
+            Para("מגיע לכם קפה. אולי שניים." + when (s.nights) { 0 -> ""; 1 -> " ופעם אחת סיימתם אחרי 23:00."; else -> " ו-${s.nights} פעמים סיימתם אחרי 23:00." })
+        }) }
+        s.bestDay?.takeIf { "days" in shows }?.let { best -> add(Slide(StoryDark, 5, 1, tag = "story_days") {
+            Kick("הקצב שלכם")
+            Head("יום ${KisFormat.DAY_LONG[best]} הוא היום שלכם.")
             Bars(s.days, best, KisFormat.DAY_SHORT, place(3), 180.dp)
         }) }
-        s.peakHour?.let { h -> add(Slide(place(5), 3, 4, tag = "story_hour") {
-            Kick("השעה הכי פעילה שלך")
+        s.peakHour?.takeIf { "hour" in shows }?.let { h -> add(Slide(place(5), 3, 4, tag = "story_hour") {
+            Kick("השעה הכי פעילה שלכם")
             Huge("%02d:00".format(h))
             Bars(s.hourMinutes.map { it.toDouble() }, h, null, Color.White, 90.dp)
-            Para(when { h >= 22 || h < 5 -> "בזמן שכולם רואים סדרה במיטה, אתה בשטח."; h < 11 -> "קפה ראשון? אתה כבר באמצע העבודה."
-                h < 17 -> "שעות השיא של העולם. וגם שלך."; else -> "השעה שבה כולם חוזרים הביתה, ואתה בדיוק בשיא." })
+            Para(when { h >= 22 || h < 5 -> "בזמן שכולם רואים סדרה במיטה, אתם בשטח."; h < 11 -> "קפה ראשון? אתם כבר באמצע העבודה."
+                h < 17 -> "שעות השיא של העולם. וגם שלכם."; else -> "השעה שבה כולם חוזרים הביתה, ואתם בדיוק בשיא." })
         }) }
         add(Slide(place(1), 3, 0, tag = "story_money") {
             Kick("השורה התחתונה")
@@ -129,17 +128,17 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
                 if (hidden) Text("${cur.currency}•••", style = KisType.hero.copy(fontSize = 64.sp, lineHeight = 70.sp), color = LocalStoryInk.current, modifier = Modifier.testTag("story_money_hidden"))
                 else MoneyText(cur.total, cur.currency, KisType.hero.copy(fontSize = 64.sp, lineHeight = 70.sp), color = LocalStoryInk.current, modifier = Modifier.testTag("story_money_${cur.currency}"))
             }
-            Para((if (s.pending > 0) "ועוד ${if (s.pending == 1) "משמרת אחת" else "${s.pending} משמרות"} שמחכות לתעריף. " else "") + "הסכום רק בשבילך, הוא לא מופיע בשיתוף.")
-            if (s.currencies.isNotEmpty()) StoryChip(if (hidden) "הצג לי" else "הסתר", "story_reveal") { hidden = !hidden }
+            Para((if (s.pending > 0) "ועוד ${if (s.pending == 1) "משמרת אחת שמחכה" else "${s.pending} משמרות שמחכות"} לתעריף. " else "") + "הסכום רק בשבילכם, הוא לא מופיע בשיתוף.")
+            if (s.currencies.isNotEmpty()) StoryChip(if (hidden) "להציג" else "להסתיר", "story_reveal") { hidden = !hidden }
         })
         add(Slide(StoryDark, 0, 3, auto = false, tag = "story_card") {
             val context = LocalContext.current
             Kick("$whose שלך בכיס")
-            Poster(label, s, persona?.name)
-            val text = listOfNotNull("$whose שלי בכיס · $label", "⁦${Math.round(hrs)}⁩ שעות · ${s.count} משמרות", top?.let { "המקום המוביל: ${it.name}" },
-                persona?.let { "טיפוס: ${it.name}" }, s.bestDay?.let { "היום שלי: ${KisFormat.DAY_LONG[it]}" }).joinToString("\n")
+            Poster(label, s, persona?.name?.takeIf { "persona" in shows })
+            val cells = posterCells(s, persona?.name?.takeIf { "persona" in shows }, shows)
+            val text = (listOf("$whose שלי בכיס · $label") + cells.map { (k, v) -> "$k: $v" }).joinToString("\n")
             KisButton("שיתוף הכרטיס", {
-                val ok = runCatching { shareImage(context, cardBitmap(context, label, posterCells(s, persona?.name)), text) }.getOrDefault(false)
+                val ok = runCatching { shareImage(context, cardBitmap(context, label, cells), text) }.getOrDefault(false)
                 if (!ok) KisShare.shareOrCopy(context, text, "$whose שלך בכיס", onMessage)
             }, Modifier.fillMaxWidth(), height = 54.dp, tag = "story_share")
         })
@@ -210,7 +209,8 @@ private val LocalStoryInk = staticCompositionLocalOf { Color.White }
 @Composable private fun Kick(text: String) = Text(text, style = TextStyle(fontFamily = Rubik, fontWeight = FontWeight.Bold, fontSize = 15.sp), color = LocalStoryInk.current.copy(alpha = .85f))
 @Composable private fun Big(text: String, modifier: Modifier = Modifier) = Text(text, style = TextStyle(fontFamily = SecularOne, fontSize = 52.sp, lineHeight = 56.sp), color = LocalStoryInk.current, modifier = modifier)
 @Composable private fun Head(text: String) = Text(text, style = TextStyle(fontFamily = SecularOne, fontSize = 30.sp, lineHeight = 36.sp), color = LocalStoryInk.current)
-@Composable private fun Huge(text: String) = Text(text, style = TextStyle(fontFamily = SecularOne, fontSize = 110.sp, lineHeight = 104.sp, letterSpacing = (-2).sp), color = LocalStoryInk.current)
+@Composable private fun Huge(text: String, modifier: Modifier = Modifier) = Text(text, style = TextStyle(fontFamily = SecularOne, fontSize = 110.sp, lineHeight = 104.sp,
+    letterSpacing = (-2).sp, textDirection = androidx.compose.ui.text.style.TextDirection.Ltr), color = LocalStoryInk.current, modifier = modifier, maxLines = 1)
 @Composable private fun Para(text: String) = Text(text, style = TextStyle(fontFamily = Rubik, fontSize = 18.sp, lineHeight = 26.sp), color = LocalStoryInk.current.copy(alpha = .92f))
 
 @Composable private fun CountUp(to: Int, modifier: Modifier) {
@@ -265,7 +265,7 @@ private val LocalStoryInk = staticCompositionLocalOf { Color.White }
             Text(label, style = TextStyle(fontFamily = SecularOne, fontSize = 22.sp), color = Color.White, modifier = Modifier.weight(1f))
             KisLogo(Modifier.size(36.dp))
         }
-        val cells = posterCells(s, persona)
+        val cells = posterCells(s, persona, V2Summary.slides(s).toSet())
         cells.chunked(2).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pair.forEach { (k, v) ->
@@ -279,9 +279,13 @@ private val LocalStoryInk = staticCompositionLocalOf { Color.White }
     }
 }
 
-private fun posterCells(s: V2Summary.Summary, persona: String?) = listOf("שעות" to "${Math.round(s.hours)}", "משמרות" to "${s.count}",
-    "מקום מוביל" to (s.places.firstOrNull()?.name ?: "—"), "טיפוס" to (persona ?: "—"), "היום שלך" to (s.bestDay?.let { KisFormat.DAY_LONG[it] } ?: "—"),
-    "הכי ארוכה" to (s.longest?.let { hm(it.hours) } ?: "—"))
+/** What the card says: only facts the story actually showed (never a "—"), and never an amount. */
+internal fun posterCells(s: V2Summary.Summary, persona: String?, shows: Set<String>): List<Pair<String, String>> = listOfNotNull(
+    "שעות" to KisFormat.hours(if (s.hours < 10) s.hours else Math.round(s.hours).toDouble()), "משמרות" to "${s.count}",
+    s.places.firstOrNull()?.let { "מקום מוביל" to it.name },
+    persona?.let { "טיפוס" to it },
+    s.bestDay?.takeIf { "days" in shows }?.let { "היום החזק" to "יום ${KisFormat.DAY_LONG[it]}" },
+    s.longest?.takeIf { "longest" in shows }?.let { "הכי ארוכה" to hm(it.hours) })
 
 /** The shared picture (1080×1080), drawn directly so it never depends on what is on screen. No amounts. */
 internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String, String>>): android.graphics.Bitmap {
@@ -308,6 +312,11 @@ internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String
         while (value.measureText(text) > size / 2 - 120f && text.length > 1) text = text.dropLast(1)
         canvas.drawText(if (text == v) v else "$text…", right, top + 86f, value)
     }
+    // Signed at the bottom: the app's mark (three rising bars on a base line) and its name.
+    val white = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE }
+    listOf(26f, 44f, 62f).forEachIndexed { i, h -> canvas.drawRoundRect(80f + i * 22f, 1000f - h, 96f + i * 22f, 1000f, 6f, 6f, white) }
+    canvas.drawRoundRect(76f, 1006f, 148f, 1012f, 3f, 3f, white)
+    canvas.drawText(context.getString(com.example.R.string.app_name), size - 80f, 1004f, paint(body, 34f, 220))
     return bmp
 }
 

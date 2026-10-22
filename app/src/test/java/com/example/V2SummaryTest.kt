@@ -51,6 +51,7 @@ class V2SummaryTest {
                     else -> V2Summary.Insight.Day(i.getInt("day"))
                 }
             }, got.insights)
+            assertEquals(name, (0 until w.getJSONArray("slides").length()).map { w.getJSONArray("slides").getString(it) }, V2Summary.slides(got))
             got.persona?.let { assertNotNull(name, V2Summary.PERSONAS[it]) }
             got.comparison?.let { assertNotNull(name, V2Summary.FUN[it.key]) }
         }
