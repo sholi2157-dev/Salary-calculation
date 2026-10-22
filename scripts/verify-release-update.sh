@@ -63,6 +63,14 @@ adb shell am instrument -w -e class com.example.PlanAutoRecordTest "$pkg.test/an
 grep -F 'OK (1 test)' release-evidence/plan-auto-record.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/plan-auto-record.txt
 adb pull "/sdcard/Android/data/$pkg/files/v2-plan-home.png" release-evidence/v2-plan-home.png || true
+adb shell am force-stop "$pkg"
+# 2.0.4: the monthly summary, a finished plan shift (with its "לא עבדתי" button) and a new version reach the notification shade.
+adb shell am instrument -w -e class com.example.NotificationsDeviceTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/notifications.txt
+grep -F 'OK (1 test)' release-evidence/notifications.txt
+! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/notifications.txt
+for name in v2-notify-monthly v2-notify-plan v2-notify-update; do
+  adb pull "/sdcard/Android/data/$pkg/files/$name.png" "release-evidence/$name.png" || true
+done
 adb exec-out screencap -p > release-evidence/rc2-screen.png
 adb logcat -d -b crash > release-evidence/crash-log.txt
 ! grep -E "FATAL EXCEPTION|AndroidRuntime|Process: $pkg" release-evidence/crash-log.txt

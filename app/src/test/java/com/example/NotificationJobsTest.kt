@@ -59,11 +59,11 @@ class NotificationJobsTest {
         val s = settings()
         val now = at(2026, 10, 30, 20, 5)
         val rows = listOf(
-            WorkEntry(id = 1, category = "מסעדה", date = at(2026, 10, 3, 17), hours = 5.0, hourlyRate = 50.0, totalEarnings = 250.0, currency = "₪"),
-            WorkEntry(id = 2, category = "שיעורים", date = at(2026, 10, 12, 9), hours = 2.0, hourlyRate = 30.0, totalEarnings = 60.0, currency = "$"),
+            WorkEntry(isTimeRange = false, id = 1, category = "מסעדה", date = at(2026, 10, 3, 17), hours = 5.0, hourlyRate = 50.0, totalEarnings = 250.0, currency = "₪"),
+            WorkEntry(isTimeRange = false, id = 2, category = "שיעורים", date = at(2026, 10, 12, 9), hours = 2.0, hourlyRate = 30.0, totalEarnings = 60.0, currency = "$"),
             // Later today and next month: not part of the month yet.
-            WorkEntry(id = 3, category = "מסעדה", date = at(2026, 10, 30, 22), hours = 5.0, hourlyRate = 50.0, totalEarnings = 250.0, currency = "₪"),
-            WorkEntry(id = 4, category = "מסעדה", date = at(2026, 9, 29, 17), hours = 5.0, hourlyRate = 50.0, totalEarnings = 250.0, currency = "₪"))
+            WorkEntry(isTimeRange = false, id = 3, category = "מסעדה", date = at(2026, 10, 30, 22), hours = 5.0, hourlyRate = 50.0, totalEarnings = 250.0, currency = "₪"),
+            WorkEntry(isTimeRange = false, id = 4, category = "מסעדה", date = at(2026, 9, 29, 17), hours = 5.0, hourlyRate = 50.0, totalEarnings = 250.0, currency = "₪"))
         val note = PlanJobs.due(rows, s, now).single()
         assertEquals("monthly", note.kind); assertEquals("2026-10", note.month)
         assertEquals("אוקטובר שלך בכיס מוכן", note.title)
@@ -152,7 +152,7 @@ class NotificationJobsTest {
         val s = PlanSettings(app).apply { quiet = true; quietFrom = "00:00"; quietTo = "23:59" }
         assertNotNull(PlanJobs.quietEnd(s, System.currentTimeMillis()))
         Shadows.shadowOf(app).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS)
-        dao.insertEntry(WorkEntry(category = "מסעדה", date = System.currentTimeMillis() - 3_600_000L, hours = 1.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = false))
+        dao.insertEntry(WorkEntry(isTimeRange = false, category = "מסעדה", date = System.currentTimeMillis() - 3_600_000L, hours = 1.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = false))
         s.notifyRate = true
         assertEquals(0, PlanJobs.run(app))
         assertTrue(Shadows.shadowOf(app.getSystemService(NotificationManager::class.java)).allNotifications.isEmpty())
