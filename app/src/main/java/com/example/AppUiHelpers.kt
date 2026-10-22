@@ -39,9 +39,7 @@ fun getWorkerNamesFromEntry(json: String): List<String> {
 }
 
 fun generateWhatsAppReportText(filteredEntries: List<WorkEntry>, selectedCategoryFilter: String, searchQuery: String): String {
-    val names = filteredEntries.flatMap { getWorkerNamesFromEntry(it.groupWorkersJson) }.distinct()
-    val worker = names.singleOrNull { searchQuery.isNotBlank() && it.equals(searchQuery.trim(), ignoreCase = true) }
-    return com.example.data.WorkMoney.report(filteredEntries, worker)
+    return com.example.data.WorkShareText.summary(filteredEntries, com.example.data.WorkShareText.workerName(filteredEntries, searchQuery))
 }
 
 /** Tab-separated table for Excel / Google Sheets (WorkShareText.excel); the caller shows the confirmation. */

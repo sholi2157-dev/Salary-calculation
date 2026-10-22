@@ -13,6 +13,8 @@ import com.example.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -48,7 +50,7 @@ object WorkUpdates {
     }
     suspend fun check(context: Context): Release? = checkWithClient(context, client)
     internal suspend fun checkWithClient(context: Context, transport: OkHttpClient): Release? = withContext(Dispatchers.IO) {
-        transport.newCall(Request.Builder().url(MANIFEST).build()).execute().use { response ->
+        transport.newCall(Request.Builder().url(MANIFEST).header("Cache-Control", "no-cache").build()).execute().use { response ->
             if (response.code == 404) return@withContext null // No approved first release yet.
             check(response.isSuccessful)
             val bytes = checkNotNull(response.body).byteStream().use { it.readBytesLimited() }
@@ -118,7 +120,7 @@ object WorkUpdates {
 
 /**
  * The newest release the app has seen, kept on the device so Home's bell can show it (with a dot) even offline,
- * until it is installed. Checked on every return to the app, at most once an hour.
+ * until it is installed. Refreshed quietly on return, while foreground and when the bell opens.
  */
 object WorkUpdateNotice {
     private fun prefs(context: Context) = context.getSharedPreferences("release_updates", Context.MODE_PRIVATE)
@@ -129,48 +131,43 @@ object WorkUpdateNotice {
         else putString("available", JSONObject().put("versionCode", release.code).put("versionName", release.name).put("apkUrl", release.apk)
             .put("sha256", release.sha256).put("releaseNotes", release.notes).toString())
     }.apply()
-    /** A fresh check (network), or the cached result when it was checked within the hour or the check fails. */
-    suspend fun refresh(context: Context, force: Boolean = false): WorkUpdates.Release? {
-        if (!BuildConfig.LOCAL_DISTRIBUTION) return null
-        val now = System.currentTimeMillis()
-        if (!force && now - prefs(context).getLong("lastBellCheck", 0) < 60 * 60 * 1000L) return cached(context)
-        return try {
-            WorkUpdates.check(context).also { save(context, it); prefs(context).edit().putLong("lastBellCheck", now).apply() }
-        } catch (_: Exception) { cached(context) }
+    private val checking = Mutex()
+    /** No dialog or notification is created here; a failed check keeps the cached card. */
+    suspend fun refresh(context: Context): WorkUpdates.Release? =
+        if (!BuildConfig.LOCAL_DISTRIBUTION) null else refreshWith(context) { WorkUpdates.check(context) }
+    internal suspend fun refreshWith(context: Context, fetch: suspend () -> WorkUpdates.Release?): WorkUpdates.Release? = checking.withLock {
+        try { fetch().also { save(context, it) } }
+        catch (error: kotlinx.coroutines.CancellationException) { throw error }
+        catch (_: java.io.IOException) { cached(context) }
+        catch (_: IllegalStateException) { cached(context) }
+        catch (_: IllegalArgumentException) { cached(context) }
+        catch (_: org.json.JSONException) { cached(context) }
     }
+
 }
 
 @Composable
-fun WorkUpdateSettings(automatic: Boolean = false) {
+fun WorkUpdateSettings() {
     if (!BuildConfig.LOCAL_DISTRIBUTION) return
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val preferences = remember { context.getSharedPreferences("release_updates", Context.MODE_PRIVATE) }
     var candidate by remember { mutableStateOf<WorkUpdates.Release?>(null) }
     var busy by remember { mutableStateOf(false) }
-    fun check(manual: Boolean) {
+    fun check() {
         if (busy) return
-        val now = System.currentTimeMillis()
-        if (!manual && now - preferences.getLong("lastCheck", 0) < 24 * 60 * 60 * 1000L) return
-        preferences.edit().putLong("lastCheck", now).apply()
         busy = true
         scope.launch {
             try {
                 val update = WorkUpdates.check(context)
-                if (manual || update?.code != preferences.getLong("dismissed", -1)) candidate = update
-                if (manual && update == null) Toast.makeText(context, "אין עדכון יציב חדש", Toast.LENGTH_LONG).show()
+                candidate = update
+                if (update == null) Toast.makeText(context, "אין עדכון יציב חדש", Toast.LENGTH_LONG).show()
             } catch (_: Exception) {
-                if (manual) Toast.makeText(context, "לא ניתן לבדוק כעת. הנתונים והשימוש המקומי זמינים", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "לא ניתן לבדוק כעת. הנתונים והשימוש המקומי זמינים", Toast.LENGTH_LONG).show()
             } finally { busy = false }
         }
     }
-    LaunchedEffect(automatic) { if (automatic) check(false) }
-    if (!automatic) TextButton(onClick = { check(true) }, enabled = !busy) {
+    TextButton(onClick = { check() }, enabled = !busy) {
         Text(if (busy) "בודק…" else "בדוק עדכונים (${BuildConfig.VERSION_NAME})")
     }
-    candidate?.let { release ->
-        // "אחר כך" on the daily check is remembered for this version; the bell and Settings still offer it.
-        com.example.ui.kis.UpdateSheet(release, onDismiss = { candidate = null },
-            onLater = { preferences.edit().putLong("dismissed", release.code).apply(); candidate = null })
-    }
+    candidate?.let { release -> com.example.ui.kis.UpdateSheet(release, onDismiss = { candidate = null }) }
 }

@@ -1153,46 +1153,21 @@ class WorkViewModel(
 
     // Export Work History to CSV and Share
     fun exportToCsvAndShare(context: Context) {
-        val entryList = entries.value
+        val entryList = com.example.ui.kis.KisHistoryLogic.done(entries.value)
         if (entryList.isEmpty()) {
             Toast.makeText(context, "אין משמרות לייצוא", Toast.LENGTH_SHORT).show()
             return
         }
 
         try {
-            val csvBuilder = StringBuilder()
-            // Add BOM (Byte Order Mark) so Excel reads Hebrew UTF-8 correctly
-            csvBuilder.append('\ufeff')
-            
-            // CSV Headers
-            csvBuilder.append("מזהה,מעסיק/קטגוריה,תאריך,שעות,תעריף שעתי,סה\"כ רווח,סטטוס תשלום,סוג דיווח,שעת כניסה,שעת יציאה,הערות,מטבע,סוג,בונוס\n")
-            
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.US)
-            for (entry in entryList) {
-                val escapedCategory = escapeCsvField(entry.category)
-                val formattedDate = sdf.format(Date(entry.date))
-                val hoursStr = String.format(Locale.US, "%.2f", entry.hours)
-                // Unknown pay stays empty (never 0); a fixed-price job has no hourly rate.
-                val job = entry.kind == WorkEntry.KIND_JOB
-                val rateStr = if (!entry.payKnown || job) "" else String.format(Locale.US, "%.2f", entry.hourlyRate)
-                val earningsStr = if (!entry.payKnown) "" else String.format(Locale.US, "%.2f", entry.totalEarnings)
-                val statusStr = if (entry.isPaid) "שולם" else "ממתין"
-                val reportTypeStr = if (entry.isTimeRange) "טווח שעות" else "ידני"
-                val startTimeStr = entry.startTime ?: ""
-                val endTimeStr = entry.endTime ?: ""
-                val escapedNotes = escapeCsvField(entry.notes)
-                
-                val kindStr = if (job) "קבלנות" else "משמרת"
-                val bonusStr = if (entry.bonus > 0) String.format(Locale.US, "%.2f", entry.bonus) else ""
-                csvBuilder.append("${entry.id},$escapedCategory,$formattedDate,$hoursStr,$rateStr,$earningsStr,$statusStr,$reportTypeStr,$startTimeStr,$endTimeStr,$escapedNotes,${entry.currency},$kindStr,$bonusStr\n")
-            }
+            val csvText = com.example.data.WorkShareText.csv(entryList)
 
             // Write to local cache file
             val cacheDir = context.cacheDir
             // unique file name to avoid collision
             val csvFile = File(cacheDir, "work_history_${System.currentTimeMillis()}.csv")
             FileOutputStream(csvFile).use { writer ->
-                writer.write(csvBuilder.toString().toByteArray(Charsets.UTF_8))
+                writer.write(csvText.toByteArray(Charsets.UTF_8))
             }
 
             // Exact Export Confirmation Toast

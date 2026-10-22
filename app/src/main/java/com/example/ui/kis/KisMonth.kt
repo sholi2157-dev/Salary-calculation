@@ -87,6 +87,7 @@ fun MonthSummarySheet(month: Int, entries: List<WorkEntry>, categories: List<Wor
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             KisButton("להיסטוריה", onHistory, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "month_summary_history")
+            KisButton("העתקה", { KisShare.copy(context, WorkShareText.copy(rows)); onMessage("הועתק ✓") }, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, enabled = rows.isNotEmpty(), tag = "month_summary_copy")
             KisButton("שיתוף", { KisShare.shareOrCopy(context, WorkShareText.summary(rows), "הסיכום של ${HistoryFilter.monthName(month)}", onMessage) },
                 Modifier.weight(1f), height = 48.dp, enabled = rows.isNotEmpty(), tag = "month_summary_share")
         }

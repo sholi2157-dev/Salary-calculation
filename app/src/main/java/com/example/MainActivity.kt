@@ -223,7 +223,6 @@ fun MainAppContent(
     val onboardingStore = remember { com.example.ui.WorkOnboardingStore(context) }
     // The 2.0 launch comes first (once), then the name, then the short tour from Home.
     var launching by rememberSaveable { mutableStateOf(onboardingStore.launchPending) }
-    if (!onboarding.active && !launching) com.example.ui.WorkUpdateSettings(automatic = true)
 
     val googleSignInLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()

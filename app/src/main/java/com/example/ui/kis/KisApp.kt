@@ -1,5 +1,6 @@
 package com.example.ui.kis
 
+import androidx.lifecycle.repeatOnLifecycle
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -112,7 +113,18 @@ fun KisApp(
     var update by remember { mutableStateOf(com.example.ui.WorkUpdateNotice.cached(appContext)) }
     var updateSheet by remember { mutableStateOf<com.example.ui.WorkUpdates.Release?>(null) }
     var resumes by remember { mutableIntStateOf(0) }
-    LaunchedEffect(resumes) { update = com.example.ui.WorkUpdateNotice.refresh(appContext) }
+    LaunchedEffect(resumes, bellOpen) {
+        update = com.example.ui.WorkUpdateNotice.refresh(appContext)
+    }
+    val foregroundOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(foregroundOwner) {
+        foregroundOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            while (true) {
+                kotlinx.coroutines.delay(60_000)
+                update = com.example.ui.WorkUpdateNotice.refresh(appContext)
+            }
+        }
+    }
 
     fun say(text: String, action: String? = null, onAction: (() -> Unit)? = null) { message = KisMessage(text, action, onAction) }
     fun openNew(ai: Boolean = false) {
@@ -167,7 +179,7 @@ fun KisApp(
             ShellRequest.UPDATE -> {
                 pager.scrollToPage(0)
                 // The notification's version, or a fresh look when the cache is empty.
-                updateSheet = update ?: com.example.ui.WorkUpdateNotice.refresh(appContext, force = true)?.also { update = it }
+                updateSheet = update ?: com.example.ui.WorkUpdateNotice.refresh(appContext)?.also { update = it }
                 onRequestHandled()
             }
             ShellRequest.HOME -> { pager.scrollToPage(0); onRequestHandled() }

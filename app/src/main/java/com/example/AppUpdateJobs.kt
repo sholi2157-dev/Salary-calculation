@@ -40,7 +40,7 @@ object AppUpdateJobs {
 
     suspend fun run(context: Context, now: Long = System.currentTimeMillis()): Boolean {
         if (!BuildConfig.LOCAL_DISTRIBUTION) return false
-        val release = WorkUpdateNotice.refresh(context, force = true) ?: return false
+        val release = WorkUpdateNotice.refresh(context) ?: return false
         return notifyIfNew(context, release, now)
     }
 

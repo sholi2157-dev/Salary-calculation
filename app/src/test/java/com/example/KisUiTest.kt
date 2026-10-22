@@ -75,6 +75,44 @@ class KisUiTest {
     @Test fun editorClockKeypadRulerDraftAndUnknownRate360() = editorFlow(false)
     @Test @Config(qualifiers = "w390dp-h844dp-xhdpi") fun editorClockKeypadRulerDraftAndUnknownRateDark390() = editorFlow(true)
 
+    @Test fun manualInputUsesHoursAndMinutesAndTodayIsCentered() {
+        val vm = model()
+        host(true) { KisEditorPage(vm, EntryDraft.new(categories.first(), "₪").copy(rate = "60"), null, categories, emptyList(), emptyList(),
+            onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        ui.onNodeWithTag("day_0").assertExists()
+        ui.onNodeWithText("היום").assertExists()
+        ui.onNodeWithTag("day_-3").assertExists()
+        ui.onNodeWithTag("day_3").assertExists()
+        ui.onNodeWithTag("mode_hours").performClick()
+        ui.onNodeWithTag("hours_display").performClick()
+        listOf("0", "1", "4", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
+        ui.onNodeWithTag("editor_meta").assertTextContains("1:40 שעות", substring = true)
+        ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪100")
+        ui.onNodeWithText("לחיצה על ספרה משנה רק אותה").assertDoesNotExist()
+        ui.onNodeWithTag("keypad_digit_2", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("key_5").performClick()
+        ui.onNodeWithTag("editor_meta").assertTextContains("1:50 שעות", substring = true)
+        ui.onNodeWithTag("keypad_done").performClick()
+        ui.onNodeWithTag("duration_minutes", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("keypad_digit_2", useUnmergedTree = true).assertIsSelected()
+        ui.onNodeWithTag("key_4").performClick()
+        ui.onNodeWithTag("keypad_done").performClick()
+        ui.onNodeWithTag("editor_meta").assertTextContains("1:40 שעות", substring = true)
+        shot("manual-100-minutes-dark")
+    }
+
+    @Test fun openingDurationWithoutTypingKeepsImportedPrecisionUnchanged() {
+        val vm = model()
+        val base = WorkEntry(id = 1, category = categories.first().name, date = day, isTimeRange = false,
+            hours = 1.234567, hourlyRate = 33.3333, totalEarnings = 42.12345)
+        host { KisEditorPage(vm, EntryDraft.from(base), base, categories, listOf(base), emptyList(),
+            onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
+        ui.onNodeWithTag("hours_display").performClick()
+        ui.onNodeWithTag("keypad_done").performClick()
+        ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
+    }
+
     private fun editorFlow(dark: Boolean) {
         val vm = model()
         var saved = ""
@@ -445,13 +483,15 @@ class KisUiTest {
         shot("home-planned")
         ui.onNodeWithTag("next_up_all").performScrollTo().performClick()
         // History: the planned view lists plans only, without totals, copy or Excel.
-        ui.onNodeWithTag("history_planned").assertIsSelected()
+        ui.onNodeWithTag("history_filters").assertExists()
         ui.onNodeWithTag("history_total").assertDoesNotExist()
         ui.onNodeWithTag("copy_menu_btn").assertDoesNotExist()
         ui.onNodeWithTag("history_scroll_container").performScrollToNode(hasTestTag("planned_card_${plans.last().key}"))
         shot("history-planned")
         ui.onNodeWithTag("history_scroll_container").performScrollToIndex(0)
+        ui.onNodeWithTag("history_filters").performClick()
         ui.onNodeWithTag("history_worked").performClick()
+        ui.onNodeWithTag("filters_apply").performClick()
         ui.onNodeWithTag("history_total").assertTextContains("₪300", substring = true)
         ui.onAllNodesWithTag("planned_card_${plans.last().key}").assertCountEquals(0)
     }
@@ -477,10 +517,12 @@ class KisUiTest {
         shot("home-future")
         ui.onNodeWithTag("next_up_all").performScrollTo().performClick()
         // History: "מתוכנן" holds it; "עבדתי" and its total never include it.
-        ui.onNodeWithTag("history_planned").assertIsSelected()
+        ui.onNodeWithTag("history_filters").assertExists()
         ui.onNodeWithTag("planned_entry_$futureId").assertExists()
         shot("history-planned-future")
+        ui.onNodeWithTag("history_filters").performClick()
         ui.onNodeWithTag("history_worked").performClick()
+        ui.onNodeWithTag("filters_apply").performClick()
         ui.onAllNodesWithTag("work_entry_card_$futureId").assertCountEquals(0)
         if (HistoryFilter.monthKey(future.date) == HistoryFilter.monthKey(now))
             ui.onNodeWithTag("history_total").assertTextContains("₪100", substring = true)
@@ -512,7 +554,10 @@ class KisUiTest {
         val vm = model()
         val state = HistoryUi()
         host { KisHistory(state, true, emptyList(), categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {}) }
+        ui.onNodeWithTag("history_planned").assertDoesNotExist()
+        ui.onNodeWithTag("history_filters").performClick()
         ui.onNodeWithTag("history_planned").assertHeightIsAtLeast(48.dp).performClick()
+        ui.onNodeWithTag("filters_apply").performClick()
         ui.onNodeWithTag("planned_empty").assertExists()
         ui.onNodeWithText("חוזרת כל שבוע", substring = true).assertExists()
     }
@@ -531,7 +576,7 @@ class KisUiTest {
         .filter { ui.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() } + ui.onNodeWithTag("story_root").fetchSemanticsNode().config
             .getOrElse(androidx.compose.ui.semantics.SemanticsProperties.StateDescription) { "?" }
 
-    @Test fun storyRecapMovesOnHidesTheAmountAndSharesACardWithoutIt() {
+    @Test fun storyRecapMovesOnHidesTheAmountAndSharesACardWithAmounts() {
         seed()
         var closed = false
         ui.mainClock.autoAdvance = false
@@ -563,7 +608,8 @@ class KisUiTest {
         ui.onNodeWithTag("story_money_₪", useUnmergedTree = true).assertExists()
         next()
         ui.onNodeWithTag("story_card").assertExists()
-        ui.onNodeWithTag("story_poster").assert(hasText("₪", substring = true).not()).assert(hasText("$", substring = true).not())
+        ui.onNodeWithText("₪300", substring = true).assertExists()
+        ui.onNodeWithTag("story_copy").assertExists()
         prev()
         assertEquals("back from the card at once ${shownSlide()}", listOf("story_money"), shownSlide().dropLast(1))
         next()
@@ -576,13 +622,14 @@ class KisUiTest {
         runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-card.png") }
         next()
         assertTrue(closed)
-        // The shared picture is drawn on its own, without amounts.
+        // The shared picture is drawn on its own, with the amounts and only the facts the story showed; it grows with them.
         val s = com.example.domain.V2Summary.summary(rows().map { com.example.domain.V2Summary.row(it) }, com.example.domain.V2Summary.monthScope(HistoryFilter.monthKey(mid)),
             com.example.domain.V2Summary.today())
         val cells = posterCells(s, "ינשוף לילה", com.example.domain.V2Summary.slides(s).toSet())
-        assertTrue(cells.none { (_, v) -> v == "—" || v.contains("₪") || v.contains("$") })
+        assertTrue(cells.none { (_, v) -> v == "—" })
+        assertTrue(cells.any { (k, _) -> k == "סכום (₪)" })
         val card = cardBitmap(app, "אוקטובר 2026", cells)
-        assertEquals(1080, card.width); assertEquals(1080, card.height)
+        assertEquals(1080, card.width); assertTrue(card.height >= 1080)
         java.io.File("/tmp/kis-share-card.png").outputStream().use { card.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
 
@@ -599,7 +646,7 @@ class KisUiTest {
         runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-thin-hours.png") }
         val s = com.example.domain.V2Summary.summary(rows().map { com.example.domain.V2Summary.row(it) }, scope, com.example.domain.V2Summary.today())
         assertEquals(listOf("intro", "hours", "money", "card"), com.example.domain.V2Summary.slides(s))
-        assertEquals(listOf("שעות" to "2.5", "משמרות" to "1", "מקום מוביל" to "מסעדה"), posterCells(s, null, com.example.domain.V2Summary.slides(s).toSet()))
+        assertEquals(listOf("סכום (₪)" to "₪100", "שעות" to "2.5", "משמרות" to "1", "מקום מוביל" to "מסעדה"), posterCells(s, null, com.example.domain.V2Summary.slides(s).toSet()))
     }
 
     @Test fun bellSheetListsRecentAndOpensTheirMonth() {

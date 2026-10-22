@@ -1,4 +1,76 @@
+# 2.0.5 published and verified — 2026-10-21
+
+Owner-approved cumulative Android release (all 2.0.4 features included):
+https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.0.5/Salary2.0.5.apk
+Code38, permanent package/certificate unchanged. Exact APK SHA256:
+c45eef0c182f42e6273082c59280076271433761da41cda5c1cc5d56b4409860.
+
+Candidate source979e5b2b60933c02f98ab886384f8e3367589b78, run39676466946 SUCCESS:
+144 Debug+112 Release tests; signed RC16→2.0.3→2.0.5 data preservation, UI/keyboard/
+defaults/plans, fresh launch and clean crashes. No intermediate 2.0.4 is required.
+
+Publication and actual online installer/data verification run39678748525 SUCCESS.
+Visible-card follow-up run39679679694 SUCCESS (verification only; no APK rebuild or
+republication): actual red-dot pixel, future-release card and update button visible,
+quiet startup/resume and offline retention. Exact public APK/checksum confirmed,
+Android installer completed code38, unchanged synthetic snapshot, no same-version
+update offered again. Red-dot/duration screenshots reviewed. Card visibility is asserted in the UI;
+its OS screenshot still captures an early sheet animation frame.
+
+Manual/group/job durations select hours/minutes with the clock digit keypad;
+typing instructions removed, untouched imported precision retained. Update checks
+are quiet on resume/bell-open and each minute foreground; red dot/card until
+installed, no automatic dialog. Installer remains user-controlled.
+
+Scope/evidence: `docs/duration-and-update-bell-20261021.md`.
+Hebrew changelog: `docs/releases/2.0.5.md`.
+Website automatic navigation updates are published at the unchanged origin:
+https://salary-calculation-eta.vercel.app/
+Runtime source660e82ccc696bff62783d1614d8959f210cd4276; deployment
+dpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk; build digestac045d488ac19009.
+CI39682231966, public-origin39683042974, metadata39683043000:SUCCESS.
+No website update/version UI; separate duration digits; normal/fallback download2.0.5.
+This Android commit updates evidence only; no additional APK is produced.
+
+# Combined 2.0.4 release — 2026-10-21
+
+Owner authorized both platforms, merge and public release. All functional changes merged:
+Android PR #8 → codex/android-local-distribution; Web PR #9 → codex/download-and-management-20261020.
+Full Hebrew changelog: `docs/releases/2.0.4.md`. Current evidence: `docs/shift-entry-20261021.md`.
+
+Android tested source 18ae87f9cc1285b5fc2767511a6d950859a8e00d, run 39668563320 SUCCESS:
+141 Debug + 110 Release tests; real signed previous-release update, preserved data, fresh launch,
+Release UI/keyboard/default-workplace/plan checks and clean crash logs. Package/certificate unchanged.
+Selected APK 2.0.4 (37), SHA256 54cef6ca017da5ce09bb9a3974990cc951eaf0b38d58bb7ec89e423bf967e1ee.
+
+Web tested source 96e3e4bb52a6a693fb728c682295934b724fa7c3, run 39669064791 SUCCESS:
+92 tests, shared fixtures and complete v2/download/sharing browser suites. Production deployment
+ dpl_52v5KTd2H9dEggr8oeHsWTzkCrG6 promoted to the existing stable origin; build digest 8d45814d204db702.
+Public Android 2.0.4 (37) is now live at release android-v2.0.4, with the exact verified APK above.
+Publication + actual online manual-check/download/Android-installer/retained-data verification:
+run 39670906841 SUCCESS (attempt 2). First verify-live attempt failed before starting Android
+because the runner downloaded a corrupt Emulator ZIP; only the failed verification job was retried.
+Published APK bytes and signing identity were never changed or rebuilt.
+Public website full v2/download/sharing verification: run 39670920652 SUCCESS.
+Post-merge Web checks: run 39670920676 SUCCESS (same runtime files, 92 tests).
+
+Permanent URLs:
+- https://salary-calculation-eta.vercel.app/
+- https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.0.4/Salary2.0.4.apk
+
+Remaining manual limits: WhatsApp recipient/rendering on a physical Android phone and Safari/iPhone native file sharing.
+Automated fixtures and OS-sharing mocks validate payloads, image generation and cancellation; no messages were sent.
+
+Earlier history follows; it does not override this owner-approved scope or release state.
+
 # Current project state
+
+## October 21 — copy/share parity prepared for owner wording review
+
+Separate review branches: `codex/sharing-android-20261021` and `codex/sharing-web-20261021`. Owner explicitly requested changes to both platforms. Contract: `docs/v2-sharing.md`; execution notes: `docs/sharing-20261021.md`. Technical copy and recipient-ready sharing are separate; multiple workplaces use technical blocks; worker search is wired consistently. TSV/CSV use one 14-column contract, unknown pay empty, future rows excluded from done-work exports. Monthly/yearly cards include money and the Web image action requires native file sharing, with no download/text fallback. JSON backups remain full-fidelity.
+
+Draft review PRs: #8 Android, #9 Web. No merge, production promotion, public APK release, signing change or data/schema mutation. Verification complete: Android run 39609123653 SUCCESS (136 Debug + 106 Release tests, unsigned Release/instrumentation builds and identity gates); Web run 39609131883 SUCCESS (build, 89 tests, shared fixtures and browser flows). Full evidence and remaining native WhatsApp/iPhone/signed-update gates: `docs/sharing-20261021.md`. Screenshots and the generated PNG were visually reviewed. No public rollout or APK delivery has taken place.
+
 
 ## October 19 — 2.0.3: live money, both times on a new shift, digit-by-digit times, AI currency
 
