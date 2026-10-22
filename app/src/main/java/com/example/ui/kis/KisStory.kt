@@ -87,7 +87,7 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
             s.comparison?.let { Para("זה בערך ${it.count} ${V2Summary.FUN[it.key]}. סתם שתדעו.") }
         })
         if ("places" in shows) add(Slide(StoryDark, 1, 0, tag = "story_places") {
-            Kick("המקומות המובילים שלך")
+            Kick("המקומות המובילים שלכם")
             s.places.forEachIndexed { i, p ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("${i + 1}", style = TextStyle(fontFamily = SecularOne, fontSize = if (i == 0) 28.sp else 22.sp), color = LocalStoryInk.current.copy(alpha = if (i == 0) 1f else .7f))
@@ -105,7 +105,7 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
         })
         s.longest?.takeIf { "longest" in shows }?.let { l -> add(Slide(place(2), 4, 3, tag = "story_longest") {
             Kick("המשמרת הארוכה")
-            Huge(hm(l.hours))
+            Huge(longLabel(l.hours))
             Head(dayLabel(millisOf(l.date)) + (if (l.start != null && l.end != null) ", ⁦${l.start}–${l.end}⁩." else "."))
             Para("מגיע לכם קפה. אולי שניים." + when (s.nights) { 0 -> ""; 1 -> " ופעם אחת סיימתם אחרי 23:00."; else -> " ו-${s.nights} פעמים סיימתם אחרי 23:00." })
         }) }
@@ -138,7 +138,7 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
             val cells = posterCells(s, persona?.name?.takeIf { "persona" in shows }, shows)
             val text = (listOf("$whose שלי בכיס · $label") + cells.map { (k, v) -> "$k: $v" }).joinToString("\n")
             KisButton("שיתוף הכרטיס", {
-                val ok = runCatching { shareImage(context, cardBitmap(context, label, cells), text) }.getOrDefault(false)
+                val ok = runCatching { shareImage(context, cardBitmap(context, label, cells, "$whose שלי בכיס"), text) }.getOrDefault(false)
                 if (!ok) KisShare.shareOrCopy(context, text, "$whose שלך בכיס", onMessage)
             }, Modifier.fillMaxWidth(), height = 54.dp, tag = "story_share")
         })
@@ -285,10 +285,10 @@ internal fun posterCells(s: V2Summary.Summary, persona: String?, shows: Set<Stri
     s.places.firstOrNull()?.let { "מקום מוביל" to it.name },
     persona?.let { "טיפוס" to it },
     s.bestDay?.takeIf { "days" in shows }?.let { "היום החזק" to "יום ${KisFormat.DAY_LONG[it]}" },
-    s.longest?.takeIf { "longest" in shows }?.let { "הכי ארוכה" to hm(it.hours) })
+    s.longest?.takeIf { "longest" in shows }?.let { "הכי ארוכה" to longLabel(it.hours) })
 
 /** The shared picture (1080×1080), drawn directly so it never depends on what is on screen. No amounts. */
-internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String, String>>): android.graphics.Bitmap {
+internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String, String>>, subtitle: String = "החודש שלי בכיס"): android.graphics.Bitmap {
     val size = 1080f
     val bmp = android.graphics.Bitmap.createBitmap(size.toInt(), size.toInt(), android.graphics.Bitmap.Config.ARGB_8888)
     val canvas = android.graphics.Canvas(bmp)
@@ -302,7 +302,7 @@ internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String
         color = android.graphics.Color.WHITE; this.alpha = alpha; textSize = px; typeface = face; textAlign = android.graphics.Paint.Align.RIGHT
     }
     canvas.drawText(label, size - 80f, 170f, paint(display, 64f))
-    canvas.drawText("בכיס", size - 80f, 240f, paint(display, 44f))
+    canvas.drawText(subtitle, size - 80f, 240f, paint(display, 44f))
     cells.forEachIndexed { n, (k, v) ->
         val right = if (n % 2 == 0) size - 80f else size / 2 - 20f
         val top = 380f + (n / 2) * 220f
@@ -320,7 +320,8 @@ internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String
     return bmp
 }
 
-private fun hm(hours: Double): String { val m = Math.round(hours * 60); return "${m / 60}:${"%02d".format(m % 60)}" }
+/** A length, never mistaken for a time of day: "7 ש׳", "6.5 ש׳". */
+private fun longLabel(hours: Double) = "${KisFormat.hours(hours)} ש׳"
 private fun millisOf(date: String) = LocalDate.parse(date).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
 /** The card as a picture through the Android share sheet. False when nothing can receive it. */
