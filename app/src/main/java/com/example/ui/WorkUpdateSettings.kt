@@ -66,9 +66,14 @@ object WorkUpdates {
         if (Build.VERSION.SDK_INT >= 28) info.signingInfo?.apkContentsSigners?.map { hash(it.toByteArray()) }?.toSet() ?: emptySet()
         else info.signatures?.map { hash(it.toByteArray()) }?.toSet() ?: emptySet()
     /** [onProgress] gets 0..1 while the file arrives (only when the server says how big it is), then the file is verified. */
-    suspend fun download(context: Context, release: Release, onProgress: (Float) -> Unit = {}): File = downloadWithClient(context, release, client, onProgress)
+    suspend fun download(context: Context, release: Release, onProgress: (Float) -> Unit = {}): File = downloadWithProgress(context, release, client, onProgress)
+    /**
+     * Kept with exactly this signature: the update gate runs the new test package against older installed builds
+     * (back to RC16), which have only this one.
+     */
+    internal suspend fun downloadWithClient(context: Context, release: Release, transport: OkHttpClient): File = downloadWithProgress(context, release, transport) {}
     @Suppress("DEPRECATION")
-    internal suspend fun downloadWithClient(context: Context, release: Release, transport: OkHttpClient, onProgress: (Float) -> Unit = {}): File = withContext(Dispatchers.IO) {
+    internal suspend fun downloadWithProgress(context: Context, release: Release, transport: OkHttpClient, onProgress: (Float) -> Unit): File = withContext(Dispatchers.IO) {
         val file = File(context.cacheDir, "salary-update-${release.code}.apk")
         val partial = File(context.cacheDir, "salary-update-${release.code}.pending.apk")
         try {
