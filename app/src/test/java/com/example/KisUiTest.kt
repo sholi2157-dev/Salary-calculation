@@ -681,10 +681,13 @@ class KisUiTest {
         assertFalse(settings.haptics)
         // Notification switches (device-only), and the profile at the bottom: first and last name, saved as typed.
         ui.onNodeWithTag("quiet_switch").performScrollTo().assertExists()
-        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
+        // The monthly summary is on by default since 2.0.4; the switch turns it off and on again.
         assertTrue(vm.planSettings.notifyMonthly)
-        ui.onNodeWithTag("notify_monthly_switch").performClick()
+        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
         assertFalse(vm.planSettings.notifyMonthly)
+        ui.onNodeWithTag("notify_monthly_switch").performClick()
+        assertTrue(vm.planSettings.notifyMonthly)
+        ui.onNodeWithTag("notify_plans_switch").performScrollTo().assertExists()
         ui.onNodeWithTag("profile_name").performScrollTo().performTextReplacement("שולי")
         ui.onNodeWithTag("profile_last_name").performScrollTo().performTextReplacement("כהן")
         assertEquals("שולי", settings.name)
