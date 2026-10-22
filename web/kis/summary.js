@@ -67,7 +67,7 @@ function story(app, scope) {
     showPer && { bg: PLACE(s.persona === 'owl' ? 4 : s.persona === 'bird' ? 3 : 2), a: 4, b: 3, tag: 'persona', html: () => `<div class="kick">טיפוס העבודה שלכם</div><h3 class="big" data-testid="story-persona-name">${esc(per.name)}</h3><p>${esc(perLine)}</p>` },
     shows.has('longest') && { bg: PLACE(2), a: 4, b: 3, tag: 'longest', html: () => { const l = s.longest;
       const [y, m, d] = l.date.split('-').map(Number);
-      return `<div class="kick">המשמרת הארוכה</div><div class="huge">${longLabel(l.hours)}</div><h3>${esc(U().dayLabel(new Date(y, m - 1, d).getTime()))}${l.start ? `, ⁦${l.start}–${l.end}⁩` : ''}.</h3><p>מגיע לכם קפה. אולי שניים.${s.nights === 1 ? ' ופעם אחת סיימתם אחרי 23:00.' : s.nights ? ` ו-${s.nights} פעמים סיימתם אחרי 23:00.` : ''}</p>`; } },
+      return `<div class="kick">המשמרת הארוכה</div><div class="huge">${U().hours(l.hours)}</div><h3>שעות, ${esc(U().dayLabel(new Date(y, m - 1, d).getTime()))}</h3><p>${l.start ? `⁦${l.start}–${l.end}⁩. ` : ''}מגיע לכם קפה. אולי שניים.${s.nights === 1 ? ' ופעם אחת סיימתם אחרי 23:00.' : s.nights ? ` ו-${s.nights} פעמים סיימתם אחרי 23:00.` : ''}</p>`; } },
     shows.has('days') && { bg: '#121212', a: 5, b: 1, tag: 'days', html: () => { const mx = Math.max(1e-9, ...s.days);
       return `<div class="kick">הקצב שלכם</div><h3>יום ${DAY_LONG[s.bestDay]} הוא היום שלכם.</h3><div class="wbars">${s.days.map((h, j) => `<div><i style="--h:${(h / mx).toFixed(3)};--d:${j * 80}ms;background:${j === s.bestDay ? PLACE(3) : '#3A3A3A'}"></i><span>${U().DAY_SHORT[j]}</span></div>`).join('')}</div>`; } },
     shows.has('hour') && { bg: PLACE(5), a: 3, b: 4, tag: 'hour', html: () => { const p = s.hourMinutes, mx = Math.max(1, ...p), h = s.peakHour;
