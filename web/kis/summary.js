@@ -10,7 +10,8 @@ const scopeOf = month => `${Math.floor(month / 12)}-${pad(month % 12 + 1)}`;
 const rowOf = e => ({ date: ymd(e.date), start: e.isTimeRange && e.startTime && e.endTime ? e.startTime : null, end: e.isTimeRange && e.startTime && e.endTime ? e.endTime : null,
   hours: e.hours, kind: e.kind === 'job' ? 'job' : 'shift', payKnown: !!e.payKnown, total: e.totalEarnings, currency: e.currency, paid: !!e.isPaid, category: e.category });
 const summaryOf = (store, scope) => S().summary(store.data.entries.filter(e => !U().upcoming(e)).map(rowOf), scope, ymd(Date.now()));
-const hm = h => { const m = Math.round(h * 60); return `${Math.floor(m / 60)}:${pad(m % 60)}`; };
+/** A length, never mistaken for a time of day: "7 ש׳", "6.5 ש׳" (Android: longLabel). */
+const longLabel = h => `${U().hours(h)} ש׳`;
 const PLACE = i => U().PLACES[i % 8].from;
 
 function insightText(i) {
@@ -66,7 +67,7 @@ function story(app, scope) {
     showPer && { bg: PLACE(s.persona === 'owl' ? 4 : s.persona === 'bird' ? 3 : 2), a: 4, b: 3, tag: 'persona', html: () => `<div class="kick">טיפוס העבודה שלכם</div><h3 class="big" data-testid="story-persona-name">${esc(per.name)}</h3><p>${esc(perLine)}</p>` },
     shows.has('longest') && { bg: PLACE(2), a: 4, b: 3, tag: 'longest', html: () => { const l = s.longest;
       const [y, m, d] = l.date.split('-').map(Number);
-      return `<div class="kick">המשמרת הארוכה</div><div class="huge">${hm(l.hours)}</div><h3>${esc(U().dayLabel(new Date(y, m - 1, d).getTime()))}${l.start ? `, ⁦${l.start}–${l.end}⁩` : ''}.</h3><p>מגיע לכם קפה. אולי שניים.${s.nights === 1 ? ' ופעם אחת סיימתם אחרי 23:00.' : s.nights ? ` ו-${s.nights} פעמים סיימתם אחרי 23:00.` : ''}</p>`; } },
+      return `<div class="kick">המשמרת הארוכה</div><div class="huge">${longLabel(l.hours)}</div><h3>${esc(U().dayLabel(new Date(y, m - 1, d).getTime()))}${l.start ? `, ⁦${l.start}–${l.end}⁩` : ''}.</h3><p>מגיע לכם קפה. אולי שניים.${s.nights === 1 ? ' ופעם אחת סיימתם אחרי 23:00.' : s.nights ? ` ו-${s.nights} פעמים סיימתם אחרי 23:00.` : ''}</p>`; } },
     shows.has('days') && { bg: '#121212', a: 5, b: 1, tag: 'days', html: () => { const mx = Math.max(1e-9, ...s.days);
       return `<div class="kick">הקצב שלכם</div><h3>יום ${DAY_LONG[s.bestDay]} הוא היום שלכם.</h3><div class="wbars">${s.days.map((h, j) => `<div><i style="--h:${(h / mx).toFixed(3)};--d:${j * 80}ms;background:${j === s.bestDay ? PLACE(3) : '#3A3A3A'}"></i><span>${U().DAY_SHORT[j]}</span></div>`).join('')}</div>`; } },
     shows.has('hour') && { bg: PLACE(5), a: 3, b: 4, tag: 'hour', html: () => { const p = s.hourMinutes, mx = Math.max(1, ...p), h = s.peakHour;
@@ -82,7 +83,7 @@ function story(app, scope) {
   /** What the card says: only facts the story showed (never a "—"), and never an amount (Android: posterCells). */
   function posterCells() {
     return [['שעות', U().hours(s.hours < 10 ? s.hours : Math.round(s.hours))], ['משמרות', String(s.count)], top && ['מקום מוביל', top.name], showPer && ['טיפוס', showPer.name],
-      shows.has('days') && ['היום החזק', `יום ${DAY_LONG[s.bestDay]}`], shows.has('longest') && ['הכי ארוכה', hm(s.longest.hours)]].filter(Boolean);
+      shows.has('days') && ['היום החזק', `יום ${DAY_LONG[s.bestDay]}`], shows.has('longest') && ['הכי ארוכה', longLabel(s.longest.hours)]].filter(Boolean);
   }
   const shareText = () => [`${whose} שלי בכיס · ${label}`, ...posterCells().map(([k, v]) => `${k}: ${v}`)].join('\n');
 
@@ -124,7 +125,7 @@ function story(app, scope) {
     if (b.dataset.x !== undefined) return close();
     if (b.dataset.go) return go(Number(b.dataset.go));
     if (b.dataset.rev !== undefined) { hidden = !hidden; const keep = elapsed; draw(); t0 = Date.now() - keep; return; }
-    if (b.dataset.sharew !== undefined) shareCard(label, posterCells(), shareText());
+    if (b.dataset.sharew !== undefined) shareCard(label, posterCells(), shareText(), `${whose} שלי בכיס`);
   });
   function keys(e) { if (e.key === 'ArrowLeft') go(1); else if (e.key === 'ArrowRight') go(-1); else if (e.key === 'Escape') { e.stopPropagation(); close(); } }
   document.addEventListener('keydown', keys, true);
@@ -134,9 +135,9 @@ function story(app, scope) {
 }
 
 /** The card as a picture: share sheet with the image when the browser can, else a download; the text as a last resort. */
-async function shareCard(label, cells, text) {
+async function shareCard(label, cells, text, subtitle) {
   try {
-    const blob = await cardImage(label, cells);
+    const blob = await cardImage(label, cells, subtitle);
     const file = new File([blob], 'kis-card.png', { type: 'image/png' });
     if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], text }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
     const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'kis-card.png'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -144,7 +145,7 @@ async function shareCard(label, cells, text) {
   } catch { U().shareOrCopy(text, 'שיתוף הכרטיס'); }
 }
 
-async function cardImage(label, cells) {
+async function cardImage(label, cells, subtitle = 'החודש שלי בכיס') {
   await document.fonts?.ready;
   const W = 1080, H = 1080, c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
@@ -152,7 +153,7 @@ async function cardImage(label, cells) {
   x.fillStyle = g; x.beginPath(); x.roundRect ? x.roundRect(0, 0, W, H, 64) : x.rect(0, 0, W, H); x.fill();
   x.direction = 'rtl'; x.textAlign = 'right'; x.fillStyle = '#fff';
   x.font = "64px 'Secular One', Rubik, sans-serif"; x.fillText(label, W - 80, 170);
-  x.font = "44px 'Secular One', Rubik, sans-serif"; x.fillText('בכיס', W - 80, 240);
+  x.font = "44px 'Secular One', Rubik, sans-serif"; x.fillText(subtitle, W - 80, 240);
   cells.forEach(([k, v], n) => {
     const col = n % 2, row = Math.floor(n / 2), right = col === 0 ? W - 80 : W / 2 - 20, top = 380 + row * 220;
     x.globalAlpha = .8; x.font = "36px Rubik, sans-serif"; x.fillText(k, right, top);
