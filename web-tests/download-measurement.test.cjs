@@ -1,0 +1,9 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const {recordDownload}=require('../lib/server/download-measurement.cjs');
+const env={VERCEL_ENV:'production',DOWNLOAD_HASH_KEY:'synthetic-hash-key',DOWNLOAD_RECORDER_KEY:'synthetic-recorder-key',DOWNLOAD_STATS_SITE_TOKEN:'synthetic-service-token',DOWNLOAD_STATS_SITE_URL:'https://salary-calculation-management.sholi2157.chatgpt.site'};
+test('repeated browser requests keep the same anonymous identifier; no raw browser ID or IP is transmitted',async()=>{
+ let cookie,body,raw;const res={setHeader(k,v){if(k==='Set-Cookie')cookie=v}},fetcher=async(url,opt)=>{body=JSON.parse(opt.body);raw=opt;return {ok:true}};
+ const req={method:'GET',headers:{'user-agent':'Mobile Chrome'}};await recordDownload(req,res,{version:'2.0.3'},{env,fetcher});const first=body.browserHash;assert.equal(first.length,64);assert.match(cookie,/Secure; HttpOnly; SameSite=Lax/);const browser=cookie.split(';')[0];req.headers.cookie=browser;await recordDownload(req,res,{version:'2.0.4'},{env,fetcher});assert.equal(body.browserHash,first);assert.ok(!raw.body.includes(browser.split('=')[1]));assert.equal(body.version,'2.0.4');assert.deepEqual(Object.keys(body).sort(),['browserHash','id','version']);
+});
+test('HEAD, previews and known bots never create download records',async()=>{let calls=0;const fetcher=async()=>{calls++;return{ok:true}},res={setHeader(){}};for(const req of [{method:'HEAD',headers:{}},{method:'GET',headers:{'user-agent':'Googlebot'}}])assert.equal(await recordDownload(req,res,{version:'2.0.3'},{env,fetcher}),false);await recordDownload({method:'GET',headers:{}},res,{version:'2.0.3'},{env:{...env,VERCEL_ENV:'preview'},fetcher});assert.equal(calls,0)});
+test('measurement outage does not fail the download',async()=>{assert.equal(await recordDownload({method:'GET',headers:{}},{setHeader(){}},{version:'2.0.3'},{env,fetcher:async()=>{throw Error('offline')}}),false)});

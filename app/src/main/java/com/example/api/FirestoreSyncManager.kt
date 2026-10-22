@@ -25,6 +25,12 @@ object FirestoreSyncManager {
 
     private var isInitialized = false
 
+    private fun canAccess(userId: String): Boolean = com.example.BuildConfig.CLOUD_SYNC_ENABLED && WorkCloudAccess.allowed(
+        com.example.BuildConfig.CLOUD_SYNC_ENABLED,
+        userId,
+        AuthManager.getFirebaseAuthSafely()?.currentUser?.uid
+    )
+
     fun init(context: Context) {
         if (isInitialized) return
         isInitialized = true
@@ -150,7 +156,7 @@ object FirestoreSyncManager {
         onShiftsChanged: (List<WorkEntry>) -> Unit,
         onError: ((Exception) -> Unit)? = null
     ): ListenerRegistration? {
-        if (userId.isBlank()) return null
+        if (!canAccess(userId)) return null
         return try {
             val firestore = getFirestoreSafely() ?: return null
             val shiftsCollection = firestore.collection(COLLECTION_USERS)
@@ -181,7 +187,7 @@ object FirestoreSyncManager {
      * Flow-based real-time shift stream for user.
      */
     fun userShiftsFlow(userId: String): Flow<List<WorkEntry>> = callbackFlow {
-        if (userId.isBlank()) {
+        if (!canAccess(userId)) {
             trySend(emptyList())
             close()
             return@callbackFlow
@@ -228,7 +234,7 @@ object FirestoreSyncManager {
         entry: WorkEntry,
         onComplete: ((Boolean) -> Unit)? = null
     ) {
-        if (userId.isBlank()) {
+        if (!canAccess(userId)) {
             onComplete?.invoke(false)
             return
         }
@@ -270,7 +276,7 @@ object FirestoreSyncManager {
         shiftId: Int,
         onComplete: ((Boolean) -> Unit)? = null
     ) {
-        if (userId.isBlank()) {
+        if (!canAccess(userId)) {
             onComplete?.invoke(false)
             return
         }
@@ -311,7 +317,7 @@ object FirestoreSyncManager {
         isPaid: Boolean,
         onComplete: ((Boolean) -> Unit)? = null
     ) {
-        if (userId.isBlank()) {
+        if (!canAccess(userId)) {
             onComplete?.invoke(false)
             return
         }

@@ -1,0 +1,66 @@
+// DOM rendering only. Persistence, account ownership and event orchestration remain in parity.js.
+const iconPaths={
+ info:'M11 10h2v7h-2zm0-3h2v2h-2zm1-5a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16',
+ filter:'M3 5h18v2H3zm3 6h12v2H6zm4 6h4v2h-4z',
+ upload:'M11 16h2V7l3 3 1.4-1.4L12 3 6.6 8.6 8 10l3-3zM4 17v4h16v-4h-2v2H6v-2z',
+ download:'M11 3h2v9l3-3 1.4 1.4L12 16l-5.4-5.6L8 9l3 3zM4 17v4h16v-4h-2v2H6v-2z',
+ close:'m6 4 6 6 6-6 2 2-6 6 6 6-2 2-6-6-6 6-2-2 6-6-6-6z',
+ plus:'M11 3h2v8h8v2h-8v8h-2v-8H3v-2h8z',
+ share:'M18 2a3 3 0 1 1-2.7 4.3L8.7 10a3 3 0 0 1 0 4l6.6 3.7a3 3 0 1 1-1 1.7L7.7 15a3 3 0 1 1 0-6l6.6-4.4A3 3 0 0 1 18 2z',
+ document:'M5 2h10l5 5v15H5zm2 2v16h11V8h-4V4zm2 7h7v2H9zm0 4h7v2H9z',
+ play:'M8 5v14l11-7zm2 3.6 5.3 3.4-5.3 3.4z',
+ stop:'M6 6h12v12H6zm2 2v8h8V8z',
+ copy:'M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm4 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m0 16H8V7h12z',
+ sort:'M3 6h18v2H3zm0 5h12v2H3zm0 5h6v2H3z',
+ label:'M17.6 5H3v14h14.6l5-7zM16.6 17H5V7h11.6l3.5 5z',
+ cash:'M2 4h18v14H2zm2 2v10h14V6zm8 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0m10-3v12H6v2h18V8z',
+ timer:'M9 1h6v2H9zm3 3a9 9 0 1 0 6.3 2.6L20 5l-1.4-1.4L17 5.2A9 9 0 0 0 12 4m0 2a7 7 0 1 1 0 14 7 7 0 0 1 0-14m-1 2h2v6h-2z',
+ down:'M7 9l5 5 5-5 1.4 1.4L12 16.8l-6.4-6.4z',
+ edit:'M3 17.3V21h3.7L17.8 9.9l-3.7-3.7zM20.7 7c.4-.4.4-1 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.7 3.7z',
+ trash:'M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zm2-10h8v10H8zm7-6-1-1h-4L9 3H4v2h16V3z',
+ check:'M9 16.2 4.8 12 3.4 13.4 9 19 21 7l-1.4-1.4z'
+};
+function uiIcon(name){return '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="'+iconPaths[name]+'"/></svg>';}
+
+
+function createShiftCard(entry,compact=false){
+ const card=document.createElement('details');card.className='journal-card'+(compact?' compact':'');card.dataset.shiftId=entry.id;
+ const summary=document.createElement('summary');const date=new Date(entry.date).toLocaleDateString('he-IL',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+ summary.innerHTML='<span class="category-avatar">'+escapeHtml(entry.category.slice(0,1))+'</span><span class="journal-info"><b>'+(!compact?uiIcon('label'):'')+escapeHtml(entry.category)+'</b><small>'+date+'</small></span><span class="journal-amount"><b>'+(!compact?uiIcon('cash'):'')+'<bdi>'+escapeHtml(entry.currency)+Number(entry.totalEarnings).toFixed(2)+'</bdi></b><small>'+(!compact?uiIcon('timer'):'')+Number(entry.hours).toFixed(1)+' ש׳ <span class="payment-status '+(entry.isPaid?'paid':'')+'">'+(entry.isPaid?'שולם':'ממתין')+'</span></small></span><span class="chevron">'+uiIcon('down')+'</span>';
+ if(!compact){installLongPress(summary,entry.id);}
+ if(!compact&&selectionMode){card.classList.toggle('selected',selectedShiftIds.has(entry.id));const mark=document.createElement('input');mark.type='checkbox';mark.checked=selectedShiftIds.has(entry.id);mark.setAttribute('aria-label','בחירת '+entry.category+' '+date);mark.onclick=event=>event.stopPropagation();mark.onchange=()=>toggleSelection(entry.id);card.classList.add("selectable");summary.insertBefore(mark,summary.querySelector(".chevron"));summary.onclick=event=>{event.preventDefault();if(Date.now()>=ignoreSelectionClickUntil)toggleSelection(entry.id);};}
+ const body=document.createElement('div');body.className='journal-details';const p=document.createElement('p');p.className='shift-work-facts';p.textContent=(entry.isTimeRange?'שעות עבודה: '+entry.startTime+' – '+entry.endTime+' ('+entry.hours+' שעות)':'שעות שהוזנו ידנית: '+entry.hours+' שעות')+'\nתעריף שעתי: '+entry.currency+entry.hourlyRate;body.append(p);if(entry.notes){const notes=document.createElement('p');notes.className='shift-note';notes.textContent='הערות: '+entry.notes;body.append(notes);}
+ if(entry.isGroupShift){try{
+  const members=JSON.parse(entry.groupWorkersJson||'[]'),hours=members.reduce((n,w)=>n+Number(w.hours),0);
+  const totals=document.createElement('div');totals.className='group-card-totals';
+  const total=document.createElement('strong');total.textContent='סה״כ לתשלום (כולל כולם): '+entry.currency+(entry.totalEarnings+members.reduce((n,w)=>n+Number(w.hours)*WorkSharing.employerRate(w,entry),0)).toFixed(2);
+  const mine=document.createElement('small');mine.textContent='החלק שלי (כולל הפרש תעריפים): '+entry.currency+(entry.totalEarnings+members.reduce((n,w)=>n+Number(w.hours)*(WorkSharing.employerRate(w,entry)-WorkSharing.workerRate(w,entry)),0)).toFixed(2);
+  totals.append(total,mine);body.append(totals);
+  const roster=document.createElement('div');roster.className='group-card-workers';
+  for(const [index,worker] of members.entries()){
+   const row=document.createElement('div');row.className='group-card-worker'+(worker.isPaid?' is-paid':'');
+   const info=document.createElement('div'),name=document.createElement('strong'),detail=document.createElement('small');name.textContent=worker.name;detail.textContent=worker.hours+' שעות · '+entry.currency+Number(worker.hours*WorkSharing.workerRate(worker,entry)).toFixed(2);info.append(name,detail);
+   const status=document.createElement('label');status.className='worker-payment';const check=document.createElement('input');check.type='checkbox';check.checked=Boolean(worker.isPaid);check.setAttribute('aria-label','שולם ל'+worker.name);check.onchange=()=>setWorkerPaid(entry.id,index,check.checked);status.append(check,document.createTextNode(worker.isPaid?'שולם':'ממתין'));
+   const workerActions=document.createElement('div');workerActions.className='worker-card-actions';
+   const share=document.createElement('button');share.className='icon-btn';share.setAttribute('aria-label','שיתוף פרטי '+worker.name);share.innerHTML=uiIcon('share');
+   share.onclick=()=>shareText('היי '+worker.name+', להלן פירוט שעות עבודה שלך מיום '+new Date(entry.date).toLocaleDateString('en-GB')+':\nעבדת '+worker.hours+' שעות. מגיע לך: '+entry.currency+Number(worker.hours*WorkSharing.workerRate(worker,entry)).toFixed(2)+'.\nסטטוס תשלום: '+(worker.isPaid?'שולם':'ממתין'));
+   workerActions.append(share,status);row.append(info,workerActions);roster.append(row);
+  }body.append(roster);
+ }catch{const p=document.createElement('p');p.textContent='לא ניתן להציג את פרטי הקבוצה. הנתונים נשמרו ללא שינוי.';body.append(p);}}
+ const actions=document.createElement('div');actions.className='journal-card-actions';for(const [name,label,action] of [['check',entry.isPaid?'סמן כממתין':'סמן כשולם',()=>togglePaid(entry.id)],['share','שיתוף החלק שלי',()=>shareText(WorkSharing.personal(entry))],...(entry.isGroupShift?[['document','דוח הקבוצה',()=>shareText(WorkSharing.group(entry))]]:[]),['edit','עריכה',()=>editShift(entry.id)],['trash','מחיקה',()=>deleteShift(entry.id)]]){const button=document.createElement('button');button.className='btn-mini'+(name==='check'?' payment-action '+(entry.isPaid?'is-paid':'is-unpaid'):'');button.innerHTML=uiIcon(name)+'<span>'+label+'</span>';button.setAttribute('aria-label',label);button.title=label;button.onclick=action;actions.append(button);}body.append(actions);card.append(summary,body);return card;
+}
+
+
+function createCategorySetting(c,prefs){
+ const row=document.createElement('div');row.className='category-setting';
+ const edit=document.createElement('button');edit.className='icon-btn';edit.innerHTML=uiIcon('edit');edit.setAttribute('aria-label','עריכת '+c.name);edit.onclick=()=>openCategoryDialog(c.name);
+ const name=document.createElement('span');name.textContent=c.name+' ('+WorkCategories.currency(c.name,prefs)+Number(c.defaultRate).toFixed(1)+')';
+ if(c.name===WorkCategories.defaultName(settingsDraft?.categories||categories,prefs)){row.classList.add('default');name.title='ברירת המחדל';}
+ const remove=document.createElement('button');remove.className='icon-btn category-remove';remove.innerHTML='<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 8 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-width="2"/></svg>';remove.setAttribute('aria-label','מחיקת '+c.name);remove.onclick=()=>deleteCategory(c.name);row.append(edit,name,remove);return row;
+}
+function renderCategorySettings(){if(!settingsDraft)return;document.getElementById('default-category-button').textContent=WorkCategories.defaultName(settingsDraft.categories,settingsDraft.webPreferences)+' ▾';document.getElementById('settings-categories').replaceChildren(...settingsDraft.categories.map(c=>createCategorySetting(c,settingsDraft.webPreferences)));}
+
+// User-triggered mail draft: no financial data or storage is included.
+function selectFeedbackType(button){document.querySelectorAll('.feedback-types button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));}
+function feedbackDraft(){const type=document.querySelector('.feedback-types [aria-pressed="true"]').textContent,message=document.getElementById('feedback-message').value.trim();return {subject:'['+type+'] שכר עבודות Web',body:'סוג: '+type+'\nגרסת Web: '+(window.WorkBuild?.buildId||'RC13')+'\nדפדפן: '+navigator.userAgent+'\n\n'+message};}
+function openFeedbackDraft(){if(!document.getElementById('feedback-message').value.trim())return;const draft=feedbackDraft();location.href='mailto:sholi2157+salaryfeedback@gmail.com?subject='+encodeURIComponent(draft.subject)+'&body='+encodeURIComponent(draft.body);}

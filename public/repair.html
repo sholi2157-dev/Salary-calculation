@@ -1,0 +1,17 @@
+<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>חישוב שכר — תיקון טעינה</title><style>body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#090b10;color:#e5e5ea;font:16px sans-serif}main{max-width:340px;padding:24px;text-align:center}h1{font-size:22px}p{line-height:1.7;color:#94a3b8}button{padding:12px 24px;border:0;border-radius:10px;background:#6366f1;color:white;font:inherit;min-height:48px}</style><main><h1>חישוב שכר</h1><p id="status" role="status">מתקן את טעינת האתר… הנתונים שלך נשמרים.</p><button id="retry" hidden>נסה שוב</button></main><script>
+// Same-origin shell repair only. Never read or write product storage.
+const statusText=document.getElementById('status'),retry=document.getElementById('retry');
+function workerBuild(worker){return new Promise(resolve=>{if(!worker)return resolve(null);const channel=new MessageChannel(),timer=setTimeout(()=>{channel.port1.close();resolve(null);},2000);channel.port1.onmessage=e=>{clearTimeout(timer);channel.port1.close();resolve(e.data?.buildId);};worker.postMessage({type:'GET_BUILD_INFO'},[channel.port2]);});}
+async function repair(){retry.hidden=true;statusText.textContent='מתקן את טעינת האתר… הנתונים שלך נשמרים.';try{
+ const response=await fetch('/build-info.json?repair='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error();const target=(await response.json()).buildId;if(!target)throw Error();
+ const reg=await navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'});await reg.update();
+ const deadline=Date.now()+30000;let activated=false;
+ while(Date.now()<deadline){
+  if(await workerBuild(navigator.serviceWorker.controller)===target){location.replace('/');return;}
+  if(!activated&&reg.waiting&&await workerBuild(reg.waiting)===target){reg.waiting.postMessage({type:'SKIP_WAITING'});activated=true;}
+  await new Promise(resolve=>setTimeout(resolve,250));
+ }
+ throw Error();
+ }catch{statusText.textContent='לא הצלחנו להשלים את התיקון. בדוק את החיבור ונסה שוב. הנתונים לא נמחקו.';retry.hidden=false;}}
+retry.onclick=repair;repair();
+</script></html>
