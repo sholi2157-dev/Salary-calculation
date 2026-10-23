@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 fs.mkdirSync('public/web', { recursive: true });
 fs.copyFileSync('index.html','public/index.html');
+fs.copyFileSync('admin.html','public/admin.html');
 fs.cpSync('web','public/web',{recursive:true,filter:source=>!source.endsWith('personal-ai.js')});
 
 // Public provenance contains no configuration or credentials. Preview QA uses
