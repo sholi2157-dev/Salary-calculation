@@ -4,5 +4,13 @@ service cloud.firestore {
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+    // Anonymous install count: one create-only record per device, never read, changed or deleted by the app.
+    match /installs/{installId} {
+      allow create: if installId.matches('^[a-f0-9]{32}$')
+        && request.resource.data.keys().hasOnly(['version', 'kind', 'at'])
+        && request.resource.data.version is string && request.resource.data.version.size() <= 32
+        && request.resource.data.kind in ['new', 'update']
+        && request.resource.data.at == request.time;
+    }
   }
 }
