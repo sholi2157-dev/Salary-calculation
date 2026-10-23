@@ -14,7 +14,8 @@ function render(el, app) {
     <div class="divider"></div>${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip" data-a="series" data-testid="series-button">ניהול</button>', 'יוצרים במסך ההוספה: "חוזרת כל שבוע". כשהזמן נגמר המשמרת נרשמת לבד, ותמיד אפשר לבטל.')}`)}
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
-  ${group('התראות', `${rowHtml('הסיכום החודשי', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyMonthly === true}" aria-label="הסיכום החודשי" data-a="monthly" data-testid="notify-monthly"></button>`, 'בתחילת החודש, כשנכנסים לאתר: כמה עבדת וכמה הרווחת. באתר התזכורות מופיעות כשהוא פתוח; באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.')}
+  ${group('הסיכומים שלי', rowHtml('כל הסיכומים', null, '<button class="chip" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל סיכום חודשי ושנתי שכבר נפתח נשמר כאן.'))}
+  ${group('התראות', `${rowHtml('הסיכום החודשי', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyMonthly === true}" aria-label="הסיכום החודשי" data-a="monthly" data-testid="notify-monthly"></button>`, 'ב-30 לחודש (ביום האחרון בחודש קצר יותר), כשנכנסים לאתר. באתר התזכורות מופיעות כשהוא פתוח; באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.')}
     <div class="divider"></div>${rowHtml('תעריף חסר', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyRate === true}" aria-label="תעריף חסר" data-a="rate" data-testid="notify-rate"></button>`, 'לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.')}`)}
   ${group('גיבוי ונתונים', `<div class="row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
     <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'הנתונים נשמרים בדפדפן הזה בלבד. כדאי לשמור גיבוי גם מחוץ לאתר. גיבוי מהאפליקציה עובר לכאן, וגיבוי מכאן עובר לאפליקציה.')}
@@ -32,6 +33,7 @@ function render(el, app) {
   q('[data-a=android-download]').onclick = () => root.KisDownload.open();
   q('[data-a=tour]').onclick = () => root.KisLaunch.tour(app);
   q('[data-a=places]').onclick = () => placesSheet(app);
+  q('[data-a=recaps]').onclick = () => root.KisSummaryUi.archive(app);
   el.querySelectorAll('[data-cur]').forEach(b => b.onclick = () => store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, mainCurrency: b.dataset.cur }); }));
   q('[data-a=series]').onclick = () => root.KisPlans.seriesSheet(app);
   el.querySelectorAll('[data-theme]').forEach(b => b.onclick = () => { store.setLocal('theme', b.dataset.theme); app.applyTheme(); });
@@ -159,14 +161,23 @@ function placeSheet(app, oldName, done) {
 function monthSummary(app, month) { root.KisSummaryUi.monthSummary(app, month); }
 
 /** What arrived (a monthly summary opens again). The switches are in Settings. */
+/** The notes to show: a recap that has not opened yet (or never will, like before the first one) stays out. */
+function notes(store) {
+  return store.recent().filter(n => n.kind !== 'monthly' || root.KisSummaryUi.isOpen(n.scope || root.KisSummaryUi.scopeOf(n.month)));
+}
+/** The bell's dot: anything new since the bell was opened, and a recap until it is actually watched. */
+function unread(store) {
+  return notes(store).some(n => n.time > (store.local.seenAt || 0) || (n.kind === 'monthly' && n.scope && !n.opened));
+}
 function notificationsSheet(app) {
-  const { store } = app, list = store.recent(), { esc } = U();
+  const { store } = app, list = notes(store), { esc } = U();
   store.setLocal('seenAt', Date.now(), true);
   U().sheet('notifications-sheet', (el, close) => {
     el.innerHTML = `<h2>התראות</h2>${list.length ? '' : '<p class="caption" data-testid="notifications-empty">אין התראות</p>'}
-      <div class="list">${list.map((n, i) => `<button class="shift" data-i="${i}" data-testid="recent-note-${i}" ${n.month == null ? 'style="cursor:default"' : ''}><span class="meta"><b class="label">${esc(n.title)}</b><span class="sub">${esc(n.text)}</span><span class="caption">${U().shortDate(n.time)}</span></span></button>`).join('')}</div>
+      <div class="list">${list.map((n, i) => `<button class="shift" data-i="${i}" data-testid="recent-note-${i}" ${n.month == null ? 'style="cursor:default"' : ''}><span class="meta"><b class="label">${esc(n.title)}${n.kind === 'monthly' && n.scope && !n.opened ? ' <span class="chip" style="min-height:0;padding:2px 8px;font-size:12px">חדש</span>' : ''}</b><span class="sub">${esc(n.text)}</span><span class="caption">${U().shortDate(n.time)}</span></span></button>`).join('')}</div>
       <button class="btn ghost" data-a="settings" data-testid="notifications-settings">הגדרות התראות</button>`;
-    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const n = list[+b.dataset.i]; if (n.month != null) { close(); monthSummary(app, n.month); } });
+    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const n = list[+b.dataset.i]; if (n.month == null) return; close();
+      if (n.scope) root.KisSummaryUi.story(app, n.scope); else monthSummary(app, n.month); });
     el.querySelector('[data-a=settings]').onclick = () => { close(); app.go('settings'); };
   }, { onClose: () => app.refresh() });
 }
@@ -174,12 +185,13 @@ function notificationsSheet(app) {
 /** In-site reminders, due when the site is opened (the Android app sends them as notifications). */
 function dueReminders(app) {
   const { store } = app, now = Date.now(), out = [];
-  const last = U().monthKey(now) - 1, done = store.data.entries.filter(e => !U().upcoming(e));
-  if (store.local.notifyMonthly === true && store.local.lastMonthly !== last) {
-    const rows = done.filter(e => U().monthKey(e.date) === last);
-    if (rows.length) { const money = root.KisHome.sortedTotals(rows).map(([c, v]) => U().money(v, c)).join(' · ');
-      out.push({ kind: 'monthly', title: `הסיכום של ${U().MONTHS[last % 12]} מוכן`, text: `${rows.length} משמרות · ${U().hours(rows.reduce((s, e) => s + e.hours, 0))} שעות${money ? ' · ' + money : ''}`, time: now, month: last }); }
-    store.setLocal('lastMonthly', last);
+  const done = store.data.entries.filter(e => !U().upcoming(e));
+  // The recap of a month, once, from its 30th for 4 more days (KisSummary.recapNew; never before the first one).
+  const scope = root.KisSummary.recapNew(root.KisPlan.dateOf(now)).month;
+  if (store.local.notifyMonthly === true && scope && store.local.lastMonthly !== scope) {
+    const rows = done.filter(e => root.KisPlan.dateOf(e.date).startsWith(scope)), month = root.KisSummaryUi.monthOf(scope);
+    if (rows.length) out.push({ kind: 'monthly', title: `${U().MONTHS[month % 12]} שלך בכיס מוכן`, text: rows.length === 1 ? 'משמרת אחת · לצפייה בסיכום' : `${rows.length} משמרות · לצפייה בסיכום`, time: now, month, scope });
+    store.setLocal('lastMonthly', scope);
   }
   const missing = done.filter(e => !e.payKnown).length;
   if (store.local.notifyRate === true && missing && now - (store.local.lastRate || 0) >= 7 * 864e5) {
@@ -190,5 +202,5 @@ function dueReminders(app) {
   return out;
 }
 
-root.KisSettings = { render, monthSummary, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet };
+root.KisSettings = { render, monthSummary, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };
 })(globalThis);

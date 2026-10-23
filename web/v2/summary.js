@@ -116,6 +116,77 @@ function slides(s) {
   return out;
 }
 
-const api = { summary, hourProfile, PERSONAS, FUN, prevMonth, weekday, slides };
+/*
+ * When a recap exists (Android: V2Summary.recap*, checked by web-tests/fixtures/v2-recap.json). A month's recap opens on
+ * its 30th (the last day of a shorter month) and is new for that day and 4 more; after that it waits in the archive.
+ * The year's recap opens with December's. Nothing before FIRST_RECAP is ever shown (it would spoil the first one).
+ */
+const FIRST_RECAP = '2026-10';
+const RECAP_NEW_DAYS = 5;
+const pad2 = n => String(n).padStart(2, '0');
+const dayNo = ymd => { const [y, m, d] = ymd.split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / 864e5); };
+/** 'YYYY-MM-DD' of the day a month's recap opens. */
+function recapDay(ym) { const [y, m] = ym.split('-').map(Number); return `${ym}-${pad2(Math.min(30, new Date(Date.UTC(y, m, 0)).getUTCDate()))}`; }
+/** The month a scope's recap opens with: the month itself, or December for a year. */
+const recapMonth = scope => scope.length === 4 ? scope + '-12' : scope;
+/** True once the recap of `scope` ('YYYY-MM' or 'YYYY') may be seen. */
+function recapOpen(scope, today) { const m = recapMonth(scope); return m >= FIRST_RECAP && today >= recapDay(m); }
+/** The recaps that are new today: { month, year } ('YYYY-MM' / 'YYYY' or null). */
+function recapNew(today) {
+  const ym = today.slice(0, 7), [y, m] = ym.split('-').map(Number);
+  const prev = m === 1 ? `${y - 1}-12` : `${y}-${pad2(m - 1)}`;
+  const month = [ym, prev].find(x => recapOpen(x, today) && dayNo(today) - dayNo(recapDay(x)) < RECAP_NEW_DAYS) || null;
+  return { month, year: month && month.endsWith('-12') ? month.slice(0, 4) : null };
+}
+/** Every recap that has opened, newest first; a year comes right before its December. */
+function recapArchive(today) {
+  const out = [];
+  for (let ym = today.slice(0, 7); ym >= FIRST_RECAP; ym = prevMonth(ym)) if (recapOpen(ym, today)) {
+    if (ym.endsWith('-12')) out.push(ym.slice(0, 4));
+    out.push(ym);
+  }
+  return out;
+}
+
+/*
+ * The story's words vary between people and between recaps: each line is picked from its own list by a stable hash of
+ * the person's own seed, the scope and the line's key (the same pick on every opening). A year has its own lists.
+ */
+const VOICE = {
+  intro: ['{whose} שלך\nבכיס.', '{whose} שלך,\nבמספרים.', 'ככה נראה\n{whose} שלך.'],
+  introLine: ['מוכנים? יש כאן כמה מספרים שעוד לא ידעתם על עצמכם.', 'חודש שלם נכנס לכמה מסכים. בואו נראה מה יצא.',
+    'לפני שמתחילים חודש חדש, רגע אחד על מה שהיה.', 'הכנו לכם את החודש בכמה מספרים. חלקם עשויים להפתיע.'],
+  introLineYear: ['שנה שלמה של משמרות, בכמה דקות. מוכנים?', 'כל השעות, כל המקומות, שנה אחת. בואו נתחיל.',
+    'עוד שנה נסגרת. הנה מה שהיא השאירה בכיס.', 'לפני שמתחילים שנה חדשה, הצצה אחת אחורה.'],
+  hoursKick: ['הזמן שלכם', 'כמה עבדתם', 'השעון לא משקר'],
+  hoursKickYear: ['השנה שלכם בשעות', 'כל השעות של השנה', 'הזמן שלכם'],
+  funTail: ['סתם שתדעו.', 'רק אומרים.', 'לא שמישהו סופר.'],
+  placesKick: ['המקומות המובילים שלכם', 'איפה הייתם', 'מי קיבל את רוב הזמן'],
+  placesLine: ['{p}% מהזמן הלכו ל{name}. שיהיה ברור מי האהוב.', 'ל{name} הלכו {p}% מהזמן. אין ספק מי במקום הראשון.', '{p}% מהשעות היו ב{name}. אהבה גדולה.'],
+  personaKick: ['טיפוס העבודה שלכם', 'אז מי אתם בעבודה?', 'הדמות שלכם'],
+  personaKickYear: ['טיפוס העבודה של השנה', 'הדמות שלכם השנה', 'אז מי הייתם השנה?'],
+  longestKick: ['המשמרת הארוכה', 'הכי ארוכה שהייתה', 'שיא האורך'],
+  longestTail: ['מגיע לכם קפה. אולי שניים.', 'מקווים שהייתה הפסקה באמצע.', 'הרגליים עוד זוכרות את זה.'],
+  daysKick: ['הקצב שלכם', 'היום החזק', 'לוח השבוע'],
+  daysLine: ['יום {day} הוא היום שלכם.', 'ביום {day} הכי הרבה עבודה.', 'יום {day}, בלי מתחרים.'],
+  hourKick: ['השעה הכי פעילה שלכם', 'שעת השיא', 'מתי אתם בשיא'],
+  moneyKick: ['השורה התחתונה', 'ומה נכנס לכיס', 'הרגע שחיכיתם לו'],
+  moneyKickYear: ['השורה התחתונה של השנה', 'כל השנה בכיס', 'ומה נכנס השנה'],
+};
+/** FNV-1a over UTF-16 code units, unsigned (the same numbers in Kotlin). */
+function hash(text) { let h = 0x811c9dc5; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193); } return h >>> 0; }
+/** The words of one recap: every VOICE line (a year uses the "…Year" list where there is one), templates unfilled. */
+function voice(scope, seed) {
+  const year = scope.length === 4, out = {};
+  for (const key of Object.keys(VOICE)) if (!key.endsWith('Year')) {
+    const list = (year && VOICE[key + 'Year']) || VOICE[key];
+    out[key] = list[hash(`${seed}|${scope}|${key}`) % list.length];
+  }
+  return out;
+}
+const fill = (text, values) => text.replace(/\{(\w+)\}/g, (m, k) => (k in values ? String(values[k]) : m));
+
+const api = { summary, hourProfile, PERSONAS, FUN, prevMonth, weekday, slides,
+  FIRST_RECAP, RECAP_NEW_DAYS, recapDay, recapOpen, recapNew, recapArchive, VOICE, hash, voice, fill, dayNo };
 if (typeof module !== 'undefined') module.exports = api; else root.KisSummary = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
