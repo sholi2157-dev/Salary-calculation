@@ -278,11 +278,13 @@ const seed = {
     assert.doesNotMatch(await page.textContent(tid('home-greeting')), /כהן/, 'only the first name is shown');
     await page.reload(); await page.waitForSelector(tid('home-hero'));
     assert.equal(await page.locator(tid('launch')).count(), 0, 'the launch shows once');
-    // Bell: only what arrived, with a way to its settings.
-    await page.evaluate(() => localStorage.setItem('kis_web_recent_v1', JSON.stringify([{ kind: 'monthly', title: 'הסיכום מוכן', text: '3 משמרות', time: Date.now(), month: 2026 * 12 + 8 }])));
+    // Bell: only what arrived, with a way to its settings. A recap from before the first one (September) never shows.
+    await page.evaluate(() => localStorage.setItem('kis_web_recent_v1', JSON.stringify([{ kind: 'rate', title: 'משמרת אחת מחכה לתעריף', text: 'אפשר להשלים', time: Date.now(), month: null },
+      { kind: 'monthly', title: 'הסיכום מוכן', text: '3 משמרות', time: Date.now(), month: 2026 * 12 + 8 }])));
     await page.reload(); await page.waitForSelector(tid('home-hero'));
     assert.ok(await page.isVisible(tid('home-bell-dot')), 'something new is marked on the bell');
     await page.click(tid('home-bell')); assert.ok(await page.isVisible(tid('recent-note-0')));
+    assert.equal(await page.locator(tid('recent-note-1')).count(), 0, 'no September recap');
     assert.equal(await page.locator(`${tid('notifications-sheet')} [role=switch]`).count(), 0, 'no switches in the bell');
     await shot(page, 'notifications'); await page.click(tid('notifications-settings'));
     assert.equal(await page.locator(tid('home-bell-dot')).count(), 0, 'opened means seen');
@@ -301,8 +303,23 @@ const seed = {
   }
 
   // 9. "החודש שלך" and the story recap: insights, amounts hidden until asked, a card without amounts, year too.
+  // Before the 30th there is no story at all (no spoilers); from the 30th it is on Home, then in Settings.
   {
     const { ctx, page } = await open();
+    const real = new Date(); const recapDay = Math.min(30, new Date(real.getFullYear(), real.getMonth() + 1, 0).getDate());
+    if (real.getDate() < recapDay) {
+      await page.click(tid('home-month-summary'));
+      assert.equal(await page.locator(tid('month-story')).count(), 0, 'no story before the 30th');
+      assert.equal(await page.locator('[data-testid^=home-recap-]').count(), 0);
+      await page.keyboard.press('Escape');
+      await page.clock.install({ time: new Date(real.getFullYear(), real.getMonth(), recapDay, 12) });
+      await page.reload(); await page.waitForSelector(tid('home-hero'));
+    }
+    const scope = await page.evaluate(() => KisSummary.recapNew(KisPlan.dateOf(Date.now())).month);
+    assert.ok(await page.isVisible(tid('home-recap-' + scope)), 'the new recap is on Home');
+    await page.click(tid('tab-settings')); await page.click(tid('recaps-button'));
+    assert.ok(await page.isVisible(tid('recap-' + scope)), 'and in the archive');
+    await page.keyboard.press('Escape'); await page.click(tid('tab-home'));
     await page.click(tid('home-month-summary'));
     assert.ok(await page.isVisible(tid('month-insight-0')));
     assert.match(await page.textContent(tid('month-rate-₪')), /₪\d/);
@@ -321,7 +338,9 @@ const seed = {
     await page.waitForTimeout(700); await page.screenshot({ path: path.join(OUT, 'v2-story-card.png') });
     await page.keyboard.press('Escape'); assert.equal(await page.locator(tid('story')).count(), 0);
     // It moves on by itself.
-    await page.click(tid('home-month-summary')); await page.click(tid('year-story'));
+    // The year's story opens with December's; it is not offered before that.
+    if (!scope.endsWith('-12')) { await page.click(tid('home-month-summary')); assert.equal(await page.locator(tid('year-story')).count(), 0); await page.keyboard.press('Escape'); }
+    await page.evaluate(() => KisSummaryUi.story(Kis, String(new Date().getFullYear())));
     await page.waitForSelector(tid('story-intro')); await page.waitForSelector(tid('story-hours'), { timeout: 9000 });
     await page.click(tid('story-close'));
     await ctx.close();

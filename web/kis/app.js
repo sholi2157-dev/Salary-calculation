@@ -125,7 +125,7 @@ function start() {
   if (root.KisLaunch.maybeStart(app)) return;
   const notes = root.KisSettings.dueReminders(app);
   const monthly = notes.find(n => n.kind === 'monthly');
-  if (monthly) U().toast(monthly.title, 'לסיכום', () => root.KisSettings.monthSummary(app, monthly.month));
+  if (monthly) U().toast(monthly.title, 'לצפייה', () => root.KisSummaryUi.story(app, monthly.scope));
   else if (notes[0]) U().toast(notes[0].title, 'להשלמה', () => app.completePending());
   // A new shift typed before a reload or an update comes back as it was.
   const draft = root.KisEditor.pendingDraft();

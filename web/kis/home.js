@@ -41,7 +41,9 @@ function render(el, app) {
   const recent = [...entries].sort((a, b) => (b.createdAt || b.date) - (a.createdAt || a.date)).slice(0, 3);
   const wallet = Object.entries(month.reduce((m, e) => { (m[e.category] ||= []).push(e); return m; }, {})).sort((a, b) => b[1].length - a[1].length);
 
-  const unread = store.recent().some(n => n.time > (store.local.seenAt || 0));
+  const unread = root.KisSettings.unread(store);
+  // A recap is on Home from its 30th for 4 more days; after that it is in Settings → "הסיכומים שלי".
+  const fresh = root.KisSummaryUi.fresh(store);
   const me = U().PLACES[0];
   el.innerHTML = `
   <div class="hello">${U().logo()}<div><div class="caption" data-testid="home-greeting">${esc(name ? greeting() + ', ' + name : greeting())}</div><div class="label" style="font-size:16px">שכר עבודות אישי</div></div>
@@ -56,6 +58,7 @@ function render(el, app) {
     ${pending ? `<button class="pending-flag" data-act="pending" data-testid="pending-flag">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}
   </section>
   <section class="now-row" data-testid="now-row">${t ? liveCard(t) : '<button class="now" data-act="start" data-testid="live-start"><span class="dot"></span>אני מתחיל עכשיו</button>'}</section>
+  ${fresh.map(scope => `<button class="story-entry home-recap" data-recap="${scope}" data-testid="home-recap-${scope}"><span><b>${esc(scope.length === 4 ? `השנה ${scope} שלך בכיס` : `${U().MONTHS[Number(scope.slice(5)) - 1]} שלך בכיס`)}</b><small>${scope.length === 4 ? 'הסיכום השנתי מוכן' : 'הסיכום החודשי מוכן'}</small></span>${U().logo(34)}</button>`).join('')}
   ${nextItems.length ? `<div class="section-title"><h2>הבא בתור</h2><button class="link" data-act="all-planned" data-testid="next-all">הכול</button></div>
     <div class="list" data-testid="next-up">${nextItems.map(x => x.e ? shiftCard(x.e, store, { tag: 'next' }) : root.KisPlans.card(x.o, store)).join('')}</div>` : ''}
   ${recent.length ? `<div class="section-title"><h2>אחרונות</h2><button class="link" data-act="history">הכול</button></div>
@@ -67,6 +70,7 @@ function render(el, app) {
   el.querySelector('[data-act=android-download]').onclick = () => root.KisDownload.open();
   el.querySelector('[data-act=bell]').addEventListener('click', () => root.KisSettings.notificationsSheet(app));
   el.querySelector('[data-act=start]')?.addEventListener('click', () => app.startLive());
+  el.querySelectorAll('[data-recap]').forEach(b => b.addEventListener('click', () => root.KisSummaryUi.story(app, b.dataset.recap)));
   el.querySelector('[data-act=pending]')?.addEventListener('click', () => app.completePending());
   el.querySelector('[data-act=all-planned]')?.addEventListener('click', () => app.go('history', { planned: true }));
   el.querySelector('[data-act=history]')?.addEventListener('click', () => app.go('history'));
