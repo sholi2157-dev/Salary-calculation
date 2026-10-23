@@ -1,10 +1,10 @@
 {
-  "sourceSha": "728a74df23752caac76ae2462853a7156a12d626",
-  "deploymentId": "dpl_Fjmn8Ts2C1MzpYcwnBPuHPkggmTd",
+  "sourceSha": "01091dd0e7a3168586d3b3a1ee424d03b3c5eb4d",
+  "deploymentId": "dpl_7D3oZpsSo9z4Fpr4fFNXQPs2MNoJ",
   "publicOrigin": "https://salary-calculation-eta.vercel.app",
-  "release": "Story quality with Android 2.0.6: slides with something to say, plural copy, card without empty cells, signed",
-  "rollbackDeployment": "dpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk",
-  "buildId": "728a74df23752caac76ae2462853a7156a12d626-030a280b6b2d5925",
-  "androidCandidateRun": 39676466946,
-  "androidRelease": "android-v2.0.6 (update channel run 39890763914)"
+  "release": "Recap with Android 2.0.7: opens on the 30th, new for 4 days then in Settings, varied words, picture-only sharing, every slide shareable",
+  "rollbackDeployment": "dpl_Fjmn8Ts2C1MzpYcwnBPuHPkggmTd",
+  "buildId": "01091dd0e7a3168586d3b3a1ee424d03b3c5eb4d-a69472d231d1d5b8",
+  "androidCandidateRun": 39998442873,
+  "androidRelease": "android-v2.0.7 (pending)"
 }
