@@ -1,3 +1,16 @@
+# Android 2.0.7 and the recap website published — 2026-10-23
+
+Android 2.0.7 (versionCode 40) from source 822de27, signed candidate run 39998442873
+(tests, permanent certificate, RC16 → 2.0.6 → 2.0.7 update with data preserved).
+APK SHA-256 722d893e73162e24d9ed70ffedb21b6dedbe8526d36c98b06449dc2890f7c690.
+Published by cc755fa; update-channel run 40001541329 SUCCESS. Includes the recap
+rules (opens on the 30th, 4 days on Home, archive in Settings, bell until watched,
+varied wording, picture-only sharing, every slide shareable) and anonymous install
+counting (PR #11).
+Website 01091dd live as dpl_7D3oZpsSo9z4Fpr4fFNXQPs2MNoJ (aliases assigned; promote of
+a preview returns 422). Rollback dpl_Fjmn8Ts2C1MzpYcwnBPuHPkggmTd. Public-site run
+40001374047 SUCCESS.
+
 # 2.0.6 published — notifications that arrive, update sheet, story quality (2026-10-23)
 
 Owner approved: "מאשר לפרסם 2.0.6 ואת האתר".
