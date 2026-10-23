@@ -72,6 +72,8 @@ fun KisHome(
     unread: Boolean = false,
     onBell: () -> Unit = {},
     onMonthSummary: () -> Unit = {},
+    /** A recap that is new (from the 30th for 4 more days); afterwards it is in Settings. */
+    onRecap: (String) -> Unit = {},
 ) {
     val c = Kis.colors
     // A clock that moves on by itself, so "today" and "this week" roll over without new data.
@@ -91,6 +93,11 @@ fun KisHome(
                 plannedThisWeek = remember(plans, now) { val from = com.example.domain.V2Plan.dateOf(KisHistoryLogic.weekStart(now)); val to = isoDayPlus(KisHistoryLogic.weekStart(now), 6)
                     plans.count { it.status == com.example.domain.V2Plan.Status.PLANNED && it.date in from..to } })
             NowRow(live, onStartLive, onStopLive, onCancelLive, onLiveCurrency)
+            val day = remember(now) { com.example.domain.V2Summary.today() }
+            remember(entries, day) { freshRecaps(entries, day) }.forEach { scope ->
+                RecapEntry(if (scope.length == 4) "השנה $scope שלך בכיס" else "${KisFormat.MONTHS[(monthKeyOf(scope) ?: 0) % 12]} שלך בכיס",
+                    if (scope.length == 4) "הסיכום השנתי מוכן" else "הסיכום החודשי מוכן", "home_recap_$scope", Modifier.padding(top = 12.dp)) { onRecap(scope) }
+            }
             val upcoming = remember(entries, now) { entries.filter { KisHistoryLogic.upcoming(it, now) } }
             NextUp(plans, upcoming, categories, planActions, onOpen, onAllPlans)
             val recent = remember(entries) { entries.sortedByDescending { it.createdAt }.take(3) }

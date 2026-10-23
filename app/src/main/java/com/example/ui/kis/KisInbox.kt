@@ -67,10 +67,12 @@ fun HeaderActions(unread: Boolean, onBell: () -> Unit) {
 /** What arrived; a monthly summary opens again. The switches live in Settings. */
 @Composable
 fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSettings: () -> Unit, onDismiss: () -> Unit,
-                       update: com.example.ui.WorkUpdates.Release? = null, onUpdate: (com.example.ui.WorkUpdates.Release) -> Unit = {}) {
+                       update: com.example.ui.WorkUpdates.Release? = null, onUpdate: (com.example.ui.WorkUpdates.Release) -> Unit = {},
+                       onStory: ((String) -> Unit)? = null) {
     val c = Kis.colors
     val plan = viewModel.planSettings
-    val recent = remember { plan.recent }
+    // A monthly summary shows only once its recap has opened, and stays marked "חדש" until the recap is watched.
+    val recent = remember { plan.notes() }
     LaunchedEffect(Unit) { plan.seenAt = System.currentTimeMillis() }
     KisSheet(onDismiss = onDismiss, tag = "notifications_sheet") {
         Text("התראות", style = KisType.title, color = c.ink)
@@ -92,13 +94,18 @@ fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSetti
             recent.forEachIndexed { i, n ->
                 val month = if (n.kind == "monthly") monthKeyOf(n.month) else null
                 val open: (() -> Unit)? = when {
+                    month != null && onStory != null -> { { onStory(n.month) } }
                     month != null -> { { onMonth(month) } }
                     n.kind == "update" && update != null -> { { onUpdate(update) } }
                     else -> null
                 }
                 Column(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(c.bg)
                     .then(if (open != null) Modifier.kisClick(onClick = open) else Modifier).testTag("recent_note_$i").padding(12.dp)) {
-                    Text(n.title, style = KisType.label, color = c.ink)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(n.title, style = KisType.label, color = c.ink, modifier = Modifier.weight(1f, fill = false))
+                        if (n.kind == "monthly" && !n.opened) Text("חדש", style = KisType.micro, color = Color.White, modifier = Modifier.clip(RoundedCornerShape(99.dp))
+                            .background(Workplaces[0].from).padding(horizontal = 8.dp, vertical = 2.dp).testTag("recent_note_new_$i"))
+                    }
                     Text(n.text, style = KisType.caption, color = c.muted)
                     Text(KisShare.shortDate(n.time), style = KisType.micro, color = c.muted)
                 }

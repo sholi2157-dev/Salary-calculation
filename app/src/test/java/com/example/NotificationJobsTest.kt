@@ -48,10 +48,14 @@ class NotificationJobsTest {
         assertEquals("2026-10", PlanJobs.monthlyDue(at(2026, 10, 30, 20, 0), "2026-09"))
         assertEquals("2026-10", PlanJobs.monthlyDue(at(2026, 10, 31, 9), "2026-09"))
         assertNull(PlanJobs.monthlyDue(at(2026, 10, 31, 9), "2026-10"))
-        // A phone that was off on the 30th still gets it in the first 3 days of the next month, and never later.
+        // A phone that was off on the 30th still gets it while the recap is new (the 30th and 4 more days), never later.
         assertEquals("2026-10", PlanJobs.monthlyDue(at(2026, 11, 2, 9), "2026-09"))
+        assertEquals("2026-10", PlanJobs.monthlyDue(at(2026, 11, 3, 23), ""))
         assertNull(PlanJobs.monthlyDue(at(2026, 11, 2, 9), "2026-10"))
-        assertNull(PlanJobs.monthlyDue(at(2026, 11, 5, 9), "2026-09"))
+        assertNull(PlanJobs.monthlyDue(at(2026, 11, 4, 9), "2026-09"))
+        // Nothing before the first recap (October 2026): no September summary.
+        assertNull(PlanJobs.monthlyDue(at(2026, 9, 30, 21), ""))
+        assertNull(PlanJobs.monthlyDue(at(2026, 10, 2, 9), ""))
         assertEquals("2027-02", PlanJobs.monthlyDue(at(2027, 2, 28, 20), "2027-01"))
     }
 

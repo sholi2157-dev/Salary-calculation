@@ -61,6 +61,76 @@ object V2Summary {
         add("money"); add("card")
     }
 
+    /*
+     * When a recap exists (the website's KisSummary.recap*, checked by src/test/resources/v2-recap.json). A month's recap
+     * opens on its 30th (the last day of a shorter month) and is new for that day and 4 more; after that it waits in the
+     * archive. The year's recap opens with December's. Nothing before FIRST_RECAP is ever shown (no spoiler of the first).
+     */
+    const val FIRST_RECAP = "2026-10"
+    const val RECAP_NEW_DAYS = 5
+    /** "YYYY-MM-DD" of the day a month's recap opens. */
+    fun recapDay(ym: String): String = java.time.YearMonth.parse(ym).let { it.atDay(minOf(30, it.lengthOfMonth())).toString() }
+    private fun recapMonth(scope: String) = if (scope.length == 4) "$scope-12" else scope
+    /** True once the recap of [scope] ("YYYY-MM" or "YYYY") may be seen. */
+    fun recapOpen(scope: String, today: String): Boolean { val m = recapMonth(scope); return m >= FIRST_RECAP && today >= recapDay(m) }
+    data class RecapNew(val month: String?, val year: String?)
+    /** The recaps that are new today. */
+    fun recapNew(today: String): RecapNew {
+        val ym = today.take(7)
+        val day = LocalDate.parse(today).toEpochDay()
+        val month = listOf(ym, prevMonth(ym)).firstOrNull { recapOpen(it, today) && day - LocalDate.parse(recapDay(it)).toEpochDay() < RECAP_NEW_DAYS }
+        return RecapNew(month, month?.takeIf { it.endsWith("-12") }?.take(4))
+    }
+    /** Every recap that has opened, newest first; a year comes right before its December. */
+    fun recapArchive(today: String): List<String> = buildList {
+        var ym = today.take(7)
+        while (ym >= FIRST_RECAP) {
+            if (recapOpen(ym, today)) { if (ym.endsWith("-12")) add(ym.take(4)); add(ym) }
+            ym = prevMonth(ym)
+        }
+    }
+
+    /*
+     * The story's words vary between people and between recaps: each line is picked from its own list by a stable hash
+     * of the person's own seed, the scope and the line's key. A year has its own lists (the same words on the website).
+     */
+    val VOICE: Map<String, List<String>> = linkedMapOf(
+        "intro" to listOf("{whose} שלך\nבכיס.", "{whose} שלך,\nבמספרים.", "ככה נראה\n{whose} שלך."),
+        "introLine" to listOf("מוכנים? יש כאן כמה מספרים שעוד לא ידעתם על עצמכם.", "חודש שלם נכנס לכמה מסכים. בואו נראה מה יצא.",
+            "לפני שמתחילים חודש חדש, רגע אחד על מה שהיה.", "הכנו לכם את החודש בכמה מספרים. חלקם עשויים להפתיע."),
+        "introLineYear" to listOf("שנה שלמה של משמרות, בכמה דקות. מוכנים?", "כל השעות, כל המקומות, שנה אחת. בואו נתחיל.",
+            "עוד שנה נסגרת. הנה מה שהיא השאירה בכיס.", "לפני שמתחילים שנה חדשה, הצצה אחת אחורה."),
+        "hoursKick" to listOf("הזמן שלכם", "כמה עבדתם", "השעון לא משקר"),
+        "hoursKickYear" to listOf("השנה שלכם בשעות", "כל השעות של השנה", "הזמן שלכם"),
+        "funTail" to listOf("סתם שתדעו.", "רק אומרים.", "לא שמישהו סופר."),
+        "placesKick" to listOf("המקומות המובילים שלכם", "איפה הייתם", "מי קיבל את רוב הזמן"),
+        "placesLine" to listOf("{p}% מהזמן הלכו ל{name}. שיהיה ברור מי האהוב.", "ל{name} הלכו {p}% מהזמן. אין ספק מי במקום הראשון.", "{p}% מהשעות היו ב{name}. אהבה גדולה."),
+        "personaKick" to listOf("טיפוס העבודה שלכם", "אז מי אתם בעבודה?", "הדמות שלכם"),
+        "personaKickYear" to listOf("טיפוס העבודה של השנה", "הדמות שלכם השנה", "אז מי הייתם השנה?"),
+        "longestKick" to listOf("המשמרת הארוכה", "הכי ארוכה שהייתה", "שיא האורך"),
+        "longestTail" to listOf("מגיע לכם קפה. אולי שניים.", "מקווים שהייתה הפסקה באמצע.", "הרגליים עוד זוכרות את זה."),
+        "daysKick" to listOf("הקצב שלכם", "היום החזק", "לוח השבוע"),
+        "daysLine" to listOf("יום {day} הוא היום שלכם.", "ביום {day} הכי הרבה עבודה.", "יום {day}, בלי מתחרים."),
+        "hourKick" to listOf("השעה הכי פעילה שלכם", "שעת השיא", "מתי אתם בשיא"),
+        "moneyKick" to listOf("השורה התחתונה", "ומה נכנס לכיס", "הרגע שחיכיתם לו"),
+        "moneyKickYear" to listOf("השורה התחתונה של השנה", "כל השנה בכיס", "ומה נכנס השנה"),
+    )
+    /** FNV-1a over UTF-16 code units, unsigned (the same numbers as the website). */
+    fun hash(text: String): Long {
+        var h = 0x811c9dc5.toInt()
+        for (ch in text) { h = h xor ch.code; h *= 0x01000193 }
+        return h.toLong() and 0xffffffffL
+    }
+    /** The words of one recap: every VOICE line (a year uses the "…Year" list where there is one), templates unfilled. */
+    fun voice(scope: String, seed: String): Map<String, String> {
+        val year = scope.length == 4
+        return VOICE.keys.filter { !it.endsWith("Year") }.associateWith { key ->
+            val list = (if (year) VOICE[key + "Year"] else null) ?: VOICE.getValue(key)
+            list[(hash("$seed|$scope|$key") % list.size).toInt()]
+        }
+    }
+    fun fill(text: String, values: Map<String, String>): String = Regex("\\{(\\w+)\\}").replace(text) { values[it.groupValues[1]] ?: it.value }
+
     fun row(e: WorkEntry, zone: ZoneId = ZoneId.systemDefault()) = Row(
         Instant.ofEpochMilli(e.date).atZone(zone).toLocalDate().toString(),
         e.startTime.takeIf { e.isTimeRange && !e.endTime.isNullOrBlank() }, e.endTime.takeIf { e.isTimeRange && !e.startTime.isNullOrBlank() },

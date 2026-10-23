@@ -151,6 +151,8 @@ class MainActivity : ComponentActivity() {
         PlanJobs.schedule(this)
         // A new version also reaches the phone's notifications (once per version), not only the bell.
         AppUpdateJobs.schedule(this)
+        // One anonymous "this device has the app" record, once (InstallCount.kt).
+        InstallCount.schedule(this)
 
         // Notification permission is requested only when starting a live shift.
 

@@ -14,6 +14,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -60,11 +64,14 @@ private class Slide(val bg: Color, val a: Int, val b: Int, val auto: Boolean = t
 /** "החודש/השנה שלך בכיס" for [scope] ("YYYY-MM" or "YYYY"): story slides that move on by themselves; a tap on the left
  * moves forward, on the right back, holding pauses. Amounts are hidden until asked for and included in the shared card. */
 @Composable
-fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCategory>, onClose: () -> Unit, onMessage: (String) -> Unit) {
+fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCategory>, onClose: () -> Unit, onMessage: (String) -> Unit, seed: String = "") {
     val s = remember(entries, scope) { V2Summary.summary(KisHistoryLogic.done(entries).map { V2Summary.row(it) }, scope, V2Summary.today()) }
     val isYear = scope.length == 4
     val label = if (isYear) "השנה $scope" else HistoryFilter.monthName(monthKeyOf(scope) ?: 0)
     val whose = if (isYear) "השנה" else "החודש"
+    // The words differ between people and between recaps (V2Summary.voice, the same picks as the website).
+    val voice = remember(scope, seed) { V2Summary.voice(scope, seed) }
+    fun say(key: String, vararg values: Pair<String, String>) = V2Summary.fill(voice.getValue(key), mapOf("whose" to whose, *values))
     var hidden by rememberSaveable { mutableStateOf(true) }
     val hrs = s.hours
     val top = s.places.firstOrNull()
@@ -76,18 +83,18 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
     val slides = buildList {
         add(Slide(StoryDark, 0, 2, tag = "story_intro") {
             Kick("${androidx.compose.ui.res.stringResource(com.example.R.string.app_name)} · $label")
-            Big("$whose שלך\nבכיס.")
-            Para("מוכנים? יש כאן כמה מספרים שעוד לא ידעתם על עצמכם.")
+            Big(say("intro"))
+            Para(say("introLine"))
         })
         add(Slide(place(0), 3, 4, tag = "story_hours") {
-            Kick("הזמן שלכם")
+            Kick(say("hoursKick"))
             // Under 10 hours the exact value (2.5), not a rounded 3.
             if (hrs < 10) Huge(KisFormat.hours(hrs), Modifier.testTag("story_hours_value")) else CountUp(Math.round(hrs).toInt(), Modifier.testTag("story_hours_value"))
             Head((if (hrs == 1.0) "שעת עבודה" else "שעות עבודה") + if (s.count == 1) " במשמרת אחת." else " ב-${s.count} משמרות.")
-            s.comparison?.let { Para("זה בערך ${it.count} ${V2Summary.FUN[it.key]}. סתם שתדעו.") }
+            s.comparison?.let { Para("זה בערך ${it.count} ${V2Summary.FUN[it.key]}. ${say("funTail")}") }
         })
         if ("places" in shows) add(Slide(StoryDark, 1, 0, tag = "story_places") {
-            Kick("המקומות המובילים שלכם")
+            Kick(say("placesKick"))
             s.places.forEachIndexed { i, p ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("${i + 1}", style = TextStyle(fontFamily = SecularOne, fontSize = if (i == 0) 28.sp else 22.sp), color = LocalStoryInk.current.copy(alpha = if (i == 0) 1f else .7f))
@@ -96,33 +103,33 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
                     Text("${KisFormat.hours(p.hours)} ש׳", style = TextStyle(fontFamily = Rubik, fontSize = 16.sp), color = LocalStoryInk.current.copy(alpha = .75f))
                 }
             }
-            top?.let { Para("${Math.round(it.hours / maxOf(0.01, hrs) * 100)}% מהזמן הלכו ל${it.name}. שיהיה ברור מי האהוב.") }
+            top?.let { Para(say("placesLine", "p" to "${Math.round(it.hours / maxOf(0.01, hrs) * 100)}", "name" to it.name)) }
         })
         if (persona != null && "persona" in shows) add(Slide(place(if (s.persona == "owl") 4 else if (s.persona == "bird") 3 else 2), 4, 3, tag = "story_persona") {
-            Kick("טיפוס העבודה שלכם")
+            Kick(say("personaKick"))
             Big(persona.name, Modifier.testTag("story_persona_name"))
             Para(personaLine ?: "")
         })
         s.longest?.takeIf { "longest" in shows }?.let { l -> add(Slide(place(2), 4, 3, tag = "story_longest") {
-            Kick("המשמרת הארוכה")
+            Kick(say("longestKick"))
             Huge(KisFormat.hours(l.hours))
             Head("שעות, " + dayLabel(millisOf(l.date)))
-            Para((if (l.start != null && l.end != null) "⁦${l.start}–${l.end}⁩. " else "") + "מגיע לכם קפה. אולי שניים." + when (s.nights) { 0 -> ""; 1 -> " ופעם אחת סיימתם אחרי 23:00."; else -> " ו-${s.nights} פעמים סיימתם אחרי 23:00." })
+            Para((if (l.start != null && l.end != null) "⁦${l.start}–${l.end}⁩. " else "") + say("longestTail") + when (s.nights) { 0 -> ""; 1 -> " ופעם אחת סיימתם אחרי 23:00."; else -> " ו-${s.nights} פעמים סיימתם אחרי 23:00." })
         }) }
         s.bestDay?.takeIf { "days" in shows }?.let { best -> add(Slide(StoryDark, 5, 1, tag = "story_days") {
-            Kick("הקצב שלכם")
-            Head("יום ${KisFormat.DAY_LONG[best]} הוא היום שלכם.")
+            Kick(say("daysKick"))
+            Head(say("daysLine", "day" to KisFormat.DAY_LONG[best]))
             Bars(s.days, best, KisFormat.DAY_SHORT, place(3), 180.dp)
         }) }
         s.peakHour?.takeIf { "hour" in shows }?.let { h -> add(Slide(place(5), 3, 4, tag = "story_hour") {
-            Kick("השעה הכי פעילה שלכם")
+            Kick(say("hourKick"))
             Huge("%02d:00".format(h))
             Bars(s.hourMinutes.map { it.toDouble() }, h, null, Color.White, 90.dp)
             Para(when { h >= 22 || h < 5 -> "בזמן שכולם רואים סדרה במיטה, אתם בשטח."; h < 11 -> "קפה ראשון? אתם כבר באמצע העבודה."
                 h < 17 -> "שעות השיא של העולם. וגם שלכם."; else -> "השעה שבה כולם חוזרים הביתה, ואתם בדיוק בשיא." })
         }) }
         add(Slide(place(1), 3, 0, tag = "story_money") {
-            Kick("השורה התחתונה")
+            Kick(say("moneyKick"))
             if (s.currencies.isEmpty()) Head("עוד חסר תעריף.")
             s.currencies.forEach { cur ->
                 if (hidden) Text("${cur.currency}•••", style = KisType.hero.copy(fontSize = 64.sp, lineHeight = 70.sp), color = LocalStoryInk.current, modifier = Modifier.testTag("story_money_hidden"))
@@ -138,19 +145,41 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
             Poster(label, s, shownPersona)
             val cells = posterCells(s, shownPersona, shows)
             val storyRows = KisHistoryLogic.done(entries).filter { com.example.domain.V2Summary.row(it).date.startsWith(scope) }
-            val text = com.example.data.WorkShareText.summary(storyRows)
             KisButton("העתקת סיכום", {
                 KisShare.copy(context, com.example.data.WorkShareText.copy(storyRows)); onMessage("הועתק ✓")
             }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "story_copy")
             KisButton("שיתוף הכרטיס", {
-                val ok = runCatching { shareImage(context, cardBitmap(context, label, cells, "$whose שלי בכיס"), text) }.getOrDefault(false)
-                if (!ok) KisShare.shareOrCopy(context, text, "$whose שלך בכיס", onMessage)
+                // The picture only: no list of shifts or any other text goes with it.
+                val ok = runCatching { shareImage(context, cardBitmap(context, label, cells, "$whose שלי בכיס")) }.getOrDefault(false)
+                if (!ok) onMessage("אין כאן אפליקציה שמקבלת תמונה")
             }, Modifier.fillMaxWidth(), height = 54.dp, tag = "story_share")
         })
     }
 
     var index by rememberSaveable { mutableIntStateOf(0) }
     var paused by remember { mutableStateOf(false) }
+    // Any slide goes out as a picture of itself: the screen as drawn, without the bars and buttons, signed at the bottom.
+    val layer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    var capturing by remember { mutableStateOf(false) }
+    val shareScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val appName = androidx.compose.ui.res.stringResource(com.example.R.string.app_name)
+    fun shareSlide() {
+        if (capturing) return
+        paused = true; capturing = true
+        shareScope.launch {
+            val ok = runCatching {
+                // Two frames: the bars and buttons fade out of the recorded picture first.
+                androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { }
+                val shot = layer.toImageBitmap().asAndroidBitmap().copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+                capturing = false
+                val shown = slides[index.coerceIn(slides.indices)]
+                shareImage(context, signed(context, shot, appName, (if (shown.bg == place(3)) InkOnMustard else Color.White).toArgb()), "kis-$scope-${shown.tag}.png")
+            }.getOrDefault(false)
+            capturing = false
+            if (!ok) onMessage("אין כאן אפליקציה שמקבלת תמונה")
+        }
+    }
     val progress = remember(index) { Animatable(0f) }
     fun go(d: Int) { val n = index + d; if (n < 0) return; if (n >= slides.size) onClose() else index = n }
     LaunchedEffect(index, paused) {
@@ -166,7 +195,8 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalStoryInk provides ink) {
             BackHandler(onBack = onClose)
             // Covers the app: nothing underneath can be touched while the story is open.
-            Box(Modifier.fillMaxSize().background(bg).pointerInput(Unit) { detectTapGestures { } }
+            Box(Modifier.fillMaxSize().drawWithContent { layer.record { this@drawWithContent.drawContent() }; drawLayer(layer) }
+                .background(bg).pointerInput(Unit) { detectTapGestures { } }
                 .semantics { stateDescription = "${index + 1}/${slides.size}" }.testTag("story_root")) {
                 Blobs(place(slide.a), place(slide.b), progress.value)
                 // Tap areas under the content: the left half moves forward (RTL), the right half back; holding pauses.
@@ -178,7 +208,8 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
                         .semantics { contentDescription = if (step > 0) "הבא" else "הקודם"; onClick { go(step); true } }.testTag(tag))
                 }
                 Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    val chrome = Modifier.graphicsLayer { alpha = if (capturing) 0f else 1f }
+                    Row(Modifier.fillMaxWidth().then(chrome), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         slides.indices.forEach { j ->
                             Box(Modifier.weight(1f).height(3.dp).clip(RoundedCornerShape(2.dp)).background(ink.copy(alpha = .28f))) {
                                 val f = if (j < index) 1f else if (j == index) progress.value else 0f
@@ -189,7 +220,10 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
                     Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         KisLogo(Modifier.size(26.dp)); Spacer(Modifier.width(8.dp))
                         Text(label, style = TextStyle(fontFamily = Rubik, fontWeight = FontWeight.SemiBold, fontSize = 14.sp), color = ink, modifier = Modifier.weight(1f))
-                        Icon(Icons.Rounded.Close, "סגירה", tint = ink, modifier = Modifier.size(40.dp).clip(CircleShape).background(ink.copy(alpha = .14f))
+                        if (slide.auto) Icon(Icons.Rounded.Share, "שיתוף המסך כתמונה", tint = ink, modifier = chrome.size(40.dp).clip(CircleShape).background(ink.copy(alpha = .14f))
+                            .kisClick { shareSlide() }.padding(10.dp).testTag("story_share_slide"))
+                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.Rounded.Close, "סגירה", tint = ink, modifier = chrome.size(40.dp).clip(CircleShape).background(ink.copy(alpha = .14f))
                             .kisClick(onClick = onClose).padding(9.dp).testTag("story_close"))
                     }
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
@@ -334,16 +368,28 @@ internal fun cardBitmap(context: Context, label: String, cells: List<Pair<String
     return bmp
 }
 
+/** The app's name at the bottom of a shared slide, in the slide's own ink. */
+internal fun signed(context: Context, shot: android.graphics.Bitmap, name: String, ink: Int): android.graphics.Bitmap {
+    val canvas = android.graphics.Canvas(shot)
+    val k = shot.width / 1080f
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = ink; alpha = 205; textSize = 34f * k; textAlign = android.graphics.Paint.Align.RIGHT
+        typeface = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, com.example.R.font.rubik_regular) }.getOrNull()
+    }
+    canvas.drawText(name, shot.width - 64f * k, shot.height - 64f * k, paint)
+    return shot
+}
+
 /** A length, never mistaken for a time of day: "7 ש׳", "6.5 ש׳". */
 private fun longLabel(hours: Double) = "${KisFormat.hours(hours)} ש׳"
 private fun millisOf(date: String) = LocalDate.parse(date).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
 /** The card as a picture through the Android share sheet. False when nothing can receive it. */
-private fun shareImage(context: Context, bitmap: android.graphics.Bitmap, text: String): Boolean {
-    val file = java.io.File(context.cacheDir, "kis-card.png")
+internal fun shareImage(context: Context, bitmap: android.graphics.Bitmap, name: String = "kis-card.png"): Boolean {
+    val file = java.io.File(context.cacheDir, name)
     file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-    val send = Intent(Intent.ACTION_SEND).apply { type = "image/png"; putExtra(Intent.EXTRA_STREAM, uri); putExtra(Intent.EXTRA_TEXT, text); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-    return try { context.startActivity(Intent.createChooser(send, "שיתוף הכרטיס").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); true }
+    val send = Intent(Intent.ACTION_SEND).apply { type = "image/png"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+    return try { context.startActivity(Intent.createChooser(send, "שיתוף").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); true }
     catch (_: android.content.ActivityNotFoundException) { false }
 }

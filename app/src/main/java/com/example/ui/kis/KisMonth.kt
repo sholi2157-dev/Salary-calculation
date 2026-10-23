@@ -43,7 +43,7 @@ fun insightText(i: com.example.domain.V2Summary.Insight): String = when (i) {
  */
 @Composable
 fun MonthSummarySheet(month: Int, entries: List<WorkEntry>, categories: List<WorkCategory>, onHistory: () -> Unit, onDismiss: () -> Unit, onMessage: (String) -> Unit,
-                      onStory: (String) -> Unit = {}) {
+                      onStory: (String) -> Unit = {}, today: String = com.example.domain.V2Summary.today()) {
     val c = Kis.colors
     val context = LocalContext.current
     val done = remember(entries) { KisHistoryLogic.done(entries) }
@@ -54,15 +54,8 @@ fun MonthSummarySheet(month: Int, entries: List<WorkEntry>, categories: List<Wor
         Text("החודש שלך · ${HistoryFilter.monthName(month)}", style = KisType.title, color = c.ink)
         if (rows.isEmpty()) Text("לא נרשמו משמרות בחודש הזה.", style = KisType.body, color = c.muted)
         else Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            // The story recap, the most fun way in.
-            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(listOf(Workplaces[0].from, Workplaces[4].from)))
-                .kisClick { onStory(scope) }.testTag("month_story").padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("${KisFormat.MONTHS[month % 12]} שלך בכיס", style = KisType.title, color = Color.White)
-                    Text("הסיכום החודשי", style = KisType.caption, color = Color.White.copy(alpha = .85f))
-                }
-                KisLogo(Modifier.size(34.dp))
-            }
+            // The story recap, the most fun way in, once it has opened (the 30th; no spoilers before).
+            if (com.example.domain.V2Summary.recapOpen(scope, today)) RecapEntry("${KisFormat.MONTHS[month % 12]} שלך בכיס", "הסיכום החודשי", "month_story") { onStory(scope) }
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(c.bg).padding(16.dp).semantics(mergeDescendants = true) {}.testTag("month_summary_money"),
                 verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (s.currencies.isEmpty()) Text("עוד חסר תעריף", style = KisType.amount, color = c.ink)
@@ -83,13 +76,58 @@ fun MonthSummarySheet(month: Int, entries: List<WorkEntry>, categories: List<Wor
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.bg).padding(horizontal = 16.dp, vertical = 12.dp).testTag("month_insight_$i"))
             }
             s.bestDay?.takeIf { rhythm }?.let { best -> WeekBars(s.days, best) }
-            KisButton("${scope.take(4)} שלך בכיס", { onStory(scope.take(4)) }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "year_story")
+            if (com.example.domain.V2Summary.recapOpen(scope.take(4), today))
+                KisButton("${scope.take(4)} שלך בכיס", { onStory(scope.take(4)) }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "year_story")
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             KisButton("להיסטוריה", onHistory, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "month_summary_history")
             KisButton("העתקה", { KisShare.copy(context, WorkShareText.copy(rows)); onMessage("הועתק ✓") }, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, enabled = rows.isNotEmpty(), tag = "month_summary_copy")
             KisButton("שיתוף", { KisShare.shareOrCopy(context, WorkShareText.summary(rows), "הסיכום של ${HistoryFilter.monthName(month)}", onMessage) },
                 Modifier.weight(1f), height = 48.dp, enabled = rows.isNotEmpty(), tag = "month_summary_share")
+        }
+    }
+}
+
+/** The way into a recap: the app's purple card with its name and the logo. */
+@Composable
+fun RecapEntry(title: String, subtitle: String, tag: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Row(modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(listOf(Workplaces[0].from, Workplaces[4].from)))
+        .kisClick(onClick = onClick).testTag(tag).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = KisType.title, color = Color.White)
+            Text(subtitle, style = KisType.caption, color = Color.White.copy(alpha = .85f))
+        }
+        KisLogo(Modifier.size(34.dp))
+    }
+}
+
+private fun hasShifts(done: List<WorkEntry>, scope: String) = done.any { com.example.domain.V2Summary.row(it).date.startsWith(scope) }
+fun recapTitle(scope: String) = if (scope.length == 4) "השנה $scope בכיס" else "${KisFormat.MONTHS[(monthKeyOf(scope) ?: 0) % 12]} ${scope.take(4)} בכיס"
+
+/** The recaps that are new today and have shifts (Home shows them from the 30th for 4 more days). */
+fun freshRecaps(entries: List<WorkEntry>, today: String = com.example.domain.V2Summary.today()): List<String> {
+    val done = KisHistoryLogic.done(entries)
+    val n = com.example.domain.V2Summary.recapNew(today)
+    return listOfNotNull(n.year, n.month).filter { hasShifts(done, it) }
+}
+
+/** "הסיכומים שלי" (Settings): every recap that has opened and has shifts, newest first. */
+@Composable
+fun RecapArchiveSheet(entries: List<WorkEntry>, onStory: (String) -> Unit, onDismiss: () -> Unit, today: String = com.example.domain.V2Summary.today()) {
+    val c = Kis.colors
+    val done = remember(entries) { KisHistoryLogic.done(entries) }
+    val list = remember(done, today) { com.example.domain.V2Summary.recapArchive(today).filter { hasShifts(done, it) } }
+    KisSheet(onDismiss = onDismiss, tag = "recaps_sheet") {
+        Text("הסיכומים שלי", style = KisType.title, color = c.ink)
+        if (list.isEmpty()) {
+            val first = com.example.domain.V2Summary.FIRST_RECAP
+            Text("הסיכום הראשון יגיע ב-${com.example.domain.V2Summary.recapDay(first).takeLast(2).toInt()} ב${KisFormat.MONTHS[(monthKeyOf(first) ?: 0) % 12]}.",
+                style = KisType.body, color = c.muted, modifier = Modifier.testTag("recaps_empty"))
+        } else Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            list.forEach { scope ->
+                val s = remember(done, scope) { com.example.domain.V2Summary.summary(done.map { com.example.domain.V2Summary.row(it) }, scope, today) }
+                RecapEntry(recapTitle(scope), "${if (s.count == 1) "משמרת אחת" else "${s.count} משמרות"} · ${KisFormat.hours(s.hours)} שעות", "recap_$scope") { onStory(scope) }
+            }
         }
     }
 }

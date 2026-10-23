@@ -46,7 +46,8 @@ import com.example.ui.WorkViewModel
 import com.example.ui.coachTarget
 
 @Composable
-fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, onClose: () -> Unit, onReplayTour: () -> Unit, onSignIn: () -> Unit = {}, bottomInset: Dp = 0.dp) {
+fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, onClose: () -> Unit, onReplayTour: () -> Unit, onSignIn: () -> Unit = {}, bottomInset: Dp = 0.dp,
+                    onRecaps: () -> Unit = {}) {
     val c = Kis.colors
     val settings = Kis.settings
     val context = LocalContext.current
@@ -100,6 +101,11 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     KisSegmented(ThemeChoice.entries.map { it to it.label }, settings.theme, settings::updateTheme, tagPrefix = "theme")
                 }
                 Row_("רטט במגע", null) { KisSwitch(settings.haptics, settings::updateHaptics, Modifier.testTag("haptics_switch"), label = "רטט במגע") }
+            }
+            Group("הסיכומים שלי") {
+                Row_("כל הסיכומים", null, tag = "recaps_row", onClick = onRecaps, info = "כל סיכום חודשי ושנתי שכבר נפתח נשמר כאן. סיכום חודשי נפתח ב-30 לחודש ומופיע בדף הבית עוד 4 ימים.") {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
+                }
             }
             Group("התראות") { NotificationSwitches(viewModel) }
             Group("עזרה וכלים") {
