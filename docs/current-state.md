@@ -1,4 +1,14 @@
-# 2.0.6 candidate — notifications that arrive, update sheet, story quality (2026-10-23, not published)
+# 2.0.6 published — notifications that arrive, update sheet, story quality (2026-10-23)
+
+Owner approved: "מאשר לפרסם 2.0.6 ואת האתר".
+- Android: update channel run 39890763914 SUCCESS (publish + live RC16 → 2.0.6 through the actual button), release
+  `android-v2.0.6`, APK SHA-256 `5584a987dcda7b1a5539e3e986763fce8c17ee8811076d7a142ccd63bf01687a`, code 39.
+- Website: `728a74d` on `codex/download-and-management-20261020`, production `dpl_Fjmn8Ts2C1MzpYcwnBPuHPkggmTd`
+  (build-info shows 728a74d), public-site browser check run 39891245908 SUCCESS; rollback `dpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk`.
+- Next Android build must use a code higher than 39. Codex also works on this repository: before a release, fetch
+  `codex/android-local-distribution` and the website branch and build on top of them.
+
+## Candidate details
 
 Built on the published 2.0.5 line (merged `codex/android-local-distribution` into `claude/v2-android`, keeping its
 owner-approved decisions: no automatic update dialog, red-dot bell with quiet checks, money on the shared card,
@@ -27,7 +37,7 @@ data kept; `NotificationsDeviceTest` on the emulator: monthly, plan ("לא עב�
 notifications in the shade (screenshots reviewed); fresh install incl. the notifications question; clean crash logs.
 APK SHA-256 `5584a987dcda7b1a5539e3e986763fce8c17ee8811076d7a142ccd63bf01687a`, `2.0.6` / 39, private artifact
 `salary-2.0.6-candidate`. Website story changes merged onto `codex/download-and-management-20261020` in `claude/v2-web`
-(728a74d; 91 node tests and the browser suite pass locally). Neither is published yet: waiting for the owner.
+(728a74d; 91 node tests and the browser suite pass locally).
 
 # 2.0.5 published and verified — 2026-10-21
 
