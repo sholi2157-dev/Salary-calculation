@@ -1,4 +1,4 @@
-/* Settings, grouped like the app: work, look, notifications, backup & data, help & updates, profile last. Home's bell lists what arrived. */
+/* Settings, grouped like the app: work, look, notifications, backup & data, help, profile last. Home's bell lists what arrived. */
 (function (root) {
 'use strict';
 const U = () => root.KisUi;
@@ -9,20 +9,19 @@ function render(el, app) {
   const { store } = app, { esc } = U(), prefs = store.data.webPreferences, def = root.WorkCategories.defaultName(store.data.categories, prefs);
   const theme = store.local.theme || 'system';
   el.innerHTML = `<h1 class="page-title">הגדרות</h1>
-  ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר אוטומטית במשמרת חדשה. נגיעה בכפתור פותחת את רשימת המקומות: הוספה, עריכה ובחירת ברירת מחדל.')}
+  ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר אוטומטית במשמרת חדשה.')}
     <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', null, `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`, 'למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה, ושקלים ודולרים לא מתחברים לסכום אחד.')}
     <div class="divider"></div>${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip" data-a="series" data-testid="series-button">ניהול</button>', 'יוצרים במסך ההוספה: "חוזרת כל שבוע". כשהזמן נגמר המשמרת נרשמת לבד, ותמיד אפשר לבטל.')}`)}
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
-  ${group('התראות', `${rowHtml('הסיכום החודשי', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyMonthly === true}" aria-label="הסיכום החודשי" data-a="monthly" data-testid="notify-monthly"></button>`, 'בתחילת החודש, כשנכנסים לאתר: כמה עבדת וכמה הרווחת. נגיעה בו פותחת את "החודש שלך". באתר התזכורות מופיעות כשהוא פתוח; באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.')}
+  ${group('התראות', `${rowHtml('הסיכום החודשי', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyMonthly === true}" aria-label="הסיכום החודשי" data-a="monthly" data-testid="notify-monthly"></button>`, 'בתחילת החודש, כשנכנסים לאתר: כמה עבדת וכמה הרווחת. באתר התזכורות מופיעות כשהוא פתוח; באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.')}
     <div class="divider"></div>${rowHtml('תעריף חסר', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyRate === true}" aria-label="תעריף חסר" data-a="rate" data-testid="notify-rate"></button>`, 'לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.')}`)}
   ${group('גיבוי ונתונים', `<div class="row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
     <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'הנתונים נשמרים בדפדפן הזה בלבד. כדאי לשמור גיבוי גם מחוץ לאתר. גיבוי מהאפליקציה עובר לכאן, וגיבוי מכאן עובר לאפליקציה.')}
-  ${group('עזרה ועדכונים', `${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip" data-a="tour" data-testid="replay-tour">הצגה</button>')}
-    <div class="divider"></div>${rowHtml('בדיקת עדכון', null, '<button class="chip" data-a="update">בדיקה</button>', 'האתר מתעדכן לבד ברגע בטוח, בלי לאבד טיוטה או משמרת פעילה.')}`)}
+  ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
   ${group('פרופיל', `<div style="display:grid;gap:8px;padding:10px 0"><input class="input" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>`)}
-  <div class="row" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי · 2.0 · ${esc((root.WorkBuild?.commit || 'local').slice(0, 7))}</span></div>`;
+  <div class="row" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי</span></div>`;
 
   const q = s => el.querySelector(s);
   // Saved as typed, without redrawing the page (no lost taps or focus).
@@ -30,6 +29,7 @@ function render(el, app) {
   q('[data-f=last]').addEventListener('input', e => store.setLocal('lastName', e.target.value.trim().slice(0, 40), true));
   q('[data-a=monthly]').onclick = e => { const on = store.local.notifyMonthly !== true; store.setLocal('notifyMonthly', on, true); e.currentTarget.setAttribute('aria-checked', on); };
   q('[data-a=rate]').onclick = e => { const on = store.local.notifyRate !== true; store.setLocal('notifyRate', on, true); e.currentTarget.setAttribute('aria-checked', on); };
+  q('[data-a=android-download]').onclick = () => root.KisDownload.open();
   q('[data-a=tour]').onclick = () => root.KisLaunch.tour(app);
   q('[data-a=places]').onclick = () => placesSheet(app);
   el.querySelectorAll('[data-cur]').forEach(b => b.onclick = () => store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, mainCurrency: b.dataset.cur }); }));
@@ -39,9 +39,8 @@ function render(el, app) {
   q('[data-a=download]').onclick = () => download('salary-backup.json', backupText(store), 'application/json');
   q('[data-a=copy-backup]').onclick = async () => { if (await U().copy(backupText(store))) U().toast('הגיבוי הועתק ✓'); else U().showText(backupText(store), 'גיבוי'); };
   q('[data-a=share-backup]').onclick = () => U().shareOrCopy(backupText(store), 'גיבוי');
-  q('[data-a=csv]').onclick = () => download('salary.csv', root.WorkTransfer.csv(store.data.entries.map(root.WorkTransfer.normalize)), 'text/csv');
+  q('[data-a=csv]').onclick = () => download('salary.csv', root.KisShare.csv(store.data.entries.filter(e => !U().upcoming(e))), 'text/csv');
   q('[data-a=import]').onclick = () => importSheet(app);
-  q('[data-a=update]').onclick = () => { root.WebUpdateManager?.check(true); U().toast('בודקים עדכון…'); };
 }
 
 function download(name, text, type) { const url = URL.createObjectURL(new Blob([text], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }

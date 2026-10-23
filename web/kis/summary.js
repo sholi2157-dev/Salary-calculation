@@ -39,8 +39,9 @@ function monthSummary(app, month) {
       ${s.bestDay != null && rhythm ? `<div class="week-bars" data-testid="month-days">${s.days.map((h, i) => `<div><i style="height:${Math.max(4, h / maxDay * 80)}%;${i === s.bestDay ? 'background:var(--glow)' : ''}"></i><span>${U().DAY_SHORT[i]}</span></div>`).join('')}</div>` : ''}
       <button class="btn ghost" data-a="year" data-testid="year-story">${scope.slice(0, 4)} שלך בכיס</button>`
       : '<p class="caption">לא נרשמו משמרות בחודש הזה.</p>'}
-      <div class="row"><button class="btn ghost grow" data-a="h">להיסטוריה</button><button class="btn primary grow" data-a="s" ${rows.length ? '' : 'disabled'}>שיתוף</button></div>`;
+      <div class="row"><button class="btn ghost grow" data-a="h">להיסטוריה</button><button class="btn ghost grow" data-a="copy-month" ${rows.length ? '' : 'disabled'}>העתקה</button><button class="btn primary grow" data-a="s" ${rows.length ? '' : 'disabled'}>שיתוף</button></div>`;
     el.querySelector('[data-a=h]').onclick = () => { close(); app.go('history', { planned: false, month }); };
+    el.querySelector('[data-a=copy-month]').onclick = async () => { const text = root.KisShare.copy(rows); if (await U().copy(text)) U().toast('הועתק ✓'); else U().showText(text); };
     el.querySelector('[data-a=s]').onclick = () => U().shareOrCopy(root.KisShare.summary(rows), 'הסיכום של ' + U().monthName(month));
     el.querySelector('[data-a=story]')?.addEventListener('click', () => { close(); story(app, scope); });
     el.querySelector('[data-a=year]')?.addEventListener('click', () => { close(); story(app, scope.slice(0, 4)); });
@@ -48,12 +49,14 @@ function monthSummary(app, month) {
 }
 
 /** The story: moves on by itself; a tap on the left moves forward, on the right back; holding pauses. Amounts are
- * hidden until asked for and are never on the shared card. */
+ * hidden until asked for and are included on the shared card. */
 function story(app, scope) {
   const { store } = app, { esc } = U(), s = summaryOf(store, scope);
   const isYear = scope.length === 4, whose = isYear ? 'השנה' : 'החודש';
   const label = isYear ? `השנה ${scope}` : `${U().MONTHS[Number(scope.slice(5)) - 1]} ${scope.slice(0, 4)}`;
   const top = s.places[0], per = s.persona && S().PERSONAS[s.persona];
+  const rows = store.data.entries.filter(e => !U().upcoming(e) && (scope.length === 4 ? ymd(e.date).startsWith(scope) : ymd(e.date).slice(0,7) === scope));
+  const fileSharing = canShareImage(); let preparedFile = null, preparing = null;
   const perLine = per && per.line.replace('#', s.persona === 'marathon' ? U().hours(s.hours / Math.max(1, s.count)) : String(s.places.length));
   // Only the slides with something real to say (KisSummary.slides, the same rule as Android).
   const shows = new Set(S().slides(s)), showPer = shows.has('persona') ? per : null;
@@ -74,18 +77,19 @@ function story(app, scope) {
       const joke = h >= 22 || h < 5 ? 'בזמן שכולם רואים סדרה במיטה, אתם בשטח.' : h < 11 ? 'קפה ראשון? אתם כבר באמצע העבודה.' : h < 17 ? 'שעות השיא של העולם. וגם שלכם.' : 'השעה שבה כולם חוזרים הביתה, ואתם בדיוק בשיא.';
       return `<div class="kick">השעה הכי פעילה שלכם</div><div class="huge">${pad(h)}:00</div><div class="hbars">${p.map((m, j) => `<i style="--h:${(m / mx).toFixed(3)};--d:${j * 25}ms;${j === h ? 'background:#fff' : ''}"></i>`).join('')}</div><p>${joke}</p>`; } },
     { bg: PLACE(1), a: 3, b: 0, tag: 'money', html: () => `<div class="kick">השורה התחתונה</div>${s.currencies.length ? s.currencies.map(c => `<div class="huge money" data-testid="${hidden ? 'story-money-hidden' : 'story-money-' + esc(c.currency)}">${hidden ? `<span class="cur">${esc(c.currency)}</span>•••` : U().moneyHtml(c.total, c.currency)}</div>`).join('') : '<h3>עוד חסר תעריף.</h3>'}
-      <p>${s.pending ? `ועוד ${s.pending === 1 ? 'משמרת אחת שמחכה' : s.pending + ' משמרות שמחכות'} לתעריף. ` : ''}הסכום רק בשבילכם, הוא לא מופיע בשיתוף.</p>${s.currencies.length ? `<button class="reveal" data-rev data-testid="story-reveal">${hidden ? 'להציג' : 'להסתיר'}</button>` : ''}` },
+      <p>${s.pending ? `ועוד ${s.pending === 1 ? 'משמרת אחת שמחכה' : s.pending + ' משמרות שמחכות'} לתעריף. ` : ''}הסכומים מופיעים גם בכרטיס לשיתוף.</p>${s.currencies.length ? `<button class="reveal" data-rev data-testid="story-reveal">${hidden ? 'להציג' : 'להסתיר'}</button>` : ''}` },
     { bg: '#121212', a: 0, b: 3, card: true, tag: 'card', html: () => `<div class="kick">${whose} שלך בכיס</div>
       <div class="poster" data-testid="story-poster"><div class="pt"><span>${esc(label)}</span>${U().logo(36)}</div>
         <div class="pg">${posterCells().map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join('')}</div></div>
-      <button class="reveal solid" data-sharew data-testid="story-share">שיתוף הכרטיס</button>` },
+      ${fileSharing ? '<button class="reveal solid" data-sharew data-testid="story-share" disabled>מכין תמונה…</button>' : ''}<button class="reveal" data-copyw data-testid="story-copy">העתקת סיכום</button>` },
   ].filter(Boolean);
-  /** What the card says: only facts the story showed (never a "—"), and never an amount (Android: posterCells). */
+  /** What the card says: the amounts per currency, then only the facts the story showed, never a "—" (Android: posterCells). */
   function posterCells() {
-    return [['שעות', U().hours(s.hours < 10 ? s.hours : Math.round(s.hours))], ['משמרות', String(s.count)], top && ['מקום מוביל', top.name], showPer && ['טיפוס', showPer.name],
+    return [...s.currencies.map(c => ['סכום (' + c.currency + ')', U().money(c.total, c.currency)]), ...(s.pending ? [['סכום חסר', s.pending === 1 ? 'משמרת אחת' : s.pending + ' משמרות']] : []),
+      ['שעות', U().hours(s.hours < 10 ? s.hours : Math.round(s.hours))], ['משמרות', String(s.count)], top && ['מקום מוביל', top.name], showPer && ['טיפוס', showPer.name],
       shows.has('days') && ['היום החזק', `יום ${DAY_LONG[s.bestDay]}`], shows.has('longest') && ['הכי ארוכה', longLabel(s.longest.hours)]].filter(Boolean);
   }
-  const shareText = () => [`${whose} שלי בכיס · ${label}`, ...posterCells().map(([k, v]) => `${k}: ${v}`)].join('\n');
+  const shareText = () => root.KisShare.summary(rows);
 
   const el = document.createElement('div');
   el.className = 'story'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', `${whose} שלך בכיס`); el.dataset.testid = 'story';
@@ -106,6 +110,10 @@ function story(app, scope) {
         <div class="slide2" data-testid="story-${sl.tag}">${sl.html()}</div></div>
       <div class="story-nav"><button data-go="-1" aria-label="הקודם" data-testid="story-prev">›</button><button data-go="1" aria-label="הבא" data-testid="story-next">‹</button></div>`;
     el.querySelectorAll('[data-count]').forEach(n => { const to = +n.dataset.count, s0 = performance.now(); const f = now => { const p = Math.min(1, (now - s0) / 900); n.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1 && n.isConnected) requestAnimationFrame(f); }; requestAnimationFrame(f); });
+    if (sl.card && fileSharing) {
+      preparing ||= cardImage(label, posterCells(), `${whose} שלי בכיס`).then(blob => new File([blob], 'kis-card.png', {type:'image/png'}));
+      preparing.then(file => { preparedFile = file; const b=el.querySelector('[data-sharew]'); if(b) { if(navigator.canShare({files:[file]})) { b.disabled=false; b.textContent='שיתוף הכרטיס'; } else b.remove(); } }).catch(() => el.querySelector('[data-sharew]')?.remove());
+    }
     t0 = Date.now(); elapsed = 0; U().haptic('tick');
   };
   const go = d => { const n = i + d; if (n < 0) return; if (n >= slides.length) return close(); i = n; draw(); };
@@ -125,7 +133,8 @@ function story(app, scope) {
     if (b.dataset.x !== undefined) return close();
     if (b.dataset.go) return go(Number(b.dataset.go));
     if (b.dataset.rev !== undefined) { hidden = !hidden; const keep = elapsed; draw(); t0 = Date.now() - keep; return; }
-    if (b.dataset.sharew !== undefined) shareCard(label, posterCells(), shareText(), `${whose} שלי בכיס`);
+    if (b.dataset.sharew !== undefined && preparedFile) shareCard(preparedFile, shareText());
+    if (b.dataset.copyw !== undefined) { const text=root.KisShare.copy(rows); U().copy(text).then(ok=>ok?U().toast('הועתק ✓'):U().showText(text)); }
   });
   function keys(e) { if (e.key === 'ArrowLeft') go(1); else if (e.key === 'ArrowRight') go(-1); else if (e.key === 'Escape') { e.stopPropagation(); close(); } }
   document.addEventListener('keydown', keys, true);
@@ -134,20 +143,19 @@ function story(app, scope) {
   return { close, go };
 }
 
-/** The card as a picture: share sheet with the image when the browser can, else a download; the text as a last resort. */
-async function shareCard(label, cells, text, subtitle) {
-  try {
-    const blob = await cardImage(label, cells, subtitle);
-    const file = new File([blob], 'kis-card.png', { type: 'image/png' });
-    if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], text }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
-    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'kis-card.png'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-    U().toast('הכרטיס נשמר כתמונה ✓');
-  } catch { U().shareOrCopy(text, 'שיתוף הכרטיס'); }
+/** Only native image sharing. Never substitutes a download or a text share. */
+function canShareImage() {
+  try { return !!navigator.share && !!navigator.canShare?.({files:[new File(['image'], 'kis-card.png', {type:'image/png'})]}); } catch { return false; }
+}
+async function shareCard(file, text) {
+  try { await navigator.share({files:[file],text}); }
+  catch(e) { if(e?.name !== 'AbortError') U().toast('שיתוף התמונה לא הצליח. אפשר לנסות שוב.'); }
 }
 
 async function cardImage(label, cells, subtitle = 'החודש שלי בכיס') {
   await document.fonts?.ready;
-  const W = 1080, H = 1080, c = document.createElement('canvas'); c.width = W; c.height = H;
+  // Room for every row of cells and the signature line under them.
+  const W = 1080, H = Math.max(1080, 350 + Math.ceil(cells.length / 2) * 180 + 120), c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
   const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, PLACE(0)); g.addColorStop(1, PLACE(4));
   x.fillStyle = g; x.beginPath(); x.roundRect ? x.roundRect(0, 0, W, H, 64) : x.rect(0, 0, W, H); x.fill();
@@ -155,17 +163,18 @@ async function cardImage(label, cells, subtitle = 'החודש שלי בכיס') 
   x.font = "64px 'Secular One', Rubik, sans-serif"; x.fillText(label, W - 80, 170);
   x.font = "44px 'Secular One', Rubik, sans-serif"; x.fillText(subtitle, W - 80, 240);
   cells.forEach(([k, v], n) => {
-    const col = n % 2, row = Math.floor(n / 2), right = col === 0 ? W - 80 : W / 2 - 20, top = 380 + row * 220;
+    const col = n % 2, row = Math.floor(n / 2), right = col === 0 ? W - 80 : W / 2 - 20, top = 330 + row * 180;
     x.globalAlpha = .8; x.font = "36px Rubik, sans-serif"; x.fillText(k, right, top);
-    x.globalAlpha = 1; x.font = "72px 'Secular One', Rubik, sans-serif"; x.fillText(v, right, top + 86, W / 2 - 120);
+    x.globalAlpha = 1; x.font = "56px Rubik, sans-serif"; x.fillText(v, right, top + 86, W / 2 - 120);
   });
   // Signed at the bottom: the app's mark (three rising bars on a base line) and its name (as on Android).
   x.globalAlpha = 1; x.fillStyle = '#fff';
-  [26, 44, 62].forEach((h, i) => { x.beginPath(); x.roundRect ? x.roundRect(80 + i * 22, 1000 - h, 16, h, 6) : x.rect(80 + i * 22, 1000 - h, 16, h); x.fill(); });
-  x.fillRect(76, 1006, 72, 6);
-  x.globalAlpha = .86; x.font = "34px Rubik, sans-serif"; x.fillText('שכר עבודות אישי', W - 80, 1004);
+  const base = H - 80;
+  [26, 44, 62].forEach((h, i) => { x.beginPath(); x.roundRect ? x.roundRect(80 + i * 22, base - h, 16, h, 6) : x.rect(80 + i * 22, base - h, 16, h); x.fill(); });
+  x.fillRect(76, base + 6, 72, 6);
+  x.globalAlpha = .86; x.font = "34px Rubik, sans-serif"; x.fillText('שכר עבודות אישי', W - 80, base + 4);
   return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('no image')), 'image/png'));
 }
 
-root.KisSummaryUi = { monthSummary, story, insightText, rowOf, scopeOf, summaryOf };
+root.KisSummaryUi = { monthSummary, story, insightText, rowOf, scopeOf, summaryOf, canShareImage, cardImage };
 })(globalThis);

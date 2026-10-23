@@ -1,3 +1,4 @@
+const {setDuration,durationValue}=require('./duration.cjs');
 /*
  * 2.0 web ("כיס") in a real browser, on the built public/ folder, with synthetic data only.
  * Proves: existing stored data is shown unchanged; add/edit; future shifts are planned and never summed; the one
@@ -43,6 +44,54 @@ const seed = {
   const stored = page => page.evaluate(() => JSON.parse(localStorage.getItem('work_complete_backup')));
   const tid = t => `[data-testid="${t}"]`;
 
+  // Reproduced duration bug, centered dates and matched history controls.
+  {
+    const {ctx,page}=await open({width:360,height:800}, 'dark');
+    await page.click(tid('add-shift'));
+    const days=await page.locator('.days button').evaluateAll(es=>es.map(e=>({day:+e.dataset.day,text:e.textContent})));
+    assert.equal(days.length,7);assert.match(days[3].text,/היום/);
+    for(let i=0;i<7;i++) {const d=new Date(days[3].day);d.setDate(d.getDate()+i-3);assert.equal(days[i].day,+d);}
+    assert.equal(await page.getByText('התחלה נפוצה:').count(),0);
+    await page.click(tid('mode-hours'));await setDuration(page,'1.40');await page.fill(tid('rate-input'),'60');
+    assert.match(await page.textContent(tid('editor-meta')),/1:40/);
+    await page.click(tid('duration-minutes'));
+    assert.equal(await page.getAttribute(tid('keypad-digit-2'),'aria-pressed'),'true');
+    await page.click(tid('key-5'));await page.click(tid('key-0'));
+    assert.equal(await durationValue(page),'1:50');
+    await page.click(tid('duration-minutes'));await page.click(tid('key-4'));await page.click(tid('key-0'));
+    assert.equal(await durationValue(page),'1:40');
+    await page.click(tid('duration-minutes'));await page.click('[data-q="4"]');await page.click(tid('key-ok'));
+    assert.equal(await durationValue(page),'4:00', 'quick hours replace the active keypad value');
+    await setDuration(page,'1:40');
+    assert.equal(await page.getByText('לחיצה על ספרה משנה רק אותה',{exact:true}).count(),0);
+
+    assert.match(await page.textContent(tid('editor-total')),/100/);
+    await shot(page,'manual-100-minutes-dark-360');await page.click(tid('save-shift'));
+    const saved=(await stored(page)).entries.at(-1);assert.equal(saved.hours,100/60);assert.equal(saved.totalEarnings,100);
+    await page.click(tid('tab-history'));
+    assert.equal(await page.locator(tid('history-planned')).count(),0);
+    const styles=await page.locator('[data-testid=history-search],[data-testid=history-copy],[data-testid=history-filters]').evaluateAll(es=>es.map(e=>{const c=getComputedStyle(e);return [c.backgroundColor,c.borderColor,c.borderRadius,c.height]}));
+    assert.deepEqual(styles[0],styles[1]);assert.deepEqual(styles[0],styles[2]);
+    await shot(page,'history-tools-dark-360');
+    await page.click(tid('history-filters'));await page.click(tid('history-planned'));await shot(page,'planned-filter-dark-360');await page.click(tid('filters-apply'));
+    assert.equal(await page.locator(tid('history-total')).count(),0);assert.ok(await page.isVisible(tid('history-filters')));
+    await ctx.close();
+  }
+
+  // A metadata edit shows the actual persisted imported amount, matching Android.
+  {
+    const imported={...seed,entries:[{...seed.entries[1],hours:1.234567,totalEarnings:99.91}]};
+    const {ctx,page}=await open(undefined,'light',imported);
+    await page.click(tid('tab-history'));await page.click(tid('shift-b'));await page.click(tid('detail-edit'));
+    assert.match(await page.textContent(tid('editor-total')),/99\.91/);
+    await page.click(tid('duration-minutes'));await page.click(tid('key-ok'));
+    assert.ok(await page.isDisabled(tid('save-shift')), 'opening a rounded display does not change imported hours');
+    await page.click(tid('editor-more'));await page.fill(tid('notes-input'),'הערה בלבד');
+    assert.match(await page.textContent(tid('editor-total')),/99\.91/);
+    await page.click(tid('save-shift'));const row=(await stored(page)).entries[0];assert.equal(row.hours,1.234567);assert.equal(row.totalEarnings,99.91);
+    await ctx.close();
+  }
+
   // 1. Existing data: shown, totals per currency, future shift not earned; nothing rewritten just by opening.
   {
     const { ctx, page } = await open();
@@ -57,9 +106,9 @@ const seed = {
     assert.match(await page.textContent(tid('history-scope')), /כל התאריכים/);
     assert.match(await page.textContent(tid('history-total')), /₪600/);
     assert.equal(await page.locator('[data-testid="shift-f"]').count(), 0, 'future shift is not in "עבדתי"');
-    await page.click(tid('history-planned'));
+    await page.click(tid('history-filters')); await page.click(tid('history-planned')); await page.click(tid('filters-apply'));
     assert.ok(await page.isVisible(tid('planned-entry-f')));
-    await page.click(tid('history-worked'));
+    await page.click(tid('history-filters')); await page.click(tid('history-worked')); await page.click(tid('filters-apply'));
     // One panel: a month, with the count it will show.
     await page.click(tid('history-filters')); await page.click(tid('period-MONTH'));
     assert.match(await page.textContent(tid('filters-apply')), /הצגת/); await shot(page, 'filters-panel');
@@ -127,7 +176,7 @@ const seed = {
     const { ctx, page } = await open({ width: 390, height: 844 }, 'dark');
     await page.click(tid('add-shift')); await page.click(tid('clock-start'));
     for (const k of '0600') await page.click(tid('key-' + k)); for (const k of '0630') await page.click(tid('key-' + k));
-    await page.locator('[data-day]').nth(4).click(); // two days ago
+    await page.locator('[data-day]').nth(1).click(); // today is index 3; two days ago is index 1
     await page.click(tid('repeat-switch'));
     for (let i = 0; i < 7; i++) { const b = page.locator(tid('repeat-day-' + i)); if ((await b.getAttribute('aria-pressed')) !== 'true') await b.click(); }
     assert.match(await page.textContent(tid('repeat-preview')), /ייכנסו ללוח/);
@@ -172,9 +221,9 @@ const seed = {
     assert.match(await page.textContent(tid('live-money')), /^[₪$][\d,]+\.\d\d$/);
     assert.match(await page.textContent(tid('live-clock')), /^\d\d:\d\d:\d\d$/);
     await shot(page, 'live-money-390');
-    await page.click(tid('add-shift')); await page.click(tid('mode-hours')); await page.fill(tid('hours-input'), '7');
+    await page.click(tid('add-shift')); await page.click(tid('mode-hours')); await setDuration(page,'7');
     await page.reload(); await page.waitForSelector(tid('add-page'));
-    assert.equal(await page.inputValue(tid('hours-input')), '7', 'draft restored');
+    assert.equal(await durationValue(page), '7:00', 'draft restored');
     await page.click(tid('editor-close')); await page.click(tid('confirm-ok'));
     assert.ok(await page.isVisible(tid('live-card')), 'timer survived the reload');
     await ctx.close();
@@ -201,12 +250,9 @@ const seed = {
     const preview = await page.textContent('[data-testid=rate-sheet] [data-f=p]');
     assert.match(preview, /₪40/); assert.match(preview, /\$20/); await page.keyboard.press('Escape');
     await page.click('[data-s=cancel]'); assert.ok(await page.isVisible('.nav-wrap'), 'navigation returns when the selection is cancelled');
-    // Typing a number keeps the field; a tap on save right after typing is not lost.
+    // Duration uses the clock keypad; typing a rate still saves on the first tap.
     await page.click(tid('add-shift')); await page.click(tid('mode-hours'));
-    await page.fill(tid('hours-input'), ''); await page.type(tid('hours-input'), '85');
-    assert.equal(await page.inputValue(tid('hours-input')), '85');
-    assert.equal(await page.evaluate(() => document.activeElement?.dataset.f), 'hours');
-    await page.fill(tid('hours-input'), '6'); await page.fill(tid('rate-input'), '45');
+    await setDuration(page, '6'); await page.fill(tid('rate-input'), '45');
     const before = (await stored(page)).entries.length;
     await page.click(tid('save-shift'));
     assert.equal((await stored(page)).entries.length, before + 1, 'first tap saves');
@@ -269,7 +315,9 @@ const seed = {
     assert.doesNotMatch(await page.textContent(tid('story-money')), /\d/);
     await page.click(tid('story-reveal')); assert.match(await page.textContent(tid('story-money')), /₪\d/);
     await page.click(tid('story-next')); await page.waitForSelector(tid('story-card'));
-    assert.doesNotMatch(await page.textContent(tid('story-poster')), /[₪$]/, 'the card never shows amounts');
+    assert.match(await page.textContent(tid('story-poster')), /₪/, 'the shared card includes amounts');
+    assert.equal(await page.locator(tid('story-share')).count(), 0, 'unsupported file sharing has no image button');
+    assert.equal(await page.locator(tid('story-copy')).count(), 1);
     await page.waitForTimeout(700); await page.screenshot({ path: path.join(OUT, 'v2-story-card.png') });
     await page.keyboard.press('Escape'); assert.equal(await page.locator(tid('story')).count(), 0);
     // It moves on by itself.

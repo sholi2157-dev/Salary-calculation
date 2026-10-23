@@ -68,11 +68,9 @@ function render(el, app, opts = {}) {
 
   el.innerHTML = `
   <div class="title-row"><h1 class="page-title">היסטוריה</h1>${state.planned ? '' : `
-    <button class="icon-btn" aria-label="חיפוש" data-a="search" data-testid="history-search">${ICON.search}</button>
-    <button class="chip${n ? ' on' : ''}" data-a="filters" data-testid="history-filters">${ICON.filter}${n ? 'סינון ומיון · ' + n : 'סינון ומיון'}</button>
-    <button class="icon-btn" aria-label="העתקת דוח" data-a="copy" data-testid="history-copy">${ICON.copy}</button>`}</div>
-  <div class="row" style="margin:8px 0"><button class="chip" aria-pressed="${!state.planned}" data-a="worked" data-testid="history-worked" style="min-height:48px">עבדתי</button>
-    <button class="chip" aria-pressed="${state.planned}" data-a="planned" data-testid="history-planned" style="min-height:48px">${plannedCount ? 'מתוכנן · ' + plannedCount : 'מתוכנן'}</button></div>
+    <button class="icon-btn history-tool" aria-label="חיפוש" data-a="search" data-testid="history-search">${ICON.search}</button>
+    `}<button class="chip${n ? ' on' : ''}" data-a="filters" data-testid="history-filters">${ICON.filter}${n ? 'סינון ומיון · ' + n : 'סינון ומיון'}</button>${state.planned ? '' : `
+    <button class="icon-btn history-tool" aria-label="העתקת דוח" data-a="copy" data-testid="history-copy">${ICON.copy}</button>`}</div>
   ${state.planned ? '' : `
     ${state.searching ? `<div class="row" style="align-items:center;margin-bottom:8px"><input class="input grow" type="search" placeholder="חיפוש: מקום, הערה, עובד, סכום" value="${esc(state.query)}" data-f="q" aria-label="חיפוש" data-testid="history-search-input">
       <button class="icon-btn" aria-label="ניקוי" data-a="clear" data-testid="history-search-clear">${ICON.close}</button><button class="chip" data-a="close-search" data-testid="history-search-close">סגירה</button></div>`
@@ -101,8 +99,6 @@ function render(el, app, opts = {}) {
   q('[data-a=prev]')?.addEventListener('click', () => { state.filter = { ...f, month: f.month - 1 }; redraw(); });
   q('[data-a=next]')?.addEventListener('click', () => { state.filter = { ...f, month: f.month + 1 }; redraw(); });
   q('[data-a=summary]')?.addEventListener('click', () => root.KisSettings.monthSummary(app, f.month));
-  q('[data-a=worked]').onclick = () => { state.planned = false; redraw(); };
-  q('[data-a=planned]').onclick = () => { state.planned = true; state.selection.clear(); state.searching = false; redraw(); };
   q('[data-a=copy]')?.addEventListener('click', () => copySheet(rows, f));
   q('[data-a=pending]')?.addEventListener('click', () => { state.selection = new Set(rows.filter(e => !e.payKnown && e.kind !== 'job').map(e => e.id)); redraw(); bulkRate(app, redraw); });
   el.querySelectorAll('.shift[data-id]').forEach(b => {
@@ -130,8 +126,8 @@ function bindSelection(el, app, sel, redraw) {
   const b = s => bar.querySelector(`[data-s=${s}]`), ids = sel.map(e => e.id), clear = () => { state.selection.clear(); redraw(); };
   b('cancel').onclick = clear;
   b('all').onclick = () => { const rows = [...el.querySelectorAll('.shift[data-id]')].map(x => x.dataset.id); if (sel.length === rows.length) state.selection.clear(); else state.selection = new Set(rows); redraw(); };
-  b('share').onclick = () => { U().shareOrCopy(root.KisShare.summary(sel), 'שיתוף משמרות'); clear(); };
-  b('copy').onclick = async () => { const text = root.KisShare.summary(sel); if (await U().copy(text)) U().toast('הועתק ✓ · מוכן להדבקה בוואטסאפ'); else U().showText(text); clear(); };
+  b('share').onclick = () => { U().shareOrCopy(root.KisShare.summary(sel, root.KisShare.workerName(sel, state.query)), 'שיתוף משמרות'); clear(); };
+  b('copy').onclick = async () => { const text = root.KisShare.copy(sel, root.KisShare.workerName(sel, state.query)); if (await U().copy(text)) U().toast('הועתק ✓ · מוכן להדבקה בוואטסאפ'); else U().showText(text); clear(); };
   b('paid').onclick = () => { store.setPaid(ids, true); U().toast('סומן כשולם ✓'); clear(); };
   b('unpaid').onclick = () => { store.setPaid(ids, false); U().toast('סומן כלא שולם'); clear(); };
   b('rate')?.addEventListener('click', () => bulkRate(app, redraw));
@@ -171,35 +167,38 @@ function bulkRate(app, after) {
 function copySheet(rows, f) {
   U().sheet('copy-sheet', (el, close) => {
     el.innerHTML = `<h2>העתקת הדוח המוצג</h2><p class="caption">${rows.length} משמרות לפי מה שמוצג עכשיו.</p>
-      <button class="btn ghost" data-a="xl" data-testid="copy-excel">Excel (טבלה)</button><button class="btn ghost" data-a="wa" data-testid="copy-whatsapp">WhatsApp (סיכום)</button>`;
+      <button class="btn ghost" data-a="xl" data-testid="copy-excel">Excel (טבלה)</button><button class="btn ghost" data-a="wa" data-testid="copy-whatsapp">סיכום טכני</button>`;
     el.querySelector('[data-a=xl]').onclick = async () => { close(); if (!rows.length) return U().toast('אין שורות להעתקה'); const t = root.KisShare.excel(rows); if (await U().copy(t)) U().toast('הטבלה הועתקה ✓ · מוכנה להדבקה באקסל'); else U().showText(t, 'טבלה לאקסל'); };
-    el.querySelector('[data-a=wa]').onclick = async () => { close(); const t = root.KisShare.summary(rows); if (await U().copy(t)) U().toast('הסיכום הועתק ✓'); else U().showText(t); };
+    el.querySelector('[data-a=wa]').onclick = async () => { close(); const t = root.KisShare.copy(rows, root.KisShare.workerName(rows, state.query)); if (await U().copy(t)) U().toast('הדוח הועתק ✓'); else U().showText(t); };
   });
 }
 
 function filtersSheet(app, done, after) {
   const { store } = app, { esc } = U();
-  let f = { ...state.filter };
+  let f = { ...state.filter }, planned = state.planned;
+  const plannedCount = store.data.entries.filter(U().upcoming).length + root.KisPlans.occurrences(store).length;
   U().sheet('filters-sheet', (el, close) => {
     const seg = (key, opts, tag) => `<div class="seg">${opts.map(([v, l]) => `<button aria-pressed="${f[key] === v}" data-k="${key}" data-v="${v}" data-testid="${tag}-${v}">${l}</button>`).join('')}</div>`;
     const draw = () => {
-      const count = apply(done, f, state.query).length;
+      const count = planned ? plannedCount : apply(done, f, state.query).length;
       el.innerHTML = `<h2>סינון ומיון</h2>
-        <div><b class="label" style="font-size:15px">אילו תאריכים להציג</b></div>${seg('period', PERIODS, 'period')}
+        <span class="caption">מצב המשמרות</span><div class="seg"><button aria-pressed="${!planned}" data-plan="false" data-testid="history-worked">עבדתי</button><button aria-pressed="${planned}" data-plan="true" data-testid="history-planned">מתוכנן · ${plannedCount}</button></div>
+        ${planned ? '' : `<div><b class="label" style="font-size:15px">אילו תאריכים להציג</b></div>${seg('period', PERIODS, 'period')}
         ${f.period === 'MONTH' ? `<div class="row" style="align-items:center"><b class="grow">${esc(U().monthName(f.month))}</b><button class="icon-btn" aria-label="חודש קודם" data-m="-1">${U().ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-m="1">${U().ICON.next}</button></div>` : ''}
         ${f.period === 'RANGE' ? `<div class="row"><label class="field grow">מתאריך<input type="date" class="input" data-d="from" value="${iso(f.from)}"></label><label class="field grow">עד תאריך<input type="date" class="input" data-d="to" value="${iso(f.to)}"></label></div>` : ''}
         <div class="divider"></div><div><b class="label" style="font-size:15px">סדר</b></div>${seg('sort', SORTS, 'sort')}
         <div class="divider"></div><div><b class="label" style="font-size:15px">סינון</b></div>
         <span class="caption">תשלום</span>${seg('pay', PAYS, 'pay')}
         <span class="caption">מקום עבודה</span><div class="chips"><button class="chip" aria-pressed="${!f.category}" data-c="">הכול</button>${store.data.categories.map(c => `<button class="chip" aria-pressed="${f.category === c.name}" data-c="${esc(c.name)}">${esc(c.name)}</button>`).join('')}</div>
-        <span class="caption">מטבע</span>${seg('currency', [[null, 'הכול'], ['₪', '₪ שקל'], ['$', '$ דולר']], 'currency')}
+        <span class="caption">מטבע</span>${seg('currency', [[null, 'הכול'], ['₪', '₪ שקל'], ['$', '$ דולר']], 'currency')}`}
         <div class="row"><button class="btn ghost grow" data-a="reset" data-testid="filters-reset">איפוס</button><button class="btn primary" style="flex:2" data-a="apply" data-testid="filters-apply">${count === 0 ? 'אין משמרות להצגה' : count === 1 ? 'הצגת משמרת אחת' : `הצגת ${count} משמרות`}</button></div>`;
+      el.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { planned = b.dataset.plan === 'true'; draw(); });
       el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { f = { ...f, [b.dataset.k]: b.dataset.v === 'null' ? null : b.dataset.v }; draw(); });
       el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { f = { ...f, month: f.month + Number(b.dataset.m) }; draw(); });
       el.querySelectorAll('[data-d]').forEach(i => i.onchange = () => { if (i.value) { const [y, m, d] = i.value.split('-').map(Number); f = { ...f, [i.dataset.d]: new Date(y, m - 1, d).getTime() }; draw(); } });
       el.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { f = { ...f, category: b.dataset.c || null }; draw(); });
-      el.querySelector('[data-a=reset]').onclick = () => { f = defaults(); draw(); };
-      el.querySelector('[data-a=apply]').onclick = () => { state.filter = f; close(); after(); };
+      el.querySelector('[data-a=reset]').onclick = () => { f = defaults(); planned = false; draw(); };
+      el.querySelector('[data-a=apply]').onclick = () => { state.filter = f; state.planned = planned; state.selection.clear(); state.searching = false; close(); after(); };
     };
     draw();
   });

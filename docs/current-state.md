@@ -1,3 +1,81 @@
+# Website automatic updates and Android 2.0.5 published — 2026-10-21
+
+Website source: 660e82ccc696bff62783d1614d8959f210cd4276.
+Consolidated run 39682231966 SUCCESS: 91 units, fixture parity, native worker
+migration/offline/failed-install/data-preservation gate, full v2/download/sharing
+browser flows including selectable minutes, imported precision and quick presets.
+Same staged build promoted as dpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk (no rebuild).
+Origin: https://salary-calculation-eta.vercel.app/
+Build ID: 660e82ccc696bff62783d1614d8959f210cd4276-ac045d488ac19009.
+Rollback: dpl_6qGopS2toz4byUV3mZuEi8qWAShj.
+Public alias/build verified. Final public-origin run 39683042974 SUCCESS:
+actual UI, sharing/download flows, real worker, fresh/offline reload, draft/timer
+and exact stored amount/extension retention. Metadata checks 39683043000 SUCCESS.
+
+Website: fresh online navigation, complete offline fallback, no update/version UI
+and no forced page reload. Duration hours/minutes select separately; no typing
+instructions; untouched imported precision retained. Quick-hour chips clear the
+old keypad buffer. Both normal and failure-fallback APK downloads point to 2.0.5.
+Evidence: `docs/automatic-web-updates-20261021.md`.
+
+Android 2.0.5 / code 38 source: 979e5b2b60933c02f98ab886384f8e3367589b78.
+Candidate run 39676466946 SUCCESS: 144 Debug + 112 Release tests, signed
+RC16 → 2.0.3 → 2.0.5 retained-data update, fresh launch and clean crash logs.
+APK SHA256: c45eef0c182f42e6273082c59280076271433761da41cda5c1cc5d56b4409860.
+Publication/live installer run 39678748525 SUCCESS. Red-dot pixel, visible card,
+quiet startup/resume and offline verification run 39679679694 SUCCESS.
+All 2.0.4 features included, no intermediate install needed. Public URL:
+https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.0.5/Salary2.0.5.apk
+
+Hebrew changelog: `docs/releases/2.0.5.md`.
+
+# Combined 2.0.4 release — 2026-10-21
+
+Owner authorized both platforms, merge and public release. All functional changes merged:
+Android PR #8 → codex/android-local-distribution; Web PR #9 → codex/download-and-management-20261020.
+Full Hebrew changelog: `docs/releases/2.0.4.md`. Current evidence: `docs/shift-entry-20261021.md`.
+
+Android tested source 18ae87f9cc1285b5fc2767511a6d950859a8e00d, run 39668563320 SUCCESS:
+141 Debug + 110 Release tests; real signed previous-release update, preserved data, fresh launch,
+Release UI/keyboard/default-workplace/plan checks and clean crash logs. Package/certificate unchanged.
+Selected APK 2.0.4 (37), SHA256 54cef6ca017da5ce09bb9a3974990cc951eaf0b38d58bb7ec89e423bf967e1ee.
+
+Web tested source 96e3e4bb52a6a693fb728c682295934b724fa7c3, run 39669064791 SUCCESS:
+92 tests, shared fixtures and complete v2/download/sharing browser suites. Production deployment
+ dpl_52v5KTd2H9dEggr8oeHsWTzkCrG6 promoted to the existing stable origin; build digest 8d45814d204db702.
+Public Android 2.0.4 (37) is now live at release android-v2.0.4, with the exact verified APK above.
+Publication + actual online manual-check/download/Android-installer/retained-data verification:
+run 39670906841 SUCCESS (attempt 2). First verify-live attempt failed before starting Android
+because the runner downloaded a corrupt Emulator ZIP; only the failed verification job was retried.
+Published APK bytes and signing identity were never changed or rebuilt.
+Public website full v2/download/sharing verification: run 39670920652 SUCCESS.
+Post-merge Web checks: run 39670920676 SUCCESS (same runtime files, 92 tests).
+
+Permanent URLs:
+- https://salary-calculation-eta.vercel.app/
+- https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.0.4/Salary2.0.4.apk
+
+Remaining manual limits: WhatsApp recipient/rendering on a physical Android phone and Safari/iPhone native file sharing.
+Automated fixtures and OS-sharing mocks validate payloads, image generation and cancellation; no messages were sent.
+
+Earlier history follows; it does not override this owner-approved scope or release state.
+
+# Sharing review — 2026-10-21
+
+Owner requested coordinated Android and Web sharing changes. Review branches: `codex/sharing-web-20261021` and `codex/sharing-android-20261021`; draft PRs #9 Web and #8 Android. Contract: `docs/v2-sharing.md`; exact source/test evidence and remaining manual gates: `docs/sharing-20261021.md`.
+
+Technical copy is separate from recipient-ready sharing; multiple workplaces share technical blocks. Worker search is corrected. Excel/CSV use the same 14 columns and preserve unknown amounts as empty cells. Monthly/yearly images include money; Web image sharing is offered only when native file sharing works, with no download/text substitution. Full JSON backups and saved financial data are unchanged.
+
+Verification: Web run 39609131883 SUCCESS (build, all 89 tests, 28 shared examples, actual UI handlers, PNG, layouts and data preservation); Android run 39609123653 SUCCESS (136 Debug + 106 Release tests, unsigned builds, identity gates). Screenshots and the generated PNG were visually reviewed. No merge, production promotion, signed APK or public distribution. Physical WhatsApp/Safari and a signed update/data-preservation gate remain before delivery. Existing public APK and website remain unchanged.
+
+# Management follow-up — 2026-10-20
+
+Public download request measurement is now live from source `fd6a7418fe08102c64bc367759d6d6c072cf495f`. The private management Site was redesigned (version 2), and its Vercel totals query was repaired. Preserve the existing Site identity, D1 binding, recorder/hash/encryption secrets and encrypted user cookie. See the top of `docs/download-and-management-20261020.md` for exact verification and limits.
+
+# Latest delivery — 2026-10-20
+
+Public Android download guide and the owner-private Hebrew management dashboard are recorded in `docs/download-and-management-20261020.md`. App source is `bb17078deb57d9630ac7c0227722395229318899` on `codex/download-and-management-20261020`, published to the same eta origin. Existing 2.0.3 GitHub Release is reused. Vercel traffic in the private dashboard still requires the owner to connect a token there; GitHub download counts are live. No APK rebuild or data migration.
+
 # Current Web track — 2026-10-06
 
 ## October 14 audit fixes — production delivery complete

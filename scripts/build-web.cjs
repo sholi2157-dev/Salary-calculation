@@ -13,6 +13,10 @@ const digest=crypto.createHash('sha256');
 function hashTree(dir){for(const name of fs.readdirSync(dir).sort()){const p=dir+'/'+name;if(fs.statSync(p).isDirectory())hashTree(p);else{digest.update(p);digest.update(fs.readFileSync(p));}}}
 digest.update(fs.readFileSync('index.html'));digest.update(fs.readFileSync('sw.js'));hashTree('web');
 const buildId=commit+'-'+digest.digest('hex').slice(0,16);
+// Pin each document's scripts/style to its own shell, including offline fallback.
+fs.writeFileSync('public/index.html', fs.readFileSync('index.html','utf8').replace(/((?:src|href)=")web\/([^"]+)"/g, '$1web/$2?v='+buildId+'"'));
+// Font requests belong to the same shell as the stylesheet, too.
+fs.writeFileSync('public/web/kis/kis.css', fs.readFileSync('web/kis/kis.css','utf8').replace(/url\((\.\.\/fonts\/[^)]+)\)/g, 'url($1?v='+buildId+')'));
 fs.writeFileSync('public/web/build.js','window.WorkBuild='+JSON.stringify({commit,buildId})+';\n');
 fs.writeFileSync('public/sw.js',fs.readFileSync('sw.js','utf8').replace('__WEB_BUILD_ID__',buildId));
 fs.writeFileSync('public/build-info.json', JSON.stringify({commit, buildId, cssSha256}, null, 2));

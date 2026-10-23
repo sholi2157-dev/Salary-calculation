@@ -1,9 +1,9 @@
 {
-  "sourceSha": "70fd200c5f6db4347eb25e432bd62fc97c5f6a1d",
-  "deploymentId": "dpl_EzPUFNqwsoPXhWSffuWBWA19SPjj",
+  "sourceSha": "660e82ccc696bff62783d1614d8959f210cd4276",
+  "deploymentId": "dpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk",
   "publicOrigin": "https://salary-calculation-eta.vercel.app",
-  "release": "2.0.3 parity: live money, both times on a new shift, digit-by-digit times, ±15 per time",
-  "rollbackDeployment": "dpl_BiKB488BfxrXNK1VoTy2fztbeqEX",
-  "buildId": "70fd200c5f6db4347eb25e432bd62fc97c5f6a1d-4b7b4314e0aa0d43",
-  "androidRelease": "android-v2.0.3 (update channel run 39174715276)"
+  "release": "Automatic website updates, duration digit editing, no version/update UI; cumulative Android 2.0.5",
+  "rollbackDeployment": "dpl_6qGopS2toz4byUV3mZuEi8qWAShj",
+  "buildId": "660e82ccc696bff62783d1614d8959f210cd4276-ac045d488ac19009",
+  "androidCandidateRun": 39676466946
 }

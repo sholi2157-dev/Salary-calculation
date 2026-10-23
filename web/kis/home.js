@@ -45,7 +45,7 @@ function render(el, app) {
   const me = U().PLACES[0];
   el.innerHTML = `
   <div class="hello">${U().logo()}<div><div class="caption" data-testid="home-greeting">${esc(name ? greeting() + ', ' + name : greeting())}</div><div class="label" style="font-size:16px">שכר עבודות אישי</div></div>
-    <div class="hello-actions"><button class="round-btn" data-act="bell" data-testid="home-bell" aria-label="${unread ? 'התראות · יש חדשות' : 'התראות'}">${U().ICON.bell}${unread ? `<span class="dot" style="background:${U().accent(me)}" data-testid="home-bell-dot"></span>` : ''}</button></div></div>
+    <div class="hello-actions"><button class="apk-entry" data-act="android-download" data-testid="android-download-entry" aria-label="הורדת האפליקציה לאנדרואיד">↓ אפליקציה</button><button class="round-btn" data-act="bell" data-testid="home-bell" aria-label="${unread ? 'התראות · יש חדשות' : 'התראות'}">${U().ICON.bell}${unread ? `<span class="dot" style="background:${U().accent(me)}" data-testid="home-bell-dot"></span>` : ''}</button></div></div>
   <section class="hero-card" data-testid="home-hero">
     <div class="label" style="color:var(--muted);font-weight:500">השבוע</div>
     <div style="display:flex;gap:18px;align-items:flex-end;overflow-x:auto;margin-top:6px">${hero}</div>
@@ -64,6 +64,7 @@ function render(el, app) {
       const tt = sortedTotals(rows); return `<div class="shift" style="cursor:default">${U().avatar(c, store)}<span class="meta"><b class="label">${esc(c)}</b><span class="sub">${rows.length === 1 ? 'משמרת אחת' : rows.length + ' משמרות'} · ${U().hours(rows.reduce((s, e) => s + e.hours, 0))} ש׳</span></span><span class="pay">${tt.map(([cur, v]) => moneyHtml(v, cur)).join(' ') || '—'}</span></div>`; }).join('')}</div>` : ''}
   ${entries.length ? '' : '<div class="empty"><h3>ברוך הבא</h3></div>'}`;
 
+  el.querySelector('[data-act=android-download]').onclick = () => root.KisDownload.open();
   el.querySelector('[data-act=bell]').addEventListener('click', () => root.KisSettings.notificationsSheet(app));
   el.querySelector('[data-act=start]')?.addEventListener('click', () => app.startLive());
   el.querySelector('[data-act=pending]')?.addEventListener('click', () => app.completePending());
