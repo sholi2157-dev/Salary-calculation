@@ -1,3 +1,34 @@
+# 2.0.6 candidate — notifications that arrive, update sheet, story quality (2026-10-23, not published)
+
+Built on the published 2.0.5 line (merged `codex/android-local-distribution` into `claude/v2-android`, keeping its
+owner-approved decisions: no automatic update dialog, red-dot bell with quiet checks, money on the shared card,
+"העתקת סיכום"). Owner request (Oct 22): an update shows as a phone notification with the app icon (not only the bell);
+check that plan/monthly notifications really arrive; monthly summary on the 30th; a quality pass on the story/card.
+
+- **Monthly summary:** the 30th of every month (the last day of a shorter month) at 20:00, about that month, on by
+  default; a summary missed while the phone was off comes within the first 3 days; tap opens that month. Lock screen
+  shows the title only (`PlanJobs.monthlyMoment/monthlyDue`).
+- **Weekly plan ended:** a wake-up a minute after each plan end; "נרשמה משמרת · מקום" with "לא עבדתי", or "המשמרת
+  הסתיימה · מקום … עבדת?" with "עבדתי"/"לא עבדתי" when auto-record is off; told once, only within 16 h, several at once
+  become one note (`PlanJobs.planNotes`, `PlanActionReceiver`).
+- **New version:** `UpdateWorker` every 6 h (network) → one phone notification per version ("לעדכון"), besides the bell.
+- **Update sheet** (`KisUpdate.kt`): notes → one-time "allow from this app" step that continues by itself → download
+  percentage → verification → Android's installer; failure leaves app and data unchanged. Used by the bell, Settings and
+  the notification. `downloadWithClient` keeps its signature for the update gate (older builds run the new test APK).
+- **Permission:** one question "התראות מהאפליקציה?" after the launch/tour on Android 13+; Settings shows when the phone
+  blocks notifications with one tap to its setting; new switches for plan ends and new versions.
+- **Story/card:** `V2Summary.slides` (shared expected results, also on the website): type ≥ 4 shifts, rhythm and busiest
+  hour ≥ 3, longest ≥ 2, places ≥ 2 places; plural-neutral copy; exact hours under 10; card cells only for shown facts
+  (plus amounts, as approved), "החודש/השנה שלי בכיס" and the app's mark and name.
+
+**Evidence:** signed candidate run 39874204743 SUCCESS (source d546cf4): 147 Debug + 112 Release tests; identity
+"same package, same permanent certificate, versionCode 39 > 38 > 24"; real RC16 → delivered 2.0.5 → 2.0.6 update with
+data kept; `NotificationsDeviceTest` on the emulator: monthly, plan ("לא עבדתי" really removes the day) and new-version
+notifications in the shade (screenshots reviewed); fresh install incl. the notifications question; clean crash logs.
+APK SHA-256 `5584a987dcda7b1a5539e3e986763fce8c17ee8811076d7a142ccd63bf01687a`, `2.0.6` / 39, private artifact
+`salary-2.0.6-candidate`. Website story changes merged onto `codex/download-and-management-20261020` in `claude/v2-web`
+(728a74d; 91 node tests and the browser suite pass locally). Neither is published yet: waiting for the owner.
+
 # 2.0.5 published and verified — 2026-10-21
 
 Owner-approved cumulative Android release (all 2.0.4 features included):
