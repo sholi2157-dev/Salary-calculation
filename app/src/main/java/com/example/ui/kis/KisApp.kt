@@ -105,6 +105,7 @@ fun KisApp(
     var hoursFor by rememberSaveable { mutableStateOf<String?>(null) }
     var monthSheet by rememberSaveable { mutableStateOf<Int?>(null) }
     var storyScope by rememberSaveable { mutableStateOf<String?>(null) }
+    var recapsOpen by rememberSaveable { mutableStateOf(false) }
     var bellOpen by rememberSaveable { mutableStateOf(false) }
     // A dot on the bell for what arrived since it was last opened (the daily job writes it; read again on every return).
     var unread by remember { mutableStateOf(viewModel.planSettings.unread) }
@@ -168,12 +169,12 @@ fun KisApp(
         when (request) {
             ShellRequest.IMPORT -> { pager.scrollToPage(2); onRequestHandled() }
             ShellRequest.HISTORY_SEARCH -> { pager.scrollToPage(1); history.planned = false; history.searching = true; onRequestHandled() }
-            // The monthly summary of the month the notification is about (an old one, without a month: last month).
+            // The monthly notification opens that month's recap (the story) once it has opened; otherwise its summary.
             ShellRequest.HISTORY -> {
-                pager.scrollToPage(1); history.planned = false
                 val month = requestedMonth?.let(::monthKeyOf) ?: (HistoryFilter.monthKey(System.currentTimeMillis()) - 1)
-                history.showMonth = month
-                monthSheet = month
+                val scope = com.example.domain.V2Summary.monthScope(month)
+                if (com.example.domain.V2Summary.recapOpen(scope, com.example.domain.V2Summary.today())) { pager.scrollToPage(0); storyScope = scope }
+                else { pager.scrollToPage(1); history.planned = false; history.showMonth = month; monthSheet = month }
                 onRequestHandled()
             }
             ShellRequest.UPDATE -> {
@@ -234,11 +235,13 @@ fun KisApp(
                     plans = plans, planActions = planActions,
                     onAllPlans = { history.selection = emptySet(); history.searching = false; history.planned = true; go(1) },
                     unread = unread || update != null, onBell = { bellOpen = true },
-                    onMonthSummary = { monthSheet = HistoryFilter.monthKey(System.currentTimeMillis()) })
+                    onMonthSummary = { monthSheet = HistoryFilter.monthKey(System.currentTimeMillis()) },
+                    onRecap = { storyScope = it })
                 1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) },
                     plans = plans, planActions = planActions, onMonthSummary = { monthSheet = it })
                 else -> Box(Modifier.onFocusChanged { settingsHasFocus = it.hasFocus }) {
-                    KisSettingsPage(viewModel, categories, onClose = { go(0) }, onReplayTour = onReplayTour, onSignIn = onSignIn, bottomInset = navHeight)
+                    KisSettingsPage(viewModel, categories, onClose = { go(0) }, onReplayTour = onReplayTour, onSignIn = onSignIn, bottomInset = navHeight,
+                        onRecaps = { recapsOpen = true })
                 }
             }
         }
@@ -291,7 +294,11 @@ fun KisApp(
             }
         }
         // The story covers the whole app (drawn here, in the app's own screen, not in a separate window).
-        storyScope?.let { sc -> KisStory(sc, entries, categories, onClose = { storyScope = null }, onMessage = { say(it) }) }
+        storyScope?.let { sc ->
+            // Watched: the bell no longer marks its summary as new.
+            LaunchedEffect(sc) { viewModel.planSettings.markOpened(sc); unread = viewModel.planSettings.unread }
+            KisStory(sc, entries, categories, onClose = { storyScope = null }, onMessage = { say(it) }, seed = viewModel.planSettings.voiceSeed)
+        }
     }
 
     detailId?.let { id -> entries.firstOrNull { it.id == id } }?.let { e ->
@@ -304,9 +311,11 @@ fun KisApp(
             say(if (n == 1) "תעריף הושלם למשמרת אחת ✓" else "תעריף הושלם ל-$n משמרות ✓")
         }
     }
-    if (bellOpen) NotificationsSheet(viewModel, onMonth = { bellOpen = false; unread = false; monthSheet = it },
-        onSettings = { bellOpen = false; unread = false; go(2) }, onDismiss = { bellOpen = false; unread = false }, update = update,
-        onUpdate = { bellOpen = false; unread = false; updateSheet = it })
+    if (bellOpen) NotificationsSheet(viewModel, onMonth = { bellOpen = false; unread = viewModel.planSettings.unread; monthSheet = it },
+        onSettings = { bellOpen = false; unread = viewModel.planSettings.unread; go(2) }, onDismiss = { bellOpen = false; unread = viewModel.planSettings.unread }, update = update,
+        onUpdate = { bellOpen = false; unread = viewModel.planSettings.unread; updateSheet = it },
+        onStory = { bellOpen = false; storyScope = it })
+    if (recapsOpen) RecapArchiveSheet(entries, onStory = { recapsOpen = false; storyScope = it }, onDismiss = { recapsOpen = false })
     updateSheet?.let { r -> UpdateSheet(r, onDismiss = { updateSheet = null }) }
     monthSheet?.let { m ->
         MonthSummarySheet(m, entries, categories, onHistory = { monthSheet = null; history.planned = false; history.showMonth = m; go(1) },

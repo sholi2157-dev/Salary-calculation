@@ -564,7 +564,13 @@ class KisUiTest {
 
     @Test fun monthSummaryCountsDoneShiftsPerCurrency() {
         seed()
-        host { MonthSummarySheet(HistoryFilter.monthKey(mid), rows(), categories, onHistory = {}, onDismiss = {}, onMessage = {}) }
+        val scope = com.example.domain.V2Summary.monthScope(HistoryFilter.monthKey(mid))
+        var today by androidx.compose.runtime.mutableStateOf("$scope-15")
+        host { MonthSummarySheet(HistoryFilter.monthKey(mid), rows(), categories, onHistory = {}, onDismiss = {}, onMessage = {}, today = today) }
+        // No story before the month's 30th (no spoilers); then it is there.
+        ui.onNodeWithTag("month_story").assertDoesNotExist()
+        today = maxOf(com.example.domain.V2Summary.recapDay(scope), "2026-10-30")
+        ui.waitForIdle()
         ui.onNodeWithTag("month_summary_money").assertTextContains("₪300", substring = true).assertTextContains("$180", substring = true)
         ui.onNodeWithTag("month_summary_counts", useUnmergedTree = true).assertTextEquals("5 משמרות · 18.5 שעות")
         ui.onNodeWithTag("month_story").assertExists()
@@ -652,9 +658,9 @@ class KisUiTest {
     @Test fun bellSheetListsRecentAndOpensTheirMonth() {
         val vm = model()
         val plan = vm.planSettings
-        (1..25).forEach { plan.addRecent(PlanSettings.Sent("monthly", "סיכום $it", "טקסט", it.toLong(), "2026-09")) }
+        (1..25).forEach { plan.addRecent(PlanSettings.Sent("rate", "תזכורת $it", "טקסט", it.toLong(), "")) }
         assertEquals(PlanSettings.RECENT_MAX, plan.recent.size)
-        assertEquals("סיכום 25", plan.recent.first().title)
+        assertEquals("תזכורת 25", plan.recent.first().title)
         assertTrue(plan.unread)
         var opened: Int? = null
         var settings = false
@@ -665,10 +671,40 @@ class KisUiTest {
         ui.onNodeWithTag("home_bell_dot", useUnmergedTree = true).assertExists()
         assertFalse(plan.unread)
         ui.onNodeWithTag("notify_monthly_switch").assertDoesNotExist()
-        ui.onNodeWithTag("recent_note_0").performScrollTo().performClick()
-        assertEquals(2026 * 12 + 8, opened)
+        ui.onNodeWithTag("recent_note_0").assertExists()
+        assertEquals(null, opened)
         ui.onNodeWithTag("notifications_settings").performClick()
         assertTrue(settings)
+    }
+
+    /** A monthly summary is on the bell only once its recap opened (never September), and new until the recap is watched. */
+    @Test fun bellKeepsTheRecapUntilWatched() {
+        val plan = model().planSettings
+        plan.addRecent(PlanSettings.Sent("monthly", "ספטמבר שלך בכיס מוכן", "טקסט", 1L, "2026-09"))
+        plan.addRecent(PlanSettings.Sent("monthly", "אוקטובר שלך בכיס מוכן", "טקסט", 2L, "2026-10"))
+        assertEquals(emptyList<String>(), plan.notes("2026-10-29").map { it.month })
+        assertEquals(listOf("2026-10"), plan.notes("2026-10-30").map { it.month })
+        assertEquals(listOf("2026-10"), plan.notes("2027-05-01").map { it.month })
+        assertFalse(plan.notes("2026-10-30").single().opened)
+        plan.markOpened("2026-10")
+        assertTrue(plan.notes("2026-10-30").single().opened)
+        // The seed for the story's words is made once and kept.
+        assertEquals(plan.voiceSeed, plan.voiceSeed)
+    }
+
+    @Test fun recapArchiveAndHomeOnlyShowOpenedRecaps() {
+        seed()
+        val scope = com.example.domain.V2Summary.monthScope(HistoryFilter.monthKey(mid))
+        val open = com.example.domain.V2Summary.recapDay(scope)
+        if (scope >= com.example.domain.V2Summary.FIRST_RECAP) {
+            assertEquals(listOf(scope), freshRecaps(rows(), open))
+            assertEquals(emptyList<String>(), freshRecaps(rows(), "$scope-15"))
+        }
+        assertEquals(emptyList<String>(), freshRecaps(rows(), "2026-09-30"))
+        var opened: String? = null
+        host { RecapArchiveSheet(rows(), onStory = { opened = it }, onDismiss = {}, today = maxOf(open, "2026-10-30")) }
+        if (scope >= com.example.domain.V2Summary.FIRST_RECAP) { ui.onNodeWithTag("recap_$scope").performClick(); assertEquals(scope, opened) }
+        shot("recap-archive")
     }
 
     @Test fun bellShowsANewVersionWithAnUpdateButton() {

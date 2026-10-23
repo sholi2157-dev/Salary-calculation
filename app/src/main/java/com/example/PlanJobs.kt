@@ -84,22 +84,35 @@ class PlanSettings(context: Context) {
     }
 
     /** The reminders that were actually sent, newest first (at most [RECENT_MAX]), for "התראות אחרונות". */
-    data class Sent(val kind: String, val title: String, val text: String, val time: Long, val month: String)
+    /** [opened]: a monthly summary whose recap was watched (until then it stays new on the bell). */
+    data class Sent(val kind: String, val title: String, val text: String, val time: Long, val month: String, val opened: Boolean = false)
     val recent: List<Sent>
         get() = runCatching {
             val a = org.json.JSONArray(prefs.getString("recent", "[]"))
-            (0 until a.length()).map { i -> a.getJSONObject(i).let { Sent(it.getString("kind"), it.getString("title"), it.getString("text"), it.getLong("time"), it.optString("month")) } }
+            (0 until a.length()).map { i -> a.getJSONObject(i).let { Sent(it.getString("kind"), it.getString("title"), it.getString("text"), it.getLong("time"), it.optString("month"), it.optBoolean("opened")) } }
         }.getOrDefault(emptyList())
-    fun addRecent(sent: Sent) {
-        val all = (listOf(sent) + recent).take(RECENT_MAX)
-        val a = org.json.JSONArray().apply { all.forEach { put(org.json.JSONObject().put("kind", it.kind).put("title", it.title).put("text", it.text).put("time", it.time).put("month", it.month)) } }
+    private fun saveRecent(all: List<Sent>) {
+        val a = org.json.JSONArray().apply { all.take(RECENT_MAX).forEach { put(org.json.JSONObject().put("kind", it.kind).put("title", it.title).put("text", it.text).put("time", it.time).put("month", it.month).put("opened", it.opened)) } }
         prefs.edit().putString("recent", a.toString()).apply()
     }
+    fun addRecent(sent: Sent) = saveRecent(listOf(sent) + recent)
+    /** The bell's list: a monthly summary of a recap that has not opened (or never will, like before the first one) stays out. */
+    fun notes(today: String = com.example.domain.V2Summary.today()): List<Sent> =
+        recent.filter { it.kind != "monthly" || it.month.isEmpty() || com.example.domain.V2Summary.recapOpen(it.month, today) }
+    /** A recap was watched: its summary is no longer new on the bell. */
+    fun markOpened(scope: String) {
+        val all = recent
+        if (all.any { it.kind == "monthly" && it.month == scope && !it.opened }) saveRecent(all.map { if (it.kind == "monthly" && it.month == scope) it.copy(opened = true) else it })
+    }
+    /** This person's own seed for the story's words (made once, kept on this device). */
+    val voiceSeed: String
+        get() = prefs.getString("voiceSeed", null) ?: java.util.UUID.randomUUID().toString().replace("-", "").take(8).also { prefs.edit().putString("voiceSeed", it).apply() }
     /** When the bell sheet was last opened: anything sent after it shows a dot on the bell. */
     var seenAt: Long
         get() = prefs.getLong("seenAt", 0L)
         set(v) { prefs.edit().putLong("seenAt", v).apply() }
-    val unread: Boolean get() = recent.any { it.time > seenAt }
+    /** Anything new since the bell was opened, and a monthly summary until its recap is actually watched. */
+    val unread: Boolean get() = notes().any { it.time > seenAt || (it.kind == "monthly" && !it.opened) }
     companion object { const val RECENT_MAX = 20 }
 }
 
@@ -177,14 +190,15 @@ object PlanJobs {
         return if (now < thisMonth) thisMonth else monthlyMoment(cal.apply { set(Calendar.DAY_OF_MONTH, 1); add(Calendar.MONTH, 1) })
     }
 
-    /** The month whose summary is due now ("YYYY-MM"), or null. A summary missed while the phone was off still comes in the next 3 days. */
+    /**
+     * The month whose summary is due now ("YYYY-MM"), or null: only while its recap is new (the 30th and 4 more days,
+     * V2Summary.recapNew; never before the first one), so a phone that was off on the 30th still gets it, and never later.
+     */
     fun monthlyDue(now: Long, lastSent: String): String? {
         val cal = Calendar.getInstance().apply { timeInMillis = now }
-        val thisMonth = ym(cal)
-        if (now >= monthlyMoment(cal)) return thisMonth.takeIf { it != lastSent }
-        if (cal.get(Calendar.DAY_OF_MONTH) > 3) return null
-        val prev = ym((cal.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, 1); add(Calendar.MONTH, -1) })
-        return prev.takeIf { lastSent < it }
+        val month = com.example.domain.V2Summary.recapNew(V2Plan.dateOf(now)).month ?: return null
+        if (month <= lastSent || (month == ym(cal) && now < monthlyMoment(cal))) return null
+        return month
     }
 
     /** Records every finished occurrence that is not held. Safe to run twice at once: the unique key decides. */
