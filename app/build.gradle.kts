@@ -39,6 +39,8 @@ android {
     buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
     // Uploaded configuration has no Android OAuth client/fingerprint yet.
     buildConfigField("boolean", "GOOGLE_SIGN_IN_ENABLED", "false")
+    // Anonymous install count (InstallCount.kt): empty disables it; only distributed builds set it.
+    buildConfigField("String", "INSTALL_COUNT_KEY", "\"\"")
     buildConfigField("String", "AI_SERVICE_URL", "\"${System.getenv("AI_SERVICE_URL") ?: ""}\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -74,6 +76,10 @@ android {
       buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
       buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", "false")
       buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
+      // The project's public Firebase client key (already in the client config); firestore.rules decide what it may write.
+      val installKey = file("src/debug/google-services.json").takeIf { it.exists() }?.readText()
+        ?.let { Regex("\"current_key\"\\s*:\\s*\"([^\"]+)\"").find(it)?.groupValues?.get(1) }.orEmpty()
+      buildConfigField("String", "INSTALL_COUNT_KEY", "\"$installKey\"")
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
