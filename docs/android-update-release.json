@@ -1,12 +1,12 @@
 {
-  "runId": 40164989307,
-  "sourceSha": "af1735fd464983abfca4228182fdecd7a18aeace",
-  "artifactName": "salary-2.0.8-candidate",
-  "tag": "android-v2.0.8",
-  "fileName": "Salary2.0.8.apk",
-  "versionCode": 41,
-  "versionName": "2.0.8",
-  "sha256": "11a56473f9e8194ad6d602e510b6675287ac048ff2b715814945907eced36fc6",
+  "runId": 40219444146,
+  "sourceSha": "4e4de603323bec33aa3cea463cfc2106136f142a",
+  "artifactName": "salary-2.1-candidate",
+  "tag": "android-v2.1",
+  "fileName": "Salary2.1.apk",
+  "versionCode": 42,
+  "versionName": "2.1",
+  "sha256": "b0a8b477975cef6bbbabea6e3a76727870da07ded2384c2d2f9da145e7e0d410",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "הזנת שעות נוחה: מקלידים במקלדת של הטלפון, לחיצה על ספרה אחת משנה רק אותה, ואין יותר קפיצה לבד לשעת הסיום. מצב בהיר רגוע יותר, בלי שחור-לבן חזק. בקבלנות אפשר להוסיף אנשים לעבודה, לכל אחד סכום או תעריף משלו. כל המשמרות, הסכומים וההגדרות נשמרים."
+  "releaseNotes": "ה-AI שלך מכיר את המשמרות: מחברים את ChatGPT, Claude, Grok, Muse, Instinct או עוזר אחר, והוא עונה על שאלות, מסכם, ולפי מה שאישרת גם מוסיף, עורך או מוחק. כל שינוי שלו נרשם ואפשר לבטל אותו. התחברות אחת עם Google וסנכרון מלא בין האפליקציה לאתר. כל המשמרות, הסכומים וההגדרות נשמרים."
 }
