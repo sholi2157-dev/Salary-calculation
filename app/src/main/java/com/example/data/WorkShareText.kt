@@ -105,8 +105,9 @@ object WorkShareText {
             add("תאריכים: ${date(e.date)}")
             add("סכום הצוות: " + (total?.let { money(it, e.currency) } ?: "ממתין להשלמת תעריף"))
             add("פירוט:")
-            add("${ownName?.trim()?.takeIf { it.isNotEmpty() } ?: "החלק שלי"}: ${hours(e.hours)} שעות | ${own?.let { money(it, e.currency) } ?: "תעריף חסר"}")
-            ws.forEachIndexed { i, w -> add("${w.name}: ${hours(w.hours)} שעות | ${pays[i]?.let { money(it, e.currency) } ?: "תעריף חסר"}") }
+            add("${ownName?.trim()?.takeIf { it.isNotEmpty() } ?: "החלק שלי"}: ${if (WorkPay.isJob(e) && e.hours == 0.0) "" else "${hours(e.hours)} שעות | "}${own?.let { money(it, e.currency) } ?: if (WorkPay.isJob(e)) "סכום חסר" else "תעריף חסר"}")
+            // On a job team a fixed sum has no hours to show.
+            ws.forEachIndexed { i, w -> add("${w.name}: ${if (WorkPay.isJob(e) && w.amount != null && w.hours == 0.0) "סכום קבוע" else "${hours(w.hours)} שעות"} | ${pays[i]?.let { money(it, e.currency) } ?: "תעריף חסר"}") }
             if (note(e).isNotEmpty()) add("הערה: ${note(e)}")
             if (!technical) add("תודה!")
         }.joinToString("\n")

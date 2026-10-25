@@ -375,6 +375,7 @@ fun KisEditorPage(
             }
             check.warnings.forEach { Notice(it) }
             if (d.mode == EntryMode.GROUP) GroupBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
+            if (d.mode == EntryMode.JOB) JobTeamBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
             if (!d.editing && d.mode == EntryMode.CLOCK && d.start != null) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
