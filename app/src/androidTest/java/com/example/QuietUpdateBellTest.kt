@@ -14,7 +14,8 @@ import org.junit.Test
 
 /** The exact published APK, offline synthetic future release, no download or actual user storage. */
 class QuietUpdateBellTest {
-    @get:Rule val ui = createEmptyComposeRule()
+    @get:Rule(order = 0) val noSignIn = SkipSignIn()
+    @get:Rule(order = 1) val ui = createEmptyComposeRule()
     @Test fun futureReleaseIsOnlyARedBellAndCardUntilUserActs() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val preferences = context.getSharedPreferences("release_updates", Context.MODE_PRIVATE)
