@@ -4,23 +4,48 @@
   "headers": [
     {
       "source": "/build-info.json",
-      "headers": [{"key":"Cache-Control","value":"no-store, max-age=0"}]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ]
     },
     {
       "source": "/sw.js",
-      "headers": [{"key":"Cache-Control","value":"no-store, max-age=0"}]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ]
     },
     {
       "source": "/web/(.*)",
-      "headers": [{"key":"Cache-Control","value":"no-cache, max-age=0, must-revalidate"}]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, max-age=0, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/",
-      "headers": [{"key":"Cache-Control","value":"no-cache, max-age=0, must-revalidate"}]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, max-age=0, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/index.html",
-      "headers": [{"key":"Cache-Control","value":"no-cache, max-age=0, must-revalidate"}]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, max-age=0, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/(.*)",
@@ -38,6 +63,36 @@
           "value": "*"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/.well-known/oauth-protected-resource",
+      "destination": "/api/oauth?meta=resource"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource/mcp",
+      "destination": "/api/oauth?meta=resource"
+    },
+    {
+      "source": "/.well-known/oauth-authorization-server",
+      "destination": "/api/oauth?meta=server"
+    },
+    {
+      "source": "/.well-known/openid-configuration",
+      "destination": "/api/oauth?meta=server"
+    },
+    {
+      "source": "/oauth/register",
+      "destination": "/api/oauth?op=register"
+    },
+    {
+      "source": "/oauth/token",
+      "destination": "/api/oauth?op=token"
+    },
+    {
+      "source": "/mcp",
+      "destination": "/api/mcp"
     }
   ]
 }
