@@ -18,6 +18,13 @@ test('registration accepts https and local return addresses only',()=>{
  assert.deepEqual(A.client(env,{client_id:c.client_id,redirect_uri:'https://chatgpt.com/connector_platform_oauth_redirect'}),[200,{name:'ChatGPT'}]);
  assert.equal(A.client(env,{client_id:c.client_id,redirect_uri:'https://other.example/cb'})[0],400);
 });
+test('Muse has a fixed client ID that returns only to Meta\'s own domains',()=>{
+ assert.deepEqual(A.client(env,{client_id:'muse',redirect_uri:'https://www.meta.ai/oauth/callback'}),[200,{name:'Muse'}]);
+ assert.deepEqual(A.client(env,{client_id:'muse',redirect_uri:'https://developers.facebook.com/cb'}),[200,{name:'Muse'}]);
+ for(const r of ['https://evil.example/cb','https://meta.ai.evil.example/cb','http://www.meta.ai/cb','https://notmeta.ai/cb'])
+  assert.equal(A.client(env,{client_id:'muse',redirect_uri:r})[0],400,r);
+ assert.equal(A.client(env,{client_id:'toString',redirect_uri:'https://www.meta.ai/cb'})[0],400);
+});
 test('metadata points assistants at this site',()=>{
  const req={headers:{host:'salary.example'}};
  assert.equal(A.metadata(req,'resource').resource,'https://salary.example/mcp');
