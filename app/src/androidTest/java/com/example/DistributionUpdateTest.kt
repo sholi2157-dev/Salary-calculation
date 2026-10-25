@@ -25,7 +25,8 @@ class DistributionUpdateTest {
         val context = instrumentation.targetContext
         assertEquals("com.aistudio.worktracker.qztvdw.distribution", context.packageName)
         assertTrue(BuildConfig.LOCAL_DISTRIBUTION)
-        assertFalse(BuildConfig.ACCOUNTS_ENABLED || BuildConfig.CLOUD_SYNC_ENABLED || BuildConfig.VERSIONED_SYNC_ENABLED)
+        // 2.1: Google account sync is on (versioned records only); the retired integer-ID cloud writer stays off.
+        assertFalse(BuildConfig.CLOUD_SYNC_ENABLED)
         assertEquals(0, context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)
         @Suppress("DEPRECATION") val installedCode = context.packageManager.getPackageInfo(context.packageName, 0).versionCode
         val stage = InstrumentationRegistry.getArguments().getString("stage")!!
