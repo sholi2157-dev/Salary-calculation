@@ -58,12 +58,20 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
         Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             when (step) {
                 0 -> {
-                    Spacer(Modifier.weight(1f))
-                    IntroRise(if (updated) "גרסה 2.1." else "ברוך הבא.", 150, "intro_line_1")
-                    IntroRise("ה-AI שלך", 700, "intro_line_2")
-                    IntroRise("מכיר את המשמרות.", 1150, "intro_line_3")
-                    IntroRise("שואלים את ChatGPT, Claude, Grok, Muse, Instinct או כל עוזר אחר כמה הרווחת, מבקשים לרשום משמרת, והוא עושה את זה בשבילך.", 1700, "intro_line_4", small = true)
-                    Spacer(Modifier.weight(1f))
+                    // Centred when it fits, scrolls on a short screen.
+                    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                        Column(Modifier.verticalScroll(rememberScrollState()).heightIn(min = maxHeight).fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
+                            IntroRise("חישוב שכר", 100, "intro_line_1", label = true)
+                            IntroRise(if (updated) "גרסה 2.1" else "ברוכים הבאים", 300, "intro_version", label = true, muted = true)
+                            IntroRise("כעת סוכן ה-AI שלך מכיר אותך ואת העבודה שלך.", 600, "intro_line_2", size = 36)
+                            IntroRise("בקשו מהסוכן שלכם:", 1100, "intro_line_3", label = true)
+                            IntroBubble("כמה הרווחתי החודש?", 1400, mine = true, small = true)
+                            IntroBubble("עבדתי אתמול בכינוס השלוחים 15 שעות, ושניאור נגר ביקש ממני לרשום בהערה סידור כסאות. תוסיף לי בבקשה.", 1800, mine = true, small = true)
+                            IntroRise("והוא יעשה זאת בשבילכם!", 2300, "intro_line_4", size = 26)
+                            IntroAssistants(2700)
+                        }
+                    }
                     KisButton("הבא", { step = 1 }, Modifier.fillMaxWidth(), height = 56.dp, tag = "intro_next")
                 }
                 1 -> {
@@ -98,25 +106,48 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
     }
 }
 
-/** A line of the intro that rises into place, like the 2.0 launch. */
+/** A line of the intro that rises into place, like the 2.0 launch: a headline of [size] sp, or a smaller [label] line. */
 @Composable
-private fun IntroRise(text: String, delayMs: Long, tag: String, small: Boolean = false) {
+private fun IntroRise(text: String, delayMs: Long, tag: String, small: Boolean = false, label: Boolean = false, muted: Boolean = false, size: Int = 50) {
     val shown = remember { androidx.compose.animation.core.Animatable(0f) }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(delayMs); shown.animateTo(1f, androidx.compose.animation.core.tween(650)) }
-    Text(text, style = if (small) KisType.body.copy(fontSize = 18.sp, lineHeight = 26.sp) else KisType.hero.copy(fontSize = 50.sp, lineHeight = 56.sp),
-        color = if (small) Kis.colors.muted else Kis.colors.ink,
+    val style = when {
+        small -> KisType.body.copy(fontSize = 18.sp, lineHeight = 26.sp)
+        label -> KisType.body.copy(fontSize = 19.sp, lineHeight = 26.sp, fontWeight = FontWeight.Bold)
+        else -> KisType.hero.copy(fontSize = size.sp, lineHeight = (size * 1.15f).sp)
+    }
+    Text(text, style = style, color = if (small || muted) Kis.colors.muted else Kis.colors.ink,
         modifier = Modifier.fillMaxWidth().padding(top = if (small) 14.dp else 0.dp)
             .graphicsLayer { alpha = shown.value; translationY = (1f - shown.value) * 28.dp.toPx() }.testTag(tag))
 }
 
+/** "מחובר עם" and the assistants, each in its own chip so no commas get lost between Hebrew and English. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun IntroAssistants(delayMs: Long) {
+    val c = Kis.colors
+    val shown = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(delayMs); shown.animateTo(1f, androidx.compose.animation.core.tween(500)) }
+    Column(Modifier.fillMaxWidth().padding(top = 6.dp).graphicsLayer { alpha = shown.value; translationY = (1f - shown.value) * 18.dp.toPx() }
+        .testTag("intro_assistants"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("מחובר עם", style = KisType.caption, color = c.muted)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("ChatGPT", "Claude", "Grok", "Muse", "Instinct").forEach {
+                Text(it, style = KisType.label, color = c.ink,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surface).padding(horizontal = 14.dp, vertical = 8.dp))
+            }
+        }
+    }
+}
+
 /** A chat line in the intro's "פשוט מבקשים" screen: what you ask ([mine]) on one side, the assistant's answer on the other. */
 @Composable
-private fun IntroBubble(text: String, delayMs: Long, mine: Boolean) {
+private fun IntroBubble(text: String, delayMs: Long, mine: Boolean, small: Boolean = false) {
     val c = Kis.colors
     val shown = remember { androidx.compose.animation.core.Animatable(0f) }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(delayMs); shown.animateTo(1f, androidx.compose.animation.core.tween(450)) }
     Box(Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
-        Text(text, style = KisType.body.copy(fontSize = 22.sp, lineHeight = 30.sp, fontWeight = FontWeight.SemiBold),
+        Text(text, style = KisType.body.copy(fontSize = if (small) 18.sp else 22.sp, lineHeight = if (small) 25.sp else 30.sp, fontWeight = FontWeight.SemiBold),
             color = if (mine) c.ink else c.onInk,
             modifier = Modifier.graphicsLayer { alpha = shown.value; translationY = (1f - shown.value) * 18.dp.toPx() }
                 .clip(RoundedCornerShape(22.dp)).background(if (mine) c.surface else c.ink).padding(horizontal = 18.dp, vertical = 12.dp))
