@@ -5,6 +5,11 @@ on:
     branches: ['claude/v2-android', 'codex/sharing-android-20261021']
     paths: ['app/**', 'gradle/**', 'build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'scripts/**', '.github/workflows/android-v2.yml']
   workflow_dispatch:
+    inputs:
+      shots:
+        description: 'Only print screenshots whose name contains one of these comma-separated texts (empty: all)'
+        required: false
+        default: ''
 permissions:
   contents: read
 concurrency:
@@ -54,23 +59,6 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$apk" | tee /tmp/release-identity.txt
           grep -F "package: name='com.aistudio.worktracker.qztvdw.distribution'" /tmp/release-identity.txt
           python3 scripts/check-local-build.py
-      - name: Print screenshots for review (compressed, base64)
-        if: ${{ always() && !contains(github.event.head_commit.message, '[compile]') }}
-        run: |
-          pip install -q pillow >/dev/null 2>&1 || true
-          python3 - <<'PY'
-          import base64, glob, io, os
-          from PIL import Image
-          files = sorted(glob.glob('/tmp/kis-*.png') + glob.glob('/tmp/onboarding-360-*.png') + glob.glob('/tmp/stage-ai-*-360.png'))
-          for f in files:
-              im = Image.open(f).convert('RGB')
-              im.thumbnail((400, 900))
-              buf = io.BytesIO(); im.save(buf, 'JPEG', quality=72)
-              data = base64.b64encode(buf.getvalue()).decode()
-              print('@@IMG ' + os.path.basename(f))
-              for i in range(0, len(data), 3000): print('@@B ' + data[i:i+3000])
-              print('@@END')
-          PY
       - name: Print exported Room schemas
         if: always()
         run: for f in app/schemas/*/*.json; do echo "=== $f"; cat "$f"; echo; done
@@ -91,3 +79,24 @@ jobs:
             /tmp/onboarding-*.png
             /tmp/stage-ai-*.png
             release-evidence/unit-tests.json
+      # Last, so the end of the log is the pictures (the "shots" input narrows them).
+      - name: Print screenshots for review (compressed, base64)
+        if: ${{ always() && !contains(github.event.head_commit.message, '[compile]') }}
+        env:
+          SHOTS: ${{ github.event.inputs.shots }}
+        run: |
+          pip install -q pillow >/dev/null 2>&1 || true
+          python3 - <<'PY'
+          import base64, glob, io, os
+          from PIL import Image
+          only = [x for x in os.environ.get('SHOTS', '').split(',') if x]
+          files = [f for f in sorted(glob.glob('/tmp/kis-*.png') + glob.glob('/tmp/onboarding-360-*.png') + glob.glob('/tmp/stage-ai-*-360.png')) if not only or any(o in f for o in only)]
+          for f in files:
+              im = Image.open(f).convert('RGB')
+              im.thumbnail((400, 900))
+              buf = io.BytesIO(); im.save(buf, 'JPEG', quality=72)
+              data = base64.b64encode(buf.getvalue()).decode()
+              print('@@IMG ' + os.path.basename(f))
+              for i in range(0, len(data), 3000): print('@@B ' + data[i:i+3000])
+              print('@@END')
+          PY
