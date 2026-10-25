@@ -2,9 +2,11 @@
 (function (root) {
 'use strict';
 const U = () => root.KisUi;
-const store = root.KisStoreFactory.createStore(localStorage);
+// The signed-in account's own copy (web/kis/account.js); the browser's existing data for the first account.
+const storage = root.KisAccount.storageFor(localStorage);
+const store = root.KisStoreFactory.createStore(storage);
 const app = {
-  store, page: 'home', editorOpen: false, closeEditor: null,
+  store, storage, page: 'home', editorOpen: false, closeEditor: null,
   occurrences: () => root.KisPlans.occurrences(store),
   go(page, opts = {}) { this.page = page; this.pageOpts = opts; render(); window.scrollTo({ top: 0 }); },
   refresh() { render(); },
@@ -107,7 +109,7 @@ function start() {
   document.querySelector('.nav [data-a=add]').onclick = () => app.openNew();
   store.subscribe(render);
   // Another tab changed the data: read it again (never overwrite it with an older copy).
-  window.addEventListener('storage', e => { if (!e.key || ['work_complete_backup', 'work_series_v1', 'kis_web_v1'].includes(e.key) || e.key.startsWith('work_active_shift_v1')) { store.load(); render(); } });
+  window.addEventListener('storage', e => { const k = e.key && e.key.replace(/^acct:[^:]+:/, ''); if (!k || ['work_complete_backup', 'work_series_v1', 'kis_web_v1'].includes(k) || k.startsWith('work_active_shift_v1')) { store.load(); render(); } });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!U().closeTopSheet() && app.editorOpen) app.editorBack?.(); } });
   // Ended weekly plans are recorded on open and on every return to the tab, with an undo.
   const catchUp = () => { const ids = root.KisPlans.catchUp(store);
@@ -121,6 +123,9 @@ function start() {
   setInterval(() => { if (document.visibilityState === 'visible' && !app.editorOpen && !U().anySheet()) render(); }, 60000);
   render();
   catchUp();
+  root.KisAccount.init(app);
+  document.addEventListener('kis-account', () => { if (app.page === 'settings' && !app.editorOpen && !U().anySheet()) { const card = document.querySelector('[data-testid=account-card]');
+    if (card) { card.innerHTML = root.KisAccount.settingsHtml(); root.KisAccount.bindSettings(card); } } });
   // Once: the 2.0 launch, the name, then the tour. Reminders and a restored draft wait for the next open.
   if (root.KisLaunch.maybeStart(app)) return;
   const notes = root.KisSettings.dueReminders(app);

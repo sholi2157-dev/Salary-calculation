@@ -1,10 +1,11 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const features=require('../web/features.js');
-test('public account switch disables config and protects dormant module before any DOM/SDK/storage access',()=>{
- assert.equal(features.accountsEnabled,false);
+test('the old email accounts stay dormant; Google account sync gets only the public Firebase web fields',()=>{
+ assert.equal(features.accountsEnabled,false);assert.equal(features.accountSyncEnabled,true);
  vm.runInNewContext(fs.readFileSync('web/accounts.js','utf8'),{window:{WorkFeatures:features}});
  const handler=require('../api/config.js');let result;const response={setHeader(){},status(n){assert.equal(n,200);return this;},json(v){result=v;}};handler({method:'GET'},response);
- assert.deepEqual(result,{firebase:null,webAccountsEnabled:false,cloudSyncEnabled:false,webAiEnabled:false});
+ assert.deepEqual(Object.keys(result.firebase).sort(),['apiKey','authDomain','projectId']);assert.equal(result.firebase.projectId,'workshiftsapp');
+ assert.equal(result.webAccountsEnabled,false);assert.equal(result.accountSyncEnabled,true);assert.equal(result.webAiEnabled,false);
  const html=fs.readFileSync('index.html','utf8');/* 2.0 page: accounts are off and have no screen at all; their code must never load. */assert.doesNotMatch(html,/<script src="web\/(accounts|cloud-sync)\.js"/);
 });
 

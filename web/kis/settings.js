@@ -9,6 +9,7 @@ function render(el, app) {
   const { store } = app, { esc } = U(), prefs = store.data.webPreferences, def = root.WorkCategories.defaultName(store.data.categories, prefs);
   const theme = store.local.theme || 'system';
   el.innerHTML = `<h1 class="page-title">הגדרות</h1>
+  ${group('חשבון', `<div data-testid="account-card">${root.KisAccount.settingsHtml()}</div>`, 'המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים עם האפליקציה לאנדרואיד ועם כל דפדפן שמחובר אליו.')}
   ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר אוטומטית במשמרת חדשה.')}
     <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', null, `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`, 'למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה, ושקלים ודולרים לא מתחברים לסכום אחד.')}
     <div class="divider"></div>${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip" data-a="series" data-testid="series-button">ניהול</button>', 'יוצרים במסך ההוספה: "חוזרת כל שבוע". כשהזמן נגמר המשמרת נרשמת לבד, ותמיד אפשר לבטל.')}`)}
@@ -18,13 +19,14 @@ function render(el, app) {
   ${group('התראות', `${rowHtml('הסיכום החודשי', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyMonthly === true}" aria-label="הסיכום החודשי" data-a="monthly" data-testid="notify-monthly"></button>`, 'ב-30 לחודש (ביום האחרון בחודש קצר יותר), כשנכנסים לאתר. באתר התזכורות מופיעות כשהוא פתוח; באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.')}
     <div class="divider"></div>${rowHtml('תעריף חסר', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyRate === true}" aria-label="תעריף חסר" data-a="rate" data-testid="notify-rate"></button>`, 'לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.')}`)}
   ${group('גיבוי ונתונים', `<div class="row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
-    <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'הנתונים נשמרים בדפדפן הזה בלבד. כדאי לשמור גיבוי גם מחוץ לאתר. גיבוי מהאפליקציה עובר לכאן, וגיבוי מכאן עובר לאפליקציה.')}
+    <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'כשמחוברים לחשבון, הנתונים נשמרים בו ובדפדפן הזה. גיבוי לקובץ הוא העתק נוסף בשבילך, וגיבוי מהאפליקציה עובר לכאן ולהפך.')}
   ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
   ${group('פרופיל', `<div style="display:grid;gap:8px;padding:10px 0"><input class="input" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>`)}
   <div class="row" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי</span></div>`;
 
   const q = s => el.querySelector(s);
+  root.KisAccount.bindSettings(el);
   // Saved as typed, without redrawing the page (no lost taps or focus).
   q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
   q('[data-f=last]').addEventListener('input', e => store.setLocal('lastName', e.target.value.trim().slice(0, 40), true));
