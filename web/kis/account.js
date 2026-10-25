@@ -159,12 +159,14 @@ function settingsHtml() {
   const line = account.status === 'syncing' ? 'מסנכרן…' : account.status === 'offline' ? 'אין חיבור. השינויים יישלחו כשהחיבור יחזור' : account.status === 'error' ? 'הסנכרון לא הצליח. ננסה שוב בקרוב' : when ? `מסונכרן · ${when}` : 'מסונכרן';
   return `<div class="row" style="align-items:center;min-height:58px"><div class="grow" style="min-width:0"><b style="overflow-wrap:anywhere">${esc(s.email || account.user.email || '')}</b><div class="caption" data-testid="account-status">${esc(line)}</div></div><button class="chip" data-acc="now">סנכרון</button></div>
     ${st.conflicts ? `<div class="divider"></div><div class="row" style="align-items:center;min-height:58px"><div class="grow"><b>${st.conflicts === 1 ? 'שינוי אחד ממתין לבחירה' : st.conflicts + ' שינויים ממתינים לבחירה'}</b><div class="caption">אותה משמרת השתנתה כאן ובמכשיר אחר</div></div><button class="chip" data-acc="conflicts" data-testid="account-conflicts">בחירה</button></div>` : ''}
+    <div class="divider"></div><div class="row" style="align-items:center;min-height:58px"><div class="grow"><b>עוזרי AI</b><div class="caption">ChatGPT, Claude ועוד: לשאול, לסכם ולהוסיף משמרות</div></div><button class="chip" data-acc="assistants" data-testid="account-assistants">ניהול</button></div>
     <div class="divider"></div><div class="row" style="padding:10px 0 6px"><button class="btn small ghost grow" data-acc="signout" data-testid="account-signout">יציאה מהחשבון</button></div>`;
 }
 function bindSettings(el) {
   el.querySelector('[data-acc=signin]')?.addEventListener('click', () => { account.status = navigator.onLine === false ? 'offline' : 'local'; connect(); showGate(); });
   el.querySelector('[data-acc=now]')?.addEventListener('click', () => schedule(0));
   el.querySelector('[data-acc=conflicts]')?.addEventListener('click', conflictsSheet);
+  el.querySelector('[data-acc=assistants]')?.addEventListener('click', assistantsSheet);
   el.querySelector('[data-acc=signout]')?.addEventListener('click', () => U().confirmSheet('יציאה מהחשבון', 'הנתונים נשארים בחשבון. כדי להמשיך תצטרך להתחבר שוב.', 'יציאה', () => signOut().catch(() => U().toast('היציאה לא הושלמה'))));
 }
 
@@ -193,7 +195,66 @@ function conflictsSheet() {
   });
 }
 
+// ---- personal AI assistants: who is connected, what they did, cutting off and undoing ----
+const PERM_LABEL = { 'shifts.read': 'קריאה', 'shifts.add': 'הוספה', 'shifts.edit': 'עריכה', 'shifts.delete': 'מחיקה' };
+const TOOL_LABEL = { add_shift: 'הוסיף', update_shift: 'ערך', delete_shift: 'מחק' };
+async function assistantsSheet() {
+  if (!account.user) return;
+  const fb = await loadFirebase(), uid = account.user.uid, me = fb.firestore().collection('users').doc(uid);
+  const { esc } = U(), mcpUrl = location.origin + '/mcp';
+  U().sheet('assistants-sheet', (el, close) => {
+    const draw = async () => {
+      let grants = [], log = [];
+      try {
+        [grants, log] = await Promise.all([me.collection('assistants').get({ source: 'server' }).then(q => q.docs),
+          me.collection('assistant_log').orderBy('at', 'desc').limit(20).get({ source: 'server' }).then(q => q.docs)]);
+      } catch { el.innerHTML = '<h2>עוזרי AI</h2><p class="caption">אין חיבור כרגע. נסה שוב בעוד רגע.</p>'; return; }
+      const live = grants.filter(g => !g.get('until') || Date.parse(g.get('until')) > Date.now());
+      el.innerHTML = `<h2>עוזרי AI</h2>
+        <p class="caption" style="margin:0">עוזר מחובר יכול לענות על שאלות על המשמרות שלך, לסכם, ולפי מה שאישרת גם להוסיף, לערוך או למחוק. הוא רואה רק את המשמרות שלך.</p>
+        <div class="card" style="display:grid;gap:8px;background:var(--sunk)"><b>איך מחברים</b>
+          <div class="caption">בהגדרות העוזר, בחיבורים (Connectors), מוסיפים חיבור חדש עם הכתובת:</div>
+          <div class="row" style="align-items:center"><code class="grow" dir="ltr" style="overflow-wrap:anywhere" data-testid="assistants-url">${esc(mcpUrl)}</code><button class="chip" data-x="copy">העתקה</button></div>
+          <div class="caption">העוזר יפתח דף שבו מתחברים עם Google ובוחרים מה מותר לו. לעוזר בלי אפשרות כזו: <a href="/connect?personal=1" data-testid="assistants-key">מפתח אישי</a>.</div></div>
+        <h3 style="margin:6px 0 0">מחוברים</h3>
+        ${live.length ? live.map(g => `<div class="row" style="align-items:center;min-height:58px"><div class="grow" style="min-width:0"><b>${esc(g.get('name'))}</b>
+          <div class="caption">${(g.get('scopes') || []).map(x => PERM_LABEL[x]).filter(Boolean).join(' · ')} · ${g.get('until') ? 'עד ' + esc(new Date(g.get('until')).toLocaleDateString('he-IL')) : 'עד שתנתק'}</div></div>
+          <button class="chip warn" data-cut="${esc(g.id)}" data-testid="assistant-cut">ניתוק</button></div>`).join('<div class="divider"></div>') : '<p class="caption" data-testid="assistants-none">אין עוזרים מחוברים.</p>'}
+        ${log.length ? `<h3 style="margin:6px 0 0">פעולות אחרונות</h3>${log.map(l => {
+          const d = l.data(), item = d.after || d.before, type = d.type || 'entry';
+          let shown = ''; try { shown = describe(type, P().decode(type, item)); } catch {}
+          return `<div class="row" style="align-items:center;min-height:58px"><div class="grow" style="min-width:0"><div class="caption">${esc(d.client)} ${TOOL_LABEL[d.tool] || ''} · ${esc(new Date(d.at).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }))}</div>${shown}</div>
+            ${d.undone ? '<span class="caption">בוטל</span>' : `<button class="chip" data-undo="${esc(l.id)}" data-testid="assistant-undo">ביטול</button>`}</div>`; }).join('<div class="divider"></div>')}` : ''}`;
+      el.querySelector('[data-x=copy]').onclick = async e => { try { await navigator.clipboard.writeText(mcpUrl); e.target.textContent = 'הועתק'; } catch {} };
+      el.querySelectorAll('[data-cut]').forEach(b => b.onclick = () => U().confirmSheet('לנתק את העוזר?', 'הוא לא יוכל יותר לראות או לשנות משמרות. מה שכבר שינה נשאר, ואפשר לבטל אותו כאן.', 'ניתוק', async () => {
+        try { await me.collection('assistants').doc(b.dataset.cut).delete(); } catch { U().toast('הניתוק לא הושלם. נסה שוב'); } draw(); }));
+      el.querySelectorAll('[data-undo]').forEach(b => b.onclick = async () => {
+        b.disabled = true;
+        try { await undo(fb, uid, me.collection('assistant_log').doc(b.dataset.undo)); U().toast('בוטל'); schedule(0); }
+        catch { U().toast('הביטול לא הושלם. אולי המשמרת השתנתה מאז'); }
+        draw();
+      });
+    };
+    el.innerHTML = '<h2>עוזרי AI</h2><p class="caption">טוען…</p>';
+    draw();
+  });
+}
+const P = () => root.WorkSyncProtocol;
+/** Puts the item back as it was before the assistant's action, as a new version (it reaches every device by sync). */
+async function undo(fb, uid, ref) {
+  const d = (await ref.get({ source: 'server' })).data();
+  if (!d || d.undone) return;
+  const t = root.WorkSyncFirestore.firestoreTransport(fb), doc = await fb.firestore().collection('users').doc(uid).collection('records_v1').doc(d.syncId).get({ source: 'server' });
+  const version = doc.exists ? doc.get('version') : 0;
+  // Only while the item is still what the assistant left; a later change by the person wins.
+  if ((doc.exists ? doc.get('payload') ?? null : null) !== (d.after ?? null)) throw Error('changed');
+  const proposed = { syncId: d.syncId, type: d.type || 'entry', version: version + 1, operation: d.syncId + ':undo-' + P().randomId(), deleted: d.before == null, payload: d.before ?? null };
+  const accepted = await t.exchange(uid, version, proposed);
+  if (accepted.operation !== proposed.operation) throw Error('changed');
+  await ref.update({ undone: true });
+}
+
 const GOOGLE = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
 
-root.KisAccount = { init, storageFor, scoped, readState, settingsHtml, bindSettings, conflictsSheet, state: account };
+root.KisAccount = { init, storageFor, scoped, readState, settingsHtml, bindSettings, conflictsSheet, assistantsSheet, state: account };
 })(globalThis);
