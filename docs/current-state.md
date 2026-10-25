@@ -1,4 +1,4 @@
-# Android 2.0.8 candidate ready (not published) — 2026-10-25
+# Android 2.0.8 and the website published — 2026-10-25
 
 Branch `claude/project-thread-cudbls` (includes the job team from `claude/project-thread-l42q3d`); website
 `claude/project-thread-cudbls-web` (on top of `claude/project-thread-l42q3d-web`). Signed candidate run 40164989307
@@ -8,7 +8,10 @@ private artifact `salary-2.0.8-candidate`. Changes: the in-app keypad is gone (t
 fields, `KeySink`/`TypingBar`), digit-by-digit time editing on the clock (tap a digit / the whole time; a full time
 takes more digits only on its last one; no jump to the end; an impossible hour is refused), calmer light mode (ink
 #1B2335, chosen days/tabs/currency white with an ink edge, the add page glows in the place's colour). The website
-mirrors all of it. Waiting for the owner's approval to publish.
+mirrors all of it. Owner approved ("לפרסם את שניהם"). Published through the update channel: run 40166702985
+SUCCESS, release `android-v2.0.8`, asset `Salary2.0.8.apk`. Website production deployment
+dpl_2jRXkJKyDXbkur9ver3mj7UfMVBD from `codex/download-and-management-20261020` @ 755740b, READY on
+salary-calculation-eta.vercel.app. The next Android version must be above 2.0.8 (versionCode > 41).
 
 # Android 2.0.7 and the recap website published — 2026-10-23
 
