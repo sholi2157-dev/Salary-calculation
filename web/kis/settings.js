@@ -163,9 +163,13 @@ function placeSheet(app, oldName, done) {
 function monthSummary(app, month) { root.KisSummaryUi.monthSummary(app, month); }
 
 /** What arrived (a monthly summary opens again). The switches are in Settings. */
-/** The notes to show: a recap that has not opened yet (or never will, like before the first one) stays out. */
-function notes(store) {
-  return store.recent().filter(n => n.kind !== 'monthly' || root.KisSummaryUi.isOpen(n.scope || root.KisSummaryUi.scopeOf(n.month)));
+/**
+ * The notes to show. Nothing stays forever: a note goes after 14 days; a recap shows only once it opened (and stays
+ * while it was not watched). Same rules as the app (PlanJobs.notes).
+ */
+const NOTE_DAYS = 14;
+function notes(store, now = Date.now()) {
+  return store.recent().filter(n => n.kind === 'monthly' ? root.KisSummaryUi.isOpen(n.scope || root.KisSummaryUi.scopeOf(n.month)) : now - n.time < NOTE_DAYS * 864e5);
 }
 /** The bell's dot: anything new since the bell was opened, and a recap until it is actually watched. */
 function unread(store) {
@@ -176,9 +180,11 @@ function notificationsSheet(app) {
   store.setLocal('seenAt', Date.now(), true);
   U().sheet('notifications-sheet', (el, close) => {
     el.innerHTML = `<h2>התראות</h2>${list.length ? '' : '<p class="caption" data-testid="notifications-empty">אין התראות</p>'}
-      <div class="list">${list.map((n, i) => `<button class="shift" data-i="${i}" data-testid="recent-note-${i}" ${n.month == null ? 'style="cursor:default"' : ''}><span class="meta"><b class="label">${esc(n.title)}${n.kind === 'monthly' && n.scope && !n.opened ? ' <span class="chip" style="min-height:0;padding:2px 8px;font-size:12px">חדש</span>' : ''}</b><span class="sub">${esc(n.text)}</span><span class="caption">${U().shortDate(n.time)}</span></span></button>`).join('')}</div>
+      <div class="list">${list.map((n, i) => `<button class="shift" data-i="${i}" data-testid="recent-note-${i}" ${n.month == null && n.kind !== 'ai' ? 'style="cursor:default"' : ''}><span class="meta"><b class="label">${esc(n.title)}${n.kind === 'monthly' && n.scope && !n.opened ? ' <span class="chip" style="min-height:0;padding:2px 8px;font-size:12px">חדש</span>' : ''}</b><span class="sub">${esc(n.text)}</span><span class="caption">${U().shortDate(n.time)}</span></span></button>`).join('')}</div>
       <button class="btn ghost" data-a="settings" data-testid="notifications-settings">הגדרות התראות</button>`;
-    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const n = list[+b.dataset.i]; if (n.month == null) return; close();
+    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const n = list[+b.dataset.i];
+      if (n.kind === 'ai') { close(); root.KisAccount.assistantsSheet({ explain: true }); return; }
+      if (n.month == null) return; close();
       if (n.scope) root.KisSummaryUi.story(app, n.scope); else monthSummary(app, n.month); });
     el.querySelector('[data-a=settings]').onclick = () => { close(); app.go('settings'); };
   }, { onClose: () => app.refresh() });

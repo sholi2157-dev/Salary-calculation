@@ -19,6 +19,14 @@ const server = http.createServer((q, r) => {
   r.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store' }); fs.createReadStream(f).pipe(r);
 });
 const tid = t => `[data-testid="${t}"]`;
+/** The 2.1 intro comes once per browser before the sign-in: the animated words, then how it works. */
+async function pastIntro(p, shots) {
+  await p.waitForSelector(tid('intro-line-3')); await p.waitForTimeout(2600);
+  if (shots) await p.screenshot({ path: path.join(OUT, 'intro-1-390.png') });
+  await p.click(tid('intro-next')); await p.waitForSelector(tid('intro-next-2')); await p.waitForTimeout(900);
+  if (shots) await p.screenshot({ path: path.join(OUT, 'intro-2-390.png') });
+  await p.click(tid('intro-next-2')); await p.waitForSelector(tid('signin-google'));
+}
 const seed = { entries: [
   { id: 'local-1', category: 'מסעדה', date: 1760000000000, createdAt: 1760000000500, isTimeRange: true, startTime: '09:00', endTime: '17:00', hours: 8, hourlyRate: 40.25, totalEarnings: 322, isPaid: false, notes: 'ראשונה', currency: '₪', isGroupShift: false, employerRate: null, workerRate: null, groupWorkersJson: '' },
   { id: 'local-2', category: 'מסעדה', date: 1760086400000, createdAt: 1760086400500, isTimeRange: false, startTime: null, endTime: null, hours: 5, hourlyRate: 40.25, totalEarnings: 201.25, isPaid: true, notes: '', currency: '₪', isGroupShift: false, employerRate: null, workerRate: null, groupWorkersJson: '' }],
@@ -58,10 +66,18 @@ const env = { MCP_SECRET: 'synthetic-test-secret-' + 'q'.repeat(32), FIRESTORE_E
     await ctx.addInitScript(d => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.clear();
       localStorage.setItem('work_complete_backup', JSON.stringify(d)); localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true })); } }, seed);
     const page = await ctx.newPage(); page.on('pageerror', e => errors.push(e.message));
-    await page.goto(base); await page.waitForSelector(tid('signin-google'));
+    await page.goto(base); await pastIntro(page);
     await signIn(page, email, true); await page.waitForSelector(tid('signin'), { state: 'detached' });
     await page.click(tid('tab-settings')); await until(async () => /מסונכרן/.test(await page.textContent(tid('account-status'))), 'first sync');
     const refreshToken = await page.evaluate(() => firebase.auth().currentUser.refreshToken);
+    // The bell invites once to connect an assistant; the note opens the explanation with the address.
+    await page.click(tid('tab-home')); await page.click(tid('home-bell'));
+    assert.match(await page.textContent(tid('recent-note-0')), /מחברים את ה-AI שלך/);
+    await page.click(tid('recent-note-0')); await page.waitForSelector(tid('assistants-url'));
+    assert.match(await page.textContent(tid('assistants-sheet')), /הרשאות[\s\S]*בטוח/);
+    await page.waitForTimeout(700); await page.screenshot({ path: path.join(OUT, 'assistants-explain-390.png') });
+    await page.keyboard.press('Escape'); await page.waitForSelector(tid('assistants-sheet'), { state: 'detached' });
+    await page.click(tid('tab-settings'));
     // The assistant connects (the approval the person gives on /connect) and adds a shift.
     const [, client] = A.register(env, { redirect_uris: ['https://assistant.example/cb'], client_name: 'ChatGPT' });
     const verifier = crypto.randomUUID() + crypto.randomUUID(), challenge = require('node:crypto').createHash('sha256').update(verifier).digest('base64url');

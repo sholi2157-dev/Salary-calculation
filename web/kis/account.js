@@ -70,6 +70,12 @@ function signedIn(fb, user) {
   if (before !== user.uid && storageFor(localStorage) !== app.storage) { location.reload(); return; }
   account.user = user; account.status = 'syncing'; hideGate();
   if (!app.store.local.name && user.displayName) app.store.setLocal('name', user.displayName.split(' ')[0].slice(0, 40), true);
+  // 2.1: once per browser, the bell invites to connect a personal AI assistant.
+  if (localStorage.getItem('kis_ai_invited_v1') !== '1') {
+    localStorage.setItem('kis_ai_invited_v1', '1');
+    app.store.addRecent({ kind: 'ai', title: 'מחברים את ה-AI שלך', text: 'כמה דקות, ואפשר לשאול את ChatGPT או Claude על המשמרות. נגיעה להסבר', time: Date.now(), month: null });
+    app.refresh?.();
+  }
   const transport = root.WorkSyncFirestore.firestoreTransport(fb);
   account.sync = root.WorkSync.createSync({ store: app.store, storage: app.storage, uid: user.uid, deviceId: deviceId(localStorage), transport,
     currentUid: () => fb.auth().currentUser?.uid || null });
@@ -101,7 +107,9 @@ function schedule(ms) {
 }
 const changed = () => document.dispatchEvent(new CustomEvent('kis-account'));
 
-// ---- the sign-in screen ----
+// ---- the sign-in screen, the first time after the 2.1 intro ----
+const INTRO = 'kis_ai_intro_v1';
+let introStep = null;
 function showGate() {
   // Automated checks of the public site run without an account.
   if (localStorage.getItem('kis_signin_skip_v1') === '1') return;
@@ -109,13 +117,34 @@ function showGate() {
   gate = document.createElement('div');
   gate.className = 'launch signin'; gate.dataset.testid = 'signin'; gate.setAttribute('role', 'dialog'); gate.setAttribute('aria-modal', 'true'); gate.setAttribute('aria-labelledby', 'signin-title');
   document.body.append(gate);
+  if (introStep == null) introStep = localStorage.getItem(INTRO) === '1' ? 2 : 0;
   draw();
+}
+/** What it is, how to connect, the permissions and why it is safe: in the intro and behind the bell's invitation. */
+function explainCards(withHow = true) {
+  return [['מה זה', 'מדברים עם העוזר בשפה רגילה: "כמה הרווחתי החודש?" או "תוסיף משמרת מחר מ-9 עד 5 במסעדה". הוא עונה ומעדכן לפי המשמרות שלך.'],
+    ['איך מחברים', 'בהגדרות העוזר מוסיפים חיבור (Connector) עם הכתובת שמופיעה בהגדרות ← עוזרי AI. נפתח דף, מתחברים עם Google ובוחרים מה מותר לו.'],
+    ['הרשאות', 'לראות משמרות מותר תמיד. להוסיף, לערוך או למחוק רק אם הפעלת. בוחרים לכמה זמן: שעה, יום, 30 יום או עד שתנתק.'],
+    ['בטוח', 'העוזר רואה רק את המשמרות שלך ולא מקבל את הסיסמה. כל שינוי שלו נרשם ואפשר לבטל אותו, ומנתקים אותו בכל רגע.']]
+    .filter(([t]) => withHow || t !== 'איך מחברים').map(([t, b], i) => `<div class="card intro-card" style="--d:${(i * 0.12).toFixed(2)}s"><b>${t}</b><p style="margin:4px 0 0">${b}</p></div>`).join('');
 }
 function draw() {
   const offline = account.status === 'offline';
+  if (introStep < 2) {
+    const updated = (app?.store?.local?.launched || 0) >= 2;
+    gate.innerHTML = introStep === 0
+      ? `<div class="launch-in"><div class="grow"></div><h1 class="launch-words" id="signin-title"><span style="--d:.15s" data-testid="intro-line-1">${updated ? 'גרסה 2.1.' : 'ברוכים הבאים.'}</span><span style="--d:.7s" data-testid="intro-line-2">ה-AI שלך</span><span style="--d:1.15s" data-testid="intro-line-3">מכיר את המשמרות.</span></h1>
+        <p class="caption intro-sub" style="--d:1.7s">שואלים את ChatGPT, Claude או עוזר אחר כמה הרווחת, מבקשים ממנו לרשום משמרת, והוא עושה את זה בשבילך.</p>
+        <div class="grow"></div><button class="btn primary" data-a="next" data-testid="intro-next">הבא</button></div>`
+      : `<div class="launch-in"><h1 class="launch-ask" id="signin-title" style="margin-top:8px">איך זה עובד</h1>${explainCards()}
+        <div class="grow"></div><button class="btn primary" data-a="next" data-testid="intro-next-2">הבא</button></div>`;
+    gate.querySelector('[data-a=next]').onclick = () => { introStep++; if (introStep === 2) localStorage.setItem(INTRO, '1'); draw(); };
+    gate.querySelector('[data-a=next]').focus({ preventScroll: true });
+    return;
+  }
   gate.innerHTML = `<div class="launch-in"><div class="grow"></div>${U().logo(56)}
-    <h1 class="launch-ask" id="signin-title">מתחברים עם Google</h1>
-    <p style="margin:0">כך המשמרות נשמרות בחשבון שלך ומסתנכרנות בין האתר לאפליקציה.</p>
+    <h1 class="launch-ask" id="signin-title">מחברים את חשבון Google</h1>
+    <p style="margin:0">פעם אחת, וכך האתר, האפליקציה והעוזר שלך רואים את אותן משמרות.</p>
     <p class="caption" style="margin:0">מה שכבר רשום כאן נשאר ועובר לחשבון.</p>
     <div class="grow"></div>
     ${offline ? '<p class="caption" role="status" style="margin:0" data-testid="signin-offline">אין חיבור לאינטרנט. אפשר להמשיך לעבוד כאן, וכשהחיבור יחזור נבקש להתחבר.</p>' : ''}
@@ -198,7 +227,7 @@ function conflictsSheet() {
 // ---- personal AI assistants: who is connected, what they did, cutting off and undoing ----
 const PERM_LABEL = { 'shifts.read': 'קריאה', 'shifts.add': 'הוספה', 'shifts.edit': 'עריכה', 'shifts.delete': 'מחיקה' };
 const TOOL_LABEL = { add_shift: 'הוסיף', update_shift: 'ערך', delete_shift: 'מחק' };
-async function assistantsSheet() {
+async function assistantsSheet(opts = {}) {
   if (!account.user) return;
   const fb = await loadFirebase(), uid = account.user.uid, me = fb.firestore().collection('users').doc(uid);
   const { esc } = U(), mcpUrl = location.origin + '/mcp';
@@ -211,7 +240,7 @@ async function assistantsSheet() {
       } catch { el.innerHTML = '<h2>עוזרי AI</h2><p class="caption">אין חיבור כרגע. נסה שוב בעוד רגע.</p>'; return; }
       const live = grants.filter(g => !g.get('until') || Date.parse(g.get('until')) > Date.now());
       el.innerHTML = `<h2>עוזרי AI</h2>
-        <p class="caption" style="margin:0">עוזר מחובר יכול לענות על שאלות על המשמרות שלך, לסכם, ולפי מה שאישרת גם להוסיף, לערוך או למחוק. הוא רואה רק את המשמרות שלך.</p>
+        ${opts.explain ? explainCards(false) : '<p class="caption" style="margin:0">עוזר מחובר יכול לענות על שאלות על המשמרות שלך, לסכם, ולפי מה שאישרת גם להוסיף, לערוך או למחוק. הוא רואה רק את המשמרות שלך.</p>'}
         <div class="card" style="display:grid;gap:8px;background:var(--sunk)"><b>איך מחברים</b>
           <div class="caption">בהגדרות העוזר, בחיבורים (Connectors), מוסיפים חיבור חדש עם הכתובת:</div>
           <div class="row" style="align-items:center"><code class="grow" dir="ltr" style="overflow-wrap:anywhere" data-testid="assistants-url">${esc(mcpUrl)}</code><button class="chip" data-x="copy">העתקה</button></div>
