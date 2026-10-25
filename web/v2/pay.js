@@ -127,23 +127,41 @@ function workers(e) {
     workerRate: isNull(o, 'workerRate') ? null : getDouble(o, 'workerRate'),
     employerRate: isNull(o, 'employerRate') ? null : getDouble(o, 'employerRate'),
     source: o,
+    // A fixed sum for this worker; used only on a job team (קבלנות), where it replaces hours × rate.
+    amount: isNull(o, 'amount') ? null : (v => Number.isFinite(v) ? v : null)(optDouble(o, 'amount', NaN)),
    };
   });
  } catch { return []; }
 }
 
-/** A worker without their own rate follows the shift rate, so it is unknown while that is. */
-const workerRate = (w, e) => w.workerRate ?? e.workerRate ?? (payKnownOf(e) ? e.hourlyRate : null);
+/**
+ * A job with a team. Its totalEarnings is what is left for the user after the team is paid, so every
+ * total and summary counts only the user's own income; the job's full price is that plus the team's pay.
+ */
+const isTeamJob = e => isJob(e) && !!e.isGroupShift;
+/** A worker without their own rate follows the shift rate, so it is unknown while that is. A job has no hourly rate to follow. */
+const workerRate = (w, e) => isJob(e) ? w.workerRate ?? e.workerRate ?? null : w.workerRate ?? e.workerRate ?? (payKnownOf(e) ? e.hourlyRate : null);
 const employerRate = (w, e) => w.employerRate ?? e.employerRate ?? (payKnownOf(e) ? e.hourlyRate : null);
-/** What the worker should receive: their hours at the worker rate plus their own bonus. */
-function workerPay(w, e) { const r = workerRate(w, e); return r == null ? null : amount(w.hours, r, w.bonus); }
-/** What the employer pays for this worker. A worker's bonus is passed through, not profit. */
-function employerPay(w, e) { const r = employerRate(w, e); return r == null ? null : amount(w.hours, r, w.bonus); }
+/** What the worker should receive: a fixed sum on a job team, otherwise their hours at the worker rate plus their own bonus. */
+function workerPay(w, e) {
+ if (isJob(e) && w.amount != null) return Math.round((w.amount + w.bonus) * 100) / 100;
+ const r = workerRate(w, e); return r == null ? null : amount(w.hours, r, w.bonus);
+}
+/** What the employer pays for this worker. A worker's bonus is passed through, not profit. On a job the client pays one price, so it is the worker's pay. */
+function employerPay(w, e) { if (isJob(e)) return workerPay(w, e); const r = employerRate(w, e); return r == null ? null : amount(w.hours, r, w.bonus); }
+/** The team's pay on a job, or null while any worker's pay is missing. */
+function teamPay(e) {
+ let sum = 0;
+ for (const w of workers(e)) { const p = workerPay(w, e); if (p == null) return null; sum += p; }
+ return Math.round(sum * 100) / 100;
+}
 
 /** {employerTotal, profit, myNet}, or null while any part is unknown: a partial group total would be misleading. */
 function group(e) {
  const own = pay(e);
  if (own == null) return null;
+ // A job: the client pays one price; the team's part comes out of it and the rest is the user's.
+ if (isJob(e)) { const team = teamPay(e); return team == null ? null : { employerTotal: Math.round((own + team) * 100) / 100, profit: 0, myNet: own }; }
  let employer = 0, profit = 0;
  for (const w of workers(e)) {
   const er = employerRate(w, e); if (er == null) return null;
@@ -155,12 +173,13 @@ function group(e) {
  return { employerTotal: r(own + employer), profit: r(profit), myNet: r(own + profit) };
 }
 
-/** Back to groupWorkersJson; keys of `source` keep their place, bonus is written only when > 0. */
-function encodeWorkers(list) {
+/** Back to groupWorkersJson; keys of `source` keep their place, bonus is written only when > 0. On a job team exactly one of amount / workerRate is written. */
+function encodeWorkers(list, job = false) {
  return JSON.stringify(list.map(w => {
   const o = JSON.parse(JSON.stringify(w.source ?? {}));
   o.name = w.name; o.hours = w.hours; o.isPaid = w.isPaid;
   if (w.bonus > 0) o.bonus = w.bonus; else delete o.bonus;
+  if (job) { if (w.amount != null) { o.amount = w.amount; delete o.workerRate; } else { delete o.amount; o.workerRate = w.workerRate ?? null; } }
   return o;
  }));
 }
@@ -195,7 +214,7 @@ function report(entries, workerName = null) {
 }
 
 const api = { KIND_SHIFT, KIND_JOB, isJob, payKnown: payKnownOf, bonus: bonusOf, pay, known, pending, amount, missingLabel, totals,
- workers, workerRate, employerRate, workerPay, employerPay, group, encodeWorkers,
+ workers, workerRate, employerRate, workerPay, employerPay, group, encodeWorkers, isTeamJob, teamPay,
  format, summary, report, moneyWorkerRate, moneyEmployerRate, fixed2, hours, javaParseDouble };
 if (typeof module !== 'undefined') module.exports = api; else root.KisPay = api;
 })(globalThis);
