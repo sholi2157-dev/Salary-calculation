@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
@@ -15,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,8 +40,8 @@ object AiIntro {
 
 /**
  * The sign-in screen. The first time it comes with the 2.1 intro: a few animated words about the AI connection
- * ([updated] says whether this phone had the app before), then what it is, how to connect, the permissions and why it
- * is safe, and only then the Google sign-in. [onLater] only exists while there is no internet.
+ * ([updated] says whether this phone had the app before), then a short "just ask" screen, and only then the Google
+ * sign-in. What it is, the permissions and why it is safe live in Settings and behind the bell. [onLater] only exists while there is no internet.
  */
 @Composable
 fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () -> Unit, updated: Boolean = true) {
@@ -60,15 +62,20 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
                     IntroRise(if (updated) "גרסה 2.1." else "ברוך הבא.", 150, "intro_line_1")
                     IntroRise("ה-AI שלך", 700, "intro_line_2")
                     IntroRise("מכיר את המשמרות.", 1150, "intro_line_3")
-                    IntroRise("שואלים את ChatGPT, Claude או עוזר אחר כמה הרווחת, מבקשים ממנו לרשום משמרת, והוא עושה את זה בשבילך.", 1700, "intro_line_4", small = true)
+                    IntroRise("שואלים את ChatGPT, Claude, Grok, Muse, Instinct או כל עוזר אחר כמה הרווחת, מבקשים לרשום משמרת, והוא עושה את זה בשבילך.", 1700, "intro_line_4", small = true)
                     Spacer(Modifier.weight(1f))
                     KisButton("הבא", { step = 1 }, Modifier.fillMaxWidth(), height = 56.dp, tag = "intro_next")
                 }
                 1 -> {
-                    Text("איך זה עובד", style = KisType.page.copy(fontSize = 34.sp, lineHeight = 40.sp), color = c.ink, modifier = Modifier.padding(top = 8.dp).semantics { heading() })
-                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        AiExplainCards()
-                    }
+                    Spacer(Modifier.weight(1f))
+                    IntroRise("פשוט מבקשים.", 100, "intro_how_title")
+                    Spacer(Modifier.height(8.dp))
+                    IntroBubble("כמה הרווחתי החודש?", 550, mine = true)
+                    IntroBubble("2,140 ₪ על 15 משמרות.", 1000, mine = false)
+                    IntroBubble("תרשום מחר 9 עד 5.", 1500, mine = true)
+                    IntroBubble("רשמתי ✓", 1950, mine = false)
+                    IntroRise("מתחברים פעם אחת, וזהו.", 2450, "intro_how_sub", small = true)
+                    Spacer(Modifier.weight(1f))
                     KisButton("הבא", { step = 2 }, Modifier.fillMaxWidth(), height = 56.dp, tag = "intro_next_2")
                 }
                 else -> {
@@ -100,6 +107,20 @@ private fun IntroRise(text: String, delayMs: Long, tag: String, small: Boolean =
         color = if (small) Kis.colors.muted else Kis.colors.ink,
         modifier = Modifier.fillMaxWidth().padding(top = if (small) 14.dp else 0.dp)
             .graphicsLayer { alpha = shown.value; translationY = (1f - shown.value) * 28.dp.toPx() }.testTag(tag))
+}
+
+/** A chat line in the intro's "פשוט מבקשים" screen: what you ask ([mine]) on one side, the assistant's answer on the other. */
+@Composable
+private fun IntroBubble(text: String, delayMs: Long, mine: Boolean) {
+    val c = Kis.colors
+    val shown = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(delayMs); shown.animateTo(1f, androidx.compose.animation.core.tween(450)) }
+    Box(Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
+        Text(text, style = KisType.body.copy(fontSize = 22.sp, lineHeight = 30.sp, fontWeight = FontWeight.SemiBold),
+            color = if (mine) c.ink else c.onInk,
+            modifier = Modifier.graphicsLayer { alpha = shown.value; translationY = (1f - shown.value) * 18.dp.toPx() }
+                .clip(RoundedCornerShape(22.dp)).background(if (mine) c.surface else c.ink).padding(horizontal = 18.dp, vertical = 12.dp))
+    }
 }
 
 /** What it is, how to connect, the permissions and why it is safe: in the intro and behind the bell's invitation. */
