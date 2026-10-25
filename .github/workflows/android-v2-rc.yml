@@ -13,13 +13,13 @@ concurrency:
   group: android-v2-rc-${{ github.ref }}
   cancel-in-progress: true
 env:
-  RC_CODE: '40'
-  RC_NAME: '2.0.7'
+  RC_CODE: '41'
+  RC_NAME: '2.0.8'
   # The previously delivered 2.0 candidate (owner's phone): its exact bytes come from that run's artifact.
-  PREV_RUN: '39874204743'
-  PREV_SHA: '5584a987dcda7b1a5539e3e986763fce8c17ee8811076d7a142ccd63bf01687a'
-  PREV_CODE: '39'
-  PREV_NAME: '2.0.6'
+  PREV_RUN: '39998442873'
+  PREV_SHA: '722d893e73162e24d9ed70ffedb21b6dedbe8526d36c98b06449dc2890f7c690'
+  PREV_CODE: '40'
+  PREV_NAME: '2.0.7'
 jobs:
   candidate:
     if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[v2-rc]') }}
@@ -50,7 +50,7 @@ jobs:
       - name: Previously delivered 2.0 candidate (exact bytes from its own run)
         uses: actions/download-artifact@v4
         with:
-          name: salary-2.0.6-candidate
+          name: salary-2.0.7-candidate
           path: prev-rc
           run-id: ${{ env.PREV_RUN }}
           github-token: ${{ github.token }}
@@ -117,7 +117,7 @@ jobs:
       - name: Candidate for owner review only; never publish a Release
         uses: actions/upload-artifact@v4
         with:
-          name: salary-2.0.7-candidate
+          name: salary-2.0.8-candidate
           path: |
             candidate-b.apk
             release-evidence/
