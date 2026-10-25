@@ -48,23 +48,24 @@ function render(el, app) {
   el.innerHTML = `
   <div class="hello">${U().logo()}<div><div class="caption" data-testid="home-greeting">${esc(name ? greeting() + ', ' + name : greeting())}</div><div class="label" style="font-size:16px">שכר עבודות אישי</div></div>
     <div class="hello-actions"><button class="apk-entry" data-act="android-download" data-testid="android-download-entry" aria-label="הורדת האפליקציה לאנדרואיד">↓ אפליקציה</button><button class="round-btn" data-act="bell" data-testid="home-bell" aria-label="${unread ? 'התראות · יש חדשות' : 'התראות'}">${U().ICON.bell}${unread ? `<span class="dot" style="background:${U().accent(me)}" data-testid="home-bell-dot"></span>` : ''}</button></div></div>
-  <section class="hero-card" data-testid="home-hero">
+  <div class="home-top"><section class="hero-card" data-testid="home-hero">
     <div class="label" style="color:var(--muted);font-weight:500">השבוע</div>
     <div style="display:flex;gap:18px;align-items:flex-end;overflow-x:auto;margin-top:6px">${hero}</div>
     ${totalH > 0 ? `<div class="progress">${byCat.map(([c, h]) => `<span style="width:${Math.max(1, h / totalH * 100)}%;background:${accent(placeOf(c, store))};margin-inline-end:3px;border-radius:3px"></span>`).join('')}</div>` : ''}
     <div class="legend" style="${totalH > 0 ? '' : 'margin-top:8px'}"><span data-testid="home-week-count">${week.length === 1 ? 'משמרת אחת השבוע' : week.length + ' משמרות השבוע'}</span>
       ${plannedWeek ? `<span>עוד ${plannedWeek} מתוכננות</span>` : ''}${byCat.slice(0, 3).map(([c]) => `<span><i style="background:${accent(placeOf(c, store))}"></i>${esc(c)}</span>`).join('')}</div>
-    <div class="tiles">${tile('היום', today, null, 'home-today')}${tile('מכל הזמנים', done, done.length === 1 ? 'משמרת אחת' : done.length + ' משמרות', 'home-all')}</div>
-    ${pending ? `<button class="pending-flag" data-act="pending" data-testid="pending-flag">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}
   </section>
-  <section class="now-row" data-testid="now-row">${t ? liveCard(t) : '<button class="now" data-act="start" data-testid="live-start"><span class="dot"></span>אני מתחיל עכשיו</button>'}</section>
-  ${fresh.map(scope => `<button class="story-entry home-recap" data-recap="${scope}" data-testid="home-recap-${scope}"><span><b>${esc(scope.length === 4 ? `השנה ${scope} שלך בכיס` : `${U().MONTHS[Number(scope.slice(5)) - 1]} שלך בכיס`)}</b><small>${scope.length === 4 ? 'הסיכום השנתי מוכן' : 'הסיכום החודשי מוכן'}</small></span>${U().logo(34)}</button>`).join('')}
-  ${nextItems.length ? `<div class="section-title"><h2>הבא בתור</h2><button class="link" data-act="all-planned" data-testid="next-all">הכול</button></div>
-    <div class="list" data-testid="next-up">${nextItems.map(x => x.e ? shiftCard(x.e, store, { tag: 'next' }) : root.KisPlans.card(x.o, store)).join('')}</div>` : ''}
-  ${recent.length ? `<div class="section-title"><h2>אחרונות</h2><button class="link" data-act="history">הכול</button></div>
-    <div class="list">${recent.map(e => shiftCard(e, store, { tag: 'recent' })).join('')}</div>` : ''}
-  ${wallet.length ? `<div class="section-title"><h2>הכיס של החודש</h2><button class="link" data-act="month" data-testid="home-month-summary">סיכום</button></div><div class="list">${wallet.map(([c, rows]) => {
-      const tt = sortedTotals(rows); return `<div class="shift" style="cursor:default">${U().avatar(c, store)}<span class="meta"><b class="label">${esc(c)}</b><span class="sub">${rows.length === 1 ? 'משמרת אחת' : rows.length + ' משמרות'} · ${U().hours(rows.reduce((s, e) => s + e.hours, 0))} ש׳</span></span><span class="pay">${tt.map(([cur, v]) => moneyHtml(v, cur)).join(' ') || '—'}</span></div>`; }).join('')}</div>` : ''}
+  <div class="home-side"><div class="tiles">${tile('היום', today, null, 'home-today')}${tile('מכל הזמנים', done, done.length === 1 ? 'משמרת אחת' : done.length + ' משמרות', 'home-all')}</div>
+    ${pending ? `<div><button class="pending-flag" data-act="pending" data-testid="pending-flag">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button></div>` : ''}
+    <section class="now-row" data-testid="now-row">${t ? liveCard(t) : '<button class="now" data-act="start" data-testid="live-start"><span class="dot"></span>אני מתחיל עכשיו</button>'}</section>
+  ${fresh.map(scope => `<button class="story-entry home-recap" data-recap="${scope}" data-testid="home-recap-${scope}"><span><b>${esc(scope.length === 4 ? `השנה ${scope} שלך בכיס` : `${U().MONTHS[Number(scope.slice(5)) - 1]} שלך בכיס`)}</b><small>${scope.length === 4 ? 'הסיכום השנתי מוכן' : 'הסיכום החודשי מוכן'}</small></span>${U().logo(34)}</button>`).join('')}</div></div>
+  <div class="home-cols">
+  ${nextItems.length ? `<section class="home-block"><div class="section-title"><h2>הבא בתור</h2><button class="link" data-act="all-planned" data-testid="next-all">הכול</button></div>
+    <div class="list" data-testid="next-up">${nextItems.map(x => x.e ? shiftCard(x.e, store, { tag: 'next' }) : root.KisPlans.card(x.o, store)).join('')}</div></section>` : ''}
+  ${recent.length ? `<section class="home-block"><div class="section-title"><h2>אחרונות</h2><button class="link" data-act="history">הכול</button></div>
+    <div class="list">${recent.map(e => shiftCard(e, store, { tag: 'recent' })).join('')}</div></section>` : ''}
+  ${wallet.length ? `<section class="home-block"><div class="section-title"><h2>הכיס של החודש</h2><button class="link" data-act="month" data-testid="home-month-summary">סיכום</button></div><div class="list">${wallet.map(([c, rows]) => {
+      const tt = sortedTotals(rows); return `<div class="shift" style="cursor:default">${U().avatar(c, store)}<span class="meta"><b class="label">${esc(c)}</b><span class="sub">${rows.length === 1 ? 'משמרת אחת' : rows.length + ' משמרות'} · ${U().hours(rows.reduce((s, e) => s + e.hours, 0))} ש׳</span></span><span class="pay">${tt.map(([cur, v]) => moneyHtml(v, cur)).join(' ') || '—'}</span></div>`; }).join('')}</div></section>` : ''}</div>
   ${entries.length ? '' : '<div class="empty"><h3>ברוך הבא</h3></div>'}`;
 
   el.querySelector('[data-act=android-download]').onclick = () => root.KisDownload.open();

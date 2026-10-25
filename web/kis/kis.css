@@ -361,3 +361,27 @@ button { cursor: pointer; }
 .history-tool { width:44px; height:44px; flex-shrink:0; border-radius:12px; border:1.5px solid var(--line); background:var(--surface); }
 
 .title-row:has(.history-tool) { gap:6px; }
+
+/* ---- A computer (wide window): navigation as a side bar, wider pages, home and settings in columns ---- */
+.nav-brand { display: none; }
+@media (min-width: 1024px) {
+  body { padding-inline-start: 264px; }
+  .nav-wrap { inset-block: 16px; inset-inline-start: 16px; inset-inline-end: auto; bottom: 16px; width: 232px; display: block; }
+  .nav { height: 100%; flex-direction: column; align-items: stretch; gap: 4px; padding: 18px 12px; border-radius: 26px; }
+  .nav-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; color: var(--nav-ink); font-size: 15px; }
+  .nav .add { order: -1; width: auto; min-height: 52px; margin-bottom: 14px; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .nav .add::after { content: 'משמרת חדשה'; }
+  .nav-brand { order: -2; }
+  .nav button[data-page] { text-align: start; padding: 0 16px; font-size: 15px; min-height: 48px; }
+  .nav button[data-page]:hover:not([aria-current="page"]) { background: color-mix(in srgb, var(--nav-ink) 8%, transparent); }
+  .kis-page { max-width: 1080px; padding: 24px 32px 48px; }
+  .home-top { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  .home-top .hero-card { margin-top: 18px; }
+  .home-side { display: grid; gap: 12px; margin-top: 18px; }
+  .home-side .tiles, .home-side .now-row, .home-side .pending-flag { margin-top: 0; }
+  .home-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0 24px; align-items: start; }
+  .set-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; align-items: start; }
+  .set-groups .set-group:first-child { grid-column: 1 / -1; }
+  .shift:hover { box-shadow: 0 0 0 1.5px var(--line); }
+}
+@media (min-width: 1024px) { .kis-page[data-page="history"] { max-width: 860px; } }

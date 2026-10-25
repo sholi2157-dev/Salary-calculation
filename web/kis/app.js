@@ -23,6 +23,7 @@ function render() {
   if (app.editorOpen) return; // the editor owns the screen; the pages redraw when it closes
   const main = document.getElementById('page');
   const opts = app.pageOpts || {}; app.pageOpts = {};
+  main.dataset.page = app.page;
   if (store.broken) { main.innerHTML = `<div class="card" role="alert"><h2>אי אפשר לקרוא את הנתונים השמורים</h2><p class="caption">${U().esc(store.broken)}. לא בוצע שום שינוי. אפשר לשחזר מגיבוי בהגדרות.</p></div>`; }
   else if (app.page === 'history') root.KisHistory.render(main, app, opts);
   else if (app.page === 'settings') root.KisSettings.render(main, app);
@@ -107,6 +108,8 @@ function start() {
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { app.applyTheme(); render(); });
   document.querySelectorAll('.nav [data-page]').forEach(b => b.onclick = () => { root.KisHistory.state.selection.clear(); app.go(b.dataset.page); });
   document.querySelector('.nav [data-a=add]').onclick = () => app.openNew();
+  // On a computer the navigation is a side bar with the app's name (hidden on a phone).
+  document.querySelector('.nav').insertAdjacentHTML('afterbegin', `<div class="nav-brand" aria-hidden="true">${U().logo(34)}<b>שכר עבודות אישי</b></div>`);
   store.subscribe(render);
   // Another tab changed the data: read it again (never overwrite it with an older copy).
   window.addEventListener('storage', e => { const k = e.key && e.key.replace(/^acct:[^:]+:/, ''); if (!k || ['work_complete_backup', 'work_series_v1', 'kis_web_v1'].includes(k) || k.startsWith('work_active_shift_v1')) { store.load(); render(); } });

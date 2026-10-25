@@ -31,10 +31,11 @@ function loadFirebase() {
   if (firebaseReady) return firebaseReady;
   const script = name => new Promise((ok, fail) => { const s = document.createElement('script'); s.src = SDK + name + '-compat.js'; s.onload = ok; s.onerror = fail; document.head.append(s); });
   firebaseReady = (async () => {
-    if (typeof root.firebase === 'undefined') { await script('app'); await Promise.all([script('auth'), script('firestore')]); }
+    // The configuration first: a site without accounts never downloads Google's code.
     const response = await fetch('/api/config', { cache: 'no-store' });
     const config = response.ok ? await response.json() : null;
     if (!config?.firebase) throw Error('config');
+    if (typeof root.firebase === 'undefined') { await script('app'); await Promise.all([script('auth'), script('firestore')]); }
     if (!root.firebase.apps.length) root.firebase.initializeApp(config.firebase);
     return root.firebase;
   })();
