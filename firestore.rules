@@ -15,5 +15,14 @@ service cloud.firestore {
         && request.resource.data.kind in ['new', 'update']
         && request.resource.data.at == request.time;
     }
+    // Anonymous download count, written by the website's server: one create-only record per browser and version.
+    match /downloads/{downloadId} {
+      allow read: if request.auth != null && request.auth.token.email == 'sholi2157@gmail.com'
+        && request.auth.token.email_verified == true;
+      allow create: if downloadId.matches('^[a-f0-9]{32}$')
+        && request.resource.data.keys().hasOnly(['version', 'at'])
+        && request.resource.data.version is string && request.resource.data.version.size() <= 32
+        && request.resource.data.at == request.time;
+    }
   }
 }

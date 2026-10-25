@@ -1,11 +1,10 @@
 /* The owner's dashboard: the app's own tokens (kis.css), plus a few chart pieces. */
 .gate { display: grid; gap: 12px; margin-top: 12px; }
-/* App / site switch, pinned under the title so it is always one tap away. */
-.switcher { position: sticky; top: 0; z-index: 5; display: grid; gap: 8px; padding: 8px 0 10px; margin: 0 -16px; padding-inline: 16px;
-  background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-.tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--sunk); border-radius: 16px; padding: 4px; gap: 4px; }
-.tabs button { min-height: 46px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font-weight: 600; font-size: 16px; }
-.tabs button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+/* App / site switch: two plain halves, the chosen one lifted onto the card colour. */
+.switcher { display: grid; gap: 10px; padding: 6px 0 4px; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--sunk); border-radius: 14px; padding: 4px; gap: 4px; }
+.tabs button { min-height: 44px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); font-weight: 600; font-size: 16px; }
+.tabs button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 #range { justify-self: start; }
 #range button { min-height: 34px; }
 #pane-app > .kpis:first-child, #pane-site > .kpis:first-child, #pane-site > .note:first-child { margin-top: 6px; }
