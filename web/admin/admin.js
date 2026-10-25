@@ -87,9 +87,22 @@
       '<p class="caption foot">התוכנית החינמית של Vercel שומרת רק 31 יום אחורה. המדינה נקבעת לפי כתובת האינטרנט, כך ש-VPN או ממסר פרטיות של אייפון יכולים להראות מדינה אחרת. דפדפן עם חוסם פרסומות לא נספר.</p>';
   }
 
-  function appHtml(app, release) {
-    const head = '<div class="kpis">' +
-      kpi('גרסה מופצת', esc(release.version), release.fallback ? 'לא הצלחתי לבדוק ב-GitHub, זו הגרסה השמורה' : 'Android · הורדה ישירה', true);
+  function downloadsHtml(dl) {
+    if (!dl || dl.error) return section('הורדות', '<p class="note">' + (dl?.error === 'rules'
+      ? 'Firebase עדיין לא מאפשר לקרוא את ספירת ההורדות. צריך לפרסם את כללי Firestore המעודכנים.'
+      : 'ספירת ההורדות לא זמינה כרגע. נסה לרענן בעוד רגע.') + '</p>');
+    return '<div class="section-title"><h2>הורדות</h2></div><div class="kpis">' +
+      kpi('הורדות', nf.format(dl.total), 'מאז שהספירה התחילה') + kpi('בשבוע האחרון', nf.format(dl.week)) + '</div>' +
+      section('הורדות לפי יום', columns(dl.daily, [['downloads', '', 'הורדות']], 'dl-days')) +
+      (dl.versions.length ? section('הורדות לפי גרסה', ranked(dl.versions, v => 'גרסה ' + v.version, 'downloads')) : '') +
+      '<p class="caption foot">כל דפדפן נספר פעם אחת לכל גרסה, גם אם לחץ על הורדה כמה פעמים. הספירה התחילה ב-25 באוקטובר.</p>';
+  }
+
+  function appHtml(app, release, downloads) {
+    const top = '<div class="kpis">' +
+      kpi('גרסה מופצת', esc(release.version), release.fallback ? 'לא הצלחתי לבדוק ב-GitHub, זו הגרסה השמורה' : 'Android · הורדה ישירה', true) + '</div>' +
+      downloadsHtml(downloads);
+    const head = top + '<div class="section-title"><h2>התקנות</h2></div><div class="kpis">';
     if (app.error) return head + '</div><div style="margin-top:10px"><p class="note">' + (app.error === 'rules'
       ? 'Firebase עדיין לא מאפשר לחשבון שלך לקרוא את ספירת ההתקנות. צריך לפרסם את כללי Firestore המעודכנים.'
       : 'ספירת ההתקנות לא זמינה כרגע. נסה לרענן בעוד רגע.') + '</p></div>';
@@ -97,9 +110,9 @@
     return head + kpi('מכשירים שנספרו', nf.format(app.total), 'מאז שהספירה התחילה') + kpi('בשבוע האחרון', nf.format(app.week), 'מכשירים חדשים בספירה') +
       kpi('התקנות חדשות', nf.format(app.new)) + kpi('עדכונים', nf.format(app.update), 'מכשיר שהיה בו כבר גרסה ישנה') +
       kpi('נספר לאחרונה', '<small>' + last + '</small>', '', true) + '</div>' +
-      section('לפי יום', columns(app.daily, [['new', '', 'חדשות'], ['update', 'alt', 'עדכונים']], 'app-days') +
+      section('התקנות לפי יום', columns(app.daily, [['new', '', 'חדשות'], ['update', 'alt', 'עדכונים']], 'app-days') +
         '<div class="legend"><span><i style="background:var(--glow)"></i>התקנה חדשה</span><span><i style="background:var(--muted)"></i>עדכון</span></div>') +
-      section('לפי גרסה', ranked(app.versions.map(v => ({ ...v, n: v.new + v.update })), v => 'גרסה ' + v.version + ' · ' + nf.format(v.new) + ' חדשות, ' + nf.format(v.update) + ' עדכונים', 'n'),
+      section('התקנות לפי גרסה', ranked(app.versions.map(v => ({ ...v, n: v.new + v.update })), v => 'גרסה ' + v.version + ' · ' + nf.format(v.new) + ' חדשות, ' + nf.format(v.update) + ' עדכונים', 'n'),
         'כל מכשיר נספר פעם אחת, בגרסה הראשונה שבה הספירה פעלה אצלו') +
       '<p class="caption foot">הספירה קיימת רק מגרסה 2.0.7 (23 באוקטובר). מכשיר נספר אחרי שהותקנה בו 2.0.7 ומעלה ונפתחה פעם אחת עם אינטרנט. מי שהוריד גרסה ישנה יותר ועוד לא עדכן לא מופיע כאן.</p>';
   }
@@ -113,7 +126,7 @@
       if (!r.ok) throw Error(r.status);
       const data = await r.json();
       show('board');
-      $('pane-app').innerHTML = appHtml(data.app, data.release); $('pane-site').innerHTML = siteHtml(data.site);
+      $('pane-app').innerHTML = appHtml(data.app, data.release, data.downloads); $('pane-site').innerHTML = siteHtml(data.site);
       $('stamp').textContent = 'עודכן ' + new Date(data.generatedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
       wireCharts();
     } catch { $('stamp').textContent = 'לא הצלחתי לטעון. בדוק חיבור ונסה לרענן.'; }
