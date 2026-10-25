@@ -140,7 +140,7 @@ function draw() {
         <p class="intro-label" style="--d:1.1s">בקשו מהסוכן שלכם:</p>
         <div class="intro-chat small"><p class="mine" style="--d:1.4s">כמה הרווחתי החודש?</p><p class="mine" style="--d:1.8s">עבדתי אתמול בכינוס השלוחים 15 שעות, ושניאור נגר ביקש ממני לרשום בהערה סידור כסאות. תוסיף לי בבקשה.</p></div>
         <p class="intro-done" style="--d:2.3s">והוא יעשה זאת בשבילכם!</p>
-        <div class="intro-ais" style="--d:2.7s"><span class="caption">מחובר עם</span><div>${['ChatGPT', 'Claude', 'Grok', 'Muse', 'Instinct'].map(n => `<b dir="ltr">${n}</b>`).join('')}</div></div>
+        <div class="intro-ais" style="--d:2.7s"><span class="caption">מחובר עם</span><div>${['ChatGPT', 'Claude', 'Grok', 'Muse'].map(n => `<b dir="ltr">${n}</b>`).join('')}</div></div>
         <div class="grow"></div><button class="btn primary" data-a="next" data-testid="intro-next">הבא</button></div>`
       : `<div class="launch-in"><div class="grow"></div><h1 class="launch-words" id="signin-title"><span style="--d:.1s">פשוט מבקשים.</span></h1>
         <div class="intro-chat"><p class="mine" style="--d:.55s">כמה הרווחתי החודש?</p><p style="--d:1s">2,140 ₪ על 15 משמרות.</p><p class="mine" style="--d:1.5s">תרשום מחר 9 עד 5.</p><p style="--d:1.95s">רשמתי ✓</p></div>
