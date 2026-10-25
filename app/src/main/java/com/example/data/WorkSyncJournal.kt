@@ -165,8 +165,11 @@ internal object WorkSyncSchema {
         keyedTables.forEach { (type, pair) ->
             val (table, key) = pair
             val new = key.replace("%s", "NEW"); val old = key.replace("%s", "OLD")
-            val touch = """INSERT OR IGNORE INTO work_sync_keyed (entityType, naturalKey, revision, acknowledgedRevision, remoteVersion, deleted, conflictPayload)
-                    VALUES ('$type', $new, 0, 0, 0, 0, NULL);
+            // Not INSERT OR IGNORE: under the app's INSERT OR REPLACE the trigger takes the outer conflict policy and
+            // would wipe the acknowledged state. Plain INSERT behind NOT EXISTS never conflicts.
+            val touch = """INSERT INTO work_sync_keyed (entityType, naturalKey, revision, acknowledgedRevision, remoteVersion, deleted, conflictPayload)
+                    SELECT '$type', $new, 0, 0, 0, 0, NULL WHERE NOT EXISTS
+                    (SELECT 1 FROM work_sync_keyed WHERE entityType = '$type' AND naturalKey = $new);
                     UPDATE work_sync_keyed SET revision = revision + 1, deleted = 0 WHERE entityType = '$type' AND naturalKey = $new;"""
             db.execSQL("CREATE TRIGGER IF NOT EXISTS sync_${type}_insert AFTER INSERT ON $table BEGIN $touch END")
             db.execSQL("""CREATE TRIGGER IF NOT EXISTS sync_${type}_update AFTER UPDATE ON $table BEGIN
