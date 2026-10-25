@@ -21,7 +21,7 @@ const server = http.createServer((q, r) => {
 const tid = t => `[data-testid="${t}"]`;
 /** The 2.1 intro comes once per browser before the sign-in: the animated words, then how it works. */
 async function pastIntro(p, shots) {
-  await p.waitForSelector(tid('intro-line-3')); await p.waitForTimeout(2600);
+  await p.waitForSelector(tid('intro-line-3')); await p.waitForTimeout(shots ? 3600 : 2600);
   if (shots) await p.screenshot({ path: path.join(OUT, 'intro-1-390.png') });
   await p.click(tid('intro-next')); await p.waitForSelector(tid('intro-next-2')); await p.waitForTimeout(shots ? 3200 : 900);
   if (shots) await p.screenshot({ path: path.join(OUT, 'intro-2-390.png') });
