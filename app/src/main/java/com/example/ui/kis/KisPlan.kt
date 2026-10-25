@@ -153,10 +153,11 @@ fun RepeatBlock(days: Set<Int>, until: String, preview: V2Plan.Preview?, onDays:
             (0..6).forEach { d ->
                 val on = d in days
                 val shape = RoundedCornerShape(12.dp)
-                Box(Modifier.weight(1f).heightIn(min = 48.dp).clip(shape).background(if (on) c.ink else c.surface)
-                    .border(1.5.dp, if (on) c.ink else c.line, shape).kisClick { onDays(if (on) days - d else days + d) }
+                // Light: a chosen day is tinted with an ink edge (like the add page's days), not a black tile.
+                Box(Modifier.weight(1f).heightIn(min = 48.dp).clip(shape).background(if (on) (if (c.dark) c.ink else c.sunk) else c.surface)
+                    .border(if (on && !c.dark) 2.dp else 1.5.dp, if (on) c.ink else c.line, shape).kisClick { onDays(if (on) days - d else days + d) }
                     .semantics { selected = on }.testTag("repeat_day_$d"), contentAlignment = Alignment.Center) {
-                    Text(KisFormat.DAY_SHORT[d], style = KisType.label, color = if (on) c.onInk else c.ink, maxLines = 1)
+                    Text(KisFormat.DAY_SHORT[d], style = KisType.label, color = if (on && c.dark) c.onInk else if (on) c.ink else c.muted, maxLines = 1)
                 }
             }
         }

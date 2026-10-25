@@ -45,11 +45,16 @@ class ReportKeyboardTest {
         val dao = WorkDatabase.getDatabase(context, CoroutineScope(Dispatchers.IO)).workDao()
         val original = runBlocking { dao.getEntriesList() }
         openAdd()
-        ui.onNodeWithTag("clock_start_hh").performClick()
-        listOf("0", "9", "0", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
-        ui.onNodeWithTag("keypad_display").assertIsDisplayed()
-        snapshot("v2-keypad")
-        ui.onNodeWithTag("keypad_done").performClick()
+        // A time is typed with the phone's own keyboard; the bar above it names the time and closes it.
+        ui.onNodeWithTag("clock_start").performClick()
+        awaitIme(true)
+        ui.onNode(isFocused()).performTextInput("0900")
+        ui.onNodeWithTag("entry_bar").assertIsDisplayed()
+        ui.onNodeWithTag("clock_start_d0").assertIsDisplayed()
+        snapshot("v2-time-keyboard")
+        ui.onNodeWithTag("entry_done").performClick()
+        awaitIme(false)
+        ui.onNodeWithTag("entry_bar").assertDoesNotExist()
         ui.onNodeWithTag("editor_more").performScrollTo().performClick()
         for (mode in listOf("clock", "hours")) {
             ui.onNodeWithTag("mode_$mode").performClick()

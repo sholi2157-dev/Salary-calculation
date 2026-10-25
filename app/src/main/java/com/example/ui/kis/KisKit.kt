@@ -231,10 +231,12 @@ fun CurrencyToggle(currency: String, onCurrency: (String) -> Unit, tag: String, 
     Row(modifier.clip(RoundedCornerShape(12.dp)).border(1.5.dp, c.line, RoundedCornerShape(12.dp)).testTag(tag)) {
         listOf("₪", "$").forEach { value ->
             val on = currency == value
-            Box(Modifier.size(width = 48.dp, height = 40.dp).background(if (on) c.ink else c.surface)
+            // Light: the chosen currency is a soft tinted cell with bold ink, not a black one.
+            Box(Modifier.size(width = 48.dp, height = 40.dp).background(if (on) (if (c.dark) c.ink else c.sunk) else c.surface)
                 .kisClick(role = Role.RadioButton) { onCurrency(value) }.semantics { this.selected = on; contentDescription = if (value == "₪") "שקל" else "דולר" }
                 .testTag("${tag}_$value"), contentAlignment = Alignment.Center) {
-                Text(value, style = KisType.label.copy(fontFamily = Rubik), color = if (on) c.onInk else c.ink)
+                Text(value, style = KisType.label.copy(fontFamily = Rubik, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium),
+                    color = if (on && c.dark) c.onInk else if (on) c.ink else c.muted)
             }
         }
     }
@@ -320,9 +322,9 @@ fun KisLogo(modifier: Modifier = Modifier.size(38.dp)) {
  * It fades out completely inside the screen, so there is no visible edge anywhere.
  */
 @Composable
-fun KisGlow(modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
+fun KisGlow(modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier, color: Color? = null) {
     val c = Kis.colors
-    val glow = Workplaces[0].accent(c.dark)
+    val glow = color ?: Workplaces[0].accent(c.dark)
     Canvas(modifier) {
         val radius = minOf(size.width * 1.1f, size.height * 0.75f)
         drawRect(androidx.compose.ui.graphics.Brush.radialGradient(listOf(glow.copy(alpha = if (c.dark) 0.40f else 0.22f), glow.copy(alpha = if (c.dark) 0.12f else 0.06f), Color.Transparent),

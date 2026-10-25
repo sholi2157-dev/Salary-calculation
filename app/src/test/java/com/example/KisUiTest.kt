@@ -84,19 +84,24 @@ class KisUiTest {
         ui.onNodeWithTag("day_-3").assertExists()
         ui.onNodeWithTag("day_3").assertExists()
         ui.onNodeWithTag("mode_hours").performClick()
+        // The phone's keyboard types into the page; there is no keypad of the app's own.
         ui.onNodeWithTag("hours_display").performClick()
-        listOf("0", "1", "4", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
+        ui.onNodeWithTag("keypad").assertDoesNotExist()
+        type("0140")
         ui.onNodeWithTag("editor_meta").assertTextContains("1:40 שעות", substring = true)
         ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪100")
         ui.onNodeWithText("לחיצה על ספרה משנה רק אותה").assertDoesNotExist()
-        ui.onNodeWithTag("keypad_digit_2", useUnmergedTree = true).performClick()
-        ui.onNodeWithTag("key_5").performClick()
+        // A tap on one digit changes only that digit.
+        ui.onNodeWithTag("duration_d2").performClick()
+        ui.onNodeWithTag("duration_d2").assertIsSelected()
+        type("5")
         ui.onNodeWithTag("editor_meta").assertTextContains("1:50 שעות", substring = true)
-        ui.onNodeWithTag("keypad_done").performClick()
-        ui.onNodeWithTag("duration_minutes", useUnmergedTree = true).performClick()
-        ui.onNodeWithTag("keypad_digit_2", useUnmergedTree = true).assertIsSelected()
-        ui.onNodeWithTag("key_4").performClick()
-        ui.onNodeWithTag("keypad_done").performClick()
+        ui.onNodeWithTag("entry_done").performClick()
+        ui.onNodeWithTag("entry_bar").assertDoesNotExist()
+        ui.onNodeWithTag("duration_d2").performClick()
+        ui.onNodeWithTag("duration_d2").assertIsSelected()
+        type("4")
+        ui.onNodeWithTag("entry_done").performClick()
         ui.onNodeWithTag("editor_meta").assertTextContains("1:40 שעות", substring = true)
         shot("manual-100-minutes-dark")
     }
@@ -109,7 +114,7 @@ class KisUiTest {
             onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
         ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
         ui.onNodeWithTag("hours_display").performClick()
-        ui.onNodeWithTag("keypad_done").performClick()
+        ui.onNodeWithTag("entry_done").performClick()
         ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
     }
 
@@ -126,20 +131,30 @@ class KisUiTest {
         ui.onNodeWithTag("save_hint").assertTextContains("שעת התחלה", substring = true)
         ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
         shot("editor-empty-$suffix")
-        // Keypad: 0900 sets the start and moves on to the end; 1730 sets the end.
-        ui.onNodeWithTag("clock_start_hh").performClick()
-        ui.onNodeWithTag("keypad").assertIsDisplayed()
-        // The keypad shows which field is being typed and has no Save of its own (no accidental saves).
-        ui.onNodeWithTag("keypad_display").assertTextContains("שעת התחלה", substring = true)
+        // The phone's keyboard: 0900 sets the start. The bar above the keyboard says what is typed and has no Save of its own.
+        ui.onNodeWithTag("clock_start").performClick()
+        ui.onNodeWithTag("entry_bar").assertIsDisplayed()
+        ui.onNodeWithTag("entry_label").assertTextContains("שעת התחלה", substring = true)
         ui.onNodeWithTag("save_shift_button").assertDoesNotExist()
-        listOf("0", "9", "0", "0", "1", "7", "3", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
+        type("0900")
         assertTime("start", "09:00")
+        // A full time stays where it is: one more digit changes only its last digit, never the end time.
+        type("5")
+        assertTime("start", "09:05")
+        assertTime("end", "17:00")
+        ui.onNodeWithTag("clock_start_d3").performClick()
+        type("0")
+        assertTime("start", "09:00")
+        // "לשעת הסיום" goes on to the end time, which starts over when typed.
+        ui.onNodeWithTag("entry_next").performClick()
+        ui.onNodeWithTag("entry_label").assertTextContains("שעת סיום", substring = true)
+        type("1730")
         assertTime("end", "17:30")
         ui.onNodeWithTag("editor_meta").assertTextContains("8:30 שעות", substring = true)
         ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪425")
-        shot("editor-keypad-$suffix")
-        ui.onNodeWithTag("keypad_done").performClick()
-        ui.onNodeWithTag("keypad").assertDoesNotExist()
+        shot("editor-typing-$suffix")
+        ui.onNodeWithTag("entry_done").performClick()
+        ui.onNodeWithTag("entry_bar").assertDoesNotExist()
         // Both handles are on the ruler, and each time has its own ±15.
         ui.onNodeWithTag("ruler_start").assertExists()
         ui.onNodeWithTag("ruler_end").assertExists()
@@ -216,11 +231,12 @@ class KisUiTest {
         // Now change the rate: the amount follows hours × rate.
         ui.runOnIdle { base = kept; open = true }
         ui.onNodeWithTag("editor_rate").performScrollTo().performClick()
-        ui.onNodeWithTag("keypad_display").assertTextContains("תעריף לשעה", substring = true)
-        ui.onNodeWithTag("keypad_value", useUnmergedTree = true).assertTextEquals("52")
-        listOf("6", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
-        ui.onNodeWithTag("keypad_value", useUnmergedTree = true).assertTextEquals("60")
-        ui.onNodeWithTag("keypad_done").performClick()
+        ui.onNodeWithTag("entry_label").assertTextContains("תעריף לשעה", substring = true)
+        ui.onNodeWithTag("entry_value", useUnmergedTree = true).assertTextEquals("52")
+        // Typing replaces the amount (it is not added to the end of 52).
+        type("60")
+        ui.onNodeWithTag("entry_value", useUnmergedTree = true).assertTextEquals("60")
+        ui.onNodeWithTag("entry_done").performClick()
         ui.onNodeWithTag("save_shift_button").performClick()
         waitFor(5_000) { rows().single().hourlyRate == 60.0 }
         assertEquals(330.0, rows().single().totalEarnings, 0.0)
@@ -388,9 +404,10 @@ class KisUiTest {
     }
 
     private fun assertTime(which: String, hhmm: String) {
-        ui.onNodeWithTag("clock_${which}_hh", useUnmergedTree = true).assertTextEquals(hhmm.take(2))
-        ui.onNodeWithTag("clock_${which}_mm", useUnmergedTree = true).assertTextEquals(hhmm.drop(3))
+        hhmm.replace(":", "").forEachIndexed { i, digit -> ui.onNodeWithTag("clock_${which}_d$i").assertTextEquals(digit.toString()) }
     }
+    /** Types into whatever the page focused for the phone's keyboard (the hidden field of the value being typed). */
+    private fun type(text: String) = ui.onNode(isFocused()).performTextInput(text)
 
     /** One digit of a time changes in place (05:30 → 05:35 without typing the whole time again); a new shift shows both times, 4 hours apart. */
     @Test fun aTimeIsEditedDigitByDigitAndANewShiftShowsBothTimes() {
@@ -401,19 +418,25 @@ class KisUiTest {
         host {
             KisEditorPage(vm, fresh.copy(start = "05:30", end = "09:30"), null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {})
         }
-        ui.onNodeWithTag("clock_start_mm").performClick()
-        ui.onNodeWithTag("keypad_display").assertTextContains("שעת התחלה", substring = true)
-        ui.onNodeWithTag("keypad_digit_2", useUnmergedTree = true).assertIsSelected()
-        ui.onNodeWithTag("keypad_digit_3", useUnmergedTree = true).performClick()
-        ui.onNodeWithTag("key_5").performClick()
+        ui.onNodeWithTag("clock_start_d3").performClick()
+        ui.onNodeWithTag("entry_label").assertTextContains("שעת התחלה", substring = true)
+        ui.onNodeWithTag("clock_start_d3").assertIsSelected()
+        ui.onNodeWithTag("clock_start_d2").assertIsNotSelected()
+        type("5")
         assertTime("start", "05:35")
-        // The last digit moves on to the end time, on its first digit: "1", "0" makes 10:30.
-        ui.onNodeWithTag("keypad_display").assertTextContains("שעת סיום", substring = true)
-        listOf("1", "0").forEach { ui.onNodeWithTag("key_$it").performClick() }
+        // It stays on the start time; the end time is a tap on its first digit: "1", "0" makes 10:30.
+        ui.onNodeWithTag("entry_label").assertTextContains("שעת התחלה", substring = true)
+        ui.onNodeWithTag("clock_end_d0").performClick()
+        ui.onNodeWithTag("clock_end_d0").assertIsSelected()
+        type("10")
         assertTime("end", "10:30")
         ui.onNodeWithTag("editor_meta").assertTextContains("4:55 שעות", substring = true)
-        shot("editor-digit-keypad")
-        ui.onNodeWithTag("keypad_done").performClick()
+        // An hour that cannot be (2 then 5) is refused; the digit stays as it was.
+        ui.onNodeWithTag("clock_end_d0").performClick()
+        type("25")
+        assertTime("end", "20:30")
+        shot("editor-digit-typing")
+        ui.onNodeWithTag("entry_done").performClick()
         ui.onNodeWithTag("nudge_start_15").assertIsDisplayed()
         shot("editor-both-times")
     }

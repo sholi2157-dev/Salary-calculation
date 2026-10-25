@@ -21,6 +21,19 @@ class V2DurationTest {
         assertNull(DurationInput.parseDigits("2401"))
         assertNull(parseTime("2400"))
     }
+    /** The add page's typing rules: a full time takes more digits only on its last digit; an impossible hour is refused. */
+    @Test fun aFullTimeChangesOnlyItsLastDigitAndAnImpossibleHourIsRefused() {
+        assertEquals("1432" to 4, typeTime("····", 0, "1432"))
+        assertEquals("1435" to 4, typeTime("1432", 4, "5"))
+        assertEquals("1437" to 4, typeTime("1432", 4, "57"))
+        assertEquals("1·32" to 1, typeTime("1432", 2, "⌫"))
+        assertNull(typeTimeOrNull("2030", 1, "5"))
+        assertEquals("2030" to 1, typeTime("2030", 1, "5"))
+        assertEquals("0930" to 2, typeTime("1430", 0, "9"))
+        assertEquals("2030" to 1, typeTime("1530", 0, "2"))
+        assertEquals("1407" to 4, typeTime("1432", 2, "7"))
+        assertEquals("2400", typeTime("····", 0, "2400", 24).first)
+    }
     @Test fun manualMinutesAreNotDecimalFractions() {
         val d = draft(DurationInput.edit("1.40"))
         assertEquals("1:40", d.hours)

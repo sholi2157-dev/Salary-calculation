@@ -32,6 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -47,6 +50,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
@@ -59,14 +63,15 @@ import com.example.ui.WorkViewModel
 import com.example.ui.coachTarget
 import java.util.Calendar
 
-/** Fields the numeric keypad can write to. */
+/** Fields typed with the phone's own keyboard into the page's values (see [KeySink]). */
 enum class KeyTarget { START, END, HOURS, RATE, BONUS, AMOUNT, BREAK }
 
 private val DraftSaver = Saver<EntryDraft, String>(save = { it.toJson() }, restore = { EntryDraft.fromJson(it) })
 
 /**
  * Add / edit page. Adding is coloured by the workplace; editing is ink, shows "before", and only
- * saves when something changed. The custom keypad keeps the screen still (no system keyboard jump).
+ * saves when something changed. Times and amounts are typed with the phone's own keyboard; a time is edited in place,
+ * digit by digit, on the big clock at the top.
  */
 @Composable
 fun KisEditorPage(
@@ -92,9 +97,15 @@ fun KisEditorPage(
     var target by rememberSaveable { mutableStateOf(if (initial.mode == EntryMode.JOB) KeyTarget.AMOUNT else if (initial.mode == EntryMode.HOURS) KeyTarget.HOURS else KeyTarget.START) }
     var buf by rememberSaveable { mutableStateOf("") }
     // Time fields are edited digit by digit: [buf] holds the four digits ("·" = not set yet) and [cursor] the one the next key writes.
+    // [fresh]: the time was opened as a whole (not on one digit), so the first key starts it over.
     var digitsDirty by rememberSaveable { mutableStateOf(false) }
     var cursor by rememberSaveable { mutableIntStateOf(0) }
-    var pad by rememberSaveable { mutableStateOf(false) }
+    var fresh by rememberSaveable { mutableStateOf(false) }
+    // [pad]: a value is being typed with the phone's keyboard (the hidden [KeySink] has focus).
+    var pad by remember { mutableStateOf(false) }
+    var sinkFocused by remember { mutableStateOf(false) }
+    var sinkSeen by remember { mutableStateOf(false) }
+    var focusAsk by remember { mutableIntStateOf(0) }
     var more by rememberSaveable { mutableStateOf(initial.breakMin > 0 || initial.notes.isNotBlank() && initial.mode != EntryMode.JOB) }
     var confirmLeave by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
@@ -118,8 +129,9 @@ fun KisEditorPage(
     val changed = d.toJson() != original
     val check = d.check()
     val workplace = workplaceOf(d.category, categories)
-    // A calm page like the rest of the app (the purple glow, plain background); the workplace colour only marks the chosen
-    // place and the worked span on the ruler. Adding and editing look the same; an edit is told apart by its frame (KisApp).
+    // A calm page like the rest of the app; the workplace colour marks the chosen place, the worked span on the ruler and
+    // the value being typed (and, in light mode, the page's glow). Adding and editing look the same; an edit is told apart
+    // by its frame (KisApp).
     val topBg = c.surface
     val onTop = c.ink
     val accent by animateColorAsState(workplace.accent(c.dark), tween(250), label = "accent")
@@ -134,16 +146,29 @@ fun KisEditorPage(
         if (buf.isEmpty()) return true
         if (isDigits(target) && buf.any { it != '·' } && (!isDuration(target) || digitsDirty)) {
             val h = if (isDuration(target)) DurationInput.parseDigits(buf) else parseTime(buf)
-            if (h == null) { Toast.makeText(context, if (isDuration(target)) "משך לא תקין" else "שעה לא תקינה", Toast.LENGTH_SHORT).show(); buf = fieldDigits(target); cursor = 0; return false }
+            if (h == null) { Toast.makeText(context, if (isDuration(target)) "משך לא תקין" else "שעה לא תקינה", Toast.LENGTH_SHORT).show(); buf = fieldDigits(target); fresh = true; return false }
             if (isDuration(target)) d = d.copy(hours = h) else setTime(target, h)
         }
         buf = ""; digitsDirty = false
         return true
     }
-    /** Opens the keypad on [t]; for a time, on digit [at] (0–1 hours, 2–3 minutes) of the value already there. */
-    fun open(t: KeyTarget, at: Int = 0) {
-        if (!commitBuf()) return; focus.clearFocus(); target = t; pad = true; digitsDirty = false
-        buf = if (isDigits(t)) fieldDigits(t) else ""; cursor = at
+    /**
+     * Starts typing [t] with the phone's keyboard. For a time, [at] is the digit (0–1 hours, 2–3 minutes) the next key
+     * replaces; null opens the whole time, so typing starts it over (an empty time always starts over).
+     */
+    fun open(t: KeyTarget, at: Int? = null) {
+        if (!commitBuf()) return
+        target = t; pad = true; digitsDirty = false
+        buf = if (isDigits(t)) fieldDigits(t) else ""
+        fresh = isDigits(t) && (at == null || buf.all { it == '·' })
+        cursor = if (fresh) 0 else at ?: 0
+        focusAsk++
+    }
+    /** Ends typing: keeps what was typed and closes the keyboard. */
+    fun done() {
+        if (!commitBuf()) return
+        pad = false; fresh = false
+        focus.clearFocus()
     }
     fun numberValue(t: KeyTarget) = when (t) { KeyTarget.HOURS -> DurationInput.display(d.hours); KeyTarget.RATE -> d.rate; KeyTarget.BONUS -> d.bonus; KeyTarget.AMOUNT -> d.amount; KeyTarget.BREAK -> if (d.breakMin > 0) d.breakMin.toString() else ""; else -> "" }
     fun setNumber(t: KeyTarget, v: String) {
@@ -154,13 +179,18 @@ fun KisEditorPage(
     }
     fun key(k: String) {
         if (isDigits(target)) {
-            digitsDirty = true
             if (buf.length != 4) buf = fieldDigits(target)
-            val (next, at) = typeTime(buf, cursor, k, if (isDuration(target)) 24 else 23)
+            if (fresh) {
+                // The whole time was selected: a digit starts it over, a delete takes back its last digit.
+                fresh = false
+                if (k == "⌫") cursor = 4 else { buf = "····"; cursor = 0 }
+            }
+            val (next, at) = typeTimeOrNull(buf, cursor, k, if (isDuration(target)) 24 else 23) ?: run { settings.haptic(KisSettings.Haptic.WARN); return }
+            digitsDirty = true
             buf = next; cursor = at
-            // Every complete, valid value shows at once (total, ruler); the last digit moves on from start to end.
+            // Every complete, valid value shows at once (total, ruler). A full time stays on its last digit: more keys
+            // only change that digit, they never jump to the other time.
             if (buf.none { it == '·' }) (if (isDuration(target)) DurationInput.parseDigits(buf) else parseTime(buf))?.let { if (isDuration(target)) d = d.copy(hours = it) else setTime(target, it) }
-            if (cursor == 4 && commitBuf()) { if (target == KeyTarget.START) open(KeyTarget.END) else { buf = fieldDigits(target); cursor = 0 } }
             return
         }
         if (k == "⌫") {
@@ -170,9 +200,12 @@ fun KisEditorPage(
             return
         }
         if (k == "." && ((buf.contains('.') || buf.contains(':')) || target == KeyTarget.BREAK)) return
-        buf = (buf + if (target == KeyTarget.HOURS && k == ".") ":" else k).take(7)
+        // A first "." means "0." (so ".5" is half, never an empty value).
+        buf = (buf.ifEmpty { if (k == ".") "0" else "" } + k).take(7)
         setNumber(target, buf)
     }
+    /** How [t] is being typed, for the clock and hours displays: null when it is not. */
+    fun edit(t: KeyTarget): DigitEdit? = if (pad && target == t && isDigits(t)) DigitEdit(fresh, cursor.coerceAtMost(3)) else null
     fun shown(t: KeyTarget): String {
         if (pad && target == t && buf.isNotEmpty()) {
             return if (isDigits(t)) buf.take(2) + ":" + buf.drop(2) else buf
@@ -218,7 +251,7 @@ fun KisEditorPage(
     BackHandler(enabled = interactive) {
         when {
             confirmLeave -> confirmLeave = false
-            pad -> { commitBuf(); pad = false }
+            pad -> done()
             aiMode && !d.editing -> aiMode = false
             else -> close()
         }
@@ -236,10 +269,22 @@ fun KisEditorPage(
     }
     // The keyboard's real height, not isImeVisible (which reads true before any insets arrive).
     val imeOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    // The system keyboard and our keypad are never open together: typing in a text field closes the keypad.
-    LaunchedEffect(imeOpen) { if (imeOpen && pad) { commitBuf(); pad = false } }
+    // Typing a value: the hidden field takes the keyboard. Focus moving to a text field (note, worker) ends it,
+    // and so does closing the keyboard (Back, or its own close key) once it has been open.
+    LaunchedEffect(sinkFocused) { if (sinkFocused) sinkSeen = true else if (pad && sinkSeen) { commitBuf(); pad = false; fresh = false } }
+    LaunchedEffect(pad) { if (!pad) sinkSeen = false }
+    var imeSeen by remember { mutableStateOf(false) }
+    LaunchedEffect(imeOpen, pad) {
+        if (!pad) imeSeen = false else if (imeOpen) imeSeen = true else if (imeSeen) done()
+    }
+    // A text field being typed in (not one of our values): the clock, ruler and places fold away.
+    val typingText = imeOpen && !pad
     Box(Modifier.fillMaxSize().background(c.bg)) {
-    KisGlow(Modifier.fillMaxSize())
+    // Light: the page glows in the chosen place's colour, so the screen keeps to one colour (the place, its span on the
+    // ruler, the digit being typed) instead of the app's purple meeting a place's pink or green.
+    KisGlow(Modifier.fillMaxSize(), if (c.dark) null else accent)
+    if (!aiMode) KeySink(target, focusAsk, pad, onFocus = { sinkFocused = it }, onKey = ::key,
+        onNext = { open(KeyTarget.END) }, onDone = ::done)
     Column(Modifier.fillMaxSize().imePadding().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
         // ---------------- top ----------------
         Column(Modifier.fillMaxWidth()
@@ -256,34 +301,36 @@ fun KisEditorPage(
             if (!aiMode) {
                 // While the system keyboard is open (note, worker name) the clock, ruler and places fold away,
                 // the mode tabs and total stay, so the form and the Save bar keep their room on small phones.
-                if (!imeOpen && d.editing && base != null) WasBanner(base, changed, onTop)
+                if (!imeOpen && !pad && d.editing && base != null) WasBanner(base, changed, onTop)
                 ModeTabs(d.mode, onTop, c.bg) { m ->
-                    if (!commitBuf()) return@ModeTabs
+                    if (pad) done()
+                    if (pad) return@ModeTabs
                     d = d.withMode(m)
                     target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
                 }
-                if (!imeOpen) {
-                    CategoryChips(categories, d.category, onTop, topBg, accent, workplace.accentInk(c.dark), onPick = { cat -> commitBuf(); d = d.withCategory(cat, viewModel::categoryCurrency) }, onAdd = { addingPlace = true })
+                if (!typingText) {
+                    // While a value is typed with the keyboard open, the places fold away so the clock and the form keep their room.
+                    if (!(pad && imeOpen)) CategoryChips(categories, d.category, onTop, topBg, accent, workplace.accentInk(c.dark), onPick = { cat -> if (commitBuf()) d = d.withCategory(cat, viewModel::categoryCurrency) }, onAdd = { if (pad) done(); addingPlace = true })
                     when {
-                        d.mode == EntryMode.JOB -> JobAmount(d, shown(KeyTarget.AMOUNT), pad && target == KeyTarget.AMOUNT, onTop,
-                            onOpen = { open(KeyTarget.AMOUNT) }, onUnknown = { pad = false; d = d.copy(amountUnknown = true, amount = "") }, onKnown = { d = d.copy(amountUnknown = false); open(KeyTarget.AMOUNT) },
+                        d.mode == EntryMode.JOB -> JobAmount(d, shown(KeyTarget.AMOUNT), pad && target == KeyTarget.AMOUNT, onTop, accent,
+                            onOpen = { open(KeyTarget.AMOUNT) }, onUnknown = { if (pad) { buf = ""; done() }; d = d.copy(amountUnknown = true, amount = "") }, onKnown = { d = d.copy(amountUnknown = false); open(KeyTarget.AMOUNT) },
                             hoursLabel = shown(KeyTarget.HOURS), onHours = { open(KeyTarget.HOURS) })
-                        d.mode == EntryMode.HOURS || d.groupByHours -> HoursDisplay(shown(KeyTarget.HOURS), pad && target == KeyTarget.HOURS, onTop,
-                            onOpen = { at -> open(KeyTarget.HOURS, at) }, onQuick = { h -> d = d.copy(hours = h.toString()); buf = "" },
-                            onUseClock = if (d.mode == EntryMode.GROUP) ({ d = d.copy(start = EntryDraft.defaultStart(d.end)); target = KeyTarget.START }) else null)
+                        d.mode == EntryMode.HOURS || d.groupByHours -> HoursDisplay(shown(KeyTarget.HOURS), edit(KeyTarget.HOURS), onTop, accent,
+                            onOpen = { at -> open(KeyTarget.HOURS, at) }, onQuick = { h -> d = d.copy(hours = h.toString()); if (pad && target == KeyTarget.HOURS) { buf = fieldDigits(target); fresh = true; digitsDirty = false } },
+                            onUseClock = if (d.mode == EntryMode.GROUP) ({ if (pad) done(); if (!pad) { d = d.copy(start = EntryDraft.defaultStart(d.end)); target = KeyTarget.START } }) else null)
                         else -> {
                             Box(Modifier.coachTarget(CoachTarget.FIELDS)) {
-                                ClockDisplay(shown(KeyTarget.START), shown(KeyTarget.END), d.start == null && !(pad && target == KeyTarget.START && buf.isNotEmpty()),
-                                    target, onTop, onOpen = ::open,
-                                    // The ±15 buttons fold away with the ruler while the keypad is open (so it fits a 360dp phone).
-                                    onNudge = if (pad) null else { t, n -> commitBuf(); timeOf(t)?.let { setTime(t, nudge(it, n)) } })
+                                ClockDisplay(shown(KeyTarget.START), shown(KeyTarget.END), d.start == null && !(pad && target == KeyTarget.START && buf.any { it != '·' }),
+                                    target, edit(KeyTarget.START), edit(KeyTarget.END), onTop, accent, onOpen = ::open,
+                                    // The ±15 buttons fold away with the ruler while typing (so it fits a 360dp phone above the keyboard).
+                                    onNudge = if (pad) null else { t, n -> timeOf(t)?.let { setTime(t, nudge(it, n)) } })
                             }
-                            // While the keypad is open the ruler and nudges fold away (the keypad shows the value), so it fits a 360dp phone.
+                            // While typing, the ruler and nudges fold away, so the clock stays in view above the keyboard.
                             if (!pad) TimeRuler(d.start, d.end, if (target == KeyTarget.START && d.start != null) TimeHandle.START else TimeHandle.END, onTop, topBg, accent = accent,
                                 onChange = { h, v -> buf = ""; d = if (h == TimeHandle.START) d.copy(start = v) else d.copy(end = v) },
                                 onSelect = { h -> target = if (h == TimeHandle.START) KeyTarget.START else KeyTarget.END; buf = "" })
                             if (d.mode == EntryMode.GROUP) Text("הזנת שעות במקום שעון", color = onTop.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold),
-                                modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick { d = d.copy(start = null); target = KeyTarget.HOURS }.padding(vertical = 4.dp))
+                                modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick { if (pad) done(); if (!pad) { d = d.copy(start = null); target = KeyTarget.HOURS } }.padding(vertical = 4.dp))
                         }
                     }
                 }
@@ -319,7 +366,7 @@ fun KisEditorPage(
                     if (d.rateUnknown) KisChip("תעריף חסר · להוספה", warn = true, tag = "editor_rate_known", onClick = { d = d.copy(rateUnknown = false); open(KeyTarget.RATE) })
                     else {
                         KisChip("${d.currency}${shown(KeyTarget.RATE).ifEmpty { "?" }} לשעה", selected = pad && target == KeyTarget.RATE, tag = "editor_rate", onClick = { open(KeyTarget.RATE) })
-                        KisChip("לא יודע", tag = "editor_rate_unknown", onClick = { if (target == KeyTarget.RATE) { buf = ""; pad = false }; d = d.copy(rateUnknown = true) })
+                        KisChip("לא יודע", tag = "editor_rate_unknown", onClick = { if (pad && target == KeyTarget.RATE) { buf = ""; done() }; d = d.copy(rateUnknown = true) })
                     }
                     val b = shown(KeyTarget.BONUS)
                     KisChip(if (b.isNotEmpty() && b != "0") "בונוס ${d.currency}$b" else "+ בונוס", selected = pad && target == KeyTarget.BONUS, tag = "editor_bonus", onClick = { open(KeyTarget.BONUS) })
@@ -354,7 +401,7 @@ fun KisEditorPage(
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             quick.forEach { m ->
                                 KisChip(if (m == 0) "ללא" else "$m דק׳", selected = d.breakMin == m && !(pad && target == KeyTarget.BREAK), tag = "break_$m", minHeight = 44.dp, onClick = {
-                                    if (target == KeyTarget.BREAK) { buf = ""; pad = false }
+                                    if (pad && target == KeyTarget.BREAK) { buf = ""; done() }
                                     d = d.copy(breakMin = m)
                                 })
                             }
@@ -367,11 +414,11 @@ fun KisEditorPage(
             }
             Spacer(Modifier.height(8.dp))
         }
-        // ---------------- keypad or save bar ----------------
-        // The keypad only enters values; the shift is saved from the save bar alone.
-        if (pad) Keypad(time = isDigits(target), label = keyLabel(target, d.currency), value = shown(target),
-            typing = buf.isNotEmpty() && !isTime(target), cursor = cursor.takeIf { isDigits(target) },
-            onCursor = { cursor = it }, onKey = ::key, onDone = { if (commitBuf()) pad = false })
+        // ---------------- typing bar or save bar ----------------
+        // While a value is typed, a slim bar above the keyboard names it and closes it; the shift is saved from the save bar alone.
+        if (pad) TypingBar(label = keyLabel(target, d.currency), value = if (isDigits(target)) null else shown(target),
+            typing = buf.isNotEmpty(), next = if (target == KeyTarget.START && d.mode != EntryMode.HOURS && !d.groupByHours) "לשעת הסיום" else null,
+            onNext = { open(KeyTarget.END) }, onDone = ::done)
         else SaveBar(check, if (repeatOn(d, repeat)) "יצירת הסדרה" else saveLabel(d, changed),
             check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatPreview?.created?.isNotEmpty() == true), ::save)
     }
@@ -415,7 +462,9 @@ private fun isWithinWeek(day: Long): Boolean {
 
 @Composable
 private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, tag: String, onClick: () -> Unit) {
-    Row(Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(99.dp)).background(ink.copy(alpha = 0.18f)).kisClick(onClick = onClick).testTag(tag).padding(horizontal = 14.dp),
+    val c = Kis.colors
+    Row(Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(99.dp)).background(if (c.dark) ink.copy(alpha = 0.18f) else c.surface)
+        .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(99.dp))).kisClick(onClick = onClick).testTag(tag).padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (icon != null) Icon(icon, null, tint = ink, modifier = Modifier.size(16.dp))
         Text(text, color = ink, style = KisType.label)
@@ -435,12 +484,16 @@ private fun WasBanner(base: WorkEntry, changed: Boolean, ink: Color) {
 
 @Composable
 private fun ModeTabs(mode: EntryMode, ink: Color, bg: Color, onMode: (EntryMode) -> Unit) {
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(ink.copy(alpha = 0.16f)).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    val c = Kis.colors
+    // Light: a raised white tab on a soft track (no black slab); dark keeps the light tab on the dark track.
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.sunk).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         EntryMode.entries.forEach { m ->
             val on = m == mode
-            Box(Modifier.weight(1f).heightIn(min = 38.dp).clip(RoundedCornerShape(9.dp)).background(if (on) ink else Color.Transparent)
+            Box(Modifier.weight(1f).heightIn(min = 38.dp)
+                .then(if (on && !c.dark) Modifier.shadow(2.dp, RoundedCornerShape(9.dp), ambientColor = ink.copy(alpha = 0.10f), spotColor = ink.copy(alpha = 0.10f)) else Modifier)
+                .clip(RoundedCornerShape(9.dp)).background(if (!on) Color.Transparent else if (c.dark) ink else c.surface)
                 .kisClick(role = Role.Tab) { onMode(m) }.semantics { selected = on }.testTag("mode_${m.name.lowercase()}"), contentAlignment = Alignment.Center) {
-                Text(m.label, color = if (on) bg else ink.copy(alpha = 0.9f), style = KisType.label)
+                Text(m.label, color = if (!on) ink.copy(alpha = if (c.dark) 0.9f else 0.7f) else if (c.dark) bg else ink, style = KisType.label)
             }
         }
     }
@@ -465,37 +518,67 @@ private fun CategoryChips(categories: List<WorkCategory>, selected: String, ink:
     }
 }
 
+/** A time or duration being typed: [all] = the whole value is selected (the next digit starts it over), else digit [at]. */
+data class DigitEdit(val all: Boolean, val at: Int)
+
 /**
- * Start and end, both always shown. Each half of a time opens the keypad on it (hours or minutes), and each time has
- * its own −15/+15 ([onNudge] null while the keypad is open). [active] is the selected time (the keypad's, or the ruler's handle).
+ * "HH:MM" as four digits, each its own tap target: a tap on a digit selects it (the next key replaces only it), a tap
+ * elsewhere on the time selects all of it. [edit] marks what the next key changes: one digit, or the whole time.
  */
 @Composable
-private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active: KeyTarget, ink: Color,
-                         onOpen: (KeyTarget, Int) -> Unit, onNudge: ((KeyTarget, Int) -> Unit)?) {
+private fun DigitClock(value: String, label: String, style: androidx.compose.ui.text.TextStyle, color: Color, ink: Color, accent: Color, edit: DigitEdit?, tag: String,
+                       onDigit: (Int) -> Unit) {
+    val c = Kis.colors
+    val marker = accent
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+        Row(Modifier.clip(RoundedCornerShape(10.dp)).background(if (edit?.all == true) marker.copy(alpha = if (c.dark) 0.30f else 0.20f) else Color.Transparent)
+            .padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            for (i in 0..3) {
+                if (i == 2) Text(":", color = color, style = style, maxLines = 1)
+                val ch = value.getOrNull(if (i < 2) i else i + 1)?.toString() ?: "-"
+                val on = edit != null && !edit.all && edit.at == i
+                Box(Modifier.clip(RoundedCornerShape(8.dp)).background(if (on) marker.copy(alpha = if (c.dark) 0.30f else 0.20f) else Color.Transparent)
+                    .drawBehind { if (on) drawRect(marker, topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.12f, size.height - 3.dp.toPx()),
+                        size = androidx.compose.ui.geometry.Size(size.width * 0.76f, 3.dp.toPx())) }
+                    .kisClick(haptic = KisSettings.Haptic.TICK) { onDigit(i) }
+                    .semantics { contentDescription = "$label · ספרה ${i + 1}"; selected = on }.testTag("${tag}_d$i"), contentAlignment = Alignment.Center) {
+                    Text(ch, color = if (on) ink else color, style = style, maxLines = 1, softWrap = false)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Start and end, both always shown, each with its own −15/+15 ([onNudge] null while typing). A tap on a time selects
+ * all of it (typing starts it over); a tap on one digit changes only that digit. [active] is the ruler's selected time.
+ */
+@Composable
+private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active: KeyTarget, startEdit: DigitEdit?, endEdit: DigitEdit?, ink: Color, accent: Color,
+                         onOpen: (KeyTarget, Int?) -> Unit, onNudge: ((KeyTarget, Int) -> Unit)?) {
+    val c = Kis.colors
+    val typing = startEdit != null || endEdit != null
     // The digits scale with the width so "00:00" always fits whole (360dp phones included).
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         // Sized from the width in dp, so a large system font cannot push the digits out of the box.
         val digits = ((maxWidth.value * 0.125f).coerceIn(38f, 60f) / LocalDensity.current.fontScale).sp
         val style = KisType.hero.copy(fontSize = digits, lineHeight = digits * 1.05f, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum")
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            @Composable fun cell(label: String, value: String, t: KeyTarget, empty: Boolean, tag: String) {
-                Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (active == t) ink.copy(alpha = 0.16f) else Color.Transparent)
-                    .kisClick { onOpen(t, 0) }.testTag(tag).padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(label, color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
-                    val color = ink.copy(alpha = if (empty) 0.45f else 1f)
-                    // Hours and minutes are separate targets: a tap on the minutes edits only them.
-                    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-                        Row {
-                            Text(value.take(2), color = color, style = style, maxLines = 1, softWrap = false, modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                                .kisClick(haptic = null) { onOpen(t, 0) }.semantics { contentDescription = "$label · שעות" }.testTag("${tag}_hh"))
-                            Text(":", color = color, style = style, maxLines = 1)
-                            Text(value.drop(3), color = color, style = style, maxLines = 1, softWrap = false, modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                                .kisClick(haptic = null) { onOpen(t, 2) }.semantics { contentDescription = "$label · דקות" }.testTag("${tag}_mm"))
-                        }
-                    }
+            @Composable fun cell(label: String, value: String, t: KeyTarget, empty: Boolean, edit: DigitEdit?, tag: String) {
+                val shape = RoundedCornerShape(14.dp)
+                // The time being typed is a lifted card with the place's colour on its edge; the ruler's choice is a soft tint.
+                val lifted = edit != null
+                val chosen = !typing && active == t
+                Column(Modifier.weight(1f).clip(shape)
+                    .background(when { lifted -> if (c.dark) ink.copy(alpha = 0.10f) else c.surface; chosen -> if (c.dark) ink.copy(alpha = 0.16f) else c.surface.copy(alpha = 0.7f); else -> Color.Transparent })
+                    .then(if (lifted) Modifier.border(1.5.dp, accent, shape) else Modifier)
+                    .kisClick { onOpen(t, null) }.semantics { selected = lifted }.testTag(tag).padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(label, color = ink.copy(alpha = if (c.dark) 0.85f else 0.7f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+                    DigitClock(value, label, style, ink.copy(alpha = if (empty && edit == null) 0.45f else 1f), ink, accent, edit, tag) { i -> onOpen(t, if (empty) null else i) }
                     if (onNudge != null && !empty) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(-15, 15).forEach { n ->
-                            Box(Modifier.weight(1f).heightIn(min = 36.dp).clip(RoundedCornerShape(10.dp)).background(ink.copy(alpha = 0.16f))
+                            Box(Modifier.weight(1f).heightIn(min = 36.dp).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+                                .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(10.dp)))
                                 .kisClick(haptic = KisSettings.Haptic.TICK) { onNudge(t, n) }
                                 .semantics { contentDescription = "$label ${if (n > 0) "$n דקות קדימה" else "${-n} דקות אחורה"}" }
                                 .testTag("nudge_${t.name.lowercase()}_$n"), contentAlignment = Alignment.Center) {
@@ -507,31 +590,31 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
                     }
                 }
             }
-            cell("התחלה", start, KeyTarget.START, startEmpty, "clock_start")
-            Text("←", color = ink.copy(alpha = 0.7f), fontSize = 20.sp, modifier = Modifier.padding(top = digits.value.dp * 0.6f))
-            cell("סיום", end, KeyTarget.END, false, "clock_end")
+            cell("התחלה", start, KeyTarget.START, startEmpty, startEdit, "clock_start")
+            Text("←", color = ink.copy(alpha = 0.5f), fontSize = 20.sp, modifier = Modifier.padding(top = digits.value.dp * 0.6f))
+            cell("סיום", end, KeyTarget.END, false, endEdit, "clock_end")
         }
     }
 }
 
 @Composable
-private fun HoursDisplay(value: String, active: Boolean, ink: Color, onOpen: (Int) -> Unit, onQuick: (Int) -> Unit, onUseClock: (() -> Unit)?) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (active) ink.copy(alpha = 0.16f) else Color.Transparent)
-        .kisClick { onOpen(0) }.testTag("hours_display").padding(horizontal = 8.dp, vertical = 6.dp)) {
-        Text("שעות ודקות", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
-        val parts = DurationInput.display(value).ifEmpty { "0:00" }.split(':')
-        val style = KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp, textDirection = TextDirection.Ltr)
-        CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(parts.first(), color = ink, style = style, modifier = Modifier.kisClick { onOpen(0) }.semantics { contentDescription = "משך · שעות" }.testTag("duration_hours"))
-                Text(":", color = ink, style = style)
-                Text(parts.getOrElse(1) { "00" }, color = ink, style = style, modifier = Modifier.kisClick { onOpen(2) }.semantics { contentDescription = "משך · דקות" }.testTag("duration_minutes"))
-            }
-        }
+private fun HoursDisplay(value: String, edit: DigitEdit?, ink: Color, accent: Color, onOpen: (Int?) -> Unit, onQuick: (Int) -> Unit, onUseClock: (() -> Unit)?) {
+    val c = Kis.colors
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.fillMaxWidth().clip(shape).background(if (edit != null) (if (c.dark) ink.copy(alpha = 0.10f) else c.surface) else Color.Transparent)
+        .then(if (edit != null) Modifier.border(1.5.dp, accent, shape) else Modifier)
+        .kisClick { onOpen(null) }.testTag("hours_display").padding(horizontal = 8.dp, vertical = 6.dp)) {
+        Text("שעות ודקות", color = ink.copy(alpha = if (c.dark) 0.85f else 0.7f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+        // Always two-digit hours ("01:40"), so every digit has its place to tap, like the clock.
+        val shown = if (value.length == 5 && value[2] == ':') value
+            else DurationInput.display(value).let { v -> if (Regex("\\d{1,2}:\\d{2}").matches(v)) v.padStart(5, '0') else "00:00" }
+        val style = KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum")
+        DigitClock(shown, "משך", style, ink, ink, accent, edit, "duration") { i -> onOpen(i) }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(2, 4, 6, 8).forEach { h ->
-            Box(Modifier.weight(1f).heightIn(min = 38.dp).clip(RoundedCornerShape(10.dp)).background(ink.copy(alpha = 0.16f)).kisClick { onQuick(h) }.testTag("quick_hours_$h"),
+            Box(Modifier.weight(1f).heightIn(min = 38.dp).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+                .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(10.dp))).kisClick { onQuick(h) }.testTag("quick_hours_$h"),
                 contentAlignment = Alignment.Center) { Text("$h ש׳", color = ink, style = KisType.label) }
         }
     }
@@ -540,24 +623,29 @@ private fun HoursDisplay(value: String, active: Boolean, ink: Color, onOpen: (In
 }
 
 @Composable
-private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color, onOpen: () -> Unit, onUnknown: () -> Unit, onKnown: () -> Unit, hoursLabel: String, onHours: () -> Unit) {
+private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color, accent: Color, onOpen: () -> Unit, onUnknown: () -> Unit, onKnown: () -> Unit, hoursLabel: String, onHours: () -> Unit) {
+    val c = Kis.colors
+    val shape = RoundedCornerShape(14.dp)
     if (d.amountUnknown) {
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).kisClick(onClick = onKnown).testTag("job_amount_unknown").padding(8.dp)) {
+        Column(Modifier.fillMaxWidth().clip(shape).kisClick(onClick = onKnown).testTag("job_amount_unknown").padding(8.dp)) {
             Text("כמה הרווחת", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
             Text("עוד לא יודע · להוספה", color = ink.copy(alpha = 0.6f), style = KisType.title.copy(fontSize = 30.sp))
         }
     } else {
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (active) ink.copy(alpha = 0.16f) else Color.Transparent)
+        Column(Modifier.fillMaxWidth().clip(shape).background(if (active) (if (c.dark) ink.copy(alpha = 0.10f) else c.surface) else Color.Transparent)
+            .then(if (active) Modifier.border(1.5.dp, accent, shape) else Modifier)
             .kisClick(onClick = onOpen).testTag("job_amount").padding(horizontal = 8.dp, vertical = 6.dp)) {
             Text("כמה הרווחת", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
             MoneyText(amount.toDoubleOrNull() ?: 0.0, d.currency, KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp), color = ink.copy(alpha = if (amount.isEmpty()) 0.45f else 1f))
         }
     }
+    val tile = Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+        .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(10.dp)))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (!d.amountUnknown) Box(Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(10.dp)).background(ink.copy(alpha = 0.16f)).kisClick(onClick = onUnknown)
-            .testTag("job_unknown").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) { Text("עוד לא יודע", color = ink, style = KisType.label) }
-        Box(Modifier.weight(1f).heightIn(min = 38.dp).clip(RoundedCornerShape(10.dp)).background(ink.copy(alpha = 0.16f)).kisClick(onClick = onHours).testTag("job_hours"),
-            contentAlignment = Alignment.Center) {
+        if (!d.amountUnknown) Box(tile.kisClick(onClick = onUnknown).testTag("job_unknown").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+            Text("עוד לא יודע", color = ink, style = KisType.label)
+        }
+        Box(Modifier.weight(1f).then(tile).kisClick(onClick = onHours).testTag("job_hours"), contentAlignment = Alignment.Center) {
             Text(if (hoursLabel.isNotEmpty() && hoursLabel != "0") "משך: ${DurationInput.display(hoursLabel)}" else "כמה זמן לקח? (לא חובה)", color = ink, style = KisType.label)
         }
     }
@@ -590,10 +678,15 @@ private fun DayStrip(day: Long, onDay: (Long) -> Unit) {
             val millis = Calendar.getInstance().apply { timeInMillis = today; add(Calendar.DAY_OF_MONTH, i) }.timeInMillis
             val cal = Calendar.getInstance().apply { timeInMillis = millis }
             val on = millis == day
-            Column(Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(if (on) c.ink else c.surface)
+            val shape = RoundedCornerShape(14.dp)
+            // Light: the chosen day is a white card with an ink edge (like a chosen chip), the others sit back; no black tile.
+            Column(Modifier.weight(1f).heightIn(min = 56.dp).clip(shape)
+                .background(if (c.dark) (if (on) c.ink else c.surface) else if (on) c.surface else c.surface.copy(alpha = 0.55f))
+                .then(if (!c.dark && on) Modifier.border(2.dp, c.ink, shape) else Modifier)
                 .kisClick { onDay(millis) }.semantics { selected = on }.testTag("day_$i"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Text(if (i == 0) "היום" else KisFormat.DAY_SHORT[cal.get(Calendar.DAY_OF_WEEK) - 1], style = KisType.micro.copy(fontSize = 12.sp), color = if (on) c.onInk else c.muted)
-                Text(cal.get(Calendar.DAY_OF_MONTH).toString(), style = KisType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 17.sp), color = if (on) c.onInk else c.ink)
+                val fg = if (c.dark && on) c.onInk else c.ink
+                Text(if (i == 0) "היום" else KisFormat.DAY_SHORT[cal.get(Calendar.DAY_OF_WEEK) - 1], style = KisType.micro.copy(fontSize = 12.sp), color = if (on) fg else c.muted)
+                Text(cal.get(Calendar.DAY_OF_MONTH).toString(), style = KisType.body.copy(fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, fontSize = 17.sp), color = fg)
             }
         }
     }
@@ -688,64 +781,62 @@ private fun keyLabel(t: KeyTarget, currency: String) = when (t) {
 }
 
 /**
- * Digits with a clear display of the field and what is being typed, and one "אישור" that only closes it.
- * For a time, the display shows its four digits; [cursor] is the one the next key replaces, and a tap on a digit moves it there.
+ * The slim bar above the phone's keyboard while a value is typed: what is being typed (and, for an amount, its value),
+ * "לשעת הסיום" after a start time, and "אישור" that only closes the keyboard (never saves).
  */
 @Composable
-private fun Keypad(time: Boolean, label: String, value: String, typing: Boolean, cursor: Int?, onCursor: (Int) -> Unit, onKey: (String) -> Unit, onDone: () -> Unit) {
+private fun TypingBar(label: String, value: String?, typing: Boolean, next: String?, onNext: () -> Unit, onDone: () -> Unit) {
     val c = Kis.colors
-    val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", if (time) "00" else ".", "0", "⌫")
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)).background(c.surface).navigationBarsPadding()
-        .padding(horizontal = 12.dp, vertical = 10.dp).testTag("keypad"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(14.dp)).background(c.sunk).padding(horizontal = 14.dp)
-            .semantics(mergeDescendants = true) {}.testTag("keypad_display"), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(label, style = KisType.label, color = c.ink)
-
-            }
-            val digitsStyle = KisType.amount.copy(fontSize = 26.sp, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum")
-            if (time && cursor != null && value.length == 5) {
-                CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-                    Row(Modifier.testTag("keypad_value").semantics { contentDescription = value }, verticalAlignment = Alignment.CenterVertically) {
-                        // value is "HH:MM"; digit i of the four sits at i, or i + 1 past the colon.
-                        listOf(0, 1, 2, 3).forEach { i ->
-                            if (i == 2) Text(":", style = digitsStyle, color = c.muted)
-                            val on = cursor == i
-                            Box(Modifier.size(width = 26.dp, height = 40.dp).clip(RoundedCornerShape(8.dp)).background(if (on) c.ink else Color.Transparent)
-                                .kisClick(haptic = KisSettings.Haptic.TICK) { onCursor(i) }.semantics { contentDescription = "ספרה ${i + 1}"; selected = on }.testTag("keypad_digit_$i"),
-                                contentAlignment = Alignment.Center) {
-                                Text(value[if (i < 2) i else i + 1].toString(), style = digitsStyle, color = if (on) c.onInk else c.ink, maxLines = 1)
-                            }
-                        }
-                    }
-                }
-            } else Text(value.ifEmpty { "—" }, style = digitsStyle, color = if (typing) c.ink else c.muted, maxLines = 1, modifier = Modifier.testTag("keypad_value"))
+    Row(Modifier.fillMaxWidth().background(c.surface).drawBehind { drawRect(c.line, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
+        .navigationBarsPadding().padding(horizontal = 14.dp, vertical = 8.dp).testTag("entry_bar"),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.weight(1f).semantics(mergeDescendants = true) {}.testTag("entry_label"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(label, style = KisType.label, color = c.muted, maxLines = 1)
+            if (value != null) Text(value.ifEmpty { "—" }, style = KisType.amount.copy(fontSize = 22.sp, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum"),
+                color = if (typing) c.ink else c.muted, maxLines = 1, modifier = Modifier.testTag("entry_value"))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // RTL: the action column sits on the left edge (end).
-            Column(Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Digits read like the phone's own dialer and calculator (1 on the left), also in Hebrew: RTL rows are reversed.
-                keys.chunked(3).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        row.reversed().forEach { k ->
-                            Box(Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(14.dp)).background(c.sunk)
-                                .kisClick(haptic = KisSettings.Haptic.TICK) { onKey(k) }.semantics { contentDescription = if (k == "⌫") "מחיקה" else k }.testTag("key_$k"),
-                                contentAlignment = Alignment.Center) {
-                                Text(k, style = KisType.body.copy(fontSize = if (k.length > 1 || k == "." || k == "⌫") 17.sp else 22.sp, fontWeight = FontWeight.Medium,
-                                    textDirection = TextDirection.Ltr), color = if (k == "⌫" || k == "00" || k == ".") c.muted else c.ink)
-                            }
-                        }
-                    }
-                }
-            }
-            Box(Modifier.weight(1.2f).height(232.dp).clip(RoundedCornerShape(14.dp)).background(c.ink)
-                .kisClick(onClick = onDone).testTag("keypad_done"), contentAlignment = Alignment.Center) {
-                Text("אישור", style = KisType.body.copy(fontWeight = FontWeight.SemiBold, fontSize = 18.sp), color = c.onInk)
-            }
-        }
+        if (next != null) KisButton(next, onNext, kind = KisButtonKind.GHOST, height = 44.dp, haptic = KisSettings.Haptic.TICK, tag = "entry_next")
+        KisButton("אישור", onDone, height = 44.dp, tag = "entry_done")
     }
 }
 
+/** What the hidden field holds: the keyboard always has something to delete, so Backspace always arrives. */
+private const val SINK = "        "
+
+/**
+ * The phone's own keyboard, without a visible text field: three hidden fields (a time going on to the end time, a
+ * time or duration that finishes, an amount with a decimal point). The page keeps the values; each key reaches
+ * [onKey] as a digit, "." or "⌫". [ask] changes whenever typing (re)starts, which focuses the field for [target].
+ */
+@Composable
+private fun KeySink(target: KeyTarget, ask: Int, active: Boolean, onFocus: (Boolean) -> Unit, onKey: (String) -> Unit, onNext: () -> Unit, onDone: () -> Unit) {
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val sinks = remember { List(3) { androidx.compose.ui.focus.FocusRequester() } }
+    val focused = remember { BooleanArray(3) }
+    val which = when (target) { KeyTarget.START -> 0; KeyTarget.END, KeyTarget.HOURS -> 1; else -> 2 }
+    LaunchedEffect(ask) {
+        if (active) { runCatching { sinks[which].requestFocus() }; keyboard?.show() }
+    }
+    val emit by rememberUpdatedState(onKey)
+    Box(Modifier.size(1.dp).graphicsLayer { alpha = 0f }) {
+        listOf(Triple(KeyboardType.Number, ImeAction.Next, "entry_time_next"), Triple(KeyboardType.Number, ImeAction.Done, "entry_time"),
+            Triple(KeyboardType.Decimal, ImeAction.Done, "entry_amount")).forEachIndexed { i, (type, action, tag) ->
+            androidx.compose.foundation.text.BasicTextField(
+                value = androidx.compose.ui.text.input.TextFieldValue(SINK, androidx.compose.ui.text.TextRange(SINK.length)),
+                onValueChange = { v ->
+                    val removed = SINK.length - v.text.count { it == ' ' }
+                    repeat(removed.coerceAtLeast(0)) { emit("⌫") }
+                    v.text.forEach { ch -> when { ch.isDigit() -> emit(ch.toString()); ch == '.' || ch == ',' -> emit(".") } }
+                },
+                modifier = Modifier.size(1.dp).focusRequester(sinks[i])
+                    .onFocusChanged { focused[i] = it.isFocused; onFocus(focused.any { f -> f }) }.testTag(tag),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = type, imeAction = action),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { onNext() }, onDone = { onDone() }),
+            )
+        }
+    }
+}
 
 @Composable
 private fun SaveBar(check: EntryDraft.Check, label: String, enabled: Boolean, onSave: () -> Unit) {

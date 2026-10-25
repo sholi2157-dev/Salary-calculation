@@ -47,13 +47,15 @@ data class KisColors(
     val onInk get() = bg
 }
 
+// Light (2.0.8): ink is a deep navy, not black, and the page a softer grey-blue, so text keeps its contrast (about 15:1 on
+// white) without the hard black-on-white look; chosen days, tabs and currencies are white with an ink edge, not black tiles.
 val KisLight = KisColors(
     dark = false,
-    bg = Color(0xFFEDF0F5), surface = Color.White, sunk = Color(0xFFE2E6EE), ink = Color(0xFF0D1015), muted = Color(0xFF5D6573), line = Color(0xFFC6CDD8),
+    bg = Color(0xFFF1F3F8), surface = Color.White, sunk = Color(0xFFE4E8F0), ink = Color(0xFF1B2335), muted = Color(0xFF5A6478), line = Color(0xFFD2D8E3),
     pending = Color(0xFF9A5000), pendingSoft = Color(0xFFFFEBC7), paid = Color(0xFF0B7F60), danger = Color(0xFFC2362B),
     // Light floating surfaces are frosted glass (translucent white, hairline edge, soft shadow), not black slabs.
-    edit = Color(0xFF0D1015), editInk = Color.White, nav = Color(0xE6FFFFFF), navInk = Color(0xFF3B4250), navOn = Color(0xFF0D1015), navOnInk = Color.White,
-    bar = Color(0xF2FFFFFF), onBar = Color(0xFF0D1015),
+    edit = Color(0xFF1B2335), editInk = Color.White, nav = Color(0xE6FFFFFF), navInk = Color(0xFF465066), navOn = Color(0xFF1B2335), navOnInk = Color.White,
+    bar = Color(0xF2FFFFFF), onBar = Color(0xFF1B2335),
 )
 
 val KisDark = KisColors(

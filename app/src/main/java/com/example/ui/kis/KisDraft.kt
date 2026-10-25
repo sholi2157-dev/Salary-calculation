@@ -286,18 +286,25 @@ fun parseTime(digits: String): String? {
  * One key on a time being edited in place: the digit at [cursor] (0–1 hours, 2–3 minutes) is replaced and the cursor
  * moves on; 4 means the value is complete. So 05:30 → 05:35 is "tap the last digit, type 5", never the whole time again.
  * A first digit that can only start a one-digit hour (3–9) becomes 0X and jumps to the minutes; likewise 6–9 for minutes.
+ * Once all four are typed, another digit replaces the last one (it never starts over or spills into another time).
  */
-fun typeTime(digits: String, cursor: Int, key: String, maxHour: Int = 23): Pair<String, Int> {
+fun typeTime(digits: String, cursor: Int, key: String, maxHour: Int = 23): Pair<String, Int> =
+    typeTimeOrNull(digits, cursor, key, maxHour) ?: (digits.padEnd(4, '·').take(4) to cursor.coerceIn(0, 4))
+
+/** As [typeTime], or null when the key cannot go there (an hour above [maxHour], like 2 then 5); nothing changes then. */
+fun typeTimeOrNull(digits: String, cursor: Int, key: String, maxHour: Int = 23): Pair<String, Int>? {
     val b = digits.padEnd(4, '·').take(4).toCharArray()
-    var at = if (cursor in 0..3) cursor else 0
+    var at = if (cursor in 0..4) cursor else 0
     if (key == "⌫") { if (at > 0) { at--; b[at] = '·' }; return String(b) to at }
     for (k in key) {
         if (!k.isDigit()) continue
-        if (at >= 4) break
+        if (at >= 4) at = 3
         when (at) {
-            0 -> if (k > '2') { b[0] = '0'; b[1] = k; at = 2 } else { b[0] = k; if (k == '2' && b[1].isDigit() && b[1].digitToInt() > maxHour % 10) b[1] = '0'; at = 1 }
+            0 -> if (k.digitToInt() > maxHour / 10) { b[0] = '0'; b[1] = k; at = 2 }
+                else { b[0] = k; if (b[1].isDigit() && k.digitToInt() * 10 + b[1].digitToInt() > maxHour) b[1] = '0'; at = 1 }
+            1 -> { if ((if (b[0].isDigit()) b[0].digitToInt() else 0) * 10 + k.digitToInt() > maxHour) return null; b[1] = k; at = 2 }
             2 -> if (k > '5') { b[2] = '0'; b[3] = k; at = 4 } else { b[2] = k; at = 3 }
-            else -> { b[at] = k; at++ }
+            else -> { b[3] = k; at = 4 }
         }
     }
     return String(b) to at
