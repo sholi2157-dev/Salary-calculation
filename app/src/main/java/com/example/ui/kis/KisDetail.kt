@@ -154,12 +154,14 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
     val context = LocalContext.current
     val workers = WorkPay.workers(entry)
     val summary = WorkPay.group(entry)
+    val job = WorkPay.isJob(entry)
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.bg).padding(14.dp).testTag("group_detail"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("הצוות", style = KisType.label.copy(fontSize = 16.sp), color = c.ink)
         if (summary != null) {
-            Row { Text("סה״כ לתשלום (כולל כולם)", style = KisType.caption, color = c.muted, modifier = Modifier.weight(1f)); MoneyText(summary.employerTotal, entry.currency, KisType.label) }
-            Row { Text("ההכנסה שלי (כולל עמלה)", style = KisType.caption, color = c.muted, modifier = Modifier.weight(1f)); MoneyText(summary.myNet, entry.currency, KisType.label) }
-        } else Text("הסכומים יופיעו אחרי שיושלם התעריף.", style = KisType.caption, color = c.muted)
+            Row { Text(if (job) "סכום העבודה" else "סה״כ לתשלום (כולל כולם)", style = KisType.caption, color = c.muted, modifier = Modifier.weight(1f)); MoneyText(summary.employerTotal, entry.currency, KisType.label) }
+            if (job) Row { Text("לצוות", style = KisType.caption, color = c.muted, modifier = Modifier.weight(1f)); MoneyText(summary.employerTotal - summary.myNet, entry.currency, KisType.label) }
+            Row { Text(if (job) "נשאר לי" else "ההכנסה שלי (כולל עמלה)", style = KisType.caption, color = c.muted, modifier = Modifier.weight(1f)); MoneyText(summary.myNet, entry.currency, KisType.label) }
+        } else Text(if (job) "הסכומים יופיעו אחרי שיושלם סכום העבודה." else "הסכומים יופיעו אחרי שיושלם התעריף.", style = KisType.caption, color = c.muted)
         workers.forEachIndexed { i, w ->
             val wPay = WorkPay.workerPay(w, entry)
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.surface)
@@ -168,7 +170,9 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                 Icon(if (w.isPaid) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked, if (w.isPaid) "שולם" else "לא שולם", tint = if (w.isPaid) c.paid else c.muted)
                 Column(Modifier.weight(1f)) {
                     Text(w.name, style = KisType.label, color = c.ink)
-                    Text("${KisFormat.hours(w.hours)} שעות · ${wPay?.let { KisFormat.money(it, entry.currency) } ?: "תעריף חסר"}${if (w.bonus > 0) " · בונוס ${KisFormat.money(w.bonus, entry.currency)}" else ""}",
+                    val fixed = job && w.amount != null
+                    val time = if (fixed && w.hours == 0.0) "סכום קבוע" else if (job && !fixed) "${KisFormat.hours(w.hours)} שעות × ${WorkPay.workerRate(w, entry)?.let { KisFormat.money(it, entry.currency) } ?: "?"}" else "${KisFormat.hours(w.hours)} שעות"
+                    Text("$time · ${wPay?.let { KisFormat.money(it, entry.currency) } ?: "תעריף חסר"}${if (w.bonus > 0) " · בונוס ${KisFormat.money(w.bonus, entry.currency)}" else ""}",
                         style = KisType.caption.copy(textDirection = TextDirection.Rtl), color = c.muted)
                 }
                 Icon(Icons.Rounded.ContentCopy, "העתק פרטי משמרת לעובד", tint = c.ink, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))

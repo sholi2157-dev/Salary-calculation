@@ -678,6 +678,9 @@ class WorkViewModel(
     private fun valid(e: WorkEntry): Boolean {
         if (e.category.isBlank() || e.currency !in listOf("₪", "$") || !e.hours.isFinite() || e.hours < 0) return false
         if (!e.bonus.isFinite() || e.bonus < 0 || !e.hourlyRate.isFinite() || e.hourlyRate < 0 || !e.totalEarnings.isFinite() || e.totalEarnings < 0) return false
+        // A team job may leave nothing for the user (the whole price went to the team); every worker's pay must still be known.
+        if (com.example.data.WorkPay.isTeamJob(e)) return com.example.data.WorkPay.workers(e).let { ws -> ws.isNotEmpty() && ws.all { it.name.isNotBlank() && it.hours.isFinite() && it.hours >= 0 } } &&
+            com.example.data.WorkPay.teamPay(e)?.let { it >= 0 } == true
         if (e.kind == WorkEntry.KIND_JOB) return !e.payKnown || e.totalEarnings > 0
         if (e.kind != WorkEntry.KIND_SHIFT || e.hours <= 0) return false
         if (e.isGroupShift && com.example.data.WorkPay.workers(e).any { it.name.isBlank() || !it.hours.isFinite() || it.hours < 0 || it.bonus < 0 }) return false
