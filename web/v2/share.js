@@ -97,8 +97,10 @@ function employer(e,ownName=null,technical=false,future=false) {
  const total=own==null||pays.some(p=>p==null)?null:Math.round((own+pays.reduce((a,b)=>a+b,0))*100)/100;
  const out=[...(technical?['עבודה: '+e.category,'כמות משמרות: 1','כמות שעות: '+hours(e.hours+ws.reduce((n,w)=>n+w.hours,0))]:['היי, סיכמתי פה את עבודת הצוות ב'+e.category+':']),
   'תאריכים: '+date(e.date),'סכום הצוות: '+(total==null?'ממתין להשלמת תעריף':money(total,e.currency)),'פירוט:'];
- out.push((String(ownName??'').trim()||'החלק שלי')+': '+hours(e.hours)+' שעות | '+(own==null?'תעריף חסר':money(own,e.currency)));
- ws.forEach((w,i)=>out.push(w.name+': '+hours(w.hours)+' שעות | '+(pays[i]==null?'תעריף חסר':money(pays[i],e.currency))));
+ const job=Pay.isJob(e);
+ out.push((String(ownName??'').trim()||'החלק שלי')+': '+(job&&e.hours===0?'':hours(e.hours)+' שעות | ')+(own==null?(job?'סכום חסר':'תעריף חסר'):money(own,e.currency)));
+ // On a job team a fixed sum has no hours to show.
+ ws.forEach((w,i)=>out.push(w.name+': '+(job&&w.amount!=null&&w.hours===0?'סכום קבוע':hours(w.hours)+' שעות')+' | '+(pays[i]==null?'תעריף חסר':money(pays[i],e.currency))));
  if(note(e))out.push('הערה: '+note(e));
  if(!technical)out.push('תודה!');return future?plannedText(out.join('\n')):out.join('\n');
 }
