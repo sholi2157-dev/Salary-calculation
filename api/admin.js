@@ -14,6 +14,6 @@ module.exports = async function handler(req, res) {
   const claims = await verifyIdToken(idToken);
   if (!claims) return res.status(401).json({ error: 'signin' });
   if (!isOwner(claims)) return res.status(403).json({ error: 'not-owner' });
-  const days = [7, 30, 90].includes(+req.query?.days) ? +req.query.days : 30;
+  const days = [7, 14, 30].includes(+req.query?.days) ? +req.query.days : 30;
   return res.status(200).json(await dashboard({ idToken, days }));
 };

@@ -24,10 +24,16 @@
     <button class="link" id="signout" hidden>להתחבר עם חשבון אחר</button>
   </section>
   <div id="board" hidden>
-    <div class="seg" role="group" aria-label="תקופה" id="range">
-      <button data-days="7">7 ימים</button><button data-days="30" aria-pressed="true">30 יום</button><button data-days="90">90 יום</button>
+    <div class="switcher">
+      <div class="tabs" role="group" aria-label="מה להציג" id="tabs">
+        <button data-tab="app" aria-pressed="true">אפליקציה</button><button data-tab="site">אתר</button>
+      </div>
+      <div class="seg" role="group" aria-label="תקופה" id="range">
+        <button data-days="7">7 ימים</button><button data-days="14">14 יום</button><button data-days="30" aria-pressed="true">30 יום</button>
+      </div>
     </div>
-    <div id="content"></div>
+    <div id="pane-app"></div>
+    <div id="pane-site" hidden></div>
   </div>
 </main>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>

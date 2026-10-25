@@ -1,20 +1,35 @@
 /* The owner's dashboard: the app's own tokens (kis.css), plus a few chart pieces. */
 .gate { display: grid; gap: 12px; margin-top: 12px; }
-#range { margin: 8px 0 4px; }
+/* App / site switch, pinned under the title so it is always one tap away. */
+.switcher { position: sticky; top: 0; z-index: 5; display: grid; gap: 8px; padding: 8px 0 10px; margin: 0 -16px; padding-inline: 16px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--sunk); border-radius: 16px; padding: 4px; gap: 4px; }
+.tabs button { min-height: 46px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font-weight: 600; font-size: 16px; }
+.tabs button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+#range { justify-self: start; }
+#range button { min-height: 34px; }
+#pane-app > .kpis:first-child, #pane-site > .kpis:first-child, #pane-site > .note:first-child { margin-top: 6px; }
 .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .kpi { background: var(--surface); border-radius: 18px; padding: 14px; display: grid; gap: 2px; align-content: start; }
 .kpi .num { font: 30px/34px var(--display); direction: ltr; text-align: right; }
 .kpi.wide { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; }
 .kpi.wide .num { margin-inline-start: auto; }
 .kpi .num small { font: 600 16px/22px var(--text); direction: rtl; }
-.chart { display: flex; align-items: flex-end; gap: 2px; height: 120px; direction: ltr; margin-top: 10px; }
+.chart { display: flex; align-items: flex-end; gap: 2px; height: 120px; direction: ltr; margin-top: 10px; touch-action: pan-y; user-select: none; cursor: crosshair; }
 .chart .col { flex: 1; display: flex; flex-direction: column-reverse; gap: 2px; height: 100%; justify-content: flex-start; min-width: 0; position: relative; }
 .chart .col span { display: block; background: var(--glow); border-radius: 4px 4px 0 0; min-height: 0; }
 .chart .col span.alt { background: var(--muted); border-radius: 4px 4px 0 0; }
-.chart .col:hover span, .chart .col:focus span { filter: brightness(1.2); }
+.chart.has-on .col span { opacity: .45; }
+.chart .col.on span { opacity: 1; }
+.chart .col.on::before { content: ''; position: absolute; inset: 0; border-radius: 6px; background: color-mix(in srgb, var(--glow) 12%, transparent); }
+.readout { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; min-height: 30px; }
+.readout .when { font-weight: 600; font-size: 15px; }
+.readout .vals { display: flex; gap: 12px; color: var(--muted); font-size: 14px; }
+.readout .v b { font: 22px/26px var(--display); color: var(--ink); }
+.readout .v::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--glow); margin-inline-end: 6px; }
+.readout .v.alt::before { background: var(--muted); }
 .chart .col.zero::after { content: ''; position: absolute; bottom: 0; inset-inline: 0; height: 2px; border-radius: 1px; background: var(--line); }
 .axis { display: flex; justify-content: space-between; direction: ltr; color: var(--muted); font-size: 12px; margin-top: 6px; }
-.tip { min-height: 20px; font-size: 13px; color: var(--muted); margin-top: 6px; }
 .bars { display: grid; gap: 10px; margin-top: 4px; }
 .bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; font-size: 14px; }
 .bar-row .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
@@ -25,3 +40,4 @@
 .legend { margin-top: 8px; }
 .cards { display: grid; gap: 10px; }
 .empty { color: var(--muted); font-size: 14px; }
+.foot { margin: 16px 4px 0; }
