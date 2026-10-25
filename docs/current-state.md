@@ -1,3 +1,15 @@
+# Android 2.0.8 candidate ready (not published) — 2026-10-25
+
+Branch `claude/project-thread-cudbls` (includes the job team from `claude/project-thread-l42q3d`); website
+`claude/project-thread-cudbls-web` (on top of `claude/project-thread-l42q3d-web`). Signed candidate run 40164989307
+SUCCESS: identity "same package, same permanent certificate, versionCode 41 > 40 > 24", real update over the delivered
+2.0.7 with data kept, fresh install. APK SHA-256 11a56473f9e8194ad6d602e510b6675287ac048ff2b715814945907eced36fc6,
+private artifact `salary-2.0.8-candidate`. Changes: the in-app keypad is gone (the phone's keyboard through hidden
+fields, `KeySink`/`TypingBar`), digit-by-digit time editing on the clock (tap a digit / the whole time; a full time
+takes more digits only on its last one; no jump to the end; an impossible hour is refused), calmer light mode (ink
+#1B2335, chosen days/tabs/currency white with an ink edge, the add page glows in the place's colour). The website
+mirrors all of it. Waiting for the owner's approval to publish.
+
 # Android 2.0.7 and the recap website published — 2026-10-23
 
 Android 2.0.7 (versionCode 40) from source 822de27, signed candidate run 39998442873
