@@ -13,13 +13,14 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class WorkFirebaseConfigurationTest {
-    @Test fun configuredAccountsDoNotEnableUnverifiedCloudOrGoogle() {
+    @Test fun configuredAccountsEnableGoogleOnlyWhereRegistered() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val expectedPackage = if (BuildConfig.LOCAL_DISTRIBUTION) "com.aistudio.worktracker.qztvdw.distribution" else if (BuildConfig.BUILD_TYPE == "preview")
             "com.aistudio.worktracker.qztvdw.preview" else "com.aistudio.worktracker.qztvdw"
         assertEquals(expectedPackage, BuildConfig.APPLICATION_ID)
         assertFalse(BuildConfig.CLOUD_SYNC_ENABLED)
-        assertFalse(BuildConfig.GOOGLE_SIGN_IN_ENABLED)
+        // 2.1: only the distributed app has an Android OAuth client (its own package and signing key) for Google sign-in.
+        assertEquals(BuildConfig.LOCAL_DISTRIBUTION && BuildConfig.ACCOUNTS_ENABLED, BuildConfig.GOOGLE_SIGN_IN_ENABLED)
         val options = FirebaseOptions.fromResource(context)
         if (!BuildConfig.ACCOUNTS_ENABLED) {
             assertNull(options)
@@ -30,6 +31,7 @@ class WorkFirebaseConfigurationTest {
         assertEquals("workshiftsapp", options!!.projectId)
         assertFalse(options.apiKey.isBlank())
         assertTrue(options.applicationId.startsWith("1:998899976228:android:"))
+        if (BuildConfig.LOCAL_DISTRIBUTION) assertEquals("1:998899976228:android:a1866f570aa7df82ffb0b1", options.applicationId)
         if (BuildConfig.BUILD_TYPE == "preview") {
             assertEquals("1:998899976228:android:3b5406564d6a5db6ffb0b1", options.applicationId)
         }
