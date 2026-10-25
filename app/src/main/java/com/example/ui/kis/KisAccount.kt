@@ -104,9 +104,9 @@ private fun IntroRise(text: String, delayMs: Long, tag: String, small: Boolean =
 
 /** What it is, how to connect, the permissions and why it is safe: in the intro and behind the bell's invitation. */
 @Composable
-fun AiExplainCards() {
+fun AiExplainCards(withHow: Boolean = true) {
     IntroCard("מה זה", "מדברים עם העוזר בשפה רגילה: \"כמה הרווחתי החודש?\" או \"תוסיף משמרת מחר מ-9 עד 5 במסעדה\". הוא עונה ומעדכן לפי המשמרות שלך.", 0)
-    IntroCard("איך מחברים", "בהגדרות העוזר מוסיפים חיבור (Connector) עם הכתובת שמופיעה בהגדרות ← עוזרי AI מחוברים. נפתח דף, מתחברים עם Google ובוחרים מה מותר לו.", 1)
+    if (withHow) IntroCard("איך מחברים", "בהגדרות העוזר מוסיפים חיבור (Connector) עם הכתובת שמופיעה בהגדרות ← עוזרי AI מחוברים. נפתח דף, מתחברים עם Google ובוחרים מה מותר לו.", 1)
     IntroCard("הרשאות", "לראות משמרות מותר תמיד. להוסיף, לערוך או למחוק רק אם הפעלת. בוחרים לכמה זמן: שעה, יום, 30 יום או עד שתנתק.", 2)
     IntroCard("בטוח", "העוזר רואה רק את המשמרות שלך ולא מקבל את הסיסמה. כל שינוי שלו נרשם ואפשר לבטל אותו, ומנתקים אותו בכל רגע.", 3)
 }
@@ -195,7 +195,7 @@ fun AssistantsSheet(viewModel: WorkViewModel, explain: Boolean = false, onDismis
     KisSheet(onDismiss = onDismiss, tag = "assistants_sheet") {
         Text("עוזרי AI", style = KisType.title, color = c.ink, modifier = Modifier.semantics { heading() })
         Column(Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (explain) AiExplainCards()
+            if (explain) AiExplainCards(withHow = false)
             else Text("עוזר מחובר יכול לענות על שאלות על המשמרות שלך, לסכם, ולפי מה שאישרת גם להוסיף, לערוך או למחוק. הוא רואה רק את המשמרות שלך.",
                 style = KisType.caption, color = c.muted)
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.bg).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
