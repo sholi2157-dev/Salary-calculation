@@ -63,6 +63,48 @@ class WorkFirestoreTransport(
             }
         }.awaitResult().also { checkOwner(uid) }
     }
+    // ---- personal AI assistants (lib/server/assistant.cjs on the website writes these, as the person) ----
+    private fun me(uid: String) = firestore.collection("users").document(uid)
+
+    /** Assistants allowed in now; an expired one is already refused by the server and is not shown. */
+    suspend fun assistants(uid: String): List<AssistantGrant> {
+        checkOwner(uid)
+        val now = System.currentTimeMillis()
+        return me(uid).collection("assistants").get(Source.SERVER).awaitResult().documents.mapNotNull { d ->
+            val until = d.getString("until")?.let(::isoMillis)
+            if (until != null && until <= now) null
+            else AssistantGrant(d.id, d.getString("name").orEmpty(), (d.get("scopes") as? List<*>)?.filterIsInstance<String>() ?: emptyList(), until)
+        }
+    }
+
+    suspend fun assistantActions(uid: String, limit: Long = 20): List<AssistantAction> {
+        checkOwner(uid)
+        return me(uid).collection("assistant_log").orderBy("at", com.google.firebase.firestore.Query.Direction.DESCENDING).limit(limit)
+            .get(Source.SERVER).awaitResult().documents.mapNotNull { d ->
+                AssistantAction(d.id, d.getString("client").orEmpty(), d.getString("tool").orEmpty(), d.getString("syncId") ?: return@mapNotNull null,
+                    d.getString("type") ?: "entry", d.getString("before"), d.getString("after"), d.getString("at")?.let(::isoMillis) ?: 0L, d.getBoolean("undone") == true)
+            }
+    }
+
+    /** Removing the grant cuts the assistant off at once: the server checks it on every call. */
+    suspend fun cutOff(uid: String, grantId: String) { checkOwner(uid); me(uid).collection("assistants").document(grantId).delete().awaitResult() }
+
+    /**
+     * Puts the item back as it was before the assistant's action, as a new version that reaches every device by sync.
+     * Only while it is still what the assistant left: a later change by the person wins. Same rules as the website.
+     */
+    suspend fun undo(uid: String, action: AssistantAction): Boolean {
+        checkOwner(uid)
+        val doc = records(uid).document(action.syncId).get(Source.SERVER).awaitResult()
+        val version = if (doc.exists()) doc.getLong("version") ?: 0L else 0L
+        if ((if (doc.exists()) doc.getString("payload") else null) != action.after) return false
+        val proposed = WorkRemoteRecord(action.syncId, action.type, version + 1, action.syncId + ":undo-" + java.util.UUID.randomUUID().toString().replace("-", ""),
+            action.before == null, action.before)
+        if (exchange(uid, version, proposed).operation != proposed.operation) return false
+        me(uid).collection("assistant_log").document(action.id).update("undone", true).awaitResult()
+        return true
+    }
+
     private fun decode(doc: DocumentSnapshot): WorkRemoteRecord {
         require(doc.getLong("schema") == 1L)
         return WorkRemoteRecord(doc.id, checkNotNull(doc.getString("type")),
@@ -78,4 +120,13 @@ private suspend fun <T> Task<T>.awaitResult(): T = suspendCancellableCoroutine {
             else continuation.resumeWithException(task.exception ?: IllegalStateException("Firebase request failed"))
         }
     }
+}
+
+data class AssistantGrant(val id: String, val name: String, val scopes: List<String>, val until: Long?)
+data class AssistantAction(val id: String, val client: String, val tool: String, val syncId: String, val type: String,
+                           val before: String?, val after: String?, val at: Long, val undone: Boolean)
+
+/** The website writes ISO times such as 2026-10-25T15:45:46.123Z. */
+internal fun isoMillis(text: String): Long? = listOf("yyyy-MM-dd'T'HH:mm:ss.SSSX", "yyyy-MM-dd'T'HH:mm:ssX").firstNotNullOfOrNull {
+    runCatching { java.text.SimpleDateFormat(it, java.util.Locale.ROOT).parse(text)?.time }.getOrNull()
 }

@@ -68,7 +68,7 @@ fun HeaderActions(unread: Boolean, onBell: () -> Unit) {
 @Composable
 fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSettings: () -> Unit, onDismiss: () -> Unit,
                        update: com.example.ui.WorkUpdates.Release? = null, onUpdate: (com.example.ui.WorkUpdates.Release) -> Unit = {},
-                       onStory: ((String) -> Unit)? = null) {
+                       onStory: ((String) -> Unit)? = null, onAi: (() -> Unit)? = null) {
     val c = Kis.colors
     val plan = viewModel.planSettings
     // A monthly summary shows only once its recap has opened, and stays marked "חדש" until the recap is watched.
@@ -97,6 +97,7 @@ fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSetti
                     month != null && onStory != null -> { { onStory(n.month) } }
                     month != null -> { { onMonth(month) } }
                     n.kind == "update" && update != null -> { { onUpdate(update) } }
+                    n.kind == "ai" && onAi != null -> onAi
                     else -> null
                 }
                 Column(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(c.bg)

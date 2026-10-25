@@ -281,7 +281,7 @@ fun MainAppContent(
     val googleSignIn: suspend () -> String? = { com.example.api.AuthManager.signInWithGoogle(activity) }
     val onSignInRequest: () -> Unit = if (BuildConfig.GOOGLE_SIGN_IN_ENABLED) ({ signInLater = false }) else ({ showAccountDialog = true })
     if (signingIn) {
-        com.example.ui.kis.SignInGate(onSignIn = googleSignIn, offline = offline, onLater = { signInLater = true })
+        com.example.ui.kis.SignInGate(onSignIn = googleSignIn, offline = offline, onLater = { signInLater = true }, updated = !onboardingStore.launchPending)
         return
     }
     Box(modifier) {

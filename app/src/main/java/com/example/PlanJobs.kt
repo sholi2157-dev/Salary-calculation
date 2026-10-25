@@ -112,6 +112,12 @@ class PlanSettings(context: Context) {
                 else -> now - it.time < NOTE_DAYS * DAY
             }
         }
+    /** 2.1: once per installation, after the Google sign-in, the bell invites to connect a personal AI assistant. */
+    fun inviteAi(now: Long = System.currentTimeMillis()) {
+        if (prefs.getBoolean("aiInvited", false)) return
+        prefs.edit().putBoolean("aiInvited", true).apply()
+        addRecent(Sent("ai", "מחברים את ה-AI שלך", "כמה דקות, ואפשר לשאול את ChatGPT או Claude על המשמרות. נגיעה להסבר", now, ""))
+    }
     /** A recap was watched: its summary is no longer new on the bell. */
     fun markOpened(scope: String) {
         val all = recent

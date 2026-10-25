@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
@@ -28,30 +29,97 @@ import kotlinx.coroutines.launch
  * (web/kis/account.js).
  */
 
-/** The sign-in screen. [onLater] only exists while there is no internet. */
+/** 2.1: the AI intro before the sign-in is shown once per installation. */
+object AiIntro {
+    private fun prefs(context: android.content.Context) = context.getSharedPreferences("ai_intro", android.content.Context.MODE_PRIVATE)
+    fun seen(context: android.content.Context) = prefs(context).getBoolean("seen", false)
+    fun markSeen(context: android.content.Context) { prefs(context).edit().putBoolean("seen", true).apply() }
+}
+
+/**
+ * The sign-in screen. The first time it comes with the 2.1 intro: a few animated words about the AI connection
+ * ([updated] says whether this phone had the app before), then what it is, how to connect, the permissions and why it
+ * is safe, and only then the Google sign-in. [onLater] only exists while there is no internet.
+ */
 @Composable
-fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () -> Unit) {
+fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () -> Unit, updated: Boolean = true) {
     val c = Kis.colors
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var step by rememberSaveable { mutableIntStateOf(if (AiIntro.seen(context)) 2 else 0) }
+    androidx.activity.compose.BackHandler(enabled = step in 1..2) { step-- }
+    LaunchedEffect(step) { if (step == 2) AiIntro.markSeen(context) }
     Box(Modifier.fillMaxSize().background(c.bg).testTag("signin")) {
         KisGlow(Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Spacer(Modifier.weight(1f))
-            KisLogo(Modifier.size(56.dp))
-            Text("מתחברים עם Google", style = KisType.page.copy(fontSize = 34.sp, lineHeight = 40.sp), color = c.ink, modifier = Modifier.semantics { heading() })
-            Text("כך המשמרות נשמרות בחשבון שלך ומסתנכרנות בין האפליקציה לאתר.", style = KisType.body, color = c.ink)
-            Text("מה שכבר רשום בטלפון נשאר ועובר לחשבון.", style = KisType.caption, color = c.muted)
-            Spacer(Modifier.weight(1f))
-            if (offline) Text("אין חיבור לאינטרנט. אפשר להמשיך לעבוד בטלפון, וכשהחיבור יחזור נבקש להתחבר.", style = KisType.caption, color = c.muted,
-                modifier = Modifier.testTag("signin_offline"))
-            error?.takeIf { it.isNotEmpty() }?.let { Text(it, style = KisType.caption, color = c.danger, modifier = Modifier.testTag("signin_error")) }
-            KisButton(if (busy) "מתחבר…" else "המשך עם Google", {
-                if (!busy) scope.launch { busy = true; error = null; error = onSignIn(); busy = false }
-            }, Modifier.fillMaxWidth(), enabled = !offline && !busy, height = 56.dp, tag = "signin_google")
-            if (offline) KisButton("להמשיך בינתיים", onLater, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "signin_later")
+            when (step) {
+                0 -> {
+                    Spacer(Modifier.weight(1f))
+                    IntroRise(if (updated) "גרסה 2.1." else "ברוך הבא.", 150, "intro_line_1")
+                    IntroRise("ה-AI שלך", 700, "intro_line_2")
+                    IntroRise("מכיר את המשמרות.", 1150, "intro_line_3")
+                    IntroRise("שואלים את ChatGPT, Claude או עוזר אחר כמה הרווחת, מבקשים ממנו לרשום משמרת, והוא עושה את זה בשבילך.", 1700, "intro_line_4", small = true)
+                    Spacer(Modifier.weight(1f))
+                    KisButton("הבא", { step = 1 }, Modifier.fillMaxWidth(), height = 56.dp, tag = "intro_next")
+                }
+                1 -> {
+                    Text("איך זה עובד", style = KisType.page.copy(fontSize = 34.sp, lineHeight = 40.sp), color = c.ink, modifier = Modifier.padding(top = 8.dp).semantics { heading() })
+                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        AiExplainCards()
+                    }
+                    KisButton("הבא", { step = 2 }, Modifier.fillMaxWidth(), height = 56.dp, tag = "intro_next_2")
+                }
+                else -> {
+                    Spacer(Modifier.weight(1f))
+                    KisLogo(Modifier.size(56.dp))
+                    Text("מחברים את חשבון Google", style = KisType.page.copy(fontSize = 34.sp, lineHeight = 40.sp), color = c.ink, modifier = Modifier.semantics { heading() })
+                    Text("פעם אחת, וכך האפליקציה, האתר והעוזר שלך רואים את אותן משמרות.", style = KisType.body, color = c.ink)
+                    Text("מה שכבר רשום בטלפון נשאר ועובר לחשבון.", style = KisType.caption, color = c.muted)
+                    Spacer(Modifier.weight(1f))
+                    if (offline) Text("אין חיבור לאינטרנט. אפשר להמשיך לעבוד בטלפון, וכשהחיבור יחזור נבקש להתחבר.", style = KisType.caption, color = c.muted,
+                        modifier = Modifier.testTag("signin_offline"))
+                    error?.takeIf { it.isNotEmpty() }?.let { Text(it, style = KisType.caption, color = c.danger, modifier = Modifier.testTag("signin_error")) }
+                    KisButton(if (busy) "מתחבר…" else "המשך עם Google", {
+                        if (!busy) scope.launch { busy = true; error = null; error = onSignIn(); busy = false }
+                    }, Modifier.fillMaxWidth(), enabled = !offline && !busy, height = 56.dp, tag = "signin_google")
+                    if (offline) KisButton("להמשיך בינתיים", onLater, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "signin_later")
+                }
+            }
         }
+    }
+}
+
+/** A line of the intro that rises into place, like the 2.0 launch. */
+@Composable
+private fun IntroRise(text: String, delayMs: Long, tag: String, small: Boolean = false) {
+    val shown = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(delayMs); shown.animateTo(1f, androidx.compose.animation.core.tween(650)) }
+    Text(text, style = if (small) KisType.body.copy(fontSize = 18.sp, lineHeight = 26.sp) else KisType.hero.copy(fontSize = 50.sp, lineHeight = 56.sp),
+        color = if (small) Kis.colors.muted else Kis.colors.ink,
+        modifier = Modifier.fillMaxWidth().padding(top = if (small) 14.dp else 0.dp)
+            .graphicsLayer { alpha = shown.value; translationY = (1f - shown.value) * 28.dp.toPx() }.testTag(tag))
+}
+
+/** What it is, how to connect, the permissions and why it is safe: in the intro and behind the bell's invitation. */
+@Composable
+fun AiExplainCards() {
+    IntroCard("מה זה", "מדברים עם העוזר בשפה רגילה: \"כמה הרווחתי החודש?\" או \"תוסיף משמרת מחר מ-9 עד 5 במסעדה\". הוא עונה ומעדכן לפי המשמרות שלך.", 0)
+    IntroCard("איך מחברים", "בהגדרות העוזר מוסיפים חיבור (Connector) עם הכתובת שמופיעה בהגדרות ← עוזרי AI מחוברים. נפתח דף, מתחברים עם Google ובוחרים מה מותר לו.", 1)
+    IntroCard("הרשאות", "לראות משמרות מותר תמיד. להוסיף, לערוך או למחוק רק אם הפעלת. בוחרים לכמה זמן: שעה, יום, 30 יום או עד שתנתק.", 2)
+    IntroCard("בטוח", "העוזר רואה רק את המשמרות שלך ולא מקבל את הסיסמה. כל שינוי שלו נרשם ואפשר לבטל אותו, ומנתקים אותו בכל רגע.", 3)
+}
+
+@Composable
+private fun IntroCard(title: String, body: String, index: Int) {
+    val c = Kis.colors
+    val shown = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(120L * index); shown.animateTo(1f, androidx.compose.animation.core.tween(450)) }
+    Column(Modifier.fillMaxWidth().graphicsLayer { alpha = shown.value; translationY = (1f - shown.value) * 16.dp.toPx() }
+        .clip(RoundedCornerShape(16.dp)).background(c.surface).padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(title, style = KisType.label, color = c.ink)
+        Text(body, style = KisType.body, color = c.ink)
     }
 }
 
@@ -66,6 +134,7 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
     val conflicts by viewModel.syncConflicts.collectAsStateWithLifecycle()
     var reviewing by rememberSaveable { mutableStateOf(false) }
     var leaving by rememberSaveable { mutableStateOf(false) }
+    var assistants by rememberSaveable { mutableStateOf(false) }
     val user = session
     Column(Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("account_card"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (user == null) {
@@ -87,8 +156,10 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
             .testTag("account_conflicts").padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(if (conflicts == 1) "שינוי אחד נעשה בשני מקומות. לבחירה" else "$conflicts שינויים נעשו בשני מקומות. לבחירה", style = KisType.caption, color = c.pending)
         }
+        KisButton("עוזרי AI מחוברים", { assistants = true }, Modifier.fillMaxWidth(), KisButtonKind.OUTLINE, height = 48.dp, tag = "account_assistants")
         KisButton("התנתקות", { leaving = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "account_signout")
     }
+    if (assistants) AssistantsSheet(viewModel) { assistants = false }
     if (leaving) KisSheet(onDismiss = { leaving = false }, tag = "account_signout_sheet") {
         Text("להתנתק מהחשבון?", style = KisType.title, color = c.ink)
         Text("הנתונים נשארים בחשבון ובטלפון. כדי להמשיך תצטרך להתחבר שוב.", style = KisType.body, color = c.ink)
@@ -98,6 +169,98 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
         }
     }
     if (reviewing) ConflictsSheet(viewModel) { reviewing = false }
+}
+
+private val PERM_LABEL = mapOf("shifts.read" to "קריאה", "shifts.add" to "הוספה", "shifts.edit" to "עריכה", "shifts.delete" to "מחיקה")
+private val TOOL_LABEL = mapOf("add_shift" to "הוסיף", "update_shift" to "ערך", "delete_shift" to "מחק")
+const val ASSISTANT_URL = "https://salary-calculation-eta.vercel.app/mcp"
+
+/**
+ * Personal AI assistants (ChatGPT, Claude and others) connected through the website: how to connect, who is
+ * connected now, cutting one off, and undoing what one did. Same as the website (web/kis/account.js).
+ */
+@Composable
+fun AssistantsSheet(viewModel: WorkViewModel, explain: Boolean = false, onDismiss: () -> Unit) {
+    val c = Kis.colors
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var round by remember { mutableIntStateOf(0) }
+    var data by remember { mutableStateOf<Pair<List<com.example.api.AssistantGrant>, List<com.example.api.AssistantAction>>?>(null) }
+    var loaded by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+    var cutting by remember { mutableStateOf<com.example.api.AssistantGrant?>(null) }
+    var copied by remember { mutableStateOf(false) }
+    LaunchedEffect(round) { data = viewModel.assistantsOverview(); loaded = true }
+    val date = remember { java.text.SimpleDateFormat("d.M HH:mm", java.util.Locale.ROOT) }
+    KisSheet(onDismiss = onDismiss, tag = "assistants_sheet") {
+        Text("עוזרי AI", style = KisType.title, color = c.ink, modifier = Modifier.semantics { heading() })
+        Column(Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (explain) AiExplainCards()
+            else Text("עוזר מחובר יכול לענות על שאלות על המשמרות שלך, לסכם, ולפי מה שאישרת גם להוסיף, לערוך או למחוק. הוא רואה רק את המשמרות שלך.",
+                style = KisType.caption, color = c.muted)
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.bg).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("איך מחברים", style = KisType.label, color = c.ink)
+                Text("בהגדרות העוזר, בחיבורים (Connectors), מוסיפים חיבור חדש עם הכתובת:", style = KisType.caption, color = c.muted)
+                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+                    Text(ASSISTANT_URL, style = KisType.body, color = c.ink, modifier = Modifier.testTag("assistants_url"))
+                }
+                KisButton(if (copied) "הועתק ✓" else "העתקת הכתובת", { KisShare.copy(context, ASSISTANT_URL, "כתובת לעוזר"); copied = true },
+                    Modifier.fillMaxWidth(), KisButtonKind.OUTLINE, height = 44.dp, tag = "assistants_copy")
+                Text("העוזר יפתח דף שבו מתחברים עם Google ובוחרים מה מותר לו ולכמה זמן.", style = KisType.caption, color = c.muted)
+            }
+            message?.let { Text(it, style = KisType.caption, color = c.danger, modifier = Modifier.testTag("assistants_message")) }
+            val (grants, log) = data ?: (emptyList<com.example.api.AssistantGrant>() to emptyList())
+            when {
+                !loaded -> Text("טוען…", style = KisType.caption, color = c.muted)
+                data == null -> Text("אין חיבור כרגע. נסה שוב בעוד רגע.", style = KisType.caption, color = c.muted, modifier = Modifier.testTag("assistants_offline"))
+                else -> {
+                    Text("מחוברים", style = KisType.label, color = c.ink)
+                    if (grants.isEmpty()) Text("אין עוזרים מחוברים.", style = KisType.caption, color = c.muted, modifier = Modifier.testTag("assistants_none"))
+                    grants.forEach { g ->
+                        Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.weight(1f)) {
+                                Text(g.name.ifBlank { "עוזר AI" }, style = KisType.label, color = c.ink)
+                                Text((g.scopes.mapNotNull { PERM_LABEL[it] } + (g.until?.let { "עד ${KisShare.shortDate(it)}" } ?: "עד שתנתק")).joinToString(" · "),
+                                    style = KisType.caption, color = c.muted)
+                            }
+                            KisChip("ניתוק", onClick = { cutting = g }, warn = true, tag = "assistant_cut")
+                        }
+                    }
+                    if (log.isNotEmpty()) Text("פעולות אחרונות", style = KisType.label, color = c.ink)
+                    log.forEach { a ->
+                        Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.weight(1f)) {
+                                Text("${a.client} ${TOOL_LABEL[a.tool].orEmpty()} · ${date.format(java.util.Date(a.at))}", style = KisType.caption, color = c.muted)
+                                Text(describe(a.type, a.after ?: a.before), style = KisType.body, color = c.ink)
+                            }
+                            if (a.undone) Text("בוטל", style = KisType.caption, color = c.muted)
+                            else KisChip("ביטול", onClick = {
+                                scope.launch {
+                                    message = if (viewModel.undoAssistant(a)) null else "הביטול לא הושלם. אולי המשמרת השתנתה מאז"
+                                    round++
+                                }
+                            }, tag = "assistant_undo")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    cutting?.let { g ->
+        KisSheet(onDismiss = { cutting = null }, tag = "assistant_cut_sheet") {
+            Text("לנתק את ${g.name.ifBlank { "העוזר" }}?", style = KisType.title, color = c.ink)
+            Text("הוא לא יוכל יותר לראות או לשנות משמרות. מה שכבר שינה נשאר, ואפשר לבטל אותו כאן.", style = KisType.body, color = c.ink)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                KisButton("ביטול", { cutting = null }, Modifier.weight(1f), KisButtonKind.GHOST, height = 52.dp)
+                KisButton("ניתוק", {
+                    cutting = null
+                    scope.launch { message = if (viewModel.cutOffAssistant(g.id)) null else "הניתוק לא הושלם. נסה שוב"; round++ }
+                }, Modifier.weight(1f), KisButtonKind.DANGER, height = 52.dp, tag = "assistant_cut_ok")
+            }
+        }
+    }
 }
 
 /** One change made in two places: both versions side by side, and the user keeps one. Nothing is lost until then. */

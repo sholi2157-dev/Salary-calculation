@@ -288,6 +288,26 @@ class WorkViewModel(
         }
     }
 
+    // ---- personal AI assistants connected through the website ----
+    /** Connected assistants and their last actions, read from the account; null without a connection. */
+    suspend fun assistantsOverview(): Pair<List<com.example.api.AssistantGrant>, List<com.example.api.AssistantAction>>? {
+        val uid = owner.cloudUid ?: return null
+        val transport = syncTransport ?: return null
+        if (currentUserSession.value?.uid != uid) return null
+        return runCatching { transport.assistants(uid) to transport.assistantActions(uid) }.getOrNull()
+    }
+    suspend fun cutOffAssistant(grantId: String): Boolean {
+        val uid = owner.cloudUid ?: return false
+        return runCatching { checkNotNull(syncTransport).cutOff(uid, grantId) }.isSuccess
+    }
+    /** False when the shift changed since the assistant's action, or without a connection. */
+    suspend fun undoAssistant(action: com.example.api.AssistantAction): Boolean {
+        val uid = owner.cloudUid ?: return false
+        val done = runCatching { checkNotNull(syncTransport).undo(uid, action) }.getOrDefault(false)
+        if (done) viewModelScope.launch { performSync() }
+        return done
+    }
+
     fun signOut(context: Context): Boolean {
         if (com.example.api.AuthManager.currentUser.value?.uid != owner.cloudUid) return false
         if (ShiftStateManager.hasActiveShift(context)) {

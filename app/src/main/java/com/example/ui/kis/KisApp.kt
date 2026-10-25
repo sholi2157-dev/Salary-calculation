@@ -107,6 +107,7 @@ fun KisApp(
     var storyScope by rememberSaveable { mutableStateOf<String?>(null) }
     var recapsOpen by rememberSaveable { mutableStateOf(false) }
     var bellOpen by rememberSaveable { mutableStateOf(false) }
+    var aiExplain by rememberSaveable { mutableStateOf(false) }
     // A dot on the bell for what arrived since it was last opened (the daily job writes it; read again on every return).
     var unread by remember { mutableStateOf(viewModel.planSettings.unread) }
     // A new version shows on the bell too (dot + an update button inside), checked on every return to the app.
@@ -204,6 +205,11 @@ fun KisApp(
     BackHandler(enabled = editorJson == null && pager.currentPage != 0 && !(pager.currentPage == 1 && (history.selecting || history.searching || history.planned))) { go(0) }
     // A plan whose time ends while the app is open turns to "waiting" without leaving the screen.
     LaunchedEffect(Unit) { while (true) { delay(60_000); viewModel.tickPlans() } }
+    // 2.1: once signed in, the bell invites to connect a personal AI assistant (once per installation).
+    val signedIn by viewModel.currentUserSession.collectAsStateWithLifecycle()
+    LaunchedEffect(signedIn != null) {
+        if (com.example.BuildConfig.ACCOUNTS_ENABLED && signedIn != null) { viewModel.planSettings.inviteAi(); unread = viewModel.planSettings.unread }
+    }
     // Leaving a page never leaves the keyboard open over the next one. Only the keyboard is hidden: clearing focus
     // here would, after a hardware key, hand focus to the first control of the old page and scroll the pager back.
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
@@ -314,7 +320,8 @@ fun KisApp(
     if (bellOpen) NotificationsSheet(viewModel, onMonth = { bellOpen = false; unread = viewModel.planSettings.unread; monthSheet = it },
         onSettings = { bellOpen = false; unread = viewModel.planSettings.unread; go(2) }, onDismiss = { bellOpen = false; unread = viewModel.planSettings.unread }, update = update,
         onUpdate = { bellOpen = false; unread = viewModel.planSettings.unread; updateSheet = it },
-        onStory = { bellOpen = false; storyScope = it })
+        onStory = { bellOpen = false; storyScope = it }, onAi = { bellOpen = false; unread = viewModel.planSettings.unread; aiExplain = true })
+    if (aiExplain) AssistantsSheet(viewModel, explain = true) { aiExplain = false }
     if (recapsOpen) RecapArchiveSheet(entries, onStory = { recapsOpen = false; storyScope = it }, onDismiss = { recapsOpen = false })
     updateSheet?.let { r -> UpdateSheet(r, onDismiss = { updateSheet = null }) }
     monthSheet?.let { m ->
