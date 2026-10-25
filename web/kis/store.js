@@ -101,6 +101,7 @@ function createStore(storage, { now = () => Date.now() } = {}) {
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }, emit,
     recent() { try { return JSON.parse(storage.getItem(RECENT) || '[]'); } catch { return []; } },
     addRecent(note) { const all = [note, ...this.recent()].slice(0, 20); storage.setItem(RECENT, JSON.stringify(all)); },
+    setRecent(list) { storage.setItem(RECENT, JSON.stringify(list.slice(0, 20))); },
   };
 }
 

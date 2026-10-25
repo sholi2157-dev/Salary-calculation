@@ -3,7 +3,11 @@ const { test } = require('node:test'); const assert = require('node:assert/stric
 const S = require('../web/v2/summary.js'); const doc = require('./fixtures/v2-summary.json');
 
 test('summaries match the contract', () => {
-  for (const c of doc.cases) assert.deepEqual(S.summary(c.rows, c.scope, c.today), c.expected, c.name);
+  for (const c of doc.cases) {
+    const { slides, ...expected } = c.expected, got = S.summary(c.rows, c.scope, c.today);
+    assert.deepEqual(got, expected, c.name);
+    assert.deepEqual(S.slides(got), slides, c.name + ' slides');
+  }
 });
 test('every persona and comparison has its words', () => {
   for (const c of doc.cases) {

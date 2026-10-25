@@ -259,6 +259,17 @@
       "percent": 11,
       "previousMonth": "2026-09"
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "places",
+     "persona",
+     "longest",
+     "days",
+     "hour",
+     "money",
+     "card"
     ]
    }
   },
@@ -520,6 +531,17 @@
       "kind": "day",
       "day": 3
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "places",
+     "persona",
+     "longest",
+     "days",
+     "hour",
+     "money",
+     "card"
     ]
    }
   },
@@ -781,6 +803,17 @@
       "kind": "day",
       "day": 3
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "places",
+     "persona",
+     "longest",
+     "days",
+     "hour",
+     "money",
+     "card"
     ]
    }
   },
@@ -1019,6 +1052,12 @@
       "kind": "day",
       "day": 3
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "money",
+     "card"
     ]
    }
   },
@@ -1222,7 +1261,13 @@
     "trend": null,
     "persona": null,
     "fun": null,
-    "insights": []
+    "insights": [],
+    "slides": [
+     "intro",
+     "hours",
+     "money",
+     "card"
+    ]
    }
   },
   {
@@ -1340,6 +1385,13 @@
       "kind": "day",
       "day": 5
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "longest",
+     "money",
+     "card"
     ]
    }
   },
@@ -1458,6 +1510,13 @@
       "kind": "day",
       "day": 1
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "longest",
+     "money",
+     "card"
     ]
    }
   },
@@ -1600,6 +1659,16 @@
       "kind": "day",
       "day": 1
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "persona",
+     "longest",
+     "days",
+     "hour",
+     "money",
+     "card"
     ]
    }
   },
@@ -1722,6 +1791,14 @@
       "kind": "day",
       "day": 1
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "places",
+     "longest",
+     "money",
+     "card"
     ]
    }
   },
@@ -1856,6 +1933,16 @@
       "kind": "day",
       "day": 1
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "places",
+     "longest",
+     "days",
+     "hour",
+     "money",
+     "card"
     ]
    }
   },
@@ -1994,6 +2081,16 @@
       "kind": "day",
       "day": 1
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "places",
+     "longest",
+     "days",
+     "hour",
+     "money",
+     "card"
     ]
    }
   },
@@ -2241,6 +2338,14 @@
       "kind": "day",
       "day": 6
      }
+    ],
+    "slides": [
+     "intro",
+     "hours",
+     "places",
+     "longest",
+     "money",
+     "card"
     ]
    }
   }

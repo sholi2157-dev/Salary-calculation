@@ -20,14 +20,14 @@ jobs:
           node-version: '22'
       - run: npm run build && npm test
       - name: Shared expected results are byte-identical to the Android branch
-        run: git fetch --no-tags origin codex/sharing-android-20261021 && node scripts/check-fixtures.cjs . origin/codex/sharing-android-20261021
+        run: git fetch --no-tags origin claude/v2-android && node scripts/check-fixtures.cjs . origin/claude/v2-android
       - run: npm install --prefix /tmp/browser-qa --no-audit --no-fund playwright@1.62.1
       - run: /tmp/browser-qa/node_modules/.bin/playwright install --with-deps chromium
       - name: Browser flows, data preservation and layout (360–1440, light and dark)
         env:
           PLAYWRIGHT_MODULE: /tmp/browser-qa/node_modules/playwright
           SCREENSHOT_DIR: browser-evidence
-        run: node browser-tests/updates.cjs && node browser-tests/v2.cjs && node browser-tests/download.cjs && node browser-tests/sharing.cjs
+        run: node browser-tests/updates.cjs && node browser-tests/v2.cjs && node browser-tests/download.cjs && node browser-tests/sharing.cjs && node browser-tests/job-team.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

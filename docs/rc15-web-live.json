@@ -1,9 +1,10 @@
 {
-  "sourceSha": "660e82ccc696bff62783d1614d8959f210cd4276",
-  "deploymentId": "dpl_2YJqFTLj8Hm9Rpk2kjYZU8UuoGVk",
+  "sourceSha": "01091dd0e7a3168586d3b3a1ee424d03b3c5eb4d",
+  "deploymentId": "dpl_7D3oZpsSo9z4Fpr4fFNXQPs2MNoJ",
   "publicOrigin": "https://salary-calculation-eta.vercel.app",
-  "release": "Automatic website updates, duration digit editing, no version/update UI; cumulative Android 2.0.5",
-  "rollbackDeployment": "dpl_6qGopS2toz4byUV3mZuEi8qWAShj",
-  "buildId": "660e82ccc696bff62783d1614d8959f210cd4276-ac045d488ac19009",
-  "androidCandidateRun": 39676466946
+  "release": "Recap with Android 2.0.7: opens on the 30th, new for 4 days then in Settings, varied words, picture-only sharing, every slide shareable",
+  "rollbackDeployment": "dpl_Fjmn8Ts2C1MzpYcwnBPuHPkggmTd",
+  "buildId": "01091dd0e7a3168586d3b3a1ee424d03b3c5eb4d-a69472d231d1d5b8",
+  "androidCandidateRun": 39998442873,
+  "androidRelease": "android-v2.0.7 (pending)"
 }
