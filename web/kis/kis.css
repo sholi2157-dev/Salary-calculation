@@ -249,9 +249,13 @@ button { cursor: pointer; }
 .launch-words span { opacity: 0; transform: translateY(28px); animation: launch-rise .65s ease-out var(--d) forwards; }
 @keyframes launch-rise { to { opacity: 1; transform: none; } }
 .intro-sub { margin: 14px 0 0; font-size: 18px; line-height: 26px; opacity: 0; transform: translateY(28px); animation: launch-rise .65s ease-out var(--d) forwards; }
+.intro-chat { display: grid; gap: 10px; margin-top: 14px; }
+.intro-chat p { margin: 0; justify-self: start; max-width: 85%; padding: 12px 18px; border-radius: 22px; font-size: 22px; line-height: 30px; font-weight: 600;
+  background: var(--ink); color: var(--bg); opacity: 0; transform: translateY(18px); animation: launch-rise .45s ease-out var(--d) forwards; }
+.intro-chat p.mine { justify-self: end; background: var(--surface); color: var(--ink); }
 .intro-card { opacity: 0; transform: translateY(16px); animation: launch-rise .45s ease-out var(--d) forwards; }
 .sheet .intro-card { background: var(--sunk); }
-@media (prefers-reduced-motion: reduce) { .intro-sub, .intro-card { animation: none; opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .intro-sub, .intro-card, .intro-chat p { animation: none; opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .launch-words span { animation: none; opacity: 1; transform: none; } }
 .launch-ask { margin: 0 0 8px; font: 34px/40px var(--display); }
 .launch .btn { min-height: 56px; }

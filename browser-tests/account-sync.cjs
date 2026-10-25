@@ -23,7 +23,7 @@ const tid = t => `[data-testid="${t}"]`;
 async function pastIntro(p, shots) {
   await p.waitForSelector(tid('intro-line-3')); await p.waitForTimeout(2600);
   if (shots) await p.screenshot({ path: path.join(OUT, 'intro-1-390.png') });
-  await p.click(tid('intro-next')); await p.waitForSelector(tid('intro-next-2')); await p.waitForTimeout(900);
+  await p.click(tid('intro-next')); await p.waitForSelector(tid('intro-next-2')); await p.waitForTimeout(shots ? 3200 : 900);
   if (shots) await p.screenshot({ path: path.join(OUT, 'intro-2-390.png') });
   await p.click(tid('intro-next-2')); await p.waitForSelector(tid('signin-google'));
 }

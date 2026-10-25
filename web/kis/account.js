@@ -135,9 +135,11 @@ function draw() {
     const updated = (app?.store?.local?.launched || 0) >= 2;
     gate.innerHTML = introStep === 0
       ? `<div class="launch-in"><div class="grow"></div><h1 class="launch-words" id="signin-title"><span style="--d:.15s" data-testid="intro-line-1">${updated ? 'גרסה 2.1.' : 'ברוכים הבאים.'}</span><span style="--d:.7s" data-testid="intro-line-2">ה-AI שלך</span><span style="--d:1.15s" data-testid="intro-line-3">מכיר את המשמרות.</span></h1>
-        <p class="caption intro-sub" style="--d:1.7s">שואלים את ChatGPT, Claude או עוזר אחר כמה הרווחת, מבקשים ממנו לרשום משמרת, והוא עושה את זה בשבילך.</p>
+        <p class="caption intro-sub" style="--d:1.7s">שואלים את ChatGPT, Claude, Grok, Muse, Instinct או כל עוזר אחר כמה הרווחת, מבקשים לרשום משמרת, והוא עושה את זה בשבילך.</p>
         <div class="grow"></div><button class="btn primary" data-a="next" data-testid="intro-next">הבא</button></div>`
-      : `<div class="launch-in"><h1 class="launch-ask" id="signin-title" style="margin-top:8px">איך זה עובד</h1>${explainCards()}
+      : `<div class="launch-in"><div class="grow"></div><h1 class="launch-words" id="signin-title"><span style="--d:.1s">פשוט מבקשים.</span></h1>
+        <div class="intro-chat"><p class="mine" style="--d:.55s">כמה הרווחתי החודש?</p><p style="--d:1s">2,140 ₪ על 15 משמרות.</p><p class="mine" style="--d:1.5s">תרשום מחר 9 עד 5.</p><p style="--d:1.95s">רשמתי ✓</p></div>
+        <p class="caption intro-sub" style="--d:2.45s">מתחברים פעם אחת, וזהו.</p>
         <div class="grow"></div><button class="btn primary" data-a="next" data-testid="intro-next-2">הבא</button></div>`;
     gate.querySelector('[data-a=next]').onclick = () => { introStep++; if (introStep === 2) localStorage.setItem(INTRO, '1'); draw(); };
     gate.querySelector('[data-a=next]').focus({ preventScroll: true });
