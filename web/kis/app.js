@@ -9,7 +9,7 @@ const app = {
   go(page, opts = {}) { this.page = page; this.pageOpts = opts; render(); window.scrollTo({ top: 0 }); },
   refresh() { render(); },
   applyTheme() { const t = store.local.theme || 'system'; if (t === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
-    document.querySelector('meta[name=theme-color]')?.setAttribute('content', U().isDark() ? '#121212' : '#EDF0F5'); },
+    document.querySelector('meta[name=theme-color]')?.setAttribute('content', U().isDark() ? '#121212' : '#F1F3F8'); },
   openNew() { if (!store.data.categories.length) return root.KisSettings.placeSheet(app, null, () => root.KisEditor.open(app)); root.KisEditor.open(app); },
   openDetail(id) { const e = store.data.entries.find(x => x.id === id); if (e) detail(e); },
   startLive, stopLive, cancelLive() { const t = store.cancelTimer(); U().toast('המשמרת הפעילה בוטלה', 'ביטול', () => store.restoreTimer(t)); },

@@ -54,14 +54,16 @@ const seed = {
     assert.equal(await page.getByText('התחלה נפוצה:').count(),0);
     await page.click(tid('mode-hours'));await setDuration(page,'1.40');await page.fill(tid('rate-input'),'60');
     assert.match(await page.textContent(tid('editor-meta')),/1:40/);
-    await page.click(tid('duration-minutes'));
-    assert.equal(await page.getAttribute(tid('keypad-digit-2'),'aria-pressed'),'true');
-    await page.click(tid('key-5'));await page.click(tid('key-0'));
+    // The device's keyboard; a tap on one digit changes only that digit.
+    assert.equal(await page.locator(tid('keypad')).count(),0,'no keypad of the site\'s own');
+    await page.click(tid('hours-input-d2'));
+    assert.equal(await page.getAttribute(tid('hours-input-d2'),'aria-pressed'),'true');
+    await page.keyboard.type('5');
     assert.equal(await durationValue(page),'1:50');
-    await page.click(tid('duration-minutes'));await page.click(tid('key-4'));await page.click(tid('key-0'));
+    await page.click(tid('hours-input-d2'));await page.keyboard.type('4');
     assert.equal(await durationValue(page),'1:40');
-    await page.click(tid('duration-minutes'));await page.click('[data-q="4"]');await page.click(tid('key-ok'));
-    assert.equal(await durationValue(page),'4:00', 'quick hours replace the active keypad value');
+    await page.click(tid('hours-input-d2'));await page.click('[data-q="4"]');await page.click(tid('entry-done'));
+    assert.equal(await durationValue(page),'4:00', 'quick hours replace the value being typed');
     await setDuration(page,'1:40');
     assert.equal(await page.getByText('לחיצה על ספרה משנה רק אותה',{exact:true}).count(),0);
 
@@ -84,7 +86,7 @@ const seed = {
     const {ctx,page}=await open(undefined,'light',imported);
     await page.click(tid('tab-history'));await page.click(tid('shift-b'));await page.click(tid('detail-edit'));
     assert.match(await page.textContent(tid('editor-total')),/99\.91/);
-    await page.click(tid('duration-minutes'));await page.click(tid('key-ok'));
+    await page.click(tid('hours-input-d2'));await page.click(tid('entry-done'));
     assert.ok(await page.isDisabled(tid('save-shift')), 'opening a rounded display does not change imported hours');
     await page.click(tid('editor-more'));await page.fill(tid('notes-input'),'הערה בלבד');
     assert.match(await page.textContent(tid('editor-total')),/99\.91/);
@@ -120,19 +122,28 @@ const seed = {
     await ctx.close();
   }
 
-  // 2. Add a clock shift with the keypad, unknown rate never 0, then complete the rate for it; edit keeps the stored amount.
+  // 2. Add a clock shift with the device's keyboard, unknown rate never 0, then complete the rate for it; edit keeps the stored amount.
   {
     const { ctx, page } = await open();
     await page.click(tid('add-shift')); await page.click(tid('clock-start'));
-    for (const k of '0900') await page.click(tid('key-' + k));
-    for (const k of '1730') await page.click(tid('key-' + k));
+    assert.match(await page.textContent(tid('entry-label')), /שעת התחלה/);
+    assert.equal(await page.locator(tid('save-shift')).count(), 0, 'the typing bar never saves');
+    const endBefore = await page.textContent(tid('clock-end'));
+    await page.keyboard.type('0900'); assert.equal(await page.textContent(tid('clock-start')), '09:00');
+    // A full time stays put: one more digit changes only its last digit, never the end time.
+    await page.keyboard.type('5'); assert.equal(await page.textContent(tid('clock-start')), '09:05');
+    assert.equal(await page.textContent(tid('clock-end')), endBefore);
+    await page.click(tid('clock-start-d3')); await page.keyboard.type('0'); assert.equal(await page.textContent(tid('clock-start')), '09:00');
+    await page.click(tid('entry-next')); assert.match(await page.textContent(tid('entry-label')), /שעת סיום/);
+    await page.keyboard.type('1730');
     assert.match(await page.textContent(tid('editor-meta')), /8:30 שעות/);
     assert.match(await page.textContent(tid('editor-total')), /₪425/);
+    await shot(page, 'editor-typing-light-390');
+    await page.click(tid('entry-done'));
     await page.click(tid('nudge-end-15')); assert.match(await page.textContent(tid('editor-total')), /₪437\.50/);
     // Each time has its own ±15.
-    await page.click(tid('nudge-start--15')); assert.equal(await page.textContent(tid('clock-start')), '08');
-    assert.equal(await page.textContent(tid('clock-start-mm')), '45');
-    await page.click(tid('nudge-start-15')); assert.equal(await page.textContent(tid('clock-start-mm')), '00');
+    await page.click(tid('nudge-start--15')); assert.equal(await page.textContent(tid('clock-start')), '08:45');
+    await page.click(tid('nudge-start-15')); assert.equal(await page.textContent(tid('clock-start')), '09:00');
     await page.click(tid('rate-unknown'));
     assert.match(await page.textContent(tid('editor-meta')), /תעריף חסר/);
     await shot(page, 'editor-light-390');
@@ -153,18 +164,22 @@ const seed = {
   {
     const { ctx, page } = await open();
     await page.click(tid('add-shift'));
-    const t = async w => (await page.textContent(tid('clock-' + w))) + ':' + (await page.textContent(tid('clock-' + w + '-mm')));
+    const t = w => page.textContent(tid('clock-' + w));
     const min = s => +s.slice(0, 2) * 60 + +s.slice(3);
     assert.equal((min(await t('end')) - min(await t('start')) + 1440) % 1440, 240, 'start is 4 hours before the end');
     await page.click(tid('clock-start'));
-    for (const k of '0530') await page.click(tid('key-' + k)); // the last digit moves on to the end
-    await page.click(tid('key-ok'));
-    await page.click(tid('clock-start-mm'));
-    assert.equal(await page.getAttribute(tid('keypad-digit-2'), 'aria-pressed'), 'true');
-    await page.click(tid('keypad-digit-3')); await page.click(tid('key-5'));
+    await page.keyboard.type('0530');
+    assert.equal(await t('start'), '05:30');
+    assert.match(await page.textContent(tid('entry-label')), /שעת התחלה/, 'a full start time does not jump to the end');
+    await page.click(tid('clock-start-d3'));
+    assert.equal(await page.getAttribute(tid('clock-start-d3'), 'aria-pressed'), 'true');
+    await page.keyboard.type('5');
     assert.equal(await t('start'), '05:35');
-    assert.match(await page.textContent(tid('keypad')), /שעת סיום/);
-    for (const k of '10') await page.click(tid('key-' + k));
+    await page.click(tid('clock-end-d0')); assert.match(await page.textContent(tid('entry-label')), /שעת סיום/);
+    await page.keyboard.type('10');
+    // An hour that cannot be (2 then 5) is refused; the digit stays as it was.
+    await page.click(tid('clock-end-d0')); await page.keyboard.type('25'); assert.equal((await t('end')).slice(0, 2), '20');
+    await page.click(tid('clock-end-d0')); await page.keyboard.type('10');
     await page.keyboard.press('Enter');
     assert.equal(await t('end').then(v => v.slice(0, 2)), '10');
     await shot(page, 'editor-digits-390');
@@ -175,7 +190,7 @@ const seed = {
   {
     const { ctx, page } = await open({ width: 390, height: 844 }, 'dark');
     await page.click(tid('add-shift')); await page.click(tid('clock-start'));
-    for (const k of '0600') await page.click(tid('key-' + k)); for (const k of '0630') await page.click(tid('key-' + k));
+    await page.keyboard.type('0600'); await page.keyboard.press('Enter'); await page.keyboard.type('0630'); await page.keyboard.press('Enter');
     await page.locator('[data-day]').nth(1).click(); // today is index 3; two days ago is index 1
     await page.click(tid('repeat-switch'));
     for (let i = 0; i < 7; i++) { const b = page.locator(tid('repeat-day-' + i)); if ((await b.getAttribute('aria-pressed')) !== 'true') await b.click(); }
@@ -250,7 +265,7 @@ const seed = {
     const preview = await page.textContent('[data-testid=rate-sheet] [data-f=p]');
     assert.match(preview, /₪40/); assert.match(preview, /\$20/); await page.keyboard.press('Escape');
     await page.click('[data-s=cancel]'); assert.ok(await page.isVisible('.nav-wrap'), 'navigation returns when the selection is cancelled');
-    // Duration uses the clock keypad; typing a rate still saves on the first tap.
+    // Duration is typed like the clock; typing a rate still saves on the first tap.
     await page.click(tid('add-shift')); await page.click(tid('mode-hours'));
     await setDuration(page, '6'); await page.fill(tid('rate-input'), '45');
     const before = (await stored(page)).entries.length;
