@@ -72,7 +72,8 @@ fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSetti
     val c = Kis.colors
     val plan = viewModel.planSettings
     // A monthly summary shows only once its recap has opened, and stays marked "חדש" until the recap is watched.
-    val recent = remember { plan.notes() }
+    // The version card on top already says a new version is out; its note below would say it twice.
+    val recent = remember(update) { plan.notes().filter { update == null || it.kind != "update" } }
     LaunchedEffect(Unit) { plan.seenAt = System.currentTimeMillis() }
     KisSheet(onDismiss = onDismiss, tag = "notifications_sheet") {
         Text("התראות", style = KisType.title, color = c.ink)
@@ -82,7 +83,6 @@ fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSetti
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Workplaces[0].from, Workplaces[4].from)))
                     .testTag("update_note").padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("גרסה ${r.name} זמינה", style = KisType.title, color = Color.White)
-                    if (r.notes.isNotBlank()) Text(r.notes, style = KisType.caption, color = Color.White.copy(alpha = .9f), maxLines = 4)
                     Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).background(Color.White)
                         .kisClick { onUpdate(r) }.testTag("update_now"),
                         contentAlignment = Alignment.Center) {
@@ -106,7 +106,7 @@ fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSetti
                         if (n.kind == "monthly" && !n.opened) Text("חדש", style = KisType.micro, color = Color.White, modifier = Modifier.clip(RoundedCornerShape(99.dp))
                             .background(Workplaces[0].from).padding(horizontal = 8.dp, vertical = 2.dp).testTag("recent_note_new_$i"))
                     }
-                    Text(n.text, style = KisType.caption, color = c.muted)
+                    if (n.text.isNotBlank()) Text(n.text, style = KisType.caption, color = c.muted)
                     Text(KisShare.shortDate(n.time), style = KisType.micro, color = c.muted)
                 }
             }

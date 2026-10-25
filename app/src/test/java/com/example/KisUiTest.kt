@@ -681,7 +681,8 @@ class KisUiTest {
     @Test fun bellSheetListsRecentAndOpensTheirMonth() {
         val vm = model()
         val plan = vm.planSettings
-        (1..25).forEach { plan.addRecent(PlanSettings.Sent("rate", "תזכורת $it", "טקסט", it.toLong(), "")) }
+        val now = System.currentTimeMillis()
+        (1..25).forEach { plan.addRecent(PlanSettings.Sent("rate", "תזכורת $it", "טקסט", now - 25 + it, "")) }
         assertEquals(PlanSettings.RECENT_MAX, plan.recent.size)
         assertEquals("תזכורת 25", plan.recent.first().title)
         assertTrue(plan.unread)
@@ -698,6 +699,20 @@ class KisUiTest {
         assertEquals(null, opened)
         ui.onNodeWithTag("notifications_settings").performClick()
         assertTrue(settings)
+    }
+
+    /** Nothing stays on the bell forever: one note per new version, gone once installed; other notes go after 14 days. */
+    @Test fun bellNotesExpireAndVersionsNeverDouble() {
+        val plan = model().planSettings
+        val now = 100L * 86_400_000L
+        plan.addRecent(PlanSettings.Sent("update", "גרסה 2.0.7 זמינה", "תקציר ישן", now - 3 * 86_400_000L, ""))
+        plan.addRecent(PlanSettings.Sent("rate", "תעריף חסר", "טקסט", now - 15 * 86_400_000L, ""))
+        plan.addRecent(PlanSettings.Sent("plans", "משמרת נרשמה", "טקסט", now - 86_400_000L, ""))
+        plan.addRecent(PlanSettings.Sent("update", "גרסה 2.1 זמינה", "", now - 2 * 86_400_000L, "", code = 42))
+        plan.addRecent(PlanSettings.Sent("update", "גרסה 2.1.1 זמינה", "", now - 86_400_000L, "", code = 43))
+        assertEquals(listOf("גרסה 2.1.1 זמינה", "משמרת נרשמה"), plan.notes(now = now, installed = 41).map { it.title })
+        assertEquals(listOf("משמרת נרשמה"), plan.notes(now = now, installed = 43).map { it.title })
+        assertEquals(emptyList<String>(), plan.notes(now = now + 14 * 86_400_000L, installed = 41).map { it.title })
     }
 
     /** A monthly summary is on the bell only once its recap opened (never September), and new until the recap is watched. */

@@ -18,7 +18,10 @@ tasks.matching { it.name == "processPreviewGoogleServices" }.configureEach {
   enabled = file("src/preview/google-services.json").exists()
 }
 
-tasks.matching { it.name == "processReleaseGoogleServices" }.configureEach { enabled = false }
+// The distributed app signs in with Google only with its own registered configuration (Firebase: the .distribution package).
+tasks.matching { it.name == "processReleaseGoogleServices" }.configureEach {
+  enabled = file("src/release/google-services.json").exists()
+}
 
 android {
   namespace = "com.example"
@@ -37,7 +40,7 @@ android {
     buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", "false")
     // Independent gate: never enable the legacy cloud writer to enable sign-in.
     buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
-    // Uploaded configuration has no Android OAuth client/fingerprint yet.
+    // Google sign-in needs an Android OAuth client for the variant's package and signing key (only the release has one).
     buildConfigField("boolean", "GOOGLE_SIGN_IN_ENABLED", "false")
     // Anonymous install count (InstallCount.kt): empty disables it; only distributed builds set it.
     buildConfigField("String", "INSTALL_COUNT_KEY", "\"\"")
@@ -73,8 +76,11 @@ android {
     release {
       applicationIdSuffix = ".distribution"
       buildConfigField("boolean", "LOCAL_DISTRIBUTION", "true")
-      buildConfigField("boolean", "ACCOUNTS_ENABLED", "false")
-      buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", "false")
+      // 2.1: Google account and sync, when the release's Firebase configuration is present.
+      val releaseFirebase = file("src/release/google-services.json").exists().toString()
+      buildConfigField("boolean", "ACCOUNTS_ENABLED", releaseFirebase)
+      buildConfigField("boolean", "VERSIONED_SYNC_ENABLED", releaseFirebase)
+      buildConfigField("boolean", "GOOGLE_SIGN_IN_ENABLED", releaseFirebase)
       buildConfigField("boolean", "CLOUD_SYNC_ENABLED", "false")
       // The project's public Firebase client key (already in the client config); firestore.rules decide what it may write.
       val installKey = file("src/debug/google-services.json").takeIf { it.exists() }?.readText()
@@ -141,6 +147,9 @@ dependencies {
   implementation(libs.firebase.auth)
   implementation(libs.firebase.firestore)
   implementation(libs.play.services.auth)
+  implementation(libs.androidx.credentials)
+  implementation(libs.androidx.credentials.play.services.auth)
+  implementation(libs.googleid)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)

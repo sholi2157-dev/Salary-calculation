@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
  * older versions reject backups that carry preference names they do not know.
  */
 class PlanSettings(context: Context) {
+    private val app = context.applicationContext
     private val prefs = context.applicationContext.getSharedPreferences("kis_plan", Context.MODE_PRIVATE)
     var autoConfirm: Boolean
         get() = prefs.getBoolean("autoConfirm", true)
@@ -85,20 +86,32 @@ class PlanSettings(context: Context) {
 
     /** The reminders that were actually sent, newest first (at most [RECENT_MAX]), for "התראות אחרונות". */
     /** [opened]: a monthly summary whose recap was watched (until then it stays new on the bell). */
-    data class Sent(val kind: String, val title: String, val text: String, val time: Long, val month: String, val opened: Boolean = false)
+    /** [code]: for a new version, its version code (0 in notes kept from before 2.1). */
+    data class Sent(val kind: String, val title: String, val text: String, val time: Long, val month: String, val opened: Boolean = false, val code: Long = 0)
     val recent: List<Sent>
         get() = runCatching {
             val a = org.json.JSONArray(prefs.getString("recent", "[]"))
-            (0 until a.length()).map { i -> a.getJSONObject(i).let { Sent(it.getString("kind"), it.getString("title"), it.getString("text"), it.getLong("time"), it.optString("month"), it.optBoolean("opened")) } }
+            (0 until a.length()).map { i -> a.getJSONObject(i).let { Sent(it.getString("kind"), it.getString("title"), it.getString("text"), it.getLong("time"), it.optString("month"), it.optBoolean("opened"), it.optLong("code")) } }
         }.getOrDefault(emptyList())
     private fun saveRecent(all: List<Sent>) {
-        val a = org.json.JSONArray().apply { all.take(RECENT_MAX).forEach { put(org.json.JSONObject().put("kind", it.kind).put("title", it.title).put("text", it.text).put("time", it.time).put("month", it.month).put("opened", it.opened)) } }
+        val a = org.json.JSONArray().apply { all.take(RECENT_MAX).forEach { put(org.json.JSONObject().put("kind", it.kind).put("title", it.title).put("text", it.text).put("time", it.time).put("month", it.month).put("opened", it.opened).put("code", it.code)) } }
         prefs.edit().putString("recent", a.toString()).apply()
     }
-    fun addRecent(sent: Sent) = saveRecent(listOf(sent) + recent)
-    /** The bell's list: a monthly summary of a recap that has not opened (or never will, like before the first one) stays out. */
-    fun notes(today: String = com.example.domain.V2Summary.today()): List<Sent> =
-        recent.filter { it.kind != "monthly" || it.month.isEmpty() || com.example.domain.V2Summary.recapOpen(it.month, today) }
+    /** A new version replaces the note of an older one: the bell never lists two versions. */
+    fun addRecent(sent: Sent) = saveRecent(listOf(sent) + recent.filter { sent.kind != "update" || it.kind != "update" })
+    /**
+     * The bell's list. Nothing stays forever: a note goes after [NOTE_DAYS] days, a new version as soon as it is installed,
+     * and a monthly summary only shows once its recap opened, staying while it was not watched.
+     */
+    fun notes(today: String = com.example.domain.V2Summary.today(), now: Long = System.currentTimeMillis(),
+              installed: Long = runCatching { com.example.ui.WorkUpdates.installedVersion(app) }.getOrDefault(Long.MAX_VALUE)): List<Sent> =
+        recent.filter {
+            when (it.kind) {
+                "monthly" -> it.month.isEmpty() || com.example.domain.V2Summary.recapOpen(it.month, today)
+                "update" -> it.code > installed && now - it.time < NOTE_DAYS * DAY
+                else -> now - it.time < NOTE_DAYS * DAY
+            }
+        }
     /** A recap was watched: its summary is no longer new on the bell. */
     fun markOpened(scope: String) {
         val all = recent
@@ -113,7 +126,7 @@ class PlanSettings(context: Context) {
         set(v) { prefs.edit().putLong("seenAt", v).apply() }
     /** Anything new since the bell was opened, and a monthly summary until its recap is actually watched. */
     val unread: Boolean get() = notes().any { it.time > seenAt || (it.kind == "monthly" && !it.opened) }
-    companion object { const val RECENT_MAX = 20 }
+    companion object { const val RECENT_MAX = 20; const val NOTE_DAYS = 14L; private const val DAY = 86_400_000L }
 }
 
 object PlanJobs {

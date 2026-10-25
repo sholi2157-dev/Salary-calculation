@@ -21,7 +21,8 @@ import org.junit.Test
  * and the planned days show on Home. Everything it adds is removed again.
  */
 class PlanAutoRecordTest {
-    @get:Rule val ui = createAndroidComposeRule<MainActivity>()
+    @get:Rule(order = 0) val noSignIn = SkipSignIn()
+    @get:Rule(order = 1) val ui = createAndroidComposeRule<MainActivity>()
 
     @Test fun endedPlanIsRecordedOnceAndPlannedDaysShow() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext

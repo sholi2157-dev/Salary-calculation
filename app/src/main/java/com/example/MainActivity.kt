@@ -122,9 +122,9 @@ import androidx.compose.ui.window.DialogProperties
 
 class MainActivity : ComponentActivity() {
     private fun modelFor(uid: String?): WorkViewModel {
-        val owner = com.example.data.WorkAccountScope(uid)
+        val owner = if (BuildConfig.ACCOUNTS_ENABLED) com.example.data.WorkAccountBinding.scopeFor(this, uid) else com.example.data.WorkAccountScope(uid)
         return androidx.lifecycle.ViewModelProvider(this, WorkViewModelFactory(application, owner))
-            .get(owner.storageKey, WorkViewModel::class.java)
+            .get(owner.modelKey, WorkViewModel::class.java)
     }
     private val viewModel: WorkViewModel
         get() = modelFor(com.example.api.AuthManager.currentUser.value?.uid)
@@ -263,6 +263,27 @@ fun MainAppContent(
         else -> null
     }
     val requestedMonth by activity.intentMonthFlow.collectAsStateWithLifecycle()
+    // 2.1: one Google sign-in for everyone (the phone's data goes to that account). Without internet: later.
+    val session by com.example.api.AuthManager.currentUser.collectAsStateWithLifecycle()
+    val gateOn = BuildConfig.GOOGLE_SIGN_IN_ENABLED && !remember { com.example.data.WorkAccountBinding.signInSkipped(context) }
+    var signInLater by rememberSaveable { mutableStateOf(false) }
+    var offline by remember { mutableStateOf(false) }
+    val signingIn = gateOn && session == null && !signInLater
+    LaunchedEffect(signingIn) {
+        while (signingIn) {
+            offline = runCatching {
+                val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
+                cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) != true
+            }.getOrDefault(false)
+            kotlinx.coroutines.delay(2_000)
+        }
+    }
+    val googleSignIn: suspend () -> String? = { com.example.api.AuthManager.signInWithGoogle(activity) }
+    val onSignInRequest: () -> Unit = if (BuildConfig.GOOGLE_SIGN_IN_ENABLED) ({ signInLater = false }) else ({ showAccountDialog = true })
+    if (signingIn) {
+        com.example.ui.kis.SignInGate(onSignIn = googleSignIn, offline = offline, onLater = { signInLater = true })
+        return
+    }
     Box(modifier) {
         com.example.ui.kis.KisApp(
             viewModel = viewModel,
@@ -270,7 +291,7 @@ fun MainAppContent(
             requestedMonth = requestedMonth,
             onRequestHandled = { activity.intentActionFlow.value = null },
             onReplayTour = { onboarding.replay() },
-            onSignIn = { showAccountDialog = true },
+            onSignIn = onSignInRequest,
             modifier = Modifier.fillMaxSize().then(if (launching) Modifier.clearAndSetSemantics { } else Modifier)
         )
         if (launching) com.example.ui.kis.KisLaunch(onDone = { onboardingStore.launched(); launching = false; onboarding.replay() })

@@ -79,6 +79,9 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
         // The scroll area ends above the floating navigation, so no row can sit (and be tapped) under it.
         Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
+            if (BuildConfig.ACCOUNTS_ENABLED) Group("חשבון", info = "המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים בין האפליקציה לאתר. שינוי שנעשה בשני מקומות לפני שהסתנכרן לא נדרס: בוחרים איזו גרסה לשמור.") {
+                AccountRows(viewModel, onSignIn = onSignIn, onSignedOut = onClose)
+            }
             Group("עבודה") {
                 Row_("מקום ברירת מחדל", null, tag = "default_category_picker",
                     modifier = Modifier.coachTarget(CoachTarget.CATEGORIES), onClick = { pickingDefault = true },
@@ -124,7 +127,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     }
                 }
             }
-            Group("גיבוי ונתונים", info = "הנתונים נשמרים רק במכשיר. כדאי לשמור גיבוי גם מחוץ לאפליקציה. גיבוי מהאפליקציה עובר לאתר, וגיבוי מהאתר עובר לאפליקציה.") {
+            Group("גיבוי ונתונים", info = (if (BuildConfig.ACCOUNTS_ENABLED) "הנתונים נשמרים בטלפון ובחשבון שלך. " else "הנתונים נשמרים רק במכשיר. ") + "כדאי לשמור גיבוי גם מחוץ לאפליקציה. גיבוי מהאפליקציה עובר לאתר, וגיבוי מהאתר עובר לאפליקציה.") {
                 Row(Modifier.padding(top = 10.dp)) {}
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
                     KisButton("שמירה לקובץ", { saveBackup.launch("salary-backup.json") }, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "save_backup_btn")
@@ -146,16 +149,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 }, Modifier.fillMaxWidth().padding(vertical = 10.dp), height = 48.dp, tag = "settings_import_action_btn")
             }
             Group("משוב ותקלות") { Box(Modifier.padding(vertical = 10.dp)) { FeedbackForm() } }
-            if (BuildConfig.ACCOUNTS_ENABLED || viewModel.owner.uid != null) Group("חשבון") {
-                val session by viewModel.currentUserSession.collectAsStateWithLifecycle()
-                Row_(if (session == null) "התחברות" else "התנתקות", session?.email ?: "שימוש מקומי — ללא סנכרון", tag = "settings_sign_out_btn", onClick = {
-                    if (session == null) onSignIn()
-                    else android.app.AlertDialog.Builder(context).setTitle("התנתקות מהחשבון")
-                        .setMessage("הנתונים השמורים יישארו בחשבון במכשיר. לאחר ההתנתקות יוצגו נתוני השימוש המקומי.")
-                        .setNegativeButton("ביטול", null).setPositiveButton("התנתקות") { _, _ -> if (viewModel.signOut(context)) onClose() }.show()
-                }) {}
-                if (viewModel.owner.uid != null) Row_("העתקה חד־פעמית של הנתונים המקומיים", null, onClick = { viewModel.reviewLegacyData(context) }) {}
-            }
             // Set once (the launch asks for it); rarely touched again, so it sits last.
             Group("פרופיל") { ProfileFields() }
             Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -51,16 +51,17 @@ object AppUpdateJobs {
         if (PlanJobs.quietEnd(settings, now) != null) return false
         channel(context)
         val title = "גרסה ${release.name} זמינה"
-        val notes = release.notes.ifBlank { "יש עדכון חדש לאפליקציה" }
+        // Only the version: what changed is in the update sheet, not under every notification.
+        val notes = "נגיעה לפרטים ולהתקנה"
         val open = PendingIntent.getActivity(context, NOTIFICATION_ID, Intent(context, MainActivity::class.java).setAction(ACTION_UPDATE)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val note = NotificationCompat.Builder(context, CHANNEL).setSmallIcon(R.drawable.ic_stat_kis).setColor(0xFF5145E8.toInt())
-            .setContentTitle(title).setContentText(notes).setStyle(NotificationCompat.BigTextStyle().bigText(notes))
+            .setContentTitle(title).setContentText(notes)
             .setContentIntent(open).addAction(0, "לעדכון", open).setAutoCancel(true).build()
         runCatching { NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, note) }
         settings.notifiedUpdate = release.code
-        settings.addRecent(PlanSettings.Sent("update", title, notes.lineSequence().first().take(140), now, ""))
+        settings.addRecent(PlanSettings.Sent("update", title, "", now, "", code = release.code))
         return true
     }
 

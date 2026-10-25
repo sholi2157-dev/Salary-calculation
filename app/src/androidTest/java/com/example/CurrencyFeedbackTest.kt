@@ -11,7 +11,8 @@ import org.junit.Test
 
 /** Live timer currency, cancel without saving, currency-only edit, multi-line feedback and default workplace. */
 class CurrencyFeedbackTest {
-    @get:Rule val ui = createAndroidComposeRule<MainActivity>()
+    @get:Rule(order = 0) val noSignIn = SkipSignIn()
+    @get:Rule(order = 1) val ui = createAndroidComposeRule<MainActivity>()
     @Test fun defaultsLiveCurrencyConfirmedDiscardEditAndEnter() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val dao = WorkAccountScope(null).database(context).workDao()

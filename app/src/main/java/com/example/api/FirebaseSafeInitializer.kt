@@ -31,7 +31,7 @@ object FirebaseSafeInitializer {
     val currentUser: StateFlow<MockUser?> = _currentUser.asStateFlow()
 
     fun init(context: Context) {
-        if (com.example.BuildConfig.LOCAL_DISTRIBUTION) return
+        if (com.example.BuildConfig.LOCAL_DISTRIBUTION && !com.example.BuildConfig.ACCOUNTS_ENABLED) return
         try {
             // Attempt dynamic reflection or safe initialization for FirebaseApp / FirebaseAuth / Firestore
             val firebaseAppClass = try {

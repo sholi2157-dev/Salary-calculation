@@ -12,6 +12,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * Robust non-destructive authentication manager with complete preview & emulator safeguards.
@@ -35,7 +36,7 @@ object AuthManager {
     private var emailRequestRunning = false
 
     fun init(context: Context) {
-        if (com.example.BuildConfig.LOCAL_DISTRIBUTION) return
+        if (com.example.BuildConfig.LOCAL_DISTRIBUTION && !com.example.BuildConfig.ACCOUNTS_ENABLED) return
         appContext = context.applicationContext
         if (isInitialized) return
         isInitialized = true
@@ -108,6 +109,35 @@ object AuthManager {
         }
     }
 
+    /**
+     * 2.1 sign-in: Google's account picker through Android's Credential Manager, then Firebase with the ID token.
+     * Returns null when signed in, "" when the person closed the picker, otherwise the message to show.
+     */
+    suspend fun signInWithGoogle(activity: android.app.Activity): String? {
+        if (!com.example.BuildConfig.GOOGLE_SIGN_IN_ENABLED) return "ההתחברות עם Google עוד לא זמינה בגרסה הזו"
+        accountBlockReason()?.let { return it }
+        val auth = getFirebaseAuthSafely() ?: return "לא ניתן להתחבר כעת"
+        val id = activity.resources.getIdentifier("default_web_client_id", "string", activity.packageName)
+        if (id == 0) return "לא ניתן להתחבר כעת"
+        val option = com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption.Builder(activity.getString(id)).build()
+        val request = androidx.credentials.GetCredentialRequest.Builder().addCredentialOption(option).build()
+        return try {
+            val credential = androidx.credentials.CredentialManager.create(activity).getCredential(activity, request).credential
+            if (credential !is androidx.credentials.CustomCredential ||
+                credential.type != com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) return "לא התקבל חשבון Google"
+            val token = com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.createFrom(credential.data).idToken
+            kotlinx.coroutines.suspendCancellableCoroutine<String?> { done ->
+                auth.signInWithCredential(GoogleAuthProvider.getCredential(token, null)).addOnCompleteListener { task ->
+                    if (task.isSuccessful) updateUserFromFirebase(auth.currentUser)
+                    if (done.isActive) done.resumeWith(Result.success(if (task.isSuccessful) null else "ההתחברות לא הושלמה. בדוק את החיבור לאינטרנט ונסה שוב."))
+                }
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (_: androidx.credentials.exceptions.GetCredentialCancellationException) { "" }
+        catch (_: androidx.credentials.exceptions.NoCredentialException) { "לא נמצא חשבון Google בטלפון. אפשר להוסיף חשבון בהגדרות הטלפון." }
+        catch (t: Throwable) { Log.w(TAG, "Google sign-in failed: ${t.javaClass.simpleName}"); "לא ניתן להתחבר כעת. בדוק את החיבור לאינטרנט ונסה שוב." }
+    }
+
     fun handleGoogleSignInResult(data: Intent?, onComplete: (Boolean, String?) -> Unit) {
         if (!com.example.BuildConfig.GOOGLE_SIGN_IN_ENABLED) {
             onComplete(false, "התחברות Google ממתינה להתאמת חתימת האפליקציה. אפשר להתחבר בדוא״ל וסיסמה.")
@@ -159,6 +189,10 @@ object AuthManager {
             GoogleSignIn.getClient(context, gso).signOut()
         } catch (t: Throwable) {
             Log.w(TAG, "GoogleSignIn.signOut() failed: ${t.localizedMessage}")
+        }
+        // The next sign-in shows the account picker again instead of choosing the same account by itself.
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            runCatching { androidx.credentials.CredentialManager.create(context.applicationContext).clearCredentialState(androidx.credentials.ClearCredentialStateRequest()) }
         }
 
         _currentUser.value = null

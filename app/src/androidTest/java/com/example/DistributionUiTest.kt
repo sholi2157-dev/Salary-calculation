@@ -12,7 +12,8 @@ import org.junit.Test
 
 /** 2.0 screens on the signed Release after the real update; read-only: nothing here saves. */
 class DistributionUiTest {
-    @get:Rule val ui = createAndroidComposeRule<MainActivity>()
+    @get:Rule(order = 0) val noSignIn = SkipSignIn()
+    @get:Rule(order = 1) val ui = createAndroidComposeRule<MainActivity>()
     private fun snap(name: String) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.uiAutomation.takeScreenshot().let { bitmap ->

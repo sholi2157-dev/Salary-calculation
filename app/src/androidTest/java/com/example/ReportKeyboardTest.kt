@@ -13,7 +13,8 @@ import org.junit.Test
 
 /** Real IME and pointer events on the 2.0 add page, against the permanently signed Release after the update gate. */
 class ReportKeyboardTest {
-    @get:Rule val ui = createAndroidComposeRule<MainActivity>()
+    @get:Rule(order = 0) val noSignIn = SkipSignIn()
+    @get:Rule(order = 1) val ui = createAndroidComposeRule<MainActivity>()
     private fun imeVisible(): Boolean {
         var visible = false
         ui.runOnUiThread { visible = ui.activity.window.decorView.rootWindowInsets?.isVisible(WindowInsets.Type.ime()) == true }

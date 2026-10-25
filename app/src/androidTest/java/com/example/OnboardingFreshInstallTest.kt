@@ -13,7 +13,8 @@ import java.io.File
 
 /** Runs against the signed RC13 on a separate freshly created disposable emulator. */
 class OnboardingFreshInstallTest {
-    @get:Rule val ui = createAndroidComposeRule<MainActivity>()
+    @get:Rule(order = 0) val noSignIn = SkipSignIn()
+    @get:Rule(order = 1) val ui = createAndroidComposeRule<MainActivity>()
     @Test fun completedColdLaunchStaysHidden() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals(ONBOARDING_VERSION, WorkOnboardingStore(context).completedVersion)

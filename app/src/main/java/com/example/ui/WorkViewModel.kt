@@ -16,6 +16,8 @@ import com.example.data.WorkEntry
 import com.example.data.WorkRepository
 import com.example.data.WorkerDirectory
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -203,60 +205,91 @@ class WorkViewModel(
 
     val currentUserSession: StateFlow<com.example.api.AuthManager.UserSession?> = com.example.api.AuthManager.currentUser
     private var cloudListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var syncListener: com.google.firebase.firestore.ListenerRegistration? = null
     val cloudStatus = kotlinx.coroutines.flow.MutableStateFlow("סנכרון הענן עדיין אינו פעיל")
-    private val versionedSync by lazy {
-        val uid = owner.uid ?: return@lazy null
+    private val syncState by lazy {
+        val prefs = application.getSharedPreferences("work_sync_state", Context.MODE_PRIVATE)
+        val key = owner.modelKey
+        object : com.example.data.WorkSyncState {
+            override var cursor: Long?
+                get() = if (prefs.contains("$key|cursor")) prefs.getLong("$key|cursor", 0) else null
+                set(v) { prefs.edit().apply { if (v == null) remove("$key|cursor") else putLong("$key|cursor", v) }.apply() }
+            override var lastSync: Long?
+                get() = if (prefs.contains("$key|last")) prefs.getLong("$key|last", 0) else null
+                set(v) { prefs.edit().apply { if (v == null) remove("$key|last") else putLong("$key|last", v) }.apply(); lastSyncAt.value = v }
+        }
+    }
+    private val syncTransport by lazy {
         val auth = com.example.api.AuthManager.getFirebaseAuthSafely() ?: return@lazy null
         val firestore = com.example.api.FirestoreSyncManager.getFirestoreSafely() ?: return@lazy null
+        com.example.api.WorkFirestoreTransport(firestore, auth)
+    }
+    private val versionedSync by lazy {
+        val uid = owner.cloudUid ?: return@lazy null
+        val auth = com.example.api.AuthManager.getFirebaseAuthSafely() ?: return@lazy null
+        val transport = syncTransport ?: return@lazy null
         val prefs = application.getSharedPreferences("sync_device_identity", Context.MODE_PRIVATE)
         val deviceId = prefs.getString("id", null) ?: java.util.UUID.randomUUID().toString().also {
             check(prefs.edit().putString("id", it).commit())
         }
-        com.example.data.WorkSyncEngine(owner.database(application), uid, deviceId,
-            com.example.api.WorkFirestoreTransport(firestore, auth)) { auth.currentUser?.uid }
+        com.example.data.WorkSyncEngine(owner.database(application), uid, deviceId, transport, syncState) { auth.currentUser?.uid }
     }
 
+    /** What the account card shows: syncing, synced (with [lastSyncAt]), offline or failed, and how many conflicts wait. */
+    enum class SyncStatus { OFF, SYNCING, OK, OFFLINE, ERROR }
+    val syncStatus = kotlinx.coroutines.flow.MutableStateFlow(SyncStatus.OFF)
+    val lastSyncAt = kotlinx.coroutines.flow.MutableStateFlow<Long?>(null)
+    val syncConflicts: StateFlow<Int> = owner.database(application).syncDao().observeConflicts()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    private val syncMutex = kotlinx.coroutines.sync.Mutex()
+    private var syncRetry: kotlinx.coroutines.Job? = null
+
     fun syncNow() {
-        if (!com.example.BuildConfig.VERSIONED_SYNC_ENABLED || owner.uid == null) return
+        if (!com.example.BuildConfig.VERSIONED_SYNC_ENABLED || owner.cloudUid == null) return
         viewModelScope.launch { performSync() }
     }
 
     private suspend fun performSync() {
-        if (currentUserSession.value?.uid != owner.uid || owner.uid == null) return
-        try {
-            cloudStatus.value = "מסנכרן…"
-            val count = versionedSync?.synchronize() ?: return
-            cloudStatus.value = if (count == 0) "הסנכרון הושלם" else "$count שינויים דורשים בחירה"
-        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-        catch (_: Exception) { cloudStatus.value = "ממתין לחיבור. השינויים נשמרו במכשיר" }
-    }
-
-    fun reviewSyncConflicts(context: Context) {
-        if (!com.example.BuildConfig.VERSIONED_SYNC_ENABLED || currentUserSession.value?.uid != owner.uid) return
-        viewModelScope.launch {
-            val row = owner.database(getApplication()).syncDao().conflicts().firstOrNull()
-            if (row == null) { Toast.makeText(context, "אין שינויים מתנגשים", Toast.LENGTH_SHORT).show(); return@launch }
-            val remote = com.example.data.WorkRemoteRecord.decode(checkNotNull(row.conflictPayload))
-            val localDescription = when (row.entityType) {
-                "entry" -> owner.database(getApplication()).workDao().getEntryById(row.localId)?.let {
-                    "${it.category} · ${if (it.payKnown) "${it.totalEarnings} ${it.currency}" else com.example.data.WorkPay.missingLabel(it)}\n${it.notes}"
-                } ?: "נמחק במכשיר"
-                else -> "${row.entityType} #${row.localId}"
+        val uid = owner.cloudUid ?: return
+        if (currentUserSession.value?.uid != uid) return
+        if (syncMutex.isLocked) return
+        syncMutex.withLock {
+            try {
+                syncStatus.value = SyncStatus.SYNCING
+                val count = versionedSync?.synchronize() ?: run { syncStatus.value = SyncStatus.OFF; return }
+                syncStatus.value = SyncStatus.OK
+                cloudStatus.value = if (count == 0) "הסנכרון הושלם" else "$count שינויים דורשים בחירה"
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) {
+                android.util.Log.w("WorkViewModel", "Sync failed: ${e.javaClass.simpleName}")
+                syncStatus.value = if (online()) SyncStatus.ERROR else SyncStatus.OFFLINE
+                cloudStatus.value = "ממתין לחיבור. השינויים נשמרו במכשיר"
+                // Try again soon; the outbox keeps every change meanwhile.
+                syncRetry?.cancel(); syncRetry = viewModelScope.launch { kotlinx.coroutines.delay(30_000); performSync() }
             }
-            android.app.AlertDialog.Builder(context).setTitle("בחירת גרסה לשמירה")
-                .setMessage("במכשיר:\n$localDescription\n\nבענן:\n${if (remote.deleted) "הרשומה נמחקה" else remote.payload}")
-                .setNeutralButton("מאוחר יותר", null)
-                .setNegativeButton("שמור מהמכשיר") { _, _ -> viewModelScope.launch {
-                    versionedSync?.resolve(row.syncId, true); performSync()
-                } }
-                .setPositiveButton("קבל מהענן") { _, _ -> viewModelScope.launch {
-                    versionedSync?.resolve(row.syncId, false); performSync()
-                } }.show()
+        }
+    }
+    private fun online(): Boolean = runCatching {
+        val cm = getApplication<Application>().getSystemService(android.net.ConnectivityManager::class.java)
+        cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    }.getOrDefault(true)
+
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    private suspend fun syncAfterLocalChanges() =
+        owner.database(getApplication()).syncDao().observePending().debounce(1_500).collect { if (it > 0) performSync() }
+
+    /** Both sides of each conflict, for the sheet where the user picks one. */
+    suspend fun syncConflictList(): List<com.example.data.WorkSyncConflict> = versionedSync?.conflicts() ?: emptyList()
+    fun resolveSyncConflict(syncId: String, keepLocal: Boolean, done: () -> Unit = {}) {
+        if (currentUserSession.value?.uid != owner.cloudUid) return
+        viewModelScope.launch {
+            runCatching { versionedSync?.resolve(syncId, keepLocal) }
+            done(); performSync()
         }
     }
 
     fun signOut(context: Context): Boolean {
-        if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return false
+        if (com.example.api.AuthManager.currentUser.value?.uid != owner.cloudUid) return false
         if (ShiftStateManager.hasActiveShift(context)) {
             Toast.makeText(context, "יש לסיים את המשמרת הפעילה לפני החלפת חשבון", Toast.LENGTH_LONG).show()
             return false
@@ -275,13 +308,22 @@ class WorkViewModel(
         }
         runCountAnimationTrigger.value = runCountAnimationTrigger.value + 1
 
-        if (com.example.BuildConfig.VERSIONED_SYNC_ENABLED && owner.uid != null) {
+        if (com.example.BuildConfig.VERSIONED_SYNC_ENABLED && owner.cloudUid != null) {
+            lastSyncAt.value = syncState.lastSync
+            // A change here is sent a moment after it is made (also from imports and the timer service).
+            viewModelScope.launch { syncAfterLocalChanges() }
+            // A change from another device, the website or an assistant arrives by itself while the app is open.
             viewModelScope.launch {
-                while (true) {
-                    performSync()
-                    kotlinx.coroutines.delay(60_000)
+                currentUserSession.collect { session ->
+                    syncListener?.remove(); syncListener = null
+                    if (session?.uid == owner.cloudUid) {
+                        performSync()
+                        syncListener = syncTransport?.listen(session.uid, syncState.lastSync ?: System.currentTimeMillis()) { viewModelScope.launch { performSync() } }
+                    } else syncStatus.value = SyncStatus.OFF
                 }
             }
+            // A slow safety net for a missed live update.
+            viewModelScope.launch { while (true) { kotlinx.coroutines.delay(5 * 60_000); performSync() } }
         }
 
         // Subscribe to real-time Firestore snapshots for user
@@ -307,6 +349,7 @@ class WorkViewModel(
     }
 
     override fun onCleared() {
+        syncListener?.remove()
         cloudListener?.remove()
         cloudListener = null
         super.onCleared()
@@ -395,7 +438,7 @@ class WorkViewModel(
     }
 
     fun startActiveShift(category: String, rate: Double, currency: String = categoryCurrency(category)) {
-        if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return
+        if (com.example.api.AuthManager.currentUser.value?.uid != owner.cloudUid) return
         val startTime = System.currentTimeMillis()
         if (!shiftState.start(category, rate, startTime, currency)) {
             Toast.makeText(getApplication(), "כבר קיימת משמרת פעילה. יש לסיים אותה תחילה", Toast.LENGTH_LONG).show()
@@ -421,7 +464,7 @@ class WorkViewModel(
     }
 
     fun updateActiveShiftCurrency(currency: String, expectedStart: Long?) {
-        if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return
+        if (com.example.api.AuthManager.currentUser.value?.uid != owner.cloudUid) return
         if (!shiftState.updateCurrency(currency, expectedStart)) {
             Toast.makeText(getApplication(), "המטבע לא עודכן. יש לנסות שוב", Toast.LENGTH_SHORT).show()
         }
@@ -483,7 +526,7 @@ class WorkViewModel(
                 .setMessage("${reviewed.entries.size} משמרות, ${reviewed.categories.size} קטגוריות\n$totals\nהמקור המקומי יישאר ללא שינוי. זהו עותק חד־פעמי לחשבון זה בלבד; אין סנכרון ענן פעיל.")
                 .setNegativeButton("ביטול", null)
                 .setPositiveButton("אישור העתקה") { _, _ ->
-                    if (com.example.api.AuthManager.currentUser.value?.uid != owner.uid) return@setPositiveButton
+                    if (com.example.api.AuthManager.currentUser.value?.uid != owner.cloudUid) return@setPositiveButton
                     viewModelScope.launch {
                         try {
                             val added = com.example.data.WorkLegacyAdoption.confirm(target, reviewed)

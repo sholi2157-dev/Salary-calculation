@@ -19,7 +19,8 @@ import java.security.MessageDigest
 /** Real public network and previous delivered release UI on a disposable, synthetic-data emulator. */
 @RunWith(AndroidJUnit4::class)
 class LiveUpdateChannelTest {
-    @get:Rule val ui = createAndroidComposeRule<MainActivity>()
+    @get:Rule(order = 0) val noSignIn = SkipSignIn()
+    @get:Rule(order = 1) val ui = createAndroidComposeRule<MainActivity>()
     private val args = InstrumentationRegistry.getArguments()
     private val expectedHash = args.getString("updateSha256")!!
     private val nextCode = args.getString("updateVersionCode")!!.toInt()

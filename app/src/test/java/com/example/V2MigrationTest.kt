@@ -94,7 +94,7 @@ class V2MigrationTest {
             }
         }
         val db = Room.databaseBuilder(context, WorkDatabase::class.java, name)
-            .addMigrations(WorkDatabase.MIGRATION_8_9)
+            .addMigrations(WorkDatabase.MIGRATION_8_9, WorkDatabase.MIGRATION_9_10)
             .build()
         try {
             val rows = db.workDao().getEntriesList().sortedBy { it.id }
@@ -136,7 +136,7 @@ class V2MigrationTest {
         createVersion8(name)
         val rc16 = rawJournal(name)
         assertEquals(8, rc16.size) // 5 entries + 2 categories + 1 worker
-        val db = Room.databaseBuilder(context, WorkDatabase::class.java, name).addMigrations(WorkDatabase.MIGRATION_8_9).build()
+        val db = Room.databaseBuilder(context, WorkDatabase::class.java, name).addMigrations(WorkDatabase.MIGRATION_8_9, WorkDatabase.MIGRATION_9_10).build()
         try {
             // Same stable identities and the same revisions: the upgrade wrote no business row.
             assertEquals(rc16, journal(db))
@@ -146,7 +146,7 @@ class V2MigrationTest {
     @Test fun seriesKeyCanNeverBeRecordedTwice() = runBlocking {
         val name = "v2-series-${java.util.UUID.randomUUID()}"
         createVersion8(name)
-        val db = Room.databaseBuilder(context, WorkDatabase::class.java, name).addMigrations(WorkDatabase.MIGRATION_8_9).build()
+        val db = Room.databaseBuilder(context, WorkDatabase::class.java, name).addMigrations(WorkDatabase.MIGRATION_8_9, WorkDatabase.MIGRATION_9_10).build()
         try {
             val sql = db.openHelper.writableDatabase
             fun planned() = sql.execSQL("""INSERT INTO work_entries (category, date, isTimeRange, startTime, endTime, hours, hourlyRate,

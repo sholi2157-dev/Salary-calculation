@@ -8,7 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 
-@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class, WorkLocalReceipt::class, WorkLocalPreference::class, ShiftSeries::class, SeriesException::class], version = 9, exportSchema = true)
+@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class, WorkLocalReceipt::class, WorkLocalPreference::class, ShiftSeries::class, SeriesException::class, WorkSyncKeyedRecord::class], version = 10, exportSchema = true)
 abstract class WorkDatabase : RoomDatabase() {
     abstract fun workDao(): WorkDao
     abstract fun syncDao(): WorkSyncDao
@@ -93,6 +93,13 @@ abstract class WorkDatabase : RoomDatabase() {
             }
         }
 
+        /** Account sync: the outbox for plans, plan days and settings. Additive; no business row is touched. */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                WorkSyncSchema.createKeyed(db)
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): WorkDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: build(context, WorkAccountStorage.GUEST_DATABASE).also { INSTANCE = it }
@@ -109,7 +116,7 @@ abstract class WorkDatabase : RoomDatabase() {
 
         private fun build(context: Context, name: String): WorkDatabase =
             Room.databaseBuilder(context.applicationContext, WorkDatabase::class.java, name)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                 .addCallback(DatabaseCallback())
                 .build()
     }
@@ -118,6 +125,7 @@ abstract class WorkDatabase : RoomDatabase() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
             WorkSyncSchema.installTriggers(db)
+            WorkSyncSchema.installKeyedTriggers(db)
             // Seed synchronously in this database, not through the guest singleton.
             db.execSQL("INSERT INTO work_categories (name, defaultRate) VALUES ('עצמאי', 40.0)")
         }
