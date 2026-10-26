@@ -212,7 +212,7 @@ function dueReminders(app) {
 /* Feedback goes as one JSON report to the owner's Google Apps Script relay, which mails it from the owner's account
    (docs/feedback-relay.md). Until FEEDBACK_URL is set the sheet opens a mail draft. The trail keeps fixed event names
    and code positions only: never typed text, amounts, workplaces, names, emails or keys. */
-const FEEDBACK_URL = '';
+const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycbwDfq5iA_2NSGYj57js0uwAuoSjErBWN-mB7jkjse4HKS476TPyqEIKAqitrVD47PmR/exec';
 const FEEDBACK_TOKEN = 'salary-feedback-v1';
 const TRAIL_KEY = 'kis_diagnostics_v1', TRAIL_MAX = 80;
 const trail = (() => { try { return JSON.parse(localStorage.getItem(TRAIL_KEY) || '[]').slice(-TRAIL_MAX); } catch { return []; } })();
