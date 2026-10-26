@@ -158,9 +158,6 @@ function placeSheet(app, oldName, done) {
   });
 }
 
-/** "החודש שלך": done shifts of one month, money per currency, the leading place, the change from the month before. */
-/** "החודש שלך" lives in web/kis/summary.js; kept here for the existing callers. */
-function monthSummary(app, month) { root.KisSummaryUi.monthSummary(app, month); }
 
 /** What arrived (a monthly summary opens again). The switches are in Settings. */
 /**
@@ -185,7 +182,7 @@ function notificationsSheet(app) {
     el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const n = list[+b.dataset.i];
       if (n.kind === 'ai') { close(); root.KisAccount.assistantsSheet({ explain: true }); return; }
       if (n.month == null) return; close();
-      if (n.scope) root.KisSummaryUi.story(app, n.scope); else monthSummary(app, n.month); });
+      if (n.scope) root.KisSummaryUi.story(app, n.scope); else app.go('history', { planned: false, month: n.month }); });
     el.querySelector('[data-a=settings]').onclick = () => { close(); app.go('settings'); };
   }, { onClose: () => app.refresh() });
 }
@@ -210,5 +207,5 @@ function dueReminders(app) {
   return out;
 }
 
-root.KisSettings = { render, monthSummary, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };
+root.KisSettings = { render, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };
 })(globalThis);

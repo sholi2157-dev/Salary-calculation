@@ -279,7 +279,7 @@ button { cursor: pointer; }
 .coach-card.center { top: 50%; bottom: auto; transform: translateY(-50%); }
 .coach-card h2 { margin: 0; font: 21px/27px var(--display); }
 
-/* "החודש שלך" (web/kis/summary.js) */
+/* Recap entries and tiles (web/kis/summary.js) */
 .story-entry { display: flex; align-items: center; gap: 12px; border: 0; border-radius: 18px; padding: 16px; color: #fff; text-align: start;
   background: linear-gradient(120deg, #5145E8, #7D3CF0); font: inherit; }
 .story-entry > span:first-child { flex: 1; display: grid; gap: 2px; }

@@ -319,14 +319,13 @@ const seed = {
     await ctx.close();
   }
 
-  // 9. "החודש שלך" and the story recap: insights, amounts hidden until asked, a card without amounts, year too.
+  // 9. The story recap: amounts hidden until asked, a card without amounts, year too. No "החודש שלך" sheet anymore.
   // Before the 30th there is no story at all (no spoilers); from the 30th it is on Home, then in Settings.
   {
     const { ctx, page } = await open();
     const real = new Date(); const recapDay = Math.min(30, new Date(real.getFullYear(), real.getMonth() + 1, 0).getDate());
     if (real.getDate() < recapDay) {
-      await page.click(tid('home-month-summary'));
-      assert.equal(await page.locator(tid('month-story')).count(), 0, 'no story before the 30th');
+      assert.equal(await page.locator(tid('home-month-summary')).count(), 0, 'no month summary link on Home');
       assert.equal(await page.locator('[data-testid^=home-recap-]').count(), 0);
       await page.keyboard.press('Escape');
       await page.clock.install({ time: new Date(real.getFullYear(), real.getMonth(), recapDay, 12) });
@@ -337,11 +336,8 @@ const seed = {
     await page.click(tid('tab-settings')); await page.click(tid('recaps-button'));
     assert.ok(await page.isVisible(tid('recap-' + scope)), 'and in the archive');
     await page.keyboard.press('Escape'); await page.click(tid('tab-home'));
-    await page.click(tid('home-month-summary'));
-    assert.ok(await page.isVisible(tid('month-insight-0')));
-    assert.match(await page.textContent(tid('month-rate-₪')), /₪\d/);
-    await shot(page, 'month-summary');
-    await page.click(tid('month-story'));
+    assert.equal(await page.locator(tid('home-month-summary')).count(), 0);
+    await page.click(tid('home-recap-' + scope));
     await page.waitForSelector(tid('story-intro'));
     await page.waitForTimeout(700); await page.screenshot({ path: path.join(OUT, 'v2-story-intro.png') });
     for (let n = 0; n < 10 && !(await page.locator(tid('story-money')).count()); n++) { await page.click(tid('story-next')); if (await page.locator(tid('story-persona')).count()) await page.screenshot({ path: path.join(OUT, 'v2-story-persona.png') }); }
@@ -356,7 +352,7 @@ const seed = {
     await page.keyboard.press('Escape'); assert.equal(await page.locator(tid('story')).count(), 0);
     // It moves on by itself.
     // The year's story opens with December's; it is not offered before that.
-    if (!scope.endsWith('-12')) { await page.click(tid('home-month-summary')); assert.equal(await page.locator(tid('year-story')).count(), 0); await page.keyboard.press('Escape'); }
+    if (!scope.endsWith('-12')) assert.equal(await page.locator(tid('home-recap-' + scope.slice(0, 4))).count(), 0);
     await page.evaluate(() => KisSummaryUi.story(Kis, String(new Date().getFullYear())));
     await page.waitForSelector(tid('story-intro')); await page.waitForSelector(tid('story-hours'), { timeout: 9000 });
     await page.click(tid('story-close'));

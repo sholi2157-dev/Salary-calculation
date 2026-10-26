@@ -78,8 +78,7 @@ function render(el, app, opts = {}) {
     <div class="row" style="align-items:center"><button class="plain caption grow" style="flex:1;color:var(--muted);font-size:13px;min-height:44px" data-a="filters" data-testid="history-scope">מוצג: ${esc(describe(f))}</button>
       ${n ? '<button class="chip" data-a="reset" data-testid="history-reset">הצגת הכול</button>' : ''}</div>
     ${f.period === 'MONTH' ? `<div class="row" style="align-items:center"><b class="grow" style="font:22px/28px var(--display)" data-testid="history-month">${esc(U().monthName(f.month))}</b>
-      <button class="icon-btn" aria-label="חודש קודם" data-a="prev">${ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-a="next">${ICON.next}</button></div>
-      ${rows.length && !state.query ? '<button class="chip" data-a="summary" data-testid="history-month-summary" style="min-height:48px">החודש שלך · סיכום</button>' : ''}` : ''}
+      <button class="icon-btn" aria-label="חודש קודם" data-a="prev">${ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-a="next">${ICON.next}</button></div>` : ''}
     <div class="card" style="margin-top:10px" data-testid="history-total"><div class="caption">${rows.length} משמרות · ${U().hours(rows.reduce((s, e) => s + e.hours, 0))} שעות</div>
       <div style="display:flex;gap:14px">${totals.length ? totals.map(([c, v]) => `<b class="amount">${moneyHtml(v, c)}</b>`).join('') : '<b class="amount">—</b>'}</div>
       ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}</div>`}
@@ -98,7 +97,6 @@ function render(el, app, opts = {}) {
   q('[data-a=reset]')?.addEventListener('click', () => { state.filter = defaults(); redraw(); });
   q('[data-a=prev]')?.addEventListener('click', () => { state.filter = { ...f, month: f.month - 1 }; redraw(); });
   q('[data-a=next]')?.addEventListener('click', () => { state.filter = { ...f, month: f.month + 1 }; redraw(); });
-  q('[data-a=summary]')?.addEventListener('click', () => root.KisSettings.monthSummary(app, f.month));
   q('[data-a=copy]')?.addEventListener('click', () => copySheet(rows, f));
   q('[data-a=pending]')?.addEventListener('click', () => { state.selection = new Set(rows.filter(e => !e.payKnown && e.kind !== 'job').map(e => e.id)); redraw(); bulkRate(app, redraw); });
   el.querySelectorAll('.shift[data-id]').forEach(b => {

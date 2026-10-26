@@ -1,4 +1,4 @@
-/* "החודש שלך" and the story recap "החודש/השנה שלך בכיס" (stage D). Rules: web/v2/summary.js, the same as Android. */
+/* The story recap "החודש/השנה שלך בכיס" (stage D). Rules: web/v2/summary.js, the same as Android. */
 (function (root) {
 'use strict';
 const U = () => root.KisUi;
@@ -35,34 +35,6 @@ function insightText(i) {
   if (i.kind === 'pending') return i.count === 1 ? 'משמרת אחת ממתינה לתעריף' : `${i.count} משמרות ממתינות לתעריף`;
   if (i.kind === 'trend') return `${Math.abs(i.percent)}% ${i.percent > 0 ? 'יותר' : 'פחות'} שעות מ${U().MONTHS[Number(i.previousMonth.slice(5)) - 1]}`;
   return `יום ${DAY_LONG[i.day]} הוא היום העמוס שלכם`;
-}
-
-function monthSummary(app, month) {
-  const { store } = app, { esc, moneyHtml, upcoming } = U();
-  const rows = store.data.entries.filter(e => !upcoming(e) && U().monthKey(e.date) === month);
-  const scope = scopeOf(month), s = summaryOf(store, scope);
-  const maxDay = Math.max(1e-9, ...s.days);
-  // "The busy day" says something only with a few shifts on different days (the story's rule).
-  const rhythm = S().slides(s).includes('days');
-  const storyOpen = isOpen(scope), yearOpen = isOpen(scope.slice(0, 4));
-  U().sheet('month-summary-sheet', (el, close) => {
-    el.innerHTML = `<h2>החודש שלך · ${esc(U().monthName(month))}</h2>${rows.length ? `
-      ${storyOpen ? `<button class="story-entry" data-a="story" data-testid="month-story"><span><b>${esc(U().MONTHS[month % 12])} שלך בכיס</b><small>הסיכום החודשי</small></span>${U().logo(34)}</button>` : ''}
-      <div class="card" style="background:var(--bg);display:grid;gap:4px" data-testid="month-summary-money">${s.currencies.length ? s.currencies.map(c => `<b class="hero" style="font-size:40px;line-height:44px">${moneyHtml(c.total, c.currency)}</b>`).join('') : '<b class="amount">עוד חסר תעריף</b>'}
-        <span class="label" style="color:var(--muted)" data-testid="month-summary-counts">${rows.length} משמרות · ${U().hours(s.hours)} שעות</span></div>
-      ${s.currencies.map(c => `<div class="row"><div class="mini-tile grow" data-testid="month-rate-${esc(c.currency)}"><span class="caption">ממוצע לשעה</span><b>${c.perHour != null ? esc(U().money(c.perHour, c.currency)) : '—'}</b></div>
-        <div class="mini-tile grow"><span class="caption">לא שולם</span><b>${esc(U().money(c.unpaid, c.currency))}</b></div></div>`).join('')}
-      ${s.insights.filter(i => rhythm || i.kind !== 'day').map((i, n) => `<div class="insight" data-testid="month-insight-${n}">${esc(insightText(i))}</div>`).join('')}
-      ${s.bestDay != null && rhythm ? `<div class="week-bars" data-testid="month-days">${s.days.map((h, i) => `<div><i style="height:${Math.max(4, h / maxDay * 80)}%;${i === s.bestDay ? 'background:var(--glow)' : ''}"></i><span>${U().DAY_SHORT[i]}</span></div>`).join('')}</div>` : ''}
-      ${yearOpen ? `<button class="btn ghost" data-a="year" data-testid="year-story">${scope.slice(0, 4)} שלך בכיס</button>` : ''}`
-      : '<p class="caption">לא נרשמו משמרות בחודש הזה.</p>'}
-      <div class="row"><button class="btn ghost grow" data-a="h">להיסטוריה</button><button class="btn ghost grow" data-a="copy-month" ${rows.length ? '' : 'disabled'}>העתקה</button><button class="btn primary grow" data-a="s" ${rows.length ? '' : 'disabled'}>שיתוף</button></div>`;
-    el.querySelector('[data-a=h]').onclick = () => { close(); app.go('history', { planned: false, month }); };
-    el.querySelector('[data-a=copy-month]').onclick = async () => { const text = root.KisShare.copy(rows); if (await U().copy(text)) U().toast('הועתק ✓'); else U().showText(text); };
-    el.querySelector('[data-a=s]').onclick = () => U().shareOrCopy(root.KisShare.summary(rows), 'הסיכום של ' + U().monthName(month));
-    el.querySelector('[data-a=story]')?.addEventListener('click', () => { close(); story(app, scope); });
-    el.querySelector('[data-a=year]')?.addEventListener('click', () => { close(); story(app, scope.slice(0, 4)); });
-  });
 }
 
 /** The story: moves on by itself; a tap on the left moves forward, on the right back; holding pauses. Amounts are
@@ -300,5 +272,5 @@ function fresh(store) {
   return [year, month].filter(scope => scope && doneIn(store, scope).length);
 }
 
-root.KisSummaryUi = { monthOf, monthSummary, story, archive, fresh, recapTitle, isOpen, markSeen, insightText, rowOf, scopeOf, summaryOf, canShareImage, cardImage, slideImage };
+root.KisSummaryUi = { monthOf, story, archive, fresh, recapTitle, isOpen, markSeen, insightText, rowOf, scopeOf, summaryOf, canShareImage, cardImage, slideImage };
 })(globalThis);

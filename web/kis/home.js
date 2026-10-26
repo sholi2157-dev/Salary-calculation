@@ -64,7 +64,7 @@ function render(el, app) {
     <div class="list" data-testid="next-up">${nextItems.map(x => x.e ? shiftCard(x.e, store, { tag: 'next' }) : root.KisPlans.card(x.o, store)).join('')}</div></section>` : ''}
   ${recent.length ? `<section class="home-block"><div class="section-title"><h2>אחרונות</h2><button class="link" data-act="history">הכול</button></div>
     <div class="list">${recent.map(e => shiftCard(e, store, { tag: 'recent' })).join('')}</div></section>` : ''}
-  ${wallet.length ? `<section class="home-block"><div class="section-title"><h2>הכיס של החודש</h2><button class="link" data-act="month" data-testid="home-month-summary">סיכום</button></div><div class="list">${wallet.map(([c, rows]) => {
+  ${wallet.length ? `<section class="home-block"><div class="section-title"><h2>הכיס של החודש</h2></div><div class="list">${wallet.map(([c, rows]) => {
       const tt = sortedTotals(rows); return `<div class="shift" style="cursor:default">${U().avatar(c, store)}<span class="meta"><b class="label">${esc(c)}</b><span class="sub">${rows.length === 1 ? 'משמרת אחת' : rows.length + ' משמרות'} · ${U().hours(rows.reduce((s, e) => s + e.hours, 0))} ש׳</span></span><span class="pay">${tt.map(([cur, v]) => moneyHtml(v, cur)).join(' ') || '—'}</span></div>`; }).join('')}</div></section>` : ''}</div>
   ${entries.length ? '' : '<div class="empty"><h3>ברוך הבא</h3></div>'}`;
 
@@ -75,7 +75,6 @@ function render(el, app) {
   el.querySelector('[data-act=pending]')?.addEventListener('click', () => app.completePending());
   el.querySelector('[data-act=all-planned]')?.addEventListener('click', () => app.go('history', { planned: true }));
   el.querySelector('[data-act=history]')?.addEventListener('click', () => app.go('history'));
-  el.querySelector('[data-act=month]')?.addEventListener('click', () => root.KisSummaryUi.monthSummary(app, U().monthKey(Date.now())));
   el.querySelectorAll('.shift[data-id]').forEach(b => b.addEventListener('click', () => app.openDetail(b.dataset.id)));
   root.KisPlans.bind(el, app);
   bindLive(el, app, t);
