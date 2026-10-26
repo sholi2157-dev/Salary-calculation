@@ -182,6 +182,20 @@ async function signIn() {
   }
 }
 
+/**
+ * Settings → חשבון → מחיקת כל הנתונים: the browser's data is emptied (as a new browser starts, with the starter place),
+ * the deletions go to the account like any other change, then the account signs out. False: offline, the account
+ * is emptied with the next sync and stays signed in until then.
+ */
+async function eraseAll(store) {
+  store.update(d => { d.entries = []; d.workers = []; d.categories = [{ name: 'עצמאי', defaultRate: 40 }]; d.webPreferences = root.WorkCategories.preferences({}); });
+  store.updatePlans(p => { p.series = []; p.exceptions = []; });
+  if (!account.user || !account.sync) return true;
+  try { await account.sync.sync(); } catch {}
+  if ((await account.sync.pending().catch(() => 1)) > 0) return false;
+  await signOut();
+  return true;
+}
 async function signOut() {
   const fb = await loadFirebase();
   if (account.sync) try { await account.sync.sync(); } catch {}
@@ -196,8 +210,7 @@ function settingsHtml() {
   const line = account.status === 'syncing' ? 'מסנכרן…' : account.status === 'offline' ? 'אין חיבור. השינויים יישלחו כשהחיבור יחזור' : account.status === 'error' ? 'הסנכרון לא הצליח. ננסה שוב בקרוב' : when ? `מסונכרן · ${when}` : 'מסונכרן';
   return `<div class="row" style="align-items:center;min-height:58px"><div class="grow" style="min-width:0"><b style="overflow-wrap:anywhere">${esc(s.email || account.user.email || '')}</b><div class="caption" data-testid="account-status">${esc(line)}</div></div><button class="chip" data-acc="now">סנכרון</button></div>
     ${st.conflicts ? `<div class="divider"></div><div class="row" style="align-items:center;min-height:58px"><div class="grow"><b>${st.conflicts === 1 ? 'שינוי אחד ממתין לבחירה' : st.conflicts + ' שינויים ממתינים לבחירה'}</b><div class="caption">אותה משמרת השתנתה כאן ובמכשיר אחר</div></div><button class="chip" data-acc="conflicts" data-testid="account-conflicts">בחירה</button></div>` : ''}
-    <div class="divider"></div><div class="row" style="align-items:center;min-height:58px"><div class="grow"><b>עוזרי AI</b><div class="caption">ChatGPT, Claude ועוד: לשאול, לסכם ולהוסיף משמרות</div></div><button class="chip" data-acc="assistants" data-testid="account-assistants">ניהול</button></div>
-    <div class="divider"></div><div class="row" style="padding:10px 0 6px"><button class="btn small ghost grow" data-acc="signout" data-testid="account-signout">יציאה מהחשבון</button></div>`;
+    <div class="row" style="padding:6px 0"><button class="btn small ghost grow" data-acc="assistants" data-testid="account-assistants">עוזרי AI</button><button class="btn small ghost grow" data-acc="signout" data-testid="account-signout">התנתקות</button></div>`;
 }
 function bindSettings(el) {
   el.querySelector('[data-acc=signin]')?.addEventListener('click', () => { account.status = navigator.onLine === false ? 'offline' : 'local'; connect(); showGate(); });
@@ -293,5 +306,5 @@ async function undo(fb, uid, ref) {
 
 const GOOGLE = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
 
-root.KisAccount = { init, storageFor, scoped, readState, settingsHtml, bindSettings, conflictsSheet, assistantsSheet, state: account };
+root.KisAccount = { eraseAll, init, storageFor, scoped, readState, settingsHtml, bindSettings, conflictsSheet, assistantsSheet, state: account };
 })(globalThis);

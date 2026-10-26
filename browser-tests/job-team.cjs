@@ -37,9 +37,9 @@ const tid = t => `[data-testid="${t}"]`;
 
       await page.click(tid('add-shift')); await page.click(tid('mode-job'));
       await page.fill(tid('job-amount'), '75'); await page.dispatchEvent(tid('job-amount'), 'change');
-      // A solo job shows only the small opener.
+      // A job of the user's own has no team; "קבוצה" at the top brings it.
       assert.equal(await page.locator(tid('job-team-block')).count(), 0);
-      await page.click(tid('job-team-open'));
+      await page.click(tid('editor-team'));
       await page.click(tid('job-rate-mine-more'));
       // A known name, then a new one with Enter: the cursor goes straight to that person's amount.
       await page.click('[data-jwname="דני"]');

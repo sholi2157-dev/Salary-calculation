@@ -40,6 +40,11 @@ function placeOf(name, store) {
   if (i >= 0) return PLACES[i % PLACES.length];
   let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) | 0; return PLACES[Math.abs(h) % PLACES.length];
 }
+/** The places in the order the user gave them (settings → places → עריכה; this browser only); new ones come last. */
+function orderedPlaces(store) {
+  const order = Array.isArray(store.local.placeOrder) ? store.local.placeOrder : [], at = new Map(order.map((n, i) => [n, i]));
+  return store.data.categories.map((c, i) => [c, i]).sort((a, b) => (at.get(a[0].name) ?? 1e9) - (at.get(b[0].name) ?? 1e9) || a[1] - b[1]).map(x => x[0]);
+}
 const accent = p => isDark() ? p.accentDark : p.from;
 const accentInk = p => isDark() ? p.accentDarkInk : p.on;
 function avatar(name, store, planned = false, size = 44) {
@@ -127,6 +132,8 @@ function showText(text, title = 'טקסט לשיתוף') {
 }
 const haptic = (kind = 'tap') => { try { if (root.Kis?.store?.local.haptics !== false) navigator.vibrate?.({ tap: 8, success: [12, 60, 22], warn: [35, 50, 35], tick: 4 }[kind] || 8); } catch {} };
 const ICON = {
+  people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14a6.5 6.5 0 0 1 3.5 6"/></svg>',
+  grip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg>',
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
   filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
@@ -151,7 +158,7 @@ document.addEventListener('click', e => {
 }, true);
 const logo = (size = 38) => `<span class="logo" style="width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 64 64" width="${size}" height="${size}"><g stroke-width="7" stroke-linecap="round"><path d="M19 44V30" stroke="#7C8CFF"/><path d="M32 44V20" stroke="#FFC54D"/><path d="M45 44V25" stroke="#34C79A"/><path d="M19 44h26" stroke="#EDF0F5"/></g></svg></span>`;
 
-root.KisUi = { DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
+root.KisUi = { orderedPlaces, DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
   isDark, placeOf, accent, accentInk, avatar, timeLabel, subtitle, upcoming, shiftCard, toast, sheet, closeTopSheet, anySheet, confirmSheet, copy, shareOrCopy,
   showText, haptic, ICON, logo, infoDot };
 })(globalThis);

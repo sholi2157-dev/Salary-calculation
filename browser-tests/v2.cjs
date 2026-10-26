@@ -305,12 +305,12 @@ const seed = {
     assert.equal(await page.locator(`${tid('notifications-sheet')} [role=switch]`).count(), 0, 'no switches in the bell');
     await shot(page, 'notifications'); await page.click(tid('notifications-settings'));
     assert.equal(await page.locator(tid('home-bell-dot')).count(), 0, 'opened means seen');
-    // Settings: notifications group with switches, profile last with both names.
+    // Settings: one notifications switch; the name and the account last, together.
     assert.ok(await page.isVisible(tid('settings-התראות')));
-    await page.click(tid('notify-monthly')); assert.equal(await page.getAttribute(tid('notify-monthly'), 'aria-checked'), 'true');
+    await page.click(tid('notify-all')); assert.equal(await page.getAttribute(tid('notify-all'), 'aria-checked'), 'true');
     assert.equal(await page.inputValue(tid('profile-name')), 'שולי'); assert.equal(await page.inputValue(tid('profile-last-name')), 'כהן');
     const titles = await page.$$eval('.section-title', n => n.map(x => x.textContent));
-    assert.equal(titles[titles.length - 1], 'פרופיל', 'the profile is last');
+    assert.equal(titles[titles.length - 1], 'חשבון', 'the name and the account are last, together');
     assert.equal(await page.locator('.caption:visible').filter({ hasText: 'ובדפדפן הזה' }).count(), 0, 'no explanation text on the page');
     await page.click('[data-info-title="גיבוי ונתונים"]');
     assert.match(await page.textContent(tid('info-sheet')), /נשמרים בו ובדפדפן הזה/);

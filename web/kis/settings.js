@@ -10,20 +10,20 @@ function render(el, app) {
   const theme = store.local.theme || 'system';
   el.innerHTML = `<h1 class="page-title">הגדרות</h1><div class="set-groups">
   ${group('משוב ותקלות', rowHtml('דיווח על תקלה או הצעה', null, '<button class="chip" data-a="feedback" data-testid="feedback-button">כתיבה</button>'))}
-  ${group('חשבון', `<div data-testid="account-card">${root.KisAccount.settingsHtml()}</div>`, 'המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים עם האפליקציה לאנדרואיד ועם כל דפדפן שמחובר אליו.')}
   ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר אוטומטית במשמרת חדשה.')}
     <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', null, `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`, 'למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה, ושקלים ודולרים לא מתחברים לסכום אחד.')}
     <div class="divider"></div>${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip" data-a="series" data-testid="series-button">ניהול</button>', 'יוצרים במסך ההוספה: "חוזרת כל שבוע". כשהזמן נגמר המשמרת נרשמת לבד, ותמיד אפשר לבטל.')}`)}
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
   ${group('הסיכומים שלי', rowHtml('כל הסיכומים', null, '<button class="chip" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל סיכום חודשי ושנתי שכבר נפתח נשמר כאן.'))}
-  ${group('התראות', `${rowHtml('הסיכום החודשי', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyMonthly === true}" aria-label="הסיכום החודשי" data-a="monthly" data-testid="notify-monthly"></button>`, 'ב-30 לחודש (ביום האחרון בחודש קצר יותר), כשנכנסים לאתר. באתר התזכורות מופיעות כשהוא פתוח; באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.')}
-    <div class="divider"></div>${rowHtml('תעריף חסר', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyRate === true}" aria-label="תעריף חסר" data-a="rate" data-testid="notify-rate"></button>`, 'לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.')}`)}
+  ${group('התראות', rowHtml('התראות', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyMonthly === true || store.local.notifyRate === true}" aria-label="התראות" data-a="notify" data-testid="notify-all"></button>`, 'הסיכום החודשי ותעריף חסר, כשנכנסים לאתר. באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.'))}
   ${group('גיבוי ונתונים', `<div class="row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
     <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'כשמחוברים לחשבון, הנתונים נשמרים בו ובדפדפן הזה. גיבוי לקובץ הוא העתק נוסף בשבילך, וגיבוי מהאפליקציה עובר לכאן ולהפך.')}
   ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
-  ${group('פרופיל', `<div style="display:grid;gap:8px;padding:10px 0"><input class="input" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
-    <input class="input" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>`)}
+  ${group('חשבון', `<div class="row" style="padding:10px 0 4px"><input class="input grow" style="min-width:0" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
+    <input class="input grow" style="min-width:0" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>
+    <div data-testid="account-card">${root.KisAccount.settingsHtml()}</div>
+    <button class="link" style="justify-self:start;color:var(--danger,#c2362b);padding-inline:0" data-a="erase" data-testid="account-erase">מחיקת כל הנתונים</button>`, 'המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים עם האפליקציה לאנדרואיד ועם כל דפדפן שמחובר אליו.')}
   </div><div class="row" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי</span></div>`;
 
   const q = s => el.querySelector(s);
@@ -31,8 +31,10 @@ function render(el, app) {
   // Saved as typed, without redrawing the page (no lost taps or focus).
   q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
   q('[data-f=last]').addEventListener('input', e => store.setLocal('lastName', e.target.value.trim().slice(0, 40), true));
-  q('[data-a=monthly]').onclick = e => { const on = store.local.notifyMonthly !== true; store.setLocal('notifyMonthly', on, true); e.currentTarget.setAttribute('aria-checked', on); };
-  q('[data-a=rate]').onclick = e => { const on = store.local.notifyRate !== true; store.setLocal('notifyRate', on, true); e.currentTarget.setAttribute('aria-checked', on); };
+  // One switch for every reminder.
+  q('[data-a=notify]').onclick = e => { const on = e.currentTarget.getAttribute('aria-checked') !== 'true';
+    store.setLocal('notifyMonthly', on, true); store.setLocal('notifyRate', on, true); e.currentTarget.setAttribute('aria-checked', on); };
+  q('[data-a=erase]').onclick = () => eraseSheet(app);
   q('[data-a=android-download]').onclick = () => root.KisDownload.open();
   q('[data-a=tour]').onclick = () => root.KisLaunch.tour(app);
   q('[data-a=places]').onclick = () => placesSheet(app);
@@ -109,21 +111,78 @@ function importSheet(app) {
 
 function placesSheet(app) {
   const { store } = app, { esc } = U();
+  let reordering = false;
   U().sheet('places-sheet', (el, close) => {
     const draw = () => {
-      const def = root.WorkCategories.defaultName(store.data.categories, store.data.webPreferences);
-      el.innerHTML = `<div class="title-row"><h2>מקומות עבודה</h2>${U().infoDot('מקומות עבודה', 'נגיעה במקום הופכת אותו לברירת המחדל. "עריכה" לשם, תעריף, מטבע וצבע.')}</div>
-        <div class="list">${store.data.categories.map(c => `<div class="row" style="align-items:center"><button class="shift grow" data-def="${esc(c.name)}" aria-pressed="${c.name === def}">${U().avatar(c.name, store, false, 32)}
+      const def = root.WorkCategories.defaultName(store.data.categories, store.data.webPreferences), places = U().orderedPlaces(store);
+      const head = `<div class="title-row"><h2 class="grow">מקומות עבודה</h2>${places.length > 1 ? `<button class="link" data-a="reorder" data-testid="places-reorder">${reordering ? 'סיום' : 'עריכה'}</button>` : ''}</div>`;
+      if (reordering) {
+        el.innerHTML = head + `<div class="list" data-testid="places-reorder-list" style="display:grid;gap:4px">${places.map(c => `<div class="place-drag" data-drag="${esc(c.name)}" data-testid="place-drag-${esc(c.name)}">${U().avatar(c.name, store, false, 28)}
+          <span class="meta"><b class="label">${esc(c.name)}</b><span class="sub">${esc(U().money(c.defaultRate, root.WorkCategories.currency(c.name, store.data.webPreferences)))} לשעה</span></span><span class="grip" aria-hidden="true">${U().ICON.grip}</span></div>`).join('')}</div>`;
+        el.querySelector('[data-a=reorder]').onclick = () => { reordering = false; draw(); };
+        dragToReorder(el.querySelector('[data-testid=places-reorder-list]'), names => store.setLocal('placeOrder', names, true));
+        return;
+      }
+      el.innerHTML = head + `
+        <div class="list">${places.map(c => `<div class="row" style="align-items:center"><button class="shift grow" data-def="${esc(c.name)}" aria-pressed="${c.name === def}">${U().avatar(c.name, store, false, 32)}
           <span class="meta"><b class="label">${esc(c.name)}${c.name === def ? ' · ברירת מחדל' : ''}</b><span class="sub">${esc(U().money(c.defaultRate, root.WorkCategories.currency(c.name, store.data.webPreferences)))} לשעה</span></span></button>
           <button class="chip" data-edit="${esc(c.name)}">עריכה</button></div>`).join('')}</div>
         <button class="btn ghost" data-a="add" data-testid="place-add">+ מקום עבודה חדש</button>`;
       el.querySelectorAll('[data-def]').forEach(b => b.onclick = () => { store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, defaultCategory: b.dataset.def }); }); draw(); });
       el.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => placeSheet(app, b.dataset.edit, draw));
       el.querySelector('[data-a=add]').onclick = () => placeSheet(app, null, draw);
+      el.querySelector('[data-a=reorder]')?.addEventListener('click', () => { reordering = true; draw(); });
     };
     draw();
   });
 }
+/**
+ * A long press on a row (a short vibration) picks it up; moving the finger moves it among the others; letting go keeps
+ * the order. Like a music queue: no buttons, no explanation.
+ */
+function dragToReorder(list, onOrder) {
+  let row = null, timer = null, startY = 0, lastY = 0;
+  const rows = () => [...list.querySelectorAll('[data-drag]')];
+  const drop = () => { clearTimeout(timer); timer = null; if (!row) return; row.classList.remove('lifted'); row = null; onOrder(rows().map(r => r.dataset.drag)); };
+  list.addEventListener('contextmenu', e => e.preventDefault());
+  list.addEventListener('pointerdown', e => {
+    const r = e.target.closest('[data-drag]'); if (!r) return;
+    startY = lastY = e.clientY;
+    timer = setTimeout(() => { row = r; row.classList.add('lifted'); try { r.setPointerCapture(e.pointerId); } catch {} navigator.vibrate?.(12); }, 350);
+  });
+  list.addEventListener('pointermove', e => {
+    if (!row) { if (timer && Math.abs(e.clientY - startY) > 8) { clearTimeout(timer); timer = null; } return; }
+    e.preventDefault(); lastY = e.clientY;
+    const all = rows(), i = all.indexOf(row);
+    const next = all[i + 1], prev = all[i - 1];
+    if (next && lastY > next.getBoundingClientRect().top + next.offsetHeight / 2) { next.after(row); navigator.vibrate?.(6); }
+    else if (prev && lastY < prev.getBoundingClientRect().top + prev.offsetHeight / 2) { prev.before(row); navigator.vibrate?.(6); }
+  });
+  // On the whole page: a row moved among the others can lose the pointer, and letting go anywhere ends the drag.
+  addEventListener('pointerup', drop); addEventListener('pointercancel', drop);
+}
+
+/** Deleting everything asks once, offers a backup first, and needs the word "מחיקה" typed. */
+function eraseSheet(app) {
+  const { store } = app, signedIn = !!root.KisAccount.state.user;
+  U().sheet('erase-sheet', (el, close) => {
+    el.innerHTML = `<h2>למחוק את כל הנתונים?</h2><p>${signedIn ? 'כל המשמרות, המקומות, המשמרות הקבועות והעובדים יימחקו מהדפדפן ומהחשבון, גם באפליקציה ובמכשירים האחרים. אחר כך החשבון יתנתק. אי אפשר לבטל.'
+        : 'כל המשמרות, המקומות, המשמרות הקבועות והעובדים יימחקו מהדפדפן הזה. אי אפשר לבטל.'}</p>
+      <button class="btn ghost" data-a="backup" data-testid="erase-backup">הורדת גיבוי לפני המחיקה</button>
+      <label class="field">לאישור כותבים: מחיקה<input class="input" data-testid="erase-word" autocomplete="off"></label>
+      <div class="row"><button class="btn ghost grow" data-a="cancel">ביטול</button><button class="btn danger grow" data-a="ok" data-testid="erase-ok" disabled>מחיקת הכל</button></div>`;
+    const ok = el.querySelector('[data-a=ok]');
+    el.querySelector('[data-testid=erase-word]').addEventListener('input', e => { ok.disabled = e.target.value.trim() !== 'מחיקה'; });
+    el.querySelector('[data-a=backup]').onclick = () => download('salary-backup.json', backupText(store), 'application/json');
+    el.querySelector('[data-a=cancel]').onclick = () => close();
+    ok.onclick = async () => {
+      ok.disabled = true; close();
+      const emptied = await root.KisAccount.eraseAll(store).catch(() => false);
+      U().toast(!signedIn ? 'כל הנתונים נמחקו' : emptied ? 'כל הנתונים נמחקו מהדפדפן ומהחשבון' : 'נמחק מהדפדפן. המחיקה מהחשבון תושלם כשיחזור החיבור');
+    };
+  });
+}
+
 /** Add or edit one workplace. Renaming moves its shifts and plans; stored amounts never change. */
 function placeSheet(app, oldName, done) {
   const { store } = app, { esc } = U(), cat = store.data.categories.find(c => c.name === oldName);

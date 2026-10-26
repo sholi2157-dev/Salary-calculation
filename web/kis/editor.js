@@ -8,7 +8,8 @@
 'use strict';
 const U = () => root.KisUi, R = () => root.KisRules;
 const DRAFT = 'kis_web_draft_v1';
-const MODES = [['CLOCK', 'שעון'], ['HOURS', 'ידני'], ['JOB', 'קבלנות'], ['GROUP', 'קבוצה']];
+/** The tabs. A group shift is not a tab: the "קבוצה" button at the top gives the same tabs with people. */
+const MODES = [['CLOCK', 'שעון'], ['HOURS', 'ידני'], ['JOB', 'קבלנות']];
 const num = s => { const t = String(s ?? '').trim().replace(',', '.'); if (!t) return null; const n = Number(t); return Number.isFinite(n) ? n : null; };
 const clean = v => v == null ? '' : String(Math.round(v * 100) / 100);
 // New UI typing uses H:MM; existing decimal drafts and persisted hours keep their meaning.
@@ -90,7 +91,7 @@ function newDraft(store) {
   return { id: null, mode: 'CLOCK', category: cat ? name : '', day, start: defaultStart(end), end, breakMin: 0,
     hours: '', rate: cat ? clean(cat.defaultRate) : '', rateUnknown: false, currency: root.WorkCategories.currency(name, prefs), bonus: '', bonusTarget: 'ME',
     amount: '', amountUnknown: false, notes: '', workers: [], separateRates: false, employerRate: '', workerRate: '', isPaid: false, repeat: false, repeatDays: null, repeatUntil: null,
-    passThrough: '', teamSameRate: true };
+    passThrough: '', teamSameRate: true, team: false };
 }
 function breakOf(e) { if (!e.isTimeRange || !R().isTime(e.startTime) || !R().isTime(e.endTime)) return 0; return Math.max(0, Math.round(R().span(e.startTime, e.endTime).minutes - e.hours * 60)); }
 function fromEntry(e) {
@@ -107,7 +108,8 @@ function fromEntry(e) {
     amount: price != null ? clean(price) : '', amountUnknown: job && !e.payKnown, notes: e.notes || '', workers,
     separateRates: e.employerRate != null || e.workerRate != null, employerRate: clean(e.employerRate), workerRate: clean(e.workerRate), isPaid: e.isPaid, repeat: false,
     passThrough: e.passThrough > 0 ? clean(e.passThrough) : '',
-    teamSameRate: !job || !saved.length || (e.payKnown && saved.every(w => w.amount != null && !w.bonus && w.amount === e.totalEarnings)) };
+    teamSameRate: !job || !saved.length || (e.payKnown && saved.every(w => w.amount != null && !w.bonus && w.amount === e.totalEarnings)),
+    team: !!e.isGroupShift || saved.length > 0 };
 }
 /** A job with people on it. The amount is the user's own pay; each worker gets a fixed sum on top of it, owed by the employer too. */
 const teamJob = d => d.mode === 'JOB' && d.workers.length > 0;
@@ -129,6 +131,19 @@ function withJobWorkerAmount(d, i, v) {
   const old = d.workers[i]?.amount ?? '';
   return { ...d, workers: d.workers.map((w, j) => j === i ? { ...w, amount: v } : i === 0 && (!w.amount || w.amount === old) ? { ...w, amount: v } : w) };
 }
+/** The tab shown: a group shift by the clock or by hours shows as שעון or ידני, like a shift of the user's own. */
+const tabOf = d => d.mode !== 'GROUP' ? d.mode : d.start == null ? 'HOURS' : 'CLOCK';
+/** A tab picked; in a group the clock and hours tabs are a group shift kept by the clock or by hours. */
+function withTab(d, t) {
+  const own = changeMode(d.mode === 'GROUP' ? { ...d, mode: tabOf(d) } : d, t);
+  return d.team && t !== 'JOB' ? { ...own, mode: 'GROUP', start: t === 'HOURS' ? null : own.start } : own;
+}
+/** The "קבוצה" button: a group shift keeps the tab; back to the user's own shift drops the people. */
+function withTeam(d, on) {
+  if (!!d.team === on) return d;
+  if (on) return withTab({ ...d, team: true }, tabOf(d));
+  return { ...d, mode: tabOf(d), team: false, workers: [], separateRates: false, employerRate: '', workerRate: '', bonusTarget: 'ME', teamSameRate: true };
+}
 function evaluate(d) {
   const clockish = d.mode === 'CLOCK' || (d.mode === 'GROUP' && d.start != null);
   const ev = R().evaluate({ mode: d.mode === 'GROUP' && !clockish ? 'HOURS' : d.mode, start: clockish ? d.start : null, end: clockish ? d.end : null, breakMinutes: clockish ? d.breakMin : 0,
@@ -139,6 +154,7 @@ function evaluate(d) {
   if (d.mode === 'GROUP' && d.workers.some(w => w.hours.trim() && (durationHours(w.hours) == null || durationHours(w.hours) < 0 || durationHours(w.hours) > 24))) errors.push('שעות העובד לא תקינות');
   if (d.mode === 'GROUP' && d.separateRates && [d.employerRate, d.workerRate].some(v => v.trim() && num(v) == null)) errors.push('תעריף לא תקין');
   if (d.mode === 'JOB' && d.hours.trim() && (durationHours(d.hours) == null || durationHours(d.hours) < 0 || durationHours(d.hours) > 24)) errors.push('משך לא תקין');
+  if (d.team && !d.workers.length) errors.push('הוסף לפחות אדם אחד לקבוצה');
   if (teamJob(d)) {
     if (d.workers.some(w => !w.name.trim())) errors.push('לכל עובד צריך שם');
     if (d.workers.some(w => jobWorkerPay(w, d) == null)) errors.push('חסר כמה מקבל כל עובד');
@@ -199,12 +215,14 @@ function changeMode(d, mode) {
 function open(app, { entry = null, restore = null } = {}) {
   const { store } = app, base = entry;
   let d = restore || (base ? fromEntry(base) : newDraft(store));
+  // A draft kept before 2.2 has no "team": it was a group when it had people (or was a group shift).
+  if (d.team === undefined) d = { ...d, team: d.mode === 'GROUP' || d.workers.length > 0 };
   // A restored draft is the user's typing: leaving it asks first, like any other unsaved work.
   const original = restore ? '' : JSON.stringify(d);
   // Times are edited digit by digit: [buf] holds the four digits ("·" = not set) and [cursor] the one the next key writes.
   // [fresh]: the time was opened as a whole (not on one digit), so the first key starts it over.
   // [pad]: a time is typed with the device's own keyboard, through the hidden [sink] field.
-  let target = 'START', pad = false, fresh = false, dirtyDigits = false, buf = '', cursor = 0, more = d.breakMin > 0 || !!d.notes || !!d.bonus, teamOpen = false, passOpen = false;
+  let target = 'START', pad = false, fresh = false, dirtyDigits = false, buf = '', cursor = 0, more = d.breakMin > 0 || !!d.notes || !!d.bonus, passOpen = false;
   const host = document.createElement('div');
   host.className = 'editor' + (base ? ' framed' : '');
   host.setAttribute('data-testid', base ? 'edit-page' : 'add-page');
@@ -328,15 +346,16 @@ function open(app, { entry = null, restore = null } = {}) {
     const caret = active && 'selectionStart' in active ? (() => { try { return active.selectionStart; } catch { return null; } })() : null;
     const c = evaluate(d), place = d.category ? U().placeOf(d.category, store) : U().PLACES[0];
     host.style.setProperty('--acc', U().accent(place)); host.style.setProperty('--acc-ink', U().accentInk(place));
-    const { esc, moneyHtml } = U(), cats = store.data.categories;
+    const { esc, moneyHtml } = U(), cats = U().orderedPlaces(store);
+    host.classList.toggle('team', !!d.team);
     const clockMode = d.mode === 'CLOCK' || (d.mode === 'GROUP' && d.start != null);
     const top = host.querySelector('[data-top]');
     top.innerHTML = `
-      <div class="top-row"><button class="pill" data-a="close" data-testid="editor-close">${base ? 'סגירה' : 'ביטול'}</button><h1>${base ? 'עריכת משמרת' : 'משמרת חדשה'}</h1>
-        ${base ? '<button class="pill" data-a="delete" data-testid="editor-delete">מחיקה</button>' : '<span style="width:64px"></span>'}</div>
+      <div class="top-row"><button class="pill" data-a="close" data-testid="editor-close">${base ? 'סגירה' : 'ביטול'}</button><h1>${base ? (d.team ? 'עריכת משמרת קבוצתית' : 'עריכת משמרת') : d.team ? 'משמרת קבוצתית' : 'משמרת חדשה'}</h1>
+        ${base ? '<button class="pill" data-a="delete" data-testid="editor-delete">מחיקה</button>' : `<button class="pill team-pill" data-a="team" aria-pressed="${!!d.team}" data-testid="editor-team">${U().ICON.people || ''}קבוצה</button>`}</div>
       ${base ? `<div class="caption" data-testid="was-banner" style="background:color-mix(in srgb,var(--ink) 8%,transparent);border-radius:10px;padding:6px 10px">${changed() ? '<span class="tag warn">שונה</span> ' : ''}לפני: ${esc(U().dayLabel(base.date))} · ${esc(U().timeLabel(base))} · ${root.KisPay.pay(base) != null ? esc(U().money(base.totalEarnings, base.currency)) : base.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</div>` : ''}
-      <div class="modes" role="tablist" aria-label="סוג הרישום">${MODES.map(([m, l]) => `<button role="tab" aria-selected="${d.mode === m}" aria-pressed="${d.mode === m}" data-mode="${m}" data-testid="mode-${m.toLowerCase()}">${l}</button>`).join('')}</div>
-      <div class="places">${cats.map(x => `<button aria-pressed="${x.name === d.category}" data-cat="${esc(x.name)}" data-testid="place-${esc(x.name)}">${esc(x.name)}</button>`).join('')}<button data-a="add-place" data-testid="add-place">+ מקום</button></div>
+      <div class="modes" role="tablist" aria-label="סוג הרישום">${MODES.map(([m, l]) => `<button role="tab" aria-selected="${tabOf(d) === m}" aria-pressed="${tabOf(d) === m}" data-mode="${m}" data-testid="mode-${m.toLowerCase()}">${l}</button>`).join('')}</div>
+      <div class="places"><button data-a="add-place" data-testid="add-place">+ מקום</button>${cats.map(x => `<button aria-pressed="${x.name === d.category}" data-cat="${esc(x.name)}" data-testid="place-${esc(x.name)}">${esc(x.name)}</button>`).join('')}</div>
       ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">${teamJob(d) ? 'כמה אתה הרווחת (רק שלך)' : 'כמה הרווחת'} (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount"></label>
           <div>${durationControl(true)}</div></div>
           <button class="chip${d.amountUnknown ? ' on' : ''}" data-a="amount-unknown">${d.amountUnknown ? 'סכום חסר · נגיעה להזנה' : 'לא יודע עדיין'}</button>`
@@ -346,9 +365,9 @@ function open(app, { entry = null, restore = null } = {}) {
               ${digitsHtml(t, shown(t), label, id)}
               ${pad || !timeOf(t) ? '' : `<div class="nudges">${[-15, 15].map(n => `<button data-nt="${t}" data-n="${n}" aria-label="${label} ${n > 0 ? n + ' דקות קדימה' : -n + ' דקות אחורה'}" data-testid="nudge-${t.toLowerCase()}-${n}">${n > 0 ? '+' + n : '−' + -n}</button>`).join('')}</div>`}</div>`; }).join('')}</div>
           ${pad ? '' : ruler(d, target)}
-          ${d.mode === 'GROUP' ? '<button class="link" data-a="group-hours">הזנת שעות במקום שעון</button>' : ''}`
+`
         : `${durationControl()}
-          <div class="chips">${[4, 6, 8, 10, 12].map(h => `<button class="chip" data-q="${h}">${h} ש׳</button>`).join('')}${d.mode === 'GROUP' ? '<button class="chip" data-a="group-clock">לפי שעון</button>' : ''}</div>`}
+          <div class="chips">${[4, 6, 8, 10, 12].map(h => `<button class="chip" data-q="${h}">${h} ש׳</button>`).join('')}</div>`}
       <div class="meta-line" data-testid="editor-meta">${metaHtml(c)}</div>`;
 
     const body = host.querySelector('[data-body]');
@@ -368,7 +387,7 @@ function open(app, { entry = null, restore = null } = {}) {
           <button class="chip" style="min-height:52px" data-a="more" data-testid="editor-more">${more ? 'פחות' : 'הפסקה · הערה · בונוס'}</button></div>
 ` : ''}
       ${d.mode === 'GROUP' ? groupBlock(d) : ''}
-      ${d.mode === 'JOB' ? jobTeamBlock(d) : ''}
+      ${d.mode === 'JOB' && d.team ? jobTeamBlock(d) : ''}
       ${!base && d.mode === 'CLOCK' && d.start != null ? `<div class="card" style="display:grid;gap:10px"><div class="row" style="align-items:center"><div class="grow title-row"><b class="label">חוזרת כל שבוע</b>${U().infoDot('חוזרת כל שבוע', 'משמרת קבועה: תופיע מראש ב"מתוכנן" ותירשם לבד כשהזמן נגמר. תמיד אפשר לבטל.')}</div>
           <button class="switch" role="switch" aria-checked="${d.repeat}" aria-label="חוזרת כל שבוע" data-a="repeat" data-testid="repeat-switch"></button></div>
           ${d.repeat ? `<b class="label">בימים</b><div class="weekdays">${U().DAY_SHORT.map((n, i) => `<button aria-pressed="${repeatDays.has(i)}" data-wd="${i}" data-testid="repeat-day-${i}">${n}</button>`).join('')}</div>
@@ -399,7 +418,8 @@ function open(app, { entry = null, restore = null } = {}) {
       const gone = store.deleteEntries([base.id]); close(true); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); }));
     all('[data-mode]').forEach(b => b.onclick = () => { if (pad) done(); if (pad) return; const mode = b.dataset.mode;
       target = mode === 'CLOCK' || mode === 'GROUP' ? 'START' : target;
-      d = changeMode(d, mode); persist(); draw(); });
+      d = withTab(d, mode); persist(); draw(); });
+    q('[data-a=team]')?.addEventListener('click', () => { commitBuf(); pad = false; d = withTeam(d, !d.team); target = tabOf(d) === 'HOURS' ? 'HOURS' : 'START'; persist(); draw(); });
     all('[data-cat]').forEach(b => b.onclick = () => { commitBuf(); const cat = store.data.categories.find(x => x.name === b.dataset.cat);
       set({ category: cat.name, rate: d.rateUnknown ? d.rate : clean(cat.defaultRate), currency: root.WorkCategories.currency(cat.name, store.data.webPreferences) }); });
     q('[data-a=add-place]').onclick = () => root.KisSettings.placeSheet(app, null, name => { const cat = store.data.categories.find(x => x.name === name); set({ category: name, rate: clean(cat?.defaultRate), currency: root.WorkCategories.currency(name, store.data.webPreferences) }); });
@@ -413,8 +433,6 @@ function open(app, { entry = null, restore = null } = {}) {
     all('[data-cur]').forEach(b => b.onclick = () => set({ currency: b.dataset.cur }));
     all('[data-b]').forEach(b => b.onclick = () => set({ breakMin: +b.dataset.b }));
     all('[data-wd]').forEach(b => b.onclick = () => { const s = new Set(d.repeatDays ?? [new Date(d.day).getDay()]); const i = +b.dataset.wd; s.has(i) ? s.delete(i) : s.add(i); set({ repeatDays: [...s].sort() }); });
-    q('[data-a=group-hours]')?.addEventListener('click', () => set({ start: null }));
-    q('[data-a=group-clock]')?.addEventListener('click', () => set({ start: defaultStart(d.end) }));
     q('[data-a=rate-unknown]')?.addEventListener('click', () => set({ rateUnknown: !d.rateUnknown }));
     q('[data-a=amount-unknown]')?.addEventListener('click', () => set({ amountUnknown: !d.amountUnknown }));
     q('[data-a=more]')?.addEventListener('click', () => { more = !more; draw(); });
@@ -441,7 +459,6 @@ function open(app, { entry = null, restore = null } = {}) {
     all('[data-wname]').forEach(b => b.onclick = () => set({ workers: [...d.workers, { name: b.dataset.wname, hours: d.start ? String((evaluate(d).minutes || 0) / 60) : d.hours, isPaid: false, bonus: '', source: {} }] }));
     q('[data-a=sep]')?.addEventListener('click', () => set({ separateRates: !d.separateRates }));
     // Job team (קבלנות): each person gets a fixed sum or hours × their own rate.
-    q('[data-a=job-team-open]')?.addEventListener('click', () => { teamOpen = true; draw(); });
     // The first worker's amount carries to the later ones; the others' fields are refreshed in place (no lost caret).
     all('[data-jw]').forEach(i => { const idx = +i.dataset.jw;
       i.addEventListener('input', () => { d = withJobWorkerAmount(d, idx, i.value.replace(',', '.').replace(/[^\d.]/g, '')); persist();
@@ -526,8 +543,6 @@ function open(app, { entry = null, restore = null } = {}) {
   }
   function jobTeamBlock(dr) {
     const { esc, moneyHtml } = U();
-    // A solo job stays as simple as before: the team opens only when asked for (or when it already has people).
-    if (!teamOpen && !dr.workers.length) return '<button class="chip dashed" data-a="job-team-open" data-testid="job-team-open" style="justify-self:start">+ עבדו איתי עוד אנשים</button>';
     const known = store.data.workers.map(w => w.name).filter(n => !dr.workers.some(w => w.name === n)), same = sameRate(dr);
     return `<div class="card" style="display:grid;gap:10px" data-testid="job-team-block"><div class="title-row"><b class="label grow">מי עבד איתך</b>${U().infoDot('עבודה עם צוות', 'הסכום למעלה הוא רק שלך. כל אחד מהצוות מקבל סכום משלו, והמעסיק משלם את כולם. בסיכומים נספר רק הסכום שלך.')}</div>
       ${dr.amountUnknown ? '' : `<div class="seg" style="display:grid;grid-template-columns:1fr 1fr"><button aria-pressed="${dr.teamSameRate !== false}" data-jrate="same" data-testid="job-rate-same">אותו סכום לכולם</button><button aria-pressed="${dr.teamSameRate === false}" data-jrate="more" data-testid="job-rate-mine-more">אני מקבל יותר</button></div>`}
@@ -594,5 +609,5 @@ function rulerBind(host, d, select, change) {
 }
 function pendingDraft() { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
 
-root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
+root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, withTab, withTeam, tabOf, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
 })(globalThis);
