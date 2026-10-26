@@ -103,7 +103,6 @@ fun KisApp(
     var message by remember { mutableStateOf<KisMessage?>(null) }
     var navHeight by remember { mutableStateOf(0.dp) }
     var hoursFor by rememberSaveable { mutableStateOf<String?>(null) }
-    var monthSheet by rememberSaveable { mutableStateOf<Int?>(null) }
     var storyScope by rememberSaveable { mutableStateOf<String?>(null) }
     var recapsOpen by rememberSaveable { mutableStateOf(false) }
     var bellOpen by rememberSaveable { mutableStateOf(false) }
@@ -170,12 +169,12 @@ fun KisApp(
         when (request) {
             ShellRequest.IMPORT -> { pager.scrollToPage(2); onRequestHandled() }
             ShellRequest.HISTORY_SEARCH -> { pager.scrollToPage(1); history.planned = false; history.searching = true; onRequestHandled() }
-            // The monthly notification opens that month's recap (the story) once it has opened; otherwise its summary.
+            // The monthly notification opens that month's recap (the story) once it has opened; otherwise its month in History.
             ShellRequest.HISTORY -> {
                 val month = requestedMonth?.let(::monthKeyOf) ?: (HistoryFilter.monthKey(System.currentTimeMillis()) - 1)
                 val scope = com.example.domain.V2Summary.monthScope(month)
                 if (com.example.domain.V2Summary.recapOpen(scope, com.example.domain.V2Summary.today())) { pager.scrollToPage(0); storyScope = scope }
-                else { pager.scrollToPage(1); history.planned = false; history.showMonth = month; monthSheet = month }
+                else { pager.scrollToPage(1); history.planned = false; history.showMonth = month }
                 onRequestHandled()
             }
             ShellRequest.UPDATE -> {
@@ -241,10 +240,9 @@ fun KisApp(
                     plans = plans, planActions = planActions,
                     onAllPlans = { history.selection = emptySet(); history.searching = false; history.planned = true; go(1) },
                     unread = unread || update != null, onBell = { bellOpen = true },
-                    onMonthSummary = { monthSheet = HistoryFilter.monthKey(System.currentTimeMillis()) },
                     onRecap = { storyScope = it })
                 1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) },
-                    plans = plans, planActions = planActions, onMonthSummary = { monthSheet = it })
+                    plans = plans, planActions = planActions)
                 else -> Box(Modifier.onFocusChanged { settingsHasFocus = it.hasFocus }) {
                     KisSettingsPage(viewModel, categories, onClose = { go(0) }, onReplayTour = onReplayTour, onSignIn = onSignIn, bottomInset = navHeight,
                         onRecaps = { recapsOpen = true })
@@ -317,17 +315,13 @@ fun KisApp(
             say(if (n == 1) "תעריף הושלם למשמרת אחת ✓" else "תעריף הושלם ל-$n משמרות ✓")
         }
     }
-    if (bellOpen) NotificationsSheet(viewModel, onMonth = { bellOpen = false; unread = viewModel.planSettings.unread; monthSheet = it },
+    if (bellOpen) NotificationsSheet(viewModel, onMonth = { bellOpen = false; unread = viewModel.planSettings.unread; history.planned = false; history.showMonth = it; go(1) },
         onSettings = { bellOpen = false; unread = viewModel.planSettings.unread; go(2) }, onDismiss = { bellOpen = false; unread = viewModel.planSettings.unread }, update = update,
         onUpdate = { bellOpen = false; unread = viewModel.planSettings.unread; updateSheet = it },
         onStory = { bellOpen = false; storyScope = it }, onAi = { bellOpen = false; unread = viewModel.planSettings.unread; aiExplain = true })
     if (aiExplain) AssistantsSheet(viewModel, explain = true) { aiExplain = false }
     if (recapsOpen) RecapArchiveSheet(entries, onStory = { recapsOpen = false; storyScope = it }, onDismiss = { recapsOpen = false })
     updateSheet?.let { r -> UpdateSheet(r, onDismiss = { updateSheet = null }) }
-    monthSheet?.let { m ->
-        MonthSummarySheet(m, entries, categories, onHistory = { monthSheet = null; history.planned = false; history.showMonth = m; go(1) },
-            onDismiss = { monthSheet = null }, onMessage = { say(it) }, onStory = { monthSheet = null; storyScope = it })
-    }
     hoursFor?.let { key -> plans.firstOrNull { it.key == key } }?.let { o ->
         PlanHoursSheet(o, onDismiss = { hoursFor = null }) { start, end, fromNowOn ->
             hoursFor = null

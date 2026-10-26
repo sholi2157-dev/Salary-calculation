@@ -71,7 +71,6 @@ fun KisHome(
     onAllPlans: () -> Unit = {},
     unread: Boolean = false,
     onBell: () -> Unit = {},
-    onMonthSummary: () -> Unit = {},
     /** A recap that is new (from the 30th for 4 more days); afterwards it is in Settings. */
     onRecap: (String) -> Unit = {},
 ) {
@@ -106,7 +105,7 @@ fun KisHome(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { recent.forEach { e -> ShiftCard(e, categories, onClick = { onOpen(e) }, tagPrefix = "recent_shift_card_") } }
             }
             if (categories.isNotEmpty() && month.isNotEmpty()) {
-                SectionTitle("הכיס של החודש", action = "סיכום", onAction = onMonthSummary, actionTag = "home_month_summary")
+                SectionTitle("הכיס של החודש")
                 Wallet(month, categories, onOpen)
             }
             if (entries.isEmpty()) EmptyHome()

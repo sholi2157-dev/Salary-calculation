@@ -161,7 +161,7 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
     }
     line("משמרת פעילה", "טיימר וסכום שנצבר בהתראה קבועה בזמן שהשעון רץ.", "service_notification_switch", serviceNotification) { viewModel.updateServiceNotificationEnabled(it) }
     KisDivider()
-    line("הסיכום החודשי", "ב-30 לכל חודש (בפברואר ביום האחרון) בשעה 20:00: כמה עבדת וכמה הרווחת החודש. נגיעה בו פותחת את \"החודש שלך\". נשלח רק כשיש משמרות בחודש.",
+    line("הסיכום החודשי", "ב-30 לכל חודש (בפברואר ביום האחרון) בשעה 20:00: כמה עבדת וכמה הרווחת החודש. נגיעה בו פותחת את הסיכום. נשלח רק כשיש משמרות בחודש.",
         "notify_monthly_switch", notifyMonthly) { enable("monthly", it) }
     KisDivider()
     line("משמרת קבועה שהסתיימה", "כשמשמרת קבועה נגמרת: \"נרשמה\" עם כפתור \"לא עבדתי\". אם הרישום האוטומטי כבוי, השאלה \"עבדת?\" עם \"עבדתי\" ו\"לא עבדתי\".",

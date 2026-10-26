@@ -95,7 +95,6 @@ fun KisHistory(
     onMessage: (String) -> Unit,
     plans: List<com.example.domain.V2Plan.Occurrence> = emptyList(),
     planActions: PlanActions? = null,
-    onMonthSummary: ((Int) -> Unit)? = null,
 ) {
     val c = Kis.colors
     val settings = Kis.settings
@@ -165,11 +164,7 @@ fun KisHistory(
                                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).kisClick { showFilters = true }.testTag("history_scope").padding(vertical = 6.dp))
                             if (filter.activeCount > 0) KisChip("הצגת הכול", onClick = { filter = HistoryFilter() }, tag = "history_reset", minHeight = 40.dp)
                         }
-                        if (filter.period == Period.MONTH) {
-                            MonthSwitcher(filter.month) { filter = filter.copy(month = it) }
-                            if (onMonthSummary != null && rows.isNotEmpty() && ui.query.isBlank())
-                                KisChip("החודש שלך · סיכום", onClick = { onMonthSummary(filter.month) }, tag = "history_month_summary", minHeight = 48.dp)
-                        }
+                        if (filter.period == Period.MONTH) MonthSwitcher(filter.month) { filter = filter.copy(month = it) }
                         Totals(rows, onPending = {
                             ui.selection = rows.filter { !it.payKnown && !WorkPay.isJob(it) }.map { it.id }.toSet()
                             if (ui.selection.isNotEmpty()) bulkOpen = true

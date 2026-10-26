@@ -585,22 +585,6 @@ class KisUiTest {
         ui.onNodeWithText("חוזרת כל שבוע", substring = true).assertExists()
     }
 
-    @Test fun monthSummaryCountsDoneShiftsPerCurrency() {
-        seed()
-        val scope = com.example.domain.V2Summary.monthScope(HistoryFilter.monthKey(mid))
-        var today by androidx.compose.runtime.mutableStateOf("$scope-15")
-        host { MonthSummarySheet(HistoryFilter.monthKey(mid), rows(), categories, onHistory = {}, onDismiss = {}, onMessage = {}, today = today) }
-        // No story before the month's 30th (no spoilers); then it is there.
-        ui.onNodeWithTag("month_story").assertDoesNotExist()
-        today = maxOf(com.example.domain.V2Summary.recapDay(scope), "2026-10-30")
-        ui.waitForIdle()
-        ui.onNodeWithTag("month_summary_money").assertTextContains("₪300", substring = true).assertTextContains("$180", substring = true)
-        ui.onNodeWithTag("month_summary_counts", useUnmergedTree = true).assertTextEquals("5 משמרות · 18.5 שעות")
-        ui.onNodeWithTag("month_story").assertExists()
-        ui.onNodeWithTag("month_insight_0").assertExists()
-        shot("month-summary")
-    }
-
     private fun shownSlide() = listOf("intro", "hours", "places", "persona", "longest", "days", "hour", "money", "card").map { "story_$it" }
         .filter { ui.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() } + ui.onNodeWithTag("story_root").fetchSemanticsNode().config
             .getOrElse(androidx.compose.ui.semantics.SemanticsProperties.StateDescription) { "?" }

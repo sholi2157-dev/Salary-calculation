@@ -30,13 +30,7 @@ The summary covers a month (`YYYY-MM`) or a year (`YYYY`), and counts only done 
 - A playful comparison of the hours to flights, episodes, films or cups of coffee.
 
 ## Screens
-**"החודש שלך"** opens from Home ("הכיס של החודש" → "סיכום"), History's month, the bell, and the monthly reminder. It shows:
-- The story entry.
-- Totals per currency.
-- Hourly average and unpaid per currency.
-- Insights.
-- Weekday bars.
-- "השנה שלך בכיס".
+**"החודש שלך"** was removed on the owner's request (2026-10-26): no month summary sheet on Home, History or the bell. Home keeps "הכיס של החודש" (per place) without a "סיכום" link. Before its recap opens, the monthly reminder opens that month in History.
 
 **The story recap (month or year):**
 - Slides in the "כיס" look: opening, hours, top places, work type, longest shift, weekly rhythm, active hour, bottom line, card.
