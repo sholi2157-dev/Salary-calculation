@@ -410,17 +410,15 @@ button { cursor: pointer; }
 .team-sum .strong { color: var(--ink); font-weight: 600; font-size: 15px; }
 .team-sum .strong b { font-weight: 700; }
 
-/* A group shift: the "קבוצה" button is filled and the page is framed in the group colour, so it never reads as the user's own. */
-.editor { --team: #3b5bdb; }
-[data-theme="dark"] .editor { --team: #8fb0ff; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .editor { --team: #8fb0ff; } }
+/* A group shift: the "קבוצה" button is filled and the page framed in the page's one colour (the chosen place's, as on the ruler). */
 .editor .team-pill { display: inline-flex; align-items: center; gap: 6px; }
 .editor .team-pill svg { width: 16px; height: 16px; }
-.editor .team-pill[aria-pressed="true"] { background: var(--team); border-color: var(--team); color: #fff; }
-.editor.team .editor-in { box-shadow: inset 0 0 0 2.5px var(--team); border-radius: 26px; }
-.editor.team .editor-top h1 { color: var(--team); }
+.editor .team-pill[aria-pressed="true"] { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+.editor.team .editor-in { box-shadow: inset 0 0 0 2.5px var(--acc); border-radius: 26px; }
+.editor.team .editor-top h1 { color: var(--acc); }
 /* Settings → places → עריכה: rows picked up with a long press and dragged. */
-.place-drag { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 12px; border-radius: 14px; background: var(--sunk, color-mix(in srgb, var(--ink) 6%, transparent)); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.place-drag { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 8px 0 4px; border-radius: 14px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .place-drag.lifted { background: var(--surface); box-shadow: 0 8px 24px rgba(0,0,0,.18); position: relative; z-index: 2; }
-.place-drag .meta { flex: 1; min-width: 0; display: grid; gap: 2px; }
-.place-drag .grip { width: 24px; height: 24px; color: var(--muted); margin-inline-start: auto; }
+.place-drag .meta { flex: 1; min-width: 0; display: grid; gap: 2px; text-align: start; }
+.place-drag .shift { display: flex; align-items: center; gap: 10px; min-width: 0; color: inherit; font: inherit; }
+.place-drag .grip { width: 44px; height: 44px; padding: 10px; color: var(--muted); touch-action: none; cursor: grab; }

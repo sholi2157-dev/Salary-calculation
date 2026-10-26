@@ -109,46 +109,48 @@ function importSheet(app) {
   });
 }
 
+/**
+ * One panel for the places: a tap makes one the default, "עריכה" opens its name, rate and colour under it, and a long
+ * press on the two lines at its side moves it in the list (the add page follows the same order).
+ */
 function placesSheet(app) {
   const { store } = app, { esc } = U();
-  let reordering = false;
+  let open = null;
   U().sheet('places-sheet', (el, close) => {
     const draw = () => {
       const def = root.WorkCategories.defaultName(store.data.categories, store.data.webPreferences), places = U().orderedPlaces(store);
-      const head = `<div class="title-row"><h2 class="grow">מקומות עבודה</h2>${places.length > 1 ? `<button class="link" data-a="reorder" data-testid="places-reorder">${reordering ? 'סיום' : 'עריכה'}</button>` : ''}</div>`;
-      if (reordering) {
-        el.innerHTML = head + `<div class="list" data-testid="places-reorder-list" style="display:grid;gap:4px">${places.map(c => `<div class="place-drag" data-drag="${esc(c.name)}" data-testid="place-drag-${esc(c.name)}">${U().avatar(c.name, store, false, 28)}
-          <span class="meta"><b class="label">${esc(c.name)}</b><span class="sub">${esc(U().money(c.defaultRate, root.WorkCategories.currency(c.name, store.data.webPreferences)))} לשעה</span></span><span class="grip" aria-hidden="true">${U().ICON.grip}</span></div>`).join('')}</div>`;
-        el.querySelector('[data-a=reorder]').onclick = () => { reordering = false; draw(); };
-        dragToReorder(el.querySelector('[data-testid=places-reorder-list]'), names => store.setLocal('placeOrder', names, true));
-        return;
-      }
-      el.innerHTML = head + `
-        <div class="list">${places.map(c => `<div class="row" style="align-items:center"><button class="shift grow" data-def="${esc(c.name)}" aria-pressed="${c.name === def}">${U().avatar(c.name, store, false, 32)}
+      el.innerHTML = `<h2>מקומות עבודה</h2>
+        <div class="list" data-testid="places-panel" style="display:grid;gap:4px">${places.map(c => `<div class="place-drag" data-drag="${esc(c.name)}" data-testid="place-row-${esc(c.name)}">
+          <button class="shift grow" style="background:none;border:0;padding:0" data-def="${esc(c.name)}" aria-pressed="${c.name === def}">${U().avatar(c.name, store, false, 32)}
           <span class="meta"><b class="label">${esc(c.name)}${c.name === def ? ' · ברירת מחדל' : ''}</b><span class="sub">${esc(U().money(c.defaultRate, root.WorkCategories.currency(c.name, store.data.webPreferences)))} לשעה</span></span></button>
-          <button class="chip" data-edit="${esc(c.name)}">עריכה</button></div>`).join('')}</div>
+          <button class="chip" data-edit="${esc(c.name)}" aria-expanded="${open === c.name}">עריכה</button>
+          <span class="grip" data-grip aria-label="הזזת ${esc(c.name)}" data-testid="place-drag-${esc(c.name)}">${U().ICON.grip}</span></div>
+          ${open === c.name ? '<div class="card" data-inline-edit style="display:grid;gap:10px"></div>' : ''}`).join('')}</div>
         <button class="btn ghost" data-a="add" data-testid="place-add">+ מקום עבודה חדש</button>`;
       el.querySelectorAll('[data-def]').forEach(b => b.onclick = () => { store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, defaultCategory: b.dataset.def }); }); draw(); });
-      el.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => placeSheet(app, b.dataset.edit, draw));
+      el.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { open = open === b.dataset.edit ? null : b.dataset.edit; draw(); });
+      const inline = el.querySelector('[data-inline-edit]');
+      if (inline) placeForm(app, open, inline, () => { open = null; }, () => { open = null; draw(); });
       el.querySelector('[data-a=add]').onclick = () => placeSheet(app, null, draw);
-      el.querySelector('[data-a=reorder]')?.addEventListener('click', () => { reordering = true; draw(); });
+      dragToReorder(el.querySelector('[data-testid=places-panel]'), names => store.setLocal('placeOrder', names, true), () => { if (open) { open = null; el.querySelector('[data-inline-edit]')?.remove(); } });
     };
     draw();
   });
 }
 /**
- * A long press on a row (a short vibration) picks it up; moving the finger moves it among the others; letting go keeps
+ * A long press on a row's two lines (a short vibration) picks it up; moving the finger moves it among the others; letting go keeps
  * the order. Like a music queue: no buttons, no explanation.
  */
-function dragToReorder(list, onOrder) {
+function dragToReorder(list, onOrder, onLift = () => {}) {
   let row = null, timer = null, startY = 0, lastY = 0;
   const rows = () => [...list.querySelectorAll('[data-drag]')];
   const drop = () => { clearTimeout(timer); timer = null; if (!row) return; row.classList.remove('lifted'); row = null; onOrder(rows().map(r => r.dataset.drag)); };
   list.addEventListener('contextmenu', e => e.preventDefault());
   list.addEventListener('pointerdown', e => {
+    if (!e.target.closest('[data-grip]')) return;
     const r = e.target.closest('[data-drag]'); if (!r) return;
     startY = lastY = e.clientY;
-    timer = setTimeout(() => { row = r; row.classList.add('lifted'); try { r.setPointerCapture(e.pointerId); } catch {} navigator.vibrate?.(12); }, 350);
+    timer = setTimeout(() => { onLift(); row = r; row.classList.add('lifted'); try { r.setPointerCapture(e.pointerId); } catch {} navigator.vibrate?.(12); }, 350);
   });
   list.addEventListener('pointermove', e => {
     if (!row) { if (timer && Math.abs(e.clientY - startY) > 8) { clearTimeout(timer); timer = null; } return; }
@@ -188,8 +190,15 @@ function placeSheet(app, oldName, done) {
   const { store } = app, { esc } = U(), cat = store.data.categories.find(c => c.name === oldName);
   const cur = oldName ? root.WorkCategories.currency(oldName, store.data.webPreferences) : store.data.webPreferences.mainCurrency;
   let color = oldName ? U().PLACES.indexOf(U().placeOf(oldName, store)) : store.data.categories.length % U().PLACES.length;
-  U().sheet('place-sheet', (el, close) => {
-    el.innerHTML = `<h2>${oldName ? 'עריכת מקום' : 'מקום עבודה חדש'}</h2>
+  U().sheet('place-sheet', (el, close) => placeForm(app, oldName, el, close, done, `<h2>${oldName ? 'עריכת מקום' : 'מקום עבודה חדש'}</h2>`));
+}
+/** The place's name, rate, currency and colour, in [el]: a sheet of its own, or opened under its row in the places panel. */
+function placeForm(app, oldName, el, close, done, title = '') {
+  const { store } = app, { esc } = U(), cat = store.data.categories.find(c => c.name === oldName);
+  const cur = oldName ? root.WorkCategories.currency(oldName, store.data.webPreferences) : store.data.webPreferences.mainCurrency;
+  let color = oldName ? U().PLACES.indexOf(U().placeOf(oldName, store)) : store.data.categories.length % U().PLACES.length;
+  {
+    el.innerHTML = `${title}
       <label class="field">שם<input class="input" data-f="n" value="${esc(oldName || '')}" data-testid="place-name"></label>
       <div class="row"><label class="field grow">תעריף לשעה<input class="input" inputmode="decimal" data-f="r" value="${cat ? cat.defaultRate : ''}" data-testid="place-rate"></label>
         <div class="field"><span>מטבע</span><div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${cur === c}" data-c="${c}">${c}</button>`).join('')}</div></div></div>
@@ -205,6 +214,7 @@ function placeSheet(app, oldName, done) {
         const next = root.WorkCategories.rename(store.data, oldName || '', name, rate, money);
         store.update(d => { Object.assign(d, next); });
         if (oldName && oldName !== name) store.updatePlans(p => p.series.forEach(s => { if (s.category === oldName) s.category = name; }));
+        if (oldName && oldName !== name && Array.isArray(store.local.placeOrder)) store.setLocal('placeOrder', store.local.placeOrder.map(n => n === oldName ? name : n), true);
         if (oldName && oldName !== name) { store.setLocal('color:' + oldName, undefined);
           const t = store.timer(); if (t && t.category === oldName) store.restoreTimer({ ...t, category: name }); }
         store.setLocal('color:' + name, color);
@@ -216,9 +226,8 @@ function placeSheet(app, oldName, done) {
         store.update(d => { Object.assign(d, next); }); store.updatePlans(p => p.series.forEach(s => { if (s.category === oldName) s.category = target; })); close(); done?.(); }
       catch (e) { el.querySelector('[data-f=err]').textContent = e.message; }
     }));
-  });
+  }
 }
-
 
 /** What arrived (a monthly summary opens again). The switches are in Settings. */
 /**
