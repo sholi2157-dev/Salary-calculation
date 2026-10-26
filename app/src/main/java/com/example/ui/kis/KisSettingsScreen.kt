@@ -60,8 +60,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     val defaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
     val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.firstOrNull()?.name ?: ""
     var pickingDefault by rememberSaveable { mutableStateOf(false) }
-    var reordering by rememberSaveable { mutableStateOf(false) }
-    var editing by rememberSaveable { mutableStateOf<String?>(null) }
     var adding by rememberSaveable { mutableStateOf(false) }
     var addingDefault by rememberSaveable { mutableStateOf(false) }
     var aiSheet by rememberSaveable { mutableStateOf(false) }
@@ -185,33 +183,13 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     }
     }
 
-    if (pickingDefault) KisSheet(onDismiss = { pickingDefault = false; reordering = false }, tag = "default_category_sheet") {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("מקומות עבודה", style = KisType.title, color = c.ink, modifier = Modifier.weight(1f))
-            if (categories.size > 1) Text(if (reordering) "סיום" else "עריכה", style = KisType.label, color = c.ink, modifier = Modifier.clip(RoundedCornerShape(10.dp))
-                .kisClick { reordering = !reordering }.testTag("places_reorder").padding(horizontal = 12.dp, vertical = 10.dp))
-        }
-        if (reordering) PlacesReorder(categories, viewModel::categoryCurrency)
-        else Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) { categories.forEach { cat ->
-            val on = cat.name == defaultCategory
-            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(if (on) c.sunk else androidx.compose.ui.graphics.Color.Transparent)
-                .kisClick { viewModel.setDefaultCategory(cat.name); pickingDefault = false }.semantics { selected = on }
-                .testTag("default_category_option_${cat.name}").padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.size(24.dp).clip(RoundedCornerShape(8.dp)).background(workplaceOf(cat.name, categories).brush))
-                Column(Modifier.weight(1f)) {
-                    Text(cat.name, style = KisType.body.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), color = c.ink)
-                    Text("${KisFormat.money(cat.defaultRate, viewModel.categoryCurrency(cat.name))} לשעה", style = KisType.caption, color = c.muted)
-                }
-                if (on) Icon(Icons.Rounded.Check, "ברירת מחדל", tint = c.ink)
-                Icon(Icons.Rounded.Edit, "עריכת ${cat.name}", tint = c.ink, modifier = Modifier.size(48.dp).clip(CircleShape)
-                    .kisClick { pickingDefault = false; editing = cat.name }.testTag("category_row_${cat.name}").padding(13.dp))
-            }
-        } }
-        if (!reordering) KisButton("+ מקום עבודה חדש", { pickingDefault = false; addingDefault = true; adding = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "default_category_add")
+    // One panel for the places: a tap makes a place the default, the pencil opens its name, rate and colour right
+    // there, and a long press on the two lines at its side moves it in the list.
+    if (pickingDefault) KisSheet(onDismiss = { pickingDefault = false }, tag = "default_category_sheet") {
+        Text("מקומות עבודה", style = KisType.title, color = c.ink)
+        PlacesPanel(categories, defaultCategory, viewModel, onDefault = { viewModel.setDefaultCategory(it); pickingDefault = false })
+        KisButton("+ מקום עבודה חדש", { pickingDefault = false; addingDefault = true; adding = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "default_category_add")
     }
-    editing?.let { name -> categories.firstOrNull { it.name == name }?.let { cat ->
-        EditWorkplaceSheet(cat, categories, viewModel, onDismiss = { editing = null })
-    } }
     if (adding) NewWorkplaceSheet(viewModel, categories, defaultCurrency, makeDefault = addingDefault, onDismiss = { adding = false; addingDefault = false })
     if (seriesSheet) SeriesSheet(series, plans, categories, autoConfirm, onAuto = { plan.autoConfirm = it; autoConfirm = it },
         onRate = { s, rate -> viewModel.applySeriesRate(s.id, rate) }, onEnd = { s -> viewModel.endSeries(s.id) }, onDismiss = { seriesSheet = false })
@@ -257,7 +235,7 @@ private fun Row_(title: String, hint: String?, modifier: Modifier = Modifier, ta
 }
 
 @Composable
-private fun EditWorkplaceSheet(cat: WorkCategory, categories: List<WorkCategory>, viewModel: WorkViewModel, onDismiss: () -> Unit) {
+private fun WorkplaceEditor(cat: WorkCategory, categories: List<WorkCategory>, viewModel: WorkViewModel, onDismiss: () -> Unit) {
     val c = Kis.colors
     val settings = Kis.settings
     var name by rememberSaveable { mutableStateOf(cat.name) }
@@ -267,8 +245,7 @@ private fun EditWorkplaceSheet(cat: WorkCategory, categories: List<WorkCategory>
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     val taken = categories.any { it.id != cat.id && it.name.trim().equals(name.trim(), true) }
     val rateValue = rate.toDoubleOrNull()?.takeIf { it >= 0 }
-    KisSheet(onDismiss = onDismiss, tag = "edit_category_sheet") {
-        Text("עריכת מקום", style = KisType.title, color = c.ink)
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sunk).padding(12.dp).testTag("edit_category_sheet"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         KisTextField(name, { name = it }, "שם", Modifier.fillMaxWidth().testTag("edit_category_name"), isError = taken)
         if (taken) Text("כבר יש מקום בשם הזה", style = KisType.caption, color = c.danger)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -358,46 +335,54 @@ private fun AiKeySheet(ownerUid: String?, onDismiss: () -> Unit) {
 }
 
 /**
- * The places in the user's order: a long press on a row (a small vibration) picks it up, dragging moves it, and the
- * new order is kept on letting go. The add-shift page lists the places in the same order.
+ * The places, in the user's order. A tap on a row makes it the default; the pencil opens its name, rate and colour
+ * under it (one at a time); a long press on the two lines (a small vibration) picks it up and dragging moves it. The
+ * add page lists the places in the same order.
  */
 @Composable
-private fun PlacesReorder(categories: List<WorkCategory>, currencyOf: (String) -> String) {
+private fun PlacesPanel(categories: List<WorkCategory>, defaultCategory: String, viewModel: WorkViewModel, onDefault: (String) -> Unit) {
     val c = Kis.colors
     val settings = Kis.settings
     val step = with(androidx.compose.ui.platform.LocalDensity.current) { 60.dp.toPx() }
     var order by remember(categories) { mutableStateOf(categories.map { it.name }) }
     var dragging by remember { mutableStateOf<String?>(null) }
     var dragY by remember { mutableFloatStateOf(0f) }
-    fun drop() { dragging = null; dragY = 0f; settings.updatePlaceOrder(order) }
-    Column(Modifier.testTag("places_reorder_list"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    var open by rememberSaveable { mutableStateOf<String?>(null) }
+    fun drop() { if (dragging == null) return; dragging = null; dragY = 0f; settings.updatePlaceOrder(order) }
+    Column(Modifier.testTag("places_panel"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         order.forEach { name ->
             val cat = categories.firstOrNull { it.name == name } ?: return@forEach
             val lifted = dragging == name
+            val on = name == defaultCategory
             key(name) {
                 Row(Modifier.fillMaxWidth().height(56.dp).zIndex(if (lifted) 1f else 0f)
                     .graphicsLayer { translationY = if (lifted) dragY else 0f; shadowElevation = if (lifted) 12f else 0f; shape = RoundedCornerShape(14.dp); clip = true }
-                    .background(if (lifted) c.surface else c.sunk)
-                    .pointerInput(name) {
-                        detectDragGesturesAfterLongPress(
-                            onDragStart = { dragging = name; dragY = 0f; settings.haptic(KisSettings.Haptic.SELECT) },
-                            onDrag = { change, amount ->
-                                change.consume()
-                                dragY += amount.y
-                                val i = order.indexOf(name)
-                                if (dragY > step / 2 && i < order.lastIndex) { order = order.toMutableList().apply { add(i + 1, removeAt(i)) }; dragY -= step; settings.haptic(KisSettings.Haptic.TICK) }
-                                else if (dragY < -step / 2 && i > 0) { order = order.toMutableList().apply { add(i - 1, removeAt(i)) }; dragY += step; settings.haptic(KisSettings.Haptic.TICK) }
-                            },
-                            onDragEnd = { drop() }, onDragCancel = { drop() })
-                    }
-                    .testTag("place_drag_$name").padding(start = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.size(24.dp).clip(RoundedCornerShape(8.dp)).background(workplaceOf(cat.name, categories).brush))
+                    .background(if (lifted) c.surface else if (on) c.sunk else androidx.compose.ui.graphics.Color.Transparent)
+                    .kisClick { onDefault(name) }.semantics { selected = on }
+                    .testTag("default_category_option_$name").padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(Modifier.size(24.dp).clip(RoundedCornerShape(8.dp)).background(workplaceOf(name, categories).brush))
                     Column(Modifier.weight(1f)) {
-                        Text(cat.name, style = KisType.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1)
-                        Text("${KisFormat.money(cat.defaultRate, currencyOf(cat.name))} לשעה", style = KisType.caption, color = c.muted)
+                        Text(name, style = KisType.body.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), color = c.ink, maxLines = 1)
+                        Text("${KisFormat.money(cat.defaultRate, viewModel.categoryCurrency(name))} לשעה", style = KisType.caption, color = c.muted)
                     }
-                    Icon(Icons.Rounded.DragHandle, "גרירת $name", tint = c.muted, modifier = Modifier.size(48.dp).padding(12.dp))
+                    if (on) Icon(Icons.Rounded.Check, "ברירת מחדל", tint = c.ink)
+                    Icon(Icons.Rounded.Edit, "עריכת $name", tint = c.ink, modifier = Modifier.size(44.dp).clip(CircleShape)
+                        .kisClick { open = if (open == name) null else name }.testTag("category_row_$name").padding(11.dp))
+                    Icon(Icons.Rounded.DragHandle, "הזזת $name", tint = c.muted, modifier = Modifier.size(44.dp)
+                        .pointerInput(name) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = { open = null; dragging = name; dragY = 0f; settings.haptic(KisSettings.Haptic.SELECT) },
+                                onDrag = { change, amount ->
+                                    change.consume()
+                                    dragY += amount.y
+                                    val i = order.indexOf(name)
+                                    if (dragY > step / 2 && i < order.lastIndex) { order = order.toMutableList().apply { add(i + 1, removeAt(i)) }; dragY -= step; settings.haptic(KisSettings.Haptic.TICK) }
+                                    else if (dragY < -step / 2 && i > 0) { order = order.toMutableList().apply { add(i - 1, removeAt(i)) }; dragY += step; settings.haptic(KisSettings.Haptic.TICK) }
+                                },
+                                onDragEnd = { drop() }, onDragCancel = { drop() })
+                        }.testTag("place_drag_$name").padding(10.dp))
                 }
+                if (open == name) WorkplaceEditor(cat, categories, viewModel, onDismiss = { open = null })
             }
         }
     }

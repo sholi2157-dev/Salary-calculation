@@ -281,7 +281,7 @@ fun KisEditorPage(
     // A text field being typed in (not one of our values): the clock, ruler and places fold away.
     val typingText = imeOpen && !pad
     val frame = RoundedCornerShape(26.dp)
-    Box(Modifier.fillMaxSize().background(c.bg).then(if (d.team) Modifier.border(2.5.dp, teamColor(), frame).testTag("team_frame") else Modifier)) {
+    Box(Modifier.fillMaxSize().background(c.bg).then(if (d.team) Modifier.border(2.5.dp, accent, frame).testTag("team_frame") else Modifier)) {
     // Light: the page glows in the chosen place's colour, so the screen keeps to one colour (the place, its span on the
     // ruler, the digit being typed) instead of the app's purple meeting a place's pink or green.
     KisGlow(Modifier.fillMaxSize(), if (c.dark) null else accent)
@@ -294,10 +294,10 @@ fun KisEditorPage(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TopPill(if (d.editing) "סגירה" else "ביטול", onTop, tag = "editor_close") { close() }
                 Text(when { d.editing && d.team -> "עריכת משמרת קבוצתית"; d.editing -> "עריכת משמרת"; d.team -> "משמרת קבוצתית"; else -> "משמרת חדשה" }, Modifier.weight(1f).semantics { heading() },
-                    color = if (d.team) teamColor() else onTop, style = KisType.label.copy(fontSize = 16.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    color = if (d.team) accent else onTop, style = KisType.label.copy(fontSize = 16.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 if (d.editing) TopPill("מחיקה", onTop, tag = "editor_delete") { confirmDelete = true }
                 // A shift is the user's own unless "קבוצה" is on: then the same tabs come with the people who worked.
-                else TopPill("קבוצה", onTop, icon = Icons.Rounded.Groups, tag = "editor_team", on = if (d.team) teamColor() else null) {
+                else TopPill("קבוצה", onTop, icon = Icons.Rounded.Groups, tag = "editor_team", on = if (d.team) accent else null, onInk = workplace.accentInk(c.dark)) {
                     commitBuf(); pad = false
                     d = d.withTeam(!d.team)
                     if (!aiMode) target = when (d.tab) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
@@ -471,10 +471,10 @@ private fun isWithinWeek(day: Long): Boolean {
 // ======================================================================= pieces
 
 @Composable
-private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, tag: String, on: Color? = null, onClick: () -> Unit) {
+private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, tag: String, on: Color? = null, onInk: Color = Color.White, onClick: () -> Unit) {
     val c = Kis.colors
-    // [on]: a switch that is on (the group button) is filled with its colour.
-    val fg = if (on != null) Color.White else ink
+    // [on]: a switch that is on (the group button) is filled with the page's one colour (the chosen place's, as on the ruler).
+    val fg = if (on != null) onInk else ink
     Row(Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(99.dp)).background(on ?: if (c.dark) ink.copy(alpha = 0.18f) else c.surface)
         .then(if (c.dark || on != null) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(99.dp))).kisClick(onClick = onClick)
         .then(if (on != null) Modifier.semantics { selected = true } else Modifier).testTag(tag).padding(horizontal = 14.dp),
@@ -484,9 +484,6 @@ private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics
     }
 }
 
-/** The colour of a group shift: its button, title and the frame around the page. */
-@Composable
-internal fun teamColor(): Color = if (Kis.colors.dark) Color(0xFF8FB0FF) else Color(0xFF3B5BDB)
 
 @Composable
 private fun WasBanner(base: WorkEntry, changed: Boolean, ink: Color) {

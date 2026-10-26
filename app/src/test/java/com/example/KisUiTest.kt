@@ -933,7 +933,7 @@ class KisUiTest {
         runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-detail-bottom.png") }
     }
 
-    /** Settings → places → עריכה: a long press picks a place up and dragging moves it; the add page follows the order. */
+    /** Settings → places, one panel: edit inline, a long press picks a place up and dragging moves it; the add page follows the order. */
     @Test fun placesAreReorderedByDragging() {
         val vm = model()
         lateinit var settings: KisSettings
@@ -944,9 +944,13 @@ class KisUiTest {
             }
         }
         ui.onNodeWithTag("default_category_picker").performScrollTo().performClick()
-        ui.onNodeWithTag("places_reorder").performClick()
         ui.onNodeWithTag("place_drag_הובלות").assertExists()
-        ui.onNodeWithTag("default_category_add").assertDoesNotExist()
+        ui.onNodeWithTag("default_category_add").assertExists()
+        ui.onNodeWithTag("category_row_מסעדה").performClick()
+        ui.onNodeWithTag("edit_category_sheet").assertExists()
+        runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-places-edit.png") }
+        ui.onNodeWithTag("category_row_מסעדה").performClick()
+        ui.onNodeWithTag("edit_category_sheet").assertDoesNotExist()
         runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-places-reorder.png") }
         ui.onNodeWithTag("place_drag_הובלות").performTouchInput {
             down(center)
