@@ -8,7 +8,8 @@
  *  {category, date(ms), isTimeRange, startTime, endTime, hours, hourlyRate, totalEarnings, isPaid, notes,
  *   currency, isGroupShift, employerRate, workerRate, groupWorkersJson,
  *   kind ('shift'|'job', default 'shift'), payKnown (default true), bonus (default 0),
- *   seriesKey (default null), autoConfirmed (default false)}
+ *   seriesKey (default null), autoConfirmed (default false), passThrough (default 0: money the employer pays through
+ *   the user for someone else, owed by the employer but never part of totalEarnings)}
  * Missing 2.0 fields read as their defaults, so pre-2.0 entries behave exactly as before.
  *
  * Since 2.0 a shift may have no known rate yet (or a job no known amount). Then totalEarnings
@@ -135,8 +136,8 @@ function workers(e) {
 }
 
 /**
- * A job with a team. Its totalEarnings is what is left for the user after the team is paid, so every
- * total and summary counts only the user's own income; the job's full price is that plus the team's pay.
+ * A job with a team. Its totalEarnings is the user's own pay, so every total and summary counts only the
+ * user's income; the employer owes that plus the team's pay (plus any money passed through).
  */
 const isTeamJob = e => isJob(e) && !!e.isGroupShift;
 /** A worker without their own rate follows the shift rate, so it is unknown while that is. A job has no hourly rate to follow. */
@@ -156,12 +157,13 @@ function teamPay(e) {
  return Math.round(sum * 100) / 100;
 }
 
-/** {employerTotal, profit, myNet}, or null while any part is unknown: a partial group total would be misleading. */
+const passThroughOf = e => Number(e.passThrough ?? 0) || 0;
+/** {employerTotal, profit, myNet}, or null while any part is unknown: a partial group total would be misleading. employerTotal includes money passed through. */
 function group(e) {
  const own = pay(e);
  if (own == null) return null;
- // A job: the client pays one price; the team's part comes out of it and the rest is the user's.
- if (isJob(e)) { const team = teamPay(e); return team == null ? null : { employerTotal: Math.round((own + team) * 100) / 100, profit: 0, myNet: own }; }
+ // A job: the user's pay and each worker's pay are separate; the employer owes all of them.
+ if (isJob(e)) { const team = teamPay(e); return team == null ? null : { employerTotal: Math.round((own + team + passThroughOf(e)) * 100) / 100, profit: 0, myNet: own }; }
  let employer = 0, profit = 0;
  for (const w of workers(e)) {
   const er = employerRate(w, e); if (er == null) return null;
@@ -170,8 +172,10 @@ function group(e) {
   profit += w.hours * (er - wr);
  }
  const r = v => Math.round(v * 100) / 100;
- return { employerTotal: r(own + employer), profit: r(profit), myNet: r(own + profit) };
+ return { employerTotal: r(own + employer + passThroughOf(e)), profit: r(profit), myNet: r(own + profit) };
 }
+/** What the employer owes for this entry (team and money passed through included), or null while any part is unknown. */
+function employerDue(e) { if (e.isGroupShift) { const g = group(e); return g ? g.employerTotal : null; } const own = pay(e); return own == null ? null : Math.round((own + passThroughOf(e)) * 100) / 100; }
 
 /** Back to groupWorkersJson; keys of `source` keep their place, bonus is written only when > 0. On a job team exactly one of amount / workerRate is written. */
 function encodeWorkers(list, job = false) {
@@ -214,7 +218,7 @@ function report(entries, workerName = null) {
 }
 
 const api = { KIND_SHIFT, KIND_JOB, isJob, payKnown: payKnownOf, bonus: bonusOf, pay, known, pending, amount, missingLabel, totals,
- workers, workerRate, employerRate, workerPay, employerPay, group, encodeWorkers, isTeamJob, teamPay,
+ workers, workerRate, employerRate, workerPay, employerPay, group, encodeWorkers, isTeamJob, teamPay, employerDue, passThrough: passThroughOf,
  format, summary, report, moneyWorkerRate, moneyEmployerRate, fixed2, hours, javaParseDouble };
 if (typeof module !== 'undefined') module.exports = api; else root.KisPay = api;
 })(globalThis);

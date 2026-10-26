@@ -19,14 +19,14 @@ function createStore(storage, { now = () => Date.now() } = {}) {
     // Ids are local only (Android ignores them). Early versions used Date.now() numbers: keep the value, as text, so every
     // screen can find the row; a row without one gets a stable id from its content until it is first saved.
     const id = e.id != null && e.id !== '' ? String(e.id) : 'legacy-' + hash(JSON.stringify(e));
-    return { kind: 'shift', payKnown: true, bonus: 0, seriesKey: null, autoConfirmed: false, ...e, id };
+    return { kind: 'shift', payKnown: true, bonus: 0, seriesKey: null, autoConfirmed: false, passThrough: 0, ...e, id };
   }
   function hash(t) { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
   /** Rows that use nothing from 2.0 are stored exactly as before (also keeps a way back to the previous site clean). */
   function stored(e) {
     const row = { ...e };
     if (row.kind === 'shift') delete row.kind; if (row.payKnown === true) delete row.payKnown; if (!row.bonus) delete row.bonus;
-    if (row.seriesKey == null) delete row.seriesKey; if (!row.autoConfirmed) delete row.autoConfirmed;
+    if (row.seriesKey == null) delete row.seriesKey; if (!row.autoConfirmed) delete row.autoConfirmed; if (!row.passThrough) delete row.passThrough;
     return row;
   }
   function load() {

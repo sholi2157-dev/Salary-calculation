@@ -56,6 +56,7 @@ function subtitle(e) {
     parts.push(e.category);
   }
   if (e.bonus > 0) parts.push('בונוס ' + money(e.bonus, e.currency));
+  if (e.passThrough > 0) parts.push('החזר ' + money(e.passThrough, e.currency));
   if (e.isGroupShift) { const n = root.KisPay.workers(e).length; if (n) parts.push((n + 1) + ' אנשים'); }
   return parts.join(' · ');
 }

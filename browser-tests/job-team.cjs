@@ -1,7 +1,8 @@
 /*
  * A job (קבלנות) with a team, in a real browser on the built public/ folder, with synthetic data only.
- * Proves: a solo job is unchanged; people get a fixed sum or hours × their own rate; only the user's share is stored
- * and counted; reopening shows the full price; an edit that touches nothing keeps the stored row exactly.
+ * Proves: a solo job is unchanged; the user's amount is theirs and each person gets a sum on top (the first one's carries
+ * to the next); a name and Enter goes to that person's amount; money passed through is owed but not income; an edit
+ * that touches nothing keeps the stored row exactly.
  */
 const assert = require('node:assert/strict'), http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -35,36 +36,45 @@ const tid = t => `[data-testid="${t}"]`;
       const stored = () => page.evaluate(() => JSON.parse(localStorage.getItem('work_complete_backup')));
 
       await page.click(tid('add-shift')); await page.click(tid('mode-job'));
-      await page.fill(tid('job-amount'), '1000'); await page.dispatchEvent(tid('job-amount'), 'change');
+      await page.fill(tid('job-amount'), '75'); await page.dispatchEvent(tid('job-amount'), 'change');
       // A solo job shows only the small opener.
       assert.equal(await page.locator(tid('job-team-block')).count(), 0);
       await page.click(tid('job-team-open'));
+      await page.click(tid('job-rate-mine-more'));
+      // A known name, then a new one with Enter: the cursor goes straight to that person's amount.
       await page.click('[data-jwname="דני"]');
-      await page.fill(tid('job-worker-amount-0'), '300');
-      await page.fill(tid('job-worker-name'), 'יוסי'); await page.click(tid('job-worker-add'));
-      await page.click(tid('job-worker-hourly-1'));
-      await page.fill(tid('job-worker-hours-1'), '5:30'); await page.fill(tid('job-worker-rate-1'), '60');
-      assert.match(await page.textContent(tid('job-team-pay')), /630/);
-      assert.match(await page.textContent(tid('job-my-share')), /370/);
-      assert.match(await page.textContent(tid('editor-total')), /370/);
+      assert.equal(await page.evaluate(() => document.activeElement?.dataset.testid), 'job-worker-amount-0');
+      await page.keyboard.type('50'); await page.keyboard.press('Enter');
+      assert.equal(await page.evaluate(() => document.activeElement?.dataset.testid), 'job-worker-name');
+      await page.keyboard.type('יוסי'); await page.keyboard.press('Enter');
+      assert.equal(await page.evaluate(() => document.activeElement?.dataset.testid), 'job-worker-amount-1');
+      // The first person's amount carries to the next one.
+      assert.equal(await page.inputValue(tid('job-worker-amount-1')), '50');
+      await page.click(tid('editor-pass-through')); await page.fill(tid('pass-through-input'), '20');
+      assert.match(await page.textContent(tid('job-mine')), /75/);
+      assert.match(await page.textContent(tid('job-team-pay')), /100/);
+      assert.match(await page.textContent(tid('job-employer-due')), /195/);
+      // The total at the top is the user's own: nothing reads as if the team took it.
+      assert.match(await page.textContent(tid('editor-total')), /75/);
       await page.screenshot({ path: path.join(OUT, `job-team-${colorScheme}-360.png`), fullPage: true });
       const width = await page.evaluate(() => document.documentElement.scrollWidth); assert.ok(width <= 360, 'no horizontal scroll: ' + width);
-      // The team cannot take more than the price.
-      await page.fill(tid('job-worker-amount-0'), '900');
-      assert.match(await page.textContent(tid('job-team-error')), /יותר מסכום העבודה/);
-      await page.fill(tid('job-worker-amount-0'), '300');
+      // One amount for everyone follows the user's amount.
+      await page.click(tid('job-rate-same'));
+      assert.match(await page.textContent(tid('job-employer-due')), /245/);
+      await page.screenshot({ path: path.join(OUT, `job-team-same-${colorScheme}-360.png`), fullPage: true });
+      await page.click(tid('job-rate-mine-more'));
       await page.click(tid('save-shift'));
       const row = (await stored()).entries[0];
-      assert.equal(row.kind, 'job'); assert.equal(row.isGroupShift, true); assert.equal(row.totalEarnings, 370);
+      assert.equal(row.kind, 'job'); assert.equal(row.isGroupShift, true); assert.equal(row.totalEarnings, 75); assert.equal(row.passThrough, 20);
       const ws = JSON.parse(row.groupWorkersJson);
-      assert.deepEqual(ws.map(w => [w.name, w.amount ?? null, w.workerRate ?? null, w.hours]), [['דני', 300, null, 0], ['יוסי', null, 60, 5.5]]);
+      assert.deepEqual(ws.map(w => [w.name, w.amount ?? null, w.workerRate ?? null, w.hours]), [['דני', 50, null, 0], ['יוסי', 50, null, 0]]);
       assert.ok((await stored()).workers.some(w => w.name === 'יוסי'), 'new name joins the list');
 
-      // Reopen: the full price comes back, and saving an untouched note keeps every stored value.
+      // Reopen: the user's own amount comes back, and saving an untouched note keeps every stored value.
       // Same defaults the store applies when it loads a row.
       const load = id => { const e = JSON.parse(localStorage.getItem('work_complete_backup')).entries.find(x => x.id === id); return { kind: 'shift', payKnown: true, bonus: 0, seriesKey: null, autoConfirmed: false, ...e }; };
       const fromEntry = await page.evaluate(([id, f]) => window.KisEditor.fromEntry(eval(f)(id)), [row.id, load.toString()]);
-      assert.equal(fromEntry.amount, '1000'); assert.equal(fromEntry.workers[0].amount, '300'); assert.equal(fromEntry.workers[1].byHours, true);
+      assert.equal(fromEntry.amount, '75'); assert.equal(fromEntry.workers[0].amount, '50'); assert.equal(fromEntry.teamSameRate, false); assert.equal(fromEntry.passThrough, '20');
       const [same, before] = await page.evaluate(([id, f]) => { const e = eval(f)(id);
         return [JSON.stringify(window.KisEditor.toEntry({ ...window.KisEditor.fromEntry(e), notes: 'מטבח' }, e)), JSON.stringify({ ...e, notes: 'מטבח' })]; }, [row.id, load.toString()]);
       assert.equal(same, before);

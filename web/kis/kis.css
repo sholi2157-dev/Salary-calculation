@@ -403,3 +403,9 @@ button { cursor: pointer; }
   .shift:hover { box-shadow: 0 0 0 1.5px var(--line); }
 }
 @media (min-width: 1024px) { .kis-page[data-page="history"] { max-width: 860px; } }
+/* Team totals in a shift's details: what the employer owes first, then each part. */
+.team-sum { display: grid; gap: 2px; font-size: 14px; color: var(--muted); }
+.team-sum .row { align-items: baseline; }
+.team-sum b { color: var(--ink); font-weight: 600; }
+.team-sum .strong { color: var(--ink); font-weight: 600; font-size: 15px; }
+.team-sum .strong b { font-weight: 700; }

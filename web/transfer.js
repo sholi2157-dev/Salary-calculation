@@ -93,6 +93,7 @@ function v2Fields(e){
  return {kind,payKnown:optBoolean(e.payKnown,true),bonus,seriesKey,autoConfirmed:optBoolean(e.autoConfirmed,false)};
 }
 const V2_DEFAULTS={kind:KIND_SHIFT,payKnown:true,bonus:0,seriesKey:null,autoConfirmed:false};
+function passThroughOf(e){const v=optDouble(e.passThrough,0);check(Number.isFinite(v)&&v>=0,'החזר הוצאות לא תקין');return v;}
 function workerBonus(w){const b=optDouble(w?.bonus,0);return Number.isFinite(b)&&b>0?b:0;}
 function normalize(e) {
  check(e&&typeof e.category==='string'&&e.category.trim(),'חסרה קטגוריה');
@@ -106,10 +107,12 @@ function normalize(e) {
  // 2.0 data normalizes to exactly the pre-2.0 object (same keys, same order) and stored data/duplicate
  // signatures stay unchanged. Readers treat a missing field as its default. A worker's bonus stays in groupWorkersJson.
  const v2=v2Fields(e);for(const k of Object.keys(V2_DEFAULTS))if(v2[k]!==V2_DEFAULTS[k])out[k]=v2[k];
+ // Money passed through the user (2.2): owed by the employer, never income. Present only when used.
+ const pass=passThroughOf(e);if(pass>0)out.passThrough=pass;
  return out;
 }
 /** Version 3 only when a 2.0 feature is actually used (unknown pay, bonus, fixed-price job, series, worker bonus). */
-function needsVersion3(entries){return entries.some(e=>{const v2=v2Fields(e);if(Object.keys(V2_DEFAULTS).some(k=>v2[k]!==V2_DEFAULTS[k]))return true;
+function needsVersion3(entries){return entries.some(e=>{const v2=v2Fields(e);if(Object.keys(V2_DEFAULTS).some(k=>v2[k]!==V2_DEFAULTS[k])||passThroughOf(e)>0)return true;
  if(!String(e.groupWorkersJson||'').trim())return false;try{const m=JSON.parse(e.groupWorkersJson);return Array.isArray(m)&&m.some(w=>workerBonus(w)>0);}catch{return false;}});}
 function seriesOf(s){
  check(s&&typeof s==='object','תוכנית לא תקינה');
@@ -171,7 +174,8 @@ function encode(data){
  const entries=(data.entries||[]).map(normalize),series=(data.series||[]).map(seriesOf),exceptions=(data.exceptions||[]).map(exceptionOf);
  const v3=needsVersion3(entries)||series.length>0||exceptions.length>0;
  const root={formatVersion:v3?3:2,androidLocalPreferences:data.androidLocalPreferences,
-  entries:v3?entries.map(e=>{const row={};for(const [k,v] of Object.entries(e))if(!(k in V2_DEFAULTS))row[k]=v;return Object.assign(row,v2Fields(e));}):entries,
+  // Same order as Android: the 2.0 fields, then passThrough only when used.
+  entries:v3?entries.map(e=>{const row={};for(const [k,v] of Object.entries(e))if(!(k in V2_DEFAULTS)&&k!=='passThrough')row[k]=v;Object.assign(row,v2Fields(e));if(e.passThrough>0)row.passThrough=e.passThrough;return row;}):entries,
   categories:(data.categories||[]).map(({name,defaultRate})=>({name,defaultRate})),workers:(data.workers||[]).map(({name})=>({name})),webPreferences:data.webPreferences};
  if(v3){root.series=series;root.seriesExceptions=exceptions;}
  return JSON.stringify(root,null,2);

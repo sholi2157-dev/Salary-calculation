@@ -89,33 +89,46 @@ function newDraft(store) {
   const day = U().startOfDay(Date.now()), end = R().roundedEnd(nowMin());
   return { id: null, mode: 'CLOCK', category: cat ? name : '', day, start: defaultStart(end), end, breakMin: 0,
     hours: '', rate: cat ? clean(cat.defaultRate) : '', rateUnknown: false, currency: root.WorkCategories.currency(name, prefs), bonus: '', bonusTarget: 'ME',
-    amount: '', amountUnknown: false, notes: '', workers: [], separateRates: false, employerRate: '', workerRate: '', isPaid: false, repeat: false, repeatDays: null, repeatUntil: null };
+    amount: '', amountUnknown: false, notes: '', workers: [], separateRates: false, employerRate: '', workerRate: '', isPaid: false, repeat: false, repeatDays: null, repeatUntil: null,
+    passThrough: '', teamSameRate: true };
 }
 function breakOf(e) { if (!e.isTimeRange || !R().isTime(e.startTime) || !R().isTime(e.endTime)) return 0; return Math.max(0, Math.round(R().span(e.startTime, e.endTime).minutes - e.hours * 60)); }
 function fromEntry(e) {
   const job = e.kind === 'job', clock = e.isTimeRange && R().isTime(e.startTime) && R().isTime(e.endTime);
-  const workers = root.KisPay.workers(e).map(w => ({ name: w.name, hours: job && w.hours === 0 && w.amount != null ? '' : clean(w.hours), isPaid: w.isPaid, bonus: w.bonus > 0 ? clean(w.bonus) : '', source: w.source || {},
-    ...(job ? { byHours: w.amount == null, rate: clean(w.workerRate), amount: clean(w.amount) } : {}) }));
-  // A team job stores the user's share; the form shows the job's full price (share + team).
-  const price = job && e.payKnown ? e.totalEarnings + (root.KisPay.isTeamJob(e) ? root.KisPay.teamPay(e) ?? 0 : 0) : null;
+  const saved = root.KisPay.workers(e);
+  // A job worker always opens with a fixed amount; one saved as hours × rate (before 2.2) opens with that pay.
+  const workers = saved.map(w => ({ name: w.name, hours: job && w.hours === 0 && w.amount != null ? '' : clean(w.hours), isPaid: w.isPaid, bonus: w.bonus > 0 ? clean(w.bonus) : '', source: w.source || {},
+    ...(job ? { amount: clean(w.amount ?? root.KisPay.workerPay(w, e)) } : {}) }));
+  // A job (with or without a team) stores the user's own pay, which is what the form shows.
+  const price = job && e.payKnown ? e.totalEarnings : null;
   return { id: e.id, mode: job ? 'JOB' : e.isGroupShift ? 'GROUP' : clock ? 'CLOCK' : 'HOURS', category: e.category, day: U().startOfDay(e.date),
     start: clock ? e.startTime : null, end: clock ? e.endTime : R().roundedEnd(nowMin()), breakMin: breakOf(e), hours: clean(e.hours),
     rate: !job && e.payKnown ? clean(e.hourlyRate) : '', rateUnknown: !job && !e.payKnown, currency: e.currency, bonus: e.bonus > 0 ? clean(e.bonus) : '', bonusTarget: 'ME',
     amount: price != null ? clean(price) : '', amountUnknown: job && !e.payKnown, notes: e.notes || '', workers,
-    separateRates: e.employerRate != null || e.workerRate != null, employerRate: clean(e.employerRate), workerRate: clean(e.workerRate), isPaid: e.isPaid, repeat: false };
+    separateRates: e.employerRate != null || e.workerRate != null, employerRate: clean(e.employerRate), workerRate: clean(e.workerRate), isPaid: e.isPaid, repeat: false,
+    passThrough: e.passThrough > 0 ? clean(e.passThrough) : '',
+    teamSameRate: !job || !saved.length || (e.payKnown && saved.every(w => w.amount != null && !w.bonus && w.amount === e.totalEarnings)) };
 }
-/** On a job team (קבלנות) a worker gets a fixed amount or, when byHours, hours at their own rate. */
+/** A job with people on it. The amount is the user's own pay; each worker gets a fixed sum on top of it, owed by the employer too. */
 const teamJob = d => d.mode === 'JOB' && d.workers.length > 0;
-function jobWorkerPay(w) {
-  if (w.byHours) { const h = durationHours(w.hours || ''), r = num(w.rate || ''); return h == null || r == null || h < 0 || r < 0 ? null : root.KisPay.amount(h, r); }
-  const a = num(w.amount || ''); return a != null && a >= 0 ? a : null;
-}
+/** Everyone gets the user's amount; only while that amount is known (otherwise each worker has their own). */
+const sameRate = d => d.teamSameRate !== false && !d.amountUnknown;
+function jobWorkerPay(w, d) { const a = num(sameRate(d) ? d.amount : w.amount || ''); return a != null && a >= 0 ? a : null; }
 function teamPayOf(d) {
   if (!teamJob(d)) return 0;
-  let sum = 0; for (const w of d.workers) { const p = jobWorkerPay(w); if (p == null) return null; sum += p; }
+  let sum = 0; for (const w of d.workers) { const p = jobWorkerPay(w, d); if (p == null) return null; sum += p; }
   return Math.round(sum * 100) / 100;
 }
-function myShare(d) { const total = num(d.amount), team = teamPayOf(d); return total == null || team == null ? null : Math.round((total - team) * 100) / 100; }
+const passThroughOf = d => { const v = num(d.passThrough); return v != null && v > 0 ? v : 0; };
+/** Everything the employer owes: the user's pay, the team's and the money passed through; null while any part is unknown. */
+const employerDue = (own, team, d) => own == null || team == null ? null : Math.round((own + team + passThroughOf(d)) * 100) / 100;
+/** A new job worker: with "I get more" their amount starts as the first worker's, and stays editable. */
+const withJobWorker = (d, name) => ({ ...d, workers: [...d.workers, { name, hours: '', isPaid: false, bonus: '', source: {}, amount: sameRate(d) ? '' : d.workers[0]?.amount || '' }] });
+/** The first worker's amount carries to every later worker who still had the old one (or none); others keep theirs. */
+function withJobWorkerAmount(d, i, v) {
+  const old = d.workers[i]?.amount ?? '';
+  return { ...d, workers: d.workers.map((w, j) => j === i ? { ...w, amount: v } : i === 0 && (!w.amount || w.amount === old) ? { ...w, amount: v } : w) };
+}
 function evaluate(d) {
   const clockish = d.mode === 'CLOCK' || (d.mode === 'GROUP' && d.start != null);
   const ev = R().evaluate({ mode: d.mode === 'GROUP' && !clockish ? 'HOURS' : d.mode, start: clockish ? d.start : null, end: clockish ? d.end : null, breakMinutes: clockish ? d.breakMin : 0,
@@ -128,12 +141,11 @@ function evaluate(d) {
   if (d.mode === 'JOB' && d.hours.trim() && (durationHours(d.hours) == null || durationHours(d.hours) < 0 || durationHours(d.hours) > 24)) errors.push('משך לא תקין');
   if (teamJob(d)) {
     if (d.workers.some(w => !w.name.trim())) errors.push('לכל עובד צריך שם');
-    if (d.workers.some(w => jobWorkerPay(w) == null)) errors.push('חסר כמה מקבל כל עובד');
-    else if (!d.amountUnknown && (myShare(d) ?? 0) < 0) errors.push('הצוות מקבל יותר מסכום העבודה');
+    if (d.workers.some(w => jobWorkerPay(w, d) == null)) errors.push('חסר כמה מקבל כל עובד');
   }
-  // A team job shows what is left for the user, which is what is stored and counted.
-  const share = teamJob(d) && ev.total != null ? myShare(d) : null;
-  const total = teamJob(d) ? (share != null && share >= 0 ? share : null) : ev.total == null || d.mode === 'JOB' || clockish ? ev.total : root.KisPay.amount(durationHours(d.hours) || 0, num(d.rate) || 0, ev.bonus);
+  if (String(d.passThrough ?? '').trim() && !(num(d.passThrough) >= 0)) errors.push('סכום ההחזר לא תקין');
+  // A job shows the user's own amount, which is what is stored and counted (a team is paid on top of it).
+  const total = ev.total == null || d.mode === 'JOB' || clockish ? ev.total : root.KisPay.amount(durationHours(d.hours) || 0, num(d.rate) || 0, ev.bonus);
   return { ...ev, total, errors, canSave: errors.length === 0, clock: clockish };
 }
 /** The stored shift, exactly as Android builds it (EntryDraft.toEntry), keeping untouched stored values. */
@@ -149,19 +161,24 @@ function toEntry(d, base) {
   if (base && U().startOfDay(base.date) === d.day) date = base.date;
   else if (clock) { const t = new Date(d.day), m = R().toMinutes(d.start); t.setHours(Math.floor(m / 60), m % 60, 0, 0); date = t.getTime(); }
   else date = d.day + 12 * 3600000;
-  const team = teamJob(d), sameJob = was && was.amount === d.amount && !was.amountUnknown && JSON.stringify(was.workers) === JSON.stringify(d.workers);
-  const amountN = sameJob ? base.totalEarnings : team ? (myShare(d) ?? 0) : (num(d.amount) || 0);
-  // A job worker's pay is exactly what the form shows (amount, or hours × rate), with no separate bonus.
+  const team = teamJob(d);
+  const amountN = was && was.amount === d.amount && !was.amountUnknown ? base.totalEarnings : (num(d.amount) || 0);
+  // An untouched team keeps its stored JSON exactly; with one amount for all, a new amount is a new team pay too.
+  const sameTeam = was && was.mode === d.mode && JSON.stringify(was.workers) === JSON.stringify(d.workers)
+    && (d.mode !== 'JOB' || sameRate(was) === sameRate(d) && (!sameRate(d) || was.amount === d.amount));
+  // A job worker's pay is exactly what the form shows, with no separate bonus.
   const groupJson = team ? root.KisPay.encodeWorkers(d.workers.map(w => ({ name: w.name.trim(), hours: durationHours(w.hours || '') || 0, isPaid: !!w.isPaid, bonus: 0,
-    workerRate: w.byHours ? num(w.rate) : null, amount: w.byHours ? null : num(w.amount), source: w.source || {} })), true) : d.mode === 'GROUP' ? JSON.stringify(d.workers.map(w => { const o = { ...(w.source || {}), name: w.name.trim(), hours: Number.isFinite(w.source?.hours) && clean(w.source.hours) === w.hours ? w.source.hours : durationHours(w.hours) || 0, isPaid: !!w.isPaid }; const b = num(w.bonus); if (b > 0) o.bonus = b; else delete o.bonus; return o; })) : '';
+    workerRate: null, amount: jobWorkerPay(w, d), source: w.source || {} })), true) : d.mode === 'GROUP' ? JSON.stringify(d.workers.map(w => { const o = { ...(w.source || {}), name: w.name.trim(), hours: Number.isFinite(w.source?.hours) && clean(w.source.hours) === w.hours ? w.source.hours : durationHours(w.hours) || 0, isPaid: !!w.isPaid }; const b = num(w.bonus); if (b > 0) o.bonus = b; else delete o.bonus; return o; })) : '';
   const total = !payKnown ? 0 : job ? amountN
     : base && base.payKnown && base.kind !== 'job' && hours === base.hours && rate === base.hourlyRate && myBonus === (base.bonus || 0) ? base.totalEarnings
     : root.KisPay.amount(hours, rate, myBonus);
   const proto = base || { createdAt: Date.now(), isPaid: false, seriesKey: null, autoConfirmed: false };
   return { ...proto, category: d.category, date, isTimeRange: clock, startTime: clock ? d.start : null, endTime: clock ? d.end : null, hours,
     hourlyRate: job || !payKnown ? 0 : rate, totalEarnings: total, notes: d.notes.trim(), currency: d.currency, kind: job ? 'job' : 'shift', payKnown, bonus: myBonus,
+    // Written only when used (or already there), so an entry without it is stored exactly as before.
+    ...((pass => pass > 0 || base && 'passThrough' in base ? { passThrough: pass } : {}))(was && was.passThrough === (d.passThrough ?? '') ? base.passThrough || 0 : passThroughOf(d)),
     isGroupShift: d.mode === 'GROUP' || team,
-    groupWorkersJson: (d.mode === 'GROUP' || team) && was && was.mode === d.mode && JSON.stringify(was.workers) === JSON.stringify(d.workers) ? base.groupWorkersJson : groupJson,
+    groupWorkersJson: (d.mode === 'GROUP' || team) && sameTeam ? base.groupWorkersJson : groupJson,
     // Untouched group rates keep their stored value exactly (an imported 33.3333 is not rounded by an unrelated edit).
     employerRate: d.mode === 'GROUP' && d.separateRates ? (was && was.employerRate === d.employerRate ? base.employerRate : num(d.employerRate)) : null,
     workerRate: d.mode === 'GROUP' && d.separateRates ? (was && was.workerRate === d.workerRate ? base.workerRate : num(d.workerRate)) : null,
@@ -187,7 +204,7 @@ function open(app, { entry = null, restore = null } = {}) {
   // Times are edited digit by digit: [buf] holds the four digits ("·" = not set) and [cursor] the one the next key writes.
   // [fresh]: the time was opened as a whole (not on one digit), so the first key starts it over.
   // [pad]: a time is typed with the device's own keyboard, through the hidden [sink] field.
-  let target = 'START', pad = false, fresh = false, dirtyDigits = false, buf = '', cursor = 0, more = d.breakMin > 0 || !!d.notes || !!d.bonus, teamOpen = false;
+  let target = 'START', pad = false, fresh = false, dirtyDigits = false, buf = '', cursor = 0, more = d.breakMin > 0 || !!d.notes || !!d.bonus, teamOpen = false, passOpen = false;
   const host = document.createElement('div');
   host.className = 'editor' + (base ? ' framed' : '');
   host.setAttribute('data-testid', base ? 'edit-page' : 'add-page');
@@ -320,7 +337,7 @@ function open(app, { entry = null, restore = null } = {}) {
       ${base ? `<div class="caption" data-testid="was-banner" style="background:color-mix(in srgb,var(--ink) 8%,transparent);border-radius:10px;padding:6px 10px">${changed() ? '<span class="tag warn">שונה</span> ' : ''}לפני: ${esc(U().dayLabel(base.date))} · ${esc(U().timeLabel(base))} · ${root.KisPay.pay(base) != null ? esc(U().money(base.totalEarnings, base.currency)) : base.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</div>` : ''}
       <div class="modes" role="tablist" aria-label="סוג הרישום">${MODES.map(([m, l]) => `<button role="tab" aria-selected="${d.mode === m}" aria-pressed="${d.mode === m}" data-mode="${m}" data-testid="mode-${m.toLowerCase()}">${l}</button>`).join('')}</div>
       <div class="places">${cats.map(x => `<button aria-pressed="${x.name === d.category}" data-cat="${esc(x.name)}" data-testid="place-${esc(x.name)}">${esc(x.name)}</button>`).join('')}<button data-a="add-place" data-testid="add-place">+ מקום</button></div>
-      ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">סכום (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount"></label>
+      ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">${teamJob(d) ? 'כמה אתה הרווחת (רק שלך)' : 'כמה הרווחת'} (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount"></label>
           <div>${durationControl(true)}</div></div>
           <button class="chip${d.amountUnknown ? ' on' : ''}" data-a="amount-unknown">${d.amountUnknown ? 'סכום חסר · נגיעה להזנה' : 'לא יודע עדיין'}</button>`
         : clockMode ? `<div class="clock-row">${[['START', 'התחלה'], ['END', 'סיום']].map(([t, label]) => { const v = shown(t) || '--:--', id = t === 'START' ? 'clock-start' : 'clock-end';
@@ -352,6 +369,7 @@ function open(app, { entry = null, restore = null } = {}) {
 ` : ''}
       ${d.mode === 'GROUP' ? groupBlock(d) : ''}
       ${d.mode === 'JOB' ? jobTeamBlock(d) : ''}
+      ${passBlock(d)}
       ${!base && d.mode === 'CLOCK' && d.start != null ? `<div class="card" style="display:grid;gap:10px"><div class="row" style="align-items:center"><div class="grow title-row"><b class="label">חוזרת כל שבוע</b>${U().infoDot('חוזרת כל שבוע', 'משמרת קבועה: תופיע מראש ב"מתוכנן" ותירשם לבד כשהזמן נגמר. תמיד אפשר לבטל.')}</div>
           <button class="switch" role="switch" aria-checked="${d.repeat}" aria-label="חוזרת כל שבוע" data-a="repeat" data-testid="repeat-switch"></button></div>
           ${d.repeat ? `<b class="label">בימים</b><div class="weekdays">${U().DAY_SHORT.map((n, i) => `<button aria-pressed="${repeatDays.has(i)}" data-wd="${i}" data-testid="repeat-day-${i}">${n}</button>`).join('')}</div>
@@ -424,15 +442,24 @@ function open(app, { entry = null, restore = null } = {}) {
     q('[data-a=sep]')?.addEventListener('click', () => set({ separateRates: !d.separateRates }));
     // Job team (קבלנות): each person gets a fixed sum or hours × their own rate.
     q('[data-a=job-team-open]')?.addEventListener('click', () => { teamOpen = true; draw(); });
-    all('[data-jw]').forEach(i => { const [idx, f] = i.dataset.jw.split(':');
-      i.addEventListener('input', () => { d = { ...d, workers: d.workers.map((w, k) => k === +idx ? { ...w, [f]: f === 'hours' ? durationEdit(i.value) : i.value } : w) }; persist(); refreshMeta(); }); });
-    all('[data-jwmode]').forEach(b => b.onclick = () => { const [idx, m] = b.dataset.jwmode.split(':'); set({ workers: d.workers.map((w, k) => k === +idx ? { ...w, byHours: m === 'hourly' } : w) }); });
+    // The first worker's amount carries to the later ones; the others' fields are refreshed in place (no lost caret).
+    all('[data-jw]').forEach(i => { const idx = +i.dataset.jw;
+      i.addEventListener('input', () => { d = withJobWorkerAmount(d, idx, i.value.replace(/[^\d.]/g, '')); persist();
+        if (idx === 0) all('[data-jw]').forEach(o => { if (o !== i) o.value = d.workers[+o.dataset.jw].amount; });
+        refreshMeta(); });
+      // Enter / "הבא" on an amount goes back to a new name.
+      i.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); q('[data-testid=job-worker-name]')?.focus(); } }); });
     all('[data-jwdel]').forEach(b => b.onclick = () => set({ workers: d.workers.filter((_, k) => k !== +b.dataset.jwdel) }));
-    const jobWorker = name => ({ name, hours: '', isPaid: false, bonus: '', source: {}, byHours: false, rate: '', amount: '' });
-    all('[data-jwname]').forEach(b => b.onclick = () => set({ workers: [...d.workers, jobWorker(b.dataset.jwname)] }));
-    q('[data-a=job-add-worker]')?.addEventListener('click', () => { const n = q('[data-testid=job-worker-name]')?.value.trim(); if (n) set({ workers: [...d.workers, jobWorker(n)] }); });
-    q('[data-testid=job-worker-name]')?.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); q('[data-a=job-add-worker]').click(); } });
-    bindSplit();
+    all('[data-jrate]').forEach(b => b.onclick = () => { const same = b.dataset.jrate === 'same'; set({ teamSameRate: same });
+      if (!same && d.workers.length && !d.workers[0].amount) host.querySelector('[data-jw="0"]')?.focus(); });
+    // A name and Enter / "הבא": the person joins and (when each has their own amount) the cursor goes straight to their amount.
+    const addJob = (name, focusName) => { const n = String(name || '').trim(); if (!n) return false; d = withJobWorker(d, n); persist(); draw();
+      const next = !sameRate(d) && host.querySelector(`[data-jw="${d.workers.length - 1}"]`);
+      (next || (focusName ? host.querySelector('[data-testid=job-worker-name]') : null))?.focus(); return true; };
+    all('[data-jwname]').forEach(b => b.onclick = () => addJob(b.dataset.jwname, false));
+    q('[data-a=job-add-worker]')?.addEventListener('click', () => addJob(q('[data-testid=job-worker-name]')?.value, true));
+    q('[data-testid=job-worker-name]')?.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); if (!addJob(ev.target.value, true)) ev.target.blur(); } });
+    q('[data-a=pass-open]')?.addEventListener('click', () => { passOpen = true; draw(); host.querySelector('[data-f=passThrough]')?.focus(); });
     all('[data-bt]').forEach(b => b.onclick = () => set({ bonusTarget: b.dataset.bt }));
     rulerBind(host, d, t => { target = t; }, (h, v) => { d = h === 'START' ? { ...d, start: v } : { ...d, end: v }; persist(); draw(); });
   }
@@ -440,7 +467,9 @@ function open(app, { entry = null, restore = null } = {}) {
     const c = evaluate(d);
     host.querySelector('[data-testid=editor-meta]').innerHTML = metaHtml(c);
     const totals = host.querySelector('[data-testid=job-team-totals]');
-    if (totals) { totals.outerHTML = jobTeamTotals(d); bindSplit(); }
+    if (totals) totals.outerHTML = jobTeamTotals(d);
+    const note = host.querySelector('[data-testid=pass-through-note]');
+    if (note) note.outerHTML = passNote(d, c);
     if (pad) return;
     // The same save button is updated in place, so a tap that lands while a field commits still saves.
     const btn = host.querySelector('[data-a=save]'), hint = host.querySelector('[data-testid=save-hint]');
@@ -477,36 +506,40 @@ function open(app, { entry = null, restore = null } = {}) {
     const names = dr.workers.map(w => w.name.trim()).filter(Boolean).filter(n => !store.data.workers.some(w => w.name === n));
     if (names.length) store.update(x => { x.workers.push(...names.map(name => ({ name }))); });
   }
-  function bindSplit() {
-    host.querySelector('[data-a=job-split]')?.addEventListener('click', () => { const price = num(d.amount), each = Math.floor(price / (d.workers.length + 1) * 100) / 100;
-      set({ workers: d.workers.map(w => ({ ...w, amount: clean(each) })) }); });
+  /** Money passed through (car, materials): owed by the employer, never income. A chip until used, in every kind of entry. */
+  function passBlock(dr) {
+    const { esc } = U();
+    if (!passOpen && !String(dr.passThrough || '').trim()) return '<button class="chip dashed" data-a="pass-open" data-testid="editor-pass-through" style="justify-self:start">+ החזר הוצאות</button>';
+    return `<div class="card" style="display:grid;gap:6px" data-testid="pass-block"><label class="field">החזר הוצאות (${esc(dr.currency)})<input class="input" inputmode="decimal" data-f="passThrough" value="${esc(dr.passThrough || '')}" placeholder="למשל כסף על הרכב" data-testid="pass-through-input"></label>
+      ${passNote(dr, evaluate(dr))}</div>`;
+  }
+  function passNote(dr, c) {
+    const { esc } = U(), due = dr.mode === 'GROUP' || teamJob(dr) ? null : employerDue(c.total, 0, dr);
+    return `<span class="caption" data-testid="pass-through-note">${due != null && passThroughOf(dr) > 0 ? `<b>לקבל מהמעסיק ${esc(U().money(due, dr.currency))}</b> · ` : ''}ההחזר לא נספר בהכנסה שלך, רק במה שהמעסיק צריך לשלם</span>`;
   }
   function jobTeamBlock(dr) {
-    const { esc } = U();
+    const { esc, moneyHtml } = U();
     // A solo job stays as simple as before: the team opens only when asked for (or when it already has people).
     if (!teamOpen && !dr.workers.length) return '<button class="chip dashed" data-a="job-team-open" data-testid="job-team-open" style="justify-self:start">+ עבדו איתי עוד אנשים</button>';
-    const known = store.data.workers.map(w => w.name).filter(n => !dr.workers.some(w => w.name === n));
-    return `<div class="card" style="display:grid;gap:10px" data-testid="job-team-block"><b class="label">מי עבד איתך</b>
-      <span class="caption">לכל אחד סכום קבוע או שעות לפי תעריף משלו. מה שנשאר אחרי הצוות הוא ההכנסה שלך, ורק הוא נספר בסיכומים.</span>
-      ${dr.workers.map((w, i) => `<div style="display:grid;gap:8px;padding:10px;border-radius:14px;background:var(--bg)" data-testid="job-worker-${i}">
-        <div class="row" style="align-items:center"><b class="label grow">${esc(w.name)}</b>
-          <div class="seg"><button aria-pressed="${!w.byHours}" data-jwmode="${i}:fixed" data-testid="job-worker-fixed-${i}">סכום</button><button aria-pressed="${!!w.byHours}" data-jwmode="${i}:hourly" data-testid="job-worker-hourly-${i}">לפי שעה</button></div>
-          <button class="icon-btn" aria-label="הסרת ${esc(w.name)}" data-jwdel="${i}">${U().ICON.close}</button></div>
-        ${w.byHours ? `<div class="row"><label class="field grow">שעות:דקות<input class="input" inputmode="decimal" dir="ltr" value="${esc(durationDisplay(w.hours || ''))}" data-jw="${i}:hours" data-testid="job-worker-hours-${i}"></label>
-          <label class="field grow">לשעה (${esc(dr.currency)})<input class="input" inputmode="decimal" value="${esc(w.rate || '')}" data-jw="${i}:rate" data-testid="job-worker-rate-${i}"></label></div>`
-        : `<label class="field">כמה הוא מקבל (${esc(dr.currency)})<input class="input" inputmode="decimal" value="${esc(w.amount || '')}" data-jw="${i}:amount" data-testid="job-worker-amount-${i}"></label>`}</div>`).join('')}
+    const known = store.data.workers.map(w => w.name).filter(n => !dr.workers.some(w => w.name === n)), same = sameRate(dr);
+    return `<div class="card" style="display:grid;gap:10px" data-testid="job-team-block"><div class="title-row"><b class="label grow">מי עבד איתך</b>${U().infoDot('עבודה עם צוות', 'הסכום למעלה הוא רק שלך. כל אחד מהצוות מקבל סכום משלו, והמעסיק משלם את כולם. בסיכומים נספר רק הסכום שלך.')}</div>
+      ${dr.amountUnknown ? '' : `<div class="seg" style="display:grid;grid-template-columns:1fr 1fr"><button aria-pressed="${dr.teamSameRate !== false}" data-jrate="same" data-testid="job-rate-same">אותו סכום לכולם</button><button aria-pressed="${dr.teamSameRate === false}" data-jrate="more" data-testid="job-rate-mine-more">אני מקבל יותר</button></div>`}
+      ${dr.workers.map((w, i) => `<div class="row" style="align-items:center;padding:4px 4px 4px 12px;border-radius:12px;background:var(--bg)" data-testid="job-worker-${i}"><b class="label grow">${esc(w.name)}</b>
+        ${same ? `<span class="caption" data-testid="job-worker-same-${i}">${jobWorkerPay(w, dr) != null ? moneyHtml(jobWorkerPay(w, dr), dr.currency) : 'כמו שלך'}</span>`
+          : `<input class="input" style="width:120px" inputmode="decimal" enterkeyhint="next" placeholder="מקבל (${esc(dr.currency)})" aria-label="כמה ${esc(w.name)} מקבל" value="${esc(w.amount || '')}" data-jw="${i}" data-testid="job-worker-amount-${i}">`}
+        <button class="icon-btn" aria-label="הסרת ${esc(w.name)}" data-jwdel="${i}">${U().ICON.close}</button></div>`).join('')}
       ${known.length ? `<div class="chips">${known.map(n => `<button class="chip dashed" data-jwname="${esc(n)}">+ ${esc(n)}</button>`).join('')}</div>` : ''}
-      <div class="row" style="align-items:flex-end"><label class="field grow">עובד חדש<input class="input" data-testid="job-worker-name" enterkeyhint="done"></label>
+      <div class="row" style="align-items:flex-end"><label class="field grow">עובד חדש<input class="input" data-testid="job-worker-name" enterkeyhint="next"></label>
         <button class="chip" style="min-height:52px" data-a="job-add-worker" data-testid="job-worker-add">+ הוספה</button></div>
       ${dr.workers.length ? jobTeamTotals(dr) : ''}</div>`;
   }
   function jobTeamTotals(dr) {
-    const { moneyHtml, esc } = U(), team = teamPayOf(dr), price = num(dr.amount), share = myShare(dr);
-    const line = (k, v, id) => `<div class="row"><span class="caption grow">${k}</span><b class="label" data-testid="${id}">${v == null ? '—' : moneyHtml(v, dr.currency)}</b></div>`;
-    const err = evaluate(dr).errors.find(e => e === 'חסר כמה מקבל כל עובד' || e === 'הצוות מקבל יותר מסכום העבודה');
-    return `<div style="display:grid;gap:4px" data-testid="job-team-totals">${dr.amountUnknown ? '' : line('סכום העבודה', price, 'job-price')}${line('לצוות', team, 'job-team-pay')}${dr.amountUnknown ? '' : line('נשאר לך', share, 'job-my-share')}
-      ${err ? `<span class="caption" style="color:var(--pending)" data-testid="job-team-error">${esc(err)}</span>` : ''}
-      ${price > 0 && !dr.workers.some(w => w.byHours) ? `<button class="link" data-a="job-split" data-testid="job-split-even" style="justify-self:start">חלוקה שווה (${dr.workers.length + 1} אנשים)</button>` : ''}</div>`;
+    const { moneyHtml, esc } = U(), team = teamPayOf(dr), mine = dr.amountUnknown ? null : num(dr.amount);
+    const line = (k, v, id, strong) => `<div class="row"${strong ? ' style="font-weight:700"' : ''}><span class="${strong ? 'label' : 'caption'} grow">${k}</span><b class="label" data-testid="${id}">${v == null ? '—' : moneyHtml(v, dr.currency)}</b></div>`;
+    const err = evaluate(dr).errors.find(e => e === 'חסר כמה מקבל כל עובד');
+    return `<div style="display:grid;gap:4px" data-testid="job-team-totals">${line('שלך', mine, 'job-mine')}${line(`לצוות (${dr.workers.length})`, team, 'job-team-pay')}
+      ${passThroughOf(dr) > 0 ? line('החזר הוצאות', passThroughOf(dr), 'job-pass-through') : ''}${line('לקבל מהמעסיק', employerDue(mine, team, dr), 'job-employer-due', true)}
+      ${err ? `<span class="caption" style="color:var(--pending)" data-testid="job-team-error">${esc(err)}</span>` : ''}</div>`;
   }
   function groupBlock(dr) {
     const { esc } = U(), known = store.data.workers.map(w => w.name).filter(n => !dr.workers.some(w => w.name === n));

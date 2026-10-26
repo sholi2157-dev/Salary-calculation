@@ -23,6 +23,7 @@ function details(e) {
  }
  if (!Pay.isJob(e)) out.push('תעריף לשעה: ' + (Pay.pay(e) == null ? 'עדיין לא ידוע' : money(e.hourlyRate,e.currency)));
  if (Pay.bonus(e)>0) out.push('בונוס: ' + money(Pay.bonus(e),e.currency) + ' (כלול בסכום)');
+ if (Pay.passThrough(e)>0) out.push('החזר הוצאות: ' + money(Pay.passThrough(e),e.currency) + ' (לא כלול בסכום)');
  if (note(e)) out.push('הערה: ' + note(e));
  return out;
 }
@@ -60,7 +61,7 @@ function workerRows(entries,name) {
  return entries.flatMap(e=>Pay.workers(e).filter(w=>w.name===name).map(w=>{
   const p=Pay.workerPay(w,e), r=Pay.workerRate(w,e);
   // The owner's time range and break are not the worker's facts; the shift note is attached.
-  return {...e,hours:w.hours,hourlyRate:r??0,totalEarnings:p??0,payKnown:p!=null,isPaid:w.isPaid,bonus:w.bonus,isTimeRange:false,startTime:null,endTime:null,isGroupShift:false};
+  return {...e,hours:w.hours,hourlyRate:r??0,totalEarnings:p??0,payKnown:p!=null,isPaid:w.isPaid,bonus:w.bonus,passThrough:0,isTimeRange:false,startTime:null,endTime:null,isGroupShift:false};
  }));
 }
 function copy(entries, name=null) {
@@ -94,13 +95,14 @@ const personal=e=>summary([e]);
 const job=personal;
 function employer(e,ownName=null,technical=false,future=false) {
  const own=Pay.pay(e), ws=Pay.workers(e), pays=ws.map(w=>Pay.employerPay(w,e));
- const total=own==null||pays.some(p=>p==null)?null:Math.round((own+pays.reduce((a,b)=>a+b,0))*100)/100;
+ const total=own==null||pays.some(p=>p==null)?null:Math.round((own+pays.reduce((a,b)=>a+b,0)+Pay.passThrough(e))*100)/100;
  const out=[...(technical?['עבודה: '+e.category,'כמות משמרות: 1','כמות שעות: '+hours(e.hours+ws.reduce((n,w)=>n+w.hours,0))]:['היי, סיכמתי פה את עבודת הצוות ב'+e.category+':']),
   'תאריכים: '+date(e.date),'סכום הצוות: '+(total==null?'ממתין להשלמת תעריף':money(total,e.currency)),'פירוט:'];
  const job=Pay.isJob(e);
  out.push((String(ownName??'').trim()||'החלק שלי')+': '+(job&&e.hours===0?'':hours(e.hours)+' שעות | ')+(own==null?(job?'סכום חסר':'תעריף חסר'):money(own,e.currency)));
  // On a job team a fixed sum has no hours to show.
  ws.forEach((w,i)=>out.push(w.name+': '+(job&&w.amount!=null&&w.hours===0?'סכום קבוע':hours(w.hours)+' שעות')+' | '+(pays[i]==null?'תעריף חסר':money(pays[i],e.currency))));
+ if(Pay.passThrough(e)>0)out.push('החזר הוצאות: '+money(Pay.passThrough(e),e.currency));
  if(note(e))out.push('הערה: '+note(e));
  if(!technical)out.push('תודה!');return future?plannedText(out.join('\n')):out.join('\n');
 }
