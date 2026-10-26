@@ -84,7 +84,8 @@ class CurrencyFeedbackTest {
         // The picker closes with an animation (and the keyboard from the feedback field is still up): reopen it only
         // once it is gone, then wait for it to open.
         ui.waitUntil(5000) { ui.onAllNodesWithTag("default_category_sheet").fetchSemanticsNodes().isEmpty() }
-        ui.onNodeWithTag("default_category_picker").assertTextContains("USD category", substring = true).performClick()
+        // Scrolled into view first, like the first time: closing the sheet can leave it under the floating tab bar.
+        ui.onNodeWithTag("default_category_picker").performScrollTo().assertTextContains("USD category", substring = true).performClick()
         ui.waitUntil(5000) { ui.onAllNodesWithTag("default_category_add").fetchSemanticsNodes().isNotEmpty() }
         ui.onNodeWithTag("default_category_add").performClick()
         ui.onNodeWithTag("category_input").performTextInput("RC15 new default")
