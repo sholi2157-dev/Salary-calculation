@@ -46,7 +46,8 @@ function avatar(name, store, planned = false, size = 44) {
   const p = placeOf(name, store);
   return `<span class="avatar${planned ? ' planned' : ''}" style="--av:${accent(p)};background:linear-gradient(90deg,${p.from},${p.to});color:${p.on};width:${size}px;height:${size}px">${esc((name || '?').trim().charAt(0))}</span>`;
 }
-const timeLabel = e => e.isTimeRange && e.startTime && e.endTime ? `⁦${e.startTime}–${e.endTime}⁩` : `${hours(e.hours)} שעות`;
+// A job paid by the job has no hours to show unless some were typed.
+const timeLabel = e => e.isTimeRange && e.startTime && e.endTime ? `⁦${e.startTime}–${e.endTime}⁩` : e.kind === 'job' && !(e.hours > 0) ? 'קבלנות' : `${hours(e.hours)} שעות`;
 function subtitle(e) {
   const parts = [];
   if (e.kind === 'job') { parts.push('קבלנות: ' + (e.notes.trim() || e.category)); if (e.hours > 0) parts.push(hours(e.hours) + ' ש׳'); }

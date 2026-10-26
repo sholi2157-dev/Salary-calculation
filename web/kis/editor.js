@@ -369,18 +369,18 @@ function open(app, { entry = null, restore = null } = {}) {
 ` : ''}
       ${d.mode === 'GROUP' ? groupBlock(d) : ''}
       ${d.mode === 'JOB' ? jobTeamBlock(d) : ''}
-      ${passBlock(d)}
       ${!base && d.mode === 'CLOCK' && d.start != null ? `<div class="card" style="display:grid;gap:10px"><div class="row" style="align-items:center"><div class="grow title-row"><b class="label">חוזרת כל שבוע</b>${U().infoDot('חוזרת כל שבוע', 'משמרת קבועה: תופיע מראש ב"מתוכנן" ותירשם לבד כשהזמן נגמר. תמיד אפשר לבטל.')}</div>
           <button class="switch" role="switch" aria-checked="${d.repeat}" aria-label="חוזרת כל שבוע" data-a="repeat" data-testid="repeat-switch"></button></div>
           ${d.repeat ? `<b class="label">בימים</b><div class="weekdays">${U().DAY_SHORT.map((n, i) => `<button aria-pressed="${repeatDays.has(i)}" data-wd="${i}" data-testid="repeat-day-${i}">${n}</button>`).join('')}</div>
             <label class="chip" style="position:relative;justify-self:start">עד ${U().shortDate(root.KisPlan.startMillis(until, '12:00'))}<input type="date" data-f="until" value="${until}" aria-label="עד תאריך" style="position:absolute;inset:0;opacity:0"></label>
             <p class="caption" data-testid="repeat-preview">${!preview.dates.length ? 'אין ימים בטווח שנבחר' : (created === 1 ? 'משמרת אחת תיכנס ללוח' : created + ' משמרות ייכנסו ללוח') + (preview.clashes.length ? ` · ${preview.clashes.length} חופפות למשמרת קיימת ולא ייווצרו` : '')}</p>
-            ${d.breakMin > 0 || d.notes.trim() ? `<p class="caption">${[d.breakMin > 0 ? 'הפסקה' : '', d.notes.trim() ? 'הערה' : ''].filter(Boolean).join(' ו')} לא נשמרות במשמרת קבועה</p>` : ''}` : ''}</div>` : ''}
+            ${(left => left.length ? `<p class="caption" data-testid="repeat-not-kept">${left.length > 1 ? left.slice(0, -1).join(', ') + ' ו' + left[left.length - 1] : left[0]} לא נשמרים במשמרת קבועה</p>` : '')([d.breakMin > 0 ? 'הפסקה' : '', num(d.bonus) > 0 ? 'בונוס' : '', d.notes.trim() ? 'הערה' : '', passThroughOf(d) > 0 ? 'החזר הוצאות' : ''].filter(Boolean))}` : ''}</div>` : ''}
       ${more && d.mode !== 'JOB' ? `<div class="card" style="display:grid;gap:10px">
           ${clockMode ? `<b class="label">הפסקה</b><div class="chips">${[0, 15, 30, 45, 60].map(m => `<button class="chip" aria-pressed="${d.breakMin === m}" data-b="${m}" data-testid="break-${m}">${m ? m + ' דק׳' : 'ללא'}</button>`).join('')}
             <input class="input" style="width:90px;min-height:44px" inputmode="numeric" data-f="break" value="${[0, 15, 30, 45, 60].includes(d.breakMin) ? '' : d.breakMin}" placeholder="אחר" aria-label="הפסקה בדקות"></div>` : ''}
           <label class="field">בונוס (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="bonus" value="${esc(d.bonus)}" placeholder="לא חובה"></label>
           <label class="field">הערה<textarea data-f="notes" placeholder="לא חובה" data-testid="notes-input">${esc(d.notes)}</textarea></label></div>` : ''}
+      ${passBlock(d)}
       ${d.mode === 'JOB' ? `<label class="field">מה עשית<textarea data-f="notes" placeholder="לא חובה" data-testid="notes-input">${esc(d.notes)}</textarea></label>` : ''}`;
 
     const bottom = host.querySelector('[data-bottom]');
@@ -444,9 +444,11 @@ function open(app, { entry = null, restore = null } = {}) {
     q('[data-a=job-team-open]')?.addEventListener('click', () => { teamOpen = true; draw(); });
     // The first worker's amount carries to the later ones; the others' fields are refreshed in place (no lost caret).
     all('[data-jw]').forEach(i => { const idx = +i.dataset.jw;
-      i.addEventListener('input', () => { d = withJobWorkerAmount(d, idx, i.value.replace(/[^\d.]/g, '')); persist();
+      i.addEventListener('input', () => { d = withJobWorkerAmount(d, idx, i.value.replace(',', '.').replace(/[^\d.]/g, '')); persist();
         if (idx === 0) all('[data-jw]').forEach(o => { if (o !== i) o.value = d.workers[+o.dataset.jw].amount; });
         refreshMeta(); });
+      // A filled-in amount is selected as a whole, so typing replaces it instead of joining the digits.
+      i.addEventListener('focus', () => { try { i.select(); } catch {} });
       // Enter / "הבא" on an amount goes back to a new name.
       i.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); q('[data-testid=job-worker-name]')?.focus(); } }); });
     all('[data-jwdel]').forEach(b => b.onclick = () => set({ workers: d.workers.filter((_, k) => k !== +b.dataset.jwdel) }));
@@ -468,6 +470,8 @@ function open(app, { entry = null, restore = null } = {}) {
     host.querySelector('[data-testid=editor-meta]').innerHTML = metaHtml(c);
     const totals = host.querySelector('[data-testid=job-team-totals]');
     if (totals) totals.outerHTML = jobTeamTotals(d);
+    // With one amount for all, each person's line follows the user's amount as it is typed.
+    host.querySelectorAll('[data-testid^=job-worker-same-]').forEach(el => { const p = jobWorkerPay({}, d); el.innerHTML = p != null ? U().moneyHtml(p, d.currency) : 'כמו שלך'; });
     const note = host.querySelector('[data-testid=pass-through-note]');
     if (note) note.outerHTML = passNote(d, c);
     if (pad) return;
@@ -483,6 +487,9 @@ function open(app, { entry = null, restore = null } = {}) {
   }
 
   function save() {
+    // A name typed in "עובד חדש" but not added yet joins the team instead of being lost.
+    const pending = host.querySelector('[data-testid=job-worker-name]')?.value.trim();
+    if (pending && d.mode === 'JOB') { d = withJobWorker(d, pending); persist(); draw(); if (!evaluate(d).canSave) { U().toast('כמה ' + pending + ' מקבל?'); return; } }
     const c = evaluate(d); if (!c.canSave) { U().haptic('warn'); return; }
     if (d.repeat && !base && d.mode === 'CLOCK' && d.start != null) {
       const from = root.KisPlan.dateOf(d.day), until = d.repeatUntil || root.KisRules.civilFromDays(root.KisRules.daysFromCivil(from) + 56);
