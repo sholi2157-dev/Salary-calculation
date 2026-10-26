@@ -62,6 +62,8 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     var aiSheet by rememberSaveable { mutableStateOf(false) }
     var aiHelp by rememberSaveable { mutableStateOf(false) }
     var feedbackOpen by rememberSaveable { mutableStateOf(false) }
+    // Focus leaves the text field before the form folds: the device never settled when a focused field was removed.
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     // Kept here, not in the form, so folding the form keeps the draft.
     var feedbackText by rememberSaveable { mutableStateOf("") }
     var feedbackImage by rememberSaveable { mutableStateOf<String?>(null) }
@@ -87,7 +89,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             // First, so a problem can be reported without scrolling past everything else. The form unfolds in place:
             // inside a bottom sheet its multi-line field never let the device settle after Enter.
             Group("משוב ותקלות") {
-                Row_("דיווח על תקלה או הצעה", null, tag = "feedback_row", onClick = { feedbackOpen = !feedbackOpen }) {
+                Row_("דיווח על תקלה או הצעה", null, tag = "feedback_row", onClick = { focusManager.clearFocus(force = true); feedbackOpen = !feedbackOpen }) {
                     Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted,
                         modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = if (feedbackOpen) -90f else 0f })
                 }
@@ -96,7 +98,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                         mapOf("page" to "settings", "theme" to settings.theme.key, "haptics" to settings.haptics, "accounts" to BuildConfig.ACCOUNTS_ENABLED,
                             "signedIn" to (viewModel.owner.uid != null), "entries" to viewModel.entries.value.size, "categories" to categories.size,
                             "weeklySeries" to series.size, "personalAiKey" to hasKey)
-                    }, onSent = { feedbackOpen = false })
+                    }, onSent = { focusManager.clearFocus(force = true); feedbackOpen = false })
                 }
             }
             if (BuildConfig.ACCOUNTS_ENABLED) Group("חשבון", info = "המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים בין האפליקציה לאתר. שינוי שנעשה בשני מקומות לפני שהסתנכרן לא נדרס: בוחרים איזו גרסה לשמור.") {
