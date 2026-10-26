@@ -168,14 +168,18 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     }
     }
 
+    // The sheet is composed inside the Settings pager page: without this, its focused text field pins that page
+    // (keeps it composed behind Home) even after the sheet closes.
     if (feedbackSheet) KisSheet(onDismiss = { feedbackSheet = false }, tag = "feedback_sheet") {
         Text("משוב ותקלות", style = KisType.title, color = c.ink)
+        CompositionLocalProvider(androidx.compose.ui.layout.LocalPinnableContainer provides null) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(top = 10.dp, bottom = 8.dp)) {
             FeedbackForm(feedbackText, { feedbackText = it }, feedbackImage, { feedbackImage = it }, state = {
                 mapOf("page" to "settings", "theme" to settings.theme.key, "haptics" to settings.haptics, "accounts" to BuildConfig.ACCOUNTS_ENABLED,
                     "signedIn" to (viewModel.owner.uid != null), "entries" to viewModel.entries.value.size, "categories" to categories.size,
                     "weeklySeries" to series.size, "personalAiKey" to hasKey)
             }, onSent = { feedbackSheet = false })
+        }
         }
     }
 
