@@ -132,7 +132,7 @@ private fun IntroAssistants(delayMs: Long) {
         .testTag("intro_assistants"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("מחובר עם", style = KisType.caption, color = c.muted)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("ChatGPT", "Claude", "Grok", "Muse", "Instinct").forEach {
+            listOf("ChatGPT", "Claude", "Grok", "Muse").forEach {
                 Text(it, style = KisType.label, color = c.ink,
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surface).padding(horizontal = 14.dp, vertical = 8.dp))
             }
