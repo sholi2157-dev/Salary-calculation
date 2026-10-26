@@ -944,7 +944,7 @@ class KisUiTest {
             }
         }
         ui.onNodeWithTag("default_category_picker").performScrollTo().performClick()
-        ui.onNodeWithTag("place_drag_הובלות").assertExists()
+        ui.onNodeWithTag("place_drag_הובלות", useUnmergedTree = true).assertExists()
         ui.onNodeWithTag("default_category_add").assertExists()
         ui.onNodeWithTag("category_row_מסעדה").performClick()
         ui.onNodeWithTag("edit_category_sheet").assertExists()
@@ -952,7 +952,7 @@ class KisUiTest {
         ui.onNodeWithTag("category_row_מסעדה").performClick()
         ui.onNodeWithTag("edit_category_sheet").assertDoesNotExist()
         runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-places-reorder.png") }
-        ui.onNodeWithTag("place_drag_הובלות").performTouchInput {
+        ui.onNodeWithTag("place_drag_הובלות", useUnmergedTree = true).performTouchInput {
             down(center)
             advanceEventTime(viewConfiguration.longPressTimeoutMillis + 200)
             repeat(30) { moveBy(androidx.compose.ui.geometry.Offset(0f, -10f)); advanceEventTime(16) }

@@ -128,6 +128,8 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
     var notifyPlans by remember { mutableStateOf(plan.notifyPlans) }
     var notifyUpdates by remember { mutableStateOf(plan.notifyUpdates) }
     var denied by remember { mutableStateOf(false) }
+    // The switch follows the tap at once; the timer setting is saved in the background.
+    var allOn by remember { mutableStateOf<Boolean?>(null) }
     var asking by rememberSaveable { mutableStateOf<String?>(null) }
     fun set(kind: String, on: Boolean) {
         when (kind) {
@@ -142,7 +144,7 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
     val kinds = listOf("monthly", "plans", "rate", "updates")
     fun turnOn(kind: String) { denied = false; if (kind == "all") kinds.forEach { set(it, true) } else set(kind, true) }
     // Without permission the switch stays off.
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> asking?.let { if (granted) turnOn(it) else denied = true }; asking = null }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> asking?.let { if (granted) turnOn(it) else { denied = true; allOn = null } }; asking = null }
     fun enable(kind: String, on: Boolean) {
         if (!on) { if (kind == "all") kinds.forEach { set(it, false) } else set(kind, false); return }
         if (android.os.Build.VERSION.SDK_INT >= 33 && androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
@@ -159,8 +161,9 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
     }
     // One switch for all of them: the active-shift timer, the monthly summary, finished weekly plans, a missing rate
     // and (outside Google Play) a new version. Quiet hours stay as they were set.
-    val all = serviceNotification || notifyMonthly || notifyPlans || notifyRate || notifyUpdates
+    val all = allOn ?: (serviceNotification || notifyMonthly || notifyPlans || notifyRate || notifyUpdates)
     line("התראות", "טיימר של משמרת פעילה, הסיכום החודשי, משמרת קבועה שהסתיימה, תעריף חסר וגרסה חדשה.", "notify_all_switch", all) { on ->
+        allOn = on
         viewModel.updateServiceNotificationEnabled(on)
         enable("all", on)
     }
