@@ -196,7 +196,7 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
         }
         // The two team reports side by side: the team's rows and the shift's own actions stay in view together.
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisButton("דו״ח למעסיק", { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName, future = KisHistoryLogic.upcoming(entry)), "סיכום לקבלן", onMessage) }, Modifier.weight(1f),
+            KisButton("למעסיק", { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName, future = KisHistoryLogic.upcoming(entry)), "סיכום לקבלן", onMessage) }, Modifier.weight(1f),
                 KisButtonKind.GHOST, icon = Icons.Rounded.ReceiptLong, height = 44.dp, tag = "group_summary_share")
             KisButton("העתקת הדוח", { KisShare.copy(context, WorkShareText.employer(entry, myName, technical = true, future = KisHistoryLogic.upcoming(entry))); onMessage("הדוח הועתק ✓") }, Modifier.weight(1f), KisButtonKind.GHOST, height = 44.dp, tag = "group_summary_copy")
         }
