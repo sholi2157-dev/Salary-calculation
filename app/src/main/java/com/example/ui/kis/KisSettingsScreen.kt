@@ -173,7 +173,9 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     if (feedbackSheet) KisSheet(onDismiss = { feedbackSheet = false }, tag = "feedback_sheet") {
         Text("משוב ותקלות", style = KisType.title, color = c.ink)
         CompositionLocalProvider(androidx.compose.ui.layout.LocalPinnableContainer provides null) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(top = 10.dp, bottom = 8.dp)) {
+        // No scroll container of its own: the form is short, and a growing multi-line field inside one kept the
+        // sheet re-laying out on every new line.
+        Column(Modifier.padding(top = 10.dp, bottom = 8.dp)) {
             FeedbackForm(feedbackText, { feedbackText = it }, feedbackImage, { feedbackImage = it }, state = {
                 mapOf("page" to "settings", "theme" to settings.theme.key, "haptics" to settings.haptics, "accounts" to BuildConfig.ACCOUNTS_ENABLED,
                     "signedIn" to (viewModel.owner.uid != null), "entries" to viewModel.entries.value.size, "categories" to categories.size,
