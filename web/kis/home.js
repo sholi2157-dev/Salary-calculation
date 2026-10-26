@@ -14,11 +14,13 @@ function tile(label, rows, caption, testid, only, amountId) {
   return `<div class="tile" data-testid="${testid}"><span class="caption">${esc(label)}</span>${money}${caption ? `<span class="caption">${esc(caption)}</span>` : ''}</div>`;
 }
 
-/** Nothing today and more than one currency: each currency gets its own tile, and today shrinks to its width (like the app). */
+/** No "today" tile until there is a shift today; then it comes in, with a bigger number, beside all time (like the app).
+ * With nothing today, each currency of all time gets its own tile. */
 function tiles(today, done) {
   const count = done.length === 1 ? 'משמרת אחת' : done.length + ' משמרות', all = sortedTotals(done);
-  if (today.length || all.length < 2) return `<div class="tiles">${tile('היום', today, null, 'home-today')}${tile('מכל הזמנים', done, count, 'home-all')}</div>`;
-  return `<div class="tiles split" style="grid-template-columns:auto repeat(${all.length},minmax(0,1fr))">${tile('היום', today, null, 'home-today')}${all.map((t, i) =>
+  if (today.length) return `<div class="tiles">${tile('היום', today, null, 'home-today').replace('class="tile"', `class="tile today" style="--n:${Math.max(4, ...sortedTotals(today).map(([c, v]) => U().money(v, c).length))}"`)}${tile('מכל הזמנים', done, count, 'home-all')}</div>`;
+  if (all.length < 2) return `<div class="tiles split" style="grid-template-columns:1fr">${tile('מכל הזמנים', done, count, 'home-all')}</div>`;
+  return `<div class="tiles split" style="grid-template-columns:repeat(${all.length},minmax(0,1fr))">${all.map((t, i) =>
     tile('מכל הזמנים', done, i ? null : count, i ? 'home-all-tile-' + t[0] : 'home-all', t, 'home-all')).join('')}</div>`;
 }
 
