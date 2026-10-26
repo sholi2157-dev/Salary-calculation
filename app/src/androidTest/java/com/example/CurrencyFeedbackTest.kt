@@ -81,7 +81,11 @@ class CurrencyFeedbackTest {
         ui.onNodeWithTag("default_category_picker").performClick()
         ui.onNodeWithTag("default_category_option_USD category").performClick()
         ui.waitUntil(5000) { runBlocking { dao.getLocalPreferences() }.any { it.name == "defaultCategory" && it.value == "USD category" } }
+        // The picker closes with an animation (and the keyboard from the feedback field is still up): reopen it only
+        // once it is gone, then wait for it to open.
+        ui.waitUntil(5000) { ui.onAllNodesWithTag("default_category_sheet").fetchSemanticsNodes().isEmpty() }
         ui.onNodeWithTag("default_category_picker").assertTextContains("USD category", substring = true).performClick()
+        ui.waitUntil(5000) { ui.onAllNodesWithTag("default_category_add").fetchSemanticsNodes().isNotEmpty() }
         ui.onNodeWithTag("default_category_add").performClick()
         ui.onNodeWithTag("category_input").performTextInput("RC15 new default")
         ui.onNodeWithTag("category_add_confirm").performClick()
