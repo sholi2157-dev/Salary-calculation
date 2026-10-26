@@ -167,25 +167,43 @@ private fun Hero(week: List<WorkEntry>, today: List<WorkEntry>, all: List<WorkEn
                 }
             }
         }
+        val allCount = if (all.size == 1) "משמרת אחת" else "${all.size} משמרות"
+        val allTotals = WorkPay.totals(all).toList().sortedByDescending { it.second }
+        // One shared size for every number in the row, shrunk only when the widest would not fit its tile.
+        var fit by remember(today, all) { mutableStateOf(KisType.title.fontSize) }
+        val shrink: (androidx.compose.ui.text.TextLayoutResult) -> Unit = { if (it.didOverflowWidth && fit > 15.sp) fit = (fit.value - 1).sp }
         Row(Modifier.padding(top = 16.dp).fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatTile("היום", today, null, Modifier.weight(1f).fillMaxHeight(), "home_today")
-            StatTile("מכל הזמנים", all, if (all.size == 1) "משמרת אחת" else "${all.size} משמרות", Modifier.weight(1f).fillMaxHeight(), "home_all")
+            if (today.isEmpty() && allTotals.size > 1) {
+                // Nothing today: a lone ₪0 beside a tall two-currency tile looked lost, so each currency gets its own tile
+                // and today shrinks to its width. The first shift of the day brings back the two-tile row.
+                StatTile("היום", today, null, Modifier.fillMaxHeight(), "home_today", fit, shrink)
+                allTotals.forEachIndexed { i, (cur, v) ->
+                    StatTile("מכל הזמנים", all, if (i == 0) allCount else null, Modifier.weight(1f).fillMaxHeight(), if (i == 0) "home_all" else "home_all_tile_$cur",
+                        fit, shrink, only = cur to v, amountTag = "home_all_$cur")
+                }
+            } else {
+                StatTile("היום", today, null, Modifier.weight(1f).fillMaxHeight(), "home_today", fit, shrink)
+                StatTile("מכל הזמנים", all, allCount, Modifier.weight(1f).fillMaxHeight(), "home_all", fit, shrink)
+            }
         }
         if (pending > 0) PendingFlag(pending, onPending, Modifier.padding(top = 12.dp))
     }
 }
 
-/** A small total: one line per currency (₪ and $ are never added together). */
+/** A small total: one line per currency (₪ and $ are never added together), or just [only] when each currency has its own tile. */
 @Composable
-private fun StatTile(label: String, rows: List<WorkEntry>, caption: String?, modifier: Modifier, tag: String) {
+private fun StatTile(label: String, rows: List<WorkEntry>, caption: String?, modifier: Modifier, tag: String,
+                     size: androidx.compose.ui.unit.TextUnit, onLayout: (androidx.compose.ui.text.TextLayoutResult) -> Unit,
+                     only: Pair<String, Double>? = null, amountTag: String? = null) {
     val c = Kis.colors
-    val totals = WorkPay.totals(rows).toList().sortedByDescending { it.second }
+    val totals = only?.let { listOf(it) } ?: WorkPay.totals(rows).toList().sortedByDescending { it.second }
+    val style = KisType.title.copy(fontSize = size, lineHeight = size * 1.27f)
     Column(modifier.clip(RoundedCornerShape(18.dp)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(18.dp))
         .padding(horizontal = 14.dp, vertical = 12.dp).semantics(mergeDescendants = true) {}.testTag(tag), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label, style = KisType.caption, color = c.muted)
+        Text(label, style = KisType.caption, color = c.muted, maxLines = 1)
         if (totals.isEmpty() && rows.isNotEmpty()) Text("עוד לא ידוע", style = KisType.title, color = c.pending, modifier = Modifier.testTag("${tag}_pending"))
-        else if (totals.isEmpty()) MoneyText(0.0, "₪", KisType.title, modifier = Modifier.testTag("${tag}_₪"), color = c.ink)
-        totals.forEach { (cur, v) -> MoneyText(v, cur, KisType.title, modifier = Modifier.testTag("${tag}_$cur"), color = c.ink) }
+        else if (totals.isEmpty()) MoneyText(0.0, "₪", style, modifier = Modifier.testTag("${tag}_₪"), color = c.ink, onTextLayout = onLayout)
+        totals.forEach { (cur, v) -> MoneyText(v, cur, style, modifier = Modifier.testTag(amountTag ?: "${tag}_$cur"), color = c.ink, onTextLayout = onLayout) }
         if (caption != null) Text(caption, style = KisType.caption, color = c.muted, modifier = Modifier.testTag("${tag}_count"))
     }
 }

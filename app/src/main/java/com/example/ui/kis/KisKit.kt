@@ -107,9 +107,10 @@ fun moneyString(amount: Double, currency: String, symbolScale: Float = 0.62f): A
 }
 
 @Composable
-fun MoneyText(amount: Double, currency: String, style: TextStyle, modifier: Modifier = Modifier, color: Color = Color.Unspecified, symbolScale: Float = 0.62f) {
+fun MoneyText(amount: Double, currency: String, style: TextStyle, modifier: Modifier = Modifier, color: Color = Color.Unspecified, symbolScale: Float = 0.62f,
+              onTextLayout: (androidx.compose.ui.text.TextLayoutResult) -> Unit = {}) {
     Text(moneyString(amount, currency, symbolScale), modifier = modifier, style = style.copy(textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum"),
-        color = if (color == Color.Unspecified) Kis.colors.ink else color, maxLines = 1, softWrap = false)
+        color = if (color == Color.Unspecified) Kis.colors.ink else color, maxLines = 1, softWrap = false, onTextLayout = onTextLayout)
 }
 
 // ---------------------------------------------------------------- interaction

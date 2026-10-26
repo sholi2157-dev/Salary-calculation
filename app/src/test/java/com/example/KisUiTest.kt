@@ -403,6 +403,31 @@ class KisUiTest {
         shot("home-dark")
     }
 
+    @Test fun anEmptyTodayGivesEachCurrencyItsOwnTileUntilTheFirstShift() = emptyTodayFlow(false, "360")
+    @Test @Config(qualifiers = "w411dp-h891dp-xxhdpi") fun anEmptyTodayGivesEachCurrencyItsOwnTileUntilTheFirstShiftDark411() = emptyTodayFlow(true, "411")
+
+    private fun emptyTodayFlow(dark: Boolean, size: String) {
+        val now = System.currentTimeMillis()
+        runBlocking {
+            dao.insertEntry(WorkEntry(category = "מסעדה", date = now - 20 * 86_400_000L, isTimeRange = false, hours = 8.0, hourlyRate = 0.0, totalEarnings = 7468.33))
+            dao.insertEntry(WorkEntry(category = "הובלות", date = now - 30 * 86_400_000L, isTimeRange = false, hours = 3.0, hourlyRate = 0.0, totalEarnings = 1117.75, kind = WorkEntry.KIND_JOB, currency = "$"))
+        }
+        var entries by mutableStateOf(rows())
+        host(dark) { KisHome(entries, categories, null, 80.dp, {}, {}, {}, {}, {}, {}, {}, {}) }
+        ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).assertTextEquals("₪0")
+        ui.onNodeWithTag("home_all_₪", useUnmergedTree = true).assertTextEquals("₪7,468.33")
+        ui.onNodeWithTag("home_all_$", useUnmergedTree = true).assertTextEquals("$1,117.75")
+        ui.onNodeWithTag("home_all_tile_$").assertIsDisplayed()
+        ui.onNodeWithTag("home_all_count", useUnmergedTree = true).assertTextEquals("2 משמרות")
+        shot("home-today-zero-$size")
+        runBlocking { dao.insertEntry(WorkEntry(category = "מסעדה", date = EntryDraft.startOfDay(now) + 60_000L, isTimeRange = false, hours = 6.0, hourlyRate = 50.0, totalEarnings = 300.0)) }
+        ui.runOnIdle { entries = rows() }
+        ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).assertTextEquals("₪300")
+        ui.onNodeWithTag("home_all_tile_$").assertDoesNotExist()
+        ui.onNodeWithTag("home_all_$", useUnmergedTree = true).assertTextEquals("$1,117.75")
+        shot("home-today-shift-$size")
+    }
+
     private fun assertTime(which: String, hhmm: String) {
         hhmm.replace(":", "").forEachIndexed { i, digit -> ui.onNodeWithTag("clock_${which}_d$i").assertTextEquals(digit.toString()) }
     }
