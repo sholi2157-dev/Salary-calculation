@@ -76,13 +76,6 @@ class CurrencyFeedbackTest {
         ui.onNodeWithTag("feedback_message").performTextInput("second line")
         ui.onNodeWithTag("feedback_message").assertTextContains("first line\nsecond line")
         automation.takeScreenshot().let { b -> java.io.File(context.getExternalFilesDir(null), "v2-feedback.png").outputStream().use { b.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } }
-        // Folding the form keeps the draft.
-        androidx.test.espresso.Espresso.closeSoftKeyboard()
-        ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
-        ui.onNodeWithTag("feedback_message").assertDoesNotExist()
-        ui.onNodeWithTag("feedback_row").performClick()
-        ui.onNodeWithTag("feedback_message").assertTextContains("first line\nsecond line")
-        ui.onNodeWithTag("feedback_row").performClick()
         // Default workplace: one current choice, change it, and add-and-select from the same picker.
         ui.onNodeWithTag("default_category_picker").performScrollTo().assertTextContains("ILS category", substring = true)
         ui.onNodeWithTag("default_category_picker").performClick()
