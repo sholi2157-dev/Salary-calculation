@@ -103,15 +103,13 @@ class DistributionUiTest {
         ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
         ui.onNodeWithTag("feedback_message").performTextInput("Synthetic feedback draft")
         Espresso.closeSoftKeyboard()
-        Espresso.pressBack()
-        ui.waitUntil(5000) { ui.onAllNodesWithTag("feedback_sheet").fetchSemanticsNodes().isEmpty() }
+        ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
         ui.onNodeWithTag("replay_onboarding").performScrollTo().performClick()
         ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
         ui.onNodeWithTag("onboarding_skip").performClick()
         ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
         ui.onNodeWithTag("feedback_message").assertTextContains("Synthetic feedback draft")
-        Espresso.pressBack()
-        ui.waitUntil(5000) { ui.onAllNodesWithTag("feedback_sheet").fetchSemanticsNodes().isEmpty() }
+        ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
         // Settings is the third swipe page: Home leaves it.
         ui.onNodeWithTag("settings_button").assertIsSelected()
         ui.onNodeWithTag("tab_0").performClick()

@@ -826,10 +826,9 @@ class KisUiTest {
         assertFalse(vm.planSettings.autoConfirm)
         ui.onNodeWithTag("auto_confirm_switch").performClick()
         assertTrue(vm.planSettings.autoConfirm)
-        // Feedback is the first section; its row opens the form in its own sheet.
+        // Feedback is the first section; its row unfolds the form in place.
         ui.onNodeWithTag("feedback_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
-        ui.onNodeWithTag("feedback_sheet").assertExists()
-        ui.onNodeWithTag("feedback_message").performTextInput("draft")
+        ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("draft")
         shot("settings-feedback")
     }
 }

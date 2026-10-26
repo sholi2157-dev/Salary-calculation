@@ -1,6 +1,6 @@
 # Feedback relay (Google Apps Script)
 
-"משוב ותקלות" is the first section of Settings. Its row opens a sheet; "שליחה" POSTs one JSON report to a
+"משוב ותקלות" is the first section of Settings. Its row unfolds the form in place; "שליחה" POSTs one JSON report to a
 Google Apps Script web app deployed from the owner's Google account, which mails it to
 `sholi2157+salaryfeedback@gmail.com` with the report as a `.json` attachment and the optional screenshot as an image.
 The app and site hold no mail password and no server of their own.

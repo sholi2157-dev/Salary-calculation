@@ -23,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -60,8 +61,8 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     var addingDefault by rememberSaveable { mutableStateOf(false) }
     var aiSheet by rememberSaveable { mutableStateOf(false) }
     var aiHelp by rememberSaveable { mutableStateOf(false) }
-    var feedbackSheet by rememberSaveable { mutableStateOf(false) }
-    // Kept here, not in the sheet, so closing the sheet by mistake keeps the draft.
+    var feedbackOpen by rememberSaveable { mutableStateOf(false) }
+    // Kept here, not in the form, so folding the form keeps the draft.
     var feedbackText by rememberSaveable { mutableStateOf("") }
     var feedbackImage by rememberSaveable { mutableStateOf<String?>(null) }
     // Not saveable: a pasted backup can be far larger than what Android may keep in saved state.
@@ -83,10 +84,19 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
         // The scroll area ends above the floating navigation, so no row can sit (and be tapped) under it.
         Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
-            // First, so a problem can be reported without scrolling past everything else.
+            // First, so a problem can be reported without scrolling past everything else. The form unfolds in place:
+            // inside a bottom sheet its multi-line field never let the device settle after Enter.
             Group("משוב ותקלות") {
-                Row_("דיווח על תקלה או הצעה", null, tag = "feedback_row", onClick = { feedbackSheet = true }) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
+                Row_("דיווח על תקלה או הצעה", null, tag = "feedback_row", onClick = { feedbackOpen = !feedbackOpen }) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted,
+                        modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = if (feedbackOpen) -90f else 0f })
+                }
+                if (feedbackOpen) Box(Modifier.padding(bottom = 10.dp)) {
+                    FeedbackForm(feedbackText, { feedbackText = it }, feedbackImage, { feedbackImage = it }, state = {
+                        mapOf("page" to "settings", "theme" to settings.theme.key, "haptics" to settings.haptics, "accounts" to BuildConfig.ACCOUNTS_ENABLED,
+                            "signedIn" to (viewModel.owner.uid != null), "entries" to viewModel.entries.value.size, "categories" to categories.size,
+                            "weeklySeries" to series.size, "personalAiKey" to hasKey)
+                    }, onSent = { feedbackOpen = false })
                 }
             }
             if (BuildConfig.ACCOUNTS_ENABLED) Group("חשבון", info = "המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים בין האפליקציה לאתר. שינוי שנעשה בשני מקומות לפני שהסתנכרן לא נדרס: בוחרים איזו גרסה לשמור.") {
@@ -166,23 +176,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             }
         }
     }
-    }
-
-    // The sheet is composed inside the Settings pager page: without this, its focused text field pins that page
-    // (keeps it composed behind Home) even after the sheet closes.
-    if (feedbackSheet) KisSheet(onDismiss = { feedbackSheet = false }, tag = "feedback_sheet") {
-        Text("משוב ותקלות", style = KisType.title, color = c.ink)
-        CompositionLocalProvider(androidx.compose.ui.layout.LocalPinnableContainer provides null) {
-        // No scroll container of its own: the form is short, and a growing multi-line field inside one kept the
-        // sheet re-laying out on every new line.
-        Column(Modifier.padding(top = 10.dp, bottom = 8.dp)) {
-            FeedbackForm(feedbackText, { feedbackText = it }, feedbackImage, { feedbackImage = it }, state = {
-                mapOf("page" to "settings", "theme" to settings.theme.key, "haptics" to settings.haptics, "accounts" to BuildConfig.ACCOUNTS_ENABLED,
-                    "signedIn" to (viewModel.owner.uid != null), "entries" to viewModel.entries.value.size, "categories" to categories.size,
-                    "weeklySeries" to series.size, "personalAiKey" to hasKey)
-            }, onSent = { feedbackSheet = false })
-        }
-        }
     }
 
     if (pickingDefault) KisSheet(onDismiss = { pickingDefault = false }, tag = "default_category_sheet") {
