@@ -169,20 +169,22 @@ private fun Hero(week: List<WorkEntry>, today: List<WorkEntry>, all: List<WorkEn
         }
         val allCount = if (all.size == 1) "משמרת אחת" else "${all.size} משמרות"
         val allTotals = WorkPay.totals(all).toList().sortedByDescending { it.second }
-        // One shared size for every number in the row, shrunk only when the widest would not fit its tile.
+        // Each tile's numbers share one size, shrunk only when the widest would not fit its tile.
         var fit by remember(today, all) { mutableStateOf(KisType.title.fontSize) }
         val shrink: (androidx.compose.ui.text.TextLayoutResult) -> Unit = { if (it.didOverflowWidth && fit > 15.sp) fit = (fit.value - 1).sp }
+        var todayFit by remember(today) { mutableStateOf(30.sp) }
+        val shrinkToday: (androidx.compose.ui.text.TextLayoutResult) -> Unit = { if (it.didOverflowWidth && todayFit > 18.sp) todayFit = (todayFit.value - 1).sp }
         Row(Modifier.padding(top = 16.dp).fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (today.isEmpty() && allTotals.size > 1) {
-                // Nothing today: a lone ₪0 beside a tall two-currency tile looked lost, so each currency gets its own tile
-                // and today shrinks to its width. The first shift of the day brings back the two-tile row.
-                StatTile("היום", today, null, Modifier.fillMaxHeight(), "home_today", fit, shrink)
-                allTotals.forEachIndexed { i, (cur, v) ->
+            if (today.isEmpty()) {
+                // Nothing today: no "today" tile at all, and each currency of all time gets its own tile.
+                // The first shift of the day brings "today" in, with a bigger number, beside one all-time tile.
+                if (allTotals.size > 1) allTotals.forEachIndexed { i, (cur, v) ->
                     StatTile("מכל הזמנים", all, if (i == 0) allCount else null, Modifier.weight(1f).fillMaxHeight(), if (i == 0) "home_all" else "home_all_tile_$cur",
                         fit, shrink, only = cur to v, amountTag = "home_all_$cur")
                 }
+                else StatTile("מכל הזמנים", all, allCount, Modifier.weight(1f).fillMaxHeight(), "home_all", fit, shrink)
             } else {
-                StatTile("היום", today, null, Modifier.weight(1f).fillMaxHeight(), "home_today", fit, shrink)
+                StatTile("היום", today, null, Modifier.weight(1f).fillMaxHeight(), "home_today", todayFit, shrinkToday)
                 StatTile("מכל הזמנים", all, allCount, Modifier.weight(1f).fillMaxHeight(), "home_all", fit, shrink)
             }
         }

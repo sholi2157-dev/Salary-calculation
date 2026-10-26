@@ -403,8 +403,8 @@ class KisUiTest {
         shot("home-dark")
     }
 
-    @Test fun anEmptyTodayGivesEachCurrencyItsOwnTileUntilTheFirstShift() = emptyTodayFlow(false, "360")
-    @Test @Config(qualifiers = "w411dp-h891dp-xxhdpi") fun anEmptyTodayGivesEachCurrencyItsOwnTileUntilTheFirstShiftDark411() = emptyTodayFlow(true, "411")
+    @Test fun noTodayTileUntilTheFirstShiftAndEachCurrencyGetsItsOwnTile() = emptyTodayFlow(false, "360")
+    @Test @Config(qualifiers = "w411dp-h891dp-xxhdpi") fun noTodayTileUntilTheFirstShiftAndEachCurrencyGetsItsOwnTileDark411() = emptyTodayFlow(true, "411")
 
     private fun emptyTodayFlow(dark: Boolean, size: String) {
         val now = System.currentTimeMillis()
@@ -414,7 +414,7 @@ class KisUiTest {
         }
         var entries by mutableStateOf(rows())
         host(dark) { KisHome(entries, categories, null, 80.dp, {}, {}, {}, {}, {}, {}, {}, {}) }
-        ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).assertTextEquals("₪0")
+        ui.onNodeWithTag("home_today").assertDoesNotExist()
         ui.onNodeWithTag("home_all_₪", useUnmergedTree = true).assertTextEquals("₪7,468.33")
         ui.onNodeWithTag("home_all_$", useUnmergedTree = true).assertTextEquals("$1,117.75")
         ui.onNodeWithTag("home_all_tile_$").assertIsDisplayed()
@@ -423,6 +423,10 @@ class KisUiTest {
         runBlocking { dao.insertEntry(WorkEntry(category = "מסעדה", date = EntryDraft.startOfDay(now) + 60_000L, isTimeRange = false, hours = 6.0, hourlyRate = 50.0, totalEarnings = 300.0)) }
         ui.runOnIdle { entries = rows() }
         ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).assertTextEquals("₪300")
+        // Today's number is the bigger one in the row.
+        val todayH = ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).fetchSemanticsNode().size.height
+        val allH = ui.onNodeWithTag("home_all_₪", useUnmergedTree = true).fetchSemanticsNode().size.height
+        assert(todayH > allH) { "today $todayH should be taller than all-time $allH" }
         ui.onNodeWithTag("home_all_tile_$").assertDoesNotExist()
         ui.onNodeWithTag("home_all_$", useUnmergedTree = true).assertTextEquals("$1,117.75")
         shot("home-today-shift-$size")
