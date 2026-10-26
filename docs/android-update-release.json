@@ -1,12 +1,12 @@
 {
-  "runId": 40219444146,
-  "sourceSha": "4e4de603323bec33aa3cea463cfc2106136f142a",
-  "artifactName": "salary-2.1-candidate",
-  "tag": "android-v2.1",
+  "runId": 40280626744,
+  "sourceSha": "12277b32a790519cdef621182b044457354592ae",
+  "artifactName": "salary-2.1-code43-candidate",
+  "tag": "android-v2.1-code43",
   "fileName": "Salary2.1.apk",
-  "versionCode": 42,
+  "versionCode": 43,
   "versionName": "2.1",
-  "sha256": "b0a8b477975cef6bbbabea6e3a76727870da07ded2384c2d2f9da145e7e0d410",
+  "sha256": "a614806acc14615501ae4ea23bf081873828db5440ff686d16cc13d3752d814b",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "ה-AI שלך מכיר את המשמרות: מחברים את ChatGPT, Claude, Grok, Muse, Instinct או עוזר אחר, והוא עונה על שאלות, מסכם, ולפי מה שאישרת גם מוסיף, עורך או מוחק. כל שינוי שלו נרשם ואפשר לבטל אותו. התחברות אחת עם Google וסנכרון מלא בין האפליקציה לאתר. כל המשמרות, הסכומים וההגדרות נשמרים."
+  "releaseNotes": "שיפור שליחת משוב ותיקוני עיצוב"
 }
