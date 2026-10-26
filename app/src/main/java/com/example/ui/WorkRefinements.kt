@@ -14,7 +14,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.example.DiagnosticLog
+import com.example.FeedbackReport
 import com.example.data.WorkEntry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.example.data.WorkMoney
 import com.example.ui.kis.Kis
 import com.example.ui.kis.KisButton
@@ -43,23 +48,67 @@ object SalaryFeedback {
         return draft(type, message, info.versionName ?: "", if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong(), Build.VERSION.RELEASE, Build.MANUFACTURER, Build.MODEL)
     }
 }
-@Composable fun FeedbackForm() {
+/**
+ * With the relay set (FeedbackReport), "שליחה" sends the report straight to the owner's mailbox: the text, version,
+ * device, the [state] allowlist, the local event trail and an optional picked screenshot. Without it, or when sending
+ * fails, the mail-app draft (version and device only) stays available.
+ */
+@Composable fun FeedbackForm(message: String, onMessage: (String) -> Unit, image: String?, onImage: (String?) -> Unit,
+                             state: () -> Map<String, Any> = { emptyMap() }, onSent: () -> Unit = {}) {
     val context = LocalContext.current
     val c = Kis.colors
+    val scope = rememberCoroutineScope()
     var type by rememberSaveable { mutableStateOf("תקלה") }
-    var message by rememberSaveable { mutableStateOf("") }
+    var sending by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
     var fallback by remember { mutableStateOf(false) }
+    val pick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) onImage(uri.toString())
+    }
+    fun mailDraft() {
+        try { context.startActivity(SalaryFeedback.intent(SalaryFeedback.draft(context, type, message))) }
+        catch (_: android.content.ActivityNotFoundException) { fallback = true }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("תקלה", "הצעה", "הערה").forEach { kind -> KisChip(kind, selected = type == kind, onClick = { type = kind }, tag = "feedback_type_$kind") }
         }
-        KisTextField(message, { message = it }, "מה קרה, או מה תרצה להציע?", Modifier.fillMaxWidth().testTag("feedback_message"), singleLine = false, minLines = 3,
+        KisTextField(message, { onMessage(it); failed = false }, "מה קרה, או מה תרצה להציע?", Modifier.fillMaxWidth().testTag("feedback_message"), singleLine = false, minLines = 3,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default))
-        Text("יצורפו רק גרסת האפליקציה ופרטי המכשיר. נתוני העבודה לא מצורפים.", style = KisType.caption, color = c.muted)
-        KisButton("פתיחת טיוטת מייל", {
-            try { context.startActivity(SalaryFeedback.intent(SalaryFeedback.draft(context, type, message))) }
-            catch (_: android.content.ActivityNotFoundException) { fallback = true }
-        }, Modifier.fillMaxWidth(), enabled = message.isNotBlank(), height = 48.dp, tag = "feedback_send")
+        if (FeedbackReport.enabled) {
+            if (image == null) KisButton("צירוף צילום מסך", {
+                pick.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 44.dp, tag = "feedback_attach")
+            else Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text("צילום מסך מצורף", style = KisType.label, color = c.ink, modifier = Modifier.weight(1f).testTag("feedback_attached"))
+                KisButton("הסרה", { onImage(null) }, kind = KisButtonKind.GHOST, height = 40.dp, tag = "feedback_attach_remove")
+            }
+            Text("יישלחו התיאור, הגרסה, פרטי המכשיר ויומן פעולות קצר. סכומים, מקומות עבודה, שמות ומפתחות לא נשלחים.", style = KisType.caption, color = c.muted)
+            KisButton(if (sending) "שולח…" else "שליחה", {
+                sending = true; failed = false
+                scope.launch {
+                    val (name, code) = FeedbackReport.version(context)
+                    val report = FeedbackReport.build(type, message, name, code, FeedbackReport.device(context), runCatching { state() }.getOrDefault(emptyMap()),
+                        DiagnosticLog.snapshot(), System.currentTimeMillis())
+                    image?.let { u -> withContext(Dispatchers.IO) { FeedbackReport.screenshot(context, Uri.parse(u)) } }?.let { report.put("screenshot", it) }
+                    val ok = FeedbackReport.send(report)
+                    sending = false
+                    DiagnosticLog.event(if (ok) "feedback_sent" else "feedback_failed")
+                    if (ok) {
+                        onMessage(""); onImage(null)
+                        android.widget.Toast.makeText(context, "המשוב נשלח. תודה!", android.widget.Toast.LENGTH_SHORT).show()
+                        onSent()
+                    } else failed = true
+                }
+            }, Modifier.fillMaxWidth(), enabled = message.isNotBlank() && !sending, height = 48.dp, tag = "feedback_send")
+            if (failed) {
+                Text("השליחה לא הצליחה. אפשר לנסות שוב, או לשלוח כטיוטת מייל.", style = KisType.caption, color = c.ink, modifier = Modifier.testTag("feedback_failed"))
+                KisButton("פתיחת טיוטת מייל", { mailDraft() }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "feedback_mail")
+            }
+        } else {
+            Text("יצורפו רק גרסת האפליקציה ופרטי המכשיר. נתוני העבודה לא מצורפים.", style = KisType.caption, color = c.muted)
+            KisButton("פתיחת טיוטת מייל", { mailDraft() }, Modifier.fillMaxWidth(), enabled = message.isNotBlank(), height = 48.dp, tag = "feedback_send")
+        }
         if (fallback) {
             Text("לא נמצאה אפליקציית מייל. אפשר להעתיק ולשלוח ל־${SalaryFeedback.RECIPIENT}", style = KisType.caption, color = c.ink)
             KisButton("העתקת המשוב והכתובת", {

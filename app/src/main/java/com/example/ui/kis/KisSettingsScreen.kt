@@ -60,6 +60,10 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     var addingDefault by rememberSaveable { mutableStateOf(false) }
     var aiSheet by rememberSaveable { mutableStateOf(false) }
     var aiHelp by rememberSaveable { mutableStateOf(false) }
+    var feedbackSheet by rememberSaveable { mutableStateOf(false) }
+    // Kept here, not in the sheet, so closing the sheet by mistake keeps the draft.
+    var feedbackText by rememberSaveable { mutableStateOf("") }
+    var feedbackImage by rememberSaveable { mutableStateOf<String?>(null) }
     // Not saveable: a pasted backup can be far larger than what Android may keep in saved state.
     var importText by remember { mutableStateOf("") }
     val hasKey = remember(aiSheet) { runCatching { PersonalAiKey.read(context, viewModel.owner.uid).isNotBlank() }.getOrDefault(false) }
@@ -79,6 +83,12 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
         // The scroll area ends above the floating navigation, so no row can sit (and be tapped) under it.
         Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
+            // First, so a problem can be reported without scrolling past everything else.
+            Group("משוב ותקלות") {
+                Row_("דיווח על תקלה או הצעה", null, tag = "feedback_row", onClick = { feedbackSheet = true }) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
+                }
+            }
             if (BuildConfig.ACCOUNTS_ENABLED) Group("חשבון", info = "המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים בין האפליקציה לאתר. שינוי שנעשה בשני מקומות לפני שהסתנכרן לא נדרס: בוחרים איזו גרסה לשמור.") {
                 AccountRows(viewModel, onSignIn = onSignIn, onSignedOut = onClose)
             }
@@ -148,7 +158,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     else if (viewModel.importDataFromString(context, importText)) importText = ""
                 }, Modifier.fillMaxWidth().padding(vertical = 10.dp), height = 48.dp, tag = "settings_import_action_btn")
             }
-            Group("משוב ותקלות") { Box(Modifier.padding(vertical = 10.dp)) { FeedbackForm() } }
             // Set once (the launch asks for it); rarely touched again, so it sits last.
             Group("פרופיל") { ProfileFields() }
             Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -157,6 +166,17 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             }
         }
     }
+    }
+
+    if (feedbackSheet) KisSheet(onDismiss = { feedbackSheet = false }, tag = "feedback_sheet") {
+        Text("משוב ותקלות", style = KisType.title, color = c.ink)
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(top = 10.dp, bottom = 8.dp)) {
+            FeedbackForm(feedbackText, { feedbackText = it }, feedbackImage, { feedbackImage = it }, state = {
+                mapOf("page" to "settings", "theme" to settings.theme.key, "haptics" to settings.haptics, "accounts" to BuildConfig.ACCOUNTS_ENABLED,
+                    "signedIn" to (viewModel.owner.uid != null), "entries" to viewModel.entries.value.size, "categories" to categories.size,
+                    "weeklySeries" to series.size, "personalAiKey" to hasKey)
+            }, onSent = { feedbackSheet = false })
+        }
     }
 
     if (pickingDefault) KisSheet(onDismiss = { pickingDefault = false }, tag = "default_category_sheet") {

@@ -98,14 +98,20 @@ class DistributionUiTest {
         ui.activity.intentActionFlow.value = "com.example.ACTION_IMPORT_EXCEL"
         ui.waitForIdle()
         ui.onNodeWithTag("settings_root").assertIsDisplayed()
-        for (section in listOf("עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות", "פרופיל")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
+        for (section in listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "פרופיל")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
         snap("v2-settings")
-        ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("Synthetic feedback draft")
+        ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
+        ui.onNodeWithTag("feedback_message").performTextInput("Synthetic feedback draft")
         Espresso.closeSoftKeyboard()
+        Espresso.pressBack()
+        ui.waitUntil(5000) { ui.onAllNodesWithTag("feedback_sheet").fetchSemanticsNodes().isEmpty() }
         ui.onNodeWithTag("replay_onboarding").performScrollTo().performClick()
         ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
         ui.onNodeWithTag("onboarding_skip").performClick()
-        ui.onNodeWithTag("feedback_message").performScrollTo().assertTextContains("Synthetic feedback draft")
+        ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
+        ui.onNodeWithTag("feedback_message").assertTextContains("Synthetic feedback draft")
+        Espresso.pressBack()
+        ui.waitUntil(5000) { ui.onAllNodesWithTag("feedback_sheet").fetchSemanticsNodes().isEmpty() }
         // Settings is the third swipe page: Home leaves it.
         ui.onNodeWithTag("settings_button").assertIsSelected()
         ui.onNodeWithTag("tab_0").performClick()

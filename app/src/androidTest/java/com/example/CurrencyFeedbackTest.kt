@@ -66,7 +66,9 @@ class CurrencyFeedbackTest {
         }
         // Feedback keeps Enter as a new line.
         ui.onNodeWithTag("settings_button").performClick()
-        ui.onNodeWithTag("feedback_message").performScrollTo().performClick().performTextInput("first line")
+        // The feedback row is the first one in Settings and opens its own sheet.
+        ui.onNodeWithTag("feedback_row").assertIsDisplayed().performClick()
+        ui.onNodeWithTag("feedback_message").performClick().performTextInput("first line")
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
         automation.executeShellCommand("input keyevent KEYCODE_ENTER").use { d -> android.os.ParcelFileDescriptor.AutoCloseInputStream(d).use { it.readBytes() } }
         ui.waitForIdle()
@@ -74,6 +76,14 @@ class CurrencyFeedbackTest {
         ui.onNodeWithTag("feedback_message").performTextInput("second line")
         ui.onNodeWithTag("feedback_message").assertTextContains("first line\nsecond line")
         automation.takeScreenshot().let { b -> java.io.File(context.getExternalFilesDir(null), "v2-feedback.png").outputStream().use { b.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } }
+        // Closing the sheet keeps the draft.
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        androidx.test.espresso.Espresso.pressBack()
+        ui.waitUntil(5000) { ui.onAllNodesWithTag("feedback_sheet").fetchSemanticsNodes().isEmpty() }
+        ui.onNodeWithTag("feedback_row").performClick()
+        ui.onNodeWithTag("feedback_message").assertTextContains("first line\nsecond line")
+        androidx.test.espresso.Espresso.pressBack()
+        ui.waitUntil(5000) { ui.onAllNodesWithTag("feedback_sheet").fetchSemanticsNodes().isEmpty() }
         // Default workplace: one current choice, change it, and add-and-select from the same picker.
         ui.onNodeWithTag("default_category_picker").performScrollTo().assertTextContains("ILS category", substring = true)
         ui.onNodeWithTag("default_category_picker").performClick()

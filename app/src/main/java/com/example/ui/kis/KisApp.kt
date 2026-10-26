@@ -216,9 +216,14 @@ fun KisApp(
     var settingsHasFocus by remember { mutableStateOf(false) }
     LaunchedEffect(pager.currentPage) {
         keyboard?.hide()
+        com.example.DiagnosticLog.event("page", listOf("home", "history", "settings")[pager.currentPage])
         // A field typed in Settings would otherwise keep that page pinned (composed) behind Home.
         if (pager.currentPage != 2 && settingsHasFocus) focusManager.clearFocus(force = true)
     }
+    LaunchedEffect(editorJson != null) {
+        if (editorJson != null) com.example.DiagnosticLog.event("editor", if (editorBaseId != null) "edit" else if (editorAi) "ai" else "new")
+    }
+    LaunchedEffect(detailId != null) { if (detailId != null) com.example.DiagnosticLog.event("detail") }
 
     Box(modifier.fillMaxSize().background(c.bg)) {
         HorizontalPager(state = pager, modifier = Modifier.fillMaxSize().testTag("main_screen_pager"), beyondViewportPageCount = 1,

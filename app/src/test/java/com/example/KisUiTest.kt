@@ -796,7 +796,7 @@ class KisUiTest {
                 KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
             }
         }
-        listOf("עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "משוב ותקלות", "פרופיל").forEach {
+        listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "פרופיל").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
         }
         ui.onNodeWithTag("theme_LIGHT").performScrollTo().performClick()
@@ -826,5 +826,10 @@ class KisUiTest {
         assertFalse(vm.planSettings.autoConfirm)
         ui.onNodeWithTag("auto_confirm_switch").performClick()
         assertTrue(vm.planSettings.autoConfirm)
+        // Feedback is the first section; its row opens the form in its own sheet.
+        ui.onNodeWithTag("feedback_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        ui.onNodeWithTag("feedback_sheet").assertExists()
+        ui.onNodeWithTag("feedback_message").performTextInput("draft")
+        shot("settings-feedback")
     }
 }

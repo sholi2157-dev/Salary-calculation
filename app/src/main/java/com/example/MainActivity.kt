@@ -135,6 +135,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Local event trail for feedback reports (FeedbackReport.kt); also records a crash on its way out.
+        DiagnosticLog.init(applicationContext)
+        if (savedInstanceState == null) DiagnosticLog.event("open", BuildConfig.VERSION_NAME)
         com.example.ui.WorkOnboardingStore(this).initialize()
         try {
             com.example.api.FirebaseSafeInitializer.init(applicationContext)
