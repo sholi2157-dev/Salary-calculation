@@ -7,11 +7,19 @@ const sortedTotals = rows => Object.entries(totalsOf(rows)).sort((a, b) => b[1] 
 function greeting() { const h = new Date().getHours(); return h >= 5 && h <= 11 ? 'בוקר טוב' : h >= 12 && h <= 16 ? 'צהריים טובים' : h >= 17 && h <= 20 ? 'ערב טוב' : 'לילה טוב'; }
 function weekStart(ms) { const d = new Date(U().startOfDay(ms)); d.setDate(d.getDate() - d.getDay()); return d.getTime(); }
 
-function tile(label, rows, caption, testid) {
-  const { moneyHtml, esc } = U(), t = sortedTotals(rows);
-  const money = t.length ? t.map(([c, v]) => `<b class="amount" data-testid="${testid}-${c}" style="font-size:22px">${moneyHtml(v, c)}</b>`).join('')
+function tile(label, rows, caption, testid, only, amountId) {
+  const { moneyHtml, esc } = U(), t = only ? [only] : sortedTotals(rows);
+  const money = t.length ? t.map(([c, v]) => `<b class="amount" data-testid="${amountId || testid}-${c}" style="font-size:22px">${moneyHtml(v, c)}</b>`).join('')
     : rows.length ? `<b class="amount" style="font-size:20px;color:var(--pending)">עוד לא ידוע</b>` : `<b class="amount" style="font-size:22px">${moneyHtml(0, '₪')}</b>`;
   return `<div class="tile" data-testid="${testid}"><span class="caption">${esc(label)}</span>${money}${caption ? `<span class="caption">${esc(caption)}</span>` : ''}</div>`;
+}
+
+/** Nothing today and more than one currency: each currency gets its own tile, and today shrinks to its width (like the app). */
+function tiles(today, done) {
+  const count = done.length === 1 ? 'משמרת אחת' : done.length + ' משמרות', all = sortedTotals(done);
+  if (today.length || all.length < 2) return `<div class="tiles">${tile('היום', today, null, 'home-today')}${tile('מכל הזמנים', done, count, 'home-all')}</div>`;
+  return `<div class="tiles split" style="grid-template-columns:auto repeat(${all.length},minmax(0,1fr))">${tile('היום', today, null, 'home-today')}${all.map((t, i) =>
+    tile('מכל הזמנים', done, i ? null : count, i ? 'home-all-tile-' + t[0] : 'home-all', t, 'home-all')).join('')}</div>`;
 }
 
 function render(el, app) {
@@ -55,7 +63,7 @@ function render(el, app) {
     <div class="legend" style="${totalH > 0 ? '' : 'margin-top:8px'}"><span data-testid="home-week-count">${week.length === 1 ? 'משמרת אחת השבוע' : week.length + ' משמרות השבוע'}</span>
       ${plannedWeek ? `<span>עוד ${plannedWeek} מתוכננות</span>` : ''}${byCat.slice(0, 3).map(([c]) => `<span><i style="background:${accent(placeOf(c, store))}"></i>${esc(c)}</span>`).join('')}</div>
   </section>
-  <div class="home-side"><div class="tiles">${tile('היום', today, null, 'home-today')}${tile('מכל הזמנים', done, done.length === 1 ? 'משמרת אחת' : done.length + ' משמרות', 'home-all')}</div>
+  <div class="home-side">${tiles(today, done)}
     ${pending ? `<div><button class="pending-flag" data-act="pending" data-testid="pending-flag">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button></div>` : ''}
     <section class="now-row" data-testid="now-row">${t ? liveCard(t) : '<button class="now" data-act="start" data-testid="live-start"><span class="dot"></span>אני מתחיל עכשיו</button>'}</section>
   ${fresh.map(scope => `<button class="story-entry home-recap" data-recap="${scope}" data-testid="home-recap-${scope}"><span><b>${esc(scope.length === 4 ? `השנה ${scope} שלך בכיס` : `${U().MONTHS[Number(scope.slice(5)) - 1]} שלך בכיס`)}</b><small>${scope.length === 4 ? 'הסיכום השנתי מוכן' : 'הסיכום החודשי מוכן'}</small></span>${U().logo(34)}</button>`).join('')}</div></div>
