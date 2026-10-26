@@ -32,11 +32,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /**
- * "In words" entry: type or dictate, parse with the user's own Gemini key, review, then save.
+ * "AI" entry (a shift of the user's own, or with [team] a group shift): type or dictate, parse with the user's own Gemini key, review, then save.
  * Nothing is saved without the review. Without a personal key it stops with a clear message.
  */
 @Composable
-fun KisAiEntry(viewModel: WorkViewModel, categories: List<WorkCategory>, modifier: Modifier = Modifier, onSaved: (Int) -> Unit) {
+fun KisAiEntry(viewModel: WorkViewModel, categories: List<WorkCategory>, modifier: Modifier = Modifier, team: Boolean = false, onSaved: (Int) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var text by rememberSaveable { mutableStateOf("") }
@@ -85,8 +85,11 @@ fun KisAiEntry(viewModel: WorkViewModel, categories: List<WorkCategory>, modifie
                     parsing = true; error = null
                     try {
                         val now = viewModel.categories.value
-                        val result = GeminiParser.parseNaturalLanguageToShifts(text, now.map { it.name }, now.associate { it.name to it.defaultRate }, PersonalAiKey.read(context, viewModel.owner.uid),
+                        // From the group page the description is about a shift with other people; from the user's own page it never is.
+                        val said = if (team) "משמרת קבוצתית, עם האנשים שעבדו איתי: $text" else text
+                        val parsed = GeminiParser.parseNaturalLanguageToShifts(said, now.map { it.name }, now.associate { it.name to it.defaultRate }, PersonalAiKey.read(context, viewModel.owner.uid),
                             currencyOf = viewModel::categoryCurrency)
+                        val result = if (team) parsed else parsed.map { it.copy(isGroup = false, groupMembers = emptyList()) }
                         if (result.isNotEmpty()) proposal = result else error = "לא הצלחנו להבין את פרטי המשמרת. נסה להוסיף תאריך, שעות ותעריף ולפענח שוב."
                     } catch (e: CancellationException) { throw e }
                     catch (_: Exception) { error = "הפענוח לא הושלם. בדוק את החיבור ואת המפתח האישי בהגדרות, או תקן את התיאור ונסה שוב." }

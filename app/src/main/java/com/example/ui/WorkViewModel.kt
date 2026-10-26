@@ -33,6 +33,7 @@ import java.io.File
 import java.io.FileOutputStream
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.room.withTransaction
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -306,6 +307,31 @@ class WorkViewModel(
         val done = runCatching { checkNotNull(syncTransport).undo(uid, action) }.getOrDefault(false)
         if (done) viewModelScope.launch { performSync() }
         return done
+    }
+
+    /**
+     * Settings → חשבון → מחיקת כל הנתונים: every shift, place, weekly plan, saved worker and setting goes, on this
+     * phone and (through the sync outbox, like any other delete) in the account, the website and other devices.
+     * The app starts again as a new install does, with the starter place. [onDone] says whether the account has
+     * already been emptied too (false: offline, it is sent with the next sync of this account).
+     */
+    fun deleteAllData(onDone: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val db = owner.database(getApplication())
+            db.withTransaction {
+                val w = db.workDao()
+                w.deleteEntriesById(w.getEntriesList().map { it.id })
+                w.getSeries().forEach { w.deleteSeries(it.id) }
+                w.getWorkersList().forEach { w.deleteWorkerById(it.id) }
+                w.getCategoriesList().forEach { w.deleteCategoryById(it.id) }
+                w.getLocalPreferences().forEach { w.removeLocalPreference(it.name) }
+                w.insertCategory(WorkCategory(name = "עצמאי", defaultRate = DEFAULT_RATE))
+            }
+            performAutoBackup()
+            if (owner.cloudUid == null || !com.example.BuildConfig.VERSIONED_SYNC_ENABLED) { onDone(true); return@launch }
+            repeat(3) { if (db.syncDao().observePending().first() > 0) { performSync(); kotlinx.coroutines.delay(1_000) } }
+            onDone(db.syncDao().observePending().first() == 0)
+        }
     }
 
     fun signOut(context: Context): Boolean {

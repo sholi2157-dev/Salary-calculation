@@ -71,6 +71,8 @@ data class EntryDraft(
     val passThrough: String = "",
     /** Job team: every worker gets the same amount as the user (true), or the user gets more and each worker has their own amount. */
     val teamSameRate: Boolean = true,
+    /** A group shift (the "קבוצה" button at the top): the same tabs, with the people who worked. Off = a shift of the user's own. */
+    val team: Boolean = false,
 ) {
     val editing get() = id != null
 
@@ -80,7 +82,7 @@ data class EntryDraft(
         put("rateUnknown", rateUnknown); put("currency", currency); put("bonus", bonus); put("bonusTarget", bonusTarget.name)
         put("amount", amount); put("amountUnknown", amountUnknown); put("notes", notes); put("separateRates", separateRates)
         put("employerRate", employerRate); put("workerRate", workerRate); put("isPaid", isPaid)
-        put("passThrough", passThrough); put("teamSameRate", teamSameRate)
+        put("passThrough", passThrough); put("teamSameRate", teamSameRate); put("team", team)
         put("workers", JSONArray().apply { workers.forEach { w -> put(JSONObject().put("name", w.name).put("hours", w.hours).put("bonus", w.bonus).put("isPaid", w.isPaid).put("source", w.source)
             .put("amount", w.amount)) } })
     }.toString()
@@ -97,6 +99,7 @@ data class EntryDraft(
                 amountUnknown = o.optBoolean("amountUnknown"), notes = o.optString("notes"), separateRates = o.optBoolean("separateRates"),
                 employerRate = o.optString("employerRate"), workerRate = o.optString("workerRate"), isPaid = o.optBoolean("isPaid"),
                 passThrough = o.optString("passThrough"), teamSameRate = o.optBoolean("teamSameRate", true),
+                team = o.optBoolean("team", EntryMode.valueOf(o.getString("mode")) == EntryMode.GROUP || (o.optJSONArray("workers")?.length() ?: 0) > 0),
                 workers = (0 until ws.length()).map { i -> ws.getJSONObject(i).let { WorkerDraft(it.getString("name"), it.optString("hours"), it.optString("bonus"), it.optBoolean("isPaid"), it.optString("source", "{}"),
                     it.optString("amount")) } },
             )
@@ -146,6 +149,7 @@ data class EntryDraft(
                 employerRate = e.employerRate?.let(::clean) ?: "", workerRate = e.workerRate?.let(::clean) ?: "", isPaid = e.isPaid,
                 passThrough = if (e.passThrough > 0) clean(e.passThrough) else "",
                 teamSameRate = !job || workers.isEmpty() || e.payKnown && workers.all { it.amount != null && it.bonus == 0.0 && it.amount == e.totalEarnings },
+                team = e.isGroupShift || workers.isNotEmpty(),
             )
         }
 
@@ -243,6 +247,7 @@ data class EntryDraft(
             if (separateRates && listOf(employerRate, workerRate).any { it.isNotBlank() && num(it) == null }) errors += "תעריף לא תקין"
         }
         if (mode == EntryMode.JOB && hours.isNotBlank() && (DurationInput.hours(hours)?.let { it < 0 || it > 24 } != false)) errors += "משך לא תקין"
+        if (team && workers.isEmpty()) errors += "הוסף לפחות אדם אחד לקבוצה"
         if (teamJob) {
             if (workers.any { it.name.isBlank() }) errors += "לכל עובד צריך שם"
             if (workers.any { jobWorkerPay(it) == null }) errors += "חסר כמה מקבל כל עובד"
@@ -313,6 +318,26 @@ data class EntryDraft(
     }
 
     /** Changing the mode keeps everything the user typed that still applies. */
+    /** The tab shown: a group shift by the clock or by hours shows as שעון or ידני, like a shift of the user's own. */
+    val tab: EntryMode get() = when { mode != EntryMode.GROUP -> mode; start == null -> EntryMode.HOURS; else -> EntryMode.CLOCK }
+
+    /** The same draft as a shift of the user's own kind (a group by the clock is a clock shift, by hours an hours shift). */
+    private fun asOwnKind(): EntryDraft = if (mode == EntryMode.GROUP) copy(mode = tab) else this
+
+    /** A tab (שעון, ידני, קבלנות) picked; in a group the clock and hours tabs are a group shift kept by the clock or by hours. */
+    fun withTab(t: EntryMode): EntryDraft {
+        val own = asOwnKind().withMode(t)
+        return if (team && t != EntryMode.JOB) own.copy(mode = EntryMode.GROUP, start = if (t == EntryMode.HOURS) null else own.start) else own
+    }
+
+    /** The "קבוצה" button: a group shift keeps the tab; back to the user's own shift drops the people. */
+    fun withTeam(on: Boolean): EntryDraft {
+        if (on == team) return this
+        if (on) return copy(team = true).withTab(tab)
+        return asOwnKind().copy(team = false, workers = emptyList(), separateRates = false, employerRate = "", workerRate = "",
+            bonusTarget = BonusTarget.ME, teamSameRate = true)
+    }
+
     fun withMode(m: EntryMode): EntryDraft {
         val clock = mode == EntryMode.CLOCK || mode == EntryMode.GROUP && !groupByHours
         if (m == EntryMode.HOURS && clock) return copy(mode = m, hours = check().minutes?.takeIf { it > 0 }?.let { DurationInput.display((it / 60.0).toString()) } ?: "")

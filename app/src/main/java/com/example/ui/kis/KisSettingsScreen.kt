@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -24,6 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -56,6 +60,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     val defaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
     val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.firstOrNull()?.name ?: ""
     var pickingDefault by rememberSaveable { mutableStateOf(false) }
+    var reordering by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     var adding by rememberSaveable { mutableStateOf(false) }
     var addingDefault by rememberSaveable { mutableStateOf(false) }
@@ -100,9 +105,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                             "weeklySeries" to series.size, "personalAiKey" to hasKey)
                     }, onSent = { focusManager.clearFocus(force = true); feedbackOpen = false })
                 }
-            }
-            if (BuildConfig.ACCOUNTS_ENABLED) Group("חשבון", info = "המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים בין האפליקציה לאתר. שינוי שנעשה בשני מקומות לפני שהסתנכרן לא נדרס: בוחרים איזו גרסה לשמור.") {
-                AccountRows(viewModel, onSignIn = onSignIn, onSignedOut = onClose)
             }
             Group("עבודה") {
                 Row_("מקום ברירת מחדל", null, tag = "default_category_picker",
@@ -170,8 +172,11 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     else if (viewModel.importDataFromString(context, importText)) importText = ""
                 }, Modifier.fillMaxWidth().padding(vertical = 10.dp), height = 48.dp, tag = "settings_import_action_btn")
             }
-            // Set once (the launch asks for it); rarely touched again, so it sits last.
-            Group("פרופיל") { ProfileFields() }
+            // The name and the Google account in one compact place; set once and rarely touched again, so it sits last.
+            Group("חשבון", info = if (BuildConfig.ACCOUNTS_ENABLED) "המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים בין האפליקציה לאתר. שינוי שנעשה בשני מקומות לפני שהסתנכרן לא נדרס: בוחרים איזו גרסה לשמור." else null) {
+                ProfileFields()
+                if (BuildConfig.ACCOUNTS_ENABLED) AccountRows(viewModel, onSignIn = onSignIn, onSignedOut = onClose, onBackup = { saveBackup.launch("salary-backup.json") })
+            }
             Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 KisLogo(Modifier.size(28.dp))
                 Text("${androidx.compose.ui.res.stringResource(com.example.R.string.app_name)} · ${BuildConfig.VERSION_NAME}", style = KisType.caption, color = c.muted)
@@ -180,9 +185,14 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     }
     }
 
-    if (pickingDefault) KisSheet(onDismiss = { pickingDefault = false }, tag = "default_category_sheet") {
-        Text("מקומות עבודה", style = KisType.title, color = c.ink)
-        Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) { categories.forEach { cat ->
+    if (pickingDefault) KisSheet(onDismiss = { pickingDefault = false; reordering = false }, tag = "default_category_sheet") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("מקומות עבודה", style = KisType.title, color = c.ink, modifier = Modifier.weight(1f))
+            if (categories.size > 1) Text(if (reordering) "סיום" else "עריכה", style = KisType.label, color = c.ink, modifier = Modifier.clip(RoundedCornerShape(10.dp))
+                .kisClick { reordering = !reordering }.testTag("places_reorder").padding(horizontal = 12.dp, vertical = 10.dp))
+        }
+        if (reordering) PlacesReorder(categories, viewModel::categoryCurrency)
+        else Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) { categories.forEach { cat ->
             val on = cat.name == defaultCategory
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(if (on) c.sunk else androidx.compose.ui.graphics.Color.Transparent)
                 .kisClick { viewModel.setDefaultCategory(cat.name); pickingDefault = false }.semantics { selected = on }
@@ -197,7 +207,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     .kisClick { pickingDefault = false; editing = cat.name }.testTag("category_row_${cat.name}").padding(13.dp))
             }
         } }
-        KisButton("+ מקום עבודה חדש", { pickingDefault = false; addingDefault = true; adding = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "default_category_add")
+        if (!reordering) KisButton("+ מקום עבודה חדש", { pickingDefault = false; addingDefault = true; adding = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "default_category_add")
     }
     editing?.let { name -> categories.firstOrNull { it.name == name }?.let { cat ->
         EditWorkplaceSheet(cat, categories, viewModel, onDismiss = { editing = null })
@@ -344,5 +354,51 @@ private fun AiKeySheet(ownerUid: String?, onDismiss: () -> Unit) {
             try { PersonalAiKey.remove(context, ownerUid); hasKey = false; status = "המפתח הוסר. המשמרות וכל שאר הנתונים נשמרו." }
             catch (_: Exception) { status = "הסרת המפתח לא הצליחה. אפשר לנסות שוב." }
         }, Modifier.fillMaxWidth(), KisButtonKind.DANGER, height = 48.dp)
+    }
+}
+
+/**
+ * The places in the user's order: a long press on a row (a small vibration) picks it up, dragging moves it, and the
+ * new order is kept on letting go. The add-shift page lists the places in the same order.
+ */
+@Composable
+private fun PlacesReorder(categories: List<WorkCategory>, currencyOf: (String) -> String) {
+    val c = Kis.colors
+    val settings = Kis.settings
+    val step = with(androidx.compose.ui.platform.LocalDensity.current) { 60.dp.toPx() }
+    var order by remember(categories) { mutableStateOf(categories.map { it.name }) }
+    var dragging by remember { mutableStateOf<String?>(null) }
+    var dragY by remember { mutableFloatStateOf(0f) }
+    fun drop() { dragging = null; dragY = 0f; settings.updatePlaceOrder(order) }
+    Column(Modifier.testTag("places_reorder_list"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        order.forEach { name ->
+            val cat = categories.firstOrNull { it.name == name } ?: return@forEach
+            val lifted = dragging == name
+            key(name) {
+                Row(Modifier.fillMaxWidth().height(56.dp).zIndex(if (lifted) 1f else 0f)
+                    .graphicsLayer { translationY = if (lifted) dragY else 0f; shadowElevation = if (lifted) 12f else 0f; shape = RoundedCornerShape(14.dp); clip = true }
+                    .background(if (lifted) c.surface else c.sunk)
+                    .pointerInput(name) {
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = { dragging = name; dragY = 0f; settings.haptic(KisSettings.Haptic.SELECT) },
+                            onDrag = { change, amount ->
+                                change.consume()
+                                dragY += amount.y
+                                val i = order.indexOf(name)
+                                if (dragY > step / 2 && i < order.lastIndex) { order = order.toMutableList().apply { add(i + 1, removeAt(i)) }; dragY -= step; settings.haptic(KisSettings.Haptic.TICK) }
+                                else if (dragY < -step / 2 && i > 0) { order = order.toMutableList().apply { add(i - 1, removeAt(i)) }; dragY += step; settings.haptic(KisSettings.Haptic.TICK) }
+                            },
+                            onDragEnd = { drop() }, onDragCancel = { drop() })
+                    }
+                    .testTag("place_drag_$name").padding(start = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(Modifier.size(24.dp).clip(RoundedCornerShape(8.dp)).background(workplaceOf(cat.name, categories).brush))
+                    Column(Modifier.weight(1f)) {
+                        Text(cat.name, style = KisType.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1)
+                        Text("${KisFormat.money(cat.defaultRate, currencyOf(cat.name))} לשעה", style = KisType.caption, color = c.muted)
+                    }
+                    Icon(Icons.Rounded.DragHandle, "גרירת $name", tint = c.muted, modifier = Modifier.size(48.dp).padding(12.dp))
+                }
+            }
+        }
     }
 }

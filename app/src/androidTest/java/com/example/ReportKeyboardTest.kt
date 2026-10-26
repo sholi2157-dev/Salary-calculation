@@ -75,7 +75,8 @@ class ReportKeyboardTest {
             }
         }
         ui.onNodeWithTag("quick_hours_4").performClick()
-        ui.onNodeWithTag("mode_group").performClick()
+        // "קבוצה" at the top: the same tab, now with the people who worked.
+        ui.onNodeWithTag("editor_team").performClick()
         focus("worker_name_input")
         ui.onNodeWithTag("worker_name_input").performTextReplacement("Synthetic worker")
         ui.onNodeWithTag("editor_scroll").performTouchInput { swipeUp() }
@@ -83,6 +84,7 @@ class ReportKeyboardTest {
         saveVisible()
         Espresso.closeSoftKeyboard(); awaitIme(false)
         ui.onNodeWithTag("worker_name_input").performTextReplacement("")
+        ui.onNodeWithTag("editor_team").performClick()
         ui.onNodeWithTag("mode_hours").performClick()
         focus("notes_input")
         ui.onNodeWithTag("notes_input").performTextReplacement("V2 one real save")
@@ -109,7 +111,7 @@ class ReportKeyboardTest {
         assertEquals(4.0, saved.hours, 0.0); assertFalse(saved.isTimeRange)
         // The AI page keeps its text through the keyboard.
         openAdd()
-        ui.onNodeWithTag("editor_ai").performClick()
+        ui.onNodeWithTag("mode_ai").performClick()
         focus("ai_free_text_input")
         ui.onNodeWithTag("ai_free_text_input").performTextReplacement("טיוטה לבדיקה בלבד")
         Espresso.closeSoftKeyboard(); awaitIme(false)

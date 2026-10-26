@@ -79,7 +79,7 @@ fun KisApp(
     val scope = rememberCoroutineScope()
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val allCategories by viewModel.categories.collectAsStateWithLifecycle()
-    val categories = remember(allCategories) { allCategories.distinctBy { it.name.trim() } }
+    val categories = remember(allCategories, settings.placeOrder) { settings.ordered(allCategories.distinctBy { it.name.trim() }) { it.name } }
     val workers by viewModel.workersDirectory.collectAsStateWithLifecycle()
     val prefs by viewModel.localPreferences.collectAsStateWithLifecycle()
     val defaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()

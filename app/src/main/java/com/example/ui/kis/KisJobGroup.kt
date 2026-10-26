@@ -57,12 +57,6 @@ internal fun JobTeamBlock(d: EntryDraft, directory: List<WorkerDirectory>, onFor
             }
         }
     }
-    // A solo job stays as simple as before: the team opens only when asked for (or when it already has people).
-    var open by rememberSaveable { mutableStateOf(false) }
-    if (!open && d.workers.isEmpty()) {
-        KisChip("+ עבדו איתי עוד אנשים", dashed = true, leading = Icons.Rounded.PersonAdd, onClick = { open = true }, tag = "job_team_open")
-        return
-    }
     KisCard(padding = PaddingValues(14.dp), radius = 18.dp, modifier = Modifier.testTag("job_team_block")) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

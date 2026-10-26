@@ -177,7 +177,7 @@ private fun IntroCard(title: String, body: String, index: Int) {
 
 /** Settings → חשבון: who is signed in, how the sync is doing, conflicts waiting for a choice, and signing out. */
 @Composable
-fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () -> Unit) {
+fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () -> Unit, onBackup: () -> Unit = {}) {
     val c = Kis.colors
     val context = LocalContext.current
     val session by viewModel.currentUserSession.collectAsStateWithLifecycle()
@@ -187,29 +187,35 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
     var reviewing by rememberSaveable { mutableStateOf(false) }
     var leaving by rememberSaveable { mutableStateOf(false) }
     var assistants by rememberSaveable { mutableStateOf(false) }
+    var erasing by rememberSaveable { mutableStateOf(false) }
     val user = session
-    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("account_card"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    // One compact block under the name: who is signed in and the sync state on one line, the two actions side by side.
+    Column(Modifier.fillMaxWidth().padding(bottom = 8.dp).testTag("account_card"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (user == null) {
-            Text("לא מחובר", style = KisType.label, color = c.ink)
-            Text("הנתונים שמורים רק בטלפון הזה", style = KisType.caption, color = c.muted)
+            Text("לא מחובר · הנתונים שמורים רק בטלפון הזה", style = KisType.caption, color = c.muted)
             KisButton("התחברות עם Google", onSignIn, Modifier.fillMaxWidth(), KisButtonKind.OUTLINE, height = 48.dp, tag = "account_signin")
-            return@Column
+        } else {
+            val line = when (status) {
+                WorkViewModel.SyncStatus.SYNCING -> "מסנכרן…"
+                WorkViewModel.SyncStatus.OFFLINE -> "אין חיבור. השינויים יישלחו כשהחיבור יחזור"
+                WorkViewModel.SyncStatus.ERROR -> "הסנכרון לא הצליח. ננסה שוב בקרוב"
+                else -> last?.let { "מסונכרן · ${KisShare.shortDate(it)} ${java.text.SimpleDateFormat("HH:mm", java.util.Locale.ROOT).format(java.util.Date(it))}" } ?: "מסונכרן"
+            }
+            Column {
+                Text(user.email ?: user.displayName.orEmpty(), style = KisType.label, color = c.ink, maxLines = 1)
+                Text(line, style = KisType.caption, color = c.muted, modifier = Modifier.testTag("account_status"))
+            }
+            if (conflicts > 0) Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.pendingSoft).kisClick { reviewing = true }
+                .testTag("account_conflicts").padding(horizontal = 12.dp, vertical = 10.dp)) {
+                Text(if (conflicts == 1) "שינוי אחד נעשה בשני מקומות. לבחירה" else "$conflicts שינויים נעשו בשני מקומות. לבחירה", style = KisType.caption, color = c.pending)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                KisButton("עוזרי AI", { assistants = true }, Modifier.weight(1f), KisButtonKind.OUTLINE, height = 44.dp, tag = "account_assistants")
+                KisButton("התנתקות", { leaving = true }, Modifier.weight(1f), KisButtonKind.GHOST, height = 44.dp, tag = "account_signout")
+            }
         }
-        Text(user.displayName ?: user.email.orEmpty(), style = KisType.label, color = c.ink)
-        if (user.email != null && user.email != user.displayName) Text(user.email, style = KisType.caption, color = c.muted)
-        val line = when (status) {
-            WorkViewModel.SyncStatus.SYNCING -> "מסנכרן…"
-            WorkViewModel.SyncStatus.OFFLINE -> "אין חיבור. השינויים יישלחו כשהחיבור יחזור"
-            WorkViewModel.SyncStatus.ERROR -> "הסנכרון לא הצליח. ננסה שוב בקרוב"
-            else -> last?.let { "מסונכרן · ${KisShare.shortDate(it)} ${java.text.SimpleDateFormat("HH:mm", java.util.Locale.ROOT).format(java.util.Date(it))}" } ?: "מסונכרן"
-        }
-        Text(line, style = KisType.caption, color = c.muted, modifier = Modifier.testTag("account_status"))
-        if (conflicts > 0) Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.pendingSoft).kisClick { reviewing = true }
-            .testTag("account_conflicts").padding(horizontal = 12.dp, vertical = 10.dp)) {
-            Text(if (conflicts == 1) "שינוי אחד נעשה בשני מקומות. לבחירה" else "$conflicts שינויים נעשו בשני מקומות. לבחירה", style = KisType.caption, color = c.pending)
-        }
-        KisButton("עוזרי AI מחוברים", { assistants = true }, Modifier.fillMaxWidth(), KisButtonKind.OUTLINE, height = 48.dp, tag = "account_assistants")
-        KisButton("התנתקות", { leaving = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "account_signout")
+        Text("מחיקת כל הנתונים", style = KisType.label, color = c.danger, modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick { erasing = true }
+            .testTag("account_erase").padding(vertical = 6.dp))
     }
     if (assistants) AssistantsSheet(viewModel) { assistants = false }
     if (leaving) KisSheet(onDismiss = { leaving = false }, tag = "account_signout_sheet") {
@@ -220,7 +226,38 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
             KisButton("התנתקות", { leaving = false; if (viewModel.signOut(context)) onSignedOut() }, Modifier.weight(1f), KisButtonKind.DANGER, height = 52.dp, tag = "account_signout_ok")
         }
     }
+    if (erasing) EraseSheet(signedIn = user != null, onBackup = onBackup, onDismiss = { erasing = false }) {
+        erasing = false
+        if (com.example.ShiftStateManager.hasActiveShift(context)) {
+            android.widget.Toast.makeText(context, "יש לסיים את המשמרת הפעילה לפני המחיקה", android.widget.Toast.LENGTH_LONG).show()
+            return@EraseSheet
+        }
+        viewModel.deleteAllData { emptied ->
+            if (user == null) android.widget.Toast.makeText(context, "כל הנתונים נמחקו", android.widget.Toast.LENGTH_LONG).show()
+            else if (emptied) { android.widget.Toast.makeText(context, "כל הנתונים נמחקו מהטלפון ומהחשבון", android.widget.Toast.LENGTH_LONG).show(); if (viewModel.signOut(context)) onSignedOut() }
+            // Offline: staying signed in lets the next sync empty the account as well.
+            else android.widget.Toast.makeText(context, "נמחק מהטלפון. המחיקה מהחשבון תושלם כשיחזור החיבור", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
     if (reviewing) ConflictsSheet(viewModel) { reviewing = false }
+}
+
+/** Deleting everything asks once, offers a backup first, and needs the word "מחיקה" typed. */
+@Composable
+private fun EraseSheet(signedIn: Boolean, onBackup: () -> Unit, onDismiss: () -> Unit, onErase: () -> Unit) {
+    val c = Kis.colors
+    var typed by rememberSaveable { mutableStateOf("") }
+    KisSheet(onDismiss = onDismiss, tag = "account_erase_sheet") {
+        Text("למחוק את כל הנתונים?", style = KisType.title, color = c.ink)
+        Text(if (signedIn) "כל המשמרות, המקומות, המשמרות הקבועות והעובדים יימחקו מהטלפון ומהחשבון, גם באתר ובמכשירים האחרים. אחר כך החשבון יתנתק. אי אפשר לבטל."
+            else "כל המשמרות, המקומות, המשמרות הקבועות והעובדים יימחקו מהטלפון. אי אפשר לבטל.", style = KisType.body, color = c.ink)
+        KisButton("שמירת גיבוי לפני המחיקה", onBackup, Modifier.fillMaxWidth(), KisButtonKind.OUTLINE, height = 48.dp, tag = "account_erase_backup")
+        KisTextField(typed, { typed = it }, "לאישור כותבים: מחיקה", Modifier.fillMaxWidth().testTag("account_erase_word"))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            KisButton("ביטול", onDismiss, Modifier.weight(1f), KisButtonKind.GHOST, height = 52.dp)
+            KisButton("מחיקת הכל", onErase, Modifier.weight(1f), KisButtonKind.DANGER, height = 52.dp, enabled = typed.trim() == "מחיקה", tag = "account_erase_ok")
+        }
+    }
 }
 
 private val PERM_LABEL = mapOf("shifts.read" to "קריאה", "shifts.add" to "הוספה", "shifts.edit" to "עריכה", "shifts.delete" to "מחיקה")

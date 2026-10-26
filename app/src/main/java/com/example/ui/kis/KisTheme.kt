@@ -154,8 +154,14 @@ class KisSettings internal constructor(private val context: Context?) {
         val p = prefs ?: return
         val i = p.getInt("color:$old", -1)
         if (i >= 0) p.edit().remove("color:$old").putInt("color:$new", i).apply()
+        if (old in placeOrder) updatePlaceOrder(placeOrder.map { if (it == old) new else it })
         colorVersion++
     }
+    /** The order the user gave the places (settings → places → עריכה). Device-only, like the colours; new places come last. */
+    var placeOrder by mutableStateOf(runCatching { org.json.JSONArray(prefs?.getString("placeOrder", "[]") ?: "[]").let { a -> List(a.length()) { a.getString(it) } } }.getOrDefault(emptyList()))
+        private set
+    fun updatePlaceOrder(names: List<String>) { placeOrder = names; prefs?.edit()?.putString("placeOrder", org.json.JSONArray(names).toString())?.apply() }
+    fun <T> ordered(places: List<T>, name: (T) -> String): List<T> = orderPlaces(places, placeOrder, name)
 
     // Haptics. The patterns follow the design system table; the switch turns all of them off.
     enum class Haptic { TAP, TICK, SELECT, SUCCESS, WARN }
@@ -250,4 +256,10 @@ fun KisTheme(settings: KisSettings = rememberKisSettings(), darkOverride: Boolea
     CompositionLocalProvider(LocalKis provides c, LocalKisSettings provides settings) {
         MaterialTheme(colorScheme = scheme, typography = KisMaterialType, content = content)
     }
+}
+
+/** [places] in the user's [order]; places not in it keep their own order after the ordered ones. */
+fun <T> orderPlaces(places: List<T>, order: List<String>, name: (T) -> String): List<T> {
+    val at = order.withIndex().associate { it.value to it.index }
+    return places.withIndex().sortedWith(compareBy({ at[name(it.value)] ?: Int.MAX_VALUE }, { it.index })).map { it.value }
 }

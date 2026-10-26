@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.PersonAdd
@@ -279,7 +280,8 @@ fun KisEditorPage(
     }
     // A text field being typed in (not one of our values): the clock, ruler and places fold away.
     val typingText = imeOpen && !pad
-    Box(Modifier.fillMaxSize().background(c.bg)) {
+    val frame = RoundedCornerShape(26.dp)
+    Box(Modifier.fillMaxSize().background(c.bg).then(if (d.team) Modifier.border(2.5.dp, teamColor(), frame).testTag("team_frame") else Modifier)) {
     // Light: the page glows in the chosen place's colour, so the screen keeps to one colour (the place, its span on the
     // ruler, the digit being typed) instead of the app's purple meeting a place's pink or green.
     KisGlow(Modifier.fillMaxSize(), if (c.dark) null else accent)
@@ -291,23 +293,27 @@ fun KisEditorPage(
             .statusBarsPadding().padding(horizontal = 16.dp).padding(top = 10.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TopPill(if (d.editing) "סגירה" else "ביטול", onTop, tag = "editor_close") { close() }
-                Text(when { d.editing -> "עריכת משמרת"; aiMode -> "משמרת במילים"; else -> "משמרת חדשה" }, Modifier.weight(1f).semantics { heading() },
-                    color = onTop, style = KisType.label.copy(fontSize = 16.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text(when { d.editing && d.team -> "עריכת משמרת קבוצתית"; d.editing -> "עריכת משמרת"; d.team -> "משמרת קבוצתית"; else -> "משמרת חדשה" }, Modifier.weight(1f).semantics { heading() },
+                    color = if (d.team) teamColor() else onTop, style = KisType.label.copy(fontSize = 16.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 if (d.editing) TopPill("מחיקה", onTop, tag = "editor_delete") { confirmDelete = true }
-                else TopPill(if (aiMode) "רישום רגיל" else "במילים", onTop, icon = if (aiMode) null else Icons.Rounded.AutoAwesome, tag = "editor_ai") {
-                    commitBuf(); pad = false; aiMode = !aiMode
+                // A shift is the user's own unless "קבוצה" is on: then the same tabs come with the people who worked.
+                else TopPill("קבוצה", onTop, icon = Icons.Rounded.Groups, tag = "editor_team", on = if (d.team) teamColor() else null) {
+                    commitBuf(); pad = false
+                    d = d.withTeam(!d.team)
+                    if (!aiMode) target = when (d.tab) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
                 }
             }
+            // While the system keyboard is open (note, worker name) the clock, ruler and places fold away,
+            // the mode tabs and total stay, so the form and the Save bar keep their room on small phones.
+            if (!aiMode && !imeOpen && !pad && d.editing && base != null) WasBanner(base, changed, onTop)
+            ModeTabs(if (aiMode) null else d.tab, onTop, c.bg, ai = !d.editing, onAi = { commitBuf(); pad = false; aiMode = true }) { m ->
+                if (pad) done()
+                if (pad) return@ModeTabs
+                aiMode = false
+                d = d.withTab(m)
+                target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
+            }
             if (!aiMode) {
-                // While the system keyboard is open (note, worker name) the clock, ruler and places fold away,
-                // the mode tabs and total stay, so the form and the Save bar keep their room on small phones.
-                if (!imeOpen && !pad && d.editing && base != null) WasBanner(base, changed, onTop)
-                ModeTabs(d.mode, onTop, c.bg) { m ->
-                    if (pad) done()
-                    if (pad) return@ModeTabs
-                    d = d.withMode(m)
-                    target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
-                }
                 if (!typingText) {
                     // While a value is typed with the keyboard open, the places fold away so the clock and the form keep their room.
                     if (!(pad && imeOpen)) CategoryChips(categories, d.category, onTop, topBg, accent, workplace.accentInk(c.dark), onPick = { cat -> if (commitBuf()) d = d.withCategory(cat, viewModel::categoryCurrency) }, onAdd = { if (pad) done(); addingPlace = true })
@@ -317,7 +323,7 @@ fun KisEditorPage(
                             hoursLabel = shown(KeyTarget.HOURS), onHours = { open(KeyTarget.HOURS) })
                         d.mode == EntryMode.HOURS || d.groupByHours -> HoursDisplay(shown(KeyTarget.HOURS), edit(KeyTarget.HOURS), onTop, accent,
                             onOpen = { at -> open(KeyTarget.HOURS, at) }, onQuick = { h -> d = d.copy(hours = h.toString()); if (pad && target == KeyTarget.HOURS) { buf = fieldDigits(target); fresh = true; digitsDirty = false } },
-                            onUseClock = if (d.mode == EntryMode.GROUP) ({ if (pad) done(); if (!pad) { d = d.copy(start = EntryDraft.defaultStart(d.end)); target = KeyTarget.START } }) else null)
+                            onUseClock = null)
                         else -> {
                             Box(Modifier.coachTarget(CoachTarget.FIELDS)) {
                                 ClockDisplay(shown(KeyTarget.START), shown(KeyTarget.END), d.start == null && !(pad && target == KeyTarget.START && buf.any { it != '·' }),
@@ -329,8 +335,6 @@ fun KisEditorPage(
                             if (!pad) TimeRuler(d.start, d.end, if (target == KeyTarget.START && d.start != null) TimeHandle.START else TimeHandle.END, onTop, topBg, accent = accent,
                                 onChange = { h, v -> buf = ""; d = if (h == TimeHandle.START) d.copy(start = v) else d.copy(end = v) },
                                 onSelect = { h -> target = if (h == TimeHandle.START) KeyTarget.START else KeyTarget.END; buf = "" })
-                            if (d.mode == EntryMode.GROUP) Text("הזנת שעות במקום שעון", color = onTop.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold),
-                                modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick { if (pad) done(); if (!pad) { d = d.copy(start = null); target = KeyTarget.HOURS } }.padding(vertical = 4.dp))
                         }
                     }
                 }
@@ -340,7 +344,7 @@ fun KisEditorPage(
             }
         }
         if (aiMode) {
-            KisAiEntry(viewModel, categories, Modifier.weight(1f), onSaved = { n ->
+            KisAiEntry(viewModel, categories, Modifier.weight(1f), team = d.team, onSaved = { n ->
                 settings.haptic(KisSettings.Haptic.SUCCESS)
                 onSaved(if (n == 1) "המשמרת נשמרה ✓" else "$n משמרות נשמרו ✓") { viewModel.undoLastAddedEntry() }
                 onClose()
@@ -379,7 +383,7 @@ fun KisEditorPage(
             if (d.passThroughValue() > 0 || pad && target == KeyTarget.PASS) PassThroughNote(d, check.total)
             check.warnings.forEach { Notice(it) }
             if (d.mode == EntryMode.GROUP) GroupBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
-            if (d.mode == EntryMode.JOB) JobTeamBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
+            if (d.mode == EntryMode.JOB && d.team) JobTeamBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
             if (!d.editing && d.mode == EntryMode.CLOCK && d.start != null) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -467,15 +471,22 @@ private fun isWithinWeek(day: Long): Boolean {
 // ======================================================================= pieces
 
 @Composable
-private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, tag: String, onClick: () -> Unit) {
+private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, tag: String, on: Color? = null, onClick: () -> Unit) {
     val c = Kis.colors
-    Row(Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(99.dp)).background(if (c.dark) ink.copy(alpha = 0.18f) else c.surface)
-        .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(99.dp))).kisClick(onClick = onClick).testTag(tag).padding(horizontal = 14.dp),
+    // [on]: a switch that is on (the group button) is filled with its colour.
+    val fg = if (on != null) Color.White else ink
+    Row(Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(99.dp)).background(on ?: if (c.dark) ink.copy(alpha = 0.18f) else c.surface)
+        .then(if (c.dark || on != null) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(99.dp))).kisClick(onClick = onClick)
+        .then(if (on != null) Modifier.semantics { selected = true } else Modifier).testTag(tag).padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (icon != null) Icon(icon, null, tint = ink, modifier = Modifier.size(16.dp))
-        Text(text, color = ink, style = KisType.label)
+        if (icon != null) Icon(icon, null, tint = fg, modifier = Modifier.size(16.dp))
+        Text(text, color = fg, style = KisType.label)
     }
 }
+
+/** The colour of a group shift: its button, title and the frame around the page. */
+@Composable
+internal fun teamColor(): Color = if (Kis.colors.dark) Color(0xFF8FB0FF) else Color(0xFF3B5BDB)
 
 @Composable
 private fun WasBanner(base: WorkEntry, changed: Boolean, ink: Color) {
@@ -489,25 +500,34 @@ private fun WasBanner(base: WorkEntry, changed: Boolean, ink: Color) {
 }
 
 @Composable
-private fun ModeTabs(mode: EntryMode, ink: Color, bg: Color, onMode: (EntryMode) -> Unit) {
+private fun ModeTabs(mode: EntryMode?, ink: Color, bg: Color, ai: Boolean, onAi: () -> Unit, onMode: (EntryMode) -> Unit) {
     val c = Kis.colors
     // Light: a raised white tab on a soft track (no black slab); dark keeps the light tab on the dark track.
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.sunk).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        EntryMode.entries.forEach { m ->
-            val on = m == mode
-            Box(Modifier.weight(1f).heightIn(min = 38.dp)
-                .then(if (on && !c.dark) Modifier.shadow(2.dp, RoundedCornerShape(9.dp), ambientColor = ink.copy(alpha = 0.10f), spotColor = ink.copy(alpha = 0.10f)) else Modifier)
-                .clip(RoundedCornerShape(9.dp)).background(if (!on) Color.Transparent else if (c.dark) ink else c.surface)
-                .kisClick(role = Role.Tab) { onMode(m) }.semantics { selected = on }.testTag("mode_${m.name.lowercase()}"), contentAlignment = Alignment.Center) {
-                Text(m.label, color = if (!on) ink.copy(alpha = if (c.dark) 0.9f else 0.7f) else if (c.dark) bg else ink, style = KisType.label)
-            }
+    @Composable fun RowScope.tab(label: String, on: Boolean, tag: String, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, onClick: () -> Unit) =
+        Row(Modifier.weight(1f).heightIn(min = 38.dp)
+            .then(if (on && !c.dark) Modifier.shadow(2.dp, RoundedCornerShape(9.dp), ambientColor = ink.copy(alpha = 0.10f), spotColor = ink.copy(alpha = 0.10f)) else Modifier)
+            .clip(RoundedCornerShape(9.dp)).background(if (!on) Color.Transparent else if (c.dark) ink else c.surface)
+            .kisClick(role = Role.Tab, onClick = onClick).semantics { selected = on }.testTag(tag), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
+            val fg = if (!on) ink.copy(alpha = if (c.dark) 0.9f else 0.7f) else if (c.dark) bg else ink
+            if (icon != null) Icon(icon, null, tint = fg, modifier = Modifier.size(15.dp))
+            Text(label, color = fg, style = KisType.label)
         }
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.sunk).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        listOf(EntryMode.CLOCK, EntryMode.HOURS, EntryMode.JOB).forEach { m -> tab(m.label, m == mode, "mode_${m.name.lowercase()}") { onMode(m) } }
+        // Describing the shift in words (the user's own Gemini key); not for an edit.
+        if (ai) tab("AI", mode == null, "mode_ai", Icons.Rounded.AutoAwesome, onAi)
     }
 }
 
 @Composable
 private fun CategoryChips(categories: List<WorkCategory>, selected: String, ink: Color, bg: Color, accent: Color, accentInk: Color, onPick: (WorkCategory) -> Unit, onAdd: () -> Unit) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Adding a place comes first, where it is always in reach (the places follow in the user's order).
+        Box(Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(99.dp)).border(1.5.dp, ink.copy(alpha = 0.4f), RoundedCornerShape(99.dp))
+            .kisClick(onClick = onAdd).testTag("editor_add_place").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+            Text("+ מקום", color = ink, style = KisType.label)
+        }
         categories.forEach { cat ->
             val on = cat.name == selected
             // The chosen place is the one spot that carries its own colour.
@@ -516,10 +536,6 @@ private fun CategoryChips(categories: List<WorkCategory>, selected: String, ink:
                 .kisClick { onPick(cat) }.semantics { this.selected = on }.testTag("editor_category_${cat.name}").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
                 Text(cat.name, color = if (on) accentInk else ink, style = KisType.label, maxLines = 1)
             }
-        }
-        Box(Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(99.dp)).border(1.5.dp, ink.copy(alpha = 0.4f), RoundedCornerShape(99.dp))
-            .kisClick(onClick = onAdd).testTag("editor_add_place").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-            Text("+ מקום", color = ink, style = KisType.label)
         }
     }
 }

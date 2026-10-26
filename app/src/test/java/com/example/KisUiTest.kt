@@ -169,12 +169,14 @@ class KisUiTest {
         // A note survives every mode switch (draft is kept).
         ui.onNodeWithTag("editor_more").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("טיוטה שנשמרת במעבר")
+        // "group" is the "קבוצה" button at the top (on, then off again back to the user's own shift).
         for (mode in listOf("hours", "group", "clock")) {
-            ui.onNodeWithTag("mode_$mode").performClick()
+            ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performClick()
             ui.onNodeWithTag("notes_input").performScrollTo().assertTextContains("טיוטה שנשמרת במעבר")
             ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
             if (mode == "group") ui.onNodeWithTag("group_block").performScrollTo().assertIsDisplayed()
             shot("editor-$mode-$suffix")
+            if (mode == "group") ui.onNodeWithTag("editor_team").performClick()
         }
         ui.onNodeWithTag("mode_job").performClick()
         ui.onNodeWithTag("job_note").performScrollTo().assertIsDisplayed()
@@ -313,7 +315,7 @@ class KisUiTest {
             KisEditorPage(vm, EntryDraft(category = "מסעדה", rate = "50", currency = "₪", start = "09:00", end = "13:00", day = day), null, categories, rows(),
                 runBlocking { dao.getWorkersList() }, onClose = {}, onSaved = { _, _ -> }, onDeleted = {})
         }
-        ui.onNodeWithTag("mode_group").performClick()
+        ui.onNodeWithTag("editor_team").performClick()
         // The long-press action itself (the same one TalkBack uses); the gesture is covered on device.
         ui.onNodeWithTag("add_worker_יוסי").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnLongClick)
         try { waitFor(5_000) { ui.onAllNodesWithTag("forget_worker_confirm").fetchSemanticsNodes().isNotEmpty() } }
@@ -825,7 +827,7 @@ class KisUiTest {
                 KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
             }
         }
-        listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "פרופיל").forEach {
+        listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
         }
         ui.onNodeWithTag("theme_LIGHT").performScrollTo().performClick()
@@ -836,15 +838,12 @@ class KisUiTest {
         shot("settings-dark")
         ui.onNodeWithTag("haptics_switch").performScrollTo().performClick()
         assertFalse(settings.haptics)
-        // Notification switches (device-only), and the profile at the bottom: first and last name, saved as typed.
-        ui.onNodeWithTag("quiet_switch").performScrollTo().assertExists()
-        // The monthly summary is on by default since 2.0.4; the switch turns it off and on again.
+        // One notification switch for all of them (device-only), and the name with the account at the bottom.
         assertTrue(vm.planSettings.notifyMonthly)
-        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
-        assertFalse(vm.planSettings.notifyMonthly)
-        ui.onNodeWithTag("notify_monthly_switch").performClick()
-        assertTrue(vm.planSettings.notifyMonthly)
-        ui.onNodeWithTag("notify_plans_switch").performScrollTo().assertExists()
+        ui.onNodeWithTag("notify_all_switch").performScrollTo().performClick()
+        assertFalse(vm.planSettings.notifyMonthly); assertFalse(vm.planSettings.notifyPlans); assertFalse(vm.planSettings.notifyRate)
+        ui.onNodeWithTag("notify_all_switch").performClick()
+        assertTrue(vm.planSettings.notifyMonthly); assertTrue(vm.planSettings.notifyPlans); assertTrue(vm.planSettings.notifyRate)
         ui.onNodeWithTag("profile_name").performScrollTo().performTextReplacement("שולי")
         ui.onNodeWithTag("profile_last_name").performScrollTo().performTextReplacement("כהן")
         assertEquals("שולי", settings.name)
@@ -875,7 +874,7 @@ class KisUiTest {
         ui.onNodeWithTag("job_amount").performClick()
         type("75")
         ui.onNodeWithTag("entry_done").performClick()
-        ui.onNodeWithTag("job_team_open").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_team").performClick()
         ui.onNodeWithTag("job_rate_mine_more").performScrollTo().performClick()
         ui.onNodeWithTag("job_worker_name_input").performScrollTo().performTextInput("דני")
         ui.onNodeWithTag("job_worker_name_input").performImeAction()
@@ -932,5 +931,58 @@ class KisUiTest {
             ui.onNodeWithTag(it).performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(60.dp)
         }
         runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-detail-bottom.png") }
+    }
+
+    /** Settings → places → עריכה: a long press picks a place up and dragging moves it; the add page follows the order. */
+    @Test fun placesAreReorderedByDragging() {
+        val vm = model()
+        lateinit var settings: KisSettings
+        ui.setContent {
+            settings = rememberKisSettings()
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                KisTheme(settings) { KisSettingsPage(vm, settings.ordered(categories) { it.name }, onClose = {}, onReplayTour = {}) }
+            }
+        }
+        ui.onNodeWithTag("default_category_picker").performScrollTo().performClick()
+        ui.onNodeWithTag("places_reorder").performClick()
+        ui.onNodeWithTag("place_drag_הובלות").assertExists()
+        ui.onNodeWithTag("default_category_add").assertDoesNotExist()
+        runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-places-reorder.png") }
+        ui.onNodeWithTag("place_drag_הובלות").performTouchInput {
+            down(center)
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis + 200)
+            repeat(30) { moveBy(androidx.compose.ui.geometry.Offset(0f, -10f)); advanceEventTime(16) }
+            up()
+        }
+        ui.waitForIdle()
+        assertEquals("הובלות", settings.placeOrder.first())
+        assertEquals(listOf("הובלות", "מסעדה", "שיעורים"), settings.ordered(categories) { it.name }.map { it.name })
+        settings.updatePlaceOrder(emptyList())
+    }
+
+    /** The add page: the user's own shift by default (four tabs, AI last, "+ מקום" first); "קבוצה" makes it a group shift. */
+    @Test fun personalByDefaultAndGroupFromTheTop() {
+        val vm = model()
+        host {
+            KisEditorPage(vm, EntryDraft(category = "מסעדה", rate = "50", currency = "₪", start = "09:00", end = "13:00", day = day), null, categories, emptyList(), emptyList(),
+                onClose = {}, onSaved = { _, _ -> }, onDeleted = {})
+        }
+        listOf("mode_clock", "mode_hours", "mode_job", "mode_ai").forEach { ui.onNodeWithTag(it).assertExists() }
+        ui.onNodeWithTag("mode_group").assertDoesNotExist()
+        ui.onNodeWithTag("group_block").assertDoesNotExist()
+        ui.onNodeWithTag("team_frame").assertDoesNotExist()
+        shot("team-personal-editor")
+        ui.onNodeWithTag("mode_job").performClick()
+        ui.onNodeWithTag("job_team_block").assertDoesNotExist()
+        ui.onNodeWithTag("editor_team").performClick()
+        ui.onNodeWithTag("team_frame").assertExists()
+        ui.onNodeWithTag("job_team_block").performScrollTo().assertExists()
+        ui.onNodeWithTag("mode_clock").performClick()
+        ui.onNodeWithTag("group_block").performScrollTo().assertExists()
+        ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
+        shot("team-group-editor")
+        ui.onNodeWithTag("editor_team").performClick()
+        ui.onNodeWithTag("team_frame").assertDoesNotExist()
+        ui.onNodeWithTag("save_shift_button").assertIsEnabled()
     }
 }

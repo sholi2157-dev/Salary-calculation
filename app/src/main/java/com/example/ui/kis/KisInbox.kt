@@ -127,9 +127,6 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
     var notifyRate by remember { mutableStateOf(plan.notifyRate) }
     var notifyPlans by remember { mutableStateOf(plan.notifyPlans) }
     var notifyUpdates by remember { mutableStateOf(plan.notifyUpdates) }
-    var quiet by remember { mutableStateOf(plan.quiet) }
-    var quietFrom by remember { mutableStateOf(plan.quietFrom) }
-    var quietTo by remember { mutableStateOf(plan.quietTo) }
     var denied by remember { mutableStateOf(false) }
     var asking by rememberSaveable { mutableStateOf<String?>(null) }
     fun set(kind: String, on: Boolean) {
@@ -142,11 +139,12 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
         // The next wake-up follows the switches (the monthly summary is one of them).
         com.example.PlanJobs.scheduleNextAsync(context)
     }
-    fun turnOn(kind: String) { denied = false; set(kind, true) }
+    val kinds = listOf("monthly", "plans", "rate", "updates")
+    fun turnOn(kind: String) { denied = false; if (kind == "all") kinds.forEach { set(it, true) } else set(kind, true) }
     // Without permission the switch stays off.
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> asking?.let { if (granted) turnOn(it) else denied = true }; asking = null }
     fun enable(kind: String, on: Boolean) {
-        if (!on) { set(kind, false); return }
+        if (!on) { if (kind == "all") kinds.forEach { set(it, false) } else set(kind, false); return }
         if (android.os.Build.VERSION.SDK_INT >= 33 && androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
             != android.content.pm.PackageManager.PERMISSION_GRANTED) { asking = kind; ask.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
         else turnOn(kind)
@@ -159,18 +157,12 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
             KisSwitch(checked, onChange, Modifier.testTag(tag), label = title)
         }
     }
-    line("משמרת פעילה", "טיימר וסכום שנצבר בהתראה קבועה בזמן שהשעון רץ.", "service_notification_switch", serviceNotification) { viewModel.updateServiceNotificationEnabled(it) }
-    KisDivider()
-    line("הסיכום החודשי", "ב-30 לכל חודש (בפברואר ביום האחרון) בשעה 20:00: כמה עבדת וכמה הרווחת החודש. נגיעה בו פותחת את הסיכום. נשלח רק כשיש משמרות בחודש.",
-        "notify_monthly_switch", notifyMonthly) { enable("monthly", it) }
-    KisDivider()
-    line("משמרת קבועה שהסתיימה", "כשמשמרת קבועה נגמרת: \"נרשמה\" עם כפתור \"לא עבדתי\". אם הרישום האוטומטי כבוי, השאלה \"עבדת?\" עם \"עבדתי\" ו\"לא עבדתי\".",
-        "notify_plans_switch", notifyPlans) { enable("plans", it) }
-    KisDivider()
-    line("תעריף חסר", "לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.", "notify_rate_switch", notifyRate) { enable("rate", it) }
-    if (com.example.BuildConfig.LOCAL_DISTRIBUTION) {
-        KisDivider()
-        line("גרסה חדשה", "הודעה בטלפון כשיוצאת גרסה חדשה, פעם אחת לכל גרסה. ההתקנה תמיד באישור שלך.", "notify_updates_switch", notifyUpdates) { enable("updates", it) }
+    // One switch for all of them: the active-shift timer, the monthly summary, finished weekly plans, a missing rate
+    // and (outside Google Play) a new version. Quiet hours stay as they were set.
+    val all = serviceNotification || notifyMonthly || notifyPlans || notifyRate || notifyUpdates
+    line("התראות", "טיימר של משמרת פעילה, הסיכום החודשי, משמרת קבועה שהסתיימה, תעריף חסר וגרסה חדשה.", "notify_all_switch", all) { on ->
+        viewModel.updateServiceNotificationEnabled(on)
+        enable("all", on)
     }
     // Switched on but the phone does not allow notifications: say so, with one tap to the phone's own setting.
     var allowed by remember { mutableStateOf(com.example.PlanJobs.canNotify(context)) }
@@ -187,12 +179,6 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
         }.testTag("notify_blocked").padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Text("הטלפון חוסם את ההתראות של האפליקציה", style = KisType.caption, color = c.pending, modifier = Modifier.weight(1f))
         Text("להפעלה", style = KisType.label, color = c.pending)
-    }
-    KisDivider()
-    line("שעות שקט", "תזכורת שנופלת בשעות האלה תגיע כשהן נגמרות.", "quiet_switch", quiet) { plan.quiet = it; quiet = it }
-    if (quiet) Row(Modifier.padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        TimeChip("משעה", quietFrom, Modifier.weight(1f), "quiet_from") { plan.quietFrom = it; quietFrom = it }
-        TimeChip("עד שעה", quietTo, Modifier.weight(1f), "quiet_to") { plan.quietTo = it; quietTo = it }
     }
 }
 
@@ -223,8 +209,8 @@ fun NotificationsPrompt(onAllow: () -> Unit, onLater: () -> Unit) {
 @Composable
 fun ProfileFields() {
     val settings = Kis.settings
-    Column(Modifier.padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        KisTextField(settings.name, settings::updateName, "שם פרטי", Modifier.fillMaxWidth().testTag("profile_name"))
-        KisTextField(settings.lastName, settings::updateLastName, "שם משפחה", Modifier.fillMaxWidth().testTag("profile_last_name"))
+    Row(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        KisTextField(settings.name, settings::updateName, "שם פרטי", Modifier.weight(1f).testTag("profile_name"))
+        KisTextField(settings.lastName, settings::updateLastName, "שם משפחה", Modifier.weight(1f).testTag("profile_last_name"))
     }
 }
