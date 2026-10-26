@@ -8,7 +8,7 @@ const store = root.KisStoreFactory.createStore(storage);
 const app = {
   store, storage, page: 'home', editorOpen: false, closeEditor: null,
   occurrences: () => root.KisPlans.occurrences(store),
-  go(page, opts = {}) { this.page = page; this.pageOpts = opts; render(); window.scrollTo({ top: 0 }); },
+  go(page, opts = {}) { root.KisSettings.event('page', page); this.page = page; this.pageOpts = opts; render(); window.scrollTo({ top: 0 }); },
   refresh() { render(); },
   applyTheme() { const t = store.local.theme || 'system'; if (t === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
     document.querySelector('meta[name=theme-color]')?.setAttribute('content', U().isDark() ? '#121212' : '#F1F3F8'); },
