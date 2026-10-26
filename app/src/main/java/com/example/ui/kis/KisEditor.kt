@@ -391,8 +391,9 @@ fun KisEditorPage(
                     }
                     if (repeat) {
                         RepeatBlock(repeatSet, repeatUntil, repeatPreview, onDays = { set -> repeatDays = set.sorted().joinToString(",") }, onUntil = { repeatUntil = it })
-                        val left = listOfNotNull("הפסקה".takeIf { d.breakMin > 0 }, "הערה".takeIf { d.notes.isNotBlank() })
-                        if (left.isNotEmpty()) Text("${left.joinToString(" ו")} לא נשמרות במשמרת קבועה", style = KisType.caption, color = c.muted,
+                        val left = listOfNotNull("הפסקה".takeIf { d.breakMin > 0 }, "בונוס".takeIf { d.bonusValue() > 0 }, "הערה".takeIf { d.notes.isNotBlank() },
+                            "החזר הוצאות".takeIf { d.passThroughValue() > 0 })
+                        if (left.isNotEmpty()) Text("${if (left.size > 1) left.dropLast(1).joinToString(", ") + " ו" + left.last() else left.single()} לא נשמרים במשמרת קבועה", style = KisType.caption, color = c.muted,
                             modifier = Modifier.testTag("repeat_not_kept"))
                     }
                 }
@@ -919,5 +920,9 @@ fun dayLabelLong(millis: Long): String {
 }
 
 /** "17:00–22:30" for clock entries, "5.5 שעות" otherwise. */
-fun timeLabel(e: WorkEntry): String =
-    if (e.isTimeRange && e.startTime != null && e.endTime != null) "⁦${e.startTime}–${e.endTime}⁩" else "${KisFormat.hours(e.hours)} שעות"
+fun timeLabel(e: WorkEntry): String = when {
+    e.isTimeRange && e.startTime != null && e.endTime != null -> "⁦${e.startTime}–${e.endTime}⁩"
+    // A job paid by the job has no hours to show unless some were typed.
+    e.kind == WorkEntry.KIND_JOB && e.hours <= 0 -> "קבלנות"
+    else -> "${KisFormat.hours(e.hours)} שעות"
+}

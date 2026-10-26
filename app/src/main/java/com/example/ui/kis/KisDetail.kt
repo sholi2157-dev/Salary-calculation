@@ -168,10 +168,11 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                 MoneyText(v, entry.currency, if (strong) KisType.label.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold) else KisType.label, modifier = Modifier.testTag(tag))
             }
             // The user's pay is the amount on top; the team's pay is on top of it, and the employer owes all of it.
-            line("לקבל מהמעסיק", summary.employerTotal, "group_employer_due", strong = true)
+            // Same order as the editor: my part, the team's, money passed through, then what the employer owes.
             line(if (job) "שלי" else "ההכנסה שלי (כולל עמלה)", summary.myNet, "group_mine")
             if (job) line("לצוות", Math.round((summary.employerTotal - summary.myNet - entry.passThrough) * 100.0) / 100.0, "group_team_pay")
             if (entry.passThrough > 0) line("החזר הוצאות", entry.passThrough, "group_pass_through")
+            line("לקבל מהמעסיק", summary.employerTotal, "group_employer_due", strong = true)
         } else Text(if (job) "הסכומים יופיעו אחרי שיושלם הסכום שלך." else "הסכומים יופיעו אחרי שיושלם התעריף.", style = KisType.caption, color = c.muted)
         workers.forEachIndexed { i, w ->
             val wPay = WorkPay.workerPay(w, entry)

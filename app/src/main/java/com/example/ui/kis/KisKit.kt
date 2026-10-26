@@ -44,6 +44,9 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -283,15 +286,31 @@ fun SectionTitle(title: String, modifier: Modifier = Modifier, action: String? =
 fun KisTextField(value: String, onValueChange: (String) -> Unit, label: String, modifier: Modifier = Modifier, placeholder: String? = null,
                  singleLine: Boolean = true, minLines: Int = 1, keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
                  keyboardActions: KeyboardActions = KeyboardActions.Default, isError: Boolean = false, enabled: Boolean = true,
-                 visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None) {
+                 visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
+                 /** A filled-in value is selected as a whole when the field takes focus, so typing replaces it instead of joining the digits. */
+                 selectAllOnFocus: Boolean = false) {
     val c = Kis.colors
+    if (selectAllOnFocus) {
+        var field by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(value)) }
+        if (field.text != value) field = androidx.compose.ui.text.input.TextFieldValue(value, androidx.compose.ui.text.TextRange(value.length))
+        OutlinedTextField(value = field, onValueChange = { field = it; if (it.text != value) onValueChange(it.text) },
+            modifier = modifier.onFocusChanged { if (it.isFocused) field = field.copy(selection = androidx.compose.ui.text.TextRange(0, field.text.length)) }, label = { Text(label) },
+            placeholder = placeholder?.let { { Text(it, color = c.muted) } }, singleLine = singleLine, minLines = minLines,
+            keyboardOptions = keyboardOptions, keyboardActions = keyboardActions, isError = isError, enabled = enabled, visualTransformation = visualTransformation,
+            textStyle = KisType.body.copy(color = c.ink, textDirection = TextDirection.ContentOrRtl), shape = RoundedCornerShape(14.dp), colors = kisFieldColors())
+        return
+    }
     OutlinedTextField(value = value, onValueChange = onValueChange, modifier = modifier, label = { Text(label) },
         placeholder = placeholder?.let { { Text(it, color = c.muted) } }, singleLine = singleLine, minLines = minLines,
         keyboardOptions = keyboardOptions, keyboardActions = keyboardActions, isError = isError, enabled = enabled, visualTransformation = visualTransformation,
-        textStyle = KisType.body.copy(color = c.ink, textDirection = TextDirection.ContentOrRtl), shape = RoundedCornerShape(14.dp),
-        colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = c.bg, unfocusedContainerColor = c.bg, disabledContainerColor = c.bg,
-            focusedBorderColor = c.ink, unfocusedBorderColor = c.line, focusedLabelColor = c.ink, unfocusedLabelColor = c.muted, cursorColor = c.ink,
-            focusedTextColor = c.ink, unfocusedTextColor = c.ink, disabledTextColor = c.muted, errorBorderColor = c.danger, errorLabelColor = c.danger))
+        textStyle = KisType.body.copy(color = c.ink, textDirection = TextDirection.ContentOrRtl), shape = RoundedCornerShape(14.dp), colors = kisFieldColors())
+}
+
+@Composable
+private fun kisFieldColors() = Kis.colors.let { c ->
+    OutlinedTextFieldDefaults.colors(focusedContainerColor = c.bg, unfocusedContainerColor = c.bg, disabledContainerColor = c.bg,
+        focusedBorderColor = c.ink, unfocusedBorderColor = c.line, focusedLabelColor = c.ink, unfocusedLabelColor = c.muted, cursorColor = c.ink,
+        focusedTextColor = c.ink, unfocusedTextColor = c.ink, disabledTextColor = c.muted, errorBorderColor = c.danger, errorLabelColor = c.danger)
 }
 
 /** Bottom sheet in Kis surface colours. */

@@ -91,10 +91,10 @@ internal fun JobTeamBlock(d: EntryDraft, directory: List<WorkerDirectory>, onFor
                     } else {
                         val fr = remember { FocusRequester() }
                         LaunchedEffect(focusWorker, d.workers.size) { if (focusWorker == i) { runCatching { fr.requestFocus() }; focusWorker = -1 } }
-                        KisTextField(w.amount, { v -> val f = v.filter { it.isDigit() || it == '.' }; if (f.count { it == '.' } <= 1) onDraft(d.withJobWorkerAmount(i, f)) },
+                        KisTextField(w.amount, { v -> val f = v.replace(',', '.').filter { it.isDigit() || it == '.' }; if (f.count { it == '.' } <= 1) onDraft(d.withJobWorkerAmount(i, f)) },
                             "מקבל (${d.currency})", Modifier.width(130.dp).focusRequester(fr).testTag("job_worker_amount_$i"),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
-                            keyboardActions = KeyboardActions(onNext = { runCatching { nameFocus.requestFocus() } }))
+                            keyboardActions = KeyboardActions(onNext = { runCatching { nameFocus.requestFocus() } }), selectAllOnFocus = true)
                     }
                     Icon(Icons.Rounded.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp))
                         .kisClick { onDraft(d.copy(workers = d.workers.filterIndexed { j, _ -> j != i })) }.padding(9.dp))
@@ -112,6 +112,8 @@ internal fun JobTeamBlock(d: EntryDraft, directory: List<WorkerDirectory>, onFor
                 Icon(Icons.Rounded.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(c.ink)
                     .kisClick(enabled = newName.isNotBlank()) { add(newName.trim()); newName = "" }.padding(12.dp).testTag("job_worker_add"))
             }
+            // A name typed but not added yet would be lost on save: say how to add it.
+            if (newName.isNotBlank()) Text("לחיצה על + מוסיפה את ${newName.trim()} לצוות", style = KisType.caption, color = c.pending, modifier = Modifier.testTag("job_worker_pending"))
             if (d.workers.isNotEmpty()) JobTeamTotals(d)
         }
     }
