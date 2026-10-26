@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 env:
   RC_CODE: '43'
-  RC_NAME: '2.1.1'
+  RC_NAME: '2.1'
   # The previously delivered 2.0 candidate (owner's phone): its exact bytes come from that run's artifact.
   PREV_RUN: '40219444146'
   PREV_SHA: 'b0a8b477975cef6bbbabea6e3a76727870da07ded2384c2d2f9da145e7e0d410'
@@ -117,7 +117,7 @@ jobs:
       - name: Candidate for owner review only; never publish a Release
         uses: actions/upload-artifact@v4
         with:
-          name: salary-2.1.1-candidate
+          name: salary-2.1-code43-candidate
           path: |
             candidate-b.apk
             release-evidence/
