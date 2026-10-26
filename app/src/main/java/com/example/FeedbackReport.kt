@@ -64,7 +64,7 @@ object DiagnosticLog {
  * set, the form falls back to the mail-app draft.
  */
 object FeedbackReport {
-    const val URL = ""
+    const val URL = "https://script.google.com/macros/s/AKfycbwDfq5iA_2NSGYj57js0uwAuoSjErBWN-mB7jkjse4HKS476TPyqEIKAqitrVD47PmR/exec"
     const val TOKEN = "salary-feedback-v1"
     private const val MAX_IMAGE_SIDE = 1600
 
