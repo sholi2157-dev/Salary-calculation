@@ -38,6 +38,13 @@ data class WorkEntry(
     val seriesKey: String? = null,
     /** Recorded automatically when its planned time ended. */
     @ColumnInfo(defaultValue = "0") val autoConfirmed: Boolean = false,
+
+    // 2.2 (schema 11).
+    /**
+     * Money the employer pays through the user for someone else (car, materials): owed by the employer,
+     * never part of totalEarnings, so it is not counted as the user's income anywhere.
+     */
+    @ColumnInfo(defaultValue = "0") val passThrough: Double = 0.0,
 ) {
     companion object {
         const val KIND_SHIFT = "shift"

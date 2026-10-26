@@ -860,4 +860,77 @@ class KisUiTest {
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("draft")
         shot("settings-feedback")
     }
+
+    /**
+     * Job with a team (קבלנות): the user's amount is theirs, "הבא" after a name goes straight to that person's amount,
+     * the first person's amount carries to the next, money passed through is owed but is not income.
+     */
+    @Test fun teamJobIsTypedNameThenAmountAndOwesEveryoneOnTop() {
+        val vm = model()
+        var closed = false
+        host {
+            KisEditorPage(vm, EntryDraft(mode = EntryMode.JOB, category = "הובלות", currency = "$", day = day), null, categories, emptyList(), emptyList(),
+                onClose = { closed = true }, onSaved = { _, _ -> }, onDeleted = {})
+        }
+        ui.onNodeWithTag("job_amount").performClick()
+        type("75")
+        ui.onNodeWithTag("entry_done").performClick()
+        ui.onNodeWithTag("job_team_open").performScrollTo().performClick()
+        ui.onNodeWithTag("job_rate_mine_more").performScrollTo().performClick()
+        ui.onNodeWithTag("job_worker_name_input").performScrollTo().performTextInput("דני")
+        ui.onNodeWithTag("job_worker_name_input").performImeAction()
+        ui.waitForIdle()
+        ui.onNodeWithTag("job_worker_amount_0").assertIsFocused()
+        type("50")
+        ui.onNodeWithTag("job_worker_amount_0").performImeAction()
+        ui.waitForIdle()
+        ui.onNodeWithTag("job_worker_name_input").assertIsFocused()
+        type("יוסי")
+        ui.onNodeWithTag("job_worker_name_input").performImeAction()
+        ui.waitForIdle()
+        // The second person starts with the first one's amount.
+        ui.onNodeWithTag("job_worker_amount_1").assertTextContains("50", substring = true)
+        ui.onNodeWithTag("editor_pass_through").performScrollTo().performClick()
+        type("20")
+        ui.onNodeWithTag("entry_done").performClick()
+        ui.onNodeWithTag("pass_through_note").assertExists()
+        ui.onNodeWithTag("job_mine", useUnmergedTree = true).assertTextEquals("$75")
+        ui.onNodeWithTag("job_team_pay", useUnmergedTree = true).assertTextEquals("$100")
+        ui.onNodeWithTag("job_employer_due", useUnmergedTree = true).performScrollTo().assertTextEquals("$195")
+        // Nothing reads as "the team took my money": the total at the top is still the user's own.
+        ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("$75")
+        shot("team-job-editor")
+        // One amount for everyone follows the user's amount.
+        ui.onNodeWithTag("job_rate_same").performScrollTo().performClick()
+        ui.onNodeWithTag("job_employer_due", useUnmergedTree = true).performScrollTo().assertTextEquals("$245")
+        shot("team-job-editor-same")
+        ui.onNodeWithTag("job_rate_mine_more").performScrollTo().performClick()
+        ui.onNodeWithTag("save_shift_button").performClick()
+        waitFor(5_000) { rows().size == 1 }
+        val e = rows().single()
+        assertEquals(75.0, e.totalEarnings, 0.0); assertEquals(20.0, e.passThrough, 0.0)
+        assertEquals(listOf(50.0, 50.0), WorkPay.workers(e).map { WorkPay.workerPay(it, e)!! })
+        assertEquals(mapOf("$" to 75.0), WorkPay.totals(rows()))
+        waitFor(10_000) { closed }
+    }
+
+    /** A big team: the shift's own actions keep their full size and the sheet scrolls instead of pressing them flat. */
+    @OptIn(com.github.takahirom.roborazzi.ExperimentalRoborazziApi::class)
+    @Test fun bigTeamDetailKeepsTheActionsFullSize() {
+        val vm = model()
+        val team = (1..6).joinToString(",", "[", "]") { """{"name":"עובד $it","hours":0.0,"isPaid":false,"amount":50.0}""" }
+        val entry = WorkEntry(id = 81, category = "הובלות", date = day, isTimeRange = false, hours = 0.0, hourlyRate = 0.0, totalEarnings = 75.0, currency = "$",
+            kind = WorkEntry.KIND_JOB, isGroupShift = true, groupWorkersJson = team, passThrough = 20.0, notes = "הובלה")
+        runBlocking { dao.insertEntry(entry) }
+        host { ShiftDetailSheet(entry, categories, vm, onDismiss = {}, onEdit = {}, onDeleted = {}, onMessage = {}) }
+        ui.waitForIdle()
+        ui.onNodeWithTag("detail_amount", useUnmergedTree = true).assertTextEquals("$75")
+        ui.onNodeWithTag("group_employer_due", useUnmergedTree = true).assertTextEquals("$395")
+        ui.onNodeWithTag("group_team_pay", useUnmergedTree = true).assertTextEquals("$300")
+        runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-detail-top.png") }
+        listOf("edit_entry_btn_81", "share_entry_btn_81", "copy_entry_btn_81", "delete_entry_btn_81").forEach {
+            ui.onNodeWithTag(it).performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(60.dp)
+        }
+        runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-detail-bottom.png") }
+    }
 }

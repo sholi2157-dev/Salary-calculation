@@ -37,9 +37,9 @@ object DurationInput {
 enum class EntryMode(val label: String) { CLOCK("שעון"), HOURS("ידני"), JOB("קבלנות"), GROUP("קבוצה") }
 enum class BonusTarget(val label: String) { ALL("כולם"), ME("רק אני"), OTHERS("רק הצוות") }
 
-/** On a job team (קבלנות) a worker is paid either a fixed [amount] or, when [byHours], their [hours] at their own [rate]. */
+/** On a job team (קבלנות) a worker is paid a fixed [amount]; one saved as hours × rate (before 2.2) opens with that pay. */
 data class WorkerDraft(val name: String, val hours: String = "", val bonus: String = "", val isPaid: Boolean = false, val source: String = "{}",
-                       val byHours: Boolean = false, val rate: String = "", val amount: String = "")
+                       val amount: String = "")
 
 /**
  * Everything the add/edit page holds. Plain values only, so it survives rotation and process death
@@ -67,6 +67,10 @@ data class EntryDraft(
     val employerRate: String = "",
     val workerRate: String = "",
     val isPaid: Boolean = false,
+    /** Money the employer pays through the user for someone else (car, materials); not the user's income. */
+    val passThrough: String = "",
+    /** Job team: every worker gets the same amount as the user (true), or the user gets more and each worker has their own amount. */
+    val teamSameRate: Boolean = true,
 ) {
     val editing get() = id != null
 
@@ -76,8 +80,9 @@ data class EntryDraft(
         put("rateUnknown", rateUnknown); put("currency", currency); put("bonus", bonus); put("bonusTarget", bonusTarget.name)
         put("amount", amount); put("amountUnknown", amountUnknown); put("notes", notes); put("separateRates", separateRates)
         put("employerRate", employerRate); put("workerRate", workerRate); put("isPaid", isPaid)
+        put("passThrough", passThrough); put("teamSameRate", teamSameRate)
         put("workers", JSONArray().apply { workers.forEach { w -> put(JSONObject().put("name", w.name).put("hours", w.hours).put("bonus", w.bonus).put("isPaid", w.isPaid).put("source", w.source)
-            .put("byHours", w.byHours).put("rate", w.rate).put("amount", w.amount)) } })
+            .put("amount", w.amount)) } })
     }.toString()
 
     companion object {
@@ -91,8 +96,9 @@ data class EntryDraft(
                 bonus = o.optString("bonus"), bonusTarget = BonusTarget.valueOf(o.optString("bonusTarget", "ME")), amount = o.optString("amount"),
                 amountUnknown = o.optBoolean("amountUnknown"), notes = o.optString("notes"), separateRates = o.optBoolean("separateRates"),
                 employerRate = o.optString("employerRate"), workerRate = o.optString("workerRate"), isPaid = o.optBoolean("isPaid"),
+                passThrough = o.optString("passThrough"), teamSameRate = o.optBoolean("teamSameRate", true),
                 workers = (0 until ws.length()).map { i -> ws.getJSONObject(i).let { WorkerDraft(it.getString("name"), it.optString("hours"), it.optString("bonus"), it.optBoolean("isPaid"), it.optString("source", "{}"),
-                    it.optBoolean("byHours"), it.optString("rate"), it.optString("amount")) } },
+                    it.optString("amount")) } },
             )
         }
 
@@ -123,19 +129,23 @@ data class EntryDraft(
             val clock = e.isTimeRange && V2Rules.isTime(e.startTime) && V2Rules.isTime(e.endTime)
             val mode = when { job -> EntryMode.JOB; e.isGroupShift -> EntryMode.GROUP; clock -> EntryMode.CLOCK; else -> EntryMode.HOURS }
             val breakMin = Math.round(WorkEntryEdits.breakMinutes(e)).toInt()
+            val workers = WorkPay.workers(e)
             return EntryDraft(
                 id = e.id, mode = mode, category = e.category, day = startOfDay(e.date), start = if (clock) e.startTime else null,
                 end = if (clock) e.endTime!! else V2Rules.roundedEnd(nowMinutes()), breakMin = breakMin,
                 hours = clean(e.hours),
                 rate = if (!job && e.payKnown) clean(e.hourlyRate) else "", rateUnknown = !job && !e.payKnown, currency = e.currency,
                 bonus = if (e.bonus > 0) clean(e.bonus) else "",
-                // A team job stores the user's share; the form shows the job's full price (share + team).
-                amount = if (job && e.payKnown) clean(e.totalEarnings + (if (WorkPay.isTeamJob(e)) WorkPay.teamPay(e) ?: 0.0 else 0.0)) else "",
+                // A job (with or without a team) stores the user's own pay, which is what the form shows.
+                amount = if (job && e.payKnown) clean(e.totalEarnings) else "",
                 amountUnknown = job && !e.payKnown, notes = e.notes,
-                workers = WorkPay.workers(e).map { WorkerDraft(it.name, if (job && it.hours == 0.0 && it.amount != null) "" else clean(it.hours), if (it.bonus > 0) clean(it.bonus) else "", it.isPaid, it.source.toString(),
-                    byHours = job && it.amount == null, rate = it.workerRate?.let(::clean) ?: "", amount = it.amount?.let(::clean) ?: "") },
+                // A job worker always opens with a fixed amount; one saved as hours × rate opens with that pay.
+                workers = workers.map { WorkerDraft(it.name, if (job && it.hours == 0.0 && it.amount != null) "" else clean(it.hours), if (it.bonus > 0) clean(it.bonus) else "", it.isPaid, it.source.toString(),
+                    amount = if (job) (it.amount ?: WorkPay.workerPay(it, e))?.let(::clean) ?: "" else "") },
                 separateRates = e.employerRate != null || e.workerRate != null,
                 employerRate = e.employerRate?.let(::clean) ?: "", workerRate = e.workerRate?.let(::clean) ?: "", isPaid = e.isPaid,
+                passThrough = if (e.passThrough > 0) clean(e.passThrough) else "",
+                teamSameRate = !job || workers.isEmpty() || e.payKnown && workers.all { it.amount != null && it.bonus == 0.0 && it.amount == e.totalEarnings },
             )
         }
 
@@ -158,21 +168,42 @@ data class EntryDraft(
 
     fun rateValue(): Double? = if (rateUnknown) null else num(rate)
 
-    /** A job with people on it: the price is split between them and the user. */
+    /** A job with people on it. The amount is the user's own pay; each worker's pay is on top of it, owed by the employer too. */
     val teamJob get() = mode == EntryMode.JOB && workers.isNotEmpty()
 
+    /** Everyone gets the user's amount. Only while that amount is known; otherwise each worker has their own. */
+    val sameRate get() = teamSameRate && !amountUnknown
+
     /** One job worker's pay, or null while it is not a valid number. */
-    fun jobWorkerPay(w: WorkerDraft): Double? = if (w.byHours) {
-        val h = DurationInput.hours(w.hours); val r = num(w.rate)
-        if (h == null || r == null || h < 0 || r < 0) null else WorkPay.amount(h, r)
-    } else num(w.amount)?.takeIf { it >= 0 }
+    fun jobWorkerPay(w: WorkerDraft): Double? = num(if (sameRate) amount else w.amount)?.takeIf { it >= 0 }
 
     /** The team's pay on a job, or null while any worker's pay is missing. */
     fun teamPayValue(): Double? = if (!teamJob) 0.0 else workers.map { jobWorkerPay(it) ?: return null }.sum().let { Math.round(it * 100.0) / 100.0 }
 
-    /** What is left for the user on a team job, or null while the price or a worker's pay is missing. */
-    fun myShare(): Double? { val total = num(amount) ?: return null; val team = teamPayValue() ?: return null; return Math.round((total - team) * 100.0) / 100.0 }
     fun bonusValue(): Double = num(bonus)?.takeIf { it > 0 } ?: 0.0
+    fun passThroughValue(): Double = num(passThrough)?.takeIf { it > 0 } ?: 0.0
+
+    /**
+     * Everything the employer owes: the user's [own] pay, the team's (job team or group shift, given as [team]) and the
+     * money passed through. Null while any part is unknown.
+     */
+    fun employerDue(own: Double?, team: Double?): Double? = if (own == null || team == null) null else Math.round((own + team + passThroughValue()) * 100.0) / 100.0
+
+    /**
+     * A new worker on a job team where the user gets more: their amount starts as the first worker's (the usual case is
+     * one rate for the whole team), and stays editable.
+     */
+    fun withJobWorker(name: String): EntryDraft = copy(workers = workers + WorkerDraft(name, amount = if (sameRate) "" else workers.firstOrNull()?.amount.orEmpty()))
+
+    /** The first worker's amount, carried to every later worker who still had the old one (or none); others keep theirs. */
+    fun withJobWorkerAmount(i: Int, v: String): EntryDraft {
+        val old = workers.getOrNull(i)?.amount ?: return this
+        return copy(workers = workers.mapIndexed { j, w -> when {
+            j == i -> w.copy(amount = v)
+            i == 0 && (w.amount.isBlank() || w.amount == old) -> w.copy(amount = v)
+            else -> w
+        } })
+    }
 
     /** A group shift may be entered by clock (start–end) or, like before 2.0, by hours only. */
     val groupByHours get() = mode == EntryMode.GROUP && start == null
@@ -215,12 +246,12 @@ data class EntryDraft(
         if (teamJob) {
             if (workers.any { it.name.isBlank() }) errors += "לכל עובד צריך שם"
             if (workers.any { jobWorkerPay(it) == null }) errors += "חסר כמה מקבל כל עובד"
-            else if (!amountUnknown && (myShare() ?: 0.0) < 0) errors += "הצוות מקבל יותר מסכום העבודה"
         }
+        if (passThrough.isNotBlank() && num(passThrough)?.let { it < 0 } != false) errors += "סכום ההחזר לא תקין"
         // Persist decimal hours; the duration UI converts hours and minutes at this boundary.
         val payHours = if (mode == EntryMode.HOURS || groupByHours) DurationInput.hours(hours) ?: 0.0 else (ev.minutes ?: 0) / 60.0
-        // A team job shows what is left for the user, which is what is stored and counted.
-        val total = if (mode == EntryMode.JOB) (if (teamJob) ev.total?.let { myShare()?.takeIf { it >= 0 } } else ev.total) else ev.total?.let { WorkPay.amount(payHours, rateValue() ?: 0.0, ev.bonus) }
+        // A job shows the user's own amount, which is what is stored and counted (a team is paid on top of it).
+        val total = if (mode == EntryMode.JOB) ev.total else ev.total?.let { WorkPay.amount(payHours, rateValue() ?: 0.0, ev.bonus) }
         return Check(errors, warnings, ev.minutes, total, overnight)
     }
 
@@ -249,16 +280,12 @@ data class EntryDraft(
             clock -> Calendar.getInstance().apply { timeInMillis = day; val m = V2Rules.toMinutes(start!!); set(Calendar.HOUR_OF_DAY, m / 60); set(Calendar.MINUTE, m % 60) }.timeInMillis
             else -> day + 12 * 60 * 60_000L
         }
-        val sameJob = was != null && was.amount == amount && !was.amountUnknown && was.workers == workers
-        val amountNumber = when {
-            sameJob -> base!!.totalEarnings
-            teamJob -> myShare() ?: 0.0
-            else -> num(amount) ?: 0.0
-        }
+        val amountNumber = if (was != null && was.amount == amount && !was.amountUnknown) base!!.totalEarnings else num(amount) ?: 0.0
+        // An untouched team keeps its stored JSON exactly; with one rate for all, a new amount is a new team pay too.
+        val sameTeam = was != null && was.mode == mode && was.workers == workers && (mode != EntryMode.JOB || was.sameRate == sameRate && (!sameRate || was.amount == amount))
         val groupJson = if (teamJob) WorkPay.encodeWorkers(workers.map { w ->
-            // A job worker's pay is exactly what the form shows (amount, or hours × rate), with no separate bonus.
-            WorkPay.Worker(w.name.trim(), DurationInput.hours(w.hours) ?: 0.0, w.isPaid, 0.0,
-                if (w.byHours) num(w.rate) else null, null, JSONObject(w.source), if (w.byHours) null else num(w.amount))
+            // A job worker's pay is exactly what the form shows, with no separate bonus.
+            WorkPay.Worker(w.name.trim(), DurationInput.hours(w.hours) ?: 0.0, w.isPaid, 0.0, null, null, JSONObject(w.source), jobWorkerPay(w))
         }, job = true) else if (mode == EntryMode.GROUP) WorkPay.encodeWorkers(workers.map { w ->
             val sourceHours = JSONObject(w.source).optDouble("hours", Double.NaN)
             val originalHours = sourceHours.takeIf { it.isFinite() && clean(it) == w.hours }
@@ -276,8 +303,9 @@ data class EntryDraft(
                 else -> WorkPay.amount(hoursValue, rateNumber, myBonus)
             },
             notes = notes.trim(), currency = currency, kind = if (job) WorkEntry.KIND_JOB else WorkEntry.KIND_SHIFT, payKnown = payKnown, bonus = myBonus,
+            passThrough = if (was != null && was.passThrough == passThrough) base!!.passThrough else passThroughValue(),
             isGroupShift = mode == EntryMode.GROUP || teamJob,
-            groupWorkersJson = if ((mode == EntryMode.GROUP || teamJob) && was != null && was.mode == mode && was.workers == workers) base!!.groupWorkersJson else groupJson,
+            groupWorkersJson = if ((mode == EntryMode.GROUP || teamJob) && sameTeam) base!!.groupWorkersJson else groupJson,
             employerRate = if (mode == EntryMode.GROUP && separateRates) (if (was != null && was.employerRate == employerRate) base!!.employerRate else num(employerRate)) else null,
             workerRate = if (mode == EntryMode.GROUP && separateRates) (if (was != null && was.workerRate == workerRate) base!!.workerRate else num(workerRate)) else null,
             isPaid = isPaid,

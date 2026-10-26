@@ -22,6 +22,7 @@ object WorkShareText {
         pause(e)?.takeIf { it > 0 }?.let { add("הפסקה: $it דקות") }
         if (!WorkPay.isJob(e)) add("תעריף לשעה: " + (if (WorkPay.pay(e) == null) "עדיין לא ידוע" else money(e.hourlyRate, e.currency)))
         if (e.bonus > 0) add("בונוס: ${money(e.bonus, e.currency)} (כלול בסכום)")
+        if (e.passThrough > 0) add("החזר הוצאות: ${money(e.passThrough, e.currency)} (לא כלול בסכום)")
         if (note(e).isNotEmpty()) add("הערה: ${note(e)}")
     }
     private fun amounts(rows: List<WorkEntry>): List<String> = buildList {
@@ -53,7 +54,7 @@ object WorkShareText {
             val p = WorkPay.workerPay(w, e)
             // Owner time range and break are not the worker's facts; the shift note is attached.
             e.copy(hours = w.hours, hourlyRate = WorkPay.workerRate(w, e) ?: 0.0, totalEarnings = p ?: 0.0,
-                payKnown = p != null, isPaid = w.isPaid, bonus = w.bonus, isTimeRange = false,
+                payKnown = p != null, isPaid = w.isPaid, bonus = w.bonus, passThrough = 0.0, isTimeRange = false,
                 startTime = null, endTime = null, isGroupShift = false)
         }
     }
@@ -98,7 +99,8 @@ object WorkShareText {
     fun job(e: WorkEntry) = personal(e)
     fun employer(e: WorkEntry, ownName: String? = null, technical: Boolean = false, future: Boolean = false): String {
         val own = WorkPay.pay(e); val ws = WorkPay.workers(e); val pays = ws.map { WorkPay.employerPay(it, e) }
-        val total = if (own == null || pays.any { it == null }) null else Math.round((own + pays.sumOf { it!! }) * 100) / 100.0
+        // Everything the employer pays: the user, each worker and any money passed through.
+        val total = if (own == null || pays.any { it == null }) null else Math.round((own + pays.sumOf { it!! } + e.passThrough) * 100) / 100.0
         val text = buildList {
             if (technical) { add("עבודה: ${e.category}"); add("כמות משמרות: 1"); add("כמות שעות: ${hours(e.hours + ws.sumOf { it.hours })}") }
             else add("היי, סיכמתי פה את עבודת הצוות ב${e.category}:")
@@ -108,6 +110,7 @@ object WorkShareText {
             add("${ownName?.trim()?.takeIf { it.isNotEmpty() } ?: "החלק שלי"}: ${if (WorkPay.isJob(e) && e.hours == 0.0) "" else "${hours(e.hours)} שעות | "}${own?.let { money(it, e.currency) } ?: if (WorkPay.isJob(e)) "סכום חסר" else "תעריף חסר"}")
             // On a job team a fixed sum has no hours to show.
             ws.forEachIndexed { i, w -> add("${w.name}: ${if (WorkPay.isJob(e) && w.amount != null && w.hours == 0.0) "סכום קבוע" else "${hours(w.hours)} שעות"} | ${pays[i]?.let { money(it, e.currency) } ?: "תעריף חסר"}") }
+            if (e.passThrough > 0) add("החזר הוצאות: ${money(e.passThrough, e.currency)}")
             if (note(e).isNotEmpty()) add("הערה: ${note(e)}")
             if (!technical) add("תודה!")
         }.joinToString("\n")

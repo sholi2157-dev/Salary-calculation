@@ -14,7 +14,7 @@ object WorkBackup {
      * app versions and the current website keep reading it.
      */
     fun needsVersion3(entries: List<WorkEntry>): Boolean = entries.any { e ->
-        e.kind != WorkEntry.KIND_SHIFT || !e.payKnown || e.bonus != 0.0 || e.seriesKey != null || e.autoConfirmed ||
+        e.kind != WorkEntry.KIND_SHIFT || !e.payKnown || e.bonus != 0.0 || e.seriesKey != null || e.autoConfirmed || e.passThrough > 0 ||
             WorkPay.workers(e).any { it.bonus > 0 }
     }
 
@@ -54,6 +54,8 @@ object WorkBackup {
                         put("bonus", e.bonus)
                         put("seriesKey", e.seriesKey ?: JSONObject.NULL)
                         put("autoConfirmed", e.autoConfirmed)
+                        // Written only when used, so files without it stay exactly as before.
+                        if (e.passThrough > 0) put("passThrough", e.passThrough)
                     }
                 }) }
             })
@@ -102,6 +104,8 @@ object WorkBackup {
             require(kind == WorkEntry.KIND_SHIFT || kind == WorkEntry.KIND_JOB) { "Unknown entry kind" }
             val bonus = e.optDouble("bonus", 0.0)
             require(bonus.isFinite() && bonus >= 0) { "Invalid bonus" }
+            val passThrough = e.optDouble("passThrough", 0.0)
+            require(passThrough.isFinite() && passThrough >= 0) { "Invalid pass-through" }
             require(e.getString("category").isNotBlank()) { "Missing category" }
             WorkEntry(
                 // Source IDs belong to the exporting installation; never overwrite by ID.
@@ -117,7 +121,7 @@ object WorkBackup {
                 groupWorkersJson = groupJson,
                 kind = kind, payKnown = e.optBoolean("payKnown", true), bonus = bonus,
                 seriesKey = if (e.isNull("seriesKey")) null else e.optString("seriesKey").takeIf { it.isNotBlank() },
-                autoConfirmed = e.optBoolean("autoConfirmed", false)
+                autoConfirmed = e.optBoolean("autoConfirmed", false), passThrough = passThrough
             )
         }
         val cats = root.optJSONArray("categories") ?: JSONArray()

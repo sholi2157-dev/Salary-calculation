@@ -51,8 +51,8 @@ object WorkPay {
     }
 
     /**
-     * A job with a team. Its totalEarnings is what is left for the user after the team is paid, so every
-     * total and summary counts only the user's own income; the job's full price is that plus the team's pay.
+     * A job with a team. Its totalEarnings is the user's own pay, so every total and summary counts only the
+     * user's income; the employer owes that plus the team's pay (plus any money passed through).
      */
     fun isTeamJob(e: WorkEntry) = isJob(e) && e.isGroupShift
 
@@ -73,13 +73,14 @@ object WorkPay {
         return Math.round(sum * 100.0) / 100.0
     }
 
+    /** [employerTotal] is everything the employer owes for the shift, money passed through included. */
     data class GroupSummary(val employerTotal: Double, val profit: Double, val myNet: Double)
 
     /** Null while any part is unknown: a partial group total would be misleading. */
     fun group(e: WorkEntry): GroupSummary? {
         val own = pay(e) ?: return null
-        // A job: the client pays one price; the team's part comes out of it and the rest is the user's.
-        if (isJob(e)) { val team = teamPay(e) ?: return null; return GroupSummary(Math.round((own + team) * 100.0) / 100.0, 0.0, own) }
+        // A job: the user's pay and each worker's pay are separate; the employer owes all of them.
+        if (isJob(e)) { val team = teamPay(e) ?: return null; return GroupSummary(Math.round((own + team + e.passThrough) * 100.0) / 100.0, 0.0, own) }
         var employer = 0.0
         var profit = 0.0
         for (w in workers(e)) {
@@ -89,8 +90,11 @@ object WorkPay {
             profit += w.hours * (er - wr)
         }
         fun r(v: Double) = Math.round(v * 100.0) / 100.0
-        return GroupSummary(r(own + employer), r(profit), r(own + profit))
+        return GroupSummary(r(own + employer + e.passThrough), r(profit), r(own + profit))
     }
+
+    /** What the employer owes for this entry (team and money passed through included), or null while any part is unknown. */
+    fun employerDue(e: WorkEntry): Double? = if (e.isGroupShift) group(e)?.employerTotal else pay(e)?.let { Math.round((it + e.passThrough) * 100.0) / 100.0 }
 
     /** On a [job] team each worker's pay is either a fixed amount or hours × their own rate, so exactly one of the two is written. */
     fun encodeWorkers(workers: List<Worker>, job: Boolean = false): String = JSONArray().apply {

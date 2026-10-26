@@ -10,6 +10,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -300,7 +302,9 @@ fun KisSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier, tag: String? 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = c.surface,
         contentColor = c.ink, shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp), scrimColor = Color.Black.copy(alpha = 0.45f),
         dragHandle = { Box(Modifier.padding(top = 10.dp, bottom = 4.dp).size(width = 40.dp, height = 4.dp).clip(CircleShape).background(c.line)) }) {
-        Column(modifier.fillMaxWidth().then(if (tag != null) Modifier.testTag(tag) else Modifier).padding(horizontal = 16.dp).padding(bottom = 18.dp)
+        // Scrolls when the content is taller than the screen (a big team, a large font, the keyboard open), so nothing is
+        // squeezed: the last row (the actions) keeps its size instead of being pressed flat.
+        Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).then(if (tag != null) Modifier.testTag(tag) else Modifier).padding(horizontal = 16.dp).padding(bottom = 18.dp)
             .navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
     }
 }

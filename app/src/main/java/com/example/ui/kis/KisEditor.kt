@@ -64,7 +64,7 @@ import com.example.ui.coachTarget
 import java.util.Calendar
 
 /** Fields typed with the phone's own keyboard into the page's values (see [KeySink]). */
-enum class KeyTarget { START, END, HOURS, RATE, BONUS, AMOUNT, BREAK }
+enum class KeyTarget { START, END, HOURS, RATE, BONUS, PASS, AMOUNT, BREAK }
 
 private val DraftSaver = Saver<EntryDraft, String>(save = { it.toJson() }, restore = { EntryDraft.fromJson(it) })
 
@@ -170,10 +170,10 @@ fun KisEditorPage(
         pad = false; fresh = false
         focus.clearFocus()
     }
-    fun numberValue(t: KeyTarget) = when (t) { KeyTarget.HOURS -> DurationInput.display(d.hours); KeyTarget.RATE -> d.rate; KeyTarget.BONUS -> d.bonus; KeyTarget.AMOUNT -> d.amount; KeyTarget.BREAK -> if (d.breakMin > 0) d.breakMin.toString() else ""; else -> "" }
+    fun numberValue(t: KeyTarget) = when (t) { KeyTarget.HOURS -> DurationInput.display(d.hours); KeyTarget.RATE -> d.rate; KeyTarget.BONUS -> d.bonus; KeyTarget.PASS -> d.passThrough; KeyTarget.AMOUNT -> d.amount; KeyTarget.BREAK -> if (d.breakMin > 0) d.breakMin.toString() else ""; else -> "" }
     fun setNumber(t: KeyTarget, v: String) {
         d = when (t) {
-            KeyTarget.HOURS -> d.copy(hours = DurationInput.edit(v)); KeyTarget.RATE -> d.copy(rate = v, rateUnknown = false); KeyTarget.BONUS -> d.copy(bonus = v)
+            KeyTarget.HOURS -> d.copy(hours = DurationInput.edit(v)); KeyTarget.RATE -> d.copy(rate = v, rateUnknown = false); KeyTarget.BONUS -> d.copy(bonus = v); KeyTarget.PASS -> d.copy(passThrough = v)
             KeyTarget.AMOUNT -> d.copy(amount = v, amountUnknown = false); KeyTarget.BREAK -> d.copy(breakMin = v.toIntOrNull()?.coerceIn(0, 600) ?: 0); else -> d
         }
     }
@@ -371,8 +371,12 @@ fun KisEditorPage(
                     val b = shown(KeyTarget.BONUS)
                     KisChip(if (b.isNotEmpty() && b != "0") "בונוס ${d.currency}$b" else "+ בונוס", selected = pad && target == KeyTarget.BONUS, tag = "editor_bonus", onClick = { open(KeyTarget.BONUS) })
                 }
+                val p = shown(KeyTarget.PASS)
+                KisChip(if (p.isNotEmpty() && p != "0") "החזר הוצאות ${d.currency}$p" else "+ החזר הוצאות", selected = pad && target == KeyTarget.PASS, tag = "editor_pass_through", onClick = { open(KeyTarget.PASS) })
                 if (d.mode != EntryMode.JOB) KisChip(if (more) "פחות" else "הפסקה · הערה", tag = "editor_more", onClick = { more = !more })
             }
+            // Money passed through (car, materials) is owed by the employer but is not the user's income; say so where it is typed.
+            if (d.passThroughValue() > 0 || pad && target == KeyTarget.PASS) PassThroughNote(d, check.total)
             check.warnings.forEach { Notice(it) }
             if (d.mode == EntryMode.GROUP) GroupBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
             if (d.mode == EntryMode.JOB) JobTeamBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
@@ -636,7 +640,7 @@ private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color
         Column(Modifier.fillMaxWidth().clip(shape).background(if (active) (if (c.dark) ink.copy(alpha = 0.10f) else c.surface) else Color.Transparent)
             .then(if (active) Modifier.border(1.5.dp, accent, shape) else Modifier)
             .kisClick(onClick = onOpen).testTag("job_amount").padding(horizontal = 8.dp, vertical = 6.dp)) {
-            Text("כמה הרווחת", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+            Text(if (d.teamJob) "כמה אתה הרווחת (רק שלך)" else "כמה הרווחת", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
             MoneyText(amount.toDoubleOrNull() ?: 0.0, d.currency, KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp), color = ink.copy(alpha = if (amount.isEmpty()) 0.45f else 1f))
         }
     }
@@ -706,6 +710,15 @@ private fun JobNote(notes: String, history: List<WorkEntry>, onNotes: (String) -
     }
 }
 
+/** "Not your income, but owed by the employer", with what the employer owes once it is known (a team shows it in its own block). */
+@Composable
+private fun PassThroughNote(d: EntryDraft, own: Double?) {
+    val c = Kis.colors
+    val due = if (d.mode == EntryMode.GROUP || d.teamJob) null else d.employerDue(own, 0.0)
+    Text((if (due != null) "לקבל מהמעסיק ${KisFormat.money(due, d.currency)} · " else "") + "ההחזר לא נספר בהכנסה שלך, רק במה שהמעסיק צריך לשלם",
+        Modifier.fillMaxWidth().testTag("pass_through_note"), color = c.muted, style = KisType.caption.copy(textDirection = TextDirection.Rtl))
+}
+
 @Composable
 private fun Notice(text: String) {
     val c = Kis.colors
@@ -715,6 +728,7 @@ private fun Notice(text: String) {
 @Composable
 private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget: (String) -> Unit, onDraft: (EntryDraft) -> Unit) {
     val c = Kis.colors
+    val focus = LocalFocusManager.current
     var newName by rememberSaveable { mutableStateOf("") }
     var forgetting by rememberSaveable { mutableStateOf<String?>(null) }
     forgetting?.let { name ->
@@ -745,7 +759,12 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
                 suggestions.forEach { n -> KisChip("+ $n", onClick = { onDraft(d.copy(workers = d.workers + WorkerDraft(n, defaultHours))) }, tag = "add_worker_$n", onLongClick = { forgetting = n }) }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KisTextField(newName, { newName = it }, "עובד חדש", Modifier.weight(1f).testTag("worker_name_input"))
+                KisTextField(newName, { newName = it }, "עובד חדש", Modifier.weight(1f).testTag("worker_name_input"),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    // "הבא" adds the name and stays for the next one; empty closes the keyboard.
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = {
+                        if (newName.isNotBlank()) { onDraft(d.copy(workers = d.workers + WorkerDraft(newName.trim(), defaultHours))); newName = "" } else focus.clearFocus()
+                    }))
                 Icon(Icons.Rounded.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(c.ink)
                     .kisClick(enabled = newName.isNotBlank()) { onDraft(d.copy(workers = d.workers + WorkerDraft(newName.trim(), defaultHours))); newName = "" }.padding(12.dp).testTag("worker_add"))
             }
@@ -778,7 +797,7 @@ private fun SmallNumberField(value: String, label: String, modifier: Modifier, d
 
 private fun keyLabel(t: KeyTarget, currency: String) = when (t) {
     KeyTarget.START -> "שעת התחלה"; KeyTarget.END -> "שעת סיום"; KeyTarget.HOURS -> "שעות ודקות"; KeyTarget.RATE -> "תעריף לשעה ($currency)"
-    KeyTarget.BONUS -> "בונוס ($currency)"; KeyTarget.AMOUNT -> "סכום ($currency)"; KeyTarget.BREAK -> "הפסקה (דקות)"
+    KeyTarget.BONUS -> "בונוס ($currency)"; KeyTarget.PASS -> "החזר הוצאות ($currency)"; KeyTarget.AMOUNT -> "הסכום שלך ($currency)"; KeyTarget.BREAK -> "הפסקה (דקות)"
 }
 
 /**

@@ -8,7 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 
-@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class, WorkLocalReceipt::class, WorkLocalPreference::class, ShiftSeries::class, SeriesException::class, WorkSyncKeyedRecord::class], version = 10, exportSchema = true)
+@Database(entities = [WorkEntry::class, WorkCategory::class, WorkerDirectory::class, WorkSyncRecord::class, WorkLocalReceipt::class, WorkLocalPreference::class, ShiftSeries::class, SeriesException::class, WorkSyncKeyedRecord::class], version = 11, exportSchema = true)
 abstract class WorkDatabase : RoomDatabase() {
     abstract fun workDao(): WorkDao
     abstract fun syncDao(): WorkSyncDao
@@ -100,6 +100,15 @@ abstract class WorkDatabase : RoomDatabase() {
             }
         }
 
+        /** Money passed through the user (car, materials). Additive; every existing row gets 0. */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val existing = mutableSetOf<String>()
+                db.query("PRAGMA table_info(work_entries)").use { c -> while (c.moveToNext()) existing += c.getString(c.getColumnIndexOrThrow("name")) }
+                if ("passThrough" !in existing) db.execSQL("ALTER TABLE work_entries ADD COLUMN passThrough REAL NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): WorkDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: build(context, WorkAccountStorage.GUEST_DATABASE).also { INSTANCE = it }
@@ -116,7 +125,7 @@ abstract class WorkDatabase : RoomDatabase() {
 
         private fun build(context: Context, name: String): WorkDatabase =
             Room.databaseBuilder(context.applicationContext, WorkDatabase::class.java, name)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                 .addCallback(DatabaseCallback())
                 .build()
     }

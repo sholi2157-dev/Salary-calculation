@@ -73,6 +73,7 @@ fun subtitle(e: WorkEntry): String {
         parts += e.category
     }
     if (e.bonus > 0) parts += "בונוס ${KisFormat.money(e.bonus, e.currency)}"
+    if (e.passThrough > 0) parts += "החזר ${KisFormat.money(e.passThrough, e.currency)}"
     if (e.isGroupShift) WorkPay.workers(e).size.takeIf { it > 0 }?.let { parts += "${it + 1} אנשים" }
     return parts.joinToString(" · ")
 }
