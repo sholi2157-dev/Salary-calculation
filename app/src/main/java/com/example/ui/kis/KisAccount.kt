@@ -63,7 +63,7 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
                         Column(Modifier.verticalScroll(rememberScrollState()).heightIn(min = maxHeight).fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
                             IntroRise("חישוב שכר", 100, "intro_line_1", label = true)
-                            IntroRise(if (updated) "גרסה 2.2" else "ברוכים הבאים", 300, "intro_version", label = true, muted = true)
+                            IntroRise(if (updated) "גרסה 2.2.1" else "ברוכים הבאים", 300, "intro_version", label = true, muted = true)
                             IntroRise("כעת סוכן ה-AI שלך מכיר אותך ואת העבודה שלך.", 600, "intro_line_2", size = 36)
                             IntroRise("בקשו מהסוכן שלכם:", 1100, "intro_line_3", label = true)
                             IntroBubble("כמה הרווחתי החודש?", 1400, mine = true, small = true)
