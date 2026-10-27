@@ -1,12 +1,12 @@
 {
-  "runId": 40280626744,
-  "sourceSha": "12277b32a790519cdef621182b044457354592ae",
-  "artifactName": "salary-2.1-code43-candidate",
-  "tag": "android-v2.1-code43",
-  "fileName": "Salary2.1.apk",
-  "versionCode": 43,
-  "versionName": "2.1",
-  "sha256": "a614806acc14615501ae4ea23bf081873828db5440ff686d16cc13d3752d814b",
+  "runId": 40424141363,
+  "sourceSha": "afef1d9f2ebcddd504dc0aed1cae926bb276ec14",
+  "artifactName": "salary-2.2-code45-candidate",
+  "tag": "android-v2.2-code45",
+  "fileName": "Salary2.2.apk",
+  "versionCode": 45,
+  "versionName": "2.2",
+  "sha256": "7280e58359e67008f4ae5619d5925991126a8d83e07a14e7fc0c5bb0345a06a6",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "שיפור שליחת משוב ותיקוני עיצוב"
+  "releaseNotes": "משמרת קבוצתית בכפתור נפרד, עם חלוקת סכומים לצוות והחזר הוצאות. מקום חדש ראשון בשורה, וסידור מקומות בגרירה. חשבון והתראות פשוטים יותר, ואפשרות למחוק את כל הנתונים. כל המשמרות וההגדרות נשמרים."
 }
