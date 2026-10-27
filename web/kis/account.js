@@ -135,7 +135,7 @@ function draw() {
     const updated = (app?.store?.local?.launched || 0) >= 2;
     gate.innerHTML = introStep === 0
       ? `<div class="launch-in"><div class="grow"></div>
-        <p class="intro-label" style="--d:.1s" data-testid="intro-line-1">חישוב שכר</p><p class="intro-label muted" style="--d:.3s">${updated ? 'גרסה 2.2' : 'ברוכים הבאים'}</p>
+        <p class="intro-label" style="--d:.1s" data-testid="intro-line-1">חישוב שכר</p><p class="intro-label muted" style="--d:.3s">${updated ? 'גרסה 2.2.1' : 'ברוכים הבאים'}</p>
         <h1 class="intro-head" id="signin-title" style="--d:.6s" data-testid="intro-line-3">כעת סוכן ה-AI שלך מכיר אותך ואת העבודה שלך.</h1>
         <p class="intro-label" style="--d:1.1s">בקשו מהסוכן שלכם:</p>
         <div class="intro-chat small"><p class="mine" style="--d:1.4s">כמה הרווחתי החודש?</p><p class="mine" style="--d:1.8s">עבדתי אתמול בכינוס השלוחים 15 שעות, ושניאור נגר ביקש ממני לרשום בהערה סידור כסאות. תוסיף לי בבקשה.</p></div>
