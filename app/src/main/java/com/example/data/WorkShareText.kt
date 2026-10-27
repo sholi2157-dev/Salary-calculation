@@ -64,8 +64,9 @@ object WorkShareText {
         val text = rows.sortedBy { it.date }.groupBy { it.category }.map { (place, es) ->
             buildList {
                 add("עבודה: $place"); add("כמות משמרות: ${es.size}"); add("כמות שעות: ${hours(es.sumOf { it.hours })}")
-                addAll(amounts(es)); add("תאריכים: ${dates(es)}")
-                if (es.size == 1) addAll(details(es.single()))
+                addAll(amounts(es))
+                // Several shifts: the dates are in the breakdown, so no separate list above it.
+                if (es.size == 1) { add("תאריכים: ${dates(es)}"); addAll(details(es.single())) }
                 else { add("פירוט:"); es.forEach { e ->
                     add("${date(e.date)} | ${hours(e.hours)} שעות | ${amount(e)} | ${if (e.isPaid) "שולם" else "ממתין"}")
                     addAll(details(e))
@@ -85,7 +86,7 @@ object WorkShareText {
             add(intro)
             val who = if (name != null) "עבדת" else "עבדתי"
             if (n == 1) add("בתאריך ${dates(rows)}" + if (rows.any { !WorkPay.isJob(it) || it.hours > 0 }) " $who ${hours(rows.sumOf { it.hours })} שעות." else ".")
-            else { add("בתאריכים ${dates(rows)}."); add("סה״כ $who ${hours(rows.sumOf { it.hours })} שעות.") }
+            else { add("סה״כ $who ${hours(rows.sumOf { it.hours })} שעות.") }
             addAll(humanAmounts(rows, name != null))
             if (n == 1) addAll(details(rows.single()))
             else { add("פירוט המשמרות:"); rows.sortedBy { it.date }.forEach { e ->
