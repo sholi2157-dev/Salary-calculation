@@ -1,0 +1,18 @@
+name: Print RC APK hash (read only)
+on:
+  push:
+    branches: ['claude/project-thread-xmbpct']
+    paths: ['.github/workflows/rc-hash.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  hash:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 40424141363 --repo ${{ github.repository }} --name salary-2.2-code45-candidate --dir rc
+          ls -la rc
+          sha256sum rc/*.apk
