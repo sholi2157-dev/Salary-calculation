@@ -70,8 +70,9 @@ function copy(entries, name=null) {
  const groups=new Map();
  for (const e of ordered(rows)) { if (!groups.has(e.category)) groups.set(e.category,[]); groups.get(e.category).push(e); }
  const text=[...groups].map(([place,es])=>{
-  const out=['עבודה: '+place,'כמות משמרות: '+es.length,'כמות שעות: '+hours(es.reduce((n,e)=>n+e.hours,0)),...amounts(es),'תאריכים: '+dates(es)];
-  if (es.length===1) out.push(...details(es[0]));
+  const out=['עבודה: '+place,'כמות משמרות: '+es.length,'כמות שעות: '+hours(es.reduce((n,e)=>n+e.hours,0)),...amounts(es)];
+  // Several shifts: the dates are in the breakdown, so no separate list above it.
+  if (es.length===1) out.push('תאריכים: '+dates(es),...details(es[0]));
   else { out.push('פירוט:'); for (const e of es) out.push(date(e.date)+' | '+hours(e.hours)+' שעות | '+amount(e)+' | '+(e.isPaid?'שולם':'ממתין'),...details(e)); }
   return out.join('\n');
  }).join('\n\n');
@@ -86,7 +87,7 @@ function summary(entries,name=null) {
   : 'היי, סיכמתי פה את '+(n===1?(Pay.isJob(rows[0])?'העבודה שלי':'המשמרת שלי'):n+' המשמרות שלי')+' ב'+place+':';
  const totalHours=hours(rows.reduce((s,e)=>s+e.hours,0));
  const who=name?'עבדת':'עבדתי';
- const out=[intro, ...(n===1?['בתאריך '+dates(rows)+(rows.some(e=>!Pay.isJob(e)||e.hours>0)?' '+who+' '+totalHours+' שעות.':'.')]:['בתאריכים '+dates(rows)+'.','סה״כ '+who+' '+totalHours+' שעות.']),...humanAmounts(rows,!!name)];
+ const out=[intro, ...(n===1?['בתאריך '+dates(rows)+(rows.some(e=>!Pay.isJob(e)||e.hours>0)?' '+who+' '+totalHours+' שעות.':'.')]:['סה״כ '+who+' '+totalHours+' שעות.']),...humanAmounts(rows,!!name)];
  if (n===1) out.push(...details(rows[0]));
  else { out.push('פירוט המשמרות:');for(const e of ordered(rows)) out.push(date(e.date)+' | '+hours(e.hours)+' שעות | '+amount(e)+' | '+(e.isPaid?'שולם':'ממתין'),...details(e)); }
  out.push('תודה!');return out.join('\n');
