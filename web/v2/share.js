@@ -14,14 +14,14 @@ function time(e) {
  if (!e.isTimeRange || !e.startTime || !e.endTime) return '';
  return e.startTime + '–' + e.endTime + (e.endTime <= e.startTime ? ' (למחרת)' : '');
 }
-function details(e) {
+function details(e, rate = true) {
  const out = [];
  if (time(e)) out.push('שעות: ' + time(e));
  if (!Pay.isJob(e) && e.isTimeRange && e.startTime && e.endTime) {
   const mins = Math.max(0, Math.round(Rules.span(e.startTime,e.endTime).minutes - e.hours*60));
   if (mins) out.push('הפסקה: ' + mins + ' דקות');
  }
- if (!Pay.isJob(e)) out.push('תעריף לשעה: ' + (Pay.pay(e) == null ? 'עדיין לא ידוע' : money(e.hourlyRate,e.currency)));
+ if (rate && !Pay.isJob(e)) out.push('תעריף לשעה: ' + (Pay.pay(e) == null ? 'עדיין לא ידוע' : money(e.hourlyRate,e.currency)));
  if (Pay.bonus(e)>0) out.push('בונוס: ' + money(Pay.bonus(e),e.currency) + ' (כלול בסכום)');
  if (Pay.passThrough(e)>0) out.push('החזר הוצאות: ' + money(Pay.passThrough(e),e.currency) + ' (לא כלול בסכום)');
  if (note(e)) out.push('הערה: ' + note(e));
@@ -73,7 +73,8 @@ function copy(entries, name=null) {
   const out=['עבודה: '+place,'כמות משמרות: '+es.length,'כמות שעות: '+hours(es.reduce((n,e)=>n+e.hours,0)),...amounts(es)];
   // Several shifts: the dates are in the breakdown, so no separate list above it.
   if (es.length===1) out.push('תאריכים: '+dates(es),...details(es[0]));
-  else { out.push('פירוט:'); for (const e of es) out.push(date(e.date)+' | '+hours(e.hours)+' שעות | '+amount(e)+' | '+(e.isPaid?'שולם':'ממתין'),...details(e)); }
+  // The breakdown line already says what the shift earned; no rate line under it.
+  else { out.push('פירוט:'); for (const e of es) out.push(date(e.date)+' | '+hours(e.hours)+' שעות | '+amount(e)+' | '+(e.isPaid?'שולם':'ממתין'),...details(e,false)); }
   return out.join('\n');
  }).join('\n\n');
  return (name?'עובד: '+name+'\n':'')+text;
