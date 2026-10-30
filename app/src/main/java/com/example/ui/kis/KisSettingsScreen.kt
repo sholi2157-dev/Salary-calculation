@@ -52,7 +52,7 @@ import com.example.ui.coachTarget
 
 @Composable
 fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, onClose: () -> Unit, onReplayTour: () -> Unit, onSignIn: () -> Unit = {}, bottomInset: Dp = 0.dp,
-                    onRecaps: () -> Unit = {}) {
+                    onRecaps: () -> Unit = {}, openSection: String? = null, onSectionOpened: () -> Unit = {}) {
     val c = Kis.colors
     val settings = Kis.settings
     val context = LocalContext.current
@@ -81,17 +81,34 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     var autoConfirm by remember { mutableStateOf(plan.autoConfirm) }
     val saveBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let { viewModel.saveBackup(context, it) } }
 
+    // Settings is a list of its categories; a tap opens one on a page of its own, and back returns to the list.
+    var section by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(openSection) { if (openSection != null) { section = openSection; onSectionOpened() } }
+    androidx.activity.compose.BackHandler(section != null) { focusManager.clearFocus(force = true); section = null }
+    val nav = SettingsNav(section) { section = it }
+
     Box(Modifier.fillMaxSize().background(c.bg)) {
     KisGlow(Modifier.fillMaxSize())
     Column(Modifier.fillMaxSize().testTag("settings_root")) {
-        Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
+        val open = section
+        if (open == null) Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
+        else Row(Modifier.statusBarsPadding().padding(start = 4.dp, end = 16.dp).padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(48.dp).clip(CircleShape).kisClick { focusManager.clearFocus(force = true); section = null }
+                .semantics { contentDescription = "חזרה להגדרות" }.testTag("settings_back"), contentAlignment = Alignment.Center) {
+                Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.ink, modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = 180f })
+            }
+            Text(open, style = KisType.page, color = c.ink, maxLines = 1, modifier = Modifier.semantics { heading() }.testTag("settings_page_title"))
+        }
         // With the keyboard open the floating navigation is covered anyway: pad for the keyboard only, not both.
         val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
         // The scroll area ends above the floating navigation, so no row can sit (and be tapped) under it.
+        // Each page starts at its top.
+        key(open) {
         Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
             // First, so a problem can be reported without scrolling past everything else. The form unfolds in place:
             // inside a bottom sheet its multi-line field never let the device settle after Enter.
-            Group("משוב ותקלות") {
+            if (open == null) Spacer(Modifier.height(14.dp))
+            Group(nav, "משוב ותקלות", "דיווח על תקלה או הצעה לשיפור, עם צילום מסך אם רוצים.") {
                 Row_("דיווח על תקלה או הצעה", null, tag = "feedback_row", onClick = { focusManager.clearFocus(force = true); feedbackOpen = !feedbackOpen }) {
                     Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted,
                         modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = if (feedbackOpen) -90f else 0f })
@@ -104,9 +121,8 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     }, onSent = { focusManager.clearFocus(force = true); feedbackOpen = false })
                 }
             }
-            Group("עבודה") {
-                Row_("מקום ברירת מחדל", null, tag = "default_category_picker",
-                    modifier = Modifier.coachTarget(CoachTarget.CATEGORIES), onClick = { pickingDefault = true },
+            Group(nav, "עבודה", "מקומות העבודה והתעריפים, המטבע ומשמרות קבועות.", Modifier.coachTarget(CoachTarget.CATEGORIES)) {
+                Row_("מקום ברירת מחדל", null, tag = "default_category_picker", onClick = { pickingDefault = true },
                     leading = { if (defaultCategory.isNotEmpty()) Box(Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(workplaceOf(defaultCategory, categories).brush)) }) {
                     Text(defaultCategory, style = KisType.label, color = c.ink, maxLines = 1)
                     Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
@@ -121,26 +137,25 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
                 }
             }
-            Group("מראה ותחושה") {
+            Group(nav, "מראה ותחושה", "ערכת צבעים בהירה או כהה, ורטט במגע.") {
                 Row_("ערכת צבעים", null) {
                     KisSegmented(ThemeChoice.entries.map { it to it.label }, settings.theme, settings::updateTheme, tagPrefix = "theme")
                 }
                 Row_("רטט במגע", null) { KisSwitch(settings.haptics, settings::updateHaptics, Modifier.testTag("haptics_switch"), label = "רטט במגע") }
             }
-            Group("הסיכומים שלי") {
+            Group(nav, "הסיכומים שלי", "כל סיכום חודשי ושנתי שכבר נפתח.") {
                 Row_("כל הסיכומים", null, tag = "recaps_row", onClick = onRecaps, info = "כל סיכום חודשי ושנתי שכבר נפתח נשמר כאן. סיכום חודשי נפתח ב-30 לחודש ומופיע בדף הבית עוד 4 ימים.") {
                     Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
                 }
             }
-            Group("התראות") { NotificationSwitches(viewModel) }
-            Group("עזרה וכלים") {
-                Row_("רישום במילים (AI)", if (hasKey) "פעיל" else null, tag = "ai_key_row", onClick = { aiSheet = true },
-                    modifier = Modifier.coachTarget(CoachTarget.API)) {
+            Group(nav, "התראות", "מה מגיע לטלפון: משמרת פעילה, הסיכום החודשי, משמרת קבועה, תעריף חסר וגרסה חדשה.") { NotificationSwitches(viewModel) }
+            Group(nav, "עזרה וכלים", "רישום במילים עם AI, ההדרכה ועדכוני גרסה.", Modifier.coachTarget(CoachTarget.API)) {
+                Row_("רישום במילים (AI)", if (hasKey) "פעיל" else null, tag = "ai_key_row", onClick = { aiSheet = true }) {
                     Text("?", style = KisType.label, color = c.muted, modifier = Modifier.size(32.dp).clip(CircleShape).background(c.sunk).kisClick { aiHelp = true }
                         .semantics { contentDescription = "מה זה מפתח אישי" }.padding(top = 6.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
                 KisDivider()
-                Row_("הצגת ההדרכה מחדש", null, tag = "replay_onboarding", onClick = onReplayTour) {}
+                Row_("הצגת ההדרכה מחדש", null, tag = "replay_onboarding", onClick = { section = null; onReplayTour() }) {}
                 if (BuildConfig.LOCAL_DISTRIBUTION) {
                     KisDivider()
                     Column(Modifier.padding(vertical = 8.dp).testTag("settings_updates")) {
@@ -149,7 +164,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     }
                 }
             }
-            Group("גיבוי ונתונים", info = (if (BuildConfig.ACCOUNTS_ENABLED) "הנתונים נשמרים בטלפון ובחשבון שלך. " else "הנתונים נשמרים רק במכשיר. ") + "כדאי לשמור גיבוי גם מחוץ לאפליקציה. גיבוי מהאפליקציה עובר לאתר, וגיבוי מהאתר עובר לאפליקציה.") {
+            Group(nav, "גיבוי ונתונים", info = (if (BuildConfig.ACCOUNTS_ENABLED) "הנתונים נשמרים בטלפון ובחשבון שלך. " else "הנתונים נשמרים רק במכשיר. ") + "כדאי לשמור גיבוי גם מחוץ לאפליקציה. גיבוי מהאפליקציה עובר לאתר, וגיבוי מהאתר עובר לאפליקציה.") {
                 Row(Modifier.padding(top = 10.dp)) {}
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
                     KisButton("שמירה לקובץ", { saveBackup.launch("salary-backup.json") }, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "save_backup_btn")
@@ -171,14 +186,15 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 }, Modifier.fillMaxWidth().padding(vertical = 10.dp), height = 48.dp, tag = "settings_import_action_btn")
             }
             // The name and the Google account in one compact place; set once and rarely touched again, so it sits last.
-            Group("חשבון", info = if (BuildConfig.ACCOUNTS_ENABLED) "המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים בין האפליקציה לאתר. שינוי שנעשה בשני מקומות לפני שהסתנכרן לא נדרס: בוחרים איזו גרסה לשמור." else null) {
+            Group(nav, "חשבון", info = if (BuildConfig.ACCOUNTS_ENABLED) "המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים בין האפליקציה לאתר. שינוי שנעשה בשני מקומות לפני שהסתנכרן לא נדרס: בוחרים איזו גרסה לשמור." else "השם שלך, כפי שהוא מופיע באפליקציה.") {
                 ProfileFields()
                 if (BuildConfig.ACCOUNTS_ENABLED) AccountRows(viewModel, onSignIn = onSignIn, onSignedOut = onClose, onBackup = { saveBackup.launch("salary-backup.json") })
             }
-            Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (open == null) Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 KisLogo(Modifier.size(28.dp))
                 Text("${androidx.compose.ui.res.stringResource(com.example.R.string.app_name)} · ${BuildConfig.VERSION_NAME}", style = KisType.caption, color = c.muted)
             }
+        }
         }
     }
     }
@@ -204,13 +220,28 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
 }
 
 @Composable
-private fun Group(title: String, info: String? = null, content: @Composable ColumnScope.() -> Unit) {
+private class SettingsNav(val open: String?, val onOpen: (String) -> Unit)
+
+/**
+ * On the list, a category is one card: its name, what is inside it (the info dot) and an arrow; a tap opens it.
+ * On its own page only its content shows, in the same card. Other categories draw nothing.
+ */
+@Composable
+private fun Group(nav: SettingsNav, title: String, info: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val c = Kis.colors
-    Row(Modifier.padding(top = 22.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, style = KisType.title, color = c.ink, modifier = Modifier.testTag("settings_section_$title").semantics { heading() })
-        if (info != null) InfoDot(title, info)
+    when (nav.open) {
+        null -> Row(Modifier.padding(bottom = 8.dp).fillMaxWidth().then(modifier).clip(RoundedCornerShape(18.dp)).background(c.surface)
+            .kisClick { nav.onOpen(title) }.testTag("settings_section_$title").heightIn(min = 60.dp).padding(start = 16.dp, end = 10.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Text(title, style = KisType.title, color = c.ink, maxLines = 1, modifier = Modifier.semantics { heading() })
+            InfoDot(title, info, tag = "settings_info_$title")
+            Spacer(Modifier.weight(1f))
+            Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(20.dp))
+        }
+        title -> Column(Modifier.padding(top = 12.dp).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.surface)
+            .padding(horizontal = 16.dp, vertical = 4.dp).testTag("settings_page_$title"), content = content)
+        else -> Unit
     }
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.surface).padding(horizontal = 16.dp, vertical = 4.dp), content = content)
 }
 
 /** A settings row: title + optional hint on the right, the control on the left (RTL). */

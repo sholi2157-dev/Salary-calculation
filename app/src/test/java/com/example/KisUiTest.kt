@@ -827,9 +827,21 @@ class KisUiTest {
                 KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
             }
         }
-        listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון").forEach {
+        // The list shows only the categories, in their order, each with its info dot; a tap opens its own page.
+        listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "הסיכומים שלי", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
+            ui.onNodeWithTag("settings_info_$it", useUnmergedTree = true).assertExists()
         }
+        ui.onNodeWithTag("theme_LIGHT").assertDoesNotExist()
+        shot("settings-list")
+        fun open(section: String) {
+            val click = androidx.compose.ui.semantics.SemanticsActions.OnClick
+            if (ui.onAllNodesWithTag("settings_back").fetchSemanticsNodes().isNotEmpty()) ui.onNodeWithTag("settings_back").performSemanticsAction(click)
+            ui.onNodeWithTag("settings_section_$section").performScrollTo().performSemanticsAction(click)
+            ui.onNodeWithTag("settings_page_title").assertTextEquals(section)
+        }
+        open("מראה ותחושה")
+        ui.onNodeWithTag("settings_section_עבודה").assertDoesNotExist()
         ui.onNodeWithTag("theme_LIGHT").performScrollTo().performClick()
         assertEquals(ThemeChoice.LIGHT, settings.theme)
         shot("settings-light")
@@ -838,23 +850,35 @@ class KisUiTest {
         shot("settings-dark")
         ui.onNodeWithTag("haptics_switch").performScrollTo().performClick()
         assertFalse(settings.haptics)
-        // One notification switch for all of them (device-only), and the name with the account at the bottom.
+        // The main notification switch turns them all off and on; each kind also has its own switch (device-only).
+        open("התראות")
         assertTrue(vm.planSettings.notifyMonthly)
         ui.onNodeWithTag("notify_all_switch").performScrollTo().performClick()
         assertFalse(vm.planSettings.notifyMonthly); assertFalse(vm.planSettings.notifyPlans); assertFalse(vm.planSettings.notifyRate)
         ui.onNodeWithTag("notify_all_switch").performClick()
         assertTrue(vm.planSettings.notifyMonthly); assertTrue(vm.planSettings.notifyPlans); assertTrue(vm.planSettings.notifyRate)
+        ui.onNodeWithTag("notify_rate_switch").performScrollTo().performClick()
+        assertFalse(vm.planSettings.notifyRate); assertTrue(vm.planSettings.notifyMonthly)
+        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
+        assertFalse(vm.planSettings.notifyMonthly); assertTrue(vm.planSettings.notifyPlans)
+        listOf("service_notification_switch", "notify_plans_switch").forEach { ui.onNodeWithTag(it).performScrollTo().assertExists() }
+        shot("settings-notifications")
+        ui.onNodeWithTag("notify_monthly_switch").performClick()
+        assertTrue(vm.planSettings.notifyMonthly)
+        open("חשבון")
         ui.onNodeWithTag("profile_name").performScrollTo().performTextReplacement("שולי")
         ui.onNodeWithTag("profile_last_name").performScrollTo().performTextReplacement("כהן")
         assertEquals("שולי", settings.name)
         assertEquals("כהן", settings.lastName)
         // Weekly plans live here (device-only settings).
+        open("עבודה")
         ui.onNodeWithTag("series_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
         ui.onNodeWithTag("auto_confirm_switch").performClick()
         assertFalse(vm.planSettings.autoConfirm)
         ui.onNodeWithTag("auto_confirm_switch").performClick()
         assertTrue(vm.planSettings.autoConfirm)
         // Feedback is the first section; its row unfolds the form in place.
+        open("משוב ותקלות")
         ui.onNodeWithTag("feedback_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("draft")
         shot("settings-feedback")
@@ -943,6 +967,7 @@ class KisUiTest {
                 KisTheme(settings) { KisSettingsPage(vm, settings.ordered(categories) { it.name }, onClose = {}, onReplayTour = {}) }
             }
         }
+        ui.onNodeWithTag("settings_section_עבודה").performScrollTo().performClick()
         ui.onNodeWithTag("default_category_picker").performScrollTo().performClick()
         ui.onNodeWithTag("place_drag_הובלות", useUnmergedTree = true).assertExists()
         ui.onNodeWithTag("default_category_add").assertExists()

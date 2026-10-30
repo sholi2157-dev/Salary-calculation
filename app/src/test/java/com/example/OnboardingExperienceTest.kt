@@ -108,6 +108,7 @@ class OnboardingExperienceTest {
         val store = WorkOnboardingStore(app); store.initialize(); store.complete()
         val controller = OnboardingController(store)
         ui.setContent { KisTheme { KisSettingsPage(vm, emptyList(), onClose = {}, onReplayTour = controller::replay) } }
+        ui.onNodeWithTag("settings_section_עזרה וכלים").performScrollTo().performClick()
         ui.onNodeWithTag("replay_onboarding").performScrollTo().performClick()
         assertTrue(controller.active)
         assertEquals(ONBOARDING_VERSION, store.completedVersion)

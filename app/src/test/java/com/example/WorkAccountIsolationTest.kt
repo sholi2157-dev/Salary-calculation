@@ -84,6 +84,36 @@ class WorkAccountIsolationTest {
         assertSame(prefA, WorkAccountPreferences.get(app, a))
     }
 
+    /**
+     * 2.2.3: the phone's own data seen by its first Google account (cloudUid set) and the service's owner from the routing
+     * (cloudUid null) are one timer. Before, the service got a second, stale state that said "no shift" and so the
+     * active-shift notification never stayed; the first check below created exactly that stale copy.
+     */
+    @Test fun signedInPhoneDataAndTheServiceShareOneTimer() {
+        val signedIn = WorkAccountScope(null, "synthetic-${UUID.randomUUID()}")
+        val timer = ShiftStateManager.forAccount(app, signedIn)
+        try {
+            assertTrue(timer.start("A", 40.0, 5000))
+            val service = ShiftStateManager.forAccount(app, ShiftStateManager.activeOwner(app))
+            assertSame(timer, service)
+            assertEquals(5000L, service.activeShiftStartTime.value)
+            assertTrue(ShiftStateManager.sameTimer(signedIn, ShiftStateManager.activeOwner(app)))
+            assertFalse(ShiftStateManager.sameTimer(signedIn, scope()))
+        } finally { timer.clear(5000) }
+    }
+
+    /** Reminders run for the phone's own data: nobody signed in, or its first account; another account stays idle. */
+    @Test fun remindersFollowWhoOwnsThePhoneData() {
+        val prefs = app.getSharedPreferences("work_account_binding", android.content.Context.MODE_PRIVATE)
+        prefs.edit().clear().commit()
+        assertTrue(PlanJobs.ownsPhoneData(app, null))
+        assertTrue(PlanJobs.ownsPhoneData(app, "first"))
+        assertNull(WorkAccountBinding.scopeFor(app, "first").uid)
+        assertTrue(PlanJobs.ownsPhoneData(app, "first"))
+        assertFalse(PlanJobs.ownsPhoneData(app, "second"))
+        prefs.edit().clear().commit()
+    }
+
     @Test fun timerOwnerPrecisionRestartAndStaleClearAreSafe() {
         val a = scope(); val b = scope()
         val timerA = ShiftStateManager.forAccount(app, a)

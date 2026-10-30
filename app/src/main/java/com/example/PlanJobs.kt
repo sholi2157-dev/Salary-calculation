@@ -302,8 +302,10 @@ object PlanJobs {
 
     /** The whole job: record finished plans, then send what is due unless it is quiet time (then retry after it). */
     suspend fun run(context: Context, now: Long = System.currentTimeMillis()): Int {
-        // Plans live in the on-device (guest) data; with a signed-in account the app shows other data, so stay idle.
-        if (BuildConfig.ACCOUNTS_ENABLED && runCatching { com.example.api.AuthManager.currentUser.value != null }.getOrDefault(false)) return 0
+        // Plans live in the phone's own data. Since 2.1 everyone signs in, and the first account on the phone keeps that
+        // same data, so only another account (with a database of its own) stays idle. Before 2.2.3 any signed-in
+        // account stopped the job, so the monthly summary, plan ends and a missing rate never reached the phone.
+        if (BuildConfig.ACCOUNTS_ENABLED && !ownsPhoneData(context, runCatching { com.example.api.AuthManager.currentUser.value?.uid }.getOrNull())) return 0
         val dao = com.example.data.WorkAccountScope(null).database(context).workDao()
         val settings = PlanSettings(context)
         catchUp(dao, settings, now)
@@ -328,6 +330,14 @@ object PlanJobs {
         } finally {
             scheduleNext(context, now)
         }
+    }
+
+    /** Whether [uid] (null: nobody signed in yet) sees the phone's own data, the same rule as WorkAccountBinding.scopeFor. */
+    fun ownsPhoneData(context: Context, uid: String?): Boolean {
+        if (uid == null) return true
+        val bound = com.example.data.WorkAccountBinding.bound(context)
+            ?: return !context.getDatabasePath(com.example.data.WorkAccountStorage.databaseName(uid)).exists()
+        return bound == uid
     }
 
     private fun open(context: Context, action: String, request: Int, month: String = ""): PendingIntent =

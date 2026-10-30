@@ -139,28 +139,37 @@ class WorkViewModel(
             settings.edit { preferences ->
                 preferences[SERVICE_NOTIFICATION_ENABLED_KEY] = enabled
             }
-            if (ShiftStateManager.activeOwner(getApplication()) != owner) return@launch
+            if (!ShiftStateManager.sameTimer(ShiftStateManager.activeOwner(getApplication()), owner)) return@launch
             if (!enabled) {
                 // Immediately stop foreground service if active
                 val intent = Intent(getApplication(), ShiftForegroundService::class.java)
                 getApplication<Application>().stopService(intent)
             } else {
-                // If enabled and shift is active, start the service
-                val activeStart = activeShiftStartTime.value
-                val category = activeShiftCategory.value
-                val rate = activeShiftRate.value
-                if (activeStart != null) {
-                    val intent = Intent(getApplication(), ShiftForegroundService::class.java).apply {
-                        action = "START"
-                        putExtra(ShiftForegroundService.EXTRA_OWNER_UID, owner.uid)
-                    }
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        getApplication<Application>().startForegroundService(intent)
-                    } else {
-                        getApplication<Application>().startService(intent)
-                    }
-                }
+                if (activeShiftStartTime.value != null) startShiftService()
             }
+        }
+    }
+
+    private fun startShiftService() {
+        val intent = Intent(getApplication(), ShiftForegroundService::class.java).apply {
+            action = "START"
+            putExtra(ShiftForegroundService.EXTRA_OWNER_UID, owner.uid)
+        }
+        runCatching {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) getApplication<Application>().startForegroundService(intent)
+            else getApplication<Application>().startService(intent)
+        }
+    }
+
+    /**
+     * A running shift whose notification is gone (the phone closed the app's process) gets it back when the app opens.
+     * Only from the open app: Android refuses a foreground service started from the background.
+     */
+    fun restoreShiftNotification() {
+        if (activeShiftStartTime.value == null || !ShiftStateManager.sameTimer(ShiftStateManager.activeOwner(getApplication()), owner)) return
+        viewModelScope.launch {
+            val enabled = runCatching { settings.data.first()[SERVICE_NOTIFICATION_ENABLED_KEY] }.getOrNull() ?: true
+            if (enabled && activeShiftStartTime.value != null) startShiftService()
         }
     }
 
@@ -495,17 +504,7 @@ class WorkViewModel(
         // collected by the settings page and would still hold its default (on) right after a cold start.
         viewModelScope.launch {
         val enabled = runCatching { settings.data.first()[SERVICE_NOTIFICATION_ENABLED_KEY] }.getOrNull() ?: true
-        if (enabled) {
-            val intent = Intent(getApplication(), ShiftForegroundService::class.java).apply {
-                action = "START"
-                putExtra(ShiftForegroundService.EXTRA_OWNER_UID, owner.uid)
-            }
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                getApplication<Application>().startForegroundService(intent)
-            } else {
-                getApplication<Application>().startService(intent)
-            }
-        }
+        if (enabled) startShiftService()
         }
     }
 

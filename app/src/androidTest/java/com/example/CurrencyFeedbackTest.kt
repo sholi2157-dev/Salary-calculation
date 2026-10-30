@@ -66,7 +66,8 @@ class CurrencyFeedbackTest {
         }
         // Feedback keeps Enter as a new line.
         ui.onNodeWithTag("settings_button").performClick()
-        // The feedback row is the first one in Settings and unfolds the form in place.
+        // Feedback is the first category in Settings; its row unfolds the form in place.
+        ui.onNodeWithTag("settings_section_משוב ותקלות").performClick()
         ui.onNodeWithTag("feedback_row").assertIsDisplayed().performClick()
         ui.onNodeWithTag("feedback_message").performClick().performTextInput("first line")
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
@@ -77,6 +78,9 @@ class CurrencyFeedbackTest {
         ui.onNodeWithTag("feedback_message").assertTextContains("first line\nsecond line")
         automation.takeScreenshot().let { b -> java.io.File(context.getExternalFilesDir(null), "v2-feedback.png").outputStream().use { b.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } }
         // Default workplace: one current choice, change it, and add-and-select from the same picker.
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        ui.onNodeWithTag("settings_back").performClick()
+        ui.onNodeWithTag("settings_section_עבודה").performScrollTo().performClick()
         ui.onNodeWithTag("default_category_picker").performScrollTo().assertTextContains("ILS category", substring = true)
         ui.onNodeWithTag("default_category_picker").performClick()
         ui.onNodeWithTag("default_category_option_USD category").performClick()

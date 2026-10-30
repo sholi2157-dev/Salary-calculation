@@ -128,11 +128,13 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
     var notifyPlans by remember { mutableStateOf(plan.notifyPlans) }
     var notifyUpdates by remember { mutableStateOf(plan.notifyUpdates) }
     var denied by remember { mutableStateOf(false) }
-    // The switch follows the tap at once; the timer setting is saved in the background.
-    var allOn by remember { mutableStateOf<Boolean?>(null) }
+    // The switches follow the tap at once; the timer setting is saved in the background.
+    var serviceOn by remember { mutableStateOf<Boolean?>(null) }
+    val service = serviceOn ?: serviceNotification
     var asking by rememberSaveable { mutableStateOf<String?>(null) }
     fun set(kind: String, on: Boolean) {
         when (kind) {
+            "service" -> { serviceOn = on; viewModel.updateServiceNotificationEnabled(on) }
             "monthly" -> { plan.notifyMonthly = on; notifyMonthly = on }
             "rate" -> { plan.notifyRate = on; notifyRate = on }
             "plans" -> { plan.notifyPlans = on; notifyPlans = on }
@@ -141,32 +143,36 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
         // The next wake-up follows the switches (the monthly summary is one of them).
         com.example.PlanJobs.scheduleNextAsync(context)
     }
-    val kinds = listOf("monthly", "plans", "rate", "updates")
+    val kinds = listOfNotNull("service", "monthly", "plans", "rate", "updates".takeIf { com.example.BuildConfig.LOCAL_DISTRIBUTION })
     fun turnOn(kind: String) { denied = false; if (kind == "all") kinds.forEach { set(it, true) } else set(kind, true) }
     // Without permission the switch stays off.
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> asking?.let { if (granted) turnOn(it) else { denied = true; allOn = null } }; asking = null }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> asking?.let { if (granted) turnOn(it) else denied = true }; asking = null }
     fun enable(kind: String, on: Boolean) {
         if (!on) { if (kind == "all") kinds.forEach { set(it, false) } else set(kind, false); return }
         if (android.os.Build.VERSION.SDK_INT >= 33 && androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
             != android.content.pm.PackageManager.PERMISSION_GRANTED) { asking = kind; ask.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
         else turnOn(kind)
     }
-    @Composable fun line(title: String, info: String, tag: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    @Composable fun line(title: String, info: String?, tag: String, checked: Boolean, strong: Boolean = false, onChange: (Boolean) -> Unit) {
         Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
-            InfoDot(title, info)
+            Text(title, style = KisType.body.copy(fontWeight = if (strong) FontWeight.SemiBold else FontWeight.Medium), color = c.ink)
+            if (info != null) InfoDot(title, info)
             Spacer(Modifier.weight(1f))
             KisSwitch(checked, onChange, Modifier.testTag(tag), label = title)
         }
     }
-    // One switch for all of them: the active-shift timer, the monthly summary, finished weekly plans, a missing rate
-    // and (outside Google Play) a new version. Quiet hours stay as they were set.
-    val all = allOn ?: (serviceNotification || notifyMonthly || notifyPlans || notifyRate || notifyUpdates)
-    line("התראות", "טיימר של משמרת פעילה, הסיכום החודשי, משמרת קבועה שהסתיימה, תעריף חסר וגרסה חדשה.", "notify_all_switch", all) { on ->
-        allOn = on
-        viewModel.updateServiceNotificationEnabled(on)
-        enable("all", on)
-    }
+    // The main switch turns all of them on or off together; each kind keeps its own switch below it (restored in 2.2.3).
+    val all = service || notifyMonthly || notifyPlans || notifyRate || (notifyUpdates && com.example.BuildConfig.LOCAL_DISTRIBUTION)
+    line("כל ההתראות", "מפעיל או מכבה את כולן יחד. אפשר לבחור כל סוג בנפרד כאן למטה.", "notify_all_switch", all, strong = true) { enable("all", it) }
+    KisDivider()
+    line("משמרת פעילה", "טיימר וסכום שנצבר בהתראה קבועה בזמן שהשעון רץ, עם כפתור לסיום.", "service_notification_switch", service) { enable("service", it) }
+    line("הסיכום החודשי", "ב-30 לכל חודש (בפברואר ביום האחרון) בשעה 20:00: כמה עבדת וכמה הרווחת החודש. נשלח רק כשיש משמרות בחודש.",
+        "notify_monthly_switch", notifyMonthly) { enable("monthly", it) }
+    line("משמרת קבועה שהסתיימה", "כשמשמרת קבועה נגמרת: \"נרשמה\" עם כפתור \"לא עבדתי\". אם הרישום האוטומטי כבוי, השאלה \"עבדת?\".",
+        "notify_plans_switch", notifyPlans) { enable("plans", it) }
+    line("תעריף חסר", "לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.", "notify_rate_switch", notifyRate) { enable("rate", it) }
+    if (com.example.BuildConfig.LOCAL_DISTRIBUTION)
+        line("גרסה חדשה", "פעם אחת לכל גרסה. ההתקנה תמיד באישור שלך.", "notify_updates_switch", notifyUpdates) { enable("updates", it) }
     // Switched on but the phone does not allow notifications: say so, with one tap to the phone's own setting.
     var allowed by remember { mutableStateOf(com.example.PlanJobs.canNotify(context)) }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -175,7 +181,7 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
         lifecycle.lifecycle.addObserver(observer)
         onDispose { lifecycle.lifecycle.removeObserver(observer) }
     }
-    if (denied || ((notifyMonthly || notifyRate || notifyPlans || notifyUpdates) && !allowed)) Row(Modifier.fillMaxWidth().padding(bottom = 6.dp).clip(RoundedCornerShape(12.dp))
+    if (denied || (all && !allowed)) Row(Modifier.fillMaxWidth().padding(bottom = 6.dp).clip(RoundedCornerShape(12.dp))
         .background(c.pendingSoft).kisClick {
             runCatching { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                 .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)) }

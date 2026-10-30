@@ -45,9 +45,14 @@ class WorkShiftState internal constructor(private val context: Context, val owne
 }
 
 object ShiftStateManager {
-    private val states = mutableMapOf<WorkAccountScope, WorkShiftState>()
+    // One state per timer file, not per scope: the phone's own data seen signed in (cloudUid set) and the service's
+    // owner from the routing (cloudUid null) are the same timer. Two instances meant the service read a stale "no
+    // shift" and dropped the active-shift notification at once (2.1 to 2.2.2).
+    private val states = mutableMapOf<String, WorkShiftState>()
     @Synchronized fun forAccount(context: Context, owner: WorkAccountScope): WorkShiftState =
-        states.getOrPut(owner) { WorkShiftState(context.applicationContext, owner) }
+        states.getOrPut(owner.timerName) { WorkShiftState(context.applicationContext, owner) }
+    /** The same timer (and database), whichever Google account it syncs with. */
+    fun sameTimer(a: WorkAccountScope, b: WorkAccountScope): Boolean = a.timerName == b.timerName
 
     private fun routing(context: Context) = context.getSharedPreferences("shift_service_owner", Context.MODE_PRIVATE)
     internal fun setOwner(context: Context, owner: WorkAccountScope): Boolean =

@@ -76,6 +76,7 @@ class OnboardingFreshInstallTest {
         ui.activityRule.scenario.recreate()
         ui.onNodeWithTag("onboarding_card").assertDoesNotExist()
         ui.onNodeWithTag("settings_button").performClick()
+        ui.onNodeWithTag("settings_section_עזרה וכלים").performScrollTo().performClick()
         ui.onNodeWithTag("replay_onboarding").performScrollTo().performClick()
         ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
         ui.onNodeWithTag("onboarding_skip").performClick()

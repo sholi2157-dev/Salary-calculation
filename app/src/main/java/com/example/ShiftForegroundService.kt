@@ -47,7 +47,7 @@ class ShiftForegroundService : Service() {
         val candidate = ShiftStateManager.forAccount(this, owner)
         if (intent?.action == ACTION_STOP_FROM_NOTIFICATION &&
             (intent.getLongExtra(EXTRA_START_TIME, -1L) != candidate.activeShiftStartTime.value ||
-                owner != ShiftStateManager.activeOwner(this))) return START_NOT_STICKY
+                !ShiftStateManager.sameTimer(owner, ShiftStateManager.activeOwner(this)))) return START_NOT_STICKY
         shiftState = candidate
         if (intent != null && intent.action == ACTION_STOP_FROM_NOTIFICATION) {
             if (intent.getLongExtra(EXTRA_START_TIME, -1L) != shiftState.activeShiftStartTime.value) return START_NOT_STICKY

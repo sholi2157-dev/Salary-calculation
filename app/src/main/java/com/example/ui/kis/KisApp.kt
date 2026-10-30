@@ -153,7 +153,7 @@ fun KisApp(
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycle) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) { unread = viewModel.planSettings.unread; resumes++ }
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) { unread = viewModel.planSettings.unread; resumes++; viewModel.restoreShiftNotification() }
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) viewModel.catchUpPlans { ids ->
                 say(if (ids.size == 1) "משמרת קבועה הסתיימה ונרשמה" else "${ids.size} משמרות קבועות הסתיימו ונרשמו", "ביטול") { viewModel.undoAutoConfirm(ids) }
             }
@@ -161,6 +161,8 @@ fun KisApp(
         lifecycle.lifecycle.addObserver(observer)
         onDispose { lifecycle.lifecycle.removeObserver(observer) }
     }
+    // The bell's "הגדרות התראות" opens Settings right on its notifications page.
+    var settingsSection by remember { mutableStateOf<String?>(null) }
     val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!granted) say("בלי הרשאה, הטיימר לא יופיע בהתראות. הוא עדיין רץ ונשמר.")
     }
@@ -250,7 +252,7 @@ fun KisApp(
                     plans = plans, planActions = planActions)
                 else -> Box(Modifier.onFocusChanged { settingsHasFocus = it.hasFocus }) {
                     KisSettingsPage(viewModel, categories, onClose = { go(0) }, onReplayTour = onReplayTour, onSignIn = onSignIn, bottomInset = navHeight,
-                        onRecaps = { recapsOpen = true })
+                        onRecaps = { recapsOpen = true }, openSection = settingsSection, onSectionOpened = { settingsSection = null })
                 }
             }
         }
@@ -321,7 +323,7 @@ fun KisApp(
         }
     }
     if (bellOpen) NotificationsSheet(viewModel, onMonth = { bellOpen = false; unread = viewModel.planSettings.unread; history.planned = false; history.showMonth = it; go(1) },
-        onSettings = { bellOpen = false; unread = viewModel.planSettings.unread; go(2) }, onDismiss = { bellOpen = false; unread = viewModel.planSettings.unread }, update = update,
+        onSettings = { bellOpen = false; unread = viewModel.planSettings.unread; settingsSection = "התראות"; go(2) }, onDismiss = { bellOpen = false; unread = viewModel.planSettings.unread }, update = update,
         onUpdate = { bellOpen = false; unread = viewModel.planSettings.unread; updateSheet = it },
         onStory = { bellOpen = false; storyScope = it }, onAi = { bellOpen = false; unread = viewModel.planSettings.unread; aiExplain = true })
     if (aiExplain) AssistantsSheet(viewModel, explain = true) { aiExplain = false }
