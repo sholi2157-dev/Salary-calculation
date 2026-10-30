@@ -219,11 +219,10 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     }
 }
 
-@Composable
 private class SettingsNav(val open: String?, val onOpen: (String) -> Unit)
 
 /**
- * On the list, a category is one card: its name, what is inside it (the info dot) and an arrow; a tap opens it.
+ * On the list, a category is one card: its name, then what is inside it (the info dot) beside the arrow; a tap opens it.
  * On its own page only its content shows, in the same card. Other categories draw nothing.
  */
 @Composable
@@ -234,8 +233,8 @@ private fun Group(nav: SettingsNav, title: String, info: String, modifier: Modif
             .kisClick { nav.onOpen(title) }.testTag("settings_section_$title").heightIn(min = 60.dp).padding(start = 16.dp, end = 10.dp),
             verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = KisType.title, color = c.ink, maxLines = 1, modifier = Modifier.semantics { heading() })
-            InfoDot(title, info, tag = "settings_info_$title")
             Spacer(Modifier.weight(1f))
+            InfoDot(title, info, tag = "settings_info_$title")
             Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(20.dp))
         }
         title -> Column(Modifier.padding(top = 12.dp).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.surface)
