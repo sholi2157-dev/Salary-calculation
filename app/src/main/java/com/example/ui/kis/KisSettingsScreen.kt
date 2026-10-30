@@ -104,9 +104,11 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         // With the keyboard open the floating navigation is covered anyway: pad for the keyboard only, not both.
         val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
         // The scroll area ends above the floating navigation, so no row can sit (and be tapped) under it.
-        // Each page starts at its top.
-        key(open) {
-        Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
+        // Each page starts at its top. One scroll area for the list and every page: rebuilding it on each change left
+        // the device never settling after the feedback field had been used.
+        val scroll = rememberScrollState()
+        LaunchedEffect(open) { scroll.scrollTo(0) }
+        Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(scroll).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
             // First, so a problem can be reported without scrolling past everything else. The form unfolds in place:
             // inside a bottom sheet its multi-line field never let the device settle after Enter.
             if (open == null) Spacer(Modifier.height(14.dp))
@@ -196,7 +198,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 KisLogo(Modifier.size(28.dp))
                 Text("${androidx.compose.ui.res.stringResource(com.example.R.string.app_name)} · ${BuildConfig.VERSION_NAME}", style = KisType.caption, color = c.muted)
             }
-        }
         }
     }
     }
