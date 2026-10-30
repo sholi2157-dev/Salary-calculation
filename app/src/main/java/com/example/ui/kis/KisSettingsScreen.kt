@@ -84,7 +84,9 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     // Settings is a list of its categories; a tap opens one on a page of its own, and back returns to the list.
     var section by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(openSection) { if (openSection != null) { section = openSection; onSectionOpened() } }
-    androidx.activity.compose.BackHandler(section != null) { focusManager.clearFocus(force = true); section = null }
+    // Leaving a page folds the feedback form the proven way first (focus out, then the field goes).
+    fun leave() { focusManager.clearFocus(force = true); feedbackOpen = false; section = null }
+    androidx.activity.compose.BackHandler(section != null) { leave() }
     val nav = SettingsNav(section) { section = it }
 
     Box(Modifier.fillMaxSize().background(c.bg)) {
@@ -93,7 +95,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         val open = section
         if (open == null) Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
         else Row(Modifier.statusBarsPadding().padding(start = 4.dp, end = 16.dp).padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(48.dp).clip(CircleShape).kisClick { focusManager.clearFocus(force = true); section = null }
+            Box(Modifier.size(48.dp).clip(CircleShape).kisClick { leave() }
                 .semantics { contentDescription = "חזרה להגדרות" }.testTag("settings_back"), contentAlignment = Alignment.Center) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.ink, modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = 180f })
             }
