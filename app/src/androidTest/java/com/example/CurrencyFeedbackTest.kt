@@ -64,31 +64,14 @@ class CurrencyFeedbackTest {
             dao.setLocalPreference(WorkLocalPreference("defaultCategory", "ILS category"))
             dao.setLocalPreference(WorkLocalPreference("default_currency", "₪"))
         }
-        // Feedback keeps Enter as a new line.
-        ui.onNodeWithTag("settings_button").performClick()
-        // Feedback is the first category in Settings; its row unfolds the form in place.
-        ui.onNodeWithTag("settings_section_משוב ותקלות").performClick()
-        ui.onNodeWithTag("feedback_row").assertIsDisplayed().performClick()
-        ui.onNodeWithTag("feedback_message").performClick().performTextInput("first line")
-        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        automation.executeShellCommand("input keyevent KEYCODE_ENTER").use { d -> android.os.ParcelFileDescriptor.AutoCloseInputStream(d).use { it.readBytes() } }
-        ui.waitForIdle()
-        ui.onNodeWithTag("settings_root").assertExists()
-        ui.onNodeWithTag("feedback_message").performTextInput("second line")
-        ui.onNodeWithTag("feedback_message").assertTextContains("first line\nsecond line")
-        automation.takeScreenshot().let { b -> java.io.File(context.getExternalFilesDir(null), "v2-feedback.png").outputStream().use { b.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } }
         // Default workplace: one current choice, change it, and add-and-select from the same picker.
-        androidx.test.espresso.Espresso.closeSoftKeyboard()
-        ui.onNodeWithTag("feedback_row").performClick()
-        ui.waitForIdle()
-        ui.onNodeWithTag("settings_back").performClick()
+        ui.onNodeWithTag("settings_button").performClick()
         ui.onNodeWithTag("settings_section_עבודה").performScrollTo().performClick()
         ui.onNodeWithTag("default_category_picker").performScrollTo().assertTextContains("ILS category", substring = true)
         ui.onNodeWithTag("default_category_picker").performClick()
         ui.onNodeWithTag("default_category_option_USD category").performClick()
         ui.waitUntil(5000) { runBlocking { dao.getLocalPreferences() }.any { it.name == "defaultCategory" && it.value == "USD category" } }
-        // The picker closes with an animation (and the keyboard from the feedback field is still up): reopen it only
-        // once it is gone, then wait for it to open.
+        // The picker closes with an animation: reopen it only once it is gone, then wait for it to open.
         ui.waitUntil(5000) { ui.onAllNodesWithTag("default_category_sheet").fetchSemanticsNodes().isEmpty() }
         // Scrolled into view first, like the first time: closing the sheet can leave it under the floating tab bar.
         ui.onNodeWithTag("default_category_picker").performScrollTo().assertTextContains("USD category", substring = true).performClick()
@@ -101,6 +84,20 @@ class CurrencyFeedbackTest {
         assertEquals("₪", runBlocking { dao.getLocalPreferences() }.first { it.name == "categoryCurrency:RC15 new default" }.value)
         assertEquals(before, runBlocking { dao.getEntriesList() })
         runBlocking { dao.setLocalPreference(WorkLocalPreference("defaultCategory", "ILS category")) }
-        ui.onNodeWithTag("tab_0").performClick()
+        // Feedback keeps Enter as a new line. It comes last: after Enter in its field the device check never settled
+        // on the next page, so the test ends with the draft still in the open form.
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        ui.onNodeWithTag("settings_back").performClick()
+        // Feedback is the first category in Settings; its row unfolds the form in place.
+        ui.onNodeWithTag("settings_section_משוב ותקלות").performClick()
+        ui.onNodeWithTag("feedback_row").assertIsDisplayed().performClick()
+        ui.onNodeWithTag("feedback_message").performClick().performTextInput("first line")
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        automation.executeShellCommand("input keyevent KEYCODE_ENTER").use { d -> android.os.ParcelFileDescriptor.AutoCloseInputStream(d).use { it.readBytes() } }
+        ui.waitForIdle()
+        ui.onNodeWithTag("settings_root").assertExists()
+        ui.onNodeWithTag("feedback_message").performTextInput("second line")
+        ui.onNodeWithTag("feedback_message").assertTextContains("first line\nsecond line")
+        automation.takeScreenshot().let { b -> java.io.File(context.getExternalFilesDir(null), "v2-feedback.png").outputStream().use { b.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } }
     }
 }
