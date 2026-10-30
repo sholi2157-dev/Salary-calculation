@@ -17,10 +17,10 @@ object WorkShareText {
         "${e.startTime}–${e.endTime}" + if (e.endTime <= e.startTime) " (למחרת)" else ""
     private fun pause(e: WorkEntry): Long? = if (!WorkPay.isJob(e) && time(e).isNotEmpty())
         maxOf(0L, Math.round(com.example.domain.V2Rules.span(e.startTime!!, e.endTime!!).minutes - e.hours * 60)) else null
-    private fun details(e: WorkEntry): List<String> = buildList {
+    private fun details(e: WorkEntry, rate: Boolean = true): List<String> = buildList {
         if (time(e).isNotEmpty()) add("שעות: ${time(e)}")
         pause(e)?.takeIf { it > 0 }?.let { add("הפסקה: $it דקות") }
-        if (!WorkPay.isJob(e)) add("תעריף לשעה: " + (if (WorkPay.pay(e) == null) "עדיין לא ידוע" else money(e.hourlyRate, e.currency)))
+        if (rate && !WorkPay.isJob(e)) add("תעריף לשעה: " + (if (WorkPay.pay(e) == null) "עדיין לא ידוע" else money(e.hourlyRate, e.currency)))
         if (e.bonus > 0) add("בונוס: ${money(e.bonus, e.currency)} (כלול בסכום)")
         if (e.passThrough > 0) add("החזר הוצאות: ${money(e.passThrough, e.currency)} (לא כלול בסכום)")
         if (note(e).isNotEmpty()) add("הערה: ${note(e)}")
@@ -69,7 +69,8 @@ object WorkShareText {
                 if (es.size == 1) { add("תאריכים: ${dates(es)}"); addAll(details(es.single())) }
                 else { add("פירוט:"); es.forEach { e ->
                     add("${date(e.date)} | ${hours(e.hours)} שעות | ${amount(e)} | ${if (e.isPaid) "שולם" else "ממתין"}")
-                    addAll(details(e))
+                    // The breakdown line already says what the shift earned; no rate line under it.
+                    addAll(details(e, rate = false))
                 } }
             }.joinToString("\n")
         }.joinToString("\n\n")
