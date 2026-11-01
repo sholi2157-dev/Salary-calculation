@@ -22,6 +22,8 @@ const money = (v, cur) => cur + number(v);
 const moneyHtml = (v, cur, cls = '') => `<span class="money ${cls}"><span class="cur">${esc(cur)}</span>${number(v)}</span>`;
 function hours(h) { const r = Math.round(h * 100) / 100; return Number.isInteger(r) ? String(r) : String(r); }
 const hm = m => Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0');
+/** A duration on screen, always h:mm ("2:30 שעות", M-36); rates and shared texts keep their decimals. */
+const duration = h => hm(Math.round((Number(h) || 0) * 60));
 const startOfDay = ms => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
 const shortDate = ms => { const d = new Date(ms); return d.getDate() + '.' + (d.getMonth() + 1); };
 function dayLabel(ms) {
@@ -52,13 +54,13 @@ function avatar(name, store, planned = false, size = 44) {
   return `<span class="avatar${planned ? ' planned' : ''}" style="--av:${accent(p)};background:linear-gradient(90deg,${p.from},${p.to});color:${p.on};width:${size}px;height:${size}px">${esc((name || '?').trim().charAt(0))}</span>`;
 }
 // A job paid by the job has no hours to show unless some were typed.
-const timeLabel = e => e.isTimeRange && e.startTime && e.endTime ? `⁦${e.startTime}–${e.endTime}⁩` : e.kind === 'job' && !(e.hours > 0) ? 'קבלנות' : `${hours(e.hours)} שעות`;
+const timeLabel = e => e.isTimeRange && e.startTime && e.endTime ? `⁦${e.startTime}–${e.endTime}⁩` : e.kind === 'job' && !(e.hours > 0) ? 'קבלנות' : `${duration(e.hours)} שעות`;
 function subtitle(e) {
   const parts = [];
-  if (e.kind === 'job') { parts.push('קבלנות: ' + (e.notes.trim() || e.category)); if (e.hours > 0) parts.push(hours(e.hours) + ' ש׳'); }
+  if (e.kind === 'job') { parts.push('קבלנות: ' + (e.notes.trim() || e.category)); if (e.hours > 0) parts.push(duration(e.hours) + ' ש׳'); }
   else {
     parts.push(timeLabel(e));
-    if (e.isTimeRange && e.startTime && e.endTime) { if (e.endTime <= e.startTime) parts.push('למחרת'); parts.push(hours(e.hours) + ' ש׳'); }
+    if (e.isTimeRange && e.startTime && e.endTime) { if (e.endTime <= e.startTime) parts.push('למחרת'); parts.push(duration(e.hours) + ' ש׳'); }
     parts.push(e.category);
   }
   if (e.bonus > 0) parts.push('בונוס ' + money(e.bonus, e.currency));
@@ -158,7 +160,7 @@ document.addEventListener('click', e => {
 }, true);
 const logo = (size = 38) => `<span class="logo" style="width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 64 64" width="${size}" height="${size}"><g stroke-width="7" stroke-linecap="round"><path d="M19 44V30" stroke="#7C8CFF"/><path d="M32 44V20" stroke="#FFC54D"/><path d="M45 44V25" stroke="#34C79A"/><path d="M19 44h26" stroke="#EDF0F5"/></g></svg></span>`;
 
-root.KisUi = { orderedPlaces, DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
+root.KisUi = { orderedPlaces, DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, duration, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
   isDark, placeOf, accent, accentInk, avatar, timeLabel, subtitle, upcoming, shiftCard, toast, sheet, closeTopSheet, anySheet, confirmSheet, copy, shareOrCopy,
   showText, haptic, ICON, logo, infoDot };
 })(globalThis);
