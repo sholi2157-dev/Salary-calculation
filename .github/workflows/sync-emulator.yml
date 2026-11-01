@@ -1,0 +1,33 @@
+name: Account sync and deletion on the Firebase emulator (synthetic accounts, no deploy)
+
+# The real Firebase SDK and the project's firestore.rules against the local Emulator Suite. Synthetic example.invalid
+# accounts only; nothing reaches a real Firebase project. Runs on the 2.3 web release branch and on demand.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['release/2.3-web']
+    paths: ['web/sync/**', 'web/kis/store.js', 'web/kis/account.js', 'integration-tests/**', 'firestore.rules', 'firebase.test.json', '.github/workflows/sync-emulator.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Unit tests (same as local)
+        run: npm test
+      - name: Sync and both delete actions against the emulator
+        run: |
+          npm install --no-save --package-lock=false firebase@10.8.0 firebase-tools@13.35.1
+          npx firebase emulators:exec --project demo-salary-sync --only auth,firestore --config firebase.test.json \
+            "node --test integration-tests/account-sync.test.cjs integration-tests/erase-e2e.test.cjs"
