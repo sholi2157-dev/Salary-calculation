@@ -27,7 +27,7 @@ function markSeen(store, scope) {
   if (list.some(n => n.scope === scope && !n.opened)) store.setRecent(list.map(n => n.scope === scope ? { ...n, opened: true } : n));
 }
 /** A length, never mistaken for a time of day: "7 ש׳", "6.5 ש׳" (Android: longLabel). */
-const longLabel = h => `${U().hours(h)} ש׳`;
+const longLabel = h => `${U().duration(h)} ש׳`;
 const PLACE = i => U().PLACES[i % 8].from;
 
 function insightText(i) {
@@ -49,7 +49,7 @@ function story(app, scope) {
   // The words differ between people and between recaps (KisSummary.voice, the same picks as Android).
   const v = S().voice(scope, seedOf(store)), say = (key, values = {}) => esc(S().fill(v[key], { whose, ...values }));
   markSeen(store, scope);
-  const perLine = per && per.line.replace('#', s.persona === 'marathon' ? U().hours(s.hours / Math.max(1, s.count)) : String(s.places.length));
+  const perLine = per && per.line.replace('#', s.persona === 'marathon' ? U().duration(s.hours / Math.max(1, s.count)) : String(s.places.length));
   // Only the slides with something real to say (KisSummary.slides, the same rule as Android).
   const shows = new Set(S().slides(s)), showPer = shows.has('persona') ? per : null;
   const placeColor = name => U().accent(U().placeOf(name, store));
@@ -57,12 +57,12 @@ function story(app, scope) {
   const DUR = 6000;
   const slides = [
     { bg: '#121212', a: 0, b: 2, tag: 'intro', html: () => `<div class="kick">שכר עבודות אישי · ${esc(label)}</div><h3 class="big">${say('intro').replace('\n', '<br>')}</h3><p>${say('introLine')}</p>` },
-    { bg: PLACE(0), a: 3, b: 4, tag: 'hours', html: () => `<div class="kick">${say('hoursKick')}</div>${s.hours < 10 ? `<div class="huge" data-testid="story-hours-value">${U().hours(s.hours)}</div>` : `<div class="huge" data-count="${Math.round(s.hours)}" data-testid="story-hours-value">0</div>`}<h3>${s.hours === 1 ? 'שעת עבודה' : 'שעות עבודה'}${s.count === 1 ? ' במשמרת אחת.' : ` ב-${s.count} משמרות.`}</h3>${s.fun ? `<p>זה בערך <b>${s.fun.count}</b> ${esc(S().FUN[s.fun.key])}. ${say('funTail')}</p>` : ''}` },
-    shows.has('places') && { bg: '#121212', a: 1, b: 0, tag: 'places', html: () => `<div class="kick">${say('placesKick')}</div><ol class="tops">${s.places.map((p, j) => `<li style="--d:${j * 120}ms"><b>${j + 1}</b><span class="dot" style="background:${placeColor(p.name)}"></span><span class="nm">${esc(p.name)}</span><span class="hh">${U().hours(p.hours)} ש׳</span></li>`).join('')}</ol>${top ? `<p>${say('placesLine', { p: Math.round(top.hours / Math.max(.01, s.hours) * 100), name: top.name })}</p>` : ''}` },
+    { bg: PLACE(0), a: 3, b: 4, tag: 'hours', html: () => `<div class="kick">${say('hoursKick')}</div>${s.hours < 10 ? `<div class="huge" data-testid="story-hours-value">${U().duration(s.hours)}</div>` : `<div class="huge" data-count="${Math.round(s.hours)}" data-testid="story-hours-value">0</div>`}<h3>${s.hours === 1 ? 'שעת עבודה' : 'שעות עבודה'}${s.count === 1 ? ' במשמרת אחת.' : ` ב-${s.count} משמרות.`}</h3>${s.fun ? `<p>זה בערך <b>${s.fun.count}</b> ${esc(S().FUN[s.fun.key])}. ${say('funTail')}</p>` : ''}` },
+    shows.has('places') && { bg: '#121212', a: 1, b: 0, tag: 'places', html: () => `<div class="kick">${say('placesKick')}</div><ol class="tops">${s.places.map((p, j) => `<li style="--d:${j * 120}ms"><b>${j + 1}</b><span class="dot" style="background:${placeColor(p.name)}"></span><span class="nm">${esc(p.name)}</span><span class="hh">${U().duration(p.hours)} ש׳</span></li>`).join('')}</ol>${top ? `<p>${say('placesLine', { p: Math.round(top.hours / Math.max(.01, s.hours) * 100), name: top.name })}</p>` : ''}` },
     showPer && { bg: PLACE(s.persona === 'owl' ? 4 : s.persona === 'bird' ? 3 : 2), a: 4, b: 3, tag: 'persona', html: () => `<div class="kick">${say('personaKick')}</div><h3 class="big" data-testid="story-persona-name">${esc(per.name)}</h3><p>${esc(perLine)}</p>` },
     shows.has('longest') && { bg: PLACE(2), a: 4, b: 3, tag: 'longest', html: () => { const l = s.longest;
       const [y, m, d] = l.date.split('-').map(Number);
-      return `<div class="kick">${say('longestKick')}</div><div class="huge">${U().hours(l.hours)}</div><h3>שעות, ${esc(U().dayLabel(new Date(y, m - 1, d).getTime()))}</h3><p>${l.start ? `⁦${l.start}–${l.end}⁩. ` : ''}${say('longestTail')}${s.nights === 1 ? ' ופעם אחת סיימתם אחרי 23:00.' : s.nights ? ` ו-${s.nights} פעמים סיימתם אחרי 23:00.` : ''}</p>`; } },
+      return `<div class="kick">${say('longestKick')}</div><div class="huge">${U().duration(l.hours)}</div><h3>שעות, ${esc(U().dayLabel(new Date(y, m - 1, d).getTime()))}</h3><p>${l.start ? `⁦${l.start}–${l.end}⁩. ` : ''}${say('longestTail')}${s.nights === 1 ? ' ופעם אחת סיימתם אחרי 23:00.' : s.nights ? ` ו-${s.nights} פעמים סיימתם אחרי 23:00.` : ''}</p>`; } },
     shows.has('days') && { bg: '#121212', a: 5, b: 1, tag: 'days', html: () => { const mx = Math.max(1e-9, ...s.days);
       return `<div class="kick">${say('daysKick')}</div><h3>${say('daysLine', { day: DAY_LONG[s.bestDay] })}</h3><div class="wbars">${s.days.map((h, j) => `<div><i style="--h:${(h / mx).toFixed(3)};--d:${j * 80}ms;background:${j === s.bestDay ? PLACE(3) : '#3A3A3A'}"></i><span>${U().DAY_SHORT[j]}</span></div>`).join('')}</div>`; } },
     shows.has('hour') && { bg: PLACE(5), a: 3, b: 4, tag: 'hour', html: () => { const p = s.hourMinutes, mx = Math.max(1, ...p), h = s.peakHour;
@@ -78,7 +78,7 @@ function story(app, scope) {
   /** What the card says: the amounts per currency, then only the facts the story showed, never a "—" (Android: posterCells). */
   function posterCells() {
     return [...s.currencies.map(c => ['סכום (' + c.currency + ')', U().money(c.total, c.currency)]), ...(s.pending ? [['סכום חסר', s.pending === 1 ? 'משמרת אחת' : s.pending + ' משמרות']] : []),
-      ['שעות', U().hours(s.hours < 10 ? s.hours : Math.round(s.hours))], ['משמרות', String(s.count)], top && ['מקום מוביל', top.name], showPer && ['טיפוס', showPer.name],
+      ['שעות', s.hours < 10 ? U().duration(s.hours) : String(Math.round(s.hours))], ['משמרות', String(s.count)], top && ['מקום מוביל', top.name], showPer && ['טיפוס', showPer.name],
       shows.has('days') && ['היום החזק', `יום ${DAY_LONG[s.bestDay]}`], shows.has('longest') && ['הכי ארוכה', longLabel(s.longest.hours)]].filter(Boolean);
   }
 
@@ -260,7 +260,7 @@ function archive(app) {
   const list = S().recapArchive(today()).map(scope => ({ scope, s: summaryOf(store, scope) })).filter(x => x.s.count > 0);
   U().sheet('recaps-sheet', (el, close) => {
     el.innerHTML = `<div class="title-row"><h2>הסיכומים שלי</h2>${U().infoDot('הסיכומים שלי', 'סיכום חודשי נפתח ב-30 לחודש (ביום האחרון בחודש קצר יותר), מופיע בדף הבית עוד 4 ימים ואז נשמר כאן. הסיכום השנתי נפתח יחד עם דצמבר.')}</div>
-      ${list.length ? `<div class="list">${list.map(({ scope, s }) => `<button class="story-entry recap-row" data-scope="${scope}" data-testid="recap-${scope}"><span><b>${esc(recapTitle(scope))}</b><small>${s.count === 1 ? 'משמרת אחת' : s.count + ' משמרות'} · ${U().hours(s.hours)} שעות</small></span>${U().logo(30)}</button>`).join('')}</div>`
+      ${list.length ? `<div class="list">${list.map(({ scope, s }) => `<button class="story-entry recap-row" data-scope="${scope}" data-testid="recap-${scope}"><span><b>${esc(recapTitle(scope))}</b><small>${s.count === 1 ? 'משמרת אחת' : s.count + ' משמרות'} · ${U().duration(s.hours)} שעות</small></span>${U().logo(30)}</button>`).join('')}</div>`
         : `<p class="caption" data-testid="recaps-empty">הסיכום הראשון יגיע ב-${Number(S().recapDay(S().FIRST_RECAP).slice(8))} ב${U().MONTHS[Number(S().FIRST_RECAP.slice(5)) - 1]}.</p>`}`;
     el.querySelectorAll('[data-scope]').forEach(b => b.onclick = () => { close(); story(app, b.dataset.scope); });
   });
