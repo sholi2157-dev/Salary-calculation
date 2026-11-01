@@ -65,6 +65,8 @@ object V2Rules {
         val bonusTarget: BonusTarget = BonusTarget.ME,
         val amount: String = "",
         val amountUnknown: Boolean = false,
+        /** A job team where each worker has their own amount: the user may only have organized it, so 0 is a valid own pay (D-7, AND-C06). */
+        val organizerOnly: Boolean = false,
     )
 
     data class Evaluation(val errors: List<String>, val minutes: Int?, val bonus: Double, val total: Double?) {
@@ -82,10 +84,11 @@ object V2Rules {
         if (d.mode == Mode.JOB) {
             val amount = if (d.amountUnknown) null else number(d.amount)
             val h = number(d.hours).let { if (it.isNaN()) 0.0 else it }
-            if (!d.amountUnknown && !(amount != null && amount > 0)) errors += "הזן סכום, או סמן \"לא יודע עדיין\""
+            val zero = d.organizerOnly && amount == 0.0
+            if (!d.amountUnknown && !(amount != null && (amount > 0 || zero))) errors += "הזן סכום, או סמן \"לא יודע עדיין\""
             if (h > 24) errors += "יותר מ-24 שעות ביום"
             val minutes = if (h > 0) (h * 60).roundToLong().toInt() else null
-            val total = if (amount != null && amount > 0) com.example.data.WorkPay.money(1.0, amount) else null
+            val total = if (amount != null && amount > 0) com.example.data.WorkPay.money(1.0, amount) else if (zero) 0.0 else null
             return Evaluation(errors, minutes, 0.0, total)
         }
         var minutes: Int? = null
