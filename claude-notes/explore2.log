@@ -1,0 +1,17 @@
+vp360 light home overflow {"sw":360,"cw":360}
+vp360 light editor overflow {"sw":360,"cw":360}
+vp360 dark home overflow {"sw":360,"cw":360}
+vp360 dark editor overflow {"sw":360,"cw":360}
+vp768 light home overflow {"sw":768,"cw":768}
+vp768 light editor overflow {"sw":768,"cw":768}
+vp768 dark home overflow {"sw":768,"cw":768}
+vp768 dark editor overflow {"sw":768,"cw":768}
+vp1440 light home overflow {"sw":1440,"cw":1440}
+vp1440 light editor overflow {"sw":1440,"cw":1440}
+vp1440 dark home overflow {"sw":1440,"cw":1440}
+vp1440 dark editor overflow {"sw":1440,"cw":1440}
+big history render ms 363 rows 400
+empty-light-add axe 
+empty-dark-add axe 
+editor errors 
+selection bar 1

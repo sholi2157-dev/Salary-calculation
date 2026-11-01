@@ -1,0 +1,96 @@
+[
+  {
+    "id": "S-CUR-01",
+    "severity": "High",
+    "priority": "P0",
+    "title": "מחיקת עוזר AI ללא יומן שחזור עקב כתיבה לא אטומית",
+    "platform": "Web/server; מסונכרן ל־Android כשצוין",
+    "status": "מאומת דטרמיניסטית בקוד הייצור עם תחליפים סינתטיים",
+    "files": [
+      "lib/server/assistant.cjs:229"
+    ],
+    "report": "current-security.md",
+    "confidence": "גבוה במנגנון; ללא הוכחת אירוע בייצור"
+  },
+  {
+    "id": "S-CUR-02",
+    "severity": "Medium",
+    "priority": "P1",
+    "title": "שדות זמן מגיבוי מאפשרים נוסחת CSV וקריסת יצוא",
+    "platform": "Web/server; מסונכרן ל־Android כשצוין",
+    "status": "מאומת דטרמיניסטית בקוד הייצור עם תחליפים סינתטיים",
+    "files": [
+      "web/transfer.js:105",
+      "web/v2/share.js:139"
+    ],
+    "report": "current-security.md",
+    "confidence": "גבוה במנגנון; ללא הוכחת אירוע בייצור"
+  },
+  {
+    "id": "S-CUR-03",
+    "severity": "Medium",
+    "priority": "P1",
+    "title": "גרסת הורדה מוצגת שגויה ו־fallback ישן",
+    "platform": "Web/server; מסונכרן ל־Android כשצוין",
+    "status": "מאומת דטרמיניסטית בקוד הייצור עם תחליפים סינתטיים",
+    "files": [
+      "web/kis/download.js:4",
+      "lib/server/android-release.cjs:10"
+    ],
+    "report": "current-security.md",
+    "confidence": "גבוה במנגנון; ללא הוכחת אירוע בייצור"
+  },
+  {
+    "id": "S-CUR-04",
+    "severity": "Medium",
+    "priority": "P1",
+    "title": "refresh token אינו קשור ללקוח; reuse ללא הגנה",
+    "platform": "Web/server; מסונכרן ל־Android כשצוין",
+    "status": "מאומת דטרמיניסטית בקוד הייצור עם תחליפים סינתטיים",
+    "files": [
+      "lib/server/assistant.cjs:382"
+    ],
+    "report": "current-security.md",
+    "confidence": "גבוה במנגנון; ללא הוכחת אירוע בייצור"
+  },
+  {
+    "id": "S-CUR-05",
+    "severity": "Medium",
+    "priority": "P2",
+    "title": "שם קטגוריה מיוחד מפיל סיכום MCP",
+    "platform": "Web/server; מסונכרן ל־Android כשצוין",
+    "status": "מאומת דטרמיניסטית בקוד הייצור עם תחליפים סינתטיים",
+    "files": [
+      "lib/server/assistant.cjs:178"
+    ],
+    "report": "current-security.md",
+    "confidence": "גבוה במנגנון; ללא הוכחת אירוע בייצור"
+  },
+  {
+    "id": "S-CUR-06",
+    "severity": "High",
+    "priority": "P1",
+    "title": "עריכת שעות MCP מאבדת הפסקה קיימת",
+    "platform": "Web/server; מסונכרן ל־Android כשצוין",
+    "status": "מאומת דטרמיניסטית בקוד הייצור עם תחליפים סינתטיים",
+    "files": [
+      "lib/server/assistant.cjs:267"
+    ],
+    "report": "current-security.md",
+    "confidence": "גבוה במנגנון; ללא הוכחת אירוע בייצור"
+  },
+  {
+    "id": "S-CUR-07",
+    "severity": "Medium",
+    "priority": "P1",
+    "title": "השלמת שכר בתעריף אפס אינה מוסיפה בונוס",
+    "platform": "Web/server; מסונכרן ל־Android כשצוין",
+    "status": "מאומת דטרמיניסטית בקוד הייצור עם תחליפים סינתטיים",
+    "files": [
+      "lib/server/assistant.cjs:272",
+      "lib/server/assistant.cjs:277"
+    ],
+    "report": "current-security.md",
+    "confidence": "גבוה במנגנון; ללא הוכחת אירוע בייצור"
+  }
+]

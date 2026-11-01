@@ -1,0 +1,83 @@
+{
+  "environment": {
+    "node": "v24.19.0",
+    "TZ": "Asia/Jerusalem"
+  },
+  "dst": {
+    "range": "2026-03-27 only",
+    "expectedIds": [],
+    "actualIds": [
+      "following-day"
+    ]
+  },
+  "performance": [
+    {
+      "rows": 0,
+      "notesCharsPerRow": 300,
+      "categories": 0,
+      "combinedMedianMs": 0.03108399999999989,
+      "maxMs": 0.47528000000000503,
+      "filtered": 0,
+      "totals": {},
+      "summaryCount": 0,
+      "jsonBytes": 2
+    },
+    {
+      "rows": 10,
+      "notesCharsPerRow": 300,
+      "categories": 10,
+      "combinedMedianMs": 0.15797899999999743,
+      "maxMs": 0.8062609999999992,
+      "filtered": 10,
+      "totals": {
+        "₪": 500,
+        "$": 500
+      },
+      "summaryCount": 10,
+      "jsonBytes": 7626
+    },
+    {
+      "rows": 100,
+      "notesCharsPerRow": 300,
+      "categories": 100,
+      "combinedMedianMs": 0.5039350000000056,
+      "maxMs": 1.392786000000001,
+      "filtered": 100,
+      "totals": {
+        "₪": 5000,
+        "$": 5000
+      },
+      "summaryCount": 100,
+      "jsonBytes": 76521
+    },
+    {
+      "rows": 1000,
+      "notesCharsPerRow": 300,
+      "categories": 100,
+      "combinedMedianMs": 5.834752000000009,
+      "maxMs": 6.996197000000002,
+      "filtered": 1000,
+      "totals": {
+        "₪": 50000,
+        "$": 50000
+      },
+      "summaryCount": 1000,
+      "jsonBytes": 767181
+    },
+    {
+      "rows": 10000,
+      "notesCharsPerRow": 300,
+      "categories": 100,
+      "combinedMedianMs": 35.58896100000004,
+      "maxMs": 58.13685100000001,
+      "filtered": 10000,
+      "totals": {
+        "₪": 500000,
+        "$": 500000
+      },
+      "summaryCount": 10000,
+      "jsonBytes": 7691781
+    }
+  ],
+  "limitation": "pure functions only; not browser rendering, device memory or storage quota"
+}

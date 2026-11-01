@@ -1,0 +1,3 @@
+DST_RANGE_PROOF timezone=Asia/Jerusalem selected=2026-03-27 next=2026-03-28 differenceHours=23.0 actualIncluded=true expectedIncluded=false
+TIMER_INPUT_PROOF numericDigits=400 parsed=Infinity WorkShiftState.requireWouldPass=false
+TIMER_SECOND_BOUNDARY uiSeconds=0 savedSeconds=1

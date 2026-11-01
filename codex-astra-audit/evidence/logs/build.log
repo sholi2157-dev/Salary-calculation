@@ -1,0 +1,50 @@
+
+> work-hours-tracker-web@1.0.0 build
+> node scripts/build-web.cjs
+
+node:child_process:1017
+    throw err;
+    ^
+
+<ref *1> Error: spawnSync /bin/sh EPERM
+    at Object.spawnSync (node:internal/child_process:1160:20)
+    at spawnSync (node:child_process:928:24)
+    at Object.execSync (node:child_process:1009:15)
+    at Object.<anonymous> (/workspace/salary-audit/runtime/app/scripts/build-web.cjs:9:109)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'spawnSync /bin/sh',
+  path: '/bin/sh',
+  spawnargs: [ '-c', 'git rev-parse HEAD' ],
+  error: [Circular *1],
+  status: 0,
+  signal: null,
+  output: [
+    null,
+    Buffer(41) [Uint8Array] [
+       51, 56, 49,  52, 51,  99, 100,  99,  99,  99,
+       50, 98, 51,  49, 53,  97, 101, 101,  54, 100,
+      102, 52, 57, 101, 97, 100,  56,  51, 100,  48,
+      100, 97, 48,  51, 99, 102,  48,  98,  50,  48,
+       10
+    ],
+    Buffer(0) [Uint8Array] []
+  ],
+  pid: 1151,
+  stdout: Buffer(41) [Uint8Array] [
+     51, 56, 49,  52, 51,  99, 100,  99,  99,  99,
+     50, 98, 51,  49, 53,  97, 101, 101,  54, 100,
+    102, 52, 57, 101, 97, 100,  56,  51, 100,  48,
+    100, 97, 48,  51, 99, 102,  48,  98,  50,  48,
+     10
+  ],
+  stderr: Buffer(0) [Uint8Array] []
+}
+
+Node.js v24.19.0

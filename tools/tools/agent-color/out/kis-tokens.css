@@ -1,0 +1,112 @@
+:root {
+  --bg: #F1F3F8;
+  --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --fill: #E4E8F0;
+  --line: #D2D8E3;
+  --line-strong: #778093;
+  --ink: #1B2335;
+  --ink-2: #5A6478;
+  --ink-3: #636C7E;
+  --disabled-ink: #9EA5B2;
+  --disabled-bg: #E4E8F0;
+  --accent: #5145E8;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E8ECFF;
+  --accent-text: #5145E8;
+  --focus: #5145E8;
+  --success: #007453;
+  --success-soft: #D5F6E6;
+  --on-success: #FFFFFF;
+  --warning: #9A5201;
+  --warning-soft: #FFEBC7;
+  --on-warning: #FFFFFF;
+  --danger: #BD2F28;
+  --danger-soft: #FEE7E4;
+  --on-danger: #FFFFFF;
+  --info: #1B65B9;
+  --info-soft: #E2EEFE;
+  --selected-bg: #FFFFFF;
+  --selected-ink: #1B2335;
+  --selected-edge: #1B2335;
+  --track: #E4E8F0;
+  --control-on: #1B2335;
+  --control-knob: #FFFFFF;
+  --primary: #1B2335;
+  --on-primary: #FFFFFF;
+  --pressed: rgb(27 35 53 / 0.10);
+  --hover: rgb(27 35 53 / 0.05);
+  --scrim: rgb(7 11 20 / 0.45);
+  --nav: rgb(255 255 255 / 0.90);
+  --nav-ink: #465066;
+  --nav-on: #1B2335;
+  --nav-on-ink: #FFFFFF;
+  --bar: rgb(255 255 255 / 0.95);
+  --on-bar: #1B2335;
+  --bar-action: #5145E8;
+  --live: #1B2335;
+  --on-live: #FFFFFF;
+  --glow: rgb(81 69 232 / 0.12);
+}
+:root[data-theme="dark"] {
+  --bg: #0F1216;
+  --surface: #181B20;
+  --surface-raised: #21252B;
+  --fill: #282C34;
+  --line: #32373F;
+  --line-strong: #717681;
+  --ink: #EDF0F6;
+  --ink-2: #B3B9C5;
+  --ink-3: #959CA8;
+  --disabled-ink: #5F636C;
+  --disabled-bg: #21252B;
+  --accent: #9398FF;
+  --accent-ink: #15153A;
+  --accent-soft: #2C2E56;
+  --accent-text: #A2A8FE;
+  --focus: #A2A8FE;
+  --success: #45D09E;
+  --success-soft: #103627;
+  --on-success: #011C11;
+  --warning: #F6B75C;
+  --warning-soft: #3E2B0F;
+  --on-warning: #241500;
+  --danger: #FF9183;
+  --danger-soft: #47211E;
+  --on-danger: #2B0E0B;
+  --info: #7EBBFA;
+  --info-soft: #192F46;
+  --selected-bg: #424853;
+  --selected-ink: #EDF0F6;
+  --selected-edge: #EDF0F6;
+  --track: #282C34;
+  --control-on: #EDF0F6;
+  --control-knob: #0F1216;
+  --primary: #EDF0F6;
+  --on-primary: #0F1216;
+  --pressed: rgb(237 240 246 / 0.12);
+  --hover: rgb(237 240 246 / 0.07);
+  --scrim: rgb(0 0 0 / 0.62);
+  --nav: rgb(33 37 43 / 0.92);
+  --nav-ink: #B3B9C5;
+  --nav-on: #EDF0F6;
+  --nav-on-ink: #0F1216;
+  --bar: #2D323A;
+  --on-bar: #EDF0F6;
+  --bar-action: #B0B7FF;
+  --live: #2D323A;
+  --on-live: #EDF0F6;
+  --glow: rgb(147 152 255 / 0.24);
+  color-scheme: dark;
+}
+/* Workplaces: --wp-N-from / -to / -on (light) and --wp-N-acc / -acc-ink (dark) */
+:root {
+  --wp-0-from: #393ECA; --wp-0-to: #150A6B; --wp-0-on: #FFFFFF; --wp-0-acc: #7D9BFF; --wp-0-acc-ink: #0E142A; /* indigo */
+  --wp-1-from: #117D15; --wp-1-to: #013E03; --wp-1-on: #FFFFFF; --wp-1-acc: #44E994; --wp-1-acc-ink: #021C0D; /* green */
+  --wp-2-from: #C50E70; --wp-2-to: #690039; --wp-2-on: #FFFFFF; --wp-2-acc: #FA74A5; --wp-2-acc-ink: #260C16; /* rose */
+  --wp-3-from: #F5B82E; --wp-3-to: #D18F1F; --wp-3-on: #1A1200; --wp-3-acc: #FFC732; --wp-3-acc-ink: #1E1400; /* mustard */
+  --wp-4-from: #9F4AE4; --wp-4-to: #5B2187; --wp-4-on: #FFFFFF; --wp-4-acc: #C874C8; --wp-4-acc-ink: #200E21; /* purple */
+  --wp-5-from: #0777A9; --wp-5-to: #003D59; --wp-5-on: #FFFFFF; --wp-5-acc: #8BC7FE; --wp-5-acc-ink: #031729; /* blue */
+  --wp-6-from: #065E63; --wp-6-to: #012527; --wp-6-on: #FFFFFF; --wp-6-acc: #18AFA4; --wp-6-acc-ink: #001B19; /* teal */
+  --wp-7-from: #8B032A; --wp-7-to: #33000A; --wp-7-on: #FFFFFF; --wp-7-acc: #F05963; --wp-7-acc-ink: #270C0D; /* burgundy */
+}

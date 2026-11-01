@@ -1,0 +1,770 @@
+From 418860734114db65b876478fa4776efb6adc3f5a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 1 Nov 2026 03:45:29 +0000
+Subject: [PATCH] Stage 0 (2.3.0): synthetic datasets, characterization
+ baseline and visual baseline for the web
+
+Synthetic rich 2.x dataset, legacy rows without id (D01) and a 1,000-shift generator.
+The characterization test records how the current code loads and totals them, including
+the known audit bugs, so later changes to stored data or money are visible and deliberate.
+No application code is changed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01LrwnHBzdbtPiryEeiYfhAg
+---
+ browser-tests/baseline-visual.cjs             |  46 +++
+ web-tests/baseline-characterization.test.cjs  |  53 +++
+ .../fixtures/synthetic/baseline-golden.json   | 158 ++++++++
+ web-tests/fixtures/synthetic/legacy-noid.json |  34 ++
+ web-tests/fixtures/synthetic/make.cjs         |  42 ++
+ web-tests/fixtures/synthetic/rich-v2.json     | 370 ++++++++++++++++++
+ 6 files changed, 703 insertions(+)
+ create mode 100644 browser-tests/baseline-visual.cjs
+ create mode 100644 web-tests/baseline-characterization.test.cjs
+ create mode 100644 web-tests/fixtures/synthetic/baseline-golden.json
+ create mode 100644 web-tests/fixtures/synthetic/legacy-noid.json
+ create mode 100644 web-tests/fixtures/synthetic/make.cjs
+ create mode 100644 web-tests/fixtures/synthetic/rich-v2.json
+
+diff --git a/browser-tests/baseline-visual.cjs b/browser-tests/baseline-visual.cjs
+new file mode 100644
+index 0000000..9891b2a
+--- /dev/null
++++ b/browser-tests/baseline-visual.cjs
+@@ -0,0 +1,46 @@
++/*
++ * Stage 0 visual baseline (2.3.0 remediation): the newest web build with the synthetic rich dataset, light and dark,
++ * phone/tablet/desktop. Saves screenshots to SCREENSHOT_DIR (default browser-evidence/baseline) for before/after review
++ * and fails on page errors or horizontal scrolling at 360px and wider. 320px is recorded, not asserted (audit M-33).
++ * Synthetic data only; never points at the production site unless PUBLIC_SITE_URL is set on purpose.
++ */
++const assert = require('node:assert/strict'), http = require('node:http'), fs = require('node:fs'), path = require('node:path');
++const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
++const ROOT = path.resolve('public'), OUT = process.env.SCREENSHOT_DIR || 'browser-evidence/baseline';
++const rich = JSON.parse(fs.readFileSync(path.join('web-tests', 'fixtures', 'synthetic', 'rich-v2.json'), 'utf8'));
++fs.mkdirSync(OUT, { recursive: true });
++const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.ttf': 'font/ttf' };
++const server = http.createServer((q, r) => {
++  let p = decodeURIComponent(new URL(q.url, 'http://x').pathname); if (p === '/') p = '/index.html';
++  if (p === '/api/config') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end('{}'); }
++  const f = path.join(ROOT, p); if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
++  r.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store' }); fs.createReadStream(f).pipe(r);
++});
++(async () => {
++  await new Promise(r => server.listen(0, r));
++  const base = process.env.PUBLIC_SITE_URL || `http://127.0.0.1:${server.address().port}/`;
++  const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
++  const report = [];
++  for (const [w, h] of [[320, 700], [360, 760], [390, 844], [768, 1024], [1440, 900]]) for (const scheme of ['light', 'dark']) {
++    const ctx = await browser.newContext({ viewport: { width: w, height: h }, colorScheme: scheme, locale: 'he-IL', serviceWorkers: 'block', isMobile: w < 900, hasTouch: w < 900 });
++    await ctx.addInitScript(d => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.clear();
++      for (const [k, v] of Object.entries(d)) localStorage.setItem(k, JSON.stringify(v));
++      localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true })); localStorage.setItem('kis_ai_invited_v1', '1'); localStorage.setItem('kis_signin_skip_v1', '1'); } }, rich);
++    const page = await ctx.newPage(); const errors = [];
++    page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/api\/config|favicon/.test(m.text())) errors.push(m.text()); });
++    await page.goto(base); await page.waitForSelector('[data-testid=home-hero]');
++    for (const [name, go] of [['home', 'home'], ['history', 'history'], ['settings', 'settings'], ['editor', null]]) {
++      if (go) await page.evaluate(p => window.Kis.go(p), go); else await page.evaluate(() => window.Kis.openNew());
++      await page.waitForTimeout(350);
++      const o = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
++      report.push({ w, scheme, name, overflow: o.sw - o.cw });
++      await page.screenshot({ path: path.join(OUT, `${w}-${scheme}-${name}.png`) });
++      if (w >= 360) assert.ok(o.sw <= o.cw, `${w} ${scheme} ${name}: horizontal scroll ${o.sw}>${o.cw}`);
++    }
++    assert.deepEqual(errors, [], `${w} ${scheme}: page errors`);
++    await ctx.close();
++  }
++  fs.writeFileSync(path.join(OUT, 'baseline-report.json'), JSON.stringify(report, null, 1));
++  console.log('baseline screens:', report.length, '· 320px overflow (recorded):', report.filter(r => r.w === 320 && r.overflow > 0).map(r => `${r.scheme}/${r.name}+${r.overflow}`).join(', ') || 'none');
++  await browser.close(); server.close();
++})().catch(e => { console.error(e); process.exit(1); });
+diff --git a/web-tests/baseline-characterization.test.cjs b/web-tests/baseline-characterization.test.cjs
+new file mode 100644
+index 0000000..d43aa05
+--- /dev/null
++++ b/web-tests/baseline-characterization.test.cjs
+@@ -0,0 +1,53 @@
++/*
++ * Stage 0 of the 2.3.0 remediation: records how the CURRENT code treats the synthetic datasets, so any later change in
++ * stored data, money or totals is visible and intentional. Known audit bugs are recorded as they are today (marked
++ * "knownBug") and are expected to change only in the commit that fixes them, with this golden file updated in that commit.
++ * Regenerate deliberately: UPDATE_GOLDEN=1 node --test web-tests/baseline-characterization.test.cjs
++ */
++const { test } = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
++globalThis.WorkRuntime = require('../web/runtime.js');
++globalThis.WorkCategories = require('../web/categories.js');
++globalThis.KisPay = require('../web/v2/pay.js');
++const { createStore } = require('../web/kis/store.js');
++const DIR = path.join(__dirname, 'fixtures', 'synthetic');
++const GOLDEN = path.join(DIR, 'baseline-golden.json');
++const rich = JSON.parse(fs.readFileSync(path.join(DIR, 'rich-v2.json'), 'utf8'));
++const legacy = JSON.parse(fs.readFileSync(path.join(DIR, 'legacy-noid.json'), 'utf8'));
++const memory = init => { const m = new Map(Object.entries(init).map(([k, v]) => [k, JSON.stringify(v)])); return { m,
++  getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k), key: i => [...m.keys()][i] ?? null, get length() { return m.size; } }; };
++
++function observe() {
++  const out = {};
++  const s1 = memory(rich), store = createStore(s1); store.load();
++  out.richLoadWritesNothing = s1.getItem('work_complete_backup') === JSON.stringify(rich.work_complete_backup);
++  out.richEntries = store.data.entries.map(e => ({ id: e.id, pay: KisPay.pay(e), known: KisPay.payKnown(e), stored: e.totalEarnings, hours: e.hours,
++    ...(e.isGroupShift ? { group: KisPay.group(e) } : {}) }));
++  out.richTotals = KisPay.totals(store.data.entries);
++  out.plans = store.plans;
++  const s2 = memory(legacy), ls = createStore(s2); ls.load();
++  const legacyIds = ls.data.entries.map(e => e.id);
++  // The ids themselves are content hashes that depend on the runtime in use; what matters is how many are distinct.
++  out.legacyRows = legacyIds.length; out.legacyDistinctIds = new Set(legacyIds).size;
++  out.legacyDeleteOneRemoves = (() => { const before = ls.data.entries.length; ls.deleteEntries([ls.data.entries[0].id]); return before - ls.data.entries.length; })();
++  out.knownBug = { D01_identicalLegacyRowsShareId: legacyIds[0] === legacyIds[1], CAL02_r11_storedNotHalfUp: out.richEntries.find(e => e.id === 'r11').stored };
++  return JSON.parse(JSON.stringify(out));
++}
++
++test('current behaviour on the synthetic datasets matches the recorded baseline', () => {
++  const now = observe();
++  if (process.env.UPDATE_GOLDEN === '1' || !fs.existsSync(GOLDEN)) fs.writeFileSync(GOLDEN, JSON.stringify(now, null, 1) + '\n');
++  assert.deepEqual(now, JSON.parse(fs.readFileSync(GOLDEN, 'utf8')));
++});
++
++test('loading never rewrites stored data and stored amounts are never recalculated', () => {
++  const now = observe();
++  assert.equal(now.richLoadWritesNothing, true);
++  for (const e of now.richEntries) { const src = rich.work_complete_backup.entries.find(x => x.id === e.id); assert.equal(e.stored, src.totalEarnings, e.id); assert.equal(e.hours, src.hours, e.id); }
++});
++
++test('1,000 synthetic shifts load and total without error', () => {
++  const big = require('./fixtures/synthetic/make.cjs').big(1000);
++  const st = createStore(memory({ work_complete_backup: big })); st.load();
++  assert.equal(st.data.entries.length, 1000);
++  const t = KisPay.totals(st.data.entries); assert.ok(t);
++});
+diff --git a/web-tests/fixtures/synthetic/baseline-golden.json b/web-tests/fixtures/synthetic/baseline-golden.json
+new file mode 100644
+index 0000000..42e215e
+--- /dev/null
++++ b/web-tests/fixtures/synthetic/baseline-golden.json
+@@ -0,0 +1,158 @@
++{
++ "richLoadWritesNothing": true,
++ "richEntries": [
++  {
++   "id": "r01",
++   "pay": 300,
++   "known": true,
++   "stored": 300,
++   "hours": 6
++  },
++  {
++   "id": "r02",
++   "pay": 175,
++   "known": true,
++   "stored": 175,
++   "hours": 3.5
++  },
++  {
++   "id": "r03",
++   "pay": 200,
++   "known": true,
++   "stored": 200,
++   "hours": 1.6666666666666667
++  },
++  {
++   "id": "r04",
++   "pay": 120,
++   "known": true,
++   "stored": 120,
++   "hours": 4
++  },
++  {
++   "id": "r05",
++   "pay": null,
++   "known": false,
++   "stored": 0,
++   "hours": 5
++  },
++  {
++   "id": "r06",
++   "pay": 850,
++   "known": true,
++   "stored": 850,
++   "hours": 0
++  },
++  {
++   "id": "r07",
++   "pay": null,
++   "known": false,
++   "stored": 0,
++   "hours": 2
++  },
++  {
++   "id": "r08",
++   "pay": 370,
++   "known": true,
++   "stored": 370,
++   "hours": 5,
++   "group": {
++    "employerTotal": 1045,
++    "profit": 180,
++    "myNet": 550
++   }
++  },
++  {
++   "id": "r09",
++   "pay": 42.12345,
++   "known": true,
++   "stored": 42.12345,
++   "hours": 1.234567
++  },
++  {
++   "id": "r10",
++   "pay": 310,
++   "known": true,
++   "stored": 310,
++   "hours": 7.75
++  },
++  {
++   "id": "r11",
++   "pay": 149.98,
++   "known": true,
++   "stored": 149.98,
++   "hours": 1.5
++  },
++  {
++   "id": "r12",
++   "pay": 432,
++   "known": true,
++   "stored": 432,
++   "hours": 9
++  },
++  {
++   "id": "r13",
++   "pay": 210.03,
++   "known": true,
++   "stored": 210.03,
++   "hours": 3,
++   "group": {
++    "employerTotal": 211.2,
++    "profit": 0.33,
++    "myNet": 210.36
++   }
++  },
++  {
++   "id": "r14",
++   "pay": 85,
++   "known": true,
++   "stored": 85,
++   "hours": 2.5
++  },
++  {
++   "id": "r15",
++   "pay": 250,
++   "known": true,
++   "stored": 250,
++   "hours": 5
++  }
++ ],
++ "richTotals": {
++  "₪": 3289.1334500000003,
++  "$": 205
++ },
++ "plans": {
++  "series": [
++   {
++    "id": "series-rich",
++    "category": "מסעדה",
++    "daysMask": 42,
++    "startTime": "09:00",
++    "endTime": "17:00",
++    "hourlyRate": 50,
++    "currency": "₪",
++    "fromDate": "2026-01-01",
++    "untilDate": "2027-12-31"
++   }
++  ],
++  "exceptions": [
++   {
++    "seriesId": "series-rich",
++    "date": "2026-02-02",
++    "cancelled": true
++   },
++   {
++    "seriesId": "series-rich",
++    "date": "2026-02-04",
++    "hold": true
++   }
++  ]
++ },
++ "legacyRows": 3,
++ "legacyDistinctIds": 2,
++ "legacyDeleteOneRemoves": 2,
++ "knownBug": {
++  "D01_identicalLegacyRowsShareId": true,
++  "CAL02_r11_storedNotHalfUp": 149.98
++ }
++}
+diff --git a/web-tests/fixtures/synthetic/legacy-noid.json b/web-tests/fixtures/synthetic/legacy-noid.json
+new file mode 100644
+index 0000000..b96093a
+--- /dev/null
++++ b/web-tests/fixtures/synthetic/legacy-noid.json
+@@ -0,0 +1,34 @@
++{
++ "user_work_shifts": [
++  {
++   "category": "מסעדה",
++   "date": 1764590400000,
++   "hours": 4,
++   "hourlyRate": 45,
++   "totalEarnings": 180,
++   "isPaid": false,
++   "notes": "",
++   "currency": "₪"
++  },
++  {
++   "category": "מסעדה",
++   "date": 1764590400000,
++   "hours": 4,
++   "hourlyRate": 45,
++   "totalEarnings": 180,
++   "isPaid": false,
++   "notes": "",
++   "currency": "₪"
++  },
++  {
++   "category": "מסעדה",
++   "date": 1764676800000,
++   "hours": 3,
++   "hourlyRate": 45,
++   "totalEarnings": 135,
++   "isPaid": false,
++   "notes": "",
++   "currency": "₪"
++  }
++ ]
++}
+diff --git a/web-tests/fixtures/synthetic/make.cjs b/web-tests/fixtures/synthetic/make.cjs
+new file mode 100644
+index 0000000..9c34934
+--- /dev/null
++++ b/web-tests/fixtures/synthetic/make.cjs
+@@ -0,0 +1,42 @@
++/*
++ * Deterministic synthetic datasets for the 2.3.0 remediation (Stage 0). No real person's data.
++ * TZ=Asia/Jerusalem node web-tests/fixtures/synthetic/make.cjs  → rewrites rich-v2.json and legacy-noid.json in this folder.
++ * Dates are fixed (local noon, 2026) so results never depend on the day the tests run.
++ */
++const fs = require('node:fs'), path = require('node:path');
++const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h, 0, 0, 0).getTime();
++const row = (id, category, date, hours, rate, cur = '₪', x = {}) => ({ id, category, date, createdAt: date + 1000, isTimeRange: false, startTime: null, endTime: null,
++  hours, hourlyRate: rate, totalEarnings: Math.round(hours * rate * 100) / 100, isPaid: false, notes: '', currency: cur, isGroupShift: false,
++  employerRate: null, workerRate: null, groupWorkersJson: '', ...x });
++const categories = [['עצמאי', 40], ['מסעדה', 50], ['שיעורים פרטיים במתמטיקה ופיזיקה לתיכון', 120], ['Tech Support', 30], ['הובלות', 60], ['אירועים', 70], ['מוקד לילה', 48]]
++  .map(([name, defaultRate]) => ({ name, defaultRate }));
++const entries = [
++  row('r01', 'מסעדה', at(2026, 3, 1), 6, 50, '₪', { isTimeRange: true, startTime: '11:00', endTime: '17:00' }),
++  row('r02', 'מסעדה', at(2026, 3, 2), 3.5, 50, '₪', { isTimeRange: true, startTime: '22:00', endTime: '02:00', notes: 'לילה, חצי שעה הפסקה' }),
++  row('r03', 'שיעורים פרטיים במתמטיקה ופיזיקה לתיכון', at(2026, 3, 3), 100 / 60, 120, '₪', { totalEarnings: 200 }),
++  row('r04', 'Tech Support', at(2026, 3, 4), 4, 30, '$', { isPaid: true }),
++  row('r05', 'מסעדה', at(2026, 3, 5), 5, 0, '₪', { payKnown: false, totalEarnings: 0 }),
++  row('r06', 'הובלות', at(2026, 3, 6), 0, 0, '₪', { kind: 'job', totalEarnings: 850, notes: 'הובלת דירה' }),
++  row('r07', 'הובלות', at(2026, 3, 7), 2, 0, '₪', { kind: 'job', payKnown: false, totalEarnings: 0 }),
++  row('r08', 'אירועים', at(2026, 3, 8), 5, 70, '₪', { isTimeRange: true, startTime: '18:00', endTime: '23:00', isGroupShift: true, employerRate: 70, workerRate: 50,
++    bonus: 20, passThrough: 45, totalEarnings: 370, groupWorkersJson: JSON.stringify([{ name: 'יוסי', hours: 5, rate: 50 }, { name: 'מנחם מענדל', hours: 4, rate: 50, paid: true }]) }),
++  row('r09', 'מסעדה', at(2026, 3, 9), 1.234567, 34.123456, '₪', { totalEarnings: 42.12345, notes: 'סכום מיובא חריג: אסור לחשב מחדש' }),
++  row('r10', 'עצמאי', at(2026, 3, 10), 7.75, 40, '₪', { isPaid: true, notes: 'א'.repeat(300) }),
++  row('r11', 'מסעדה', at(2026, 3, 11), 1.5, 99.99, '₪', { totalEarnings: 149.98, notes: 'CAL-02: נשמר 149.98' }),
++  row('r12', 'מוקד לילה', at(2026, 3, 28), 9, 48, '₪', { isTimeRange: true, startTime: '22:00', endTime: '07:00', notes: 'לילה של מעבר לשעון קיץ' }),
++  row('r13', 'אירועים', at(2026, 4, 2), 3, 70.01, '₪', { isGroupShift: true, employerRate: 70.01, workerRate: 50.02, totalEarnings: 210.03,
++    groupWorkersJson: JSON.stringify([{ name: 'עובד א', hours: 1 / 60, rate: 50.02 }]) }),
++  row('r14', 'Tech Support', at(2026, 4, 3), 2.5, 30, '$', { bonus: 10, totalEarnings: 85 }),
++  row('r15', 'מסעדה', at(2027, 1, 4, 12), 5, 50, '₪', { notes: 'עתידית' }),
++];
++const rich = { entries, categories, workers: [{ name: 'יוסי' }, { name: 'מנחם מענדל' }],
++  webPreferences: { mainCurrency: '₪', defaultCategory: 'מסעדה', categoryCurrencies: { 'Tech Support': '$' } } };
++const plans = { series: [{ id: 'series-rich', category: 'מסעדה', daysMask: 42, startTime: '09:00', endTime: '17:00', hourlyRate: 50, currency: '₪', fromDate: '2026-01-01', untilDate: '2027-12-31' }],
++  exceptions: [{ seriesId: 'series-rich', date: '2026-02-02', cancelled: true }, { seriesId: 'series-rich', date: '2026-02-04', hold: true }] };
++// D01: two identical rows without id, in the oldest storage format ("user_work_shifts").
++const legacyRow = { category: 'מסעדה', date: at(2025, 12, 1), hours: 4, hourlyRate: 45, totalEarnings: 180, isPaid: false, notes: '', currency: '₪' };
++const legacy = [legacyRow, { ...legacyRow }, { ...legacyRow, date: at(2025, 12, 2), hours: 3, totalEarnings: 135 }];
++const dir = __dirname;
++fs.writeFileSync(path.join(dir, 'rich-v2.json'), JSON.stringify({ work_complete_backup: rich, work_series_v1: plans }, null, 1) + '\n');
++fs.writeFileSync(path.join(dir, 'legacy-noid.json'), JSON.stringify({ user_work_shifts: legacy }, null, 1) + '\n');
++module.exports = { big(n = 1000) { const out = []; for (let i = 0; i < n; i++) { const c = categories[i % categories.length]; out.push(row('b' + i, c.name, at(2025, 1, 1) + i * 43_200_000, 2 + (i % 7) * 0.25, c.defaultRate, i % 5 ? '₪' : '$', { isPaid: i % 3 === 0 })); } return { ...rich, entries: out }; } };
+diff --git a/web-tests/fixtures/synthetic/rich-v2.json b/web-tests/fixtures/synthetic/rich-v2.json
+new file mode 100644
+index 0000000..bc5e008
+--- /dev/null
++++ b/web-tests/fixtures/synthetic/rich-v2.json
+@@ -0,0 +1,370 @@
++{
++ "work_complete_backup": {
++  "entries": [
++   {
++    "id": "r01",
++    "category": "מסעדה",
++    "date": 1772366400000,
++    "createdAt": 1772366401000,
++    "isTimeRange": true,
++    "startTime": "11:00",
++    "endTime": "17:00",
++    "hours": 6,
++    "hourlyRate": 50,
++    "totalEarnings": 300,
++    "isPaid": false,
++    "notes": "",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": ""
++   },
++   {
++    "id": "r02",
++    "category": "מסעדה",
++    "date": 1772452800000,
++    "createdAt": 1772452801000,
++    "isTimeRange": true,
++    "startTime": "22:00",
++    "endTime": "02:00",
++    "hours": 3.5,
++    "hourlyRate": 50,
++    "totalEarnings": 175,
++    "isPaid": false,
++    "notes": "לילה, חצי שעה הפסקה",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": ""
++   },
++   {
++    "id": "r03",
++    "category": "שיעורים פרטיים במתמטיקה ופיזיקה לתיכון",
++    "date": 1772539200000,
++    "createdAt": 1772539201000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 1.6666666666666667,
++    "hourlyRate": 120,
++    "totalEarnings": 200,
++    "isPaid": false,
++    "notes": "",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": ""
++   },
++   {
++    "id": "r04",
++    "category": "Tech Support",
++    "date": 1772625600000,
++    "createdAt": 1772625601000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 4,
++    "hourlyRate": 30,
++    "totalEarnings": 120,
++    "isPaid": true,
++    "notes": "",
++    "currency": "$",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": ""
++   },
++   {
++    "id": "r05",
++    "category": "מסעדה",
++    "date": 1772712000000,
++    "createdAt": 1772712001000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 5,
++    "hourlyRate": 0,
++    "totalEarnings": 0,
++    "isPaid": false,
++    "notes": "",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": "",
++    "payKnown": false
++   },
++   {
++    "id": "r06",
++    "category": "הובלות",
++    "date": 1772798400000,
++    "createdAt": 1772798401000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 0,
++    "hourlyRate": 0,
++    "totalEarnings": 850,
++    "isPaid": false,
++    "notes": "הובלת דירה",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": "",
++    "kind": "job"
++   },
++   {
++    "id": "r07",
++    "category": "הובלות",
++    "date": 1772884800000,
++    "createdAt": 1772884801000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 2,
++    "hourlyRate": 0,
++    "totalEarnings": 0,
++    "isPaid": false,
++    "notes": "",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": "",
++    "kind": "job",
++    "payKnown": false
++   },
++   {
++    "id": "r08",
++    "category": "אירועים",
++    "date": 1772971200000,
++    "createdAt": 1772971201000,
++    "isTimeRange": true,
++    "startTime": "18:00",
++    "endTime": "23:00",
++    "hours": 5,
++    "hourlyRate": 70,
++    "totalEarnings": 370,
++    "isPaid": false,
++    "notes": "",
++    "currency": "₪",
++    "isGroupShift": true,
++    "employerRate": 70,
++    "workerRate": 50,
++    "groupWorkersJson": "[{\"name\":\"יוסי\",\"hours\":5,\"rate\":50},{\"name\":\"מנחם מענדל\",\"hours\":4,\"rate\":50,\"paid\":true}]",
++    "bonus": 20,
++    "passThrough": 45
++   },
++   {
++    "id": "r09",
++    "category": "מסעדה",
++    "date": 1773057600000,
++    "createdAt": 1773057601000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 1.234567,
++    "hourlyRate": 34.123456,
++    "totalEarnings": 42.12345,
++    "isPaid": false,
++    "notes": "סכום מיובא חריג: אסור לחשב מחדש",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": ""
++   },
++   {
++    "id": "r10",
++    "category": "עצמאי",
++    "date": 1773144000000,
++    "createdAt": 1773144001000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 7.75,
++    "hourlyRate": 40,
++    "totalEarnings": 310,
++    "isPaid": true,
++    "notes": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": ""
++   },
++   {
++    "id": "r11",
++    "category": "מסעדה",
++    "date": 1773230400000,
++    "createdAt": 1773230401000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 1.5,
++    "hourlyRate": 99.99,
++    "totalEarnings": 149.98,
++    "isPaid": false,
++    "notes": "CAL-02: נשמר 149.98",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": ""
++   },
++   {
++    "id": "r12",
++    "category": "מוקד לילה",
++    "date": 1774699200000,
++    "createdAt": 1774699201000,
++    "isTimeRange": true,
++    "startTime": "22:00",
++    "endTime": "07:00",
++    "hours": 9,
++    "hourlyRate": 48,
++    "totalEarnings": 432,
++    "isPaid": false,
++    "notes": "לילה של מעבר לשעון קיץ",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": ""
++   },
++   {
++    "id": "r13",
++    "category": "אירועים",
++    "date": 1775131200000,
++    "createdAt": 1775131201000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 3,
++    "hourlyRate": 70.01,
++    "totalEarnings": 210.03,
++    "isPaid": false,
++    "notes": "",
++    "currency": "₪",
++    "isGroupShift": true,
++    "employerRate": 70.01,
++    "workerRate": 50.02,
++    "groupWorkersJson": "[{\"name\":\"עובד א\",\"hours\":0.016666666666666666,\"rate\":50.02}]"
++   },
++   {
++    "id": "r14",
++    "category": "Tech Support",
++    "date": 1775217600000,
++    "createdAt": 1775217601000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 2.5,
++    "hourlyRate": 30,
++    "totalEarnings": 85,
++    "isPaid": false,
++    "notes": "",
++    "currency": "$",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": "",
++    "bonus": 10
++   },
++   {
++    "id": "r15",
++    "category": "מסעדה",
++    "date": 1799064000000,
++    "createdAt": 1799064001000,
++    "isTimeRange": false,
++    "startTime": null,
++    "endTime": null,
++    "hours": 5,
++    "hourlyRate": 50,
++    "totalEarnings": 250,
++    "isPaid": false,
++    "notes": "עתידית",
++    "currency": "₪",
++    "isGroupShift": false,
++    "employerRate": null,
++    "workerRate": null,
++    "groupWorkersJson": ""
++   }
++  ],
++  "categories": [
++   {
++    "name": "עצמאי",
++    "defaultRate": 40
++   },
++   {
++    "name": "מסעדה",
++    "defaultRate": 50
++   },
++   {
++    "name": "שיעורים פרטיים במתמטיקה ופיזיקה לתיכון",
++    "defaultRate": 120
++   },
++   {
++    "name": "Tech Support",
++    "defaultRate": 30
++   },
++   {
++    "name": "הובלות",
++    "defaultRate": 60
++   },
++   {
++    "name": "אירועים",
++    "defaultRate": 70
++   },
++   {
++    "name": "מוקד לילה",
++    "defaultRate": 48
++   }
++  ],
++  "workers": [
++   {
++    "name": "יוסי"
++   },
++   {
++    "name": "מנחם מענדל"
++   }
++  ],
++  "webPreferences": {
++   "mainCurrency": "₪",
++   "defaultCategory": "מסעדה",
++   "categoryCurrencies": {
++    "Tech Support": "$"
++   }
++  }
++ },
++ "work_series_v1": {
++  "series": [
++   {
++    "id": "series-rich",
++    "category": "מסעדה",
++    "daysMask": 42,
++    "startTime": "09:00",
++    "endTime": "17:00",
++    "hourlyRate": 50,
++    "currency": "₪",
++    "fromDate": "2026-01-01",
++    "untilDate": "2027-12-31"
++   }
++  ],
++  "exceptions": [
++   {
++    "seriesId": "series-rich",
++    "date": "2026-02-02",
++    "cancelled": true
++   },
++   {
++    "seriesId": "series-rich",
++    "date": "2026-02-04",
++    "hold": true
++   }
++  ]
++ }
++}
+-- 
+2.43.0
+

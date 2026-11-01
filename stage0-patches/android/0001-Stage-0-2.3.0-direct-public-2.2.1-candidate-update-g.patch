@@ -1,0 +1,242 @@
+From 200a18a5a701d6fe5821540e37f244427fb817ee Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 1 Nov 2026 03:45:29 +0000
+Subject: [PATCH] =?UTF-8?q?Stage=200=20(2.3.0):=20direct=20public=202.2.1?=
+ =?UTF-8?q?=20=E2=86=92=20candidate=20update=20gate=20with=20rich=202.x=20?=
+ =?UTF-8?q?data=20(QA-02)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+RichUpgradeTest seeds synthetic 2.x data inside the exact public 2.2.1 APK (raw SQL on schema 11 and
+preference files only, so the new test APK runs inside the old app), snapshots it, and after
+install -r of the candidate requires every user table, the seeded preferences and the running
+timer to be identical. Added to the signed RC workflow as a separate fresh emulator.
+No application code is changed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01LrwnHBzdbtPiryEeiYfhAg
+---
+ .github/workflows/android-v2-rc.yml           |   9 ++
+ .../java/com/example/RichUpgradeTest.kt       | 139 ++++++++++++++++++
+ scripts/verify-rich-upgrade.sh                |  42 ++++++
+ 3 files changed, 190 insertions(+)
+ create mode 100644 app/src/androidTest/java/com/example/RichUpgradeTest.kt
+ create mode 100755 scripts/verify-rich-upgrade.sh
+
+diff --git a/.github/workflows/android-v2-rc.yml b/.github/workflows/android-v2-rc.yml
+index dfdae5f..5ec56f8 100644
+--- a/.github/workflows/android-v2-rc.yml
++++ b/.github/workflows/android-v2-rc.yml
+@@ -90,6 +90,15 @@ jobs:
+           profile: pixel_2
+           disable-animations: true
+           script: bash scripts/verify-release-update.sh
++      - name: Direct public 2.2.1 → candidate with rich 2.x data (the path every existing user takes)
++        uses: reactivecircus/android-emulator-runner@v2
++        with:
++          api-level: 35
++          arch: x86_64
++          profile: pixel_2
++          avd-name: salary-rich-upgrade
++          disable-animations: true
++          script: bash scripts/verify-rich-upgrade.sh
+       - name: First launch on a separate fresh signed-install emulator
+         uses: reactivecircus/android-emulator-runner@v2
+         with:
+diff --git a/app/src/androidTest/java/com/example/RichUpgradeTest.kt b/app/src/androidTest/java/com/example/RichUpgradeTest.kt
+new file mode 100644
+index 0000000..22d6231
+--- /dev/null
++++ b/app/src/androidTest/java/com/example/RichUpgradeTest.kt
+@@ -0,0 +1,139 @@
++package com.example
++
++import android.content.Context
++import android.database.Cursor
++import androidx.test.ext.junit.runners.AndroidJUnit4
++import androidx.test.platform.app.InstrumentationRegistry
++import com.example.data.WorkDatabase
++import kotlinx.coroutines.CoroutineScope
++import kotlinx.coroutines.Dispatchers
++import org.json.JSONArray
++import org.json.JSONObject
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import org.junit.runner.RunWith
++import java.io.File
++
++/**
++ * 2.x-era data created inside the PUBLIC 2.2.1 build survives a direct update to the candidate (audit QA-02).
++ * Uses only what is identical in every 2.x build: WorkDatabase.getDatabase, raw SQL on schema 11 and preference files,
++ * because this test APK is compiled from the new code but runs inside whichever app version is installed.
++ * Synthetic data only. Runs on a disposable emulator; never on a phone with real data.
++ *
++ * Stages (-e stage): seed (on 2.2.1: write data, snapshot to rich-before.json) · verify (on the candidate: snapshot
++ * again to rich-after.json and require the user data to be identical).
++ */
++@RunWith(AndroidJUnit4::class)
++class RichUpgradeTest {
++    private val userTables = listOf("work_entries", "work_categories", "worker_directory", "shift_series", "series_exceptions", "work_local_preferences")
++    /** Seeded preference keys per file; the candidate may add keys of its own, but never change or drop these. */
++    private val seededPrefs = mapOf(
++        "kis_ui" to listOf("theme", "haptics", "name", "lastName", "placeOrder", "color:שיעורים פרטיים במתמטיקה ופיזיקה לתיכון", "color:Tech Support"),
++        "active_shift_prefs" to listOf("start_time", "category", "rate_double", "currency"),
++    )
++
++    @Test fun richDataSurvivesDirectUpdate() {
++        val context = InstrumentationRegistry.getInstrumentation().targetContext
++        assertEquals("com.aistudio.worktracker.qztvdw.distribution", context.packageName)
++        val stage = InstrumentationRegistry.getArguments().getString("stage")!!
++        val out = context.getExternalFilesDir(null)!!
++        val sql = WorkDatabase.getDatabase(context, CoroutineScope(Dispatchers.IO)).openHelper.writableDatabase
++        when (stage) {
++            "seed" -> {
++                assertEquals("seed needs an empty store (fresh emulator)", 0, count(sql.query("SELECT COUNT(*) FROM work_entries")))
++                seed(context) { sql.execSQL(it) }
++                File(out, "rich-before.json").writeText(snapshot(context) { sql.query(it) }.toString(1))
++            }
++            "verify" -> {
++                val before = JSONObject(File(out, "rich-before.json").readText())
++                val after = snapshot(context) { sql.query(it) }
++                File(out, "rich-after.json").writeText(after.toString(1))
++                for (table in userTables - "work_local_preferences") assertEquals("table $table changed across the update", before.getJSONArray(table).toString(), after.getJSONArray(table).toString())
++                // The candidate may store new local preferences of its own; every one that existed must stay unchanged.
++                val afterPrefs = (0 until after.getJSONArray("work_local_preferences").length()).map { after.getJSONArray("work_local_preferences").getJSONObject(it).toString() }.toSet()
++                val lp = before.getJSONArray("work_local_preferences")
++                for (i in 0 until lp.length()) assertTrue("local preference changed: ${lp.getJSONObject(i)}", lp.getJSONObject(i).toString() in afterPrefs)
++                val bp = before.getJSONObject("prefs"); val ap = after.getJSONObject("prefs")
++                for ((file, keys) in seededPrefs) for (key in keys)
++                    assertEquals("pref $file/$key changed", bp.getJSONObject(file).opt(key)?.toString(), ap.getJSONObject(file).opt(key)?.toString())
++                assertTrue("the active timer must still be running after the update", ap.getJSONObject("active_shift_prefs").has("start_time"))
++            }
++            else -> error("unknown stage $stage")
++        }
++    }
++
++    private fun seed(context: Context, exec: (String) -> Unit) {
++        val day = 86_400_000L
++        val base = (System.currentTimeMillis() / day) * day - 3 * 3_600_000L // local-ish midnight; exact value is irrelevant
++        fun q(s: String?) = if (s == null) "NULL" else "'" + s.replace("'", "''") + "'"
++        val cats = listOf("עצמאי" to 40.0, "מסעדה" to 50.0, "שיעורים פרטיים במתמטיקה ופיזיקה לתיכון" to 120.0, "Tech Support" to 30.0, "הובלות" to 60.0, "אירועים" to 70.0)
++        for ((name, rate) in cats.drop(1)) exec("INSERT INTO work_categories (name, defaultRate) VALUES (${q(name)}, $rate)")
++        exec("INSERT INTO worker_directory (name) VALUES ('יוסי'), ('מנחם מענדל')")
++        // category, dayOffset, isTimeRange, start, end, hours, rate, total, paid, notes, group, employer, worker, workersJson, currency, kind, payKnown, bonus, seriesKey, auto, passThrough
++        data class R(val c: String, val d: Int, val tr: Boolean, val s: String?, val e: String?, val h: Double, val r: Double, val t: Double,
++                     val paid: Boolean = false, val notes: String = "", val g: Boolean = false, val er: Double? = null, val wr: Double? = null,
++                     val wj: String = "", val cur: String = "₪", val kind: String = "shift", val known: Boolean = true, val bonus: Double = 0.0,
++                     val sk: String? = null, val auto: Boolean = false, val pass: Double = 0.0)
++        val rows = listOf(
++            R("מסעדה", 0, true, "11:00", "17:00", 6.0, 50.0, 300.0),
++            R("מסעדה", 1, true, "22:00", "02:00", 3.5, 50.0, 175.0, notes = "לילה עם הפסקה של חצי שעה"),
++            R("שיעורים פרטיים במתמטיקה ופיזיקה לתיכון", 2, false, null, null, 1.6666666666666667, 120.0, 200.0, notes = "1:40 שעות"),
++            R("Tech Support", 3, false, null, null, 4.0, 30.0, 120.0, paid = true, cur = "$"),
++            R("מסעדה", 4, false, null, null, 5.0, 0.0, 0.0, known = false),
++            R("הובלות", 5, false, null, null, 0.0, 0.0, 850.0, kind = "job", notes = "הובלת דירה"),
++            R("הובלות", 6, false, null, null, 2.0, 0.0, 0.0, kind = "job", known = false),
++            R("אירועים", 7, true, "18:00", "23:00", 5.0, 70.0, 370.0, g = true, er = 70.0, wr = 50.0, bonus = 20.0, pass = 45.0,
++                wj = """[{"name":"יוסי","hours":5.0,"rate":50.0,"paid":false},{"name":"מנחם מענדל","hours":4.0,"rate":50.0,"paid":true}]"""),
++            R("מסעדה", 8, false, null, null, 1.234567, 34.123456, 42.12345, notes = "סכום מיובא חריג שאסור לחשב מחדש"),
++            R("עצמאי", 9, false, null, null, 7.75, 40.0, 310.0, paid = true, notes = "x".repeat(300)),
++            R("מסעדה", 10, true, "09:00", "17:00", 8.0, 50.0, 400.0, sk = "series-rich@2026-01-01", auto = true),
++        )
++        for (r in rows) exec(
++            "INSERT INTO work_entries (category, date, isTimeRange, startTime, endTime, hours, hourlyRate, totalEarnings, isPaid, notes, createdAt, " +
++                "isGroupShift, employerRate, workerRate, groupWorkersJson, currency, kind, payKnown, bonus, seriesKey, autoConfirmed, passThrough) VALUES (" +
++                "${q(r.c)}, ${base - r.d * day}, ${if (r.tr) 1 else 0}, ${q(r.s)}, ${q(r.e)}, ${r.h}, ${r.r}, ${r.t}, ${if (r.paid) 1 else 0}, ${q(r.notes)}, ${base - r.d * day + 1000}, " +
++                "${if (r.g) 1 else 0}, ${r.er ?: "NULL"}, ${r.wr ?: "NULL"}, ${q(r.wj)}, ${q(r.cur)}, ${q(r.kind)}, ${if (r.known) 1 else 0}, ${r.bonus}, ${q(r.sk)}, ${if (r.auto) 1 else 0}, ${r.pass})")
++        exec("INSERT INTO shift_series (id, category, daysMask, startTime, endTime, hourlyRate, currency, fromDate, untilDate, createdAt) VALUES " +
++            "('series-rich', 'מסעדה', 42, '09:00', '17:00', 50.0, '₪', '2026-01-01', '2027-12-31', ${base - 30 * day}), " +
++            "('series-night', 'אירועים', 64, '22:00', '03:00', NULL, '₪', '2026-01-01', '2027-06-30', ${base - 20 * day})")
++        exec("INSERT INTO series_exceptions (seriesId, date, cancelled, hold, startTime, endTime, rateOverridden, hourlyRate) VALUES " +
++            "('series-rich', '2026-02-02', 1, 0, NULL, NULL, 0, NULL), ('series-rich', '2026-02-04', 0, 1, NULL, NULL, 0, NULL), " +
++            "('series-night', '2026-02-07', 0, 0, '21:00', '02:30', 1, 65.0)")
++        context.getSharedPreferences("kis_ui", Context.MODE_PRIVATE).edit()
++            .putString("theme", "dark").putBoolean("haptics", false).putString("name", "בודק").putString("lastName", "סינתטי")
++            .putString("placeOrder", JSONArray(listOf("Tech Support", "מסעדה")).toString())
++            .putInt("color:שיעורים פרטיים במתמטיקה ופיזיקה לתיכון", 4).putInt("color:Tech Support", 6).commit()
++        // An active timer started 90 minutes ago at a $ rate: it must survive the update and keep its start time.
++        context.getSharedPreferences("active_shift_prefs", Context.MODE_PRIVATE).edit()
++            .putLong("start_time", System.currentTimeMillis() - 90 * 60_000L).putString("category", "Tech Support")
++            .putString("rate_double", "30.5").putString("currency", "$").commit()
++    }
++
++    private fun snapshot(context: Context, query: (String) -> Cursor): JSONObject {
++        val out = JSONObject()
++        for (table in userTables) {
++            val rows = JSONArray()
++            // A stable order that does not depend on rowid reuse; every column is kept with its stored type.
++            query("SELECT * FROM $table ORDER BY 1, 2").use { c ->
++                while (c.moveToNext()) rows.put(JSONObject().apply {
++                    for (i in 0 until c.columnCount) put(c.getColumnName(i), when (c.getType(i)) {
++                        Cursor.FIELD_TYPE_NULL -> JSONObject.NULL
++                        Cursor.FIELD_TYPE_INTEGER -> c.getLong(i)
++                        Cursor.FIELD_TYPE_FLOAT -> c.getDouble(i).toString() // exact text, no JSON float rounding
++                        else -> c.getString(i)
++                    })
++                })
++            }
++            out.put(table, rows)
++        }
++        out.put("prefs", JSONObject().apply {
++            for (file in seededPrefs.keys) put(file, JSONObject().apply {
++                for ((k, v) in context.getSharedPreferences(file, Context.MODE_PRIVATE).all) put(k, v?.toString() ?: JSONObject.NULL)
++            })
++        })
++        return out
++    }
++
++    private fun count(c: Cursor) = c.use { it.moveToFirst(); it.getInt(0) }
++}
+diff --git a/scripts/verify-rich-upgrade.sh b/scripts/verify-rich-upgrade.sh
+new file mode 100755
+index 0000000..77f401a
+--- /dev/null
++++ b/scripts/verify-rich-upgrade.sh
+@@ -0,0 +1,42 @@
++#!/usr/bin/env bash
++# Direct update from the PUBLIC 2.2.1 (code 46, exact release bytes) to the candidate with rich 2.x data (audit QA-02).
++# This is the path every existing user takes: no intermediate version is installed. Synthetic data only; the runner
++# must provide a fresh disposable emulator. Never uninstall/reset as a workaround.
++set -euo pipefail
++pkg=com.aistudio.worktracker.qztvdw.distribution
++if adb shell pm list packages | grep -Fx "package:$pkg"; then echo 'Expected fresh emulator; refusing to overwrite existing data'; exit 1; fi
++mkdir -p release-evidence/rich
++echo "c62691480f7cdb81259af5d8179328ec3620c20a1fc367e4916740035d6d8882  candidate-prev.apk" | sha256sum -c -
++adb shell wm size 720x1600
++adb shell wm density 320
++adb install candidate-prev.apk | tee release-evidence/rich/install-221.txt
++adb install app/build/outputs/apk/androidTest/release/app-release-androidTest.apk
++adb shell svc wifi disable
++adb shell svc data disable
++adb shell pm grant "$pkg" android.permission.POST_NOTIFICATIONS || true
++rich_stage() {
++  log="release-evidence/rich/$1.txt"
++  adb shell am force-stop "$pkg"
++  adb shell am instrument -w -e class com.example.RichUpgradeTest -e stage "$1" \
++    "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee "$log"
++  grep -F 'OK (1 test)' "$log"
++  ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' "$log"
++}
++rich_stage seed
++# 2.2.1 itself opens the seeded data (and its running timer) before the update.
++adb shell am start -W -n "$pkg/com.example.MainActivity" | tee release-evidence/rich/start-221.txt
++grep -F "Status: ok" release-evidence/rich/start-221.txt
++sleep 3
++adb exec-out screencap -p > release-evidence/rich/home-221.png || true
++adb shell dumpsys package "$pkg" | grep -E "versionCode|versionName" | tee release-evidence/rich/version-before.txt
++adb install -r candidate-b.apk | tee release-evidence/rich/install-candidate.txt
++adb shell dumpsys package "$pkg" | grep -E "versionCode|versionName" | tee release-evidence/rich/version-after.txt
++rich_stage verify
++adb shell am start -W -n "$pkg/com.example.MainActivity" | tee release-evidence/rich/start-candidate.txt
++grep -F "Status: ok" release-evidence/rich/start-candidate.txt
++sleep 3
++adb exec-out screencap -p > release-evidence/rich/home-candidate.png || true
++for f in rich-before.json rich-after.json; do adb pull "/sdcard/Android/data/$pkg/files/$f" "release-evidence/rich/$f"; done
++adb logcat -d -b crash > release-evidence/rich/crash-log.txt
++! grep -E "FATAL EXCEPTION|AndroidRuntime|Process: $pkg" release-evidence/rich/crash-log.txt
++echo 'Rich 2.2.1 → candidate update: user data, preferences and the running timer preserved.'
+-- 
+2.43.0
+

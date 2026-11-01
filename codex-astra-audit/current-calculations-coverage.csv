@@ -1,0 +1,21 @@
+path,platform,status,cases,evidence
+100 minutes 1.40,Web,עבר במודול,1,current-calculations/results.json
+"100 minutes 1,40",Web,עבר במודול,1,current-calculations/results.json
+100 minutes 1:40,Web,עבר במודול,1,current-calculations/results.json
+invalid duration 0:00,Web,עבר במודול,1,current-calculations/results.json
+invalid duration 1:75,Web,עבר במודול,1,current-calculations/results.json
+invalid duration 24:01,Web,עבר במודול,1,current-calculations/results.json
+24h,Web,עבר במודול,1,current-calculations/results.json
+overnight break,Web,עבר במודול,1,current-calculations/results.json
+zero clock,Web,עבר במודול,1,current-calculations/results.json
+metadata preserves historical financial precision,Web,עבר במודול,1,current-calculations/results.json
+currency and unknown,Web,עבר במודול,1,current-calculations/results.json
+group OTHERS displayed equals persisted pay,Web,נכשל במודול,1,current-calculations/results.json
+group OTHERS worker bonus,Web,נכשל במודול,1,current-calculations/results.json
+bulk preview equals persisted amount,Web,נכשל במודול,1,current-calculations/results.json
+plan overnight clash previous day,Web,נכשל במודול,1,current-calculations/results.json
+clock preview equals stored,Web,נכשל במודול,1,current-calculations/results.json
+cents,Web,נכשל חלקית,20160,mismatches=178
+spans,Web,עבר במודול,107944,mismatches=0
+התנהגות UI Android בכל הנתיבים,Android,קוד בלבד,0,אין אמולטור או מהדר Kotlin נגיש
+DST זמן ממשי מול שעון,שתיהן,מפרט חסר,4,ריצת JS; Android נבדק בקוד

@@ -1,0 +1,13 @@
+{
+  "node": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+  "npm": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+  "java": "/usr/bin/java",
+  "javac": null,
+  "chromium": "/usr/bin/chromium",
+  "adb": null,
+  "emulator": null,
+  "sdkmanager": null,
+  "gradle": null,
+  "kotlinc": null,
+  "maestro": null
+}

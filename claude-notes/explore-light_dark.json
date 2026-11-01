@@ -1,0 +1,5135 @@
+{
+ "steps": [
+  "light-01-home",
+  "light-01-home-full",
+  "light-02-bell",
+  "light-03-editor-new",
+  "light-03b-editor-range",
+  "light-03c-editor-more",
+  "light-03d-editor-full",
+  "light-03e-editor-time-entry",
+  "light-04-detail",
+  "light-04b-detail-group",
+  "light-04c-detail-unknown-rate",
+  "light-05-history",
+  "light-05a-history-full",
+  "light-05b-history-search",
+  "light-05c-history-search-empty",
+  "light-05d-history-filters",
+  "light-05e-history-select-ERR",
+  "light-05f-history-copy",
+  "light-05g-history-month-ERR",
+  "light-05h-history-pending-ERR",
+  "light-06-settings",
+  "light-06a-settings-full",
+  "light-06b-places",
+  "light-06c-place-edit",
+  "light-06d-notifications",
+  "light-06e-feedback",
+  "light-06f-import",
+  "light-06g-recaps",
+  "light-06h-series",
+  "light-06i-erase",
+  "light-06j-android",
+  "light-07-live-start",
+  "light-07b-live-running",
+  "light-07c-home-live",
+  "light-08-toast-delete",
+  "dark-01-home",
+  "dark-01-home-full",
+  "dark-02-bell",
+  "dark-03-editor-new",
+  "dark-03b-editor-range",
+  "dark-03c-editor-more",
+  "dark-03d-editor-full",
+  "dark-03e-editor-time-entry",
+  "dark-04-detail",
+  "dark-04b-detail-group",
+  "dark-04c-detail-unknown-rate",
+  "dark-05-history",
+  "dark-05a-history-full",
+  "dark-05b-history-search",
+  "dark-05c-history-search-empty",
+  "dark-05d-history-filters",
+  "dark-05e-history-select-ERR",
+  "dark-05f-history-copy",
+  "dark-05g-history-month-ERR",
+  "dark-05h-history-pending-ERR",
+  "dark-06-settings",
+  "dark-06a-settings-full",
+  "dark-06b-places",
+  "dark-06c-place-edit",
+  "dark-06d-notifications",
+  "dark-06e-feedback",
+  "dark-06f-import",
+  "dark-06g-recaps",
+  "dark-06h-series",
+  "dark-06i-erase",
+  "dark-06j-android",
+  "dark-07-live-start",
+  "dark-07b-live-running",
+  "dark-07c-home-live",
+  "dark-08-toast-delete"
+ ],
+ "axe": {
+  "light-01-home": [],
+  "light-02-bell": [],
+  "light-03-editor-new": [
+   {
+    "id": "aria-allowed-attr",
+    "impact": "critical",
+    "n": 3,
+    "nodes": [
+     "button[data-mode=\"CLOCK\"] ::   ARIA attribute is not allowed: aria-pressed=\"true\"",
+     "button[data-mode=\"HOURS\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\"",
+     "button[data-mode=\"JOB\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\""
+    ]
+   }
+  ],
+  "light-03b-editor-range": [
+   {
+    "id": "aria-allowed-attr",
+    "impact": "critical",
+    "n": 3,
+    "nodes": [
+     "button[data-mode=\"CLOCK\"] ::   ARIA attribute is not allowed: aria-pressed=\"true\"",
+     "button[data-mode=\"HOURS\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\"",
+     "button[data-mode=\"JOB\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\""
+    ]
+   }
+  ],
+  "light-03c-editor-more": [
+   {
+    "id": "aria-allowed-attr",
+    "impact": "critical",
+    "n": 3,
+    "nodes": [
+     "button[data-mode=\"CLOCK\"] ::   ARIA attribute is not allowed: aria-pressed=\"true\"",
+     "button[data-mode=\"HOURS\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\"",
+     "button[data-mode=\"JOB\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\""
+    ]
+   }
+  ],
+  "light-03e-editor-time-entry": [
+   {
+    "id": "aria-allowed-attr",
+    "impact": "critical",
+    "n": 3,
+    "nodes": [
+     "button[data-mode=\"CLOCK\"] ::   ARIA attribute is not allowed: aria-pressed=\"true\"",
+     "button[data-mode=\"HOURS\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\"",
+     "button[data-mode=\"JOB\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\""
+    ]
+   }
+  ],
+  "light-04-detail": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 1,
+    "nodes": [
+     "button[data-a=\"del\"] ::   Element has insufficient color contrast of 4.43 (foreground color: #c2362b, background color: #e4e8f0, font size: 11.3pt (15px), font weight: normal). Expecte"
+    ]
+   }
+  ],
+  "light-04b-detail-group": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 1,
+    "nodes": [
+     "button[data-a=\"del\"] ::   Element has insufficient color contrast of 4.43 (foreground color: #c2362b, background color: #e4e8f0, font size: 11.3pt (15px), font weight: normal). Expecte"
+    ]
+   }
+  ],
+  "light-04c-detail-unknown-rate": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 1,
+    "nodes": [
+     "button[data-a=\"del\"] ::   Element has insufficient color contrast of 4.43 (foreground color: #c2362b, background color: #e4e8f0, font size: 11.3pt (15px), font weight: normal). Expecte"
+    ]
+   }
+  ],
+  "light-05-history": [],
+  "light-05b-history-search": [],
+  "light-05c-history-search-empty": [],
+  "light-05d-history-filters": [],
+  "light-05f-history-copy": [],
+  "light-06-settings": [],
+  "light-06b-places": [
+   {
+    "id": "aria-prohibited-attr",
+    "impact": "serious",
+    "n": 9,
+    "nodes": [
+     "span[aria-label=\"הזזת מסעדה\"] ::   aria-label attribute cannot be used on \"span\" elements with no valid role attribute.",
+     ".place-drag:nth-child(2) > .grip[data-grip=\"\"] ::   aria-label attribute cannot be used on \"span\" elements with no valid role attribute.",
+     "span[aria-label=\"הזזת הובלות\"] ::   aria-label attribute cannot be used on \"span\" elements with no valid role attribute.",
+     "span[aria-label=\"הזזת בייביסיטר\"] ::   aria-label attribute cannot be used on \"span\" elements with no valid role attribute."
+    ]
+   }
+  ],
+  "light-06c-place-edit": [],
+  "light-06d-notifications": [],
+  "light-06e-feedback": [],
+  "light-06f-import": [],
+  "light-06g-recaps": [],
+  "light-06h-series": [],
+  "light-06i-erase": [],
+  "light-06j-android": [],
+  "light-07-live-start": [],
+  "light-07b-live-running": [],
+  "light-07c-home-live": [],
+  "light-08-toast-delete": [],
+  "dark-01-home": [],
+  "dark-02-bell": [],
+  "dark-03-editor-new": [
+   {
+    "id": "aria-allowed-attr",
+    "impact": "critical",
+    "n": 3,
+    "nodes": [
+     "button[data-mode=\"CLOCK\"] ::   ARIA attribute is not allowed: aria-pressed=\"true\"",
+     "button[data-mode=\"HOURS\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\"",
+     "button[data-mode=\"JOB\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\""
+    ]
+   }
+  ],
+  "dark-03b-editor-range": [
+   {
+    "id": "aria-allowed-attr",
+    "impact": "critical",
+    "n": 3,
+    "nodes": [
+     "button[data-mode=\"CLOCK\"] ::   ARIA attribute is not allowed: aria-pressed=\"true\"",
+     "button[data-mode=\"HOURS\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\"",
+     "button[data-mode=\"JOB\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\""
+    ]
+   }
+  ],
+  "dark-03c-editor-more": [
+   {
+    "id": "aria-allowed-attr",
+    "impact": "critical",
+    "n": 3,
+    "nodes": [
+     "button[data-mode=\"CLOCK\"] ::   ARIA attribute is not allowed: aria-pressed=\"true\"",
+     "button[data-mode=\"HOURS\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\"",
+     "button[data-mode=\"JOB\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\""
+    ]
+   }
+  ],
+  "dark-03e-editor-time-entry": [
+   {
+    "id": "aria-allowed-attr",
+    "impact": "critical",
+    "n": 3,
+    "nodes": [
+     "button[data-mode=\"CLOCK\"] ::   ARIA attribute is not allowed: aria-pressed=\"true\"",
+     "button[data-mode=\"HOURS\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\"",
+     "button[data-mode=\"JOB\"] ::   ARIA attribute is not allowed: aria-pressed=\"false\""
+    ]
+   }
+  ],
+  "dark-04-detail": [],
+  "dark-04b-detail-group": [],
+  "dark-04c-detail-unknown-rate": [],
+  "dark-05-history": [],
+  "dark-05b-history-search": [],
+  "dark-05c-history-search-empty": [],
+  "dark-05d-history-filters": [],
+  "dark-05f-history-copy": [],
+  "dark-06-settings": [],
+  "dark-06b-places": [
+   {
+    "id": "aria-prohibited-attr",
+    "impact": "serious",
+    "n": 9,
+    "nodes": [
+     "span[aria-label=\"הזזת מסעדה\"] ::   aria-label attribute cannot be used on \"span\" elements with no valid role attribute.",
+     ".place-drag:nth-child(2) > .grip[data-grip=\"\"] ::   aria-label attribute cannot be used on \"span\" elements with no valid role attribute.",
+     "span[aria-label=\"הזזת הובלות\"] ::   aria-label attribute cannot be used on \"span\" elements with no valid role attribute.",
+     "span[aria-label=\"הזזת בייביסיטר\"] ::   aria-label attribute cannot be used on \"span\" elements with no valid role attribute."
+    ]
+   }
+  ],
+  "dark-06c-place-edit": [],
+  "dark-06d-notifications": [],
+  "dark-06e-feedback": [],
+  "dark-06f-import": [],
+  "dark-06g-recaps": [],
+  "dark-06h-series": [],
+  "dark-06i-erase": [],
+  "dark-06j-android": [],
+  "dark-07-live-start": [],
+  "dark-07b-live-running": [],
+  "dark-07c-home-live": [],
+  "dark-08-toast-delete": []
+ },
+ "census": {
+  "light-01-home": {
+   "color": {
+    "rgb(90, 100, 120)": 23,
+    "rgb(27, 35, 53)": 24,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 7,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 10,
+    "rgb(228, 232, 240)": 5,
+    "rgb(81, 69, 232)": 3,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(81, 69, 232)": 2,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 46,
+    "\"Secular One\"": 13
+   },
+   "size": {
+    "13px": 12,
+    "16px": 8,
+    "12px": 1,
+    "14px": 11,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 26,
+    "500": 1,
+    "600": 27,
+    "700": 5
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 5
+   },
+   "small": []
+  },
+  "light-01-home-full": {
+   "color": {
+    "rgb(90, 100, 120)": 23,
+    "rgb(27, 35, 53)": 24,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 7,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 10,
+    "rgb(228, 232, 240)": 5,
+    "rgb(81, 69, 232)": 3,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(81, 69, 232)": 2,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 46,
+    "\"Secular One\"": 13
+   },
+   "size": {
+    "13px": 12,
+    "16px": 8,
+    "12px": 1,
+    "14px": 11,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 26,
+    "500": 1,
+    "600": 27,
+    "700": 5
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 5
+   },
+   "small": []
+  },
+  "light-02-bell": {
+   "color": {
+    "rgb(90, 100, 120)": 24,
+    "rgb(27, 35, 53)": 26,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 7,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 11,
+    "rgb(228, 232, 240)": 6,
+    "rgb(81, 69, 232)": 3,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(81, 69, 232)": 2,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 48,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 13,
+    "16px": 9,
+    "12px": 1,
+    "14px": 11,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 7,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 28,
+    "500": 1,
+    "600": 28,
+    "700": 5
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 5,
+    "26px": 1,
+    "16px": 1
+   },
+   "small": []
+  },
+  "light-03-editor-new": {
+   "color": {
+    "rgb(90, 100, 120)": 39,
+    "rgb(27, 35, 53)": 70,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 9,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2,
+    "rgb(241, 243, 248)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 26,
+    "rgb(228, 232, 240)": 7,
+    "rgb(81, 69, 232)": 6,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 3,
+    "rgb(241, 243, 248)": 2,
+    "color(srgb 1 1 1 / 0.6)": 11,
+    "color(srgb 0.105882 0.137255 0.207843 / 0.12)": 1,
+    "color(srgb 1 1 1 / 0.55)": 6,
+    "rgb(210, 216, 227)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 16,
+    "rgba(0, 0, 0, 0)": 7,
+    "rgb(81, 69, 232)": 3,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1,
+    "color(srgb 0.105882 0.137255 0.207843 / 0.25)": 9,
+    "rgb(27, 35, 53)": 2
+   },
+   "font": {
+    "Rubik": 100,
+    "\"Secular One\"": 24
+   },
+   "size": {
+    "13px": 16,
+    "16px": 21,
+    "12px": 8,
+    "14px": 33,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 6,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 10,
+    "10px": 5,
+    "26px": 1,
+    "16.12px": 1
+   },
+   "weight": {
+    "400": 45,
+    "500": 1,
+    "600": 70,
+    "700": 8
+   },
+   "radius": {
+    "12px": 17,
+    "50%": 3,
+    "7px": 5,
+    "3px": 2,
+    "18px": 11,
+    "99px": 19,
+    "14px": 13,
+    "9px": 13,
+    "6px": 3,
+    "20px": 1,
+    "16px": 1
+   },
+   "small": [
+    "button 116x40 \"שעון\"",
+    "button 116x40 \"ידני\"",
+    "button 116x40 \"קבלנות\"",
+    "button 73x40 \"+ מקום\"",
+    "button 73x40 \"מסעדה\"",
+    "button 277x40 \"שיעורים פרטיים במתמטיקה \"",
+    "button 72x40 \"הובלות\"",
+    "button 87x40 \"בייביסיטר\"",
+    "button 122x40 \"Tech Support\"",
+    "button 111x40 \"הדרכת טיולים\"",
+    "button 54x40 \"גינון\"",
+    "button 75x40 \"אירועים\"",
+    "button 90x40 \"מוקד לילה\"",
+    "button 27x48 \"2\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 28x48 \"0\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: חוזרת כל שבוע\"",
+    "button 52x32 \"חוזרת כל שבוע\""
+   ]
+  },
+  "light-03b-editor-range": {
+   "color": {
+    "rgb(90, 100, 120)": 39,
+    "rgb(27, 35, 53)": 70,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 9,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2,
+    "rgb(241, 243, 248)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 26,
+    "rgb(228, 232, 240)": 7,
+    "rgb(81, 69, 232)": 6,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 3,
+    "rgb(241, 243, 248)": 2,
+    "color(srgb 1 1 1 / 0.6)": 11,
+    "color(srgb 0.105882 0.137255 0.207843 / 0.12)": 1,
+    "color(srgb 1 1 1 / 0.55)": 6,
+    "rgb(210, 216, 227)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 16,
+    "rgba(0, 0, 0, 0)": 7,
+    "rgb(81, 69, 232)": 3,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1,
+    "color(srgb 0.105882 0.137255 0.207843 / 0.25)": 9,
+    "rgb(27, 35, 53)": 2
+   },
+   "font": {
+    "Rubik": 100,
+    "\"Secular One\"": 24
+   },
+   "size": {
+    "13px": 16,
+    "16px": 21,
+    "12px": 8,
+    "14px": 33,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 6,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 10,
+    "10px": 5,
+    "26px": 1,
+    "16.12px": 1
+   },
+   "weight": {
+    "400": 45,
+    "500": 1,
+    "600": 70,
+    "700": 8
+   },
+   "radius": {
+    "12px": 17,
+    "50%": 3,
+    "7px": 5,
+    "3px": 2,
+    "18px": 11,
+    "99px": 19,
+    "14px": 13,
+    "9px": 13,
+    "6px": 3,
+    "20px": 1,
+    "16px": 1
+   },
+   "small": [
+    "button 116x40 \"שעון\"",
+    "button 116x40 \"ידני\"",
+    "button 116x40 \"קבלנות\"",
+    "button 73x40 \"+ מקום\"",
+    "button 73x40 \"מסעדה\"",
+    "button 277x40 \"שיעורים פרטיים במתמטיקה \"",
+    "button 72x40 \"הובלות\"",
+    "button 87x40 \"בייביסיטר\"",
+    "button 122x40 \"Tech Support\"",
+    "button 111x40 \"הדרכת טיולים\"",
+    "button 54x40 \"גינון\"",
+    "button 75x40 \"אירועים\"",
+    "button 90x40 \"מוקד לילה\"",
+    "button 27x48 \"2\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 28x48 \"0\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: חוזרת כל שבוע\"",
+    "button 52x32 \"חוזרת כל שבוע\""
+   ]
+  },
+  "light-03c-editor-more": {
+   "color": {
+    "rgb(90, 100, 120)": 39,
+    "rgb(27, 35, 53)": 78,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 9,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2,
+    "rgb(241, 243, 248)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 35,
+    "rgb(228, 232, 240)": 7,
+    "rgb(81, 69, 232)": 6,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 3,
+    "rgb(241, 243, 248)": 2,
+    "color(srgb 1 1 1 / 0.6)": 11,
+    "color(srgb 0.105882 0.137255 0.207843 / 0.12)": 1,
+    "color(srgb 1 1 1 / 0.55)": 6,
+    "rgb(210, 216, 227)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 23,
+    "rgba(0, 0, 0, 0)": 7,
+    "rgb(81, 69, 232)": 3,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1,
+    "color(srgb 0.105882 0.137255 0.207843 / 0.25)": 9,
+    "rgb(27, 35, 53)": 3
+   },
+   "font": {
+    "Rubik": 108,
+    "\"Secular One\"": 24
+   },
+   "size": {
+    "13px": 16,
+    "16px": 23,
+    "12px": 8,
+    "14px": 39,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 6,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 10,
+    "10px": 5,
+    "26px": 1,
+    "16.12px": 1
+   },
+   "weight": {
+    "400": 47,
+    "500": 1,
+    "600": 76,
+    "700": 8
+   },
+   "radius": {
+    "12px": 22,
+    "50%": 3,
+    "7px": 5,
+    "3px": 2,
+    "18px": 11,
+    "99px": 19,
+    "14px": 16,
+    "9px": 13,
+    "6px": 3,
+    "20px": 2,
+    "16px": 1
+   },
+   "small": [
+    "button 116x40 \"שעון\"",
+    "button 116x40 \"ידני\"",
+    "button 116x40 \"קבלנות\"",
+    "button 73x40 \"+ מקום\"",
+    "button 73x40 \"מסעדה\"",
+    "button 277x40 \"שיעורים פרטיים במתמטיקה \"",
+    "button 72x40 \"הובלות\"",
+    "button 87x40 \"בייביסיטר\"",
+    "button 122x40 \"Tech Support\"",
+    "button 111x40 \"הדרכת טיולים\"",
+    "button 54x40 \"גינון\"",
+    "button 75x40 \"אירועים\"",
+    "button 90x40 \"מוקד לילה\"",
+    "button 27x48 \"2\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 28x48 \"0\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: חוזרת כל שבוע\"",
+    "button 52x32 \"חוזרת כל שבוע\""
+   ]
+  },
+  "light-03d-editor-full": {
+   "color": {
+    "rgb(90, 100, 120)": 39,
+    "rgb(27, 35, 53)": 78,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 9,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2,
+    "rgb(241, 243, 248)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 35,
+    "rgb(228, 232, 240)": 7,
+    "rgb(81, 69, 232)": 6,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 3,
+    "rgb(241, 243, 248)": 2,
+    "color(srgb 1 1 1 / 0.6)": 11,
+    "color(srgb 0.105882 0.137255 0.207843 / 0.12)": 1,
+    "color(srgb 1 1 1 / 0.55)": 6,
+    "rgb(210, 216, 227)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 23,
+    "rgba(0, 0, 0, 0)": 7,
+    "rgb(81, 69, 232)": 3,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1,
+    "color(srgb 0.105882 0.137255 0.207843 / 0.25)": 9,
+    "rgb(27, 35, 53)": 3
+   },
+   "font": {
+    "Rubik": 108,
+    "\"Secular One\"": 24
+   },
+   "size": {
+    "13px": 16,
+    "16px": 23,
+    "12px": 8,
+    "14px": 39,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 6,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 10,
+    "10px": 5,
+    "26px": 1,
+    "16.12px": 1
+   },
+   "weight": {
+    "400": 47,
+    "500": 1,
+    "600": 76,
+    "700": 8
+   },
+   "radius": {
+    "12px": 22,
+    "50%": 3,
+    "7px": 5,
+    "3px": 2,
+    "18px": 11,
+    "99px": 19,
+    "14px": 16,
+    "9px": 13,
+    "6px": 3,
+    "20px": 2,
+    "16px": 1
+   },
+   "small": [
+    "button 116x40 \"שעון\"",
+    "button 116x40 \"ידני\"",
+    "button 116x40 \"קבלנות\"",
+    "button 73x40 \"+ מקום\"",
+    "button 73x40 \"מסעדה\"",
+    "button 277x40 \"שיעורים פרטיים במתמטיקה \"",
+    "button 72x40 \"הובלות\"",
+    "button 87x40 \"בייביסיטר\"",
+    "button 122x40 \"Tech Support\"",
+    "button 111x40 \"הדרכת טיולים\"",
+    "button 54x40 \"גינון\"",
+    "button 75x40 \"אירועים\"",
+    "button 90x40 \"מוקד לילה\"",
+    "button 27x48 \"2\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 28x48 \"0\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: חוזרת כל שבוע\"",
+    "button 52x32 \"חוזרת כל שבוע\""
+   ]
+  },
+  "light-03e-editor-time-entry": {
+   "color": {
+    "rgb(90, 100, 120)": 39,
+    "rgb(27, 35, 53)": 78,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 9,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2,
+    "rgb(241, 243, 248)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 35,
+    "rgb(228, 232, 240)": 7,
+    "rgb(81, 69, 232)": 6,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 3,
+    "rgb(241, 243, 248)": 2,
+    "color(srgb 1 1 1 / 0.6)": 11,
+    "color(srgb 0.105882 0.137255 0.207843 / 0.12)": 1,
+    "color(srgb 1 1 1 / 0.55)": 6,
+    "rgb(210, 216, 227)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 23,
+    "rgba(0, 0, 0, 0)": 7,
+    "rgb(81, 69, 232)": 3,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1,
+    "color(srgb 0.105882 0.137255 0.207843 / 0.25)": 9,
+    "rgb(27, 35, 53)": 3
+   },
+   "font": {
+    "Rubik": 108,
+    "\"Secular One\"": 24
+   },
+   "size": {
+    "13px": 16,
+    "16px": 23,
+    "12px": 8,
+    "14px": 39,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 6,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 10,
+    "10px": 5,
+    "26px": 1,
+    "16.12px": 1
+   },
+   "weight": {
+    "400": 47,
+    "500": 1,
+    "600": 76,
+    "700": 8
+   },
+   "radius": {
+    "12px": 22,
+    "50%": 3,
+    "7px": 5,
+    "3px": 2,
+    "18px": 11,
+    "99px": 19,
+    "14px": 16,
+    "9px": 13,
+    "6px": 3,
+    "20px": 2,
+    "16px": 1
+   },
+   "small": [
+    "button 116x40 \"שעון\"",
+    "button 116x40 \"ידני\"",
+    "button 116x40 \"קבלנות\"",
+    "button 73x40 \"+ מקום\"",
+    "button 73x40 \"מסעדה\"",
+    "button 277x40 \"שיעורים פרטיים במתמטיקה \"",
+    "button 72x40 \"הובלות\"",
+    "button 87x40 \"בייביסיטר\"",
+    "button 122x40 \"Tech Support\"",
+    "button 111x40 \"הדרכת טיולים\"",
+    "button 54x40 \"גינון\"",
+    "button 75x40 \"אירועים\"",
+    "button 90x40 \"מוקד לילה\"",
+    "button 27x48 \"2\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 28x48 \"0\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: חוזרת כל שבוע\"",
+    "button 52x32 \"חוזרת כל שבוע\""
+   ]
+  },
+  "light-04-detail": {
+   "color": {
+    "rgb(90, 100, 120)": 25,
+    "rgb(27, 35, 53)": 31,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 8,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2,
+    "rgb(194, 54, 43)": 1,
+    "rgb(241, 243, 248)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 11,
+    "rgb(228, 232, 240)": 9,
+    "rgb(81, 69, 232)": 3,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 2,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(81, 69, 232)": 2,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 57,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 14,
+    "16px": 10,
+    "12px": 1,
+    "14px": 12,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 1,
+    "27.28px": 1,
+    "15px": 5
+   },
+   "weight": {
+    "400": 30,
+    "500": 1,
+    "600": 34,
+    "700": 6
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 11,
+    "26px": 1
+   },
+   "small": []
+  },
+  "light-04b-detail-group": {
+   "color": {
+    "rgb(90, 100, 120)": 26,
+    "rgb(27, 35, 53)": 46,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 8,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2,
+    "rgb(194, 54, 43)": 1,
+    "rgb(241, 243, 248)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 13,
+    "rgb(228, 232, 240)": 15,
+    "rgb(81, 69, 232)": 3,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 2,
+    "rgba(0, 0, 0, 0.45)": 1,
+    "rgb(210, 216, 227)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 7,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(81, 69, 232)": 2,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 73,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 14,
+    "16px": 11,
+    "12px": 1,
+    "14px": 17,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 1,
+    "27.28px": 1,
+    "15px": 13,
+    "8.68px": 1,
+    "9.3px": 1
+   },
+   "weight": {
+    "400": 32,
+    "500": 1,
+    "600": 47,
+    "700": 7
+   },
+   "radius": {
+    "12px": 5,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 17,
+    "26px": 1
+   },
+   "small": []
+  },
+  "light-04c-detail-unknown-rate": {
+   "color": {
+    "rgb(90, 100, 120)": 25,
+    "rgb(27, 35, 53)": 29,
+    "rgb(154, 80, 0)": 2,
+    "rgb(255, 255, 255)": 8,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2,
+    "rgb(194, 54, 43)": 1,
+    "rgb(241, 243, 248)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 11,
+    "rgb(228, 232, 240)": 10,
+    "rgb(81, 69, 232)": 3,
+    "rgb(255, 235, 199)": 2,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 2,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(81, 69, 232)": 2,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 57,
+    "\"Secular One\"": 13
+   },
+   "size": {
+    "13px": 14,
+    "16px": 9,
+    "12px": 1,
+    "14px": 12,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 5,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "15px": 6
+   },
+   "weight": {
+    "400": 28,
+    "500": 1,
+    "600": 35,
+    "700": 6
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 6,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 12,
+    "26px": 1
+   },
+   "small": []
+  },
+  "light-05-history": {
+   "color": {
+    "rgb(27, 35, 53)": 43,
+    "rgb(90, 100, 120)": 36,
+    "rgb(154, 80, 0)": 2,
+    "rgb(255, 255, 255)": 14,
+    "rgb(26, 18, 0)": 1,
+    "rgb(70, 80, 102)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 17,
+    "rgb(255, 235, 199)": 2,
+    "rgb(228, 232, 240)": 9,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1,
+    "rgb(81, 69, 232)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 3,
+    "rgba(0, 0, 0, 0)": 13,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 15,
+    "Rubik": 83
+   },
+   "size": {
+    "30px": 1,
+    "14px": 17,
+    "13px": 27,
+    "26px": 2,
+    "16.12px": 2,
+    "16px": 14,
+    "11px": 10,
+    "19px": 12,
+    "11.78px": 12,
+    "28px": 1
+   },
+   "weight": {
+    "400": 30,
+    "600": 55,
+    "700": 13
+   },
+   "radius": {
+    "12px": 3,
+    "20px": 1,
+    "99px": 6,
+    "18px": 13,
+    "14px": 13,
+    "7px": 10
+   },
+   "small": []
+  },
+  "light-05a-history-full": {
+   "color": {
+    "rgb(27, 35, 53)": 43,
+    "rgb(90, 100, 120)": 36,
+    "rgb(154, 80, 0)": 2,
+    "rgb(255, 255, 255)": 14,
+    "rgb(26, 18, 0)": 1,
+    "rgb(70, 80, 102)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 17,
+    "rgb(255, 235, 199)": 2,
+    "rgb(228, 232, 240)": 9,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1,
+    "rgb(81, 69, 232)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 3,
+    "rgba(0, 0, 0, 0)": 13,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 15,
+    "Rubik": 83
+   },
+   "size": {
+    "30px": 1,
+    "14px": 17,
+    "13px": 27,
+    "26px": 2,
+    "16.12px": 2,
+    "16px": 14,
+    "11px": 10,
+    "19px": 12,
+    "11.78px": 12,
+    "28px": 1
+   },
+   "weight": {
+    "400": 30,
+    "600": 55,
+    "700": 13
+   },
+   "radius": {
+    "12px": 3,
+    "20px": 1,
+    "99px": 6,
+    "18px": 13,
+    "14px": 13,
+    "7px": 10
+   },
+   "small": []
+  },
+  "light-05b-history-search": {
+   "color": {
+    "rgb(27, 35, 53)": 12,
+    "rgb(90, 100, 120)": 13,
+    "rgb(154, 80, 0)": 2,
+    "rgb(255, 255, 255)": 5,
+    "rgb(70, 80, 102)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 9,
+    "rgb(255, 235, 199)": 2,
+    "rgb(228, 232, 240)": 2,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1,
+    "rgb(81, 69, 232)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "rgba(0, 0, 0, 0)": 3,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 4,
+    "Rubik": 30
+   },
+   "size": {
+    "30px": 1,
+    "14px": 8,
+    "13px": 11,
+    "26px": 1,
+    "16.12px": 1,
+    "16px": 4,
+    "11px": 3,
+    "19px": 2,
+    "11.78px": 2,
+    "28px": 1
+   },
+   "weight": {
+    "400": 9,
+    "600": 22,
+    "700": 3
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 4,
+    "50%": 1,
+    "20px": 1,
+    "99px": 6,
+    "18px": 3,
+    "7px": 3
+   },
+   "small": []
+  },
+  "light-05c-history-search-empty": {
+   "color": {
+    "rgb(27, 35, 53)": 5,
+    "rgb(90, 100, 120)": 3,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 6,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1,
+    "rgb(81, 69, 232)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 3,
+    "Rubik": 9
+   },
+   "size": {
+    "30px": 1,
+    "14px": 5,
+    "13px": 3,
+    "26px": 1,
+    "22px": 1,
+    "28px": 1
+   },
+   "weight": {
+    "400": 6,
+    "600": 6
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5
+   },
+   "small": []
+  },
+  "light-05d-history-filters": {
+   "color": {
+    "rgb(27, 35, 53)": 25,
+    "rgb(90, 100, 120)": 17,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2,
+    "rgb(241, 243, 248)": 1
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 22,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 2,
+    "rgb(81, 69, 232)": 1,
+    "rgba(0, 0, 0, 0.45)": 1,
+    "rgb(228, 232, 240)": 6,
+    "rgb(210, 216, 227)": 2
+   },
+   "border": {
+    "rgb(210, 216, 227)": 14,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1,
+    "rgb(27, 35, 53)": 1
+   },
+   "font": {
+    "\"Secular One\"": 4,
+    "Rubik": 43
+   },
+   "size": {
+    "30px": 1,
+    "14px": 15,
+    "13px": 22,
+    "26px": 1,
+    "22px": 2,
+    "28px": 1,
+    "15px": 3,
+    "16px": 2
+   },
+   "weight": {
+    "400": 11,
+    "600": 36
+   },
+   "radius": {
+    "12px": 19,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5,
+    "26px": 1,
+    "9px": 15,
+    "16px": 2
+   },
+   "small": [
+    "button 59x38 \"עבדתי\"",
+    "button 87x38 \"מתוכנן · 14\"",
+    "button 96x38 \"כל התאריכים\"",
+    "button 53x38 \"חודש\"",
+    "button 48x38 \"טווח\"",
+    "button 88x38 \"החדש קודם\"",
+    "button 79x38 \"הישן קודם\"",
+    "button 81x38 \"לפי הוספה\"",
+    "button 50x38 \"הכול\"",
+    "button 57x38 \"ממתין\"",
+    "button 52x38 \"שולם\"",
+    "button 80x38 \"בלי תעריף\"",
+    "button 50x38 \"הכול\"",
+    "button 64x38 \"₪ שקל\"",
+    "button 60x38 \"$ דולר\""
+   ]
+  },
+  "light-05e-history-select-ERR": {
+   "color": {
+    "rgb(27, 35, 53)": 5,
+    "rgb(90, 100, 120)": 3,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 6,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1,
+    "rgb(81, 69, 232)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 3,
+    "Rubik": 9
+   },
+   "size": {
+    "30px": 1,
+    "14px": 5,
+    "13px": 3,
+    "26px": 1,
+    "22px": 1,
+    "28px": 1
+   },
+   "weight": {
+    "400": 6,
+    "600": 6
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5
+   },
+   "small": []
+  },
+  "light-05f-history-copy": {
+   "color": {
+    "rgb(27, 35, 53)": 8,
+    "rgb(90, 100, 120)": 4,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 7,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1,
+    "rgb(81, 69, 232)": 1,
+    "rgba(0, 0, 0, 0.45)": 1,
+    "rgb(228, 232, 240)": 2
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 4,
+    "Rubik": 12
+   },
+   "size": {
+    "30px": 1,
+    "14px": 5,
+    "13px": 4,
+    "26px": 1,
+    "22px": 2,
+    "28px": 1,
+    "16px": 2
+   },
+   "weight": {
+    "400": 8,
+    "600": 8
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5,
+    "26px": 1,
+    "16px": 2
+   },
+   "small": []
+  },
+  "light-05g-history-month-ERR": {
+   "color": {
+    "rgb(27, 35, 53)": 5,
+    "rgb(90, 100, 120)": 3,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 6,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1,
+    "rgb(81, 69, 232)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 3,
+    "Rubik": 9
+   },
+   "size": {
+    "30px": 1,
+    "14px": 5,
+    "13px": 3,
+    "26px": 1,
+    "22px": 1,
+    "28px": 1
+   },
+   "weight": {
+    "400": 6,
+    "600": 6
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5
+   },
+   "small": []
+  },
+  "light-05h-history-pending-ERR": {
+   "color": {
+    "rgb(27, 35, 53)": 5,
+    "rgb(90, 100, 120)": 3,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 6,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1,
+    "rgb(81, 69, 232)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 5,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 3,
+    "Rubik": 9
+   },
+   "size": {
+    "30px": 1,
+    "14px": 5,
+    "13px": 3,
+    "26px": 1,
+    "22px": 1,
+    "28px": 1
+   },
+   "weight": {
+    "400": 6,
+    "600": 6
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5
+   },
+   "small": []
+  },
+  "light-06-settings": {
+   "color": {
+    "rgb(27, 35, 53)": 33,
+    "rgb(90, 100, 120)": 5,
+    "rgb(241, 243, 248)": 1,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 19,
+    "rgb(210, 216, 227)": 5,
+    "rgb(228, 232, 240)": 6,
+    "rgb(11, 127, 96)": 1,
+    "rgb(27, 35, 53)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 9,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 9,
+    "Rubik": 35
+   },
+   "size": {
+    "30px": 1,
+    "22px": 8,
+    "16px": 11,
+    "14px": 11,
+    "13px": 7,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 11,
+    "500": 10,
+    "600": 22,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 7
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "light-06a-settings-full": {
+   "color": {
+    "rgb(27, 35, 53)": 33,
+    "rgb(90, 100, 120)": 5,
+    "rgb(241, 243, 248)": 1,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 19,
+    "rgb(210, 216, 227)": 5,
+    "rgb(228, 232, 240)": 6,
+    "rgb(11, 127, 96)": 1,
+    "rgb(27, 35, 53)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 9,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 9,
+    "Rubik": 35
+   },
+   "size": {
+    "30px": 1,
+    "22px": 8,
+    "16px": 11,
+    "14px": 11,
+    "13px": 7,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 11,
+    "500": 10,
+    "600": 22,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 7
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "light-06b-places": {
+   "color": {
+    "rgb(27, 35, 53)": 53,
+    "rgb(90, 100, 120)": 14,
+    "rgb(241, 243, 248)": 1,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 10,
+    "rgb(26, 18, 0)": 1
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 29,
+    "rgb(210, 216, 227)": 5,
+    "rgb(228, 232, 240)": 7,
+    "rgb(11, 127, 96)": 1,
+    "rgb(27, 35, 53)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 18,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 72
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 21,
+    "14px": 29,
+    "13px": 16,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 21,
+    "500": 10,
+    "600": 41,
+    "700": 10
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 19,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 25,
+    "26px": 1,
+    "18px": 9,
+    "16px": 1
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\"",
+    "button 227x40 \"מ\nמסעדה · ברירת מחדל\n₪50\"",
+    "button 227x40 \"ה\nהובלות\n$60 לשעה\"",
+    "button 227x40 \"ב\nבייביסיטר\n₪45 לשעה\"",
+    "button 227x40 \"T\nTech Support\n$30 לשעה\"",
+    "button 227x40 \"ה\nהדרכת טיולים\n₪80 לשעה\"",
+    "button 227x40 \"ג\nגינון\n₪55 לשעה\"",
+    "button 227x40 \"א\nאירועים\n₪70 לשעה\"",
+    "button 227x40 \"מ\nמוקד לילה\n₪48 לשעה\""
+   ]
+  },
+  "light-06c-place-edit": {
+   "color": {
+    "rgb(27, 35, 53)": 38,
+    "rgb(90, 100, 120)": 7,
+    "rgb(241, 243, 248)": 2,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 23,
+    "rgb(210, 216, 227)": 5,
+    "rgb(228, 232, 240)": 7,
+    "rgb(11, 127, 96)": 1,
+    "rgb(27, 35, 53)": 3,
+    "rgb(13, 16, 21)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 2,
+    "rgba(0, 0, 0, 0.45)": 1,
+    "rgb(14, 128, 89)": 1,
+    "rgb(214, 51, 108)": 1,
+    "rgb(245, 184, 46)": 1,
+    "rgb(125, 60, 240)": 1,
+    "rgb(31, 114, 224)": 1,
+    "rgb(14, 138, 134)": 1,
+    "rgb(181, 41, 78)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 18,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1,
+    "rgb(27, 35, 53)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 42
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 15,
+    "14px": 11,
+    "13px": 10,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 16,
+    "500": 10,
+    "600": 25,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 19,
+    "50%": 7,
+    "9px": 7,
+    "99px": 7,
+    "14px": 9,
+    "26px": 1,
+    "16px": 1
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\"",
+    "button 36x42 \"₪\"",
+    "button 33x42 \"$\"",
+    "button 39x44 \"אינדיגו\"",
+    "button 39x44 \"ירוק\"",
+    "button 39x44 \"ורד\"",
+    "button 39x44 \"חרדל\"",
+    "button 39x44 \"סגול\"",
+    "button 39x44 \"תכלת\"",
+    "button 39x44 \"טורקיז\"",
+    "button 39x44 \"בורדו\""
+   ]
+  },
+  "light-06d-notifications": {
+   "color": {
+    "rgb(27, 35, 53)": 33,
+    "rgb(90, 100, 120)": 5,
+    "rgb(241, 243, 248)": 1,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 19,
+    "rgb(210, 216, 227)": 4,
+    "rgb(228, 232, 240)": 6,
+    "rgb(11, 127, 96)": 2,
+    "rgb(27, 35, 53)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 9,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 9,
+    "Rubik": 35
+   },
+   "size": {
+    "30px": 1,
+    "22px": 8,
+    "16px": 11,
+    "14px": 11,
+    "13px": 7,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 11,
+    "500": 10,
+    "600": 22,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 7
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "light-06e-feedback": {
+   "color": {
+    "rgb(27, 35, 53)": 38,
+    "rgb(90, 100, 120)": 6,
+    "rgb(241, 243, 248)": 2,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 24,
+    "rgb(210, 216, 227)": 4,
+    "rgb(228, 232, 240)": 7,
+    "rgb(11, 127, 96)": 2,
+    "rgb(27, 35, 53)": 3,
+    "rgb(13, 16, 21)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 12,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1,
+    "rgb(27, 35, 53)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 41
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 12,
+    "14px": 14,
+    "13px": 8,
+    "15px": 6,
+    "28px": 1
+   },
+   "weight": {
+    "400": 13,
+    "500": 10,
+    "600": 27,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 13,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 9,
+    "26px": 1,
+    "16px": 1
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "light-06f-import": {
+   "color": {
+    "rgb(27, 35, 53)": 36,
+    "rgb(90, 100, 120)": 5,
+    "rgb(241, 243, 248)": 2,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 21,
+    "rgb(210, 216, 227)": 4,
+    "rgb(228, 232, 240)": 8,
+    "rgb(11, 127, 96)": 2,
+    "rgb(27, 35, 53)": 3,
+    "rgb(13, 16, 21)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 10,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 38
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 13,
+    "14px": 11,
+    "13px": 7,
+    "15px": 6,
+    "28px": 1
+   },
+   "weight": {
+    "400": 12,
+    "500": 10,
+    "600": 25,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 8,
+    "9px": 5,
+    "99px": 7,
+    "14px": 9,
+    "26px": 1,
+    "16px": 2
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\"",
+    "button 40x40 \"הסבר: ייבוא נתונים\""
+   ]
+  },
+  "light-06g-recaps": {
+   "color": {
+    "rgb(27, 35, 53)": 34,
+    "rgb(90, 100, 120)": 5,
+    "rgb(241, 243, 248)": 1,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 4
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 20,
+    "rgb(210, 216, 227)": 4,
+    "rgb(228, 232, 240)": 6,
+    "rgb(11, 127, 96)": 2,
+    "rgb(27, 35, 53)": 2,
+    "rgb(13, 16, 21)": 2,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 9,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 11,
+    "Rubik": 36
+   },
+   "size": {
+    "30px": 1,
+    "22px": 10,
+    "16px": 11,
+    "14px": 11,
+    "13px": 8,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 14,
+    "500": 10,
+    "600": 22,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 11,
+    "50%": 8,
+    "9px": 5,
+    "99px": 7,
+    "14px": 7,
+    "26px": 1,
+    "18px": 1
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\"",
+    "button 40x40 \"הסבר: הסיכומים שלי\""
+   ]
+  },
+  "light-06h-series": {
+   "color": {
+    "rgb(27, 35, 53)": 35,
+    "rgb(90, 100, 120)": 6,
+    "rgb(241, 243, 248)": 1,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 20,
+    "rgb(210, 216, 227)": 5,
+    "rgb(228, 232, 240)": 6,
+    "rgb(11, 127, 96)": 3,
+    "rgb(27, 35, 53)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 9,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 37
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 11,
+    "14px": 12,
+    "13px": 8,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 13,
+    "500": 10,
+    "600": 23,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 8,
+    "9px": 5,
+    "99px": 8,
+    "14px": 7,
+    "26px": 1
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\"",
+    "button 40x40 \"הסבר: רישום אוטומטי\"",
+    "button 52x32 \"רישום אוטומטי\""
+   ]
+  },
+  "light-06i-erase": {
+   "color": {
+    "rgb(27, 35, 53)": 38,
+    "rgb(90, 100, 120)": 5,
+    "rgb(241, 243, 248)": 1,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 3
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 21,
+    "rgb(210, 216, 227)": 4,
+    "rgb(228, 232, 240)": 8,
+    "rgb(11, 127, 96)": 2,
+    "rgb(27, 35, 53)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 1,
+    "rgba(0, 0, 0, 0.45)": 1,
+    "rgb(194, 54, 43)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 10,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 40
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 16,
+    "14px": 11,
+    "13px": 7,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 14,
+    "500": 10,
+    "600": 25,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 8,
+    "26px": 1,
+    "16px": 3
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "light-06j-android": {
+   "color": {
+    "rgb(27, 35, 53)": 40,
+    "rgb(90, 100, 120)": 16,
+    "rgb(241, 243, 248)": 2,
+    "rgb(194, 54, 43)": 1,
+    "rgb(70, 80, 102)": 2,
+    "rgb(255, 255, 255)": 2
+   },
+   "bg": {
+    "rgb(255, 255, 255)": 20,
+    "rgb(210, 216, 227)": 4,
+    "rgb(228, 232, 240)": 7,
+    "rgb(11, 127, 96)": 2,
+    "rgb(27, 35, 53)": 3,
+    "rgb(13, 16, 21)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(81, 69, 232)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 11,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 53
+   },
+   "size": {
+    "30px": 1,
+    "22px": 8,
+    "16px": 16,
+    "14px": 21,
+    "13px": 10,
+    "15px": 5,
+    "28px": 1,
+    "24px": 1
+   },
+   "weight": {
+    "400": 23,
+    "500": 10,
+    "600": 26,
+    "700": 4
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 8,
+    "9px": 5,
+    "99px": 7,
+    "14px": 7,
+    "26px": 1,
+    "16px": 2
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "light-07-live-start": {
+   "color": {
+    "rgb(90, 100, 120)": 24,
+    "rgb(27, 35, 53)": 36,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 7,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2,
+    "rgb(241, 243, 248)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 22,
+    "rgb(228, 232, 240)": 6,
+    "rgb(81, 69, 232)": 3,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 2,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 14,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(81, 69, 232)": 2,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1,
+    "rgb(27, 35, 53)": 1
+   },
+   "font": {
+    "Rubik": 59,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 14,
+    "16px": 10,
+    "12px": 1,
+    "14px": 20,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 7,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 28,
+    "500": 1,
+    "600": 39,
+    "700": 5
+   },
+   "radius": {
+    "12px": 13,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 6,
+    "26px": 1,
+    "9px": 2,
+    "16px": 1
+   },
+   "small": [
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\""
+   ]
+  },
+  "light-07b-live-running": {
+   "color": {
+    "rgb(90, 100, 120)": 23,
+    "rgb(27, 35, 53)": 24,
+    "rgb(154, 80, 0)": 1,
+    "rgb(241, 243, 248)": 5,
+    "rgb(255, 255, 255)": 7,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 9,
+    "rgb(228, 232, 240)": 5,
+    "rgb(81, 69, 232)": 3,
+    "rgb(255, 235, 199)": 1,
+    "rgb(27, 35, 53)": 2,
+    "rgb(241, 243, 248)": 1,
+    "rgba(255, 255, 255, 0.9)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 4,
+    "color(srgb 0.945098 0.952941 0.972549 / 0.4)": 1,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(81, 69, 232)": 2,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 50,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 12,
+    "16px": 9,
+    "12px": 1,
+    "14px": 13,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "24.8px": 1,
+    "40px": 1,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 27,
+    "500": 1,
+    "600": 31,
+    "700": 5
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 1,
+    "7px": 5,
+    "3px": 2,
+    "18px": 8,
+    "99px": 6,
+    "20px": 1,
+    "16px": 2,
+    "14px": 5
+   },
+   "small": []
+  },
+  "light-07c-home-live": {
+   "color": {
+    "rgb(90, 100, 120)": 23,
+    "rgb(27, 35, 53)": 24,
+    "rgb(154, 80, 0)": 1,
+    "rgb(241, 243, 248)": 5,
+    "rgb(255, 255, 255)": 7,
+    "rgb(81, 69, 232)": 2,
+    "rgb(70, 80, 102)": 2
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 9,
+    "rgb(228, 232, 240)": 5,
+    "rgb(81, 69, 232)": 3,
+    "rgb(255, 235, 199)": 1,
+    "rgb(27, 35, 53)": 2,
+    "rgb(241, 243, 248)": 1,
+    "rgba(255, 255, 255, 0.9)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 4,
+    "color(srgb 0.945098 0.952941 0.972549 / 0.4)": 1,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(81, 69, 232)": 2,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 50,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 12,
+    "16px": 9,
+    "12px": 1,
+    "14px": 13,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "24.8px": 1,
+    "40px": 1,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 27,
+    "500": 1,
+    "600": 31,
+    "700": 5
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 1,
+    "7px": 5,
+    "3px": 2,
+    "18px": 8,
+    "99px": 6,
+    "20px": 1,
+    "16px": 2,
+    "14px": 5
+   },
+   "small": []
+  },
+  "light-08-toast-delete": {
+   "color": {
+    "rgb(90, 100, 120)": 23,
+    "rgb(27, 35, 53)": 25,
+    "rgb(154, 80, 0)": 1,
+    "rgb(255, 255, 255)": 7,
+    "rgb(81, 69, 232)": 3,
+    "rgb(70, 80, 102)": 2
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(255, 255, 255)": 10,
+    "rgb(228, 232, 240)": 5,
+    "rgb(81, 69, 232)": 3,
+    "rgb(255, 235, 199)": 1,
+    "rgb(11, 127, 96)": 1,
+    "rgba(255, 255, 255, 0.9)": 1,
+    "rgb(27, 35, 53)": 1,
+    "rgba(255, 255, 255, 0.95)": 1
+   },
+   "border": {
+    "rgb(210, 216, 227)": 6,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(81, 69, 232)": 2,
+    "color(srgb 0.823529 0.847059 0.890196 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 48,
+    "\"Secular One\"": 13
+   },
+   "size": {
+    "13px": 12,
+    "16px": 8,
+    "12px": 1,
+    "14px": 13,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 26,
+    "500": 1,
+    "600": 28,
+    "700": 6
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 8,
+    "14px": 5
+   },
+   "small": []
+  },
+  "dark-01-home": {
+   "color": {
+    "rgb(179, 179, 179)": 25,
+    "rgb(255, 255, 255)": 30,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 10,
+    "rgb(42, 42, 42)": 5,
+    "rgb(143, 135, 255)": 3,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(143, 135, 255)": 2,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 46,
+    "\"Secular One\"": 13
+   },
+   "size": {
+    "13px": 12,
+    "16px": 8,
+    "12px": 1,
+    "14px": 11,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 26,
+    "500": 1,
+    "600": 27,
+    "700": 5
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 5
+   },
+   "small": []
+  },
+  "dark-01-home-full": {
+   "color": {
+    "rgb(179, 179, 179)": 25,
+    "rgb(255, 255, 255)": 30,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 10,
+    "rgb(42, 42, 42)": 5,
+    "rgb(143, 135, 255)": 3,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(143, 135, 255)": 2,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 46,
+    "\"Secular One\"": 13
+   },
+   "size": {
+    "13px": 12,
+    "16px": 8,
+    "12px": 1,
+    "14px": 11,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 26,
+    "500": 1,
+    "600": 27,
+    "700": 5
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 5
+   },
+   "small": []
+  },
+  "dark-02-bell": {
+   "color": {
+    "rgb(179, 179, 179)": 26,
+    "rgb(255, 255, 255)": 32,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 11,
+    "rgb(42, 42, 42)": 6,
+    "rgb(143, 135, 255)": 3,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(143, 135, 255)": 2,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 48,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 13,
+    "16px": 9,
+    "12px": 1,
+    "14px": 11,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 7,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 28,
+    "500": 1,
+    "600": 28,
+    "700": 5
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 5,
+    "26px": 1,
+    "16px": 1
+   },
+   "small": []
+  },
+  "dark-03-editor-new": {
+   "color": {
+    "rgb(179, 179, 179)": 41,
+    "rgb(255, 255, 255)": 73,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 5,
+    "rgb(18, 15, 58)": 1,
+    "rgb(30, 30, 30)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 18,
+    "rgb(42, 42, 42)": 6,
+    "rgb(143, 135, 255)": 6,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 5,
+    "rgb(18, 18, 18)": 2,
+    "color(srgb 1 1 1 / 0.1)": 7,
+    "color(srgb 0.117647 0.117647 0.117647 / 0.6)": 9,
+    "color(srgb 1 1 1 / 0.06)": 2,
+    "color(srgb 1 1 1 / 0.12)": 1,
+    "color(srgb 0.117647 0.117647 0.117647 / 0.55)": 6,
+    "rgb(48, 48, 48)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 10,
+    "rgba(0, 0, 0, 0)": 13,
+    "rgb(143, 135, 255)": 3,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1,
+    "color(srgb 1 1 1 / 0.25)": 9,
+    "rgb(255, 255, 255)": 2
+   },
+   "font": {
+    "Rubik": 100,
+    "\"Secular One\"": 24
+   },
+   "size": {
+    "13px": 16,
+    "16px": 21,
+    "12px": 8,
+    "14px": 33,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 6,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 10,
+    "10px": 5,
+    "26px": 1,
+    "16.12px": 1
+   },
+   "weight": {
+    "400": 45,
+    "500": 1,
+    "600": 70,
+    "700": 8
+   },
+   "radius": {
+    "12px": 17,
+    "50%": 3,
+    "7px": 5,
+    "3px": 2,
+    "18px": 11,
+    "99px": 19,
+    "14px": 13,
+    "9px": 13,
+    "6px": 3,
+    "20px": 1,
+    "16px": 1
+   },
+   "small": [
+    "button 116x40 \"שעון\"",
+    "button 116x40 \"ידני\"",
+    "button 116x40 \"קבלנות\"",
+    "button 73x40 \"+ מקום\"",
+    "button 73x40 \"מסעדה\"",
+    "button 277x40 \"שיעורים פרטיים במתמטיקה \"",
+    "button 72x40 \"הובלות\"",
+    "button 87x40 \"בייביסיטר\"",
+    "button 122x40 \"Tech Support\"",
+    "button 111x40 \"הדרכת טיולים\"",
+    "button 54x40 \"גינון\"",
+    "button 75x40 \"אירועים\"",
+    "button 90x40 \"מוקד לילה\"",
+    "button 27x48 \"2\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 28x48 \"0\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: חוזרת כל שבוע\"",
+    "button 52x32 \"חוזרת כל שבוע\""
+   ]
+  },
+  "dark-03b-editor-range": {
+   "color": {
+    "rgb(179, 179, 179)": 41,
+    "rgb(255, 255, 255)": 73,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 5,
+    "rgb(18, 15, 58)": 1,
+    "rgb(30, 30, 30)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 18,
+    "rgb(42, 42, 42)": 6,
+    "rgb(143, 135, 255)": 6,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 5,
+    "rgb(18, 18, 18)": 2,
+    "color(srgb 1 1 1 / 0.1)": 7,
+    "color(srgb 0.117647 0.117647 0.117647 / 0.6)": 9,
+    "color(srgb 1 1 1 / 0.06)": 2,
+    "color(srgb 1 1 1 / 0.12)": 1,
+    "color(srgb 0.117647 0.117647 0.117647 / 0.55)": 6,
+    "rgb(48, 48, 48)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 10,
+    "rgba(0, 0, 0, 0)": 13,
+    "rgb(143, 135, 255)": 3,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1,
+    "color(srgb 1 1 1 / 0.25)": 9,
+    "rgb(255, 255, 255)": 2
+   },
+   "font": {
+    "Rubik": 100,
+    "\"Secular One\"": 24
+   },
+   "size": {
+    "13px": 16,
+    "16px": 21,
+    "12px": 8,
+    "14px": 33,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 6,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 10,
+    "10px": 5,
+    "26px": 1,
+    "16.12px": 1
+   },
+   "weight": {
+    "400": 45,
+    "500": 1,
+    "600": 70,
+    "700": 8
+   },
+   "radius": {
+    "12px": 17,
+    "50%": 3,
+    "7px": 5,
+    "3px": 2,
+    "18px": 11,
+    "99px": 19,
+    "14px": 13,
+    "9px": 13,
+    "6px": 3,
+    "20px": 1,
+    "16px": 1
+   },
+   "small": [
+    "button 116x40 \"שעון\"",
+    "button 116x40 \"ידני\"",
+    "button 116x40 \"קבלנות\"",
+    "button 73x40 \"+ מקום\"",
+    "button 73x40 \"מסעדה\"",
+    "button 277x40 \"שיעורים פרטיים במתמטיקה \"",
+    "button 72x40 \"הובלות\"",
+    "button 87x40 \"בייביסיטר\"",
+    "button 122x40 \"Tech Support\"",
+    "button 111x40 \"הדרכת טיולים\"",
+    "button 54x40 \"גינון\"",
+    "button 75x40 \"אירועים\"",
+    "button 90x40 \"מוקד לילה\"",
+    "button 27x48 \"2\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 28x48 \"0\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: חוזרת כל שבוע\"",
+    "button 52x32 \"חוזרת כל שבוע\""
+   ]
+  },
+  "dark-03c-editor-more": {
+   "color": {
+    "rgb(179, 179, 179)": 41,
+    "rgb(255, 255, 255)": 81,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 5,
+    "rgb(18, 15, 58)": 1,
+    "rgb(30, 30, 30)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 27,
+    "rgb(42, 42, 42)": 6,
+    "rgb(143, 135, 255)": 6,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 5,
+    "rgb(18, 18, 18)": 2,
+    "color(srgb 1 1 1 / 0.1)": 7,
+    "color(srgb 0.117647 0.117647 0.117647 / 0.6)": 9,
+    "color(srgb 1 1 1 / 0.06)": 2,
+    "color(srgb 1 1 1 / 0.12)": 1,
+    "color(srgb 0.117647 0.117647 0.117647 / 0.55)": 6,
+    "rgb(48, 48, 48)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 17,
+    "rgba(0, 0, 0, 0)": 13,
+    "rgb(143, 135, 255)": 3,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1,
+    "color(srgb 1 1 1 / 0.25)": 9,
+    "rgb(255, 255, 255)": 3
+   },
+   "font": {
+    "Rubik": 108,
+    "\"Secular One\"": 24
+   },
+   "size": {
+    "13px": 16,
+    "16px": 23,
+    "12px": 8,
+    "14px": 39,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 6,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 10,
+    "10px": 5,
+    "26px": 1,
+    "16.12px": 1
+   },
+   "weight": {
+    "400": 47,
+    "500": 1,
+    "600": 76,
+    "700": 8
+   },
+   "radius": {
+    "12px": 22,
+    "50%": 3,
+    "7px": 5,
+    "3px": 2,
+    "18px": 11,
+    "99px": 19,
+    "14px": 16,
+    "9px": 13,
+    "6px": 3,
+    "20px": 2,
+    "16px": 1
+   },
+   "small": [
+    "button 116x40 \"שעון\"",
+    "button 116x40 \"ידני\"",
+    "button 116x40 \"קבלנות\"",
+    "button 73x40 \"+ מקום\"",
+    "button 73x40 \"מסעדה\"",
+    "button 277x40 \"שיעורים פרטיים במתמטיקה \"",
+    "button 72x40 \"הובלות\"",
+    "button 87x40 \"בייביסיטר\"",
+    "button 122x40 \"Tech Support\"",
+    "button 111x40 \"הדרכת טיולים\"",
+    "button 54x40 \"גינון\"",
+    "button 75x40 \"אירועים\"",
+    "button 90x40 \"מוקד לילה\"",
+    "button 27x48 \"2\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 28x48 \"0\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: חוזרת כל שבוע\"",
+    "button 52x32 \"חוזרת כל שבוע\""
+   ]
+  },
+  "dark-03d-editor-full": {
+   "color": {
+    "rgb(179, 179, 179)": 41,
+    "rgb(255, 255, 255)": 81,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 5,
+    "rgb(18, 15, 58)": 1,
+    "rgb(30, 30, 30)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 27,
+    "rgb(42, 42, 42)": 6,
+    "rgb(143, 135, 255)": 6,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 5,
+    "rgb(18, 18, 18)": 2,
+    "color(srgb 1 1 1 / 0.1)": 7,
+    "color(srgb 0.117647 0.117647 0.117647 / 0.6)": 9,
+    "color(srgb 1 1 1 / 0.06)": 2,
+    "color(srgb 1 1 1 / 0.12)": 1,
+    "color(srgb 0.117647 0.117647 0.117647 / 0.55)": 6,
+    "rgb(48, 48, 48)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 17,
+    "rgba(0, 0, 0, 0)": 13,
+    "rgb(143, 135, 255)": 3,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1,
+    "color(srgb 1 1 1 / 0.25)": 9,
+    "rgb(255, 255, 255)": 3
+   },
+   "font": {
+    "Rubik": 108,
+    "\"Secular One\"": 24
+   },
+   "size": {
+    "13px": 16,
+    "16px": 23,
+    "12px": 8,
+    "14px": 39,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 6,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 10,
+    "10px": 5,
+    "26px": 1,
+    "16.12px": 1
+   },
+   "weight": {
+    "400": 47,
+    "500": 1,
+    "600": 76,
+    "700": 8
+   },
+   "radius": {
+    "12px": 22,
+    "50%": 3,
+    "7px": 5,
+    "3px": 2,
+    "18px": 11,
+    "99px": 19,
+    "14px": 16,
+    "9px": 13,
+    "6px": 3,
+    "20px": 2,
+    "16px": 1
+   },
+   "small": [
+    "button 116x40 \"שעון\"",
+    "button 116x40 \"ידני\"",
+    "button 116x40 \"קבלנות\"",
+    "button 73x40 \"+ מקום\"",
+    "button 73x40 \"מסעדה\"",
+    "button 277x40 \"שיעורים פרטיים במתמטיקה \"",
+    "button 72x40 \"הובלות\"",
+    "button 87x40 \"בייביסיטר\"",
+    "button 122x40 \"Tech Support\"",
+    "button 111x40 \"הדרכת טיולים\"",
+    "button 54x40 \"גינון\"",
+    "button 75x40 \"אירועים\"",
+    "button 90x40 \"מוקד לילה\"",
+    "button 27x48 \"2\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 28x48 \"0\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: חוזרת כל שבוע\"",
+    "button 52x32 \"חוזרת כל שבוע\""
+   ]
+  },
+  "dark-03e-editor-time-entry": {
+   "color": {
+    "rgb(179, 179, 179)": 41,
+    "rgb(255, 255, 255)": 81,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 5,
+    "rgb(18, 15, 58)": 1,
+    "rgb(30, 30, 30)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 27,
+    "rgb(42, 42, 42)": 6,
+    "rgb(143, 135, 255)": 6,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 5,
+    "rgb(18, 18, 18)": 2,
+    "color(srgb 1 1 1 / 0.1)": 7,
+    "color(srgb 0.117647 0.117647 0.117647 / 0.6)": 9,
+    "color(srgb 1 1 1 / 0.06)": 2,
+    "color(srgb 1 1 1 / 0.12)": 1,
+    "color(srgb 0.117647 0.117647 0.117647 / 0.55)": 6,
+    "rgb(48, 48, 48)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 17,
+    "rgba(0, 0, 0, 0)": 13,
+    "rgb(143, 135, 255)": 3,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1,
+    "color(srgb 1 1 1 / 0.25)": 9,
+    "rgb(255, 255, 255)": 3
+   },
+   "font": {
+    "Rubik": 108,
+    "\"Secular One\"": 24
+   },
+   "size": {
+    "13px": 16,
+    "16px": 23,
+    "12px": 8,
+    "14px": 39,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 6,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 10,
+    "10px": 5,
+    "26px": 1,
+    "16.12px": 1
+   },
+   "weight": {
+    "400": 47,
+    "500": 1,
+    "600": 76,
+    "700": 8
+   },
+   "radius": {
+    "12px": 22,
+    "50%": 3,
+    "7px": 5,
+    "3px": 2,
+    "18px": 11,
+    "99px": 19,
+    "14px": 16,
+    "9px": 13,
+    "6px": 3,
+    "20px": 2,
+    "16px": 1
+   },
+   "small": [
+    "button 116x40 \"שעון\"",
+    "button 116x40 \"ידני\"",
+    "button 116x40 \"קבלנות\"",
+    "button 73x40 \"+ מקום\"",
+    "button 73x40 \"מסעדה\"",
+    "button 277x40 \"שיעורים פרטיים במתמטיקה \"",
+    "button 72x40 \"הובלות\"",
+    "button 87x40 \"בייביסיטר\"",
+    "button 122x40 \"Tech Support\"",
+    "button 111x40 \"הדרכת טיולים\"",
+    "button 54x40 \"גינון\"",
+    "button 75x40 \"אירועים\"",
+    "button 90x40 \"מוקד לילה\"",
+    "button 27x48 \"2\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 28x48 \"0\"",
+    "button 28x48 \"0\"",
+    "button 27x48 \"3\"",
+    "button 28x48 \"0\"",
+    "button 69x36 \"−15\"",
+    "button 69x36 \"+15\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: חוזרת כל שבוע\"",
+    "button 52x32 \"חוזרת כל שבוע\""
+   ]
+  },
+  "dark-04-detail": {
+   "color": {
+    "rgb(179, 179, 179)": 27,
+    "rgb(255, 255, 255)": 38,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 2,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 11,
+    "rgb(42, 42, 42)": 9,
+    "rgb(143, 135, 255)": 3,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 2,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(143, 135, 255)": 2,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 57,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 14,
+    "16px": 10,
+    "12px": 1,
+    "14px": 12,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 1,
+    "27.28px": 1,
+    "15px": 5
+   },
+   "weight": {
+    "400": 30,
+    "500": 1,
+    "600": 34,
+    "700": 6
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 11,
+    "26px": 1
+   },
+   "small": []
+  },
+  "dark-04b-detail-group": {
+   "color": {
+    "rgb(179, 179, 179)": 28,
+    "rgb(255, 255, 255)": 53,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 2,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 13,
+    "rgb(42, 42, 42)": 15,
+    "rgb(143, 135, 255)": 3,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 2,
+    "rgba(0, 0, 0, 0.45)": 1,
+    "rgb(48, 48, 48)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 7,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(143, 135, 255)": 2,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 73,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 14,
+    "16px": 11,
+    "12px": 1,
+    "14px": 17,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "44px": 1,
+    "27.28px": 1,
+    "15px": 13,
+    "8.68px": 1,
+    "9.3px": 1
+   },
+   "weight": {
+    "400": 32,
+    "500": 1,
+    "600": 47,
+    "700": 7
+   },
+   "radius": {
+    "12px": 5,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 17,
+    "26px": 1
+   },
+   "small": []
+  },
+  "dark-04c-detail-unknown-rate": {
+   "color": {
+    "rgb(179, 179, 179)": 27,
+    "rgb(255, 255, 255)": 36,
+    "rgb(255, 194, 102)": 2,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 2,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 11,
+    "rgb(42, 42, 42)": 10,
+    "rgb(143, 135, 255)": 3,
+    "rgb(58, 45, 18)": 2,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 2,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(143, 135, 255)": 2,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 57,
+    "\"Secular One\"": 13
+   },
+   "size": {
+    "13px": 14,
+    "16px": 9,
+    "12px": 1,
+    "14px": 12,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 5,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1,
+    "15px": 6
+   },
+   "weight": {
+    "400": 28,
+    "500": 1,
+    "600": 35,
+    "700": 6
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 6,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 12,
+    "26px": 1
+   },
+   "small": []
+  },
+  "dark-05-history": {
+   "color": {
+    "rgb(255, 255, 255)": 56,
+    "rgb(179, 179, 179)": 38,
+    "rgb(255, 194, 102)": 2,
+    "rgb(26, 18, 0)": 1,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 17,
+    "rgb(58, 45, 18)": 2,
+    "rgb(42, 42, 42)": 9,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1,
+    "rgb(143, 135, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 3,
+    "rgba(0, 0, 0, 0)": 13,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 15,
+    "Rubik": 83
+   },
+   "size": {
+    "30px": 1,
+    "14px": 17,
+    "13px": 27,
+    "26px": 2,
+    "16.12px": 2,
+    "16px": 14,
+    "11px": 10,
+    "19px": 12,
+    "11.78px": 12,
+    "28px": 1
+   },
+   "weight": {
+    "400": 30,
+    "600": 55,
+    "700": 13
+   },
+   "radius": {
+    "12px": 3,
+    "20px": 1,
+    "99px": 6,
+    "18px": 13,
+    "14px": 13,
+    "7px": 10
+   },
+   "small": []
+  },
+  "dark-05a-history-full": {
+   "color": {
+    "rgb(255, 255, 255)": 56,
+    "rgb(179, 179, 179)": 38,
+    "rgb(255, 194, 102)": 2,
+    "rgb(26, 18, 0)": 1,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 17,
+    "rgb(58, 45, 18)": 2,
+    "rgb(42, 42, 42)": 9,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1,
+    "rgb(143, 135, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 3,
+    "rgba(0, 0, 0, 0)": 13,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 15,
+    "Rubik": 83
+   },
+   "size": {
+    "30px": 1,
+    "14px": 17,
+    "13px": 27,
+    "26px": 2,
+    "16.12px": 2,
+    "16px": 14,
+    "11px": 10,
+    "19px": 12,
+    "11.78px": 12,
+    "28px": 1
+   },
+   "weight": {
+    "400": 30,
+    "600": 55,
+    "700": 13
+   },
+   "radius": {
+    "12px": 3,
+    "20px": 1,
+    "99px": 6,
+    "18px": 13,
+    "14px": 13,
+    "7px": 10
+   },
+   "small": []
+  },
+  "dark-05b-history-search": {
+   "color": {
+    "rgb(255, 255, 255)": 16,
+    "rgb(179, 179, 179)": 15,
+    "rgb(255, 194, 102)": 2,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 9,
+    "rgb(58, 45, 18)": 2,
+    "rgb(42, 42, 42)": 2,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1,
+    "rgb(143, 135, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "rgba(0, 0, 0, 0)": 3,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 4,
+    "Rubik": 30
+   },
+   "size": {
+    "30px": 1,
+    "14px": 8,
+    "13px": 11,
+    "26px": 1,
+    "16.12px": 1,
+    "16px": 4,
+    "11px": 3,
+    "19px": 2,
+    "11.78px": 2,
+    "28px": 1
+   },
+   "weight": {
+    "400": 9,
+    "600": 22,
+    "700": 3
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 4,
+    "50%": 1,
+    "20px": 1,
+    "99px": 6,
+    "18px": 3,
+    "7px": 3
+   },
+   "small": []
+  },
+  "dark-05c-history-search-empty": {
+   "color": {
+    "rgb(255, 255, 255)": 6,
+    "rgb(179, 179, 179)": 5,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 6,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1,
+    "rgb(143, 135, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 3,
+    "Rubik": 9
+   },
+   "size": {
+    "30px": 1,
+    "14px": 5,
+    "13px": 3,
+    "26px": 1,
+    "22px": 1,
+    "28px": 1
+   },
+   "weight": {
+    "400": 6,
+    "600": 6
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5
+   },
+   "small": []
+  },
+  "dark-05d-history-filters": {
+   "color": {
+    "rgb(255, 255, 255)": 26,
+    "rgb(179, 179, 179)": 19,
+    "rgb(18, 18, 18)": 2
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 22,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 2,
+    "rgb(143, 135, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1,
+    "rgb(42, 42, 42)": 6,
+    "rgb(48, 48, 48)": 2
+   },
+   "border": {
+    "rgb(48, 48, 48)": 14,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1,
+    "rgb(255, 255, 255)": 1
+   },
+   "font": {
+    "\"Secular One\"": 4,
+    "Rubik": 43
+   },
+   "size": {
+    "30px": 1,
+    "14px": 15,
+    "13px": 22,
+    "26px": 1,
+    "22px": 2,
+    "28px": 1,
+    "15px": 3,
+    "16px": 2
+   },
+   "weight": {
+    "400": 11,
+    "600": 36
+   },
+   "radius": {
+    "12px": 19,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5,
+    "26px": 1,
+    "9px": 15,
+    "16px": 2
+   },
+   "small": [
+    "button 59x38 \"עבדתי\"",
+    "button 87x38 \"מתוכנן · 14\"",
+    "button 96x38 \"כל התאריכים\"",
+    "button 53x38 \"חודש\"",
+    "button 48x38 \"טווח\"",
+    "button 88x38 \"החדש קודם\"",
+    "button 79x38 \"הישן קודם\"",
+    "button 81x38 \"לפי הוספה\"",
+    "button 50x38 \"הכול\"",
+    "button 57x38 \"ממתין\"",
+    "button 52x38 \"שולם\"",
+    "button 80x38 \"בלי תעריף\"",
+    "button 50x38 \"הכול\"",
+    "button 64x38 \"₪ שקל\"",
+    "button 60x38 \"$ דולר\""
+   ]
+  },
+  "dark-05e-history-select-ERR": {
+   "color": {
+    "rgb(255, 255, 255)": 6,
+    "rgb(179, 179, 179)": 5,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 6,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1,
+    "rgb(143, 135, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 3,
+    "Rubik": 9
+   },
+   "size": {
+    "30px": 1,
+    "14px": 5,
+    "13px": 3,
+    "26px": 1,
+    "22px": 1,
+    "28px": 1
+   },
+   "weight": {
+    "400": 6,
+    "600": 6
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5
+   },
+   "small": []
+  },
+  "dark-05f-history-copy": {
+   "color": {
+    "rgb(255, 255, 255)": 9,
+    "rgb(179, 179, 179)": 6,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 7,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1,
+    "rgb(143, 135, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1,
+    "rgb(42, 42, 42)": 2
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 4,
+    "Rubik": 12
+   },
+   "size": {
+    "30px": 1,
+    "14px": 5,
+    "13px": 4,
+    "26px": 1,
+    "22px": 2,
+    "28px": 1,
+    "16px": 2
+   },
+   "weight": {
+    "400": 8,
+    "600": 8
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5,
+    "26px": 1,
+    "16px": 2
+   },
+   "small": []
+  },
+  "dark-05g-history-month-ERR": {
+   "color": {
+    "rgb(255, 255, 255)": 6,
+    "rgb(179, 179, 179)": 5,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 6,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1,
+    "rgb(143, 135, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 3,
+    "Rubik": 9
+   },
+   "size": {
+    "30px": 1,
+    "14px": 5,
+    "13px": 3,
+    "26px": 1,
+    "22px": 1,
+    "28px": 1
+   },
+   "weight": {
+    "400": 6,
+    "600": 6
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5
+   },
+   "small": []
+  },
+  "dark-05h-history-pending-ERR": {
+   "color": {
+    "rgb(255, 255, 255)": 6,
+    "rgb(179, 179, 179)": 5,
+    "rgb(18, 18, 18)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 6,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1,
+    "rgb(143, 135, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 5,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 3,
+    "Rubik": 9
+   },
+   "size": {
+    "30px": 1,
+    "14px": 5,
+    "13px": 3,
+    "26px": 1,
+    "22px": 1,
+    "28px": 1
+   },
+   "weight": {
+    "400": 6,
+    "600": 6
+   },
+   "radius": {
+    "12px": 4,
+    "14px": 1,
+    "50%": 1,
+    "20px": 1,
+    "99px": 5
+   },
+   "small": []
+  },
+  "dark-06-settings": {
+   "color": {
+    "rgb(255, 255, 255)": 34,
+    "rgb(179, 179, 179)": 7,
+    "rgb(18, 18, 18)": 2,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 19,
+    "rgb(48, 48, 48)": 5,
+    "rgb(42, 42, 42)": 6,
+    "rgb(52, 199, 154)": 1,
+    "rgb(255, 255, 255)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 9,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 9,
+    "Rubik": 35
+   },
+   "size": {
+    "30px": 1,
+    "22px": 8,
+    "16px": 11,
+    "14px": 11,
+    "13px": 7,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 11,
+    "500": 10,
+    "600": 22,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 7
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "dark-06a-settings-full": {
+   "color": {
+    "rgb(255, 255, 255)": 34,
+    "rgb(179, 179, 179)": 7,
+    "rgb(18, 18, 18)": 2,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 19,
+    "rgb(48, 48, 48)": 5,
+    "rgb(42, 42, 42)": 6,
+    "rgb(52, 199, 154)": 1,
+    "rgb(255, 255, 255)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 9,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 9,
+    "Rubik": 35
+   },
+   "size": {
+    "30px": 1,
+    "22px": 8,
+    "16px": 11,
+    "14px": 11,
+    "13px": 7,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 11,
+    "500": 10,
+    "600": 22,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 7
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "dark-06b-places": {
+   "color": {
+    "rgb(255, 255, 255)": 62,
+    "rgb(179, 179, 179)": 16,
+    "rgb(18, 18, 18)": 2,
+    "rgb(255, 138, 122)": 1,
+    "rgb(26, 18, 0)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 29,
+    "rgb(48, 48, 48)": 5,
+    "rgb(42, 42, 42)": 7,
+    "rgb(52, 199, 154)": 1,
+    "rgb(255, 255, 255)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 18,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 72
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 21,
+    "14px": 29,
+    "13px": 16,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 21,
+    "500": 10,
+    "600": 41,
+    "700": 10
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 19,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 25,
+    "26px": 1,
+    "18px": 9,
+    "16px": 1
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\"",
+    "button 227x40 \"מ\nמסעדה · ברירת מחדל\n₪50\"",
+    "button 227x40 \"ה\nהובלות\n$60 לשעה\"",
+    "button 227x40 \"ב\nבייביסיטר\n₪45 לשעה\"",
+    "button 227x40 \"T\nTech Support\n$30 לשעה\"",
+    "button 227x40 \"ה\nהדרכת טיולים\n₪80 לשעה\"",
+    "button 227x40 \"ג\nגינון\n₪55 לשעה\"",
+    "button 227x40 \"א\nאירועים\n₪70 לשעה\"",
+    "button 227x40 \"מ\nמוקד לילה\n₪48 לשעה\""
+   ]
+  },
+  "dark-06c-place-edit": {
+   "color": {
+    "rgb(255, 255, 255)": 39,
+    "rgb(179, 179, 179)": 9,
+    "rgb(18, 18, 18)": 3,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 23,
+    "rgb(48, 48, 48)": 5,
+    "rgb(42, 42, 42)": 7,
+    "rgb(52, 199, 154)": 1,
+    "rgb(255, 255, 255)": 3,
+    "rgb(13, 16, 21)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1,
+    "rgb(81, 69, 232)": 1,
+    "rgb(14, 128, 89)": 1,
+    "rgb(214, 51, 108)": 1,
+    "rgb(245, 184, 46)": 1,
+    "rgb(125, 60, 240)": 1,
+    "rgb(31, 114, 224)": 1,
+    "rgb(14, 138, 134)": 1,
+    "rgb(181, 41, 78)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 18,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1,
+    "rgb(255, 255, 255)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 42
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 15,
+    "14px": 11,
+    "13px": 10,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 16,
+    "500": 10,
+    "600": 25,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 19,
+    "50%": 7,
+    "9px": 7,
+    "99px": 7,
+    "14px": 9,
+    "26px": 1,
+    "16px": 1
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\"",
+    "button 36x42 \"₪\"",
+    "button 33x42 \"$\"",
+    "button 39x44 \"אינדיגו\"",
+    "button 39x44 \"ירוק\"",
+    "button 39x44 \"ורד\"",
+    "button 39x44 \"חרדל\"",
+    "button 39x44 \"סגול\"",
+    "button 39x44 \"תכלת\"",
+    "button 39x44 \"טורקיז\"",
+    "button 39x44 \"בורדו\""
+   ]
+  },
+  "dark-06d-notifications": {
+   "color": {
+    "rgb(255, 255, 255)": 34,
+    "rgb(179, 179, 179)": 7,
+    "rgb(18, 18, 18)": 2,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 19,
+    "rgb(48, 48, 48)": 4,
+    "rgb(42, 42, 42)": 6,
+    "rgb(52, 199, 154)": 2,
+    "rgb(255, 255, 255)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 9,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 9,
+    "Rubik": 35
+   },
+   "size": {
+    "30px": 1,
+    "22px": 8,
+    "16px": 11,
+    "14px": 11,
+    "13px": 7,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 11,
+    "500": 10,
+    "600": 22,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 7
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "dark-06e-feedback": {
+   "color": {
+    "rgb(255, 255, 255)": 39,
+    "rgb(179, 179, 179)": 8,
+    "rgb(18, 18, 18)": 3,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 24,
+    "rgb(48, 48, 48)": 4,
+    "rgb(42, 42, 42)": 7,
+    "rgb(52, 199, 154)": 2,
+    "rgb(255, 255, 255)": 3,
+    "rgb(13, 16, 21)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 12,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1,
+    "rgb(255, 255, 255)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 41
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 12,
+    "14px": 14,
+    "13px": 8,
+    "15px": 6,
+    "28px": 1
+   },
+   "weight": {
+    "400": 13,
+    "500": 10,
+    "600": 27,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 13,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 9,
+    "26px": 1,
+    "16px": 1
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "dark-06f-import": {
+   "color": {
+    "rgb(255, 255, 255)": 37,
+    "rgb(179, 179, 179)": 7,
+    "rgb(18, 18, 18)": 3,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 21,
+    "rgb(48, 48, 48)": 4,
+    "rgb(42, 42, 42)": 8,
+    "rgb(52, 199, 154)": 2,
+    "rgb(255, 255, 255)": 3,
+    "rgb(13, 16, 21)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 10,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 38
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 13,
+    "14px": 11,
+    "13px": 7,
+    "15px": 6,
+    "28px": 1
+   },
+   "weight": {
+    "400": 12,
+    "500": 10,
+    "600": 25,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 8,
+    "9px": 5,
+    "99px": 7,
+    "14px": 9,
+    "26px": 1,
+    "16px": 2
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\"",
+    "button 40x40 \"הסבר: ייבוא נתונים\""
+   ]
+  },
+  "dark-06g-recaps": {
+   "color": {
+    "rgb(255, 255, 255)": 37,
+    "rgb(179, 179, 179)": 7,
+    "rgb(18, 18, 18)": 2,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 20,
+    "rgb(48, 48, 48)": 4,
+    "rgb(42, 42, 42)": 6,
+    "rgb(52, 199, 154)": 2,
+    "rgb(255, 255, 255)": 2,
+    "rgb(13, 16, 21)": 2,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 9,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 11,
+    "Rubik": 36
+   },
+   "size": {
+    "30px": 1,
+    "22px": 10,
+    "16px": 11,
+    "14px": 11,
+    "13px": 8,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 14,
+    "500": 10,
+    "600": 22,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 11,
+    "50%": 8,
+    "9px": 5,
+    "99px": 7,
+    "14px": 7,
+    "26px": 1,
+    "18px": 1
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\"",
+    "button 40x40 \"הסבר: הסיכומים שלי\""
+   ]
+  },
+  "dark-06h-series": {
+   "color": {
+    "rgb(255, 255, 255)": 36,
+    "rgb(179, 179, 179)": 8,
+    "rgb(18, 18, 18)": 2,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 20,
+    "rgb(48, 48, 48)": 5,
+    "rgb(42, 42, 42)": 6,
+    "rgb(52, 199, 154)": 3,
+    "rgb(255, 255, 255)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 9,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 37
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 11,
+    "14px": 12,
+    "13px": 8,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 13,
+    "500": 10,
+    "600": 23,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 8,
+    "9px": 5,
+    "99px": 8,
+    "14px": 7,
+    "26px": 1
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\"",
+    "button 40x40 \"הסבר: רישום אוטומטי\"",
+    "button 52x32 \"רישום אוטומטי\""
+   ]
+  },
+  "dark-06i-erase": {
+   "color": {
+    "rgb(255, 255, 255)": 40,
+    "rgb(179, 179, 179)": 7,
+    "rgb(18, 18, 18)": 2,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 21,
+    "rgb(48, 48, 48)": 4,
+    "rgb(42, 42, 42)": 8,
+    "rgb(52, 199, 154)": 2,
+    "rgb(255, 255, 255)": 2,
+    "rgb(13, 16, 21)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1,
+    "rgb(255, 138, 122)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 10,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 40
+   },
+   "size": {
+    "30px": 1,
+    "22px": 9,
+    "16px": 16,
+    "14px": 11,
+    "13px": 7,
+    "15px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 14,
+    "500": 10,
+    "600": 25,
+    "700": 1
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 7,
+    "9px": 5,
+    "99px": 7,
+    "14px": 8,
+    "26px": 1,
+    "16px": 3
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "dark-06j-android": {
+   "color": {
+    "rgb(255, 255, 255)": 41,
+    "rgb(179, 179, 179)": 18,
+    "rgb(18, 18, 18)": 3,
+    "rgb(255, 138, 122)": 1
+   },
+   "bg": {
+    "rgb(30, 30, 30)": 20,
+    "rgb(48, 48, 48)": 4,
+    "rgb(42, 42, 42)": 7,
+    "rgb(52, 199, 154)": 2,
+    "rgb(255, 255, 255)": 3,
+    "rgb(13, 16, 21)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(143, 135, 255)": 1,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 11,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "\"Secular One\"": 10,
+    "Rubik": 53
+   },
+   "size": {
+    "30px": 1,
+    "22px": 8,
+    "16px": 16,
+    "14px": 21,
+    "13px": 10,
+    "15px": 5,
+    "28px": 1,
+    "24px": 1
+   },
+   "weight": {
+    "400": 23,
+    "500": 10,
+    "600": 26,
+    "700": 4
+   },
+   "radius": {
+    "20px": 8,
+    "12px": 10,
+    "50%": 8,
+    "9px": 5,
+    "99px": 7,
+    "14px": 7,
+    "26px": 1,
+    "16px": 2
+   },
+   "small": [
+    "button 40x40 \"הסבר: מקום ברירת מחדל\"",
+    "button 40x40 \"הסבר: מטבע ברירת מחדל\"",
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\"",
+    "button 40x40 \"הסבר: משמרות קבועות\"",
+    "button 68x38 \"אוטומטי\"",
+    "button 50x38 \"בהיר\"",
+    "button 48x38 \"כהה\"",
+    "button 52x32 \"רטט במגע\"",
+    "button 40x40 \"הסבר: כל הסיכומים\"",
+    "button 40x40 \"הסבר: התראות\"",
+    "button 52x32 \"התראות\"",
+    "button 40x40 \"הסבר: גיבוי ונתונים\"",
+    "button 40x40 \"הסבר: חשבון\""
+   ]
+  },
+  "dark-07-live-start": {
+   "color": {
+    "rgb(179, 179, 179)": 26,
+    "rgb(255, 255, 255)": 42,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 2,
+    "rgb(18, 18, 18)": 2
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 22,
+    "rgb(42, 42, 42)": 6,
+    "rgb(143, 135, 255)": 3,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 2,
+    "rgba(0, 0, 0, 0.45)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 14,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(143, 135, 255)": 2,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1,
+    "rgb(255, 255, 255)": 1
+   },
+   "font": {
+    "Rubik": 59,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 14,
+    "16px": 10,
+    "12px": 1,
+    "14px": 20,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 7,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 28,
+    "500": 1,
+    "600": 39,
+    "700": 5
+   },
+   "radius": {
+    "12px": 13,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 6,
+    "14px": 6,
+    "26px": 1,
+    "9px": 2,
+    "16px": 1
+   },
+   "small": [
+    "button 36x38 \"₪\"",
+    "button 33x38 \"$\""
+   ]
+  },
+  "dark-07b-live-running": {
+   "color": {
+    "rgb(179, 179, 179)": 25,
+    "rgb(255, 255, 255)": 30,
+    "rgb(255, 194, 102)": 1,
+    "rgb(18, 18, 18)": 6,
+    "rgb(143, 135, 255)": 2
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 9,
+    "rgb(42, 42, 42)": 5,
+    "rgb(143, 135, 255)": 3,
+    "rgb(58, 45, 18)": 1,
+    "rgb(255, 255, 255)": 2,
+    "rgb(18, 18, 18)": 1,
+    "rgb(24, 24, 24)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 4,
+    "color(srgb 0.0705882 0.0705882 0.0705882 / 0.4)": 1,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(143, 135, 255)": 2,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 50,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 12,
+    "16px": 9,
+    "12px": 1,
+    "14px": 13,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "24.8px": 1,
+    "40px": 1,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 27,
+    "500": 1,
+    "600": 31,
+    "700": 5
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 1,
+    "7px": 5,
+    "3px": 2,
+    "18px": 8,
+    "99px": 6,
+    "20px": 1,
+    "16px": 2,
+    "14px": 5
+   },
+   "small": []
+  },
+  "dark-07c-home-live": {
+   "color": {
+    "rgb(179, 179, 179)": 25,
+    "rgb(255, 255, 255)": 30,
+    "rgb(255, 194, 102)": 1,
+    "rgb(18, 18, 18)": 6,
+    "rgb(143, 135, 255)": 2
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 9,
+    "rgb(42, 42, 42)": 5,
+    "rgb(143, 135, 255)": 3,
+    "rgb(58, 45, 18)": 1,
+    "rgb(255, 255, 255)": 2,
+    "rgb(18, 18, 18)": 1,
+    "rgb(24, 24, 24)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 4,
+    "color(srgb 0.0705882 0.0705882 0.0705882 / 0.4)": 1,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(143, 135, 255)": 2,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 50,
+    "\"Secular One\"": 14
+   },
+   "size": {
+    "13px": 12,
+    "16px": 9,
+    "12px": 1,
+    "14px": 13,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "24.8px": 1,
+    "40px": 1,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 27,
+    "500": 1,
+    "600": 31,
+    "700": 5
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 1,
+    "7px": 5,
+    "3px": 2,
+    "18px": 8,
+    "99px": 6,
+    "20px": 1,
+    "16px": 2,
+    "14px": 5
+   },
+   "small": []
+  },
+  "dark-08-toast-delete": {
+   "color": {
+    "rgb(179, 179, 179)": 25,
+    "rgb(255, 255, 255)": 30,
+    "rgb(255, 194, 102)": 1,
+    "rgb(143, 135, 255)": 3,
+    "rgb(18, 18, 18)": 1,
+    "rgb(241, 243, 247)": 1
+   },
+   "bg": {
+    "rgb(13, 16, 21)": 2,
+    "rgb(30, 30, 30)": 10,
+    "rgb(42, 42, 42)": 5,
+    "rgb(143, 135, 255)": 3,
+    "rgb(58, 45, 18)": 1,
+    "rgb(52, 199, 154)": 1,
+    "rgb(24, 24, 24)": 1,
+    "rgb(255, 255, 255)": 1,
+    "rgb(44, 46, 51)": 1
+   },
+   "border": {
+    "rgb(48, 48, 48)": 6,
+    "rgba(0, 0, 0, 0)": 5,
+    "rgb(143, 135, 255)": 2,
+    "color(srgb 0.188235 0.188235 0.188235 / 0.6)": 1
+   },
+   "font": {
+    "Rubik": 48,
+    "\"Secular One\"": 13
+   },
+   "size": {
+    "13px": 12,
+    "16px": 8,
+    "12px": 1,
+    "14px": 13,
+    "60px": 1,
+    "37.2px": 1,
+    "30px": 1,
+    "18.6px": 1,
+    "22px": 6,
+    "13.64px": 2,
+    "11px": 4,
+    "19px": 5,
+    "11.78px": 5,
+    "28px": 1
+   },
+   "weight": {
+    "400": 26,
+    "500": 1,
+    "600": 28,
+    "700": 6
+   },
+   "radius": {
+    "12px": 3,
+    "50%": 2,
+    "7px": 5,
+    "3px": 2,
+    "18px": 9,
+    "99px": 8,
+    "14px": 5
+   },
+   "small": []
+  }
+ },
+ "errors": [
+  "light-05e-history-select: locator.boundingBox: Timeout 30000ms exceeded.",
+  "light-05g-history-month: locator.click: Timeout 30000ms exceeded.",
+  "light-05h-history-pending: page.click: Timeout 30000ms exceeded.",
+  "light console: Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "dark-05e-history-select: locator.boundingBox: Timeout 30000ms exceeded.",
+  "dark-05g-history-month: locator.click: Timeout 30000ms exceeded.",
+  "dark-05h-history-pending: page.click: Timeout 30000ms exceeded.",
+  "dark console: Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ]
+}

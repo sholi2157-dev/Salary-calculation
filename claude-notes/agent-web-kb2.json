@@ -1,0 +1,70 @@
+{
+ "ruler-handles": [
+  {
+   "label": "התחלה",
+   "now": "1230",
+   "text": "20:30",
+   "min": "0",
+   "max": "1439",
+   "tab": 0
+  },
+  {
+   "label": "סיום",
+   "now": "30",
+   "text": "00:30",
+   "min": "0",
+   "max": "1439",
+   "tab": 0
+  }
+ ],
+ "ruler-arrow": {
+  "before": "20:30",
+  "after": "20:15",
+  "focus": "div#ruler-start \"התחלה\" RING op=1 52x28 [modal]"
+ },
+ "editor-tablist": [
+  "null ti=0",
+  "null ti=0",
+  "null ti=0"
+ ],
+ "hero-focusable": [],
+ "detail-first": "button#detail-edit \"עריכה\" RING op=1 260x48 [modal]",
+ "detail-name": {
+  "role": "dialog",
+  "labelledby": null,
+  "label": null
+ },
+ "after-paid": {
+  "focus": "BODY",
+  "toast": "none"
+ },
+ "toast-region": {
+  "role": "status",
+  "live": "polite",
+  "hidden": true
+ },
+ "story-focus-autoadvance": {
+  "start": "button#story-next \"הבא\" NO-RING op=1 44x44 [modal]",
+  "after6_5s": "BODY",
+  "slide": "story-hours"
+ },
+ "story-space-pauses?": "story-places",
+ "story-close-focus": "BODY",
+ "history-kb-select": 1,
+ "history-tab": [
+  "button#history-search \"חיפוש\" RING op=1 44x44",
+  "button#history-filters \"סינון ומיון\" RING op=1 112x44",
+  "button#history-copy \"העתקת דוח\" RING op=1 44x44",
+  "button#history-scope \"מוצג: כל התאריכים · מהחדש לישן\" RING op=1 796x44",
+  "button#history-pending \"משמרת אחת מחכה לתעריף ←\" RING op=1 237x44",
+  "button#shift-a \"מ היום לא שולם ⁦11:00–17:00⁩ ·\" RING op=1 796x70",
+  "button#shift-b \"ש אתמול לא שולם 2.5 שעות · שיע\" RING op=1 796x70",
+  "button#shift-c \"ה יום ו׳ 30.10 3 שעות · הובלות\" RING op=1 796x70",
+  "button#shift-d \"T יום ה׳ 29.10 לא שולם 4 שעות \" RING op=1 796x70",
+  "button#shift-e \"ב יום ד׳ 28.10 3.75 שעות · ביי\" RING op=1 796x70",
+  "button#shift-g \"ה יום ב׳ 26.10 לא שולם 8 שעות \" RING op=1 796x70",
+  "button#shift-h \"ג יום ש׳ 24.10 2 שעות · גינון \" RING op=1 796x70"
+ ],
+ "search-mutations": 3,
+ "search-native-cancel": "block"
+}

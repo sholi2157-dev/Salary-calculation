@@ -1,0 +1,198 @@
+{
+  "observedAt": "2026-11-01",
+  "branches": [
+    {
+      "branch": "backup/android-rc9-before-interface-polish-20260930",
+      "sha": "3910e9689dcafa0a2dcf2fb90dff3eb46f6a076f"
+    },
+    {
+      "branch": "backup/android-rc10-before-ui-skills-20261001",
+      "sha": "25f7066cbe058af226ba46befc990f2d8b30b929"
+    },
+    {
+      "branch": "backup/android-rc12-before-onboarding-20261006",
+      "sha": "6207796903515b97dcb147ae029d4b12e8f635fe"
+    },
+    {
+      "branch": "backup/android-rc16-before-v2",
+      "sha": "bb72a0965335495bd17ea65f15bd5784abe3bc76"
+    },
+    {
+      "branch": "backup/web-before-rc13-parity-20261006",
+      "sha": "05794abf0b01a3e3c69d83123c48824fc7b87def"
+    },
+    {
+      "branch": "claude/fix-fixture-check",
+      "sha": "3fb3f346d640272856c184f2778a9c98d0f0d4ff"
+    },
+    {
+      "branch": "claude/fix-fixture-check-2",
+      "sha": "51fd4ffb63fcfb5eb590c220ad72c52308c7dd42"
+    },
+    {
+      "branch": "claude/main-sync-2.0",
+      "sha": "fcea62c4a834d69dd64e74df38c9d208a7d384b1"
+    },
+    {
+      "branch": "claude/payroll-v2-planning-vrdjmp",
+      "sha": "b8f3e1d0db5b18240bf94ed9f26d620d45445136"
+    },
+    {
+      "branch": "claude/project-thread-c50fyf",
+      "sha": "08509d9a95e6f965c9247a3ccafffa1da9df80e0"
+    },
+    {
+      "branch": "claude/project-thread-c50fyf-web",
+      "sha": "69e430e2e75d330e00671e2b2d03a4180d2e4327"
+    },
+    {
+      "branch": "claude/project-thread-cudbls",
+      "sha": "67e73c974bd39ee48c62a73d3fa68acd3f18815c"
+    },
+    {
+      "branch": "claude/project-thread-cudbls-web",
+      "sha": "755740b5c60de89372156f1a16ba6a063b9cbf9f"
+    },
+    {
+      "branch": "claude/project-thread-dsicpj",
+      "sha": "b2d5abe2fabd8013452ecfeb956d1131690b70ee"
+    },
+    {
+      "branch": "claude/project-thread-dsicpj-android",
+      "sha": "92cf5f40dae54d6644271daebc57a7233d342355"
+    },
+    {
+      "branch": "claude/project-thread-ghymd8",
+      "sha": "bfaf9b263ea2edf8788812dc4744ff9214f1eff5"
+    },
+    {
+      "branch": "claude/project-thread-jw84rp",
+      "sha": "3d84f2e3991c2243de9b8354c1e069852d741968"
+    },
+    {
+      "branch": "claude/project-thread-kp5rip",
+      "sha": "0c571b8037b1e123745af0ed9f9539d1dba84e24"
+    },
+    {
+      "branch": "claude/project-thread-l42q3d",
+      "sha": "58549bad02c1ba1812f38ae7710c3316340d54ab"
+    },
+    {
+      "branch": "claude/project-thread-l42q3d-web",
+      "sha": "e778a12bc00a1851c9e2838b1cbff6c4ee107b3b"
+    },
+    {
+      "branch": "claude/project-thread-owiyl1",
+      "sha": "ccc0737dedca91515b2716b89fb1d30468f37501"
+    },
+    {
+      "branch": "claude/project-thread-q528w1-android",
+      "sha": "3511b402fa33077f16ea330d696a542d08cd7bc8"
+    },
+    {
+      "branch": "claude/project-thread-q528w1",
+      "sha": "a95822912b9a0557c22a7306a7f454cfb86e629a"
+    },
+    {
+      "branch": "claude/project-thread-urqksg",
+      "sha": "26af6aacc2f4c8a9a243244c339a50a2fcdb3464"
+    },
+    {
+      "branch": "claude/project-thread-xmbpct",
+      "sha": "d92f7a5b31fed2b7979dd3bf4e6dd7d9f3d22242"
+    },
+    {
+      "branch": "claude/project-thread-zs8886",
+      "sha": "fd5a2b656efef3dee2f69881760ed72e44133804"
+    },
+    {
+      "branch": "claude/v2-android",
+      "sha": "95b1de7f87cf87ab5d836dee2c89bcaca6731835"
+    },
+    {
+      "branch": "claude/v2-web",
+      "sha": "2c16c4215aab33667f6bcde4bef1fa155d61f6f9"
+    },
+    {
+      "branch": "codespace-solid-enigma-5vxxjwprgw7vh75q4",
+      "sha": "2e9b0cbe81c1104ef3a77f91799b277df7a36885"
+    },
+    {
+      "branch": "codespace-zany-waffle-vgvwg4g6w5p2wj69",
+      "sha": "9a07292e6bbd33ecdc6243c0f57c250454880cf9"
+    },
+    {
+      "branch": "codex/android-audit-20261011",
+      "sha": "ff6fed93b1548a1ba3d1e0b3f48c42b2b7132f0f"
+    },
+    {
+      "branch": "codex/android-local-distribution",
+      "sha": "26af6aacc2f4c8a9a243244c339a50a2fcdb3464"
+    },
+    {
+      "branch": "codex/download-and-management-20261020",
+      "sha": "b6ccbc1a1e7c112663d979aa9789bac8b5134f00"
+    },
+    {
+      "branch": "codex/oss-license-privacy",
+      "sha": "e5a5f0087aa8f345710942709aaac82183158b38"
+    },
+    {
+      "branch": "codex/preserve-app-sync",
+      "sha": "05794abf0b01a3e3c69d83123c48824fc7b87def"
+    },
+    {
+      "branch": "codex/sharing-web-20261021",
+      "sha": "96e3e4bb52a6a693fb728c682295934b724fa7c3"
+    },
+    {
+      "branch": "codex/web-analytics-distribution",
+      "sha": "d5f0512cf2bce2e523182f8e7747d814670c801c"
+    },
+    {
+      "branch": "codex/web-android-rc13-parity",
+      "sha": "67f4e1a9277b0898af11968d82a2f3bf2f16ca0a"
+    },
+    {
+      "branch": "codex/web-audit-20261011",
+      "sha": "cfe35193aa82e94ba19286f0b16744d2a8ce7156"
+    },
+    {
+      "branch": "codex/web-rc15-live",
+      "sha": "dcbf8af33b00e243158c0b8059e1d90f0dad4c21"
+    },
+    {
+      "branch": "main",
+      "sha": "38143cdccc2b315aee6df49ead83d0da03cf0b20"
+    }
+  ],
+  "releases": [
+    {
+      "tag": "android-v2.2.1-code46",
+      "target": "26af6aacc2f4c8a9a243244c339a50a2fcdb3464",
+      "published": "2026-10-27T16:23:38Z"
+    },
+    {
+      "tag": "android-v2.2-code45",
+      "target": "e4655e804227e8f24a061ffc618a4ddab35009a9",
+      "published": "2026-10-27T00:39:50Z"
+    },
+    {
+      "tag": "android-v2.1-code43",
+      "target": "9033949744ca3976e20f6cb223365dbe170c4767",
+      "published": "2026-10-26T06:54:35Z"
+    },
+    {
+      "tag": "android-v2.1",
+      "target": "aa456569a0d40b3b18d254f3f7154ca4451684c6",
+      "published": "2026-10-25T18:40:29Z"
+    },
+    {
+      "tag": "android-v2.0.8",
+      "target": "90696cb095e13e24c5caae9ada72f452e39a6273",
+      "published": "2026-10-25T05:46:29Z"
+    }
+  ],
+  "changed": {},
+  "removed": []
+}

@@ -1,0 +1,188 @@
+{
+ "light": {
+  "worst": 9.57,
+  "cols": [
+   "#3A3ECA",
+   "#0B7E00",
+   "#C60373",
+   "#FFC224",
+   "#A149E8",
+   "#0077A7",
+   "#005E64",
+   "#8B022A"
+  ],
+  "lch": [
+   "oklch(0.460 0.210 273)",
+   "oklch(0.515 0.173 142)",
+   "oklch(0.540 0.220 356)",
+   "oklch(0.847 0.167 84)",
+   "oklch(0.594 0.230 306)",
+   "oklch(0.538 0.115 236)",
+   "oklch(0.439 0.075 202)",
+   "oklch(0.405 0.161 16)"
+  ],
+  "report": {
+   "normal": [
+    [
+     16.8,
+     "indigo",
+     "purple"
+    ],
+    [
+     17.7,
+     "blue",
+     "teal"
+    ],
+    [
+     18.1,
+     "rose",
+     "burgundy"
+    ]
+   ],
+   "protan": [
+    [
+     9.6,
+     "purple",
+     "blue"
+    ],
+    [
+     9.7,
+     "indigo",
+     "purple"
+    ],
+    [
+     10.0,
+     "rose",
+     "teal"
+    ]
+   ],
+   "deutan": [
+    [
+     9.6,
+     "purple",
+     "blue"
+    ],
+    [
+     10.5,
+     "indigo",
+     "blue"
+    ],
+    [
+     12.7,
+     "green",
+     "burgundy"
+    ]
+   ],
+   "tritan": [
+    [
+     9.6,
+     "green",
+     "blue"
+    ],
+    [
+     9.8,
+     "green",
+     "teal"
+    ],
+    [
+     12.0,
+     "blue",
+     "teal"
+    ]
+   ]
+  }
+ },
+ "dark": {
+  "worst": 9.79,
+  "cols": [
+   "#7A9BFF",
+   "#0BED90",
+   "#FC6EA3",
+   "#FFC726",
+   "#C973C7",
+   "#8AC7FE",
+   "#08B0A5",
+   "#FB354F"
+  ],
+  "lch": [
+   "oklch(0.709 0.151 269)",
+   "oklch(0.833 0.199 156)",
+   "oklch(0.725 0.180 359)",
+   "oklch(0.856 0.168 87)",
+   "oklch(0.679 0.152 328)",
+   "oklch(0.809 0.100 247)",
+   "oklch(0.682 0.118 187)",
+   "oklch(0.647 0.230 20)"
+  ],
+  "report": {
+   "normal": [
+    [
+     12.7,
+     "indigo",
+     "blue"
+    ],
+    [
+     14.4,
+     "rose",
+     "purple"
+    ],
+    [
+     17.6,
+     "rose",
+     "burgundy"
+    ]
+   ],
+   "protan": [
+    [
+     9.9,
+     "indigo",
+     "purple"
+    ],
+    [
+     10.8,
+     "rose",
+     "purple"
+    ],
+    [
+     11.4,
+     "indigo",
+     "blue"
+    ]
+   ],
+   "deutan": [
+    [
+     9.8,
+     "indigo",
+     "purple"
+    ],
+    [
+     9.9,
+     "purple",
+     "teal"
+    ],
+    [
+     11.4,
+     "indigo",
+     "blue"
+    ]
+   ],
+   "tritan": [
+    [
+     10.0,
+     "indigo",
+     "blue"
+    ],
+    [
+     10.0,
+     "indigo",
+     "teal"
+    ],
+    [
+     10.4,
+     "rose",
+     "purple"
+    ]
+   ]
+  }
+ }
+}

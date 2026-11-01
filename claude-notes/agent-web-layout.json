@@ -1,0 +1,297 @@
+{
+ "w320-home": {
+  "docScrollW": 320,
+  "vw": 320,
+  "clipped": [
+   "span.sub \"⁦11:00–17:00⁩ · 6 ש׳ · מסעדה\" 153>147",
+   "span.sub \"2.5 שעות · שיעורים פרטיים במ\" 280>147"
+  ],
+  "offscreen": []
+ },
+ "w320-history": {
+  "docScrollW": 350,
+  "vw": 320,
+  "clipped": [
+   "span.sub \"⁦11:00–17:00⁩ · 6 ש׳ · מסעדה\" 153>147",
+   "span.sub \"2.5 שעות · שיעורים פרטיים במ\" 280>147",
+   "span.sub \"⁦22:00–07:00⁩ · למחרת · 9 ש׳\" 225>149"
+  ],
+  "offscreen": [
+   "h1.page-title \"היסטוריה\" L218 R334",
+   "button.plain caption grow \"מוצג: כל התאריכים · מהחד\" L46 R334",
+   "span. \"השבוע\" L293 R330",
+   "span. \"שבוע של 25.10\" L245 R330",
+   "span. \"שבוע של 18.10\" L247 R330",
+   "span. \"שבוע של 11.10\" L249 R330",
+   "span. \"שבוע של 20.9\" L251 R330",
+   "span. \"שבוע של 23.8\" L250 R330"
+  ]
+ },
+ "w320-settings": {
+  "docScrollW": 320,
+  "vw": 320,
+  "clipped": [],
+  "offscreen": []
+ },
+ "w320-editor": {
+  "docScrollW": 320,
+  "vw": 320,
+  "clipped": [
+   "span.sub \"⁦11:00–17:00⁩ · 6 ש׳ · מסעדה\" 153>147",
+   "span.sub \"2.5 שעות · שיעורים פרטיים במ\" 280>147"
+  ],
+  "offscreen": [
+   "button.pill team-pill \"קבוצה\" L-21 R79",
+   "button. \"קבלנות\" L-18 R87",
+   "span.caption \"סיום\" L-6 R122",
+   "button. \"0\" L-6 R22",
+   "button. \"+15\" L-6 R55",
+   "span. \"24\" L-5 R15",
+   "span.money  \"₪200\" L-21 R39",
+   "span.cur \"₪\" L-21 R-6"
+  ]
+ },
+ "w320-places": {
+  "docScrollW": 320,
+  "vw": 320,
+  "clipped": [],
+  "offscreen": []
+ },
+ "w320-detail-group": {
+  "docScrollW": 320,
+  "vw": 320,
+  "clipped": [],
+  "offscreen": []
+ },
+ "z200-390-home": {
+  "docScrollW": 255,
+  "vw": 195,
+  "clipped": [
+   "span.sub \"5 שעות · מסעדה\" 89>77",
+   "span.sub \"⁦11:00–17:00⁩ · 6 ש׳ · מסעדה\" 153>98",
+   "span.sub \"2.5 שעות · שיעורים פרטיים במ\" 280>98",
+   "span.sub \"משמרת אחת · 6 ש׳\" 102>43"
+  ],
+  "offscreen": [
+   "div.label \"השבוע\" L76 R239",
+   "span. \"משמרת אחת השבוע\" L132 R239",
+   "span. \"מסעדה\" L186 R239",
+   "span.caption \"היום\" L202 R224",
+   "button.pending-flag \"משמרת אחת מחכה לתעריף ←\" L76 R239",
+   "button.now \"אני מתחיל עכשיו\" L76 R239",
+   "b. \"אוקטובר שלך בכיס\" L138 R223",
+   "small. \"הסיכום החודשי מוכן\" L138 R223",
+   "h2. \"הבא בתור\" L120 R239",
+   "span.avatar planned \"מ\" L180 R224",
+   "h2. \"אחרונות\" L120 R239",
+   "span.avatar \"מ\" L180 R224",
+   "span.avatar \"ש\" L180 R224",
+   "h2. \"הכיס של החודש\" L76 R239",
+   "button. \"בית\" L153 R206"
+  ]
+ },
+ "z200-390-history": {
+  "docScrollW": 350,
+  "vw": 195,
+  "clipped": [
+   "span.sub \"⁦11:00–17:00⁩ · 6 ש׳ · מסעדה\" 153>115",
+   "span.sub \"2.5 שעות · שיעורים פרטיים במ\" 280>115",
+   "span.sub \"4 שעות · Tech Support\" 131>120",
+   "span.sub \"3.75 שעות · בייביסיטר\" 117>92",
+   "span.sub \"8 שעות · הדרכת טיולים\" 124>114",
+   "span.sub \"⁦22:00–07:00⁩ · למחרת · 9 ש׳\" 225>117",
+   "span.sub \"5 שעות · אירועים · 3 אנשים\" 145>117"
+  ],
+  "offscreen": [
+   "h1.page-title \"היסטוריה\" L218 R334",
+   "button.plain caption grow \"מוצג: כל התאריכים · מהחד\" L171 R334",
+   "div.caption \"13 משמרות · 65.25 שעות\" L187 R318",
+   "span.money  \"₪3,070.75\" L205 R318",
+   "span.cur \"₪\" L205 R220",
+   "button.pending-flag \"משמרת אחת מחכה לתעריף ←\" L187 R318",
+   "span. \"השבוע\" L293 R330",
+   "span.avatar \"מ\" L275 R319",
+   "b.label \"היום\" L238 R263",
+   "span.tag \"לא שולם\" L179 R232",
+   "span.sub \"⁦11:00–17:00⁩ · 6 ש׳ · מ\" L148 R263",
+   "span. \"שבוע של 25.10\" L245 R330",
+   "span.avatar \"ש\" L275 R319",
+   "b.label \"אתמול\" L224 R263",
+   "span.tag \"לא שולם\" L165 R218"
+  ]
+ },
+ "z200-390-settings": {
+  "docScrollW": 223,
+  "vw": 195,
+  "clipped": [],
+  "offscreen": [
+   "h1.page-title \"הגדרות\" L43 R206",
+   "h2.section-title \"משוב ותקלות\" L85 R206",
+   "h2.section-title \"עבודה\" L150 R206",
+   "h2.section-title \"מראה ותחושה\" L79 R206",
+   "h2.section-title \"הסיכומים שלי\" L81 R206",
+   "h2.section-title \"התראות\" L133 R206",
+   "h2.section-title \"גיבוי ונתונים\" L93 R206",
+   "h2.section-title \"עזרה\" L162 R206",
+   "h2.section-title \"חשבון\" L150 R206",
+   "button. \"בית\" L169 R222",
+   "button. \"הגדרות\" L-3 R73",
+   "button.add \"+\" L-55 R-7"
+  ]
+ },
+ "z200-390-editor": {
+  "docScrollW": 255,
+  "vw": 195,
+  "clipped": [
+   "span.sub \"5 שעות · מסעדה\" 89>77",
+   "span.sub \"⁦11:00–17:00⁩ · 6 ש׳ · מסעדה\" 153>98",
+   "span.sub \"2.5 שעות · שיעורים פרטיים במ\" 280>98",
+   "span.sub \"משמרת אחת · 6 ש׳\" 102>43"
+  ],
+  "offscreen": [
+   "div.label \"השבוע\" L76 R239",
+   "span. \"משמרת אחת השבוע\" L132 R239",
+   "span. \"מסעדה\" L186 R239",
+   "span.caption \"היום\" L202 R224",
+   "button.pending-flag \"משמרת אחת מחכה לתעריף ←\" L76 R239",
+   "button.now \"אני מתחיל עכשיו\" L76 R239",
+   "b. \"אוקטובר שלך בכיס\" L138 R223",
+   "small. \"הסיכום החודשי מוכן\" L138 R223",
+   "h2. \"הבא בתור\" L120 R239",
+   "span.avatar planned \"מ\" L180 R224",
+   "h2. \"אחרונות\" L120 R239",
+   "span.avatar \"מ\" L180 R224",
+   "span.avatar \"ש\" L180 R224",
+   "h2. \"הכיס של החודש\" L76 R239",
+   "button. \"בית\" L153 R206"
+  ]
+ },
+ "z200-1280-home": {
+  "docScrollW": 640,
+  "vw": 640,
+  "clipped": [],
+  "offscreen": []
+ },
+ "z200-1280-history": {
+  "docScrollW": 640,
+  "vw": 640,
+  "clipped": [],
+  "offscreen": []
+ },
+ "z200-1280-settings": {
+  "docScrollW": 640,
+  "vw": 640,
+  "clipped": [],
+  "offscreen": []
+ },
+ "z200-1280-editor": {
+  "docScrollW": 640,
+  "vw": 640,
+  "clipped": [],
+  "offscreen": []
+ },
+ "z200-1280-places": {
+  "docScrollW": 640,
+  "vw": 640,
+  "clipped": [],
+  "offscreen": []
+ },
+ "t768-home": {
+  "docScrollW": 768,
+  "vw": 768,
+  "clipped": [],
+  "offscreen": []
+ },
+ "t768-history": {
+  "docScrollW": 768,
+  "vw": 768,
+  "clipped": [],
+  "offscreen": []
+ },
+ "t768-settings": {
+  "docScrollW": 768,
+  "vw": 768,
+  "clipped": [],
+  "offscreen": []
+ },
+ "t768-editor": {
+  "docScrollW": 768,
+  "vw": 768,
+  "clipped": [],
+  "offscreen": []
+ },
+ "d1440-home": {
+  "docScrollW": 1440,
+  "vw": 1440,
+  "clipped": [
+   "span.sub \"2.5 שעות · שיעורים פרטיים במ\" 280>181"
+  ],
+  "offscreen": []
+ },
+ "d1440-history": {
+  "docScrollW": 1440,
+  "vw": 1440,
+  "clipped": [],
+  "offscreen": []
+ },
+ "d1440-settings": {
+  "docScrollW": 1440,
+  "vw": 1440,
+  "clipped": [],
+  "offscreen": []
+ },
+ "d1440-editor": {
+  "docScrollW": 1440,
+  "vw": 1440,
+  "clipped": [
+   "span.sub \"2.5 שעות · שיעורים פרטיים במ\" 280>181"
+  ],
+  "offscreen": []
+ },
+ "d1440-places": {
+  "docScrollW": 1440,
+  "vw": 1440,
+  "clipped": [],
+  "offscreen": []
+ },
+ "ts390-home": {
+  "docScrollW": 390,
+  "vw": 390,
+  "clipped": [
+   "span.sub \"2.5 שעות · שיעורים פרטיים במ\" 371>209"
+  ],
+  "offscreen": []
+ },
+ "ts390-editor": {
+  "docScrollW": 390,
+  "vw": 390,
+  "clipped": [
+   "span.sub \"2.5 שעות · שיעורים פרטיים במ\" 371>209"
+  ],
+  "offscreen": []
+ },
+ "ts390-settings": {
+  "docScrollW": 390,
+  "vw": 390,
+  "clipped": [],
+  "offscreen": []
+ },
+ "rootfont": {
+  "identicalScreenshot": true,
+  "sampleFontSize": "16px"
+ },
+ "reduced-motion": {
+  "story": [
+   "blob b1: anim=none/0s trans=0s",
+   "blob b2: anim=none/0s trans=0s",
+   "ring: anim=none/0s trans=0s"
+  ],
+  "autoAdvanceStill": "story-intro -> story-hours",
+  "countUp": true,
+  "editor": [
+   "kis-glow: anim=none/0s trans=0s",
+   "editor: anim=none/0s trans=0s",
+   "editor-in: anim=none/0s trans=0s"
+  ]
+ }
+}

@@ -1,0 +1,20 @@
+{
+  "timerBefore": {
+    "id": "39ee541b-938b-4d45-abd0-6d8257e3dcc3",
+    "category": "סינתטי",
+    "rate": 60,
+    "currency": "₪",
+    "startedAt": 1793492996431,
+    "rateUnknown": false
+  },
+  "timerAfter": {
+    "id": "39ee541b-938b-4d45-abd0-6d8257e3dcc3",
+    "category": "סינתטי",
+    "rate": 60,
+    "currency": "₪",
+    "startedAt": 1793492996431,
+    "rateUnknown": false
+  },
+  "nameAfter": "סינתטי",
+  "entries": 0
+}

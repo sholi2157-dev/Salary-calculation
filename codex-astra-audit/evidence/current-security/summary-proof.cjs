@@ -1,0 +1,5 @@
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const r='/workspace/salary-audit/sources/web-latest',A=require(r+'/lib/server/assistant.cjs'),P=require(r+'/web/sync/protocol.js');
+const e={category:'__proto__',date:1700000000000,createdAt:1,hours:1,hourlyRate:40,totalEarnings:40,isPaid:false,notes:'',currency:'₪',isTimeRange:false,startTime:null,endTime:null,isGroupShift:false,employerRate:null,workerRate:null,groupWorkersJson:''};
+const db={list:async()=>[{id:'a'.repeat(32),data:{schema:1,type:'entry',version:1,operation:'a'.repeat(32)+':seed',deleted:false,payload:P.encode('entry',e)},updateTime:'s'}]};
+(async()=>{let error;try{await A.run({db,grant:{s:['shifts.read'],z:'UTC'}},'get_summary',{});}catch(e){error=e.message;}assert(error);const out={acceptedBySyncCodec:true,category:'__proto__',summaryError:error,prototypeShifts:String(Object.prototype.shifts),prototypeHours:String(Object.prototype.hours)};console.log(out);fs.writeFileSync('/workspace/salary-audit/current-security/summary-proof.json',JSON.stringify(out,null,2));delete Object.prototype.shifts;delete Object.prototype.hours;})()

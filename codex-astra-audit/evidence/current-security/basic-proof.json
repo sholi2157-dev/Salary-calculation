@@ -1,0 +1,17 @@
+{
+  "csvFormula": {
+    "accepted": true,
+    "csv": "synthetic,14/11/2023,=1+1,,1.00,,40.00,40.00,₪,ממתין,משמרת,,,כן",
+    "tsv": "synthetic\t14/11/2023\t=1+1\t\t1.00\t\t40.00\t40.00\t₪\tממתין\tמשמרת\t\t\tכן",
+    "spreadsheetExecuted": false
+  },
+  "numericTimeExport": {
+    "accepted": true,
+    "error": "s.includes is not a function"
+  },
+  "metadataOutage": {
+    "href": "https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.0.3/Salary2.0.3.apk",
+    "label": "גרסה 2.0.3 · קישור גיבוי ישיר",
+    "serverFallback": "2.0.5"
+  }
+}

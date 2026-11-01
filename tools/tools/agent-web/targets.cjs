@@ -1,0 +1,12 @@
+const { chromium } = require('playwright'); const L = require('../lib.cjs');
+(async () => { const { s, base } = await L.serve(); const b = await chromium.launch(); const { page } = await L.open(b, base, {});
+  const small = async tag => { const r = await page.evaluate(() => { const o = {}; for (const el of document.querySelectorAll('button,a,[role=button],[role=switch],[role=slider],[role=tab],input,label.chip')) { const r = el.getBoundingClientRect(); if (!r.width || r.height >= 44 && r.width >= 44) continue; if (el.closest('[inert]')) continue; const s = getComputedStyle(el); if (s.visibility === 'hidden' || +s.opacity === 0 && el.tagName !== 'INPUT') continue;
+      const k = `${el.tagName.toLowerCase()}${el.getAttribute('role') ? '[' + el.getAttribute('role') + ']' : ''} ${Math.round(r.width)}x${Math.round(r.height)} "${(el.getAttribute('aria-label') || el.innerText || el.value || '').trim().slice(0, 18)}"`; o[k] = (o[k] || 0) + 1; } return o; }); console.log('##', tag, JSON.stringify(r)); };
+  const clr = () => page.evaluate(() => document.querySelectorAll('.scrim').forEach(x => x.remove()));
+  await page.evaluate(() => Kis.go('history')); await page.click('[data-testid=history-filters]'); await page.waitForTimeout(200); await small('filters'); await clr();
+  await page.evaluate(() => Kis.go('history')); await page.dispatchEvent('.shift[data-id]', 'contextmenu'); await page.waitForTimeout(200); await small('selection'); await page.evaluate(() => { KisHistory.state.selection.clear(); Kis.go('home'); });
+  await page.evaluate(() => Kis.openDetail('l')); await page.waitForTimeout(200); await small('detail-group'); await clr();
+  await page.evaluate(() => Kis.openNew()); await page.waitForTimeout(200); await page.click('[data-testid=editor-more]'); await page.click('[data-testid=repeat-switch]'); await page.waitForTimeout(200); await small('editor-more-repeat');
+  await page.evaluate(() => { document.querySelector('.editor').remove(); Kis.editorOpen = false; document.querySelectorAll('[inert]').forEach(n => n.inert = false); });
+  await page.evaluate(() => KisSummaryUi.story(Kis, '2026-10')); await page.waitForTimeout(300); await small('story');
+  await b.close(); s.close(); })();

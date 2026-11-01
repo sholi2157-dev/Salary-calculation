@@ -1,0 +1,357 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><style>
+@font-face{font-family:'RubikApp';src:url(file:///home/user/Salary-calculation/ux-audit/src/web/web/fonts/rubik_regular.ttf);font-weight:400}
+@font-face{font-family:'RubikApp';src:url(file:///home/user/Salary-calculation/ux-audit/src/web/web/fonts/rubik_medium.ttf);font-weight:500}
+@font-face{font-family:'RubikApp';src:url(file:///home/user/Salary-calculation/ux-audit/src/web/web/fonts/rubik_semibold.ttf);font-weight:600}
+@font-face{font-family:'RubikApp';src:url(file:///home/user/Salary-calculation/ux-audit/src/web/web/fonts/rubik_bold.ttf);font-weight:700}
+@font-face{font-family:'SecularApp';src:url(file:///home/user/Salary-calculation/ux-audit/src/web/web/fonts/secular_one.ttf)}
+@font-face{font-family:'HeeboV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/heebo/files/heebo-hebrew-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'HeeboV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/heebo/files/heebo-latin-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;}
+@font-face{font-family:'AssistantV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/assistant/files/assistant-hebrew-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'AssistantV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/assistant/files/assistant-latin-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;}
+@font-face{font-family:'RubikV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/rubik/files/rubik-hebrew-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'RubikV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/rubik/files/rubik-latin-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;}
+@font-face{font-family:'NotoHebV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/noto-sans-hebrew/files/noto-sans-hebrew-hebrew-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'NotoHebV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/noto-sans-hebrew/files/noto-sans-hebrew-latin-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;}
+@font-face{font-family:'OpenSansV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/open-sans/files/open-sans-hebrew-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'OpenSansV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/open-sans/files/open-sans-latin-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;}
+@font-face{font-family:'FrankV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/frank-ruhl-libre/files/frank-ruhl-libre-hebrew-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'FrankV';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource-variable/frank-ruhl-libre/files/frank-ruhl-libre-latin-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap;}
+@font-face{font-family:'PlexHeb';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource/ibm-plex-sans-hebrew/files/ibm-plex-sans-hebrew-hebrew-400-normal.woff2) format('woff2');font-weight:400;unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'PlexHeb';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource/ibm-plex-sans-hebrew/files/ibm-plex-sans-hebrew-latin-400-normal.woff2) format('woff2');font-weight:400;}
+@font-face{font-family:'PlexHeb';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource/ibm-plex-sans-hebrew/files/ibm-plex-sans-hebrew-hebrew-500-normal.woff2) format('woff2');font-weight:500;unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'PlexHeb';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource/ibm-plex-sans-hebrew/files/ibm-plex-sans-hebrew-latin-500-normal.woff2) format('woff2');font-weight:500;}
+@font-face{font-family:'PlexHeb';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource/ibm-plex-sans-hebrew/files/ibm-plex-sans-hebrew-hebrew-600-normal.woff2) format('woff2');font-weight:600;unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'PlexHeb';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource/ibm-plex-sans-hebrew/files/ibm-plex-sans-hebrew-latin-600-normal.woff2) format('woff2');font-weight:600;}
+@font-face{font-family:'PlexHeb';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource/ibm-plex-sans-hebrew/files/ibm-plex-sans-hebrew-hebrew-700-normal.woff2) format('woff2');font-weight:700;unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'PlexHeb';src:url(file:///home/user/Salary-calculation/ux-audit/tools/agent-type/node_modules/@fontsource/ibm-plex-sans-hebrew/files/ibm-plex-sans-hebrew-latin-700-normal.woff2) format('woff2');font-weight:700;}
+
+*{box-sizing:border-box} body{margin:0;background:#888;display:inline-flex;flex-wrap:wrap;gap:0;direction:rtl}
+.phone{width:390px;padding:18px 18px 22px;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--text);font-variant-numeric:var(--num)}
+.tagname{font:600 11px/1.2 system-ui, sans-serif;direction:ltr;text-align:left;color:var(--glow);margin-bottom:6px;font-family:'HeeboV'}
+.page{font-family:var(--disp);font-weight:var(--dw);font-size:30px;line-height:36px;letter-spacing:var(--ls);margin:0 0 2px}
+.cap{font-size:13px;line-height:18px;color:var(--muted);margin:0}
+.money{direction:ltr;unicode-bidi:isolate;display:inline-block;white-space:nowrap}
+.money .cur{font-family:var(--text);font-weight:500;font-size:calc(var(--cs) * 1em);margin-inline-end:.06em}
+.hero{font-family:var(--disp);font-weight:var(--dw);font-size:56px;line-height:60px;letter-spacing:var(--ls);margin:6px 0 10px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px;display:grid;gap:2px}
+.amount{font-family:var(--disp);font-weight:var(--dw);font-size:26px;line-height:30px;letter-spacing:var(--ls)}
+.sec{font-family:var(--disp);font-weight:var(--dw);font-size:22px;line-height:28px;letter-spacing:var(--ls);margin:16px 0 8px}
+.row{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:18px;padding:12px 14px;margin-bottom:8px}
+.av{width:40px;height:40px;border-radius:12px;background:var(--glow);color:#fff;display:grid;place-items:center;font-weight:700}
+.mid{flex:1;min-width:0}.t1{font-weight:var(--lw);font-size:16px;line-height:22px}
+.chip{display:inline-block;font-size:11px;line-height:13px;font-weight:500;padding:3px 7px;border-radius:7px;background:var(--pend-soft);color:var(--pend);vertical-align:2px;margin-inline-start:4px}
+.sub{font-size:13px;line-height:18px;color:var(--muted)}
+.time{direction:ltr;unicode-bidi:isolate;display:inline-block}
+.pay{font-family:var(--disp);font-weight:var(--dw);font-size:19px;line-height:22px}
+.nums{margin:10px 0;background:var(--surface);border-radius:14px;padding:8px 14px;font-family:var(--disp);font-weight:var(--dw);font-size:20px;line-height:26px;text-align:left}
+.btn{width:100%;min-height:52px;border:0;border-radius:16px;background:var(--glow);color:#fff;font:var(--lw) 16px var(--text);margin:4px 0 10px}
+.body{font-size:15px;line-height:24px;margin:0 0 8px;color:var(--ink)}
+.small{display:grid;gap:2px;color:var(--muted)}
+</style></head><body><section class="phone light" style="--text:'RubikApp';--disp:'SecularApp';--dw:400;--ls:-0.5px;--lw:600;--cs:0.62;--num:normal;
+  --bg:#EEF0F6;--surface:#fff;--ink:#1B2335;--muted:#5A6478;--line:#D2D8E3;--glow:#5145E8;--pend:#9A5000;--pend-soft:#FFEBC7;--sunk:#E4E8F0">
+  <div class="tagname">a · נוכחי: Rubik + Secular One</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone dark" style="--text:'RubikApp';--disp:'SecularApp';--dw:400;--ls:-0.5px;--lw:600;--cs:0.62;--num:normal;
+  --bg:#0D1015;--surface:#1A1D24;--ink:#EEF0F6;--muted:#A3ABBC;--line:#2C313B;--glow:#8C82FF;--pend:#F2B66B;--pend-soft:#3A2A12;--sunk:#262A33">
+  <div class="tagname">a · נוכחי: Rubik + Secular One</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone light" style="--text:'HeeboV';--disp:'HeeboV';--dw:700;--ls:-0.02em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#EEF0F6;--surface:#fff;--ink:#1B2335;--muted:#5A6478;--line:#D2D8E3;--glow:#5145E8;--pend:#9A5000;--pend-soft:#FFEBC7;--sunk:#E4E8F0">
+  <div class="tagname">b · Heebo בלבד</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone dark" style="--text:'HeeboV';--disp:'HeeboV';--dw:700;--ls:-0.02em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#0D1015;--surface:#1A1D24;--ink:#EEF0F6;--muted:#A3ABBC;--line:#2C313B;--glow:#8C82FF;--pend:#F2B66B;--pend-soft:#3A2A12;--sunk:#262A33">
+  <div class="tagname">b · Heebo בלבד</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone light" style="--text:'AssistantV';--disp:'AssistantV';--dw:700;--ls:-0.01em;--lw:600;--cs:0.7;--num:tabular-nums;
+  --bg:#EEF0F6;--surface:#fff;--ink:#1B2335;--muted:#5A6478;--line:#D2D8E3;--glow:#5145E8;--pend:#9A5000;--pend-soft:#FFEBC7;--sunk:#E4E8F0">
+  <div class="tagname">c · Assistant בלבד</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone dark" style="--text:'AssistantV';--disp:'AssistantV';--dw:700;--ls:-0.01em;--lw:600;--cs:0.7;--num:tabular-nums;
+  --bg:#0D1015;--surface:#1A1D24;--ink:#EEF0F6;--muted:#A3ABBC;--line:#2C313B;--glow:#8C82FF;--pend:#F2B66B;--pend-soft:#3A2A12;--sunk:#262A33">
+  <div class="tagname">c · Assistant בלבד</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone light" style="--text:'RubikV';--disp:'RubikV';--dw:600;--ls:-0.02em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#EEF0F6;--surface:#fff;--ink:#1B2335;--muted:#5A6478;--line:#D2D8E3;--glow:#5145E8;--pend:#9A5000;--pend-soft:#FFEBC7;--sunk:#E4E8F0">
+  <div class="tagname">d · Rubik בלבד (משקלים)</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone dark" style="--text:'RubikV';--disp:'RubikV';--dw:600;--ls:-0.02em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#0D1015;--surface:#1A1D24;--ink:#EEF0F6;--muted:#A3ABBC;--line:#2C313B;--glow:#8C82FF;--pend:#F2B66B;--pend-soft:#3A2A12;--sunk:#262A33">
+  <div class="tagname">d · Rubik בלבד (משקלים)</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone light" style="--text:'NotoHebV';--disp:'NotoHebV';--dw:700;--ls:-0.02em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#EEF0F6;--surface:#fff;--ink:#1B2335;--muted:#5A6478;--line:#D2D8E3;--glow:#5145E8;--pend:#9A5000;--pend-soft:#FFEBC7;--sunk:#E4E8F0">
+  <div class="tagname">e · Noto Sans Hebrew</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone dark" style="--text:'NotoHebV';--disp:'NotoHebV';--dw:700;--ls:-0.02em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#0D1015;--surface:#1A1D24;--ink:#EEF0F6;--muted:#A3ABBC;--line:#2C313B;--glow:#8C82FF;--pend:#F2B66B;--pend-soft:#3A2A12;--sunk:#262A33">
+  <div class="tagname">e · Noto Sans Hebrew</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone light" style="--text:'PlexHeb';--disp:'PlexHeb';--dw:600;--ls:-0.01em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#EEF0F6;--surface:#fff;--ink:#1B2335;--muted:#5A6478;--line:#D2D8E3;--glow:#5145E8;--pend:#9A5000;--pend-soft:#FFEBC7;--sunk:#E4E8F0">
+  <div class="tagname">f · IBM Plex Sans Hebrew</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone dark" style="--text:'PlexHeb';--disp:'PlexHeb';--dw:600;--ls:-0.01em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#0D1015;--surface:#1A1D24;--ink:#EEF0F6;--muted:#A3ABBC;--line:#2C313B;--glow:#8C82FF;--pend:#F2B66B;--pend-soft:#3A2A12;--sunk:#262A33">
+  <div class="tagname">f · IBM Plex Sans Hebrew</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone light" style="--text:'HeeboV';--disp:'RubikV';--dw:600;--ls:-0.02em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#EEF0F6;--surface:#fff;--ink:#1B2335;--muted:#5A6478;--line:#D2D8E3;--glow:#5145E8;--pend:#9A5000;--pend-soft:#FFEBC7;--sunk:#E4E8F0">
+  <div class="tagname">g · Heebo טקסט + Rubik תצוגה</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone dark" style="--text:'HeeboV';--disp:'RubikV';--dw:600;--ls:-0.02em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#0D1015;--surface:#1A1D24;--ink:#EEF0F6;--muted:#A3ABBC;--line:#2C313B;--glow:#8C82FF;--pend:#F2B66B;--pend-soft:#3A2A12;--sunk:#262A33">
+  <div class="tagname">g · Heebo טקסט + Rubik תצוגה</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone light" style="--text:'OpenSansV';--disp:'OpenSansV';--dw:700;--ls:-0.02em;--lw:600;--cs:0.7;--num:tabular-nums;
+  --bg:#EEF0F6;--surface:#fff;--ink:#1B2335;--muted:#5A6478;--line:#D2D8E3;--glow:#5145E8;--pend:#9A5000;--pend-soft:#FFEBC7;--sunk:#E4E8F0">
+  <div class="tagname">h · Open Sans (עברית)</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone dark" style="--text:'OpenSansV';--disp:'OpenSansV';--dw:700;--ls:-0.02em;--lw:600;--cs:0.7;--num:tabular-nums;
+  --bg:#0D1015;--surface:#1A1D24;--ink:#EEF0F6;--muted:#A3ABBC;--line:#2C313B;--glow:#8C82FF;--pend:#F2B66B;--pend-soft:#3A2A12;--sunk:#262A33">
+  <div class="tagname">h · Open Sans (עברית)</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone light" style="--text:'HeeboV';--disp:'FrankV';--dw:600;--ls:-0.01em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#EEF0F6;--surface:#fff;--ink:#1B2335;--muted:#5A6478;--line:#D2D8E3;--glow:#5145E8;--pend:#9A5000;--pend-soft:#FFEBC7;--sunk:#E4E8F0">
+  <div class="tagname">i · Heebo + Frank Ruhl Libre לסכומים</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section><section class="phone dark" style="--text:'HeeboV';--disp:'FrankV';--dw:600;--ls:-0.01em;--lw:500;--cs:0.7;--num:tabular-nums;
+  --bg:#0D1015;--surface:#1A1D24;--ink:#EEF0F6;--muted:#A3ABBC;--line:#2C313B;--glow:#8C82FF;--pend:#F2B66B;--pend-soft:#3A2A12;--sunk:#262A33">
+  <div class="tagname">i · Heebo + Frank Ruhl Libre לסכומים</div>
+  <h1 class="page">היסטוריה</h1>
+  <p class="cap">מוצג: כל התאריכים · מהחדש לישן</p>
+  <div class="hero"><span class="money"><span class="cur">₪</span>3,070.75</span></div>
+  <div class="tiles"><div class="tile"><span class="cap">היום</span><b class="amount"><span class="money"><span class="cur">₪</span>300</span></b></div>
+  <div class="tile"><span class="cap">מכל הזמנים</span><b class="amount"><span class="money"><span class="cur">$</span>480</span></b></div></div>
+  <h2 class="sec">הבא בתור</h2>
+  <div class="row"><div class="av">מ</div><div class="mid"><div class="t1">יום ד׳ 4.11 <span class="chip">לא שולם</span></div>
+  <div class="sub">5 שעות · מסעדה · <span class="time">20:30–00:30</span></div></div><b class="pay"><span class="money"><span class="cur">₪</span>250</span></b></div>
+  <div class="row"><div class="av" style="background:#7C3AED">T</div><div class="mid"><div class="t1">יום ה׳ 29.10</div>
+  <div class="sub">4 שעות · Tech Support · $120</div></div><b class="pay"><span class="money"><span class="cur">$</span>120</span></b></div>
+  <div class="nums"><div><span class="money"><span class="cur">₪</span>1,111.11</span></div><div><span class="money"><span class="cur">₪</span>8,888.88</span></div><div><span class="money"><span class="cur">₪</span>3,070.75</span></div><div><span class="money"><span class="cur">₪</span>168.75</span></div><div><span class="money"><span class="cur">₪</span>11.00</span></div></div>
+  <button class="btn">שמירה</button>
+  <p class="body">המשמרת נשמרה. הסכום המחושב נשאר כפי שנרשם, גם אם תשנו אחר כך את התעריף של מקום העבודה. אפשר לייצא דוח חודשי ל־PDF ולשתף.</p>
+  <div class="small"><span style="font-size:11px">11px · מתוכנן 13 משמרות</span><span style="font-size:12px">12px · שבוע של 25.10</span><span style="font-size:13px">13px · 2.5 שעות · שיעורים</span></div>
+</section></body></html>

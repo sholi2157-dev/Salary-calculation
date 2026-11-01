@@ -1,0 +1,171 @@
+[
+  {
+    "id": "group_bonus_others",
+    "canSave": true,
+    "preview": 60,
+    "storedOwn": 60,
+    "bonus": 0,
+    "workers": [
+      {
+        "name": "worker",
+        "hours": 1,
+        "isPaid": false,
+        "bonus": 0,
+        "workerRate": null,
+        "employerRate": null,
+        "source": {
+          "name": "worker",
+          "hours": 1,
+          "isPaid": false
+        },
+        "amount": null
+      }
+    ],
+    "group": {
+      "employerTotal": 120,
+      "profit": 0,
+      "myNet": 60
+    }
+  },
+  {
+    "id": "group_bonus_all",
+    "canSave": true,
+    "preview": 90,
+    "storedOwn": 90,
+    "bonus": 30,
+    "workers": [
+      {
+        "name": "worker",
+        "hours": 1,
+        "isPaid": false,
+        "bonus": 0,
+        "workerRate": null,
+        "employerRate": null,
+        "source": {
+          "name": "worker",
+          "hours": 1,
+          "isPaid": false
+        },
+        "amount": null
+      }
+    ],
+    "group": {
+      "employerTotal": 150,
+      "profit": 0,
+      "myNet": 90
+    }
+  },
+  {
+    "id": "negative_group_rate",
+    "canSave": true,
+    "preview": 60,
+    "storedOwn": 60,
+    "bonus": 0,
+    "workers": [
+      {
+        "name": "worker",
+        "hours": 1,
+        "isPaid": false,
+        "bonus": 0,
+        "workerRate": null,
+        "employerRate": null,
+        "source": {
+          "name": "worker",
+          "hours": 1,
+          "isPaid": false
+        },
+        "amount": null
+      }
+    ],
+    "group": {
+      "employerTotal": 120,
+      "profit": 70,
+      "myNet": 130
+    }
+  },
+  {
+    "id": "invalid_bonus",
+    "canSave": true,
+    "preview": 60,
+    "storedOwn": 60,
+    "bonus": 0,
+    "workers": [],
+    "group": {
+      "employerTotal": 60,
+      "profit": 0,
+      "myNet": 60
+    }
+  },
+  {
+    "id": "negative_bonus",
+    "canSave": true,
+    "preview": -40,
+    "storedOwn": -40,
+    "bonus": -100,
+    "workers": [],
+    "group": {
+      "employerTotal": -40,
+      "profit": 0,
+      "myNet": -40
+    }
+  },
+  {
+    "id": "infinite_job",
+    "canSave": true,
+    "preview": null,
+    "storedOwn": 0,
+    "bonus": 0,
+    "workers": [],
+    "group": {
+      "employerTotal": 0,
+      "profit": 0,
+      "myNet": 0
+    }
+  },
+  {
+    "id": "lookback",
+    "all": 303,
+    "visible": 63
+  },
+  {
+    "id": "end_today",
+    "stillPlanned": [
+      {
+        "key": "s@2026-10-30",
+        "seriesId": "s",
+        "category": "A",
+        "date": "2026-10-30",
+        "start": "09:00",
+        "end": "10:00",
+        "rate": 60,
+        "currency": "₪",
+        "edited": false,
+        "hold": false,
+        "status": "PLANNED"
+      }
+    ]
+  },
+  {
+    "id": "overnight_overlap",
+    "preview": {
+      "dates": [
+        "2026-10-31"
+      ],
+      "clashes": [],
+      "created": [
+        "2026-10-31"
+      ]
+    }
+  }
+]
+PROTOTYPE constructor [{"name":"constructor","hours":null}]
+PROTOTYPE_ERROR constructor Cannot read properties of undefined (reading 'unread')
+PROTOTYPE __proto__ []
+PROTOTYPE_ERROR __proto__ Cannot read properties of undefined (reading 'unread')
+PROTOTYPE toString [{"name":"toString","hours":null}]
+PROTOTYPE_ERROR toString Cannot read properties of undefined (reading 'unread')
+CURRENT_HOME constructor m[e.category].push is not a function
+CURRENT_HOME __proto__ m[e.category].push is not a function
+CURRENT_HOME toString m[e.category].push is not a function
+ACCOUNT_DRAFT {"scopedDraft":null,"actualRestore":{"mode":"CLOCK","notes":"synthetic private draft A","category":"A-only"}}
+INVALID_PASS_THROUGH {"evaluation":{"errors":[],"minutes":60,"bonus":0,"total":60,"canSave":true,"clock":true},"stored":{"createdAt":1793492998465,"isPaid":false,"seriesKey":null,"autoConfirmed":false,"category":"A","date":1793523600000,"isTimeRange":true,"startTime":"09:00","endTime":"10:00","hours":1,"hourlyRate":60,"totalEarnings":60,"notes":"","currency":"₪","kind":"shift","payKnown":true,"bonus":0,"isGroupShift":false,"groupWorkersJson":"","employerRate":null,"workerRate":null}}

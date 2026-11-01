@@ -1,0 +1,14 @@
+{
+  "deleteWithFailedLog": {
+    "returnedSuccess": true,
+    "recordTombstoned": true,
+    "undoLogSaved": false
+  },
+  "refresh": {
+    "initialExchange": 200,
+    "differentClient": 200,
+    "replayedOriginal": 200,
+    "firestoreWrites": 1
+  },
+  "network": "All requests mocked; no network or real credentials"
+}

@@ -1,0 +1,21 @@
+const fs=require('node:fs'),assert=require('node:assert/strict'),crypto=require('node:crypto');
+const root='/workspace/salary-audit/sources/web-latest',A=require(root+'/lib/server/assistant.cjs'),P=require(root+'/web/sync/protocol.js');
+const env={MCP_SECRET:'audit-synthetic-'+'x'.repeat(40),FIREBASE_WEB_API_KEY:'synthetic'};
+const e={category:'בדיקה',date:1700000000000,createdAt:1,hours:1,hourlyRate:40,totalEarnings:40,isPaid:false,notes:'',currency:'₪',isTimeRange:false,startTime:null,endTime:null,isGroupShift:false,employerRate:null,workerRate:null,groupWorkersJson:''};
+const id='a'.repeat(32),writes=[];
+const db={list:async()=>[{id,data:{schema:1,type:'entry',version:1,operation:id+':seed',deleted:false,payload:P.encode('entry',e)},updateTime:'synthetic-rev'}],put:async(path,data)=>{writes.push({path,data});if(path.startsWith('assistant_log/'))throw Error('synthetic log write failure');return true;}};
+const fields={scopes:{arrayValue:{values:[{stringValue:'shifts.read'},{stringValue:'shifts.delete'}]}},codeUsed:{booleanValue:false},until:{nullValue:null}};
+let commits=0;
+const fetcher=async(url,init)=>{if(url.includes('securetoken'))return {ok:true,json:async()=>({id_token:'synthetic',user_id:'audit-user',expires_in:3600})};if(url.includes('documents:commit')){commits++;return {ok:true,json:async()=>({writeResults:[]})};}return {ok:true,json:async()=>({fields,updateTime:'audit-rev'})};};
+(async()=>{
+const deleted=await A.run({db,grant:{s:['shifts.delete'],g:'synthetic-grant',n:'audit',z:'UTC'}},'delete_shift',{id});
+assert(deleted.deleted);assert(writes[0].data.deleted);assert(writes.length===2);
+const verifier='x'.repeat(43),client='synthetic-client-A';
+const code=A.seal(env,'code',{u:'audit-user',g:'grant',f:'synthetic-refresh',s:['shifts.read'],z:'UTC',n:'audit',until:0,c:client,r:'https://example.invalid/cb',ch:crypto.createHash('sha256').update(verifier).digest('base64url')},300);
+const [status,tokens]=await A.token(env,{grant_type:'authorization_code',code,client_id:client,code_verifier:verifier,redirect_uri:'https://example.invalid/cb'},fetcher);assert.equal(status,200);
+const first=await A.token(env,{grant_type:'refresh_token',refresh_token:tokens.refresh_token,client_id:'different-client-B'},fetcher);
+const replay=await A.token(env,{grant_type:'refresh_token',refresh_token:tokens.refresh_token,client_id:'different-client-B'},fetcher);
+assert.equal(first[0],200);assert.equal(replay[0],200);
+const output={deleteWithFailedLog:{returnedSuccess:true,recordTombstoned:true,undoLogSaved:false},refresh:{initialExchange:status,differentClient:first[0],replayedOriginal:replay[0],firestoreWrites:commits},network:'All requests mocked; no network or real credentials'};
+fs.writeFileSync('/workspace/salary-audit/current-security/assistant-proof.json',JSON.stringify(output,null,2));console.log(JSON.stringify(output,null,2));
+})().catch(e=>{console.error(e);process.exitCode=1});

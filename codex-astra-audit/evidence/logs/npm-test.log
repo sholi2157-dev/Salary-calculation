@@ -1,0 +1,32 @@
+
+> work-hours-tracker-web@1.0.0 test
+> node --test web-tests/*.test.cjs
+
+✔ web-tests/ai.test.cjs (157.170333ms)
+✔ web-tests/audit.test.cjs (100.93764ms)
+✔ web-tests/backup-v3.test.cjs (151.552363ms)
+✔ web-tests/categories-sharing.test.cjs (174.910776ms)
+✔ web-tests/cloud-sync.test.cjs (136.852975ms)
+✔ web-tests/download-measurement.test.cjs (156.697495ms)
+✔ web-tests/download.test.cjs (110.60261ms)
+✔ web-tests/history.test.cjs (150.870104ms)
+✔ web-tests/navigation.test.cjs (172.771901ms)
+✔ web-tests/range-hours.test.cjs (77.311788ms)
+✔ web-tests/runtime.test.cjs (82.61841ms)
+✔ web-tests/selection.test.cjs (90.131518ms)
+✔ web-tests/transfer.test.cjs (126.698313ms)
+✔ web-tests/updates.test.cjs (139.344716ms)
+✔ web-tests/v2-duration.test.cjs (115.06804ms)
+✔ web-tests/v2-plan.test.cjs (107.671039ms)
+✔ web-tests/v2-rules.test.cjs (98.940673ms)
+✔ web-tests/v2-share.test.cjs (114.366526ms)
+✔ web-tests/v2-summary.test.cjs (86.59976ms)
+✔ web-tests/v2-time.test.cjs (84.982231ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2475.887853

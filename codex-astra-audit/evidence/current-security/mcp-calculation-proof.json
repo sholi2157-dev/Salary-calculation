@@ -1,0 +1,17 @@
+{
+  "unknownRateCompletion": {
+    "expected": 20,
+    "actual": 0,
+    "payKnown": true
+  },
+  "clockEdit": {
+    "beforeHours": 7.5,
+    "beforeClock": "09:00-17:00",
+    "oldBreakMinutes": 30,
+    "newEnd": "18:00",
+    "expectedHours": 8.5,
+    "actualHours": 9,
+    "expectedTotal": 340,
+    "actualTotal": 360
+  }
+}

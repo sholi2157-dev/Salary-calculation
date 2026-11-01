@@ -1,0 +1,42 @@
+[
+  {
+    "name": "v2-rules.json",
+    "androidExists": true,
+    "webExists": true,
+    "equal": true,
+    "androidHash": "364b84565e013b0d3ac75fa7eae51e406305f04762bee6403849b8e1a8904f65",
+    "webHash": "364b84565e013b0d3ac75fa7eae51e406305f04762bee6403849b8e1a8904f65"
+  },
+  {
+    "name": "v2-plan.json",
+    "androidExists": true,
+    "webExists": true,
+    "equal": true,
+    "androidHash": "627d5e35482a75f574da0e74067b2a735fad7eb6b48f084a6766ab9d2694ab27",
+    "webHash": "627d5e35482a75f574da0e74067b2a735fad7eb6b48f084a6766ab9d2694ab27"
+  },
+  {
+    "name": "v2-share-fixtures.json",
+    "androidExists": true,
+    "webExists": true,
+    "equal": true,
+    "androidHash": "c52df620c36b4821c3359116ba06961879f81e278c69e64c9ddc9893ad70822b",
+    "webHash": "c52df620c36b4821c3359116ba06961879f81e278c69e64c9ddc9893ad70822b"
+  },
+  {
+    "name": "v2-summary.json",
+    "androidExists": true,
+    "webExists": true,
+    "equal": true,
+    "androidHash": "fb7e718a901298ea37144905cf3b15d8193c937cfa40b13cf2578a8b8f6c97e5",
+    "webHash": "fb7e718a901298ea37144905cf3b15d8193c937cfa40b13cf2578a8b8f6c97e5"
+  },
+  {
+    "name": "v2-recap.json",
+    "androidExists": true,
+    "webExists": true,
+    "equal": true,
+    "androidHash": "c812388d8447d0e6a05bcfc6179d274d63bfa2730ee169032857bc2d8d605289",
+    "webHash": "c812388d8447d0e6a05bcfc6179d274d63bfa2730ee169032857bc2d8d605289"
+  }
+]

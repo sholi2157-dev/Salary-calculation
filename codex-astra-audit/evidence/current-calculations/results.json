@@ -1,0 +1,304 @@
+{
+  "environment": {
+    "node": "v24.19.0",
+    "TZ": "system",
+    "source": "/workspace/salary-audit/sources/web-latest"
+  },
+  "checks": [
+    {
+      "name": "100 minutes 1.40",
+      "expected": 100,
+      "actual": 100,
+      "pass": true
+    },
+    {
+      "name": "100 minutes 1,40",
+      "expected": 100,
+      "actual": 100,
+      "pass": true
+    },
+    {
+      "name": "100 minutes 1:40",
+      "expected": 100,
+      "actual": 100,
+      "pass": true
+    },
+    {
+      "name": "invalid duration 0:00",
+      "expected": false,
+      "actual": false,
+      "pass": true
+    },
+    {
+      "name": "invalid duration 1:75",
+      "expected": false,
+      "actual": false,
+      "pass": true
+    },
+    {
+      "name": "invalid duration 24:01",
+      "expected": false,
+      "actual": false,
+      "pass": true
+    },
+    {
+      "name": "24h",
+      "expected": 1440,
+      "actual": 1440,
+      "pass": true
+    },
+    {
+      "name": "overnight break",
+      "expected": 210,
+      "actual": 210,
+      "pass": true
+    },
+    {
+      "name": "zero clock",
+      "expected": true,
+      "actual": true,
+      "pass": true
+    },
+    {
+      "name": "metadata preserves historical financial precision",
+      "expected": [
+        1.234567,
+        33.3333,
+        42.12345
+      ],
+      "actual": [
+        1.234567,
+        33.3333,
+        42.12345
+      ],
+      "pass": true
+    },
+    {
+      "name": "currency and unknown",
+      "expected": {
+        "₪": 100,
+        "$": 50
+      },
+      "actual": {
+        "₪": 100,
+        "$": 50
+      },
+      "pass": true
+    },
+    {
+      "name": "group OTHERS displayed equals persisted pay",
+      "expected": 100,
+      "actual": 120,
+      "pass": false
+    },
+    {
+      "name": "group OTHERS worker bonus",
+      "expected": 20,
+      "actual": 0,
+      "pass": false
+    },
+    {
+      "name": "bulk preview equals persisted amount",
+      "expected": 123.46,
+      "actual": 123.33,
+      "pass": false
+    },
+    {
+      "name": "plan overnight clash previous day",
+      "expected": [
+        "2026-10-20"
+      ],
+      "actual": [],
+      "pass": false
+    },
+    {
+      "name": "clock preview equals stored",
+      "expected": 1.03,
+      "actual": 1.02,
+      "pass": false
+    }
+  ],
+  "generated": {
+    "cents": {
+      "cases": 20160,
+      "mismatches": 178,
+      "examples": [
+        {
+          "minutes": 10,
+          "rate": 0.03,
+          "expected": 0.01,
+          "actual": 0
+        },
+        {
+          "minutes": 10,
+          "rate": 0.57,
+          "expected": 0.1,
+          "actual": 0.09
+        },
+        {
+          "minutes": 10,
+          "rate": 3.33,
+          "expected": 0.56,
+          "actual": 0.55
+        },
+        {
+          "minutes": 18,
+          "rate": 2.05,
+          "expected": 0.62,
+          "actual": 0.61
+        },
+        {
+          "minutes": 30,
+          "rate": 0.29,
+          "expected": 0.15,
+          "actual": 0.14
+        },
+        {
+          "minutes": 30,
+          "rate": 0.57,
+          "expected": 0.29,
+          "actual": 0.28
+        },
+        {
+          "minutes": 30,
+          "rate": 2.05,
+          "expected": 1.03,
+          "actual": 1.02
+        },
+        {
+          "minutes": 42,
+          "rate": 2.05,
+          "expected": 1.44,
+          "actual": 1.43
+        },
+        {
+          "minutes": 45,
+          "rate": 12.34,
+          "expected": 9.26,
+          "actual": 9.25
+        },
+        {
+          "minutes": 90,
+          "rate": 0.29,
+          "expected": 0.44,
+          "actual": 0.43
+        },
+        {
+          "minutes": 90,
+          "rate": 99.99,
+          "expected": 149.99,
+          "actual": 149.98
+        },
+        {
+          "minutes": 102,
+          "rate": 2.05,
+          "expected": 3.49,
+          "actual": 3.48
+        },
+        {
+          "minutes": 110,
+          "rate": 0.03,
+          "expected": 0.06,
+          "actual": 0.05
+        },
+        {
+          "minutes": 110,
+          "rate": 99.99,
+          "expected": 183.32,
+          "actual": 183.31
+        },
+        {
+          "minutes": 114,
+          "rate": 2.05,
+          "expected": 3.9,
+          "actual": 3.89
+        },
+        {
+          "minutes": 130,
+          "rate": 0.03,
+          "expected": 0.07,
+          "actual": 0.06
+        },
+        {
+          "minutes": 130,
+          "rate": 0.57,
+          "expected": 1.24,
+          "actual": 1.23
+        },
+        {
+          "minutes": 130,
+          "rate": 33.33,
+          "expected": 72.22,
+          "actual": 72.21
+        },
+        {
+          "minutes": 138,
+          "rate": 2.05,
+          "expected": 4.72,
+          "actual": 4.71
+        },
+        {
+          "minutes": 150,
+          "rate": 0.57,
+          "expected": 1.43,
+          "actual": 1.42
+        }
+      ]
+    },
+    "spans": {
+      "cases": 107944,
+      "mismatches": 0
+    }
+  },
+  "groupRounding": {
+    "minutes": 2,
+    "employerRate": 0.15,
+    "workerRate": 0.01,
+    "employerPays": 0.01,
+    "workerReceives": 0,
+    "expectedProfit": 0.01,
+    "actual": {
+      "employerTotal": 10.01,
+      "profit": 0,
+      "myNet": 10
+    }
+  },
+  "summaryBreak": {
+    "netMinutes": 60,
+    "profileMinutes": 120
+  },
+  "dst": [
+    {
+      "zone": "Asia/Jerusalem",
+      "date": "2026-03-27",
+      "start": "01:00",
+      "end": "04:00",
+      "clockHours": 3,
+      "elapsedHours": 2
+    },
+    {
+      "zone": "Asia/Jerusalem",
+      "date": "2026-10-25",
+      "start": "00:00",
+      "end": "03:00",
+      "clockHours": 3,
+      "elapsedHours": 4
+    },
+    {
+      "zone": "America/New_York",
+      "date": "2026-03-08",
+      "start": "01:00",
+      "end": "04:00",
+      "clockHours": 3,
+      "elapsedHours": 2
+    },
+    {
+      "zone": "America/New_York",
+      "date": "2026-11-01",
+      "start": "00:00",
+      "end": "03:00",
+      "clockHours": 3,
+      "elapsedHours": 4
+    }
+  ]
+}

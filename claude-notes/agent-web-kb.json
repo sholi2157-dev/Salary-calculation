@@ -1,0 +1,228 @@
+page.evaluate: TypeError: Cannot read properties of null (reading 'getAttribute')
+    at eval (eval at evaluate (:311:30), <anonymous>:1:70)
+    at UtilityScript.evaluate (<anonymous>:313:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at /home/user/Salary-calculation/ux-audit/tools/agent-web/kb.cjs:62:68 {
+  log: []
+}
+{
+ "struct-home": {
+  "h": [
+   "H2:הבא בתור",
+   "H2:אחרונות",
+   "H2:הכיס של החודש"
+  ],
+  "skip": false,
+  "landmarks": [
+   "MAIN",
+   "NAV:ניווט ראשי"
+  ],
+  "title": "שכר עבודות אישי",
+  "shiftAriaPressed": 4
+ },
+ "struct-history": {
+  "h": [
+   "H1:היסטוריה"
+  ],
+  "skip": false,
+  "landmarks": [
+   "MAIN",
+   "NAV:ניווט ראשי"
+  ],
+  "title": "שכר עבודות אישי",
+  "shiftAriaPressed": 13
+ },
+ "struct-settings": {
+  "h": [
+   "H1:הגדרות",
+   "H2:משוב ותקלות",
+   "H2:עבודה",
+   "H2:מראה ותחושה",
+   "H2:הסיכומים שלי",
+   "H2:התראות",
+   "H2:גיבוי ונתונים",
+   "H2:עזרה",
+   "H2:חשבון"
+  ],
+  "skip": false,
+  "landmarks": [
+   "MAIN",
+   "NAV:ניווט ראשי"
+  ],
+  "title": "שכר עבודות אישי",
+  "shiftAriaPressed": 0
+ },
+ "tab-home": [
+  "button#android-download-entry \"הורדת האפליקציה לאנדרואיד\" RING op=1 82x44",
+  "button#home-bell \"התראות\" RING op=1 44x44",
+  "div \"₪300\" RING op=1 560x66",
+  "button#pending-flag \"משמרת אחת מחכה לתעריף ←\" RING op=1 237x44",
+  "button#live-start \"אני מתחיל עכשיו\" RING op=1 374x60",
+  "button#home-recap-2026-10 \"אוקטובר שלך בכיס הסיכום החודשי\" RING op=1 374x81",
+  "button#next-all \"הכול\" RING op=1 44x44",
+  "button#next-f \"מ יום ד׳ 4.11 מתוכנן 5 שעות · \" RING op=1 464x70",
+  "button \"הכול\" RING op=1 44x44",
+  "button#recent-f \"מ יום ד׳ 4.11 מתוכנן 5 שעות · \" RING op=1 464x70",
+  "button#recent-a \"מ היום לא שולם ⁦11:00–17:00⁩ ·\" RING op=1 464x70",
+  "button#recent-b \"ש אתמול לא שולם 2.5 שעות · שיע\" RING op=1 464x70",
+  "button#tab-home \"בית\" RING op=1 206x48",
+  "button#tab-history \"היסטוריה\" RING op=1 206x48",
+  "button#tab-settings \"הגדרות\" RING op=1 206x48",
+  "button#add-shift \"משמרת חדשה\" RING op=1 206x52",
+  "BODY",
+  "button#android-download-entry \"הורדת האפליקציה לאנדרואיד\" RING op=1 82x44",
+  "button#home-bell \"התראות\" RING op=1 44x44",
+  "div \"₪300\" RING op=1 560x66",
+  "button#pending-flag \"משמרת אחת מחכה לתעריף ←\" RING op=1 237x44",
+  "button#live-start \"אני מתחיל עכשיו\" RING op=1 374x60"
+ ],
+ "refresh-focus": {
+  "before": "button#recent-f \"מ יום ד׳ 4.11 מתוכנן 5 שעות · \" RING op=1 464x70",
+  "after": "BODY"
+ },
+ "places-first-focus": "button \"מ מסעדה · ברירת מחדל ₪50 לשעה\" RING op=1 395x40 [modal]",
+ "places-tab40": [
+  "button \"עריכה\" RING op=1 67x44 [modal]",
+  "button \"ש שיעורים פרטיים במתמטיקה ופיז\" RING op=1 395x40 [modal]",
+  "button \"עריכה\" RING op=1 67x44 [modal]",
+  "button \"ה הובלות $60 לשעה\" RING op=1 395x40 [modal]",
+  "button \"עריכה\" RING op=1 67x44 [modal]",
+  "button \"ב בייביסיטר ₪45 לשעה\" RING op=1 395x40 [modal]",
+  "button \"עריכה\" RING op=1 67x44 [modal]",
+  "button \"T Tech Support $30 לשעה\" RING op=1 395x40 [modal]",
+  "button \"עריכה\" RING op=1 67x44 [modal]",
+  "button \"ה הדרכת טיולים ₪80 לשעה\" RING op=1 395x40 [modal]",
+  "button \"עריכה\" RING op=1 67x44 [modal]",
+  "button \"ג גינון ₪55 לשעה\" RING op=1 395x40 [modal]",
+  "button \"עריכה\" RING op=1 67x44 [modal]",
+  "button \"א אירועים ₪70 לשעה\" RING op=1 395x40 [modal]",
+  "button \"עריכה\" RING op=1 67x44 [modal]",
+  "button \"מ מוקד לילה ₪48 לשעה\" RING op=1 395x40 [modal]",
+  "button \"עריכה\" RING op=1 67x44 [modal]",
+  "button#place-add \"+ מקום עבודה חדש\" RING op=1 528x54 [modal]",
+  "BODY",
+  "button#feedback-button \"כתיבה\" RING op=1 68x44",
+  "button \"הסבר: מקום ברירת מחדל\" RING op=1 40x40",
+  "button#places-button \"מסעדה\" RING op=1 73x44",
+  "button \"הסבר: מטבע ברירת מחדל\" RING op=1 40x40",
+  "button \"₪\" RING op=1 36x38",
+  "button \"$\" RING op=1 33x38",
+  "button \"הסבר: משמרות קבועות\" RING op=1 40x40",
+  "button#series-button \"ניהול\" RING op=1 60x44",
+  "button#theme-system \"אוטומטי\" RING op=1 68x38",
+  "button#theme-light \"בהיר\" RING op=1 50x38",
+  "button#theme-dark \"כהה\" RING op=1 48x38",
+  "button \"רטט במגע\" RING op=1 52x32",
+  "button \"הסבר: כל הסיכומים\" RING op=1 40x40",
+  "button#recaps-button \"פתיחה\" RING op=1 69x44",
+  "button \"הסבר: התראות\" RING op=1 40x40",
+  "button#notify-all \"התראות\" RING op=1 52x32",
+  "button \"הסבר: גיבוי ונתונים\" RING op=1 40x40",
+  "button#backup-download \"הורדת גיבוי\" RING op=1 139x48",
+  "button \"העתקה\" RING op=1 139x48",
+  "button \"שיתוף\" RING op=1 139x48",
+  "button \"אקסל (CSV)\" RING op=1 212x48"
+ ],
+ "places-esc-return": "button#places-button \"מסעדה\" RING op=1 73x44",
+ "info-first": "button \"הבנתי\" RING op=1 528x54 [modal]",
+ "info-tab": [
+  "BODY",
+  "button#feedback-button \"כתיבה\" RING op=1 68x44",
+  "button \"הסבר: מקום ברירת מחדל\" RING op=1 40x40",
+  "button#places-button \"מסעדה\" RING op=1 73x44"
+ ],
+ "info-return": "button \"הסבר: מקום ברירת מחדל\" RING op=1 40x40",
+ "theme-after-enter": "BODY",
+ "settings-currency-after-enter": "BODY",
+ "editor-first-focus": "button#editor-close \"ביטול\" RING op=1 71x44 [modal]",
+ "editor-tab45": [
+  "button#editor-team \"קבוצה\" RING op=1 99x44 [modal]",
+  "button#mode-clock \"שעון\" RING op=1 173x40 [modal]",
+  "button#mode-hours \"ידני\" RING op=1 173x40 [modal]",
+  "button#mode-job \"קבלנות\" RING op=1 173x40 [modal]",
+  "button#add-place \"+ מקום\" RING op=1 73x40 [modal]",
+  "button#place-מסעדה \"מסעדה\" RING op=1 73x40 [modal]",
+  "button#place-שיעורים פרטיים במתמטיקה ופיזיקה לתיכון \"שיעורים פרטיים במתמטיקה ופיזיק\" RING op=1 277x40 [modal]",
+  "button#place-הובלות \"הובלות\" RING op=1 72x40 [modal]",
+  "button#place-בייביסיטר \"בייביסיטר\" RING op=1 87x40 [modal]",
+  "button#place-Tech Support \"Tech Support\" RING op=1 122x40 [modal]",
+  "button#place-הדרכת טיולים \"הדרכת טיולים\" RING op=1 111x40 [modal]",
+  "button#place-גינון \"גינון\" RING op=1 54x40 [modal]",
+  "button#place-אירועים \"אירועים\" RING op=1 75x40 [modal]",
+  "button#place-מוקד לילה \"מוקד לילה\" RING op=1 90x40 [modal]",
+  "button#clock-start-d0 \"התחלה · ספרה 1\" RING op=1 27x48 [modal]",
+  "button#clock-start-d1 \"התחלה · ספרה 2\" RING op=1 28x48 [modal]",
+  "button#clock-start-d2 \"התחלה · ספרה 3\" RING op=1 27x48 [modal]",
+  "button#clock-start-d3 \"התחלה · ספרה 4\" RING op=1 28x48 [modal]",
+  "button#nudge-start--15 \"התחלה 15 דקות אחורה\" RING op=1 112x36 [modal]",
+  "button#nudge-start-15 \"התחלה 15 דקות קדימה\" RING op=1 112x36 [modal]",
+  "button#clock-end-d0 \"סיום · ספרה 1\" RING op=1 28x48 [modal]",
+  "button#clock-end-d1 \"סיום · ספרה 2\" RING op=1 28x48 [modal]",
+  "button#clock-end-d2 \"סיום · ספרה 3\" RING op=1 27x48 [modal]",
+  "button#clock-end-d3 \"סיום · ספרה 4\" RING op=1 28x48 [modal]",
+  "button#nudge-end--15 \"סיום 15 דקות אחורה\" RING op=1 112x36 [modal]",
+  "button#nudge-end-15 \"סיום 15 דקות קדימה\" RING op=1 112x36 [modal]",
+  "div#ruler-start \"התחלה\" RING op=1 52x28 [modal]",
+  "div#ruler-end \"סיום\" RING op=1 52x28 [modal]",
+  "button \"ה׳ 29\" RING op=1 48x56 [modal]",
+  "button \"ו׳ 30\" RING op=1 48x56 [modal]",
+  "button \"ש׳ 31\" RING op=1 48x56 [modal]",
+  "button \"היום 1\" RING op=1 48x56 [modal]",
+  "button \"ב׳ 2\" RING op=1 48x56 [modal]",
+  "button \"ג׳ 3\" RING op=1 48x56 [modal]",
+  "button \"ד׳ 4\" RING op=1 48x56 [modal]",
+  "input \"תאריך אחר\" RING op=0 94x42 [modal]",
+  "input \"תאריך אחר\" RING op=0 94x42 [modal]",
+  "input \"תאריך אחר\" RING op=0 94x42 [modal]",
+  "input \"תאריך אחר\" NO-RING op=0 94x42 [modal]",
+  "button \"₪\" RING op=1 36x38 [modal]",
+  "button \"$\" RING op=1 33x38 [modal]",
+  "input#rate-input \"50\" RING op=1 278x52 [modal]",
+  "button#rate-unknown \"לא יודע\" RING op=1 73x52 [modal]",
+  "button#editor-more \"הפסקה · הערה · בונוס\" RING op=1 161x52 [modal]",
+  "button \"הסבר: חוזרת כל שבוע\" RING op=1 40x40 [modal]"
+ ],
+ "editor-cur-after-enter": "BODY",
+ "editor-day-after-enter": "BODY",
+ "editor-tab-arrowkey": "button#mode-hours \"ידני\" RING op=1 173x40 [modal]",
+ "editor-day-names": [
+  "ה׳ 29|",
+  "ו׳ 30|",
+  "ש׳ 31|",
+  "היום 1|",
+  "ב׳ 2|",
+  "ג׳ 3|",
+  "ד׳ 4|"
+ ],
+ "editor-place-chip-names": [
+  "+ מקום pressed=null",
+  "מסעדה pressed=true",
+  "שיעורים פרטיים במתמטיקה ופיזיקה לתיכון pressed=false"
+ ],
+ "digit-enter-focus": "input#key-sink \"שעת התחלה\" RING op=0 1x1 [modal]",
+ "start-after-type": "09:30",
+ "after-esc1": "BODY",
+ "after-esc2-confirm": "button \"ביטול\" RING op=1 260x54 [modal] sheets=1",
+ "confirm-tab": [
+  "button#confirm-ok \"לצאת\" RING op=1 260x54 [modal]",
+  "BODY",
+  "button#editor-close \"ביטול\" RING op=1 71x44 [modal]",
+  "button#editor-team \"קבוצה\" RING op=1 99x44 [modal]",
+  "button#mode-clock \"שעון\" RING op=1 173x40 [modal]",
+  "button#mode-hours \"ידני\" RING op=1 173x40 [modal]"
+ ],
+ "after-esc3": "button#mode-hours \"ידני\" RING op=1 173x40 [modal]",
+ "ruler": {
+  "html": "<div class=\"ruler\" data-ruler=\"\"><div class=\"track\"></div><div class=\"span\" style=\"left:0%;width:60.416666666666664%\"></div><div class=\"span\" style=\"left:97.91666666666666%;width:2.083333333333333%\"></div>\n    <div class=\"handle on\" data-h=\"START\" data-testid=\"ruler-start\" role=\"slider\" aria-label=\"",
+  "role": null,
+  "label": null,
+  "hidden": null
+ },
+ "sink": {
+  "tab": 0,
+  "op": "0",
+  "pos": "fixed",
+  "label": "שעת התחלה"
+ },
+ "detail-first": "BODY"
+}

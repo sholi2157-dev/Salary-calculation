@@ -1,0 +1,272 @@
+[
+  {
+    "file": "web/accounts.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/admin/admin.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/app.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/categories.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/cloud-sync.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/connect/connect.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/experience.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/features.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/history.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/account.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/app.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/download.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/editor.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/history.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/home.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/launch.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/plans.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/settings.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/store.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/summary.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/kis/ui.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/parity.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/personal-ai.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/presentation.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/runtime.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/selection.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/sharing.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/sync/engine.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/sync/firestore.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/sync/protocol.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/transfer.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/updates.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/v2/pay.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/v2/plan.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/v2/rules.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/v2/share.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "web/v2/summary.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "api/admin.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "api/ai.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "api/android-release.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "api/config.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "api/download.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "api/mcp.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "api/oauth.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "server/ai.cjs",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "lib/server/admin-dashboard.cjs",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "lib/server/android-release.cjs",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "lib/server/assistant.cjs",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "lib/server/download-count.cjs",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "lib/server/download-measurement.cjs",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "scripts/build-web.cjs",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "scripts/check-fixtures.cjs",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "scripts/v2/make-recap-fixtures.cjs",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "scripts/v2/make-summary-fixtures.cjs",
+    "exit": 0,
+    "stderr": ""
+  }
+]

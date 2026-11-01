@@ -1,0 +1,22 @@
+behavior,status,evidence
+JSON v2 roundtrip duplicates+extensions,נבדק בהצלחה,P06
+JSON v3 recognition,נבדק בהצלחה,P07
+legacy technical CSV precision,נבדק בהצלחה,P08
+D01 זהויות כפולות ברשומות ישנות ללא id,נבדק ונכשל,DATA-P01
+D02 שינוי קטגוריה מלשונית מיושנת עלול לאבד משמרת מלשונית אחרת,נבדק ונכשל,DATA-P04
+D03 מחיקה/ייבוא/קטגוריות ותוכניות נשמרים בכמה כתיבות לא אטומיות,נבדק ונכשל,"DATA-P03,DATA-P05"
+D04 תוכניות פגומות נבלעות וניתנות לדריסה ללא שחזור,נבדק ונכשל,DATA-P02
+D05 שחזור גיבוי מתעלם מהעדפות וחוסם גיבוי המכיל מטא־נתונים בלבד,נבדק ונכשל,"DATA-P10,DATA-P11"
+D06 תוכנית מיובאת יכולה להפנות לקטגוריה חסרה,נבדק ונכשל,DATA-P12
+D07 CSV תצוגתי מאבד דיוק וייבואו יוצר כפילות,נבדק ונכשל,DATA-P09
+D08 מחיקת כל הנתונים משאירה טיימר פעיל ומידע מקומי,נבדק ונכשל,current-erase-probe.json + הוכחת קוד Android
+D09 מחיקת כל החשבון אינה מוחקת רשומות שטרם הגיעו למכשיר,נבדק ונכשל,current-erase-sync-probe.json
+D10 מספר רשומות שיובאו עשוי להיות גבוה ממספר ההוספות,קוד בלבד,הוכחת קוד
+Android category delete reassign+financial preservation,קוד בלבד,WorkDao21
+Android transaction import/cancel preview,קוד בלבד,WorkDao151;VM1227
+Android timer finish receipt idempotence,קוד בלבד,WorkDao58
+public2.2.1/current2.2.3 schema identity,נבדק בהצלחה,public-WorkDatabase.kt
+Android native upgrade with rich v2 dataset,חסום בסביבה,לא הורץ
+live account sync and cloud deletion,לא נבדק,אין כתיבות ייצור
+corrupt primary backup recovery UI,נמסר לסוקר Web,app render
+account-scoped draft leakage,נמסר לסוקר Web,editor localStorage

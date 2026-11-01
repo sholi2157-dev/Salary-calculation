@@ -1,0 +1,26 @@
+{
+  "android-latest": {
+    "sha": "fd5a2b656efef3dee2f69881760ed72e44133804",
+    "verified": 386,
+    "mismatches": [],
+    "missing": []
+  },
+  "web-latest": {
+    "sha": "69e430e2e75d330e00671e2b2d03a4180d2e4327",
+    "verified": 244,
+    "mismatches": [],
+    "missing": []
+  },
+  "web-live": {
+    "sha": "da7a7c34785845a4a9584ce796156492811f5a67",
+    "verified": 244,
+    "mismatches": [],
+    "missing": []
+  },
+  "web-green": {
+    "sha": "b6ccbc1a1e7c112663d979aa9789bac8b5134f00",
+    "verified": 244,
+    "mismatches": [],
+    "missing": []
+  }
+}

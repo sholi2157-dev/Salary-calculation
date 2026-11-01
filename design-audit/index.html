@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ביקורת עיצוב חישוב שכר</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column with wide tables that scroll in place; tokens follow the palette this report proposes (hue 264). */
+:root {
+  --bg:#F1F3F8; --surface:#FFFFFF; --fill:#E4E8F0; --line:#D2D8E3; --ink:#1B2335; --ink2:#5A6478; --accent:#5145E8;
+  --p0:#BD2F28; --p0s:#FEE7E4; --p1:#9A5201; --p1s:#FFEBC7; --p2:#1B65B9; --p2s:#E2EEFE; --p3:#5A6478; --p3s:#E4E8F0;
+  --ok:#007453; --font:'Heebo', 'Assistant', system-ui, sans-serif; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0F1216; --surface:#181B20; --fill:#282C34; --line:#32373F; --ink:#EDF0F6; --ink2:#B3B9C5; --accent:#A2A8FE;
+  --p0:#FF9183; --p0s:#47211E; --p1:#F6B75C; --p1s:#3E2B0F; --p2:#7EBBFA; --p2s:#192F46; --p3:#B3B9C5; --p3s:#282C34; --ok:#45D09E; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg:#0F1216; --surface:#181B20; --fill:#282C34; --line:#32373F; --ink:#EDF0F6; --ink2:#B3B9C5; --accent:#A2A8FE;
+  --p0:#FF9183; --p0s:#47211E; --p1:#F6B75C; --p1s:#3E2B0F; --p2:#7EBBFA; --p2s:#192F46; --p3:#B3B9C5; --p3s:#282C34; --ok:#45D09E; color-scheme: dark; }
+* { box-sizing:border-box; }
+html,body { margin:0; background:var(--bg); color:var(--ink); font:400 16px/1.6 var(--font); }
+.wrap { max-width:1080px; margin:0 auto; padding:24px 16px 80px; }
+header.top { display:grid; gap:6px; padding:8px 0 20px; border-bottom:1px solid var(--line); }
+h1 { font-size:34px; line-height:1.15; margin:0; font-weight:800; letter-spacing:-.01em; text-wrap:balance; }
+h2 { font-size:24px; line-height:1.25; margin:44px 0 12px; font-weight:700; text-wrap:balance; display:flex; gap:10px; align-items:baseline; }
+h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; font-weight:600; font-size:18px; }
+h3 { font-size:19px; margin:26px 0 8px; font-weight:700; }
+p, li { max-width:72ch; }
+.meta { color:var(--ink2); font-size:14px; }
+.mono { font-variant-numeric:tabular-nums; direction:ltr; unicode-bidi:isolate; font-size:13px; white-space:nowrap; }
+.small { font-size:13px; color:var(--ink2); }
+nav.toc { display:flex; flex-wrap:wrap; gap:6px 8px; margin:16px 0 0; }
+nav.toc a { color:var(--ink); text-decoration:none; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:6px 10px; font-size:14px; }
+nav.toc a:focus-visible, a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin:16px 0; }
+.card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+.card .k { font-size:13px; color:var(--ink2); }
+.card .v { font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.2; }
+.grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:10px; }
+.grade .card b { display:block; }
+.bar { height:8px; border-radius:6px; background:var(--fill); margin-top:8px; overflow:hidden; }
+.bar i { display:block; height:100%; background:var(--ink); }
+.tbl { overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--surface); margin:12px 0; }
+table { border-collapse:collapse; width:100%; font-size:14px; }
+th, td { text-align:start; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); }
+th { font-weight:600; font-size:13px; color:var(--ink2); background:var(--fill); position:sticky; top:0; }
+tr:last-child td { border-bottom:0; }
+.det { font-size:13px; color:var(--ink2); margin-top:4px; max-width:60ch; }
+.reg td:nth-child(5) { min-width:320px; }
+.pri { display:inline-block; font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px; font-variant-numeric:tabular-nums; }
+.pri.P0 { color:var(--p0); background:var(--p0s); } .pri.P1 { color:var(--p1); background:var(--p1s); }
+.pri.P2 { color:var(--p2); background:var(--p2s); } .pri.P3 { color:var(--p3); background:var(--p3s); }
+.sw { display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px; margin-inline-end:6px; border:1px solid color-mix(in srgb, var(--ink) 20%, transparent); }
+figure { margin:14px 0; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px; }
+figure img { max-width:100%; height:auto; display:block; margin:0 auto; border-radius:8px; }
+figcaption { font-size:13px; color:var(--ink2); padding:8px 4px 0; }
+.figs { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:12px; }
+.figs figure { margin:0; }
+.note { border-inline-start:4px solid var(--accent); background:var(--surface); padding:12px 16px; border-radius:10px; margin:14px 0; }
+.warn { border-inline-start-color:var(--p1); }
+.screen { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 18px; margin:12px 0; }
+.screen h3 { margin-top:4px; }
+.refs a { color:var(--accent); text-decoration:none; font-variant-numeric:tabular-nums; }
+.phase { display:grid; grid-template-columns:110px 1fr; gap:12px; padding:14px 0; border-bottom:1px solid var(--line); }
+.phase .when { font-weight:700; color:var(--accent); }
+ul.tight li { margin:4px 0; }
+@media (max-width:560px) { h1 { font-size:27px; } .phase { grid-template-columns:1fr; gap:4px; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior:auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>ביקורת עיצוב, חוויית שימוש ונגישות: חישוב שכר</h1>
+  <div class="meta">1 בנובמבר 2026 · נבדקו הגרסאות החדשות, כולל מה שעוד לא פורסם · אנדרואיד <span class="mono">claude/project-thread-zs8886 @ fd5a2b6</span> (2.2.3, קוד 48) · ווב <span class="mono">claude/project-thread-c50fyf-web @ 69e430e</span></div>
+  <div class="meta">נבדק לעומת הגרסאות שפורסמו: אנדרואיד 2.2.1 (<span class="mono">26af6aa</span>) ואתר חי <span class="mono">da7a7c3</span>. בזמן הבדיקה לא שונה שום קוד, לא בוצע commit, ולא נגעתי בנתוני משתמשים.</div>
+  <nav class="toc" aria-label="תוכן">
+    <a href="#exec">סיכום</a><a href="#color">צבע ותמות</a><a href="#palette">פלטה מוצעת</a><a href="#type">טיפוגרפיה</a><a href="#system">מערכת רכיבים</a>
+    <a href="#screens">מסך אחר מסך</a><a href="#register">רשימת ממצאים</a><a href="#roadmap">מפת דרכים</a><a href="#coverage">כיסוי</a><a href="#method">שיטה</a>
+  </nav>
+</header>
+
+<h2 id="exec"><span class="n">1</span>הערכה כללית</h2>
+<p>לאפליקציה יש בסיס עיצובי טוב יותר מרוב האפליקציות האישיות. יש לה שפה מוגדרת ("כיס"): RTL טבעי, הפרדה נכונה בין ₪ ל-$, כרטיסי משמרת עם אות וצבע לכל מקום, וניווט צף פשוט. בין האנדרואיד לווב יש התאמה גבוהה, ו-axe כמעט לא מצא הפרות בווב. הבעיה היא לא חוסר בכיוון. הבעיה היא <b>שחיקה</b>: כל תיקון נקודתי הוסיף עוד ערך קשיח, עוד סגנון "נבחר", עוד גודל גופן. התוצאה נראית "כמעט מלוטשת", אבל לא כמו עבודה של צוות אחד.</p>
+<div class="cards">
+  <div class="card"><div class="k">ממצאים ברשימה המאוחדת</div><div class="v">46</div><div class="small">אחרי מיזוג וניקוי כפילויות מ-175+ ממצאים גולמיים</div></div>
+  <div class="card"><div class="k">P0 / P1</div><div class="v">1 / 23</div><div class="small">P0: נתון כספי שעלול להישמר שגוי בלי אזהרה</div></div>
+  <div class="card"><div class="k">P2 / P3</div><div class="v">19 / 3</div><div class="small">ליטוש ועקביות</div></div>
+  <div class="card"><div class="k">מסכים שצולמו בפועל (ווב)</div><div class="v">170+</div><div class="small">בהיר וכהה, 320–1440px</div></div>
+</div>
+<div class="grade">
+  <div class="card"><b>זהות וצבע</b><span class="small">הבהיר בוגר ומאוזן. הכהה הוא "תמה אחרת", אפור ניטרלי בלי קשר לנייבי. יש כשלי ניגודיות ממשיים. 5/10</span><div class="bar"><i style="width:50%"></i></div></div>
+  <div class="card"><b>טיפוגרפיה</b><span class="small">עברית קריאה, אבל Secular One ו-Rubik עגולים ולא רשמיים. הספרות לא אחידות ברוחב ויש יותר מדי גדלים. 5/10</span><div class="bar"><i style="width:50%"></i></div></div>
+  <div class="card"><b>עקביות רכיבים</b><span class="small">11 סגנונות "נבחר", 12–20 רדיוסים, 7 גבהי כפתור, ושני סוגי אייקונים. 4/10</span><div class="bar"><i style="width:40%"></i></div></div>
+  <div class="card"><b>RTL</b><span class="small">חזק מאוד ברוב המסכים. יש באג טווח שעות אחד באנדרואיד ופורמטים מעורבים. 8/10</span><div class="bar"><i style="width:80%"></i></div></div>
+  <div class="card"><b>שימושיות</b><span class="small">התהליכים העיקריים קצרים וטובים. יש כפילויות, שלושה כפתורי סגירה בחיפוש, וקלט שמשתנה בשקט. 6/10</span><div class="bar"><i style="width:60%"></i></div></div>
+  <div class="card"><b>נגישות</b><span class="small">axe כמעט נקי, אבל פוקוס, מטרות מגע, הגדלת גופן וקורא מסך דורשים עבודה. 5/10</span><div class="bar"><i style="width:50%"></i></div></div>
+</div>
+<p class="small">הציונים הם הערכה מקצועית שלי ולא מדד אובייקטיבי. הם נועדו להראות איפה הפער הכי גדול.</p>
+<h3>חמש ההחלטות שישפיעו הכי הרבה</h3>
+<ol class="tight">
+  <li><b>מערכת טוקנים אחת לשתי התמות ולשתי הפלטפורמות</b>, באותו גוון כחלחל, עם תפקידים שמשמעותם זהה בבהיר ובכהה (<a href="#R-03">R-03</a>, <a href="#R-05">R-05</a>, <a href="#R-06">R-06</a>, <a href="#R-07">R-07</a>).</li>
+  <li><b>מתכון אחד ל"נבחר"</b> ושלושה גדלי כפתור (<a href="#R-04">R-04</a>, <a href="#R-25">R-25</a>).</li>
+  <li><b>גופן אחד: Heebo (variable)</b>, עם ספרות ברוחב אחיד. זה דורש את אישורך, כי AGENTS.md קובע היום Rubik + Secular One (<a href="#R-09">R-09</a>, <a href="#R-10">R-10</a>).</li>
+  <li><b>להעביר לווב את שלושת שינויי 2.2.3</b> לפני השחרור המאוחד (<a href="#R-11">R-11</a>).</li>
+  <li><b>אימות קלט ושגיאות</b>: אסור שערך כספי ישתנה בשקט (<a href="#R-01">R-01</a>, <a href="#R-02">R-02</a>). זה חופף לבדיקה של Codex, ועדיף לתאם.</li>
+</ol>
+
+<h2 id="color"><span class="n">2</span>בדיקת עקביות הצבע: בהיר וכהה</h2>
+<p>הבדיקה נעשתה על הטוקנים (KisTheme.kt, kis.css), על מפקד צבעים מחושב מכל אלמנט גלוי ב-70 מסכים לכל תמה, ועל מטריצת ניגודיות של 148 זוגות.</p>
+<h3>מה עובד</h3>
+<ul class="tight">
+  <li>הבהיר ממושמע: 9 צבעי טקסט בלבד בפועל. הדיו נייבי עמוק (#1B2335) ולא שחור, והרקע אפור-כחלחל רך.</li>
+  <li>הקוד שומר על משמעת יחסית: רק 12 ערכי hex מחוץ לקובץ התמה באנדרואיד.</li>
+  <li>הכותרות, הגיליונות והניווט כבר מבוססים על טוקנים בשתי הפלטפורמות.</li>
+</ul>
+<h3>מה לא עובד</h3>
+<ul class="tight">
+  <li><b>שתי זהויות.</b> בבהיר כל האפורים בגוון 263–269 ברוויה 0.007–0.036. בכהה כולם ברוויה 0.000, כלומר אפור "Material" גנרי. יוצאי הדופן היחידים בכהה (#2C2E33 בסרגל הצף, #0D1015 במשבצת הלוגו) מערבבים זהויות גם בתוך הכהה עצמו (<a href="#R-03">R-03</a>).</li>
+  <li><b>היגיון עומק הפוך.</b> ‏sunk "שקוע" בבהיר ו"מורם" בכהה, והניווט בכהה כהה מהכרטיסים.</li>
+  <li><b>הכרטיס החי</b> כהה בבהיר ולבן מסנוור בכהה (<a href="#R-05">R-05</a>).</li>
+  <li><b>סגנון "נבחר"</b> בבהיר: לבן עם מסגרת כהה. בכהה: לפעמים לבן מלא ולפעמים כהה מהמסילה (<a href="#R-04">R-04</a>).</li>
+  <li><b>המותג לא מוגדר כתפקיד נפרד.</b> האינדיגו הוא גם מותג וגם מקום עבודה, המתג משתמש בירוק של כסף, וההודעה הקופצת בחרדל (<a href="#R-06">R-06</a>).</li>
+  <li><b>ניגודיות</b>: מספר כשלים אמיתיים, כולל 2.29 על כפתור מחיקה בכהה בווב, ומסגרות פקדים ב-1.3 (<a href="#R-07">R-07</a>).</li>
+  <li><b>לבן טהור על #121212</b> (18.7:1) גורם לסנוור (halation). בכהה בוגר עדיף טקסט ראשי של כ-95% לבן.</li>
+</ul>
+<div class="figs">
+  <figure class=""><img src="img/home.jpg" alt="מסך הבית, בהיר (שמאל) מול כהה (ימין): בכהה האפור ניטרלי, הבאנר הסגול נשאר רועש, והניווט בגוון אחר" loading="lazy"><figcaption>מסך הבית, בהיר (שמאל) מול כהה (ימין): בכהה האפור ניטרלי, הבאנר הסגול נשאר רועש, והניווט בגוון אחר</figcaption></figure>
+  <figure class=""><img src="img/live.jpg" alt="הכרטיס החי: כהה בבהיר, משטח לבן בכהה" loading="lazy"><figcaption>הכרטיס החי: כהה בבהיר, משטח לבן בכהה</figcaption></figure>
+  <figure class=""><img src="img/editor.jpg" alt="עורך: ארבעה סגנונות &quot;נבחר&quot; במסך אחד. בכהה הלשונית הנבחרת לבנה" loading="lazy"><figcaption>עורך: ארבעה סגנונות &quot;נבחר&quot; במסך אחד. בכהה הלשונית הנבחרת לבנה</figcaption></figure>
+  <figure class=""><img src="img/filters.jpg" alt="סינון: בכהה המקטע הנבחר כהה, הפוך מהעורך. &quot;מקום עבודה&quot; בסגנון שלישי" loading="lazy"><figcaption>סינון: בכהה המקטע הנבחר כהה, הפוך מהעורך. &quot;מקום עבודה&quot; בסגנון שלישי</figcaption></figure>
+</div>
+
+<h2 id="palette"><span class="n">3</span>פלטה מוצעת וטוקנים סמנטיים</h2>
+<p>העיקרון: <b>לשמור על הזהות הקיימת</b> (דיו נייבי לפעולות, אינדיגו כמותג, צבע לכל מקום עבודה), ולבנות את הכהה מאותה משפחת גוון (264) ברוויה נמוכה מאוד, כדי שיקרא כ"אותו מוצר בלילה" ולא כאפליקציה אחרת. ערכי הבהיר שכבר עובדים נשארים כמעט כמו שהם, כך שבבהיר השינוי כמעט לא ייראה.</p>
+<div class="note">נבדקו 181 זוגות ניגודיות של ההצעה, ונמצאו 0 כשלים. בין הדוגמאות: בכהה, טקסט על רקע 16.45 (במקום 18.7, פחות סנוור), ה-+ בכפתור ההוספה 6.81 (במקום 2.97), וטקסט על כפתור מחיקה 8.23 (במקום 2.29). קו חזק לפקדים: 3.2–4.1.</div>
+<div class="tbl"><table>
+<thead><tr><th>טוקן</th><th>תפקיד</th><th>היום, בהיר</th><th>היום, כהה</th><th>מוצע (בהיר / כהה)</th></tr></thead>
+<tbody><tr><td class="mono">bg</td><td>רקע הדף</td><td><span class="sw" style="background:#F1F3F8"></span><span class="mono">#F1F3F8</span></td><td><span class="sw" style="background:#121212"></span><span class="mono">#121212</span></td><td><span class="sw" style="background:#0F1216"></span><span class="mono">#0F1216</span></td></tr>
+<tr><td class="mono">surface</td><td>כרטיס</td><td><span class="sw" style="background:#FFFFFF"></span><span class="mono">#FFFFFF</span></td><td><span class="sw" style="background:#1E1E1E"></span><span class="mono">#1E1E1E</span></td><td><span class="sw" style="background:#181B20"></span><span class="mono">#181B20</span></td></tr>
+<tr><td class="mono">surfaceRaised</td><td>גיליון, ניווט</td><td><span class="sw" style="background:#FFFFFF"></span><span class="mono">#FFFFFF</span></td><td><span class="sw" style="background:#1E1E1E"></span><span class="sw" style="background:#181818"></span><span class="mono">#1E1E1E / #181818</span></td><td><span class="sw" style="background:#21252B"></span><span class="mono">#21252B</span></td></tr>
+<tr><td class="mono">fill (במקום sunk)</td><td>כפתור משני, מסילה, שדה</td><td><span class="sw" style="background:#E4E8F0"></span><span class="mono">#E4E8F0</span></td><td><span class="sw" style="background:#2A2A2A"></span><span class="mono">#2A2A2A</span></td><td><span class="sw" style="background:#282C34"></span><span class="mono">#282C34</span></td></tr>
+<tr><td class="mono">line</td><td>קו מפריד (קישוטי בלבד)</td><td><span class="sw" style="background:#D2D8E3"></span><span class="mono">#D2D8E3</span></td><td><span class="sw" style="background:#303030"></span><span class="mono">#303030</span></td><td><span class="sw" style="background:#32373F"></span><span class="mono">#32373F</span></td></tr>
+<tr><td class="mono">lineStrong</td><td>מסגרת שהיא הסימן היחיד של פקד</td><td><span class="mono">— (אין)</span></td><td><span class="mono">— (אין)</span></td><td><span class="sw" style="background:#778093"></span><span class="sw" style="background:#717681"></span><span class="mono">#778093 / #717681</span></td></tr>
+<tr><td class="mono">ink</td><td>טקסט ראשי</td><td><span class="sw" style="background:#1B2335"></span><span class="mono">#1B2335</span></td><td><span class="sw" style="background:#FFFFFF"></span><span class="mono">#FFFFFF</span></td><td><span class="sw" style="background:#EDF0F6"></span><span class="mono">#EDF0F6</span></td></tr>
+<tr><td class="mono">ink2</td><td>טקסט משני</td><td><span class="sw" style="background:#5A6478"></span><span class="mono">#5A6478</span></td><td><span class="sw" style="background:#B3B3B3"></span><span class="mono">#B3B3B3</span></td><td><span class="sw" style="background:#B3B9C5"></span><span class="mono">#B3B9C5</span></td></tr>
+<tr><td class="mono">ink3</td><td>מטא, placeholder</td><td><span class="mono">—</span></td><td><span class="mono">—</span></td><td><span class="sw" style="background:#636C7E"></span><span class="sw" style="background:#959CA8"></span><span class="mono">#636C7E / #959CA8</span></td></tr>
+<tr><td class="mono">accent</td><td>מותג (+, זוהר, פוקוס)</td><td><span class="sw" style="background:#5145E8"></span><span class="mono">#5145E8</span></td><td><span class="sw" style="background:#8F87FF"></span><span class="mono">#8F87FF</span></td><td><span class="sw" style="background:#5145E8"></span><span class="sw" style="background:#9398FF"></span><span class="mono">#5145E8 / #9398FF</span></td></tr>
+<tr><td class="mono">accentInk</td><td>טקסט על המותג</td><td><span class="sw" style="background:#FFFFFF"></span><span class="mono">#FFFFFF</span></td><td><span class="sw" style="background:#FFFFFF"></span><span class="mono">#FFFFFF (2.97!)</span></td><td><span class="sw" style="background:#FFFFFF"></span><span class="sw" style="background:#15153A"></span><span class="mono">#FFFFFF / #15153A</span></td></tr>
+<tr><td class="mono">success</td><td>שולם</td><td><span class="sw" style="background:#0B7F60"></span><span class="mono">#0B7F60</span></td><td><span class="sw" style="background:#34C79A"></span><span class="mono">#34C79A</span></td><td><span class="sw" style="background:#007453"></span><span class="sw" style="background:#45D09E"></span><span class="mono">#007453 / #45D09E</span></td></tr>
+<tr><td class="mono">warning</td><td>ממתין לתעריף</td><td><span class="sw" style="background:#9A5000"></span><span class="mono">#9A5000</span></td><td><span class="sw" style="background:#FFC266"></span><span class="mono">#FFC266</span></td><td><span class="sw" style="background:#9A5201"></span><span class="sw" style="background:#F6B75C"></span><span class="mono">#9A5201 / #F6B75C</span></td></tr>
+<tr><td class="mono">danger</td><td>מחיקה, שגיאה</td><td><span class="sw" style="background:#C2362B"></span><span class="mono">#C2362B</span></td><td><span class="sw" style="background:#FF8A7A"></span><span class="mono">#FF8A7A</span></td><td><span class="sw" style="background:#BD2F28"></span><span class="sw" style="background:#FF9183"></span><span class="mono">#BD2F28 / #FF9183</span></td></tr>
+<tr><td class="mono">onDanger</td><td>טקסט על אדום</td><td><span class="sw" style="background:#FFFFFF"></span><span class="mono">#FFFFFF</span></td><td><span class="sw" style="background:#FFFFFF"></span><span class="mono">#FFFFFF (2.29!)</span></td><td><span class="sw" style="background:#FFFFFF"></span><span class="sw" style="background:#2B0E0B"></span><span class="mono">#FFFFFF / #2B0E0B</span></td></tr>
+<tr><td class="mono">selectedBg/Edge</td><td>נבחר: אותו מתכון בשתי הערכות</td><td><span class="mono">לבן + מסגרת כהה</span></td><td><span class="mono">לבן מלא / כהה (סותר)</span></td><td><span class="sw" style="background:#FFFFFF"></span><span class="sw" style="background:#1B2335"></span><span class="sw" style="background:#424853"></span><span class="sw" style="background:#EDF0F6"></span><span class="mono">#FFFFFF+#1B2335 / #424853+#EDF0F6</span></td></tr>
+<tr><td class="mono">controlOn</td><td>מתג דולק</td><td><span class="mono">ירוק כסף</span></td><td><span class="mono">ירוק כסף</span></td><td><span class="sw" style="background:#1B2335"></span><span class="sw" style="background:#EDF0F6"></span><span class="mono">#1B2335 / #EDF0F6</span></td></tr>
+<tr><td class="mono">live</td><td>כרטיס משמרת חיה</td><td><span class="sw" style="background:#1B2335"></span><span class="mono">#1B2335</span></td><td><span class="sw" style="background:#FFFFFF"></span><span class="mono">#FFFFFF (משטח לבן)</span></td><td><span class="sw" style="background:#1B2335"></span><span class="sw" style="background:#2D323A"></span><span class="mono">#1B2335 / #2D323A</span></td></tr>
+<tr><td class="mono">glow</td><td>זוהר עליון (שקיפות)</td><td><span class="mono">.22</span></td><td><span class="mono">.40</span></td><td><span class="mono">.12 / .24</span></td></tr></tbody></table></div>
+<h3>כללי שימוש (חשובים לא פחות מהערכים)</h3>
+<ul class="tight">
+  <li><b>נבחר</b>: אותו מתכון בכל רכיב ובשתי התמות. selectedBg, מסגרת של 2px ב-selectedEdge, וטקסט selectedInk. רק צ׳יפ מקום עבודה רשאי להיצבע בצבע המקום.</li>
+  <li><b>פעולות בצבע הדיו, המותג רק לרגעי מותג</b>: כפתור הוספה, זוהר, לוגו, טבעת פוקוס, פעולה בהודעה. מתג דולק בצבע הדיו, לא בירוק של כסף.</li>
+  <li><b>‏line</b> משמש רק כקו מפריד. כל קו שהוא הסימן היחיד של פקד (כפתור מתאר, שדה, מתג כבוי) הוא lineStrong.</li>
+  <li><b>מצב מושבת</b>: צבעים ייעודיים (disabledInk/disabledBg) במקום שקיפות .38/.45.</li>
+  <li><b>פוקוס</b>: ‏2px עם רווח של 2px, רק ב-<span class="mono">:focus-visible</span>. לא מעבירים פוקוס אוטומטית לכפתור הראשון כשהמשתמש במגע.</li>
+  <li><b>הכרטיס החי, ההודעה הקופצת והסרגל הצף</b>: משטח מורם כהה (#2D323A) בכהה, אף פעם לא לבן.</li>
+</ul>
+<h3>צבעי מקומות העבודה</h3>
+<p>הסדר והשמות לא משתנים, כך שאינדקס הצבע השמור לכל מקום נשאר נכון ואין צורך בהמרת נתונים. החרדל נשאר זהה. כל צבע זז רק בתוך משפחת הגוון שלו, ובזוגות הקרובים נעזרים גם בבהירות. הזוג הכי קשה להבחנה (כולל סימולציה של שלושה סוגי עיוורון צבעים) עולה מ-ΔE 1.4 ל-8.5 בבהיר, ומ-0.7 ל-8.7 בכהה. זו בערך התקרה עם שמונה גוונים ששלושה מהם סגלגלים, ולכן האות והשם חייבים להישאר הסימן העיקרי.</p>
+<div class="tbl"><table>
+<thead><tr><th>מקום</th><th>היום, בהיר</th><th>מוצע, בהיר</th><th>היום, כהה</th><th>מוצע, כהה</th></tr></thead>
+<tbody><tr><td>אינדיגו</td><td><span class="sw" style="background:#5145E8"></span><span class="mono">#5145E8</span></td><td><span class="sw" style="background:#393ECA"></span><span class="mono">#393ECA</span></td><td><span class="sw" style="background:#8F87FF"></span><span class="mono">#8F87FF</span></td><td><span class="sw" style="background:#7D9BFF"></span><span class="mono">#7D9BFF</span></td></tr>
+<tr><td>ירוק</td><td><span class="sw" style="background:#0E8059"></span><span class="mono">#0E8059</span></td><td><span class="sw" style="background:#117D15"></span><span class="mono">#117D15</span></td><td><span class="sw" style="background:#3DDC97"></span><span class="mono">#3DDC97</span></td><td><span class="sw" style="background:#44E994"></span><span class="mono">#44E994</span></td></tr>
+<tr><td>ורד</td><td><span class="sw" style="background:#D6336C"></span><span class="mono">#D6336C</span></td><td><span class="sw" style="background:#C50E70"></span><span class="mono">#C50E70</span></td><td><span class="sw" style="background:#FF6B9A"></span><span class="mono">#FF6B9A</span></td><td><span class="sw" style="background:#FA74A5"></span><span class="mono">#FA74A5</span></td></tr>
+<tr><td>חרדל</td><td><span class="sw" style="background:#F5B82E"></span><span class="mono">#F5B82E</span></td><td><span class="sw" style="background:#F5B82E"></span><span class="mono">#F5B82E</span></td><td><span class="sw" style="background:#FFC94D"></span><span class="mono">#FFC94D</span></td><td><span class="sw" style="background:#FFC732"></span><span class="mono">#FFC732</span></td></tr>
+<tr><td>סגול</td><td><span class="sw" style="background:#7D3CF0"></span><span class="mono">#7D3CF0</span></td><td><span class="sw" style="background:#9F4AE4"></span><span class="mono">#9F4AE4</span></td><td><span class="sw" style="background:#B48CFF"></span><span class="mono">#B48CFF</span></td><td><span class="sw" style="background:#C874C8"></span><span class="mono">#C874C8</span></td></tr>
+<tr><td>תכלת</td><td><span class="sw" style="background:#1F72E0"></span><span class="mono">#1F72E0</span></td><td><span class="sw" style="background:#0777A9"></span><span class="mono">#0777A9</span></td><td><span class="sw" style="background:#5AA9FF"></span><span class="mono">#5AA9FF</span></td><td><span class="sw" style="background:#8BC7FE"></span><span class="mono">#8BC7FE</span></td></tr>
+<tr><td>טורקיז</td><td><span class="sw" style="background:#0E8A86"></span><span class="mono">#0E8A86</span></td><td><span class="sw" style="background:#065E63"></span><span class="mono">#065E63</span></td><td><span class="sw" style="background:#3CD3CB"></span><span class="mono">#3CD3CB</span></td><td><span class="sw" style="background:#18AFA4"></span><span class="mono">#18AFA4</span></td></tr>
+<tr><td>בורדו</td><td><span class="sw" style="background:#B5294E"></span><span class="mono">#B5294E</span></td><td><span class="sw" style="background:#8B032A"></span><span class="mono">#8B032A</span></td><td><span class="sw" style="background:#FF6F8E"></span><span class="mono">#FF6F8E</span></td><td><span class="sw" style="background:#F05963"></span><span class="mono">#F05963</span></td></tr></tbody></table></div>
+<p class="small">שלושה דברים צריך לבדוק בעין על הטלפון: הירוק הופך ל"ירוק עלה" נקי יותר, הסגול בכהה נוטה לסחלבי, והבורדו בכהה נראה אדום. ההחלטה על כפתור השמירה בכהה פתוחה: ‏#EDF0F6, או אינדיגו אם עדיין יהיה בולט מדי.</p>
+<figure class=""><img src="img/palette.jpg" alt="דף הדוגמיות: היום מול ההצעה, בהיר וכהה, כולל סימולציה לעיוורי צבעים" loading="lazy"><figcaption>דף הדוגמיות: היום מול ההצעה, בהיר וכהה, כולל סימולציה לעיוורי צבעים</figcaption></figure>
+<p class="small">הערכים המלאים (כ-CSS ו-Kotlin) נמצאים ב-<span class="mono">ux-audit/tools/agent-color/out/kis-tokens.css</span> וב-<span class="mono">KisTokens.kt</span>. הניתוח המלא ב-<span class="mono">ux-audit/notes/agent-color.md</span>.</p>
+
+<h2 id="type"><span class="n">4</span>טיפוגרפיה</h2>
+<h3>מצב קיים</h3>
+<ul class="tight">
+  <li><b>גופנים</b>: Rubik (400/500/600/700) לטקסט, Secular One לכותרות ולסכומים, ו-Heebo כגיבוי (וגם נטען). ₪ חייב להיות ב-Rubik, כי Secular One מצייר אותו כאותיות.</li>
+  <li><b>אופי</b>: Secular One הוא גופן כרזה במשקל אחד ובאופי לא רשמי. ב-Rubik האותיות הלטיניות והספרות עגולות ורחבות. יחד הם יוצרים את התחושה ה"ילדותית" שתיארת, בעיקר בסכומים הגדולים.</li>
+  <li><b>ספרות</b>: ל-Secular One אין ספרות ברוחב אחיד (tnum), כך שבאנדרואיד ההגדרה לא עושה כלום. בווב היא בכלל לא מוגדרת. ב-Rubik "1111" ברוחב 171px ו-"8888" ברוחב 254px, ולכן סכומים ושעות "קופצים" ועמודות לא מיושרות (<a href="#R-09">R-09</a>).</li>
+  <li><b>מעבר גופן באמצע סכום</b>: ₪ ב-Rubik מוקטן ל-.62em ליד ספרות ב-Secular One. זה יוצר שני גופנים בכל סכום, ובווב גם 8 גדלים שבריים.</li>
+  <li><b>היקף</b>: בווב 25 גדלים בפועל, באנדרואיד 23 גדלים קשיחים בקוד, ומשקל 600 הוא 53% מהטקסט (<a href="#R-10">R-10</a>).</li>
+  <li><b>טעינה</b>: כ-1MB של TTF בלי woff2 (<a href="#R-37">R-37</a>).</li>
+</ul>
+<h3>השוואת גופנים (נבדקו בפועל: 9 שילובים, בהיר וכהה, 390px ומחשב)</h3>
+<div class="tbl"><table>
+<thead><tr><th>מועמד</th><th>התרשמות</th><th>ספרות</th><th>הכרעה</th></tr></thead>
+<tbody>
+<tr><td>Rubik + Secular One (היום)</td><td>חם וידידותי, אבל עגול ולא רשמי. משקל אחד לכותרות</td><td>ברוחב משתנה, אין tnum ב-Secular</td><td>להחליף</td></tr>
+<tr><td><b>Heebo בלבד (variable 100–900)</b></td><td>ניטרלי, בוגר, מודרני. החלק הלטיני שלו הוא Roboto, כך שהוא מרגיש טבעי באנדרואיד</td><td>ברוחב אחיד כברירת מחדל. ₪ מאותו עיצוב כמו הספרות</td><td><b>המלצה</b></td></tr>
+<tr><td>IBM Plex Sans Hebrew</td><td>המוסדי ביותר, רציני מאוד</td><td>רחבות. ₪ בולט מדי. קבצים סטטיים בלבד</td><td>חלופה שנייה</td></tr>
+<tr><td>Noto Sans Hebrew</td><td>נקי וגנרי</td><td>טובות</td><td>סביר, פחות אופי</td></tr>
+<tr><td>Assistant</td><td>אלגנטי ודק</td><td>אין tnum, "1" צר מהשאר</td><td>נפסל לסכומים</td></tr>
+<tr><td>Heebo + Rubik לכותרות</td><td>משאיר את העגלגלות</td><td>—</td><td>לא פותר</td></tr>
+<tr><td>Heebo + Frank Ruhl Libre</td><td>נראה כמו עיתון, חלש בגדלים קטנים</td><td>—</td><td>לא מתאים לאפליקציה</td></tr>
+</tbody></table></div>
+<h3>ההמלצה: Heebo בלבד, סולם של 8 מדרגות (px = sp)</h3>
+<p><b>Heebo</b> כבר נמצא בפרויקט, ברישיון OFL. בגרסת woff2 של עברית ולטינית הוא כ-40KB (במקום כ-1MB). המשמעות: <b>גופן אחד, ספרות שלא קופצות, ו-₪ שמתיישב עם הספרות</b>. המראה בוגר ואמין יותר, ועדיין חם. לפריטי "כרזה" (מסך פתיחה וסיכום חודשי) משתמשים ב-Heebo 800, מחוץ לסולם.</p>
+<div class="tbl"><table>
+<thead><tr><th>טוקן</th><th>גודל/גובה שורה</th><th>משקל</th><th>ריווח</th><th>שימוש</th></tr></thead>
+<tbody><tr><td class="mono">hero</td><td class="mono">52/56</td><td class="mono">700</td><td class="mono">−0.02em</td><td>סכום השבוע, שעון חי, סכום בפרטים</td></tr>
+<tr><td class="mono">page</td><td class="mono">28/34</td><td class="mono">700</td><td class="mono">−0.01em</td><td>כותרת דף</td></tr>
+<tr><td class="mono">amount</td><td class="mono">24/30</td><td class="mono">600</td><td class="mono">—</td><td>סכומים בכרטיסים</td></tr>
+<tr><td class="mono">title</td><td class="mono">20/26</td><td class="mono">700</td><td class="mono">—</td><td>כותרת קטע, כותרת גיליון</td></tr>
+<tr><td class="mono">body</td><td class="mono">16/24</td><td class="mono">400 / 600</td><td class="mono">—</td><td>טקסט רץ, כפתורים</td></tr>
+<tr><td class="mono">label</td><td class="mono">14/20</td><td class="mono">500</td><td class="mono">—</td><td>צ׳יפים, ניווט, תוויות</td></tr>
+<tr><td class="mono">caption</td><td class="mono">13/18</td><td class="mono">400</td><td class="mono">—</td><td>שורת משנה, הערות</td></tr>
+<tr><td class="mono">micro</td><td class="mono">11/14</td><td class="mono">500</td><td class="mono">—</td><td>תגיות ("לא שולם", "מתוכנן")</td></tr></tbody></table></div>
+<ul class="tight">
+  <li>כל סכום, שעה ומשך מוגדר עם <span class="mono">font-variant-numeric: tabular-nums</span> (באנדרואיד <span class="mono">fontFeatureSettings="tnum"</span>, שעכשיו גם יעבוד).</li>
+  <li>‏₪ ו-$ ב-Heebo במשקל 500: ‏0.66em בסכומים מ-28px ומעלה, ו-0.8em בסכומים עד 24px. במקום .62em בכל גודל.</li>
+  <li>צ׳יפים, ניווט, מקטעים וקישורים יורדים מ-600 ל-500. ‏600/700 נשמרים להיררכיה אמיתית.</li>
+  <li>בווב: woff2 מחולק לפי unicode-range, ‏font-display: swap, ‏preload לחלק העברי בלבד, ו-rem כדי שגודל הגופן של הדפדפן ישפיע. באנדרואיד: 4 קבצים סטטיים (כ-57KB כל אחד), כי minSdk 24 לא תומך בבחירת משקלים מגופן variable.</li>
+</ul>
+<div class="note warn"><b>דורש את אישורך:</b> AGENTS.md ו-docs/preservation-and-sync.md קובעים היום "Rubik לטקסט, Secular One לכותרות, ₪ תמיד ב-Rubik". מעבר ל-Heebo מחייב אישור מפורש, עדכון של המסמכים האלה, ובדיקה על הטלפון (11sp בעברית, מצב כהה).</div>
+<div class="figs">
+  <figure class=""><img src="img/type-compare.jpg" alt="אותו תוכן: היום (ימין, Rubik + Secular One) מול ההמלצה (שמאל, Heebo בלבד)" loading="lazy"><figcaption>אותו תוכן: היום (ימין, Rubik + Secular One) מול ההמלצה (שמאל, Heebo בלבד)</figcaption></figure>
+  <figure class=""><img src="img/type-scale.jpg" alt="סולם ההמלצה ב-8 מדרגות" loading="lazy"><figcaption>סולם ההמלצה ב-8 מדרגות</figcaption></figure>
+</div>
+
+<h2 id="system"><span class="n">5</span>מערכת רכיבים ועקביות</h2>
+<div class="tbl"><table>
+<thead><tr><th>רכיב</th><th>היום</th><th>מוצע</th></tr></thead>
+<tbody>
+<tr><td>מצב "נבחר"</td><td>11 דרכים (צ׳יפ מלא, לשונית מורמת, מסגרת דיו, לבן מלא, כהה מהמסילה, מתאר...)</td><td>שני דפוסים בלבד: <b>אריח/צ׳יפ</b> (משטח בהיר ומסגרת של 2px) ו<b>מקטע/לשונית</b> (אותו מתכון בתוך מסילה). צ׳יפ מקום בצבע המקום.</td></tr>
+<tr><td>כפתורים</td><td>7 גבהים (באנדרואיד), ראשי, רוח, מתאר, סכנה, צ׳יפ-פעולה. סכנה רך באנדרואיד ומלא בווב</td><td>3 גדלים: 56 / 48 / 40 (40 רק עם אזור מגע של 48). ארבעה סוגים: ראשי (דיו), משני (fill), מתאר (lineStrong), סכנה (מילוי danger עם onDanger) זהה בשתי הפלטפורמות. צ׳יפ פעולה מקבל אייקון חץ או נראה כקישור.</td></tr>
+<tr><td>רדיוסים</td><td>12 (ווב) / 19–20 (אנדרואיד)</td><td>4 מדרגות: ‏8 (תגית), ‏12 (שדה, צ׳יפ, כפתור קטן), ‏16 (כפתור, כרטיס פנימי), ‏24 (כרטיס, גיליון), ועוד מלא (99) לגלולות</td></tr>
+<tr><td>ריווח</td><td>ערכים קשיחים רבים, חלקם בתוך style</td><td>סולם 4: ‏4/8/12/16/24/32/48. ריווח בכרטיס 16, בין כרטיסים 12, בין קטעים 32</td></tr>
+<tr><td>אייקונים</td><td>SVG בקו 2 לצד תווי גופן (← ↓ ✓ ‹ ›). באנדרואיד שלושה סגנונות</td><td>סט SVG אחד, קו 1.75–2, גדלים 16/20/24, מראה מתאים ל-RTL לחצים. בלי תווי גופן כאייקונים</td></tr>
+<tr><td>גיליונות</td><td>חלקם עם × וחלקם עם ידית בלבד. פוקוס אוטומטי לכפתור הראשון. 8 עותקים של גיליון אישור</td><td>מבנה אחד: ידית, כותרת, תוכן, ופעולות מוצמדות לתחתית. × רק בגיליונות ארוכים. רכיב אישור אחד</td></tr>
+<tr><td>משוב</td><td>הודעה של האפליקציה, Toast של המערכת (כ-38), שגיאה בשורה, דיאלוג, כלום</td><td>הודעה אחת למעלה (עם ביטול של 8 שניות, ומוכרזת לקורא מסך), שגיאה בשורה ליד השדה, ודיאלוג רק לפעולה הרסנית</td></tr>
+<tr><td>פורמטים</td><td>משך 4:00 / 2.5, תאריך 4.11 / 04/11/2026, מפרידים · ו-•</td><td>משך ש:דד, תאריך "יום ד׳ 4.11" (ובשנה אחרת 4.11.25), מפריד ·</td></tr>
+</tbody></table></div>
+
+<h2 id="screens"><span class="n">6</span>מסך אחר מסך</h2>
+<div class="screen"><h3>בית</h3><p>ההיררכיה טובה: סכום השבוע גדול, ואחריו היום ומכל הזמנים. המשמרת המתוכננת כפולה, כרטיס "היום" ריק, ההודעה הכתומה ברוחב חצי, ובכהה באנר הסיכום צועק. במסך ריק "₪0" ענק במקום הזמנה להתחיל.</p><p class="refs"><a href="#R-28">R-28</a> · <a href="#R-32">R-32</a> · <a href="#R-05">R-05</a> · <a href="#R-11">R-11</a></p></div>
+<div class="screen"><h3>עורך משמרת (שעון, ידני, קבלנות, קבוצה)</h3><p>החלק החזק במוצר: מעט צעדים, יום, מקום ושעה במסך אחד. מצד שני יש ארבעה סגנונות "נבחר", סרגל לילה שקשה לקרוא, "קבוצה" ככפתור בכותרת, הודעות בניסוח "הזן"/"הוסף", וערכים שמשתנים בשקט. במצב קבוצה כל המסך מקבל מסגרת אינדיגו, צבע שהוא גם מקום עבודה.</p><p class="refs"><a href="#R-01">R-01</a> · <a href="#R-04">R-04</a> · <a href="#R-33">R-33</a> · <a href="#R-24">R-24</a> · <a href="#R-20">R-20</a></p></div>
+<div class="figs"><figure class=""><img src="img/editor-modes.jpg" alt="מצבי העורך: ידני, קבלנות, אפשרויות נוספות, קבוצה, ובחירה מרובה בהיסטוריה" loading="lazy"><figcaption>מצבי העורך: ידני, קבלנות, אפשרויות נוספות, קבוצה, ובחירה מרובה בהיסטוריה</figcaption></figure><figure class=""><img src="img/editor-more.jpg" alt="אפשרויות נוספות: &quot;חוזרת כל שבוע&quot;. הפסקה, בונוס והערה נמצאים בגלילה" loading="lazy"><figcaption>אפשרויות נוספות: &quot;חוזרת כל שבוע&quot;. הפסקה, בונוס והערה נמצאים בגלילה</figcaption></figure></div>
+<div class="screen"><h3>פרטי משמרת</h3><p>ברור ונקי. בפתיחה הפוקוס האוטומטי צובע את "עריכה" כאילו נבחר. במשמרת קבוצתית לא ברור מה המספר הראשי, ויש קיר של כפתורים. ב"מחיקה" הניגודיות 4.43.</p><p class="refs"><a href="#R-14">R-14</a> · <a href="#R-29">R-29</a> · <a href="#R-07">R-07</a></p></div>
+<div class="figs"><figure class=""><img src="img/detail.jpg" alt="פרטי משמרת: טבעת פוקוס על &quot;עריכה&quot; מיד בפתיחה" loading="lazy"><figcaption>פרטי משמרת: טבעת פוקוס על &quot;עריכה&quot; מיד בפתיחה</figcaption></figure><figure class=""><img src="img/detail-group.jpg" alt="משמרת קבוצתית: ₪350 מול ₪530 מול ₪980, ו-10 כפתורים" loading="lazy"><figcaption>משמרת קבוצתית: ₪350 מול ₪530 מול ₪980, ו-10 כפתורים</figcaption></figure></div>
+<div class="screen"><h3>היסטוריה, חיפוש, סינון ובחירה מרובה</h3><p>החלוקה לשבועות טובה, ו-400 משמרות מוצגות ב-363ms. אייקון ההעתקה בכותרת (שני ריבועים) לא מובן. בחיפוש שלושה כפתורי סגירה. בסינון שלושה סגנונות בחירה. סרגל הבחירה המרובה נחתך אופקית. ב-320px הכותרת נחתכת.</p><p class="refs"><a href="#R-19">R-19</a> · <a href="#R-04">R-04</a> · <a href="#R-13">R-13</a> · <a href="#R-34">R-34</a> · <a href="#R-20">R-20</a></p></div>
+<div class="figs"><figure class=""><img src="img/search.jpg" alt="חיפוש: × של הדפדפן בתוך השדה, × נוסף, ו&quot;סגירה&quot;" loading="lazy"><figcaption>חיפוש: × של הדפדפן בתוך השדה, × נוסף, ו&quot;סגירה&quot;</figcaption></figure><figure class=""><img src="img/search-empty.jpg" alt="חיפוש בלי תוצאות: כרטיס &quot;0 • —&quot; מעל ההודעה" loading="lazy"><figcaption>חיפוש בלי תוצאות: כרטיס &quot;0 • —&quot; מעל ההודעה</figcaption></figure></div>
+<div class="screen"><h3>הגדרות וגיליונות</h3><p>בווב: רשימה שטוחה עם נקודת מידע כמעט בכל שורה, וצ׳יפים כפעולות. "ייבוא" הוא הכפתור הראשי היחיד, ו"הורדת גיבוי" נשבר לשתי שורות. באנדרואיד 2.2.3 כבר מסודר בכרטיסי קטגוריה, וזה הכיוון הנכון שצריך להעביר לווב. גיליון המקומות חוזר על עצמו.</p><p class="refs"><a href="#R-30">R-30</a> · <a href="#R-27">R-27</a> · <a href="#R-31">R-31</a> · <a href="#R-11">R-11</a> · <a href="#R-22">R-22</a></p></div>
+<div class="figs"><figure class=""><img src="img/settings-full.jpg" alt="הגדרות בווב (בהיר, דף מלא)" loading="lazy"><figcaption>הגדרות בווב (בהיר, דף מלא)</figcaption></figure><figure class=""><img src="img/places.jpg" alt="מקומות עבודה: המקום התשיעי חוזר לאינדיגו, ו-9 כפתורי &quot;עריכה&quot;" loading="lazy"><figcaption>מקומות עבודה: המקום התשיעי חוזר לאינדיגו, ו-9 כפתורי &quot;עריכה&quot;</figcaption></figure><figure class=""><img src="img/android-sheet.jpg" alt="הורדת האפליקציה: &quot;גרסה 2.0.3&quot; כגיבוי" loading="lazy"><figcaption>הורדת האפליקציה: &quot;גרסה 2.0.3&quot; כגיבוי</figcaption></figure><figure class=""><img src="img/place-edit.jpg" alt="עריכת מקום: בחירת צבע בלי שמות לצבעים" loading="lazy"><figcaption>עריכת מקום: בחירת צבע בלי שמות לצבעים</figcaption></figure></div>
+<div class="screen"><h3>התחלה ראשונה ומצבים ריקים</h3><p>הפתיחה ("עיצוב חדש. התחלה חדשה.") חזקה. שלב השם חוסם המשך בלי שם. אפשר לדלג עם "אחר כך", אבל הכפתור "המשך" נראה מושבת ולא אומר מה חסר. כשאין מקום, הוספת משמרת פותחת קודם את גיליון המקום, וזה טוב, אבל בלי הסבר קצר.</p></div>
+<figure class=""><img src="img/first-run.jpg" alt="התחלה ראשונה, מסך בית ריק, היסטוריה ריקה, והוספה ראשונה" loading="lazy"><figcaption>התחלה ראשונה, מסך בית ריק, היסטוריה ריקה, והוספה ראשונה</figcaption></figure>
+<div class="screen"><h3>סיכום חודשי (story)</h3><p>הרגע הכי "מהנה" במוצר, עם ניסוחים טובים. הוא מתקדם לבד בלי השהיה מהמקלדת ומתעלם מהפחתת תנועה. החצים קטנים. צריך לבדוק פער אפשרי במספר השעות.</p><p class="refs"><a href="#R-15">R-15</a> · <a href="#R-43">R-43</a> · <a href="#R-44">R-44</a></p></div>
+<figure class=""><img src="img/story.jpg" alt="שש שקופיות הסיכום החודשי" loading="lazy"><figcaption>שש שקופיות הסיכום החודשי</figcaption></figure>
+<div class="screen"><h3>מחשב וטאבלט</h3><p>אין גלילה אופקית ב-768 וב-1440. בכל דף רוחב תוכן אחר, שם האפליקציה מופיע פעמיים, וההיסטוריה צרה.</p><p class="refs"><a href="#R-35">R-35</a></p></div>
+<figure class=""><img src="img/desktop.jpg" alt="1440px: בית (בהיר וכהה), עורך, היסטוריה" loading="lazy"><figcaption>1440px: בית (בהיר וכהה), עורך, היסטוריה</figcaption></figure>
+<div class="screen"><h3>אנדרואיד (מניתוח קוד בלבד)</h3><p>המבנה זהה לווב ברוב המסכים (ראו את צילום העיצוב מ-2.0.8). ייחודי לאנדרואיד: באג טווח שעות בשורות תכנון, ₪ ב-Secular One כשהכסף מוסתר, השעון החי ב-Rubik, כ-38 Toast של המערכת, חיתוך בגופן גדול, ומטרות מגע קטנות. הניתוח המלא (77 ממצאים) ב-<span class="mono">ux-audit/notes/agent-android.md</span>.</p><p class="refs"><a href="#R-12">R-12</a> · <a href="#R-39">R-39</a> · <a href="#R-40">R-40</a> · <a href="#R-21">R-21</a> · <a href="#R-18">R-18</a></p></div>
+<div class="figs"><figure class=""><img src="img/android-home.jpg" alt="אנדרואיד, בית בכהה (צילום עיצוב שנשמר בריפו, 2.0.8)" loading="lazy"><figcaption>אנדרואיד, בית בכהה (צילום עיצוב שנשמר בריפו, 2.0.8)</figcaption></figure><figure class=""><img src="img/w320.jpg" alt="ווב ב-320px ובזום 200%: חיתוך בהיסטוריה ובעורך" loading="lazy"><figcaption>ווב ב-320px ובזום 200%: חיתוך בהיסטוריה ובעורך</figcaption></figure></div>
+
+<h2 id="register"><span class="n">7–10</span>רשימת ממצאים מלאה, עם עדיפות, מאמץ והשפעה</h2>
+<p class="small">P0 קריטי · P1 לפני השחרור המאוחד · P2 חשוב · P3 שיפור. מאמץ: S עד חצי יום, M יום-יומיים, L שלושה עד חמישה ימים. "שניהם*" = אומת בווב, ובאנדרואיד לא נבדק בהרצה. הרשימה מאחדת את ממצאי המעבר הראשון שלי ואת ארבע הבדיקות המקצועיות (צבע, טיפוגרפיה, אנדרואיד, נגישות ושימושיות), בלי כפילויות. הממצאים הגולמיים המלאים (W, U, A) נמצאים בתיקייה <span class="mono">ux-audit/notes/</span>.</p>
+<div class="tbl"><table class="reg">
+<thead><tr><th>מזהה</th><th>עדיפות</th><th>פלטפורמה</th><th>תחום</th><th>ממצא והמלצה</th><th>ראיה</th><th>מצב</th><th>מאמץ</th><th>השפעה</th></tr></thead>
+<tbody>
+<tr id="R-01"><td class="mono">R-01</td><td><span class="pri P0">P0</span></td><td>שניהם*</td><td>קלט וערכים</td><td><b>ערכים משתנים בשקט בזמן הזנה</b><div class="det">הקלדת 25:00 נשמרת כ-20:00, ו-99:99 כ-9:09. סיום לפני התחלה נשמר כמשמרת של 23 שעות בלי שום סימון. סכום של ₪799,999.92 נשמר בלי בקשת אישור. אין הגבלת אורך להערות ולשמות מקום. (web/kis/editor.js; באנדרואיד לא נבדק בהרצה)</div></td><td class="small">agent-web-ux U-07, צילומי web-err*</td><td class="small">אומת (ווב)</td><td class="mono">M</td><td>גבוהה</td></tr>
+<tr id="R-02"><td class="mono">R-02</td><td><span class="pri P1">P1</span></td><td>ווב</td><td>קלט וערכים</td><td><b>שגיאות לא מוכרזות ולא עקביות</b><div class="det">תעריף שלילי מציג סה״כ &quot;₪-200&quot;. תעריף ‎-5 בהתחלת משמרת חיה לא עושה כלום ולא מציג הודעה. ההודעה מבקשת לסמן &quot;תעריף חסר&quot;, אבל על הכפתור כתוב &quot;לא יודע&quot;. השגיאות לא מקושרות לשדה ולא מוכרזות לקורא מסך.</div></td><td class="small">agent-web-ux U-06</td><td class="small">אומת</td><td class="mono">S</td><td>גבוהה</td></tr>
+<tr id="R-03"><td class="mono">R-03</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>צבע / ערכות</td><td><b>המצב הכהה לא נראה כמו אותה זהות</b><div class="det">בבהיר כל האפורים נוטים לכחול-נייבי (גוון 263–269). בכהה הם אפור טהור (#121212/#1E1E1E/#2A2A2A, רוויה 0). בכהה ‏sunk בהיר יותר מהכרטיס, כך ששדות ומילויים נראים מורמים במקום שקועים. הניווט בכהה (#181818) כהה מהכרטיסים ולכן נראה &quot;מתחתם&quot;. KisTheme.kt:52-67, kis.css:9-33</div></td><td class="small">צילומי pairs/*, agent-color §2</td><td class="small">אומת</td><td class="mono">M</td><td>גבוהה</td></tr>
+<tr id="R-04"><td class="mono">R-04</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>מערכת רכיבים</td><td><b>&quot;נבחר&quot; מצויר ב-11 דרכים שונות</b><div class="det">במסך העורך לבדו יש ארבעה סגנונות: צ׳יפ מקום מלא בצבע המקום, לשונית לבנה מורמת, יום לבן עם מסגרת כהה, מטבע לבן מורם. בכהה הסתירה בולטת עוד יותר: הלשונית הנבחרת בעורך לבנה, אבל המקטע הנבחר בגיליון הסינון כהה מהמסילה. KisKit.kt:188/223/241, KisEditor.kt:506/531/703, kis.css (--tab-on, --pick-*)</div></td><td class="small">editor.jpg, filters.jpg</td><td class="small">אומת</td><td class="mono">M</td><td>גבוהה</td></tr>
+<tr id="R-05"><td class="mono">R-05</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>צבע / ערכות</td><td><b>כרטיס המשמרת החיה הופך במצב כהה למשטח לבן</b><div class="det">הרקע הוא c.ink, כלומר כהה בבהיר ולבן בכהה. זה סותר את ההערה בקוד עצמו (&quot;never a white slab in dark mode&quot;). נקודת ה&quot;חי&quot; על הכרטיס בניגודיות 1.77:1. KisHome.kt:251, web/home.js</div></td><td class="small">live.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>גבוהה</td></tr>
+<tr id="R-06"><td class="mono">R-06</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>צבע / ערכות</td><td><b>צבע המותג זהה לצבע של מקום עבודה</b><div class="det">#5145E8 הוא גם צבע המותג (כפתור +, הזוהר, טבעת הפוקוס, הודעות) וגם מקום העבודה הראשון (ΔE=0). מתג דולק משתמש בירוק &quot;שולם&quot; של כסף. פעולת ההודעה הקופצת אינדיגו בבהיר וחרדל בכהה. KisApp.kt:279/363, KisKit.kt:211, kis.css .switch</div></td><td class="small">home.jpg, settings.jpg</td><td class="small">אומת</td><td class="mono">M</td><td>גבוהה</td></tr>
+<tr id="R-07"><td class="mono">R-07</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>נגישות / צבע</td><td><b>כשלי ניגודיות</b><div class="det">אדום על מילוי אפור 4.43. ירוק &quot;שולם&quot; על הרקע 4.48 ועל מילוי 4.05. לבן על מקום טורקיז 4.20. טקסט משני מתחת לזוהר 3.87. בכהה בווב: לבן על כפתור מחיקה 2.29, ה-+ בכפתור הוספה 2.97. קווי מתאר של כפתורים, שדות ומתג כבוי 1.26–1.43.</div></td><td class="small">axe + agent-color נספח A</td><td class="small">אומת (חישוב)</td><td class="mono">S</td><td>גבוהה</td></tr>
+<tr id="R-08"><td class="mono">R-08</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>צבע / נתונים</td><td><b>צבעי מקומות העבודה קשים להבחנה</b><div class="det">אצל עיוורי צבעים: אינדיגו/סגול ΔE 1.4, ורד/בורדו בכהה 0.7. גם בראייה רגילה אינדיגו/סגול רק 6.2. המקום התשיעי חוזר לצבע של הראשון (מוקד לילה = מסעדה). המקום הירוק כמעט זהה לירוק &quot;שולם&quot; (2.4).</div></td><td class="small">places.jpg, agent-color §3</td><td class="small">אומת</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-09"><td class="mono">R-09</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>טיפוגרפיה</td><td><b>ספרות ברוחב משתנה, ולכן סכומים ושעות &quot;רוקדים&quot;</b><div class="det">בווב אין tabular-nums בכלל. ל-Secular One אין tnum, כך ש-fontFeatureSettings=&quot;tnum&quot; באנדרואיד לא עושה כלום (KisKit:117, KisEditor:584/630/829). השעון בעורך משנה רוחב תוך כדי הקלדה ועמודות הסכומים לא מיושרות. בכל סכום יש מעבר בין גופנים: ₪ ב-Rubik והספרות ב-Secular One.</div></td><td class="small">agent-typography §1</td><td class="small">אומת (בדיקת קובץ גופן)</td><td class="mono">L</td><td>גבוהה</td></tr>
+<tr id="R-10"><td class="mono">R-10</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>טיפוגרפיה</td><td><b>יותר מדי גדלים ומשקלים</b><div class="det">בווב יש 25 גדלים שונים בפועל, 8 מהם שבריים (11.78/13.64px), כי ₪ מוקטן ל-.62em. באנדרואיד יש 23 גדלים קשיחים בקוד ו-48 copy(fontSize). משקל 600 הוא 53% מכל הטקסט, ולכן ההדגשה מאבדת משמעות. היררכיית הכותרות שונה ממסך למסך.</div></td><td class="small">census, agent-android A-20/21/22</td><td class="small">אומת</td><td class="mono">M</td><td>גבוהה</td></tr>
+<tr id="R-11"><td class="mono">R-11</td><td><span class="pri P1">P1</span></td><td>ווב</td><td>התאמה בין הפלטפורמות</td><td><b>שינויי אנדרואיד 2.2.3 עדיין לא בווב</b><div class="det">השעון בכרטיס החי הפך לגדול והסכום לקטן; ההגדרות הפכו לכרטיסי קטגוריה עם עמוד לכל קטגוריה; חזר מתג ראשי עם 5 מתגים לפי סוג התראה. בווב עדיין: הסכום גדול, הגדרות כרשימה שטוחה, מתג התראות אחד. KisHome.kt:246, KisSettingsScreen.kt:84, KisInbox.kt:121 מול web/home.js:93, settings.js:5-19</div></td><td class="small">live.jpg, settings.jpg</td><td class="small">אומת (קוד)</td><td class="mono">L</td><td>גבוהה</td></tr>
+<tr id="R-12"><td class="mono">R-12</td><td><span class="pri P1">P1</span></td><td>אנדרואיד</td><td>RTL</td><td><b>טווח שעות מוצג הפוך בשורות תכנון</b><div class="det">timeLabel עוטף את הטווח בסימני כיוון (U+2066/2069), אבל PlannedCard ושורות המשמרות הקבועות בונים &quot;${start}–${end}&quot; בלי עטיפה. לכן ייתכן שיוצג &quot;22:30–17:00&quot; ליד כרטיס שמציג &quot;17:00–22:30&quot;. KisPlan.kt:68,204 מול KisEditor.kt:937</div></td><td class="small">קוד (אומת בקריאה)</td><td class="small">אומת בקוד, לא במכשיר</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-13"><td class="mono">R-13</td><td><span class="pri P1">P1</span></td><td>ווב</td><td>רספונסיביות</td><td><b>רוחב 320px נשבר (WCAG 1.4.10)</b><div class="det">ההיסטוריה נפרשת על 350px והכותרת נחתכת. בעורך &quot;קבוצה&quot;, שעת הסיום והסכום חתוכים. ב-360px ומעלה אין גלילה אופקית.</div></td><td class="small">w320.jpg</td><td class="small">אומת</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-14"><td class="mono">R-14</td><td><span class="pri P1">P1</span></td><td>ווב</td><td>נגישות</td><td><b>ניהול פוקוס</b><div class="det">אין מלכודת פוקוס בגיליונות: Tab יוצא לדף שמאחור. בכל ציור מחדש הפוקוס נופל ל-body, כולל ברענון האוטומטי כל 60 שניות (app.js:132). בפתיחת גיליון או עורך במגע מופיעה מיד טבעת פוקוס עבה על הכפתור הראשון (&quot;עריכה&quot;/&quot;ביטול&quot;), שנראית כמו מצב &quot;נבחר&quot;.</div></td><td class="small">detail.jpg, editor.jpg, agent-web-ux U-02/U-03</td><td class="small">אומת</td><td class="mono">M</td><td>גבוהה</td></tr>
+<tr id="R-15"><td class="mono">R-15</td><td><span class="pri P1">P1</span></td><td>ווב</td><td>נגישות / תנועה</td><td><b>הסיכום החודשי (story) מתקדם לבד</b><div class="det">הוא עובר שקופית כל 6 שניות, אין השהיה מהמקלדת, ההתקדמות ממשיכה גם כשמבוקשת הפחתת תנועה, והפוקוס אובד במעבר ובסגירה. באנדרואיד: לבדוק אם ההתנהגות זהה.</div></td><td class="small">story.jpg, U-04</td><td class="small">אומת (ווב)</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-16"><td class="mono">R-16</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>נגישות</td><td><b>סמנטיקה לקוראי מסך</b><div class="det">ספרות השעה מוקראות בלי הערך (&quot;התחלה · ספרה 1&quot;). כפתורי סוג הרישום מסומנים role=tab עם aria-pressed. כרטיסי משמרת מוקראים ככפתור מתג. לגיליון פרטים אין שם. ידיות הגרירה הן span לא תפעולי. בסרגל השעות עובדים רק חצים. באנדרואיד חסרה סמנטיקה בסרגל, במקטעים, בסימון &quot;שולם&quot; לעובד ובגרירה.</div></td><td class="small">axe, U-05/U-08..U-12, A-58..</td><td class="small">אומת</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-17"><td class="mono">R-17</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>נגישות / מגע</td><td><b>מטרות מגע קטנות</b><div class="det">בווב: ₪/$ 33–36×38, מקטעי ערכת צבעים 38 גובה, נקודות מידע 40×40, מתג 52×32, ±15 בגובה 36, חצי הסיכום. באנדרואיד: PendingFlag כ-33dp, &quot;?&quot; 32, ±15 ‏36, לשוניות וצ׳יפים 38, InfoDot 40.</div></td><td class="small">census, A-56, U-17</td><td class="small">אומת</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-18"><td class="mono">R-18</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>נגישות</td><td><b>הגדלת גופן</b><div class="det">באנדרואיד, בגופן גדול נחתכים שורת השעון החי, שורות המקומות (56dp קבוע), הסרגל והמספרים בסיכום. בווב כל הגדלים ב-px, כך שהגדרת גודל הגופן בדפדפן לא משפיעה בכלל.</div></td><td class="small">A-55/57, U-14</td><td class="small">אומת (קוד/ווב)</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-19"><td class="mono">R-19</td><td><span class="pri P1">P1</span></td><td>ווב</td><td>שימושיות</td><td><b>שלושה כפתורי סגירה בחיפוש</b><div class="det">יש × של הדפדפן בתוך השדה (input type=search, בצבע כחול של הדפדפן), עוד × של האפליקציה, וגם &quot;סגירה&quot;. history.js:75-76, ואין כלל ::-webkit-search-cancel-button.</div></td><td class="small">search.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-20"><td class="mono">R-20</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>עקביות תוכן</td><td><b>משך זמן בשני פורמטים</b><div class="det">בעורך &quot;4:00 שעות&quot;, אבל ברשימות ובסיכומים &quot;2.5 שעות&quot;, &quot;3.75 שעות&quot;, &quot;65.25 שעות&quot;, &quot;21.25 ש׳&quot;. מומלץ פורמט אחד, ש:דד, בכל מקום.</div></td><td class="small">history.jpg, editor.jpg</td><td class="small">אומת (ווב), סביר באנדרואיד</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-21"><td class="mono">R-21</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>משוב</td><td><b>משוב ואישור לא עקביים</b><div class="det">באנדרואיד כ-38 Toast של המערכת לצד ההודעה של האפליקציה, ושגיאות מוצגות ב-5 דרכים. בווב: ההודעה הקופצת כנראה לא מוכרזת, וכפתור הביטול בה נעלם אחרי 6 שניות. &quot;סימון כשולם&quot; לא נותן משוב. סימון כשולם לכמה משמרות יחד אין לו ביטול. &quot;לא שולם&quot; של עובד בקבוצה סוגר את כל הגיליון.</div></td><td class="small">A-36/47, U-13</td><td class="small">אומת</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-22"><td class="mono">R-22</td><td><span class="pri P1">P1</span></td><td>ווב</td><td>תוכן</td><td><b>גרסה ישנה בגיליון הורדת האפליקציה</b><div class="det">כשהבדיקה לגרסה האחרונה נכשלת מוצג &quot;גרסה 2.0.3 · קישור גיבוי ישיר&quot;, והקישור מוביל ל-APK של 2.0.3. השוואה: 2.2.1 פורסמה ו-2.2.3 מוכנה. web/kis/download.js:4,12,30</div></td><td class="small">android-sheet.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-23"><td class="mono">R-23</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>מערכת רכיבים</td><td><b>כפתור מחיקה שונה בין הפלטפורמות</b><div class="det">באנדרואיד מילוי רך (ובניגודיות 4.43 בלבד), בווב אדום מלא. בכהה בווב הניגודיות 2.29. KisKit.kt:148, kis.css:76</div></td><td class="small">A-26</td><td class="small">אומת</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-24"><td class="mono">R-24</td><td><span class="pri P1">P1</span></td><td>שניהם</td><td>מיקרוקופי</td><td><b>שלוש צורות פנייה ומונחים כפולים</b><div class="det">מעורבבות פנייה ביחיד (&quot;הזן&quot;, &quot;הוסף&quot;, &quot;בחר&quot;), ניסוח כללי (&quot;מוסיפים&quot;, &quot;לוחצים&quot;) ופנייה ברבים (&quot;אתם&quot;, &quot;סיימתם&quot;). יש גם &quot;נגיעה&quot; במחשב, &quot;דו״ח&quot;/&quot;דוח&quot; באותו גיליון ו&quot;ממתין&quot;/&quot;לא שולם&quot;. תאריכים בשלושה פורמטים: 4.11 / 04/11/2026 / 4.11.2026.</div></td><td class="small">ed-job, ed-group, U-18/U-19</td><td class="small">אומת</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-25"><td class="mono">R-25</td><td><span class="pri P2">P2</span></td><td>שניהם</td><td>מערכת רכיבים</td><td><b>יותר מדי רדיוסים, גבהים ומסגרות</b><div class="det">בווב 12 רדיוסים בפועל, באנדרואיד 19–20 (2,3,6,7,8,9,10,12,14,16,18,20,22,24,26,99). באנדרואיד 7 גבהי כפתור. 4 סגנונות מסגרת לכרטיס. כרטיס ההגדרות 18 במקום אחד ו-20 במקום אחר.</div></td><td class="small">census, A-25/29/30</td><td class="small">אומת</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-26"><td class="mono">R-26</td><td><span class="pri P2">P2</span></td><td>שניהם</td><td>אייקונים</td><td><b>אייקונים לא אחידים</b><div class="det">בווב: SVG בקו 2 לצד חצים וסימנים שהם תווי גופן (← ↓ ✓ ‹ ›) ב-Rubik, בעובי אחר. באנדרואיד שלושה סגנונות אייקונים. גם המפרידים לא אחידים: · ו-•.</div></td><td class="small">קוד ui.js ICON, A-3x</td><td class="small">אומת</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-27"><td class="mono">R-27</td><td><span class="pri P2">P2</span></td><td>שניהם</td><td>מערכת רכיבים</td><td><b>צ׳יפ של פעולה נראה כמו צ׳יפ בחירה</b><div class="det">בהגדרות &quot;כתיבה&quot;, &quot;ניהול&quot;, &quot;פתיחה&quot;, &quot;הצגה&quot; ו&quot;מסעדה&quot; עוצבו כמו צ׳יפ סינון, כך שלא ברור אם זו פעולה או בחירה.</div></td><td class="small">settings.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>נמוכה</td></tr>
+<tr id="R-28"><td class="mono">R-28</td><td><span class="pri P2">P2</span></td><td>שניהם</td><td>מסך הבית</td><td><b>כפילויות ואיזון במסך הבית</b><div class="det">משמרת מתוכננת מופיעה גם ב&quot;הבא בתור&quot; וגם ב&quot;אחרונות&quot;. כרטיס &quot;היום&quot; כמעט ריק ליד כרטיס &quot;מכל הזמנים&quot; עם שלוש שורות. הודעת &quot;משמרת מחכה לתעריף&quot; ברוחב חצי ומיושרת לימין, בזמן שכל השאר ברוחב מלא.</div></td><td class="small">home.jpg, android-home.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-29"><td class="mono">R-29</td><td><span class="pri P2">P2</span></td><td>שניהם</td><td>פרטי משמרת</td><td><b>משמרת קבוצתית: לא ברור מה המספר הראשי</b><div class="det">הכותרת ₪350, מתחתיה &quot;ההכנסה שלי ₪530&quot; ו&quot;לקבל מהמעסיק ₪980&quot;. יש קיר של 10 כפתורים (לכל עובד &quot;לא שולם&quot;, &quot;שיתוף&quot; ו&quot;העתקה&quot;), ו&quot;לא שולם&quot; הוא סגנון כפתור נוסף (מתאר).</div></td><td class="small">detail-group.jpg</td><td class="small">אומת</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-30"><td class="mono">R-30</td><td><span class="pri P2">P2</span></td><td>ווב</td><td>הגדרות</td><td><b>הגדרות בווב</b><div class="det">נקודת מידע ליד כמעט כל שורה. &quot;משוב ותקלות&quot; ראשון. &quot;הורדת גיבוי&quot; נשבר לשתי שורות ב-390px. &quot;ייבוא נתונים&quot; הוא הכפתור הראשי היחיד בקבוצת הגיבוי, וזו הדגשה שגויה לפעולה רגישה. (באנדרואיד 2.2.3 המבנה כבר שונה, ראו R-11)</div></td><td class="small">settings-full.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-31"><td class="mono">R-31</td><td><span class="pri P2">P2</span></td><td>שניהם</td><td>הגדרות</td><td><b>גיליון מקומות העבודה</b><div class="det">תשעה כפתורי &quot;עריכה&quot; זהים וידיות גרירה. עדיף שכל השורה תהיה לחיצה, עם גרירה נגישה (או כפתורי הזזה).</div></td><td class="small">places.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>נמוכה</td></tr>
+<tr id="R-32"><td class="mono">R-32</td><td><span class="pri P2">P2</span></td><td>שניהם</td><td>צבע</td><td><b>באנר הסיכום והזוהר בכהה רועשים מדי</b><div class="det">שיפוע הסגול בבאנר נשאר באותה בהירות גם בכהה, והוא האלמנט הכי צועק במסך. שקיפות הזוהר .40 בכהה פוגעת בניגודיות הכיתוב שמתחתיו.</div></td><td class="small">home.jpg</td><td class="small">סובייקטיבי + חישוב</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-33"><td class="mono">R-33</td><td><span class="pri P2">P2</span></td><td>שניהם</td><td>עורך</td><td><b>עורך המשמרת</b><div class="det">בסרגל השעות, משמרת לילה (20:30–00:30) מוצגת כשני מקטעים שקשה לקרוא. &quot;קבוצה&quot; ככפתור בכותרת לא מובן. צ׳יפי ההפסקה נחתכים. כ-40 עצירות Tab עד שדה התעריף.</div></td><td class="small">editor.jpg, editor-modes.jpg</td><td class="small">אומת</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-34"><td class="mono">R-34</td><td><span class="pri P2">P2</span></td><td>ווב</td><td>מצבים ריקים</td><td><b>מצבים ריקים</b><div class="det">כרטיס סיכום &quot;0 משמרות • 0 שעות —&quot; מופיע מעל הודעת &quot;אין משמרות&quot;. גיליון ההעתקה מציע להעתיק 0 משמרות. מתג &quot;רישום אוטומטי&quot; מוצג כשאין אף משמרת קבועה.</div></td><td class="small">search-empty.jpg, copy-empty.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>נמוכה</td></tr>
+<tr id="R-35"><td class="mono">R-35</td><td><span class="pri P2">P2</span></td><td>ווב</td><td>מחשב</td><td><b>פריסה במחשב</b><div class="det">רוחב התוכן שונה מדף לדף: בית כ-1016px, היסטוריה 796px, עורך 560px. שם האפליקציה מופיע פעמיים. ההיסטוריה צרה ומשאירה הרבה חלל ריק.</div></td><td class="small">desktop.jpg</td><td class="small">אומת</td><td class="mono">M</td><td>נמוכה</td></tr>
+<tr id="R-36"><td class="mono">R-36</td><td><span class="pri P2">P2</span></td><td>ווב</td><td>משוב</td><td><b>ההודעה הקופצת מופיעה באמצע המסך</b><div class="det">היא צפה מעל הרשימה ומסתירה תוכן, ופעולת &quot;ביטול&quot; בה בצבע המותג.</div></td><td class="small">toast.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>נמוכה</td></tr>
+<tr id="R-37"><td class="mono">R-37</td><td><span class="pri P2">P2</span></td><td>שניהם</td><td>ביצועים</td><td><b>גופנים כבדים</b><div class="det">בווב כ-1MB של TTF (ארבעה משקלי Rubik, Heebo ו-Secular One), בלי woff2 ובלי preload. Heebo נטען כגיבוי. באנדרואיד כ-900KB.</div></td><td class="small">web/fonts</td><td class="small">אומת</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-38"><td class="mono">R-38</td><td><span class="pri P2">P2</span></td><td>ווב</td><td>קוד → עיצוב</td><td><b>עיצוב בתוך הקוד עוקף את הטוקנים</b><div class="det">כ-130 תכונות style=&quot;&quot; בקובצי ה-JS (editor 30, account 27, home 19, settings 18, history 14), למשל font-size:44px בגיליון הפרטים. טוקני הכהה כתובים פעמיים ב-kis.css, וזה סיכון שיתפצלו.</div></td><td class="small">grep</td><td class="small">אומת</td><td class="mono">M</td><td>בינונית</td></tr>
+<tr id="R-39"><td class="mono">R-39</td><td><span class="pri P2">P2</span></td><td>אנדרואיד</td><td>טיפוגרפיה</td><td><b>₪ מוצג ב-Secular One כשהכסף מוסתר בסיכום</b><div class="det">KisStory.kt:135 מציג &quot;${currency}•••&quot; בסגנון hero, וזה שובר את הכלל &quot;₪ תמיד ב-Rubik&quot;.</div></td><td class="small">קוד</td><td class="small">אומת בקוד</td><td class="mono">S</td><td>נמוכה</td></tr>
+<tr id="R-40"><td class="mono">R-40</td><td><span class="pri P2">P2</span></td><td>אנדרואיד</td><td>טיפוגרפיה</td><td><b>השעון החי (2.2.3) בגופן אחר משאר המספרים הגדולים</b><div class="det">הוא ב-Rubik 30sp, בזמן שכל מספר גדול אחר ב-Secular One (ובווב 40px). ייפתר ממילא עם R-09. KisHome.kt:259</div></td><td class="small">קוד</td><td class="small">אומת בקוד</td><td class="mono">S</td><td>נמוכה</td></tr>
+<tr id="R-41"><td class="mono">R-41</td><td><span class="pri P2">P2</span></td><td>שניהם</td><td>מצבים</td><td><b>מצב מושבת שונה בין הפלטפורמות</b><div class="det">שקיפות .38 באנדרואיד ו-.45 בווב. כפתור ראשי מושבת הופך למשטח אפור שנראה כמעט פעיל.</div></td><td class="small">feedback.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>נמוכה</td></tr>
+<tr id="R-42"><td class="mono">R-42</td><td><span class="pri P2">P2</span></td><td>ווב</td><td>רספונסיביות</td><td><b>זום 200% בטלפון</b><div class="det">סרגל הניווט רחב יותר מהמסך ומסתיר תוכן.</div></td><td class="small">U-22</td><td class="small">אומת</td><td class="mono">S</td><td>נמוכה</td></tr>
+<tr id="R-43"><td class="mono">R-43</td><td><span class="pri P2">P2</span></td><td>ווב</td><td>נתונים</td><td><b>לבדוק: מספר השעות בסיכום החודשי לא זהה</b><div class="det">בנתונים הסינתטיים כתוב בשקופית &quot;46 שעות&quot;, ובשורת הסיכום של אותו חודש &quot;49.25 שעות&quot;. ייתכן שזה הבדל מכוון בהגדרה (למשל משמרות קבוצה או מתוכננות). מומלץ ש-Codex יאמת.</div></td><td class="small">story.jpg, recaps</td><td class="small">לא ודאי</td><td class="mono">S</td><td>בינונית</td></tr>
+<tr id="R-44"><td class="mono">R-44</td><td><span class="pri P3">P3</span></td><td>ווב</td><td>סיכום חודשי</td><td><b>חצים וסגירה קטנים בסיכום החודשי</b><div class="det">חצי &quot;‹ ›&quot; וכפתור הסגירה קטנים מ-44px.</div></td><td class="small">story.jpg</td><td class="small">אומת</td><td class="mono">S</td><td>נמוכה</td></tr>
+<tr id="R-45"><td class="mono">R-45</td><td><span class="pri P3">P3</span></td><td>ווב</td><td>מקלדת</td><td><b>Escape בזמן הקלדת שעה מאבד את הפוקוס</b><div class="det">U-21</div></td><td class="small">U-21</td><td class="small">אומת</td><td class="mono">S</td><td>נמוכה</td></tr>
+<tr id="R-46"><td class="mono">R-46</td><td><span class="pri P3">P3</span></td><td>אנדרואיד</td><td>קוד → עיצוב</td><td><b>שאריות</b><div class="det">טוקנים לא בשימוש (edit, editInk), רכיב מקטעים כפול, 8 עותקים של גיליון אישור, ו-setColor(0xFF5145E8) קשיח 5 פעמים בהתראות.</div></td><td class="small">A-4x</td><td class="small">אומת</td><td class="mono">S</td><td>נמוכה</td></tr>
+</tbody></table></div>
+<h3>הנחיות יישום עיקריות</h3>
+<ul class="tight">
+  <li><b>טוקנים</b>: קובץ מקור אחד (JSON) שממנו נוצרים kis.css ו-KisTheme.kt. מוסיפים את התפקידים החסרים (accent, success, lineStrong, ink3, selected*, controlOn, live, bar*) ומחליפים sunk ב-fill. אסור להשתמש בצבע של מקום עבודה לתפקיד שאינו נתון.</li>
+  <li><b>מתכון "נבחר"</b>: רכיב אחד ב-Kotlin (KisSelectable) ומחלקה אחת ב-CSS (<span class="mono">[aria-pressed=true], [aria-selected=true]</span>) שכל הצ׳יפים, הימים, המטבע, הלשוניות והמקטעים משתמשים בהם.</li>
+  <li><b>טיפוגרפיה</b>: KisType עם 8 מדרגות ומחלקות CSS תואמות. מוחקים את כל ה-fontSize הקשיחים ואת font-size שבתוך style. ‏tnum בכל מספר.</li>
+  <li><b>רכיב סכום אחד</b> (MoneyText / moneyHtml) ורכיב טווח זמן אחד עם בידוד כיווני, ובהם משתמשים בכל מקום.</li>
+  <li><b>נגישות</b>: מינימום של 48dp בתוך kisClick, ו-<span class="mono">min-height/min-width: 44px</span> לכל פקד בווב. מלכודת פוקוס והחזרת פוקוס בגיליונות. ציור מחדש ששומר את הפוקוס. rem בווב.</li>
+  <li><b>אימות קלט</b>: לא לשנות ערך בשקט. מסמנים את השדה ומסבירים בשורה ליד השדה ("שעה לא תקינה"). משמרת לילה מסומנת "למחרת". סכום חריג מבקש אישור. מגבלת אורך גלויה לשדות טקסט.</li>
+</ul>
+
+<h2 id="roadmap"><span class="n">13</span>מפת דרכים עד השחרור המאוחד</h2>
+<div class="phase"><div class="when">שלב 0<br><span class="small">החלטות</span></div><div>לאשר את פלטת "Kis 2", את מתכון "נבחר", ואת המעבר ל-Heebo (כולל עדכון AGENTS.md). לסגור מול Codex מי מטפל ב-R-01/R-02/R-43 (קלט ונתונים). <span class="small">השפעה: מאפשר את כל השאר. מאמץ: S.</span></div></div>
+<div class="phase"><div class="when">שלב 1<br><span class="small">יסודות</span></div><div>טוקני צבע וטיפוגרפיה בשתי הפלטפורמות, מקובץ מקור אחד. כרטיס חי, ניגודיות, פלטת מקומות, ו-tnum. עם נקודת חזרה (תג או ענף גיבוי) לפני השינוי. <span class="small">R-03, R-05, R-06, R-07, R-08, R-09, R-10, R-37 · מאמץ L (כ-4–6 ימי עבודה של סוכן ובדיקה)</span></div></div>
+<div class="phase"><div class="when">שלב 2<br><span class="small">רכיבים</span></div><div>"נבחר" אחד, 3 גדלי כפתור, 4 רדיוסים, סט אייקונים אחד, הודעה קופצת ומשוב אחידים, גיליון אחד. <span class="small">R-04, R-21, R-23, R-25, R-26, R-27, R-41 · מאמץ L</span></div></div>
+<div class="phase"><div class="when">שלב 3<br><span class="small">מסכים והתאמה</span></div><div>להעביר לווב את שינויי 2.2.3 (כרטיס חי, הגדרות לפי קטגוריות, התראות לפי סוג). חיפוש, בית, פרטי קבוצה, מקומות, מצבים ריקים, ופורמטי משך ותאריך. <span class="small">R-11, R-12, R-19, R-20, R-22, R-24, R-28–R-36 · מאמץ L</span></div></div>
+<div class="phase"><div class="when">שלב 4<br><span class="small">נגישות</span></div><div>פוקוס, מטרות מגע, הגדלת גופן ו-rem, סמנטיקה, הסיכום החודשי, ו-320px. <span class="small">R-13–R-18, R-42, R-44, R-45 · מאמץ M–L</span></div></div>
+<div class="phase"><div class="when">שלב 5<br><span class="small">אימות</span></div><div>להריץ שוב את סקריפטי Playwright האלה (בהיר וכהה, 320–1440) וצילומי Roborazzi ב-CI. לאחר מכן RC חתום אחד שמתעדכן מעל 2.2.3, ובדיקה שלך על הטלפון. <span class="small">מאמץ M</span></div></div>
+<p class="small">ההערכה הכוללת: כשלושה עד ארבעה שבועות של עבודה בשלבים, עם בדיקה שלך אחרי כל שלב. האומדן גס ותלוי בהיקף הבדיקות האוטומטיות.</p>
+
+<h2 id="coverage"><span class="n">12</span>מטריצת כיסוי</h2>
+<p class="small">✔ נבדק בפועל · ◐ חלקי (קוד או מסך בלבד) · ✘ לא ניתן בסביבה הזו. התו הראשון הוא ווב והשני אנדרואיד.</p>
+<div class="tbl"><table>
+<thead><tr><th>תחום</th><th>ווב</th><th>אנדרואיד</th><th>מצב</th></tr></thead>
+<tbody><tr><td>מסך בית (מלא, ריק, משמרת חיה)</td><td>Playwright בהיר+כהה, 360/390/768/1440</td><td>קוד + צילום עיצוב מ-2.0.8</td><td class="mono">✔ / ◐</td></tr>
+<tr><td>עורך משמרת: שעון, ידני, קבלנות, קבוצה, אפשרויות נוספות</td><td>Playwright, axe, מקלדת</td><td>קוד</td><td class="mono">✔ / ◐</td></tr>
+<tr><td>הזנת שעה ומשך, ערכים חריגים</td><td>Playwright (25:00, 99:99, שלילי, 799,999)</td><td>קוד בלבד</td><td class="mono">✔ / ◐</td></tr>
+<tr><td>פרטי משמרת: רגילה, קבוצה, בלי תעריף</td><td>Playwright בהיר+כהה, axe</td><td>קוד</td><td class="mono">✔ / ◐</td></tr>
+<tr><td>היסטוריה: חיפוש, סינון, בחירה מרובה, העתקה, 400 משמרות</td><td>Playwright, axe, ביצועים (363ms ל-400 שורות)</td><td>קוד</td><td class="mono">✔ / ◐</td></tr>
+<tr><td>הגדרות וגיליונות (מקומות, מקום, התראות, משוב, ייבוא, סיכומים, קבועות, מחיקה, הורדה)</td><td>Playwright בהיר+כהה, axe</td><td>קוד (מבנה 2.2.3 החדש)</td><td class="mono">✔ / ◐</td></tr>
+<tr><td>התחלה ראשונה, הדרכה, מצבים ריקים</td><td>Playwright (שלב השם בלבד, הוא חוסם בלי שם)</td><td>קוד</td><td class="mono">◐ / ◐</td></tr>
+<tr><td>סיכום חודשי (story)</td><td>Playwright, 6 שקופיות</td><td>קוד</td><td class="mono">✔ / ◐</td></tr>
+<tr><td>שיתוף ל-Share Sheet, הורדת קבצים, העתקה ללוח</td><td>לא ניתן (אין תפריט שיתוף אמיתי בדפדפן אוטומטי)</td><td>לא ניתן</td><td class="mono">✘ / ✘</td></tr>
+<tr><td>חשבון Google, סנכרון, ייבוא מקובץ אמיתי</td><td>Firebase חסום ברשת. לא נבדק בכוונה (לא נוגעים בחשבונות)</td><td>לא נבדק</td><td class="mono">✘ / ✘</td></tr>
+<tr><td>התראות, עדכון אפליקציה, רטט</td><td>רק המסכים</td><td>קוד בלבד</td><td class="mono">◐ / ◐</td></tr>
+<tr><td>קורא מסך אמיתי (NVDA/TalkBack)</td><td>שמות נגישים נבדקו בעץ הנגישות, לא בקורא מסך</td><td>לא ניתן</td><td class="mono">◐ / ✘</td></tr>
+<tr><td>האתר החי</td><td>נבדק בתור הקודם (200, RTL, גופנים). בתור הזה נחסם שוב</td><td>—</td><td class="mono">◐</td></tr>
+<tr><td>אמולטור או מכשיר אנדרואיד</td><td>—</td><td>אין SDK ואין KVM. צילומי CI חסומים (blob.core.windows.net)</td><td class="mono">✘</td></tr></tbody></table></div>
+<div class="note warn"><b>מגבלות חשובות:</b> לא היה אמולטור אנדרואיד (אין SDK ואין KVM, והשרת dl.google.com חסום). צילומי ה-CI של אנדרואיד שמורים ב-blob.core.windows.net, שחסום גם הוא. לכן כל ממצאי האנדרואיד מבוססים על קריאת קוד, על חישובי ניגודיות, ועל צילום עיצוב אחד מ-2.0.8. האתר החי היה נגיש בתור הקודם ונחסם שוב בזמן הבדיקה, ולכן נבדק build מקומי של הענף החדש ביותר (5 קבצים קטנים שונים מהגרסה החיה). לא הופעלו workflows ב-GitHub Actions.</div>
+
+<h2 id="method"><span class="n">·</span>שיטה וקבצים</h2>
+<ul class="tight">
+  <li>Playwright 1.63 (Chromium) על build מקומי עם נתונים סינתטיים בלבד: 9 מקומות כולל שמות ארוכים ולטיניים, ₪ ו-$, שולם ולא שולם, מתוכננת, קבוצה, בלי תעריף, וגם 400 משמרות. רוחבים 320, 360, 390, 768 ו-1440, בהיר וכהה.</li>
+  <li>axe-core 4.14 (WCAG 2.0, 2.1 ו-2.2 ברמת AA) על כל מסך. מפקד של צבעים, גופנים, גדלים, רדיוסים ומטרות מגע מחושב מה-DOM.</li>
+  <li>UI UX Pro Max ו-Frontend Design שימשו כרשימות בדיקה (מטרות מגע, עקביות אייקונים, סמנטיקה של פקדים קומפקטיים, מצב כהה).</li>
+  <li>מעבר שני על ידי ארבעה סוקרים נפרדים: צבע (סקריפטי ניגודיות, OKLCH ו-CIEDE2000 עם סימולציה לעיוורי צבעים), טיפוגרפיה (דוגמיות של 9 שילובים), אנדרואיד (קריאת קוד מלאה) ונגישות ושימושיות. אחר כך אימתתי בעצמי את הממצאים המרכזיים מול הקוד והצילומים, ומיזגתי כפילויות.</li>
+  <li>כל החומר נמצא ב-<span class="mono">ux-audit/</span> בתוך הריפו, בתיקייה שמוחרגת מ-git: ‏notes, shots, tools, report ו-PROGRESS.md.</li>
+</ul>
+</div>
+</body>
+</html>

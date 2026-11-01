@@ -1,0 +1,105 @@
+[
+  {
+    "id": "DATA-P01-identical-legacy-ids",
+    "before": 2,
+    "ids": [
+      "legacy-1txnhoa",
+      "legacy-1txnhoa"
+    ],
+    "after": 0,
+    "expectedAfterDeletingOne": 1
+  },
+  {
+    "id": "DATA-P02-corrupt-plans-overwritten",
+    "brokenReported": null,
+    "rawAfter": "{\"series\":[{\"id\":\"new\"}],\"exceptions\":[]}",
+    "originalPreservedInSnapshot": null
+  },
+  {
+    "id": "DATA-P03-plan-write-failure-memory",
+    "error": "synthetic quota",
+    "memory": {
+      "series": [
+        {
+          "id": "unsaved"
+        }
+      ],
+      "exceptions": []
+    },
+    "disk": {
+      "series": [],
+      "exceptions": []
+    }
+  },
+  {
+    "id": "DATA-P04-category-stale-tab-overwrite",
+    "before": 2,
+    "after": 1,
+    "lostNewRow": true
+  },
+  {
+    "id": "DATA-P05-delete-plan-second-write-failure",
+    "error": "synthetic quota",
+    "entriesOnDisk": 0,
+    "exceptionsOnDisk": []
+  },
+  {
+    "id": "DATA-P06-json-v2-roundtrip",
+    "version": 2,
+    "entries": 2,
+    "normalizeEqual": true,
+    "missingAfterReimport": 0
+  },
+  {
+    "id": "DATA-P07-v3-export-version",
+    "webExportVersion": 3,
+    "localAndroidAcceptedVersions": "1..3 WorkBackup.kt:81"
+  },
+  {
+    "id": "DATA-P08-timezone-and-csv",
+    "sourceHours": 1.6666666666666667,
+    "restoredHours": 1.6666666666666667,
+    "sourceDate": 1793318400000,
+    "restoredDate": 1793318400000
+  }
+]
+[
+  {
+    "id": "DATA-P09-current-csv-precision",
+    "originalHours": 1.6666666666666667,
+    "restoredHours": 1.67,
+    "secondsChanged": 11.999999999999478,
+    "originalAmount": 100,
+    "restoredAmount": 100,
+    "duplicateCount": 1
+  },
+  {
+    "id": "DATA-P10-import-drops-preferences",
+    "savedEntries": 1,
+    "expected": {
+      "mainCurrency": "$",
+      "defaultCategory": "B",
+      "categoryCurrencies": {
+        "B": "$"
+      }
+    },
+    "actual": {
+      "mainCurrency": "₪",
+      "defaultCategory": "עצמאי",
+      "categoryCurrencies": {}
+    }
+  },
+  {
+    "id": "DATA-P11-metadata-only-import-blocked",
+    "saveDisabled": true,
+    "summary": "נקראו 0 משמרות. חדשות: 0. קיימות: 0."
+  },
+  {
+    "id": "DATA-P12-series-only-import-orphan-category",
+    "seriesCategory": "orphan",
+    "categories": [
+      "A",
+      "B"
+    ]
+  }
+]

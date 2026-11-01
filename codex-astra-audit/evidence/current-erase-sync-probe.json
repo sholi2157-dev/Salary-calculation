@@ -1,0 +1,7 @@
+{
+  "localAfterDeleteAllThenSync": [
+    "new not yet received on B"
+  ],
+  "remoteStillPresent": 1,
+  "pending": 0
+}

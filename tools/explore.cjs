@@ -1,0 +1,71 @@
+const { chromium } = require('playwright'); const AxeBuilder = require('@axe-core/playwright').default;
+const fs = require('node:fs'); const L = require('./lib.cjs');
+const OUT = __dirname + '/../shots/web'; fs.mkdirSync(OUT, { recursive: true });
+const results = { steps: [], axe: {}, census: {}, errors: [] };
+(async () => {
+  const { s, base } = await L.serve(); const browser = await chromium.launch();
+  const schemes = (process.env.SCHEMES || 'light,dark').split(',');
+  for (const scheme of schemes) {
+    const { ctx, page } = await L.open(browser, base, { scheme });
+    const tid = t => `[data-testid="${t}"]`;
+    const snap = async (name, { axe = true, full = false } = {}) => {
+      const file = `${scheme}-${name}.png`; await page.waitForTimeout(450);
+      await page.screenshot({ path: `${OUT}/${file}`, fullPage: full });
+      if (axe) { try { const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+        results.axe[`${scheme}-${name}`] = r.violations.map(v => ({ id: v.id, impact: v.impact, n: v.nodes.length, nodes: v.nodes.slice(0, 4).map(x => x.target.join(' ') + ' :: ' + (x.failureSummary || '').split('\n').slice(1, 2).join('').slice(0, 160)) })); } catch (e) { results.axe[`${scheme}-${name}`] = 'ERR ' + e.message; } }
+      results.census[`${scheme}-${name}`] = await L.census(page); results.steps.push(`${scheme}-${name}`); };
+    const step = async (name, fn, o) => { try { await fn(); await snap(name, o); } catch (e) { results.errors.push(`${scheme}-${name}: ${e.message.split('\n')[0]}`); try { await snap(name + '-ERR', { axe: false }); } catch {} } };
+    const esc = async () => { await page.keyboard.press('Escape'); await page.waitForTimeout(300); };
+    const closeAll = async () => { for (let i = 0; i < 3; i++) await esc(); await page.evaluate(() => { document.querySelectorAll('dialog[open]').forEach(d => d.close()); }); };
+    const go = p => page.evaluate(p => window.Kis.go(p), p);
+
+    await step('01-home', async () => {});
+    await step('01-home-full', async () => {}, { full: true, axe: false });
+    await step('02-bell', async () => { await page.click(tid('home-bell')); }); await closeAll();
+    await step('03-editor-new', async () => { await page.evaluate(() => window.Kis.openNew()); });
+    await step('03b-editor-range', async () => { const r = page.locator('[data-testid=mode-range], [data-mode=range]').first(); if (await r.count()) await r.click(); });
+    await step('03c-editor-more', async () => { await page.click(tid('editor-more')); });
+    await step('03d-editor-full', async () => {}, { full: true, axe: false });
+    await step('03e-editor-time-entry', async () => { const d = page.locator('[data-testid^=hours-input-d], [data-testid^=start-input], .time-digit').first(); if (await d.count()) await d.click(); });
+    await page.evaluate(() => window.Kis.closeEditor && window.Kis.closeEditor()); await closeAll(); await go('home');
+    await step('04-detail', async () => { await page.evaluate(() => window.Kis.openDetail('b')); });
+    await closeAll();
+    await step('04b-detail-group', async () => { await page.evaluate(() => window.Kis.openDetail('l')); }, { full: false }); await closeAll();
+    await step('04c-detail-unknown-rate', async () => { await page.evaluate(() => window.Kis.openDetail('k')); }); await closeAll();
+    await step('05-history', async () => { await go('history'); });
+    await step('05a-history-full', async () => {}, { full: true, axe: false });
+    await step('05b-history-search', async () => { await page.click(tid('history-search')); await page.fill(tid('history-search-input'), 'מסעדה'); });
+    await step('05c-history-search-empty', async () => { await page.fill(tid('history-search-input'), 'zzzz'); });
+    await page.evaluate(() => window.Kis.go('history'));
+    await step('05d-history-filters', async () => { await page.click(tid('history-filters')); }); await closeAll(); await go('history');
+    await step('05e-history-select', async () => { const r = page.locator('.shift[data-id]').first(); const b = await r.boundingBox(); await page.mouse.move(b.x + 40, b.y + 20); await page.mouse.down(); await page.waitForTimeout(800); await page.mouse.up(); });
+    await step('05f-history-copy', async () => { const c = page.locator(tid('history-copy')); if (await c.count()) await c.first().click(); else throw Error('no copy'); });
+    await closeAll(); await page.evaluate(() => { window.KisHistory?.state?.selection?.clear?.(); window.Kis.go('history'); });
+    await step('05g-history-month', async () => { const m = page.locator(tid('history-month')); await m.first().click(); });
+    await closeAll(); await go('history');
+    await step('05h-history-pending', async () => { await page.click(tid('history-pending')); });
+    await go('settings');
+    await step('06-settings', async () => {});
+    await step('06a-settings-full', async () => {}, { full: true, axe: false });
+    await step('06b-places', async () => { await page.click(tid('places-button')); }); await closeAll(); await go('settings');
+    await step('06c-place-edit', async () => { await page.evaluate(() => window.KisSettings.placeSheet(window.Kis, 'מסעדה', () => {})); }); await closeAll(); await go('settings');
+    await step('06d-notifications', async () => { await page.click(tid('notify-all')); await page.waitForTimeout(200); });
+    await step('06e-feedback', async () => { await page.click(tid('feedback-button')); }); await closeAll(); await go('settings');
+    await step('06f-import', async () => { await page.click(tid('import-button')); }); await closeAll(); await go('settings');
+    await step('06g-recaps', async () => { await page.click(tid('recaps-button')); }); await closeAll(); await go('settings');
+    await step('06h-series', async () => { await page.click(tid('series-button')); }); await closeAll(); await go('settings');
+    await step('06i-erase', async () => { await page.click(tid('account-erase')); }); await closeAll(); await go('settings');
+    await step('06j-android', async () => { await page.click('[data-a=android-download]'); }); await closeAll(); await go('settings');
+    await step('07-live-start', async () => { await go('home'); await page.click(tid('live-start')); });
+    await step('07b-live-running', async () => { const g = page.locator(tid('live-go')); if (await g.count()) await g.click(); }); 
+    await closeAll(); await go('home');
+    await step('07c-home-live', async () => {});
+    await page.evaluate(() => { try { window.Kis.cancelLive(); } catch {} });
+    await step('08-toast-delete', async () => { await page.evaluate(() => window.Kis.openDetail('e')); await page.click('[data-a=del]'); });
+    results.errors.push(...page.errors.map(e => `${scheme} console: ${e.slice(0, 160)}`));
+    await ctx.close();
+  }
+  await browser.close(); s.close();
+  fs.writeFileSync(__dirname + `/../notes/explore-${schemes.join('_')}.json`, JSON.stringify(results, null, 1));
+  console.log('steps', results.steps.length, '\nerrors', results.errors.join('\n'));
+})();

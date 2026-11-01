@@ -1,0 +1,988 @@
+## contrast failures
+| light | text | muted #5A6478 | glow-top(bg) #CECDF4 | 3.87 | 4.5 |
+| light | text | paid #0B7F60 | bg #F1F3F8 | 4.48 | 4.5 |
+| light | text | paid #0B7F60 | sunk #E4E8F0 | 4.05 | 4.5 |
+| light | text | danger #C2362B | sunk #E4E8F0 | 4.43 | 4.5 |
+| light | text | ink disabled (.45) #989CA4 | surface #FFFFFF | 2.75 | 3.0 |
+| light | ui | line (outline btn/input edge) #D2D8E3 | bg #F1F3F8 | 1.29 | 3.0 |
+| light | ui | line (outline btn/input edge) #D2D8E3 | surface #FFFFFF | 1.43 | 3.0 |
+| light | ui | switch OFF track (line) #D2D8E3 | surface #FFFFFF | 1.43 | 3.0 |
+| light | ui | switch knob #FFF #FFFFFF | switch OFF track (line) #D2D8E3 | 1.43 | 3.0 |
+| light | text | mustard.from as text #F5B82E | surface #FFFFFF | 1.78 | 4.5 |
+| light | ui | mustard.from chip #F5B82E | surface #FFFFFF | 1.78 | 3.0 |
+| light | text | teal.on #FFFFFF | teal.from #0E8A86 | 4.2 | 4.5 |
+| light | text | teal.from as text #0E8A86 | surface #FFFFFF | 4.2 | 4.5 |
+| dark | text | muted #B3B3B3 | glow-top(bg) #444171 | 4.47 | 4.5 |
+| dark | text | #FFFFFF (danger btn) #FFFFFF | danger #FF8A7A | 2.29 | 4.5 |
+| dark | text | #FFFFFF (FAB +, 28px) #FFFFFF | glow (FAB) #8F87FF | 2.97 | 3.0 |
+| dark | ui | line (outline btn/input edge) #303030 | bg #121212 | 1.42 | 3.0 |
+| dark | ui | line (outline btn/input edge) #303030 | surface #1E1E1E | 1.26 | 3.0 |
+| dark | ui | switch OFF track (line) #303030 | surface #1E1E1E | 1.26 | 3.0 |
+| dark | ui | indigo.from avatar vs surface #5145E8 | surface #1E1E1E | 2.67 | 3.0 |
+| dark | ui | purple.from avatar vs surface #7D3CF0 | surface #1E1E1E | 3.0 | 3.0 |
+| dark | text | teal.on (avatar gradient in dark) #FFFFFF | teal.from #0E8A86 | 4.2 | 4.5 |
+| dark | ui | burgundy.from avatar vs surface #B5294E | surface #1E1E1E | 2.69 | 3.0 |
+## all
+| light | text | ink | bg | 14.13 | OK |
+| light | text | ink | surface | 15.69 | OK |
+| light | text | ink | sunk | 12.78 | OK |
+| light | text | ink | nav(over bg) | 15.56 | OK |
+| light | text | ink | glow-top(bg) | 10.21 | OK |
+| light | text | muted | bg | 5.36 | OK |
+| light | text | muted | surface | 5.95 | OK |
+| light | text | muted | sunk | 4.85 | OK |
+| light | text | muted | nav(over bg) | 5.9 | OK |
+| light | text | muted | glow-top(bg) | 3.87 | FAIL |
+| light | text | paid | bg | 4.48 | FAIL |
+| light | text | paid | surface | 4.98 | OK |
+| light | text | paid | sunk | 4.05 | FAIL |
+| light | text | danger | bg | 4.91 | OK |
+| light | text | danger | surface | 5.45 | OK |
+| light | text | danger | sunk | 4.43 | FAIL |
+| light | text | pending | bg | 5.37 | OK |
+| light | text | pending | surface | 5.96 | OK |
+| light | text | pending | sunk | 4.86 | OK |
+| light | text | pending | pendingSoft | 5.1 | OK |
+| light | text | navInk | nav(over bg) | 8.01 | OK |
+| light | text | navOnInk | navOn | 15.69 | OK |
+| light | text | onBar | bar(over bg) | 15.57 | OK |
+| light | text | glow (toast action) | bar(over bg) | 6.19 | OK |
+| light | text | onInk (primary btn) | ink (primary btn) | 14.13 | OK |
+| light | text | editInk | edit | 15.69 | OK |
+| light | text | #FFFFFF (danger btn) | danger | 5.45 | OK |
+| light | text | #FFFFFF (FAB +, 28px) | glow (FAB) | 6.24 | OK |
+| light | text | ink disabled (.45) | surface | 2.75 | FAIL |
+| light | ui | focus ring (glow) | bg | 5.62 | OK |
+| light | ui | line (outline btn/input edge) | bg | 1.29 | FAIL |
+| light | ui | focus ring (glow) | surface | 6.24 | OK |
+| light | ui | line (outline btn/input edge) | surface | 1.43 | FAIL |
+| light | ui | switch ON track (paid) | surface | 4.98 | OK |
+| light | ui | switch OFF track (line) | surface | 1.43 | FAIL |
+| light | ui | switch knob #FFF | switch OFF track (line) | 1.43 | FAIL |
+| light | ui | surface card edge | bg | 1.11 | OK |
+| light | text | indigo.on | indigo.from | 6.24 | OK |
+| light | text | indigo.on | indigo.to | 14.65 | OK |
+| light | text | indigo.from as text | surface | 6.24 | OK |
+| light | ui | indigo.from chip | surface | 6.24 | OK |
+| light | text | green.on | green.from | 4.94 | OK |
+| light | text | green.on | green.to | 12.26 | OK |
+| light | text | green.from as text | surface | 4.94 | OK |
+| light | ui | green.from chip | surface | 4.94 | OK |
+| light | text | rose.on | rose.from | 4.62 | OK |
+| light | text | rose.on | rose.to | 13.26 | OK |
+| light | text | rose.from as text | surface | 4.62 | OK |
+| light | ui | rose.from chip | surface | 4.62 | OK |
+| light | text | mustard.on | mustard.from | 10.42 | OK |
+| light | text | mustard.on | mustard.to | 6.3 | OK |
+| light | text | mustard.from as text | surface | 1.78 | FAIL |
+| light | ui | mustard.from chip | surface | 1.78 | FAIL |
+| light | text | purple.on | purple.from | 5.56 | OK |
+| light | text | purple.on | purple.to | 14.91 | OK |
+| light | text | purple.from as text | surface | 5.56 | OK |
+| light | ui | purple.from chip | surface | 5.56 | OK |
+| light | text | blue.on | blue.from | 4.62 | OK |
+| light | text | blue.on | blue.to | 13.01 | OK |
+| light | text | blue.from as text | surface | 4.62 | OK |
+| light | ui | blue.from chip | surface | 4.62 | OK |
+| light | text | teal.on | teal.from | 4.2 | FAIL |
+| light | text | teal.on | teal.to | 12.39 | OK |
+| light | text | teal.from as text | surface | 4.2 | FAIL |
+| light | ui | teal.from chip | surface | 4.2 | OK |
+| light | text | burgundy.on | burgundy.from | 6.19 | OK |
+| light | text | burgundy.on | burgundy.to | 15.2 | OK |
+| light | text | burgundy.from as text | surface | 6.19 | OK |
+| light | ui | burgundy.from chip | surface | 6.19 | OK |
+| dark | text | ink | bg | 18.73 | OK |
+| dark | text | ink | surface | 16.67 | OK |
+| dark | text | ink | sunk | 14.35 | OK |
+| dark | text | ink | nav(over bg) | 17.76 | OK |
+| dark | text | ink | glow-top(bg) | 9.37 | OK |
+| dark | text | ink | tile(ink10% over bg) | 14.35 | OK |
+| dark | text | muted | bg | 8.93 | OK |
+| dark | text | muted | surface | 7.95 | OK |
+| dark | text | muted | sunk | 6.85 | OK |
+| dark | text | muted | nav(over bg) | 8.47 | OK |
+| dark | text | muted | glow-top(bg) | 4.47 | FAIL |
+| dark | text | muted | tile(ink10% over bg) | 6.85 | OK |
+| dark | text | paid | bg | 8.73 | OK |
+| dark | text | paid | surface | 7.77 | OK |
+| dark | text | paid | sunk | 6.69 | OK |
+| dark | text | danger | bg | 8.18 | OK |
+| dark | text | danger | surface | 7.28 | OK |
+| dark | text | danger | sunk | 6.27 | OK |
+| dark | text | pending | bg | 11.74 | OK |
+| dark | text | pending | surface | 10.45 | OK |
+| dark | text | pending | sunk | 9.0 | OK |
+| dark | text | pending | pendingSoft | 8.41 | OK |
+| dark | text | navInk | nav(over bg) | 8.47 | OK |
+| dark | text | navOnInk | navOn | 18.73 | OK |
+| dark | text | onBar | bar(over bg) | 12.23 | OK |
+| dark | text | glow (toast action) | bar(over bg) | 4.58 | OK |
+| dark | text | onInk (primary btn) | ink (primary btn) | 18.73 | OK |
+| dark | text | editInk | edit | 12.92 | OK |
+| dark | text | #FFFFFF (danger btn) | danger | 2.29 | FAIL |
+| dark | text | #FFFFFF (FAB +, 28px) | glow (FAB) | 2.97 | FAIL |
+| dark | text | ink disabled (.45) | surface | 4.4 | OK |
+| dark | ui | focus ring (glow) | bg | 6.31 | OK |
+| dark | ui | line (outline btn/input edge) | bg | 1.42 | FAIL |
+| dark | ui | focus ring (glow) | surface | 5.62 | OK |
+| dark | ui | line (outline btn/input edge) | surface | 1.26 | FAIL |
+| dark | ui | switch ON track (paid) | surface | 7.77 | OK |
+| dark | ui | switch OFF track (line) | surface | 1.26 | FAIL |
+| dark | ui | switch knob #FFF | switch OFF track (line) | 13.2 | OK |
+| dark | ui | surface card edge | bg | 1.12 | OK |
+| dark | text | indigo.accentDarkInk | indigo.accentDark | 6.13 | OK |
+| dark | text | indigo.accentDark as text | surface | 5.62 | OK |
+| dark | text | indigo.accentDark as text | bg | 6.31 | OK |
+| dark | text | indigo.on (avatar gradient in dark) | indigo.from | 6.24 | OK |
+| dark | ui | indigo.from avatar vs surface | surface | 2.67 | FAIL |
+| dark | text | green.accentDarkInk | green.accentDark | 10.7 | OK |
+| dark | text | green.accentDark as text | surface | 9.43 | OK |
+| dark | text | green.accentDark as text | bg | 10.6 | OK |
+| dark | text | green.on (avatar gradient in dark) | green.from | 4.94 | OK |
+| dark | ui | green.from avatar vs surface | surface | 3.37 | OK |
+| dark | text | rose.accentDarkInk | rose.accentDark | 6.67 | OK |
+| dark | text | rose.accentDark as text | surface | 6.21 | OK |
+| dark | text | rose.accentDark as text | bg | 6.98 | OK |
+| dark | text | rose.on (avatar gradient in dark) | rose.from | 4.62 | OK |
+| dark | ui | rose.from avatar vs surface | surface | 3.61 | OK |
+| dark | text | mustard.accentDarkInk | mustard.accentDark | 10.84 | OK |
+| dark | text | mustard.accentDark as text | surface | 10.89 | OK |
+| dark | text | mustard.accentDark as text | bg | 12.23 | OK |
+| dark | text | mustard.on (avatar gradient in dark) | mustard.from | 10.42 | OK |
+| dark | ui | mustard.from avatar vs surface | surface | 9.35 | OK |
+| dark | text | purple.accentDarkInk | purple.accentDark | 6.95 | OK |
+| dark | text | purple.accentDark as text | surface | 6.46 | OK |
+| dark | text | purple.accentDark as text | bg | 7.26 | OK |
+| dark | text | purple.on (avatar gradient in dark) | purple.from | 5.56 | OK |
+| dark | ui | purple.from avatar vs surface | surface | 3.0 | FAIL |
+| dark | text | blue.accentDarkInk | blue.accentDark | 6.65 | OK |
+| dark | text | blue.accentDark as text | surface | 6.79 | OK |
+| dark | text | blue.accentDark as text | bg | 7.63 | OK |
+| dark | text | blue.on (avatar gradient in dark) | blue.from | 4.62 | OK |
+| dark | ui | blue.from avatar vs surface | surface | 3.61 | OK |
+| dark | text | teal.accentDarkInk | teal.accentDark | 9.23 | OK |
+| dark | text | teal.accentDark as text | surface | 9.03 | OK |
+| dark | text | teal.accentDark as text | bg | 10.14 | OK |
+| dark | text | teal.on (avatar gradient in dark) | teal.from | 4.2 | FAIL |
+| dark | ui | teal.from avatar vs surface | surface | 3.97 | OK |
+| dark | text | burgundy.accentDarkInk | burgundy.accentDark | 6.83 | OK |
+| dark | text | burgundy.accentDark as text | surface | 6.28 | OK |
+| dark | text | burgundy.accentDark as text | bg | 7.06 | OK |
+| dark | text | burgundy.on (avatar gradient in dark) | burgundy.from | 6.19 | OK |
+| dark | ui | burgundy.from avatar vs surface | surface | 2.69 | FAIL |
+## identity
+light bg ('#F1F3F8', 0.9641, 0.007, 268.5475)
+light surface ('#FFFFFF', 1.0, 0.0, 89.8756)
+light sunk ('#E4E8F0', 0.9303, 0.0116, 264.5087)
+light line ('#D2D8E3', 0.8809, 0.0165, 262.748)
+light ink ('#1B2335', 0.2575, 0.0361, 265.5558)
+light muted ('#5A6478', 0.5022, 0.0343, 264.1993)
+light navInk ('#465066', 0.4314, 0.0388, 265.7032)
+light bar ('#FFFFFFF2', 0.9973, 0.0013, 286.3762)
+light nav ('#FFFFFFE6', 0.997, 0.0, 89.8756)
+light edit ('#1B2335', 0.2575, 0.0361, 265.5558)
+light pendingSoft ('#FFEBC7', 0.9471, 0.0517, 82.2819)
+dark bg ('#121212', 0.1822, 0.0, 89.8756)
+dark surface ('#1E1E1E', 0.235, 0.0, 89.8756)
+dark sunk ('#2A2A2A', 0.285, 0.0, 89.8756)
+dark line ('#303030', 0.3092, 0.0, 89.8756)
+dark ink ('#FFFFFF', 1.0, 0.0, 89.8756)
+dark muted ('#B3B3B3', 0.7668, 0.0, 89.8756)
+dark navInk ('#B3B3B3', 0.7668, 0.0, 89.8756)
+dark bar ('#2C2E33', 0.3012, 0.0094, 268.3558)
+dark nav ('#181818', 0.209, 0.0, 89.8756)
+dark edit ('#2A2A2A', 0.285, 0.0, 89.8756)
+dark pendingSoft ('#3A2D12', 0.3052, 0.0455, 83.7376)
+## workplaces
+{
+"from": {
+"lch": {
+"indigo": [
+0.513,
+0.234,
+277.49
+],
+"green": [
+0.532,
+0.112,
+162.749
+],
+"rose": [
+0.588,
+0.201,
+5.248
+],
+"mustard": [
+0.818,
+0.157,
+82.32
+],
+"purple": [
+0.547,
+0.248,
+292.669
+],
+"blue": [
+0.567,
+0.185,
+257.629
+],
+"teal": [
+0.573,
+0.096,
+191.147
+],
+"burgundy": [
+0.515,
+0.176,
+11.029
+]
+},
+"normal": [
+[
+6.2,
+"indigo",
+"purple"
+],
+[
+8.7,
+"rose",
+"burgundy"
+],
+[
+13.5,
+"green",
+"teal"
+],
+[
+16.4,
+"indigo",
+"blue"
+],
+[
+20.7,
+"purple",
+"blue"
+],
+[
+29.8,
+"rose",
+"purple"
+]
+],
+"normal_ok": [
+[
+6.7,
+"green",
+"teal"
+],
+[
+7.3,
+"indigo",
+"purple"
+],
+[
+7.9,
+"rose",
+"burgundy"
+],
+[
+10.2,
+"indigo",
+"blue"
+]
+],
+"protan": [
+[
+1.4,
+"indigo",
+"purple"
+],
+[
+7.2,
+"purple",
+"blue"
+],
+[
+8.2,
+"indigo",
+"blue"
+],
+[
+9.2,
+"rose",
+"burgundy"
+],
+[
+14.2,
+"rose",
+"teal"
+],
+[
+16.5,
+"green",
+"teal"
+]
+],
+"protan_ok": [
+[
+1.4,
+"indigo",
+"purple"
+],
+[
+6.3,
+"purple",
+"blue"
+],
+[
+6.6,
+"rose",
+"burgundy"
+],
+[
+6.7,
+"indigo",
+"blue"
+]
+],
+"deutan": [
+[
+3.8,
+"indigo",
+"purple"
+],
+[
+3.8,
+"purple",
+"blue"
+],
+[
+6.1,
+"green",
+"burgundy"
+],
+[
+7.0,
+"indigo",
+"blue"
+],
+[
+8.8,
+"green",
+"rose"
+],
+[
+9.2,
+"rose",
+"burgundy"
+]
+],
+"deutan_ok": [
+[
+2.5,
+"green",
+"burgundy"
+],
+[
+2.9,
+"indigo",
+"purple"
+],
+[
+3.1,
+"purple",
+"blue"
+],
+[
+4.8,
+"indigo",
+"blue"
+]
+],
+"tritan": [
+[
+5.7,
+"green",
+"teal"
+],
+[
+7.7,
+"rose",
+"burgundy"
+],
+[
+8.9,
+"blue",
+"teal"
+],
+[
+11.8,
+"indigo",
+"blue"
+],
+[
+12.3,
+"green",
+"blue"
+],
+[
+13.9,
+"indigo",
+"purple"
+]
+],
+"tritan_ok": [
+[
+3.4,
+"blue",
+"teal"
+],
+[
+4.5,
+"green",
+"teal"
+],
+[
+6.3,
+"indigo",
+"purple"
+],
+[
+6.5,
+"green",
+"blue"
+]
+]
+},
+"to": {
+"lch": {
+"indigo": [
+0.293,
+0.147,
+275.259
+],
+"green": [
+0.321,
+0.062,
+166.346
+],
+"rose": [
+0.322,
+0.109,
+1.042
+],
+"mustard": [
+0.68,
+0.14,
+75.664
+],
+"purple": [
+0.289,
+0.132,
+289.928
+],
+"blue": [
+0.317,
+0.105,
+259.534
+],
+"teal": [
+0.32,
+0.052,
+192.912
+],
+"burgundy": [
+0.279,
+0.089,
+6.883
+]
+},
+"normal": [
+[
+3.7,
+"indigo",
+"purple"
+],
+[
+4.7,
+"rose",
+"burgundy"
+],
+[
+7.9,
+"green",
+"teal"
+],
+[
+9.9,
+"indigo",
+"blue"
+],
+[
+12.1,
+"purple",
+"blue"
+],
+[
+21.6,
+"rose",
+"purple"
+]
+],
+"normal_ok": [
+[
+2.8,
+"green",
+"teal"
+],
+[
+3.9,
+"indigo",
+"purple"
+],
+[
+4.9,
+"rose",
+"burgundy"
+],
+[
+5.9,
+"indigo",
+"blue"
+]
+],
+"protan": [
+[
+2.2,
+"indigo",
+"purple"
+],
+[
+4.3,
+"purple",
+"blue"
+],
+[
+4.6,
+"indigo",
+"blue"
+],
+[
+5.0,
+"rose",
+"burgundy"
+],
+[
+6.8,
+"rose",
+"teal"
+],
+[
+8.0,
+"teal",
+"burgundy"
+]
+],
+"protan_ok": [
+[
+2.6,
+"indigo",
+"purple"
+],
+[
+2.7,
+"green",
+"teal"
+],
+[
+3.8,
+"purple",
+"blue"
+],
+[
+3.8,
+"indigo",
+"blue"
+]
+],
+"deutan": [
+[
+0.8,
+"green",
+"rose"
+],
+[
+2.6,
+"indigo",
+"purple"
+],
+[
+3.1,
+"purple",
+"blue"
+],
+[
+3.7,
+"green",
+"burgundy"
+],
+[
+3.9,
+"rose",
+"burgundy"
+],
+[
+4.8,
+"indigo",
+"blue"
+]
+],
+"deutan_ok": [
+[
+0.8,
+"green",
+"rose"
+],
+[
+2.3,
+"purple",
+"blue"
+],
+[
+2.3,
+"indigo",
+"purple"
+],
+[
+2.6,
+"green",
+"teal"
+]
+],
+"tritan": [
+[
+1.6,
+"green",
+"teal"
+],
+[
+3.9,
+"rose",
+"burgundy"
+],
+[
+6.2,
+"indigo",
+"blue"
+],
+[
+6.3,
+"blue",
+"teal"
+],
+[
+7.2,
+"indigo",
+"purple"
+],
+[
+7.9,
+"green",
+"blue"
+]
+],
+"tritan_ok": [
+[
+0.5,
+"green",
+"teal"
+],
+[
+2.0,
+"blue",
+"teal"
+],
+[
+2.5,
+"green",
+"blue"
+],
+[
+3.1,
+"indigo",
+"purple"
+]
+]
+},
+"accentDark": {
+"lch": {
+"indigo": [
+0.685,
+0.172,
+283.892
+],
+"green": [
+0.797,
+0.164,
+159.689
+],
+"rose": [
+0.723,
+0.185,
+3.069
+],
+"mustard": [
+0.863,
+0.149,
+84.653
+],
+"purple": [
+0.725,
+0.165,
+298.216
+],
+"blue": [
+0.722,
+0.148,
+252.281
+],
+"teal": [
+0.789,
+0.123,
+189.672
+],
+"burgundy": [
+0.724,
+0.177,
+9.268
+]
+},
+"normal": [
+[
+3.8,
+"rose",
+"burgundy"
+],
+[
+7.2,
+"indigo",
+"purple"
+],
+[
+16.5,
+"green",
+"teal"
+],
+[
+17.2,
+"indigo",
+"blue"
+],
+[
+23.1,
+"purple",
+"blue"
+],
+[
+26.1,
+"rose",
+"purple"
+]
+],
+"normal_ok": [
+[
+2.1,
+"rose",
+"burgundy"
+],
+[
+5.8,
+"indigo",
+"purple"
+],
+[
+8.4,
+"green",
+"teal"
+],
+[
+9.8,
+"indigo",
+"blue"
+]
+],
+"protan": [
+[
+2.5,
+"indigo",
+"purple"
+],
+[
+4.3,
+"purple",
+"blue"
+],
+[
+6.2,
+"rose",
+"burgundy"
+],
+[
+6.8,
+"indigo",
+"blue"
+],
+[
+12.2,
+"green",
+"mustard"
+],
+[
+17.1,
+"teal",
+"burgundy"
+]
+],
+"protan_ok": [
+[
+2.0,
+"rose",
+"burgundy"
+],
+[
+2.8,
+"indigo",
+"purple"
+],
+[
+4.8,
+"purple",
+"blue"
+],
+[
+7.5,
+"indigo",
+"blue"
+]
+],
+"deutan": [
+[
+0.8,
+"purple",
+"blue"
+],
+[
+4.1,
+"indigo",
+"blue"
+],
+[
+4.5,
+"rose",
+"burgundy"
+],
+[
+4.8,
+"indigo",
+"purple"
+],
+[
+5.3,
+"green",
+"burgundy"
+],
+[
+7.6,
+"green",
+"rose"
+]
+],
+"deutan_ok": [
+[
+0.8,
+"purple",
+"blue"
+],
+[
+1.8,
+"rose",
+"burgundy"
+],
+[
+4.4,
+"indigo",
+"blue"
+],
+[
+5.2,
+"indigo",
+"purple"
+]
+],
+"tritan": [
+[
+0.7,
+"rose",
+"burgundy"
+],
+[
+2.6,
+"green",
+"teal"
+],
+[
+9.8,
+"blue",
+"teal"
+],
+[
+12.0,
+"green",
+"blue"
+],
+[
+13.6,
+"indigo",
+"blue"
+],
+[
+19.7,
+"mustard",
+"burgundy"
+]
+],
+"tritan_ok": [
+[
+0.4,
+"rose",
+"burgundy"
+],
+[
+1.2,
+"green",
+"teal"
+],
+[
+7.4,
+"indigo",
+"purple"
+],
+[
+7.9,
+"blue",
+"teal"
+]
+]
+},
+"brand_vs_wp1": 0.0
+}
+## semantic {"light": {"paid": ["#0B7F60", [0.531, 0.105, 167.828]], "pending": ["#9A5000", [0.511, 0.124, 56.692]], "danger": ["#C2362B", [0.544, 0.179, 28.857]], "pendingSoft": ["#FFEBC7", [0.947, 0.052, 82.282]]}, "dark": {"paid": ["#34C79A", [0.743, 0.138, 167.47]], "pending": ["#FFC266", [0.852, 0.129, 75.72]], "danger": ["#FF8A7A", [0.758, 0.145, 29.021]], "pendingSoft": ["#3A2D12", [0.305, 0.046, 83.738]]}}
+## census
+light color [('#1B2335', 1047), ('#5A6478', 528), ('#FFFFFF', 164), ('#465066', 62), ('#F1F3F8', 33), ('#5145E8', 27), ('#9A5000', 18), ('#C2362B', 13), ('#1A1200', 2)]
+light bg [('#FFFFFF', 523), ('#E4E8F0', 181), ('#5145E8', 70), ('#1B2335', 60), ('#D2D8E3', 51), ('color(srgb 1 1 1 / 0.6)', 44), ('#0D1015', 37), ('#FFFFFF@0.90', 31), ('#0B7F60', 29), ('color(srgb 1 1 1 / 0.55)', 24), ('#FFEBC7', 18), ('#000000@0.45', 15), ('#F1F3F8', 10), ('color(srgb 0.105882 0.137255 0.207843 / 0.12)', 4), ('#0E8059', 1), ('#D6336C', 1), ('#F5B82E', 1), ('#7D3CF0', 1), ('#1F72E0', 1), ('#0E8A86', 1), ('#B5294E', 1), ('#C2362B', 1), ('#FFFFFF@0.95', 1)]
+light border [('#D2D8E3', 295), ('transparent', 89), ('color(srgb 0.105882 0.137255 0.207843 / 0.25)', 36), ('color(srgb 0.823529 0.847059 0.890196 / 0.6)', 31), ('#5145E8', 30), ('#1B2335', 14), ('color(srgb 0.945098 0.952941 0.972549 / 0.4)', 2)]
+dark color [('#FFFFFF', 1159), ('#B3B3B3', 590), ('#121212', 76), ('#8F87FF', 27), ('#FFC266', 18), ('#FF8A7A', 13), ('#120F3A', 4), ('#1E1E1E', 4), ('#1A1200', 2), ('#F1F3F7', 1)]
+dark bg [('#1E1E1E', 491), ('#2A2A2A', 177), ('#8F87FF', 69), ('#FFFFFF', 68), ('#303030', 51), ('#0D1015', 37), ('color(srgb 0.117647 0.117647 0.117647 / 0.6)', 36), ('#181818', 31), ('#34C79A', 29), ('color(srgb 1 1 1 / 0.1)', 28), ('color(srgb 0.117647 0.117647 0.117647 / 0.55)', 24), ('#3A2D12', 18), ('#000000@0.45', 15), ('#121212', 10), ('color(srgb 1 1 1 / 0.06)', 8), ('color(srgb 1 1 1 / 0.12)', 4), ('#5145E8', 1), ('#0E8059', 1), ('#D6336C', 1), ('#F5B82E', 1), ('#7D3CF0', 1), ('#1F72E0', 1), ('#0E8A86', 1), ('#B5294E', 1), ('#FF8A7A', 1)]
+dark border [('#303030', 271), ('transparent', 113), ('color(srgb 1 1 1 / 0.25)', 36), ('color(srgb 0.188235 0.188235 0.188235 / 0.6)', 31), ('#8F87FF', 30), ('#FFFFFF', 14), ('color(srgb 0.0705882 0.0705882 0.0705882 / 0.4)', 2)]

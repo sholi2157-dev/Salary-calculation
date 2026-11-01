@@ -1,0 +1,117 @@
+[
+  {
+    "command": "GITHUB_SHA=69e430e2e75d330e00671e2b2d03a4180d2e4327 npm run build",
+    "cwd": "current-runtime/web",
+    "exit": 0,
+    "log": "logs/current-build.log"
+  },
+  {
+    "command": "node --test --test-isolation=none web-tests/*.test.cjs",
+    "cwd": "current-runtime/web",
+    "exit": 0,
+    "passed": 119,
+    "failed": 0,
+    "skipped": 0,
+    "log": "logs/current-unit.log"
+  },
+  {
+    "command": "GITHUB_SHA=da7a7c34785845a4a9584ce796156492811f5a67 npm run build",
+    "cwd": "current-runtime/web-live",
+    "exit": 0,
+    "log": "logs/live-baseline-build.log"
+  },
+  {
+    "command": "node --test --test-isolation=none web-tests/*.test.cjs",
+    "cwd": "current-runtime/web-live",
+    "exit": 0,
+    "passed": 119,
+    "failed": 0,
+    "skipped": 0,
+    "log": "logs/live-baseline-unit-after-build.log"
+  },
+  {
+    "command": "node --check <file>",
+    "exit": 0,
+    "files": 54,
+    "log": "logs/current-syntax.json"
+  },
+  {
+    "command": "node current-calculations/oracle.cjs",
+    "exit": 0,
+    "meaning": "הרתמה השלימה; results.json כולל כשלי התאמה",
+    "log": "current-calculations/results.json"
+  },
+  {
+    "command": "node current-web-proof.cjs",
+    "exit": 0,
+    "meaning": "יצירת ראיות, לא הצלחת UI",
+    "log": "current-web-proof.log"
+  },
+  {
+    "command": "node current-data-probes.cjs",
+    "exit": 0,
+    "log": "current-data-probes.json"
+  },
+  {
+    "command": "node current-erase-probe.cjs",
+    "exit": 0,
+    "log": "current-erase-probe.json"
+  },
+  {
+    "command": "node current-erase-sync-probe.cjs",
+    "exit": 0,
+    "log": "current-erase-sync-probe.json"
+  },
+  {
+    "command": "node current-security/basic-proof.cjs",
+    "exit": 0,
+    "log": "current-security/basic-proof.json"
+  },
+  {
+    "command": "node current-security/assistant-proof.cjs",
+    "exit": 0,
+    "log": "current-security/assistant-proof.json"
+  },
+  {
+    "command": "node current-security/summary-proof.cjs",
+    "exit": 0,
+    "log": "current-security/summary-proof.json"
+  },
+  {
+    "command": "node current-security/mcp-calculation-proof.cjs",
+    "exit": 0,
+    "log": "current-security/mcp-calculation-proof.json"
+  },
+  {
+    "command": "TZ=Asia/Jerusalem node performance-and-dst.cjs",
+    "exit": 0,
+    "log": "performance-and-dst.json"
+  },
+  {
+    "command": "java current-android-evidence/CalendarProof.java",
+    "exit": 0,
+    "meaning": "Java source launcher; לא Android",
+    "log": "current-android-evidence/calendar-proof.log"
+  },
+  {
+    "command": "PLAYWRIGHT_MODULE=/opt/codex/cua_node/lib/node_modules/playwright CHROMIUM_PATH=/usr/bin/chromium node browser-tests/v2.cjs",
+    "exit": 1,
+    "meaning": "ניסיון סביבתי על בסיס מוקדם; listen EPERM לפני בדיקות UI",
+    "log": "logs/browser-v2.log"
+  },
+  {
+    "command": "Chromium via Playwright launch; about:blank/file URL",
+    "exit": 1,
+    "meaning": "setsockopt EPERM; ניסיון הרשאות נוסף בוטל. אין UI pass"
+  },
+  {
+    "command": "Gradle tests / Android Lint / ADB / Maestro",
+    "exit": null,
+    "meaning": "לא הורץ: כלים/SDK אינם זמינים"
+  },
+  {
+    "command": "Firebase emulator integration / live OAuth / live cloud sync",
+    "exit": null,
+    "meaning": "לא הורץ; שירותים לא שונו"
+  }
+]
