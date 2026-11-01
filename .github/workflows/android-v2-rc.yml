@@ -90,6 +90,15 @@ jobs:
           profile: pixel_2
           disable-animations: true
           script: bash scripts/verify-release-update.sh
+      - name: Direct public 2.2.1 → candidate with rich 2.x data (the path every existing user takes)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          avd-name: salary-rich-upgrade
+          disable-animations: true
+          script: bash scripts/verify-rich-upgrade.sh
       - name: First launch on a separate fresh signed-install emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
