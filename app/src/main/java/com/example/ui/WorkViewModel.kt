@@ -61,7 +61,7 @@ class WorkViewModel(
     } }
     fun categoryCurrency(name: String): String = localPreferences.value["categoryCurrency:$name"] ?: defaultCurrency.value
     fun editCategory(category: WorkCategory, name: String, rate: Double, currency: String) { viewModelScope.launch {
-        try { localDao.editCategorySafely(category, name, rate, currency); performAutoBackup() }
+        try { localDao.editCategorySafely(category, name, rate, currency); shiftState.renameCategory(category.name, name.trim()); performAutoBackup() }
         catch (_: IllegalArgumentException) { Toast.makeText(getApplication(), "שם כפול או ערכים לא תקינים", Toast.LENGTH_LONG).show() }
     } }
     private val settings = com.example.data.WorkAccountPreferences.get(application, owner)
@@ -1096,7 +1096,9 @@ class WorkViewModel(
 
     fun deleteCategory(category: WorkCategory) {
         viewModelScope.launch {
+            val target = localDao.categoryFallback(category)?.name
             if (!localDao.removeCategorySafely(category)) Toast.makeText(getApplication(), "יש להשאיר לפחות קטגוריה אחת", Toast.LENGTH_LONG).show()
+            else if (target != null) shiftState.renameCategory(category.name, target)
             performAutoBackup()
         }
     }

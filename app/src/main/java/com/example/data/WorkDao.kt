@@ -21,14 +21,20 @@ interface WorkDao {
         val categories = getCategoriesList()
         if (categories.none { it.id == category.id } || categories.size <= 1) return false
         val chosen = getLocalPreferences().firstOrNull { it.name == "defaultCategory" }?.value
-        val fallback = categories.firstOrNull { it.name == chosen && it.id != category.id }
-            ?: categories.first { it.id != category.id }
+        val fallback = categoryFallback(category) ?: return false
         updateCategoryForEntries(category.name, fallback.name)
         updateCategoryForSeries(category.name, fallback.name)
         if (chosen == category.name || chosen == null) setLocalPreference(WorkLocalPreference("defaultCategory", fallback.name))
         removeLocalPreference("categoryCurrency:${category.name}")
         deleteCategoryById(category.id)
         return true
+    }
+
+    /** Where a removed place's shifts go: the default place, or else the first other one. */
+    suspend fun categoryFallback(category: WorkCategory): WorkCategory? {
+        val categories = getCategoriesList()
+        val chosen = getLocalPreferences().firstOrNull { it.name == "defaultCategory" }?.value
+        return categories.firstOrNull { it.name == chosen && it.id != category.id } ?: categories.firstOrNull { it.id != category.id }
     }
 
     @Transaction

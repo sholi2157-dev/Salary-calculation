@@ -35,6 +35,14 @@ class WorkShiftState internal constructor(private val context: Context, val owne
         true
     }
 
+    /** A running timer follows its place when the place is renamed or removed; rate, currency and start stay (audit AND-C02). */
+    fun renameCategory(from: String, to: String): Boolean = synchronized(ShiftStateManager) {
+        if (activeShiftStartTime.value == null || activeShiftCategory.value != from || from == to) return false
+        if (!prefs.edit().putString("category", to).commit()) return false
+        activeShiftCategory.value = to
+        true
+    }
+
     /** An old notification/completion cannot clear a newer timer. */
     fun clear(expectedStart: Long? = activeShiftStartTime.value): Boolean = synchronized(ShiftStateManager) {
         if (expectedStart == null || activeShiftStartTime.value != expectedStart) return false

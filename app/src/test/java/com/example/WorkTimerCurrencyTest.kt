@@ -30,6 +30,24 @@ class WorkTimerCurrencyTest {
         assertFalse(state.updateCurrency("$", 1234L))
     }
 
+    /** 2.3.0 (audit AND-C02): a running timer follows its place when the place is renamed or removed. */
+    @Test fun runningTimerFollowsARenamedOrRemovedPlace() {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val owner = WorkAccountScope("rename-${UUID.randomUUID()}")
+        val state = ShiftStateManager.forAccount(app, owner)
+        assertTrue(state.start("מסעדה", 30.5, 5678L, "$"))
+        try {
+            assertFalse(state.renameCategory("אחר", "חדש"))
+            assertTrue(state.renameCategory("מסעדה", "מסעדה חדשה"))
+            val reopened = WorkShiftState(app, owner)
+            assertEquals("מסעדה חדשה", reopened.activeShiftCategory.value)
+            assertEquals(30.5, reopened.activeShiftRate.value, 0.0)
+            assertEquals("$", reopened.activeShiftCurrency.value)
+            assertEquals(5678L, reopened.activeShiftStartTime.value)
+        } finally { state.clear(5678L) }
+        assertFalse(state.renameCategory("מסעדה חדשה", "x"))
+    }
+
     @Test fun currencyCorrectionKeepsImportedAmountAndGroupMetadata() {
         val original = WorkEntry(id=7, category="synthetic", date=1234L, isTimeRange=false,
             hours=2.0, hourlyRate=40.0, totalEarnings=79.13, currency="₪", createdAt=321L,
