@@ -14,6 +14,12 @@ for variant in ('Debug','Release'):
             assert any(file.name == f'TEST-com.example.{name}.xml' for file in files), name
     assert any(file.name == 'TEST-com.example.V2PayTest.xml' for file in files), '2.0 pay rules coverage missing'
     assert any(file.name == 'TEST-com.example.WorkOnboardingTest.xml' for file in files), 'versioned onboarding coverage missing'
+    # Release-critical 2.3.0 classes must have run on this variant; their counts are printed by name as evidence.
+    for name in ('V2HistoryRangeDstTest', 'WorkMoneyContractTest', 'V2PlanEdgesTest', 'WorkSyncEngineTest'):
+        found = [f for f in files if f.name == f'TEST-com.example.{name}.xml']
+        assert found, f'{variant}: {name} did not run'
+        suite = ET.parse(found[0]).getroot()
+        print(f"{variant} {name}: tests={suite.get('tests')} failures={suite.get('failures')} errors={suite.get('errors')} skipped={suite.get('skipped')}")
     result[variant]=totals
 Path('release-evidence').mkdir(exist_ok=True)
 Path('release-evidence/unit-tests.json').write_text(json.dumps(result,indent=2)+'\n')
