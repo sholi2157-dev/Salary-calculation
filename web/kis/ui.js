@@ -80,13 +80,32 @@ function shiftCard(e, store, { selected = false, tag = 'shift' } = {}) {
 }
 
 // ---- messages ----
+/*
+ * One message at a time, at the bottom above the navigation (design decision "משוב והודעות" B). A sign says what kind it
+ * is: ✓ done, ↺ can be undone, ! went wrong (announced at once to a screen reader), nothing for plain information.
+ * The kind is given, or read from the wording. A message with an action stays longer; an error stays until it is read.
+ */
 let toastTimer = null;
-function toast(text, action, onAction) {
+const FAILED = /נכשל|לא הושלם|לא בוצע|לא תקין|לא הצליח|אין חיבור|אין שעה כזאת|אפשר עד/;
+function toast(text, action, onAction, kind) {
   const host = document.getElementById('toast');
-  host.innerHTML = `<div><span>${esc(text)}</span>${action ? `<button type="button" data-testid="toast-action">${esc(action)}</button>` : ''}</div>`;
+  kind ||= FAILED.test(text) ? 'error' : /✓/.test(text) ? 'ok' : action ? 'undo' : 'info';
+  const shown = kind === 'ok' ? String(text).replace(/\s*✓\s*/g, ' ').trim() : text;
+  const sign = { ok: '✓', undo: '↺', error: '!' }[kind];
+  host.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  host.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite');
+  host.innerHTML = `<div class="t-${kind}" data-kind="${kind}">${sign ? `<span class="t-sign" aria-hidden="true">${sign}</span>` : ''}<span class="t-text">${esc(shown)}</span>${action ? `<button type="button" data-testid="toast-action">${esc(action)}</button>` : ''}</div>`;
   host.hidden = false;
   if (action) host.querySelector('button').onclick = () => { host.hidden = true; onAction?.(); };
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { host.hidden = true; }, action ? 6000 : 2600);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { host.hidden = true; }, kind === 'error' ? 8000 : action ? 6000 : 2600);
+}
+
+/** A short list of actions for one thing (a worker, the reports of a shift), in a sheet: focus, Escape and the scrim as usual. */
+function actionSheet(title, items, testid = 'action-sheet') {
+  sheet(testid, (el, close) => {
+    el.innerHTML = `<h2>${esc(title)}</h2><div class="action-list">${items.map((it, i) => `<button class="action-item${it.danger ? ' danger' : ''}" data-i="${i}" data-testid="${esc(it.testid || '')}">${esc(it.label)}</button>`).join('')}</div>`;
+    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { close(); items[+b.dataset.i].onClick(); });
+  });
 }
 
 // ---- sheets ----
@@ -183,7 +202,7 @@ function followKeyboard() {
 }
 if (root.document) followKeyboard();
 
-root.KisUi = { orderedPlaces, DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, duration, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
+root.KisUi = { actionSheet, orderedPlaces, DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, duration, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
   isDark, placeOf, accent, accentInk, avatar, timeLabel, subtitle, upcoming, shiftCard, toast, sheet, closeTopSheet, anySheet, confirmSheet, copy, shareOrCopy,
   showText, haptic, ICON, logo, infoDot };
 })(globalThis);

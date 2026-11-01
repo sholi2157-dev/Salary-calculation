@@ -166,6 +166,19 @@ button { cursor: pointer; }
 .toast div { pointer-events: auto; display: flex; align-items: center; gap: 10px; background: var(--bar); color: var(--on-bar); border-radius: 99px; padding: 6px 6px 6px 18px;
   padding-inline-start: 18px; min-height: 48px; box-shadow: var(--shadow); border: 1px solid var(--line); max-width: 520px; font-weight: 600; font-size: 14px; }
 .toast button { border: 0; background: transparent; color: var(--glow); font-weight: 700; padding: 10px 12px; border-radius: 99px; min-height: 44px; }
+/* Messages B: one style, a sign by kind; the text may take two lines. */
+.toast div { border-radius: 16px; padding-block: 6px; font-weight: 500; line-height: 1.35; }
+.toast .t-text { flex: 1; min-width: 0; }
+.toast .t-sign { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-weight: 700; font-size: 15px; }
+.toast .t-ok .t-sign { background: var(--paid); color: #fff; }
+.toast .t-undo .t-sign { background: color-mix(in srgb, var(--on-bar) 18%, transparent); }
+.toast .t-error .t-sign { background: var(--danger); color: #fff; }
+.toast .t-error { border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
+/* Action lists (a worker's ⋯, the reports of a group shift) */
+.action-list { display: grid; gap: 2px; }
+.action-item { min-height: 52px; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font: inherit; font-weight: 500; text-align: start; padding: 0 12px; }
+.action-item:hover, .action-item:focus-visible { background: var(--sunk); }
+.action-item.danger { color: var(--danger); }
 
 /* Sheets */
 .scrim { position: fixed; inset: 0; top: var(--vvt, 0); bottom: auto; height: var(--vvh, 100dvh); background: rgba(0,0,0,.45); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
@@ -456,3 +469,19 @@ input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webki
   .set-list, .set-back { display: none; }
   .set-groups[data-open=""] .set-group, .set-groups:not([data-open=""]) .set-group:not(.on) { display: block; }
 }
+
+/* Group shift details B */
+.gd-hero { display: grid; gap: 2px; } .gd-amount { font: 600 44px/48px var(--text); font-variant-numeric: tabular-nums; }
+.gd-lines { display: grid; gap: 6px; background: var(--sunk); border-radius: 14px; padding: 10px 12px; }
+.gd-lines .row { font-size: 15px; } .gd-lines b { font-variant-numeric: tabular-nums; }
+.gd-lines .row.strong { border-top: 1px solid var(--line); padding-top: 8px; font-weight: 600; }
+.gd-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.btn.danger-text, .danger-text { color: var(--danger); }
+.gd-w { display: flex; align-items: center; gap: 8px; min-height: 56px; border-bottom: 1px solid var(--line); }
+.gd-w:last-child { border-bottom: 0; }
+.gd-w .nm { flex: 1; min-width: 0; display: grid; } .gd-w .nm small { color: var(--muted); font-size: 13px; }
+.gd-w .pay { font-weight: 600; font-variant-numeric: tabular-nums; }
+.gd-w .more { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: var(--ink); font-size: 22px; line-height: 1; flex-shrink: 0; }
+.paid-chip { min-height: 44px; border: 0; background: transparent; padding: 0 2px; font: inherit; }
+.paid-chip span { display: inline-block; font-size: 12px; border-radius: 99px; padding: 3px 10px; background: var(--sunk); color: var(--muted); }
+.paid-chip.on span { background: color-mix(in srgb, var(--paid) 18%, transparent); color: var(--paid); }

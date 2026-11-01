@@ -17,11 +17,11 @@ try{for(const supported of [false,true]){
  const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(process.env.PUBLIC_SITE_URL || `http://127.0.0.1:${server.address().port}`);await page.waitForSelector('[data-testid=home-hero]');
  const before=await page.evaluate(()=>localStorage.getItem('work_complete_backup'));
  await page.evaluate(()=>Kis.openDetail('a'));
- await page.click('[data-a=copy]');assert.match(await page.evaluate(()=>copied.at(-1)),/^עבודה: מסעדה/);assert.doesNotMatch(await page.evaluate(()=>copied.at(-1)),/היי/);
- await page.click('[data-a=share]');assert.match(await page.evaluate(()=>shared.at(-1).text),/^היי, סיכמתי פה/);
+ await page.click('[data-testid=detail-reports]');await page.click('[data-testid=report-mine-copy]');assert.match(await page.evaluate(()=>copied.at(-1)),/^עבודה: מסעדה/);assert.doesNotMatch(await page.evaluate(()=>copied.at(-1)),/היי/);
+ await page.click('[data-testid=detail-reports]');await page.click('[data-testid=report-mine]');assert.match(await page.evaluate(()=>shared.at(-1).text),/^היי, סיכמתי פה/);
  assert.doesNotMatch(await page.evaluate(()=>shared.at(-1).text),/דני|יוסי/);
- await page.click('[data-a=employer]');const employer=await page.evaluate(()=>shared.at(-1).text);assert.match(employer,/₪780.00/);assert.doesNotMatch(employer,/175.00|172.00|עמלה/);
- await page.click('[data-w="0"]');const worker=await page.evaluate(()=>shared.at(-1).text);assert.match(worker,/היי דני/);assert.match(worker,/₪175.00/);assert.doesNotMatch(worker,/יוסי|780.00|300.00/);
+ await page.click('[data-testid=detail-reports]');await page.click('[data-testid=report-employer]');const employer=await page.evaluate(()=>shared.at(-1).text);assert.match(employer,/₪780.00/);assert.doesNotMatch(employer,/175.00|172.00|עמלה/);
+ await page.click('[data-testid=worker-more-0]');await page.click('[data-testid=worker-share]');const worker=await page.evaluate(()=>shared.at(-1).text);assert.match(worker,/היי דני/);assert.match(worker,/₪175.00/);assert.doesNotMatch(worker,/יוסי|780.00|300.00/);
  await page.screenshot({path:path.join(out,`sharing-group-${supported}.png`)});
  await page.evaluate(()=>KisUi.closeTopSheet());await page.click('[data-testid=tab-history]');await page.click('[data-testid=history-search]');await page.fill('[data-testid=history-search-input]','דני');
  await page.click('[data-testid=history-copy]');await page.click('[data-testid=copy-whatsapp]');const searched=await page.evaluate(()=>copied.at(-1));assert.match(searched,/עובד: דני/);assert.match(searched,/₪175.00/);assert.doesNotMatch(searched,/₪200.00|יוסי/);

@@ -38,7 +38,7 @@ function detail(e) {
   const { esc, moneyHtml } = U(), pay = root.KisPay.pay(e), group = e.isGroupShift ? root.KisPay.workers(e) : [];
   U().sheet('shift-detail', (el, close) => {
     const sum = e.isGroupShift ? root.KisPay.group(e) : null;
-    el.innerHTML = `<div class="row" style="align-items:center">${U().avatar(e.category, store, U().upcoming(e))}<div class="grow"><b class="label">${esc(e.category)}</b><div class="caption">${esc(U().dayLabelLong(e.date))} · ${esc(U().timeLabel(e))}</div></div></div>
+    if (e.isGroupShift) el.innerHTML = groupDetailHtml(e, sum, group); else el.innerHTML = `<div class="row" style="align-items:center">${U().avatar(e.category, store, U().upcoming(e))}<div class="grow"><b class="label">${esc(e.category)}</b><div class="caption">${esc(U().dayLabelLong(e.date))} · ${esc(U().timeLabel(e))}</div></div></div>
       <div style="display:flex;align-items:baseline;gap:10px">${pay != null ? `<b class="hero" style="font-size:44px" data-testid="detail-amount">${moneyHtml(pay, e.currency)}</b>` : `<span class="tag warn">${e.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</span>`}
         <span class="caption">${e.kind === 'job' ? 'קבלנות' : `${U().duration(e.hours)} שעות${e.payKnown ? ' · ' + esc(U().money(e.hourlyRate, e.currency)) + ' לשעה' : ''}`}${e.bonus > 0 ? ' · בונוס ' + esc(U().money(e.bonus, e.currency)) : ''}</span></div>
       ${e.notes ? `<p style="margin:0">${esc(e.notes)}</p>` : ''}
@@ -56,19 +56,62 @@ function detail(e) {
         ${group.map((w, i) => `<div style="display:grid;gap:6px"><div class="row" style="align-items:center"><span class="grow">${esc(w.name)}${e.kind === 'job' && w.amount != null ? '' : ' · ' + U().duration(w.hours) + ' ש׳'}${root.KisPay.workerPay(w, e) != null ? ' · ' + esc(U().money(root.KisPay.workerPay(w, e), e.currency)) : ''}</span><button class="chip" data-wp="${i}">${w.isPaid ? 'שולם ✓' : 'לא שולם'}</button></div><div class="row"><button class="btn ghost small grow" data-w="${i}">שיתוף לעובד</button><button class="btn ghost small grow" data-wc="${i}">העתקה</button></div></div>`).join('')}` : ''}`;
     const q = s => el.querySelector(s);
     q('[data-a=edit]').onclick = () => { close(); root.KisEditor.open(app, { entry: e }); };
-    q('[data-a=share]').onclick = () => U().shareOrCopy(root.KisShare.entry(e, false, U().upcoming(e)), 'שיתוף משמרת');
-    q('[data-a=copy]').onclick = async () => { const t = root.KisShare.entry(e, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); };
+    const shareMine = () => U().shareOrCopy(root.KisShare.entry(e, false, U().upcoming(e)), 'שיתוף משמרת');
+    const copyMine = async () => { const t = root.KisShare.entry(e, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); };
+    const shareEmployer = () => U().shareOrCopy(root.KisShare.employer(e, (store.local.name || '').trim() || null, false, U().upcoming(e)), 'סיכום לקבלן');
+    const copyEmployer = async () => { const t = root.KisShare.employer(e, store.local.name, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הדוח הועתק ✓'); else U().showText(t); };
+    q('[data-a=share]')?.addEventListener('click', shareMine);
+    q('[data-a=copy]')?.addEventListener('click', copyMine);
+    // Group B: one "שיתוף" with every report, and one ⋯ per worker.
+    q('[data-a=reports]')?.addEventListener('click', () => U().actionSheet('שיתוף', [
+      { label: 'דו״ח למעסיק', onClick: shareEmployer, testid: 'report-employer' }, { label: 'העתקת דוח הצוות', onClick: copyEmployer, testid: 'report-employer-copy' },
+      { label: 'החלק שלי', onClick: shareMine, testid: 'report-mine' }, { label: 'העתקת החלק שלי', onClick: copyMine, testid: 'report-mine-copy' }], 'reports-sheet'));
+    el.querySelectorAll('[data-more]').forEach(b => b.onclick = () => { const i = +b.dataset.more, w = group[i];
+      U().actionSheet(w.name, [
+        { label: `שיתוף ל${w.name}`, onClick: () => U().shareOrCopy(root.KisShare.worker(e, w, false, U().upcoming(e)), 'שיתוף לעובד'), testid: 'worker-share' },
+        { label: 'העתקה', onClick: async () => { const t = root.KisShare.worker(e, w, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); }, testid: 'worker-copy' },
+        { label: w.isPaid ? 'סימון כלא שולם' : 'סימון כשולם', onClick: () => markWorkerPaid(i), testid: 'worker-paid' }], 'worker-sheet'); });
     q('[data-a=del]').onclick = () => { close(); const gone = store.deleteEntries([e.id]); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); };
     q('[data-a=paid]').onclick = () => { store.setPaid([e.id], !e.isPaid); close(); };
     q('[data-a=rate]')?.addEventListener('click', () => { close(); root.KisHistory.state.selection = new Set([e.id]); root.KisHistory.bulkRate(app, render); });
-    q('[data-a=employer]')?.addEventListener('click', () => U().shareOrCopy(root.KisShare.employer(e, (store.local.name || '').trim() || null, false, U().upcoming(e)), 'סיכום לקבלן'));
+    q('[data-a=employer]')?.addEventListener('click', shareEmployer);
     el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => U().shareOrCopy(root.KisShare.worker(e, group[+b.dataset.w], false, U().upcoming(e)), 'שיתוף לעובד'));
-    q('[data-a=employer-copy]')?.addEventListener('click', async () => { const t = root.KisShare.employer(e, store.local.name, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הדוח הועתק ✓'); else U().showText(t); });
+    q('[data-a=employer-copy]')?.addEventListener('click', copyEmployer);
     el.querySelectorAll('[data-wc]').forEach(b => b.onclick = async () => { const t = root.KisShare.worker(e, group[+b.dataset.wc], true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); });
-    el.querySelectorAll('[data-wp]').forEach(b => b.onclick = () => {
-      const i = +b.dataset.wp; store.update(d => { const row = d.entries.find(x => x.id === e.id); if (!row) return;
-        const list = JSON.parse(row.groupWorkersJson || '[]'); if (list[i]) list[i].isPaid = !list[i].isPaid; row.groupWorkersJson = JSON.stringify(list); }); close(); });
+    function markWorkerPaid(i) { store.update(d => { const row = d.entries.find(x => x.id === e.id); if (!row) return;
+        const list = JSON.parse(row.groupWorkersJson || '[]'); if (list[i]) list[i].isPaid = !list[i].isPaid; row.groupWorkersJson = JSON.stringify(list); }); close(); }
+    el.querySelectorAll('[data-wp]').forEach(b => b.onclick = () => markWorkerPaid(+b.dataset.wp));
   });
+}
+
+/**
+ * Group shift details, design decision B: the main amount is the user's own part, the same amount the lists and totals
+ * show, labelled as such. Commission, the team's pay, money passed through and what the employer owes are one block
+ * (all from KisPay, reconciled in whole agorot). Every report sits under one "שיתוף"; each worker is one row with ⋯.
+ */
+function groupDetailHtml(e, sum, group) {
+  const { esc, moneyHtml } = U(), P = root.KisPay, pay = P.pay(e), job = e.kind === 'job', m = v => moneyHtml(v, e.currency);
+  const team = job ? P.teamPay(e) : (() => { let c = 0; for (const w of group) { const p = P.workerPay(w, e); if (p == null) return null; c += Math.round(p * 100); } return c / 100; })();
+  const parts = job ? 'קבלנות' : `${U().duration(e.hours)} שעות${e.payKnown ? ' · ' + esc(U().money(e.hourlyRate, e.currency)) + ' לשעה' : ''}${e.bonus > 0 ? ' · בונוס ' + esc(U().money(e.bonus, e.currency)) : ''}`;
+  return `<div class="row" style="align-items:center">${U().avatar(e.category, store, U().upcoming(e))}<div class="grow"><b class="label">${esc(e.category)} · ${job ? 'צוות' : 'קבוצה'}</b><div class="caption">${esc(U().dayLabelLong(e.date))} · ${esc(U().timeLabel(e))}</div></div></div>
+    <div class="gd-hero"><span class="caption">החלק שלי · ${parts}</span>${pay != null ? `<b class="gd-amount" data-testid="detail-amount">${m(pay)}</b>` : `<span class="tag warn">${job ? 'סכום חסר' : 'תעריף חסר'}</span>`}</div>
+    ${e.notes ? `<p style="margin:0">${esc(e.notes)}</p>` : ''}
+    ${sum ? `<div class="gd-lines" data-testid="group-summary">
+      ${job ? '' : `<div class="row"><span class="grow">עמלה מהצוות</span><b data-testid="group-profit">${m(sum.profit)}</b></div>
+      <div class="row"><span class="grow">ההכנסה שלי כולל עמלה</span><b data-testid="group-my-net">${m(sum.myNet)}</b></div>`}
+      ${team != null ? `<div class="row"><span class="grow">לצוות (${group.length})</span><b data-testid="group-team-pay">${m(team)}</b></div>` : ''}
+      ${e.passThrough > 0 ? `<div class="row"><span class="grow">החזר הוצאות · לא שלך</span><b data-testid="detail-pass-through">${m(e.passThrough)}</b></div>` : ''}
+      <div class="row strong"><span class="grow">לקבל מהמעסיק</span><b data-testid="group-employer-due">${m(sum.employerTotal)}</b></div></div>`
+      : `<p class="caption" style="margin:0" data-testid="group-summary-missing">${job ? 'הסכומים יופיעו אחרי שיושלם הסכום שלך' : 'חסר תעריף לחלק מהקבוצה'}</p>`}
+    ${!pay && !job ? '<button class="btn ghost small" data-a="rate">השלמת תעריף</button>' : ''}
+    <div class="gd-actions"><button class="btn ghost small" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small" data-a="reports" data-testid="detail-reports" aria-haspopup="dialog">שיתוף ▾</button><button class="btn ghost small danger-text" data-a="del" data-testid="detail-delete">מחיקה</button></div>
+    <button class="btn small ${e.isPaid ? 'ghost' : 'primary'}" data-a="paid" data-testid="detail-paid">${e.isPaid ? 'שולם ✓ · נגיעה לבטל' : 'סימון כשולם'}</button>
+    <div class="divider"></div><b class="label">${job ? 'הצוות' : 'הקבוצה'} · ${group.length}</b>
+    <div class="gd-workers">${group.map((w, i) => { const p = P.workerPay(w, e);
+      return `<div class="gd-w" data-testid="worker-row-${i}"><span class="nm"><b>${esc(w.name)}</b><small>${job && w.amount != null ? 'סכום קבוע' : U().duration(w.hours) + ' שעות'}${w.bonus > 0 ? ' · בונוס ' + esc(U().money(w.bonus, e.currency)) : ''}</small></span>
+        <button class="paid-chip${w.isPaid ? ' on' : ''}" data-wp="${i}" aria-pressed="${!!w.isPaid}" aria-label="${esc(w.name)}: ${w.isPaid ? 'שולם' : 'לא שולם'}"><span>${w.isPaid ? 'שולם ✓' : 'לא שולם'}</span></button>
+        <span class="pay">${p != null ? m(p) : '<span class="tag warn">חסר</span>'}</span>
+        <button class="more" data-more="${i}" aria-label="פעולות ל${esc(w.name)}" data-testid="worker-more-${i}">⋯</button></div>`; }).join('')}</div>`;
 }
 
 // ---- live shift ----
