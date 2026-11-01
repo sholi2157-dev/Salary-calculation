@@ -47,6 +47,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.composed
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.layout.ime
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -296,16 +299,29 @@ fun KisTextField(value: String, onValueChange: (String) -> Unit, label: String, 
         var field by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(value)) }
         if (field.text != value) field = androidx.compose.ui.text.input.TextFieldValue(value, androidx.compose.ui.text.TextRange(value.length))
         OutlinedTextField(value = field, onValueChange = { field = it; if (it.text != value) onValueChange(it.text) },
-            modifier = modifier.onFocusChanged { if (it.isFocused) field = field.copy(selection = androidx.compose.ui.text.TextRange(0, field.text.length)) }, label = { Text(label) },
+            modifier = modifier.keepInViewWhenFocused().onFocusChanged { if (it.isFocused) field = field.copy(selection = androidx.compose.ui.text.TextRange(0, field.text.length)) }, label = { Text(label) },
             placeholder = placeholder?.let { { Text(it, color = c.muted) } }, singleLine = singleLine, minLines = minLines,
             keyboardOptions = keyboardOptions, keyboardActions = keyboardActions, isError = isError, enabled = enabled, visualTransformation = visualTransformation,
             textStyle = KisType.body.copy(color = c.ink, textDirection = TextDirection.ContentOrRtl), shape = RoundedCornerShape(14.dp), colors = kisFieldColors())
         return
     }
-    OutlinedTextField(value = value, onValueChange = onValueChange, modifier = modifier, label = { Text(label) },
+    OutlinedTextField(value = value, onValueChange = onValueChange, modifier = modifier.keepInViewWhenFocused(), label = { Text(label) },
         placeholder = placeholder?.let { { Text(it, color = c.muted) } }, singleLine = singleLine, minLines = minLines,
         keyboardOptions = keyboardOptions, keyboardActions = keyboardActions, isError = isError, enabled = enabled, visualTransformation = visualTransformation,
         textStyle = KisType.body.copy(color = c.ink, textDirection = TextDirection.ContentOrRtl), shape = RoundedCornerShape(14.dp), colors = kisFieldColors())
+}
+
+/**
+ * Design decision "גלילה ומקלדת": a focused field stays visible above the keyboard. Once the keyboard has opened (the
+ * page shrinks by its height), the field is brought into view within its scroll area, and again if the keyboard changes.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+fun Modifier.keepInViewWhenFocused(): Modifier = composed {
+    val requester = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    var focused by remember { mutableStateOf(false) }
+    val keyboard = androidx.compose.foundation.layout.WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current)
+    androidx.compose.runtime.LaunchedEffect(focused, keyboard) { if (focused) { kotlinx.coroutines.delay(120); requester.bringIntoView() } }
+    this.bringIntoViewRequester(requester).onFocusChanged { focused = it.isFocused }
 }
 
 @Composable
