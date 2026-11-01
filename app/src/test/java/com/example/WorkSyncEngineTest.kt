@@ -241,4 +241,30 @@ class WorkSyncEngineTest {
         WorkErase.wipeLocal(a, forgetSync = false); ea.synchronize()
         assertEquals(0, server.live("owner").count { it.type == "entry" })
     }
+
+    /**
+     * Public 2.2.1 compatibility of "מחיקה מהחשבון": the tombstones the website wrote to the Firebase emulator
+     * (integration-tests/erase-e2e, kept as erase-tombstones-web.json) pass Android's validation, and the same shape
+     * empties phones that hold the data, with no conflict and nothing sent back. The receiving code is unchanged since
+     * 2.2.1 (only remoteLeft was added), so this is what an existing 2.2.1 phone does.
+     */
+    @Test fun websiteTombstonesFromTheEmulatorEmptyEveryPhone() = runBlocking {
+        val fixture = org.json.JSONArray(javaClass.classLoader!!.getResourceAsStream("erase-tombstones-web.json").bufferedReader().readText())
+        assertTrue(fixture.length() > 0)
+        for (i in 0 until fixture.length()) {
+            val r = WorkRemoteRecord.decode(fixture.getJSONObject(i).toString())
+            assertTrue(r.deleted && r.payload == null && r.type == "entry")
+        }
+        val a = db(); val b = db(); val server = Server(); val ea = engine(a, server, "A"); val eb = engine(b, server, "B")
+        seedRich(a); ea.synchronize(); eb.synchronize()
+        assertEquals(2, b.workDao().getEntriesList().size)
+        // The website deletes: each shift document becomes a tombstone of the same shape as the fixture.
+        val records = server.accounts.getValue("owner")
+        for ((id, pair) in records.toMap()) if (pair.first.type == "entry")
+            records[id] = WorkRemoteRecord(id, "entry", pair.first.version + 1, id + ":" + "e629ca663d63eec1f8fd8346b33fbf294a50021b", true, null).validate() to ++server.seq
+        eb.synchronize(); ea.synchronize(); eb.synchronize()
+        assertTrue(a.workDao().getEntriesList().isEmpty()); assertTrue(b.workDao().getEntriesList().isEmpty())
+        assertTrue(a.syncDao().conflicts().isEmpty() && b.syncDao().conflicts().isEmpty())
+        assertEquals("nothing came back to the account", 0, server.live("owner").count { it.type == "entry" })
+    }
 }
