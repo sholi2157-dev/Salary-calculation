@@ -96,12 +96,12 @@ function render(el, app) {
 
 function liveCard(t) {
   return `<div class="live" data-testid="live-card"><div class="row" style="align-items:center"><span class="grow label">משמרת פעילה · ${U().esc(t.category)}</span></div>
-    ${earning(t) ? `<div class="clock money" data-testid="live-money"><span class="cur">${U().esc(t.currency)}</span><span data-live-money>0.00</span></div>
-    <div class="label" style="direction:ltr;text-align:right" data-live-clock data-testid="live-clock">00:00:00</div>` : '<div class="clock" data-live-clock data-testid="live-clock">00:00:00</div>'}
-    <div class="row"><button class="btn grow" style="background:var(--on-ink);color:var(--ink)" data-act="stop" data-testid="live-stop">סיום ושמירה</button>
-    <button class="btn" style="background:transparent;color:var(--on-ink);border:1.5px solid color-mix(in srgb,var(--on-ink) 40%,transparent)" data-act="cancel" data-testid="live-cancel">ביטול</button></div></div>`;
+    <div class="clock" data-live-clock data-testid="live-clock">00:00:00</div>
+    ${earning(t) ? `<div class="live-money money" data-testid="live-money"><span class="cur">${U().esc(t.currency)}</span><span data-live-money>0.00</span></div>` : ''}
+    <div class="row"><button class="btn grow stop" data-act="stop" data-testid="live-stop">סיום ושמירה</button>
+    <button class="btn cancel" data-act="cancel" data-testid="live-cancel">ביטול</button></div></div>`;
 }
-/** With a known rate the live card counts the money earned so far (to the agora, by the second); the clock goes below it. */
+/** With a known rate the live card counts the money earned so far (to the agora, by the second), under the clock. */
 const earning = t => !t.rateUnknown && Number(t.rate) > 0;
 const liveMoney = (t, seconds) => (Math.floor(seconds * Number(t.rate) / 36) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
