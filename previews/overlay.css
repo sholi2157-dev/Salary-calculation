@@ -1,0 +1,37 @@
+/* Preview layer only: the proposed "Kis 2" palette, Heebo and the unified selection/controls on top of the real app.
+   It never ships; it exists to compare before/after on real screens. */
+@font-face { font-family: HeeboV; src: url(/__preview/heebo-hebrew-wght-normal.woff2) format('woff2'); font-weight: 100 900; unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+@font-face { font-family: HeeboV; src: url(/__preview/heebo-latin-wght-normal.woff2) format('woff2'); font-weight: 100 900; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+:root {
+  --bg:#F1F3F8; --surface:#FFFFFF; --sunk:#E4E8F0; --ink:#1B2335; --muted:#5A6478; --line:#D2D8E3;
+  --pending:#9A5201; --pending-soft:#FFEBC7; --paid:#007453; --danger:#BD2F28;
+  --nav:rgba(255,255,255,.90); --nav-ink:#465066; --nav-on:#1B2335; --nav-on-ink:#FFFFFF; --bar:rgba(255,255,255,.95); --on-bar:#1B2335; --on-ink:#FFFFFF;
+  --pick-bg:#FFFFFF; --pick-ink:#1B2335; --pick-edge:#1B2335; --tile:#FFFFFF; --tile-edge:#D2D8E3; --track:#E4E8F0; --tab-on:#FFFFFF; --tab-on-ink:#1B2335;
+  --glow:#5145E8; --glow-a:.12; --glow-b:.03; --fab-ink:#FFFFFF; --live:#1B2335; --on-live:#FFFFFF; --knob:#FFFFFF; --on-danger:#FFFFFF;
+  --text: HeeboV, Heebo, system-ui, sans-serif; --display: HeeboV, Heebo, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0F1216; --surface:#181B20; --sunk:#282C34; --ink:#EDF0F6; --muted:#B3B9C5; --line:#32373F;
+  --pending:#F6B75C; --pending-soft:#3E2B0F; --paid:#45D09E; --danger:#FF9183;
+  --nav:rgba(33,37,43,.92); --nav-ink:#B3B9C5; --nav-on:#EDF0F6; --nav-on-ink:#0F1216; --bar:#2D323A; --on-bar:#EDF0F6; --on-ink:#0F1216;
+  --pick-bg:#424853; --pick-ink:#EDF0F6; --pick-edge:#EDF0F6; --tile:#21252B; --tile-edge:transparent; --track:#282C34; --tab-on:#424853; --tab-on-ink:#EDF0F6;
+  --glow:#9398FF; --glow-a:.24; --glow-b:.06; --fab-ink:#15153A; --live:#2D323A; --on-live:#EDF0F6; --knob:#0F1216; --on-danger:#2B0E0B; } }
+:root[data-theme="dark"] {
+  --bg:#0F1216; --surface:#181B20; --sunk:#282C34; --ink:#EDF0F6; --muted:#B3B9C5; --line:#32373F;
+  --pending:#F6B75C; --pending-soft:#3E2B0F; --paid:#45D09E; --danger:#FF9183;
+  --nav:rgba(33,37,43,.92); --nav-ink:#B3B9C5; --nav-on:#EDF0F6; --nav-on-ink:#0F1216; --bar:#2D323A; --on-bar:#EDF0F6; --on-ink:#0F1216;
+  --pick-bg:#424853; --pick-ink:#EDF0F6; --pick-edge:#EDF0F6; --tile:#21252B; --tile-edge:transparent; --track:#282C34; --tab-on:#424853; --tab-on-ink:#EDF0F6;
+  --glow:#9398FF; --glow-a:.24; --glow-b:.06; --fab-ink:#15153A; --live:#2D323A; --on-live:#EDF0F6; --knob:#0F1216; --on-danger:#2B0E0B; }
+body { font-variant-numeric: tabular-nums; }
+.page-title, .section-title h2, .amount, .hero, h1, h2, h3, .live .clock { font-weight: 700; }
+.hero { letter-spacing: -0.02em; }
+.money .cur { font-family: var(--text); font-weight: 500; font-size: .66em; }
+.chip, .seg button, .nav [data-page], .link { font-weight: 500; }
+.switch[aria-checked="true"] { background: var(--ink); }
+.switch::after { background: var(--knob); }
+.switch[aria-checked="false"]::after, .switch:not([aria-checked="true"])::after { background: #FFFFFF; }
+.switch:not([aria-checked="true"]) { background: #778093; }
+.live { background: var(--live); color: var(--on-live); }
+.nav .add { color: var(--fab-ink); }
+.btn.danger { color: var(--on-danger); }
+.btn.outline, .chip, .input { border-color: color-mix(in srgb, var(--ink) 38%, transparent); }
