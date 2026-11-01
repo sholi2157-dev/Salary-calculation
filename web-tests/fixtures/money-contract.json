@@ -1,0 +1,125 @@
+{
+ "contract": "2.3.0 money: exact decimal of each input fixed to 10 places, hours*rate+bonus, rounded once half up to 0.01. Shared by web (KisRules.money) and Android (WorkPay.money).",
+ "cases": [
+  {
+   "hours": 1.5,
+   "rate": 99.99,
+   "bonus": 0,
+   "expected": 149.99
+  },
+  {
+   "hours": 0.5,
+   "rate": 2.05,
+   "bonus": 0,
+   "expected": 1.03
+  },
+  {
+   "hours": 1.6666666666666667,
+   "rate": 120,
+   "bonus": 0,
+   "expected": 200
+  },
+  {
+   "hours": 1.234567,
+   "rate": 100,
+   "bonus": 0,
+   "expected": 123.46
+  },
+  {
+   "hours": 1.234567,
+   "rate": 34.123456,
+   "bonus": 0,
+   "expected": 42.13
+  },
+  {
+   "hours": 2,
+   "rate": 50,
+   "bonus": 20,
+   "expected": 120
+  },
+  {
+   "hours": 7.75,
+   "rate": 40,
+   "bonus": 0,
+   "expected": 310
+  },
+  {
+   "hours": 8.5,
+   "rate": 40,
+   "bonus": 0,
+   "expected": 340
+  },
+  {
+   "hours": 0.016666666666666666,
+   "rate": 0.3,
+   "bonus": 0,
+   "expected": 0.01
+  },
+  {
+   "hours": 3,
+   "rate": 70.01,
+   "bonus": 0,
+   "expected": 210.03
+  },
+  {
+   "hours": 0.25,
+   "rate": 0.02,
+   "bonus": 0,
+   "expected": 0.01
+  },
+  {
+   "hours": 24,
+   "rate": 99999.99,
+   "bonus": 0,
+   "expected": 2399999.76
+  },
+  {
+   "hours": 2.5,
+   "rate": 30,
+   "bonus": 10,
+   "expected": 85
+  },
+  {
+   "hours": 1,
+   "rate": 850.005,
+   "bonus": 0,
+   "expected": 850.01
+  },
+  {
+   "hours": 1,
+   "rate": 0.125,
+   "bonus": 0,
+   "expected": 0.13
+  },
+  {
+   "hours": 0.16666666666666666,
+   "rate": 33.33,
+   "bonus": 0.5,
+   "expected": 6.06
+  },
+  {
+   "hours": 0,
+   "rate": 0,
+   "bonus": 20,
+   "expected": 20
+  },
+  {
+   "hours": 1.1,
+   "rate": 1.1,
+   "bonus": 0,
+   "expected": 1.21
+  },
+  {
+   "hours": 4.35,
+   "rate": 100,
+   "bonus": 0,
+   "expected": 435
+  },
+  {
+   "hours": 2.675,
+   "rate": 1,
+   "bonus": 0,
+   "expected": 2.68
+  }
+ ]
+}

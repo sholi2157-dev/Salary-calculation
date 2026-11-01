@@ -161,7 +161,7 @@ function evaluate(d) {
   }
   if (String(d.passThrough ?? '').trim() && !(num(d.passThrough) >= 0)) errors.push('סכום ההחזר לא תקין');
   // A job shows the user's own amount, which is what is stored and counted (a team is paid on top of it).
-  const total = ev.total == null || d.mode === 'JOB' || clockish ? ev.total : root.KisPay.amount(durationHours(d.hours) || 0, num(d.rate) || 0, ev.bonus);
+  const total = ev.total == null || d.mode === 'JOB' || clockish ? ev.total : root.KisPay.money(durationHours(d.hours) || 0, num(d.rate) || 0, ev.bonus);
   return { ...ev, total, errors, canSave: errors.length === 0, clock: clockish };
 }
 /** The stored shift, exactly as Android builds it (EntryDraft.toEntry), keeping untouched stored values. */
@@ -187,7 +187,7 @@ function toEntry(d, base) {
     workerRate: null, amount: jobWorkerPay(w, d), source: w.source || {} })), true) : d.mode === 'GROUP' ? JSON.stringify(d.workers.map(w => { const o = { ...(w.source || {}), name: w.name.trim(), hours: Number.isFinite(w.source?.hours) && clean(w.source.hours) === w.hours ? w.source.hours : durationHours(w.hours) || 0, isPaid: !!w.isPaid }; const b = num(w.bonus); if (b > 0) o.bonus = b; else delete o.bonus; return o; })) : '';
   const total = !payKnown ? 0 : job ? amountN
     : base && base.payKnown && base.kind !== 'job' && hours === base.hours && rate === base.hourlyRate && myBonus === (base.bonus || 0) ? base.totalEarnings
-    : root.KisPay.amount(hours, rate, myBonus);
+    : root.KisPay.money(hours, rate, myBonus);
   const proto = base || { createdAt: Date.now(), isPaid: false, seriesKey: null, autoConfirmed: false };
   return { ...proto, category: d.category, date, isTimeRange: clock, startTime: clock ? d.start : null, endTime: clock ? d.end : null, hours,
     hourlyRate: job || !payKnown ? 0 : rate, totalEarnings: total, notes: d.notes.trim(), currency: d.currency, kind: job ? 'job' : 'shift', payKnown, bonus: myBonus,

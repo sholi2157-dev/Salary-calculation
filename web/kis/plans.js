@@ -38,7 +38,7 @@ function card(o, store) {
   const { esc, avatar, dayLabel, moneyHtml } = U();
   const waiting = isAwaiting(o), mins = root.KisRules.span(o.start, o.end).minutes;
   const overnight = root.KisRules.toMinutes(o.end) <= root.KisRules.toMinutes(o.start);
-  const amount = o.rate != null ? `<span class="pay muted">${moneyHtml(root.KisPay.amount(mins / 60, o.rate), o.currency)}</span>` : '<span class="pay muted">?</span>';
+  const amount = o.rate != null ? `<span class="pay muted">${moneyHtml(root.KisPay.money(mins / 60, o.rate), o.currency)}</span>` : '<span class="pay muted">?</span>';
   return `<div class="shift" style="display:grid;gap:10px" data-plan="${esc(o.key)}" data-testid="planned-${esc(o.key)}">
     <button class="plain" style="display:flex;align-items:center;gap:12px;width:100%" data-plan-open aria-expanded="false">${avatar(o.category, store, true)}
       <span class="meta"><span class="top"><b class="label">${esc(dayLabel(root.KisPlan.startMillis(o.date, o.start)))}</b><span class="tag${waiting ? ' warn' : ''}">${waiting ? 'ממתין לאישור' : 'מתוכנן'}</span></span>

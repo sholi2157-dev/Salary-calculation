@@ -95,7 +95,7 @@ function toEntry(o, auto, createdAt = Date.now()) {
  const h = Rules.span(o.start, o.end).minutes / 60;
  const date = startMillis(o.date, o.start);
  return { category: o.category, date, createdAt, isTimeRange: true, startTime: o.start, endTime: o.end, hours: h,
-  hourlyRate: o.rate ?? 0, totalEarnings: o.rate != null ? Pay.amount(h, o.rate) : 0, isPaid: false, notes: '', currency: o.currency,
+  hourlyRate: o.rate ?? 0, totalEarnings: o.rate != null ? Pay.money(h, o.rate) : 0, isPaid: false, notes: '', currency: o.currency,
   isGroupShift: false, employerRate: null, workerRate: null, groupWorkersJson: '',
   kind: 'shift', payKnown: o.rate != null, bonus: 0, seriesKey: o.key, autoConfirmed: auto };
 }

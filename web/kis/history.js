@@ -154,7 +154,7 @@ function bulkRate(app, after) {
     ok.onclick = () => {
       const rate = rateOf(), byId = new Map(targets.map(e => [e.id, e])), before = [];
       store.update(d => d.entries.forEach(e => { const t = byId.get(e.id); if (!t || e.payKnown || e.kind === 'job') return; before.push({ ...e });
-        e.hourlyRate = rate; e.totalEarnings = root.KisPay.amount(e.hours, rate, e.bonus || 0); e.payKnown = true; }));
+        e.hourlyRate = rate; e.totalEarnings = root.KisPay.money(e.hours, rate, e.bonus || 0); e.payKnown = true; }));
       state.selection.clear(); close(); U().haptic('success');
       U().toast(before.length === 1 ? 'תעריף הושלם למשמרת אחת ✓' : `תעריף הושלם ל-${before.length} משמרות ✓`, 'ביטול', () =>
         store.update(d => d.entries.forEach((e, i) => { const old = before.find(b => b.id === e.id); if (old) d.entries[i] = old; }))); after?.();

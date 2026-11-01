@@ -119,7 +119,7 @@ function planned(o,technical=false) {
   'מצב: מתוכנן — עוד לא בוצע','תאריכים: '+date(Plan.startMillis(o.date,'12:00')),
   'שעות: '+o.start+'–'+o.end+(o.end<=o.start?' (למחרת)':''),'כמות שעות: '+hours(h),
   'תעריף לשעה: '+(o.rate==null?'עדיין לא ידוע':money(o.rate,o.currency)),
-  'צפי בלבד: '+(o.rate==null?'ממתין להשלמת תעריף':money(Pay.amount(h,o.rate),o.currency))];
+  'צפי בלבד: '+(o.rate==null?'ממתין להשלמת תעריף':money(Pay.money(h,o.rate),o.currency))];
  if(!technical)out.push('תודה!');return out.join('\n');
 }
 // Saved future entries are also estimates, even though they are not weekly-plan occurrences.

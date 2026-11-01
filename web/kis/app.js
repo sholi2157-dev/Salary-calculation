@@ -101,7 +101,7 @@ function stopLive() {
     const start = new Date(t.startedAt), end = new Date(now), hh = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     const unknown = t.rateUnknown === true;
     const entry = { ...row, keepId: t.id, isTimeRange: true, startTime: hh(start), endTime: hh(end), kind: 'shift', payKnown: !unknown, bonus: 0,
-      hourlyRate: unknown ? 0 : t.rate, totalEarnings: unknown ? 0 : root.KisPay.amount(row.hours, t.rate) };
+      hourlyRate: unknown ? 0 : t.rate, totalEarnings: unknown ? 0 : root.KisPay.money(row.hours, t.rate) };
     const [id] = store.addEntries([entry]); store.cancelTimer(); U().haptic('success');
     U().toast('המשמרת נשמרה ✓', 'ביטול', () => { store.update(d => { d.entries = d.entries.filter(e => e.id !== id); }); store.restoreTimer(t); });
   };

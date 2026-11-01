@@ -97,7 +97,10 @@ const known = entries => entries.filter(payKnownOf);
 const pending = entries => entries.filter(e => !payKnownOf(e));
 
 /** Same rounding the app has always stored, so new rows match historical ones. */
+/** Derived pay of workers/employer in group reports, unchanged since 2.0 (their rounding is not changed in 2.3; see audit CAL-03). */
 function amount(h, rate, bonus = 0) { return Math.round((h * rate + bonus) * 100) / 100; }
+/** Every NEW saved amount and its preview (2.3.0 money contract, see KisRules.money). */
+const money = (h, rate, bonus = 0) => (root.KisRules || require('./rules.js')).money(h, rate, bonus);
 
 /** "תעריף חסר" for a shift, "סכום חסר" for a job. */
 const missingLabel = e => isJob(e) ? 'סכום חסר' : 'תעריף חסר';
@@ -217,7 +220,7 @@ function report(entries, workerName = null) {
   rows.map(r => r.category + ': ' + (r.payKnown ? format(r.totalEarnings, r.currency) : 'תעריף חסר') + ' — ' + (r.isPaid ? 'שולם' : 'ממתין')).join('\n');
 }
 
-const api = { KIND_SHIFT, KIND_JOB, isJob, payKnown: payKnownOf, bonus: bonusOf, pay, known, pending, amount, missingLabel, totals,
+const api = { KIND_SHIFT, KIND_JOB, isJob, payKnown: payKnownOf, bonus: bonusOf, pay, known, pending, amount, money, missingLabel, totals,
  workers, workerRate, employerRate, workerPay, employerPay, group, encodeWorkers, isTeamJob, teamPay, employerDue, passThrough: passThroughOf,
  format, summary, report, moneyWorkerRate, moneyEmployerRate, fixed2, hours, javaParseDouble };
 if (typeof module !== 'undefined') module.exports = api; else root.KisPay = api;

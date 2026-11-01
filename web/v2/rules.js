@@ -63,6 +63,20 @@ function roundedEnd(nowMinutes) { return fromMinutes(Math.trunc(nowMinutes / 30)
 
 /** Two-decimal rounding with the same epsilon guard the existing app and web use. */
 function round2(value) { return Math.floor((value + Number.EPSILON) * 100 + 0.5) / 100; }
+/*
+ * 2.3.0 money contract (audit CAL-02/CAL-05), identical to Android WorkPay.money: every new amount is
+ * hours × rate + bonus in exact decimal arithmetic, rounded once, half up, to whole agorot/cents. Each input is first
+ * fixed to 10 decimal places from its exact binary value (toFixed(10) here, BigDecimal.setScale(10, HALF_UP) there),
+ * so a typed 1.5 × 99.99 is 149.99 and the preview and the saved amount always come from this one function.
+ * Saved amounts are never recalculated with it.
+ */
+function money(hours, rate, bonus = 0) {
+ const units = x => { const t = Number(x).toFixed(10), neg = t.startsWith('-'); const v = BigInt(t.replace('-', '').replace('.', '')); return neg ? -v : v; };
+ const total = units(hours) * units(rate) + units(bonus) * 10000000000n; // in 10^-20
+ const den = 1000000000000000000n, neg = total < 0n, abs = neg ? -total : total;
+ const cents = (abs + den / 2n) / den;
+ return Number(neg ? -cents : cents) / 100;
+}
 
 /** An end earlier than the start means the shift crosses midnight; the date stays the start day. */
 function span(start, end, breakMinutes = 0) {
@@ -110,7 +124,7 @@ function evaluate(input) {
   if (!d.amountUnknown && !(amount !== null && amount > 0)) errors.push('הזן סכום, או סמן "לא יודע עדיין"');
   if (h > 24) errors.push('יותר מ-24 שעות ביום');
   const minutes = h > 0 ? Math.round(h * 60) : null;
-  const total = amount !== null && amount > 0 ? round2(amount) : null;
+  const total = amount !== null && amount > 0 ? money(1, amount) : null;
   return result(minutes, 0, total);
  }
  let minutes = null;
@@ -131,8 +145,8 @@ function evaluate(input) {
  const rate = d.rateUnknown ? null : d.rate;
  if (!d.rateUnknown && !(rate !== null && rate >= 0)) errors.push('הזן תעריף, או סמן "תעריף חסר"');
  const myBonus = d.mode === 'GROUP' && d.bonusTarget === 'OTHERS' ? 0 : d.bonus;
- const base = minutes !== null && !invalid && rate !== null ? minutes / 60 * rate : null;
- return result(minutes, myBonus, base === null ? null : round2(base + myBonus));
+ const known = minutes !== null && !invalid && rate !== null;
+ return result(minutes, myBonus, known ? money(minutes / 60, rate, myBonus) : null);
 }
 
 /** Quiet hours: a notification due inside the window waits until it ends; it is never dropped. */
@@ -197,10 +211,11 @@ function recordMinutes(r) {
 /** Writes only to shifts whose rate is missing. Known amounts and fixed-price jobs never change. Returns {updated:[{id,total}], skipped}. */
 function bulkRate(records, rate) {
  const targets = records.filter(r => r.rate == null && !r.isJob);
- return { updated: targets.map(r => ({ id: r.id, total: round2(recordMinutes(r) / 60 * rate + (r.bonus ?? 0)) })), skipped: records.length - targets.length };
+ // The same hours that will be saved (the exact stored ones when known), not minutes rounded for display (audit CAL-05).
+ return { updated: targets.map(r => ({ id: r.id, total: money(r.hours ?? recordMinutes(r) / 60, rate, r.bonus ?? 0) })), skipped: records.length - targets.length };
 }
 
-const api = { LONG_SHIFT_MINUTES, MODES, BONUS_TARGETS, toIntOrNull, toDoubleOrNull, toMinutes, isTime, fromMinutes, roundedEnd, round2, span,
+const api = { LONG_SHIFT_MINUTES, MODES, BONUS_TARGETS, toIntOrNull, toDoubleOrNull, toMinutes, isTime, fromMinutes, roundedEnd, round2, money, span,
  evaluate, quietDelay, daysFromCivil, civilFromDays, weekday, seriesDates, recordMinutes, bulkRate };
 if (typeof module !== 'undefined') module.exports = api; else root.KisRules = api;
 })(globalThis);
