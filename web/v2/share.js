@@ -132,15 +132,17 @@ function plannedText(text) { return 'מתוכנן — עוד לא בוצע\n'+te
 }
 const excelHeaders=['עבודה','תאריך','שעת התחלה','שעת סיום','שעות עבודה','הפסקה בדקות','תעריף שעתי','סכום','מטבע','סטטוס תשלום','סוג','בונוס','הערה','שכר ידוע'];
 // Prevent spreadsheet formula execution from user-entered text; numeric columns stay numeric.
-const textCell=v=>/^[\s]*[=+\-@]/.test(String(v))?"'"+v:String(v??'');
+const textCell=v=>{const s=String(v??'');return /^[\s\u0000-\u001f\u200e\u200f\u202a-\u202e\u2066-\u2069]*[=+\-@]/.test(s)?"'"+s:s;};
+const numberCell=v=>typeof v==='number'&&Number.isFinite(v)?Pay.fixed2(v):textCell(v);
+const validTime=t=>typeof t==='string'&&/^(?:[01]?\d|2[0-3]):[0-5]\d$/.test(t.trim());
 function table(entries){return [excelHeaders,...ordered(entries).map(e=>{
  const known=Pay.payKnown(e), job=Pay.isJob(e);
- const pause=!job&&time(e)?Math.max(0,Math.round(Rules.span(e.startTime,e.endTime).minutes-e.hours*60)):null;
- return [textCell(e.category),date(e.date),e.startTime??'',e.endTime??'',Pay.fixed2(e.hours),pause==null?'':String(pause),
-  !known||job?'':Pay.fixed2(e.hourlyRate),known?Pay.fixed2(e.totalEarnings):'',textCell(e.currency),e.isPaid?'שולם':'ממתין',
+ const pause=!job&&e.isTimeRange&&validTime(e.startTime)&&validTime(e.endTime)?Math.max(0,Math.round(Rules.span(e.startTime,e.endTime).minutes-e.hours*60)):null;
+ return [textCell(e.category),date(e.date),textCell(e.startTime),textCell(e.endTime),numberCell(e.hours),pause==null?'':textCell(pause),
+  !known||job?'':numberCell(e.hourlyRate),known?numberCell(e.totalEarnings):'',textCell(e.currency),e.isPaid?'שולם':'ממתין',
   job?'קבלנות':e.isGroupShift?'משמרת קבוצתית':'משמרת',Pay.bonus(e)>0?Pay.fixed2(Pay.bonus(e)):'',textCell(e.notes??''),known?'כן':'חסר'];
  })];}
-const quote=(s,d)=>s.includes(d)||/[\n\r"]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;
+const quote=(value,d)=>{const s=String(value??'');return s.includes(d)||/[\n\r"]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;};
 const excel=entries=>table(entries).map(row=>row.map(s=>quote(s,'\t')).join('\t')).join('\n');
 const csv=entries=>'\ufeff'+table(entries).map(row=>row.map(s=>quote(s,',')).join(',')).join('\r\n');
 const api={date,money,hours,personal,job,employer,worker,planned,summary,copy,entry,workerName,excel,csv};
