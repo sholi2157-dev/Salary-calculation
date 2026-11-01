@@ -30,7 +30,7 @@ function render(el, app) {
   const done = entries.filter(e => !upcoming(e, now));
   const week = done.filter(e => e.date >= weekStart(now)), today = done.filter(e => e.date >= U().startOfDay(now));
   const month = done.filter(e => U().monthKey(e.date) === U().monthKey(now));
-  const byCat = Object.entries(week.reduce((m, e) => (m[e.category] = (m[e.category] || 0) + e.hours, m), {})).sort((a, b) => b[1] - a[1]);
+  const byCat = Object.entries(week.reduce((m, e) => (m[e.category] = (m[e.category] || 0) + e.hours, m), Object.create(null))).sort((a, b) => b[1] - a[1]);
   const totalH = byCat.reduce((s, [, h]) => s + h, 0);
   const weekTotals = sortedTotals(week);
   const pending = root.KisPay.pending(done).filter(e => e.kind !== 'job').length;
@@ -49,7 +49,7 @@ function render(el, app) {
     return [...waiting, ...next];
   })();
   const recent = [...entries].sort((a, b) => (b.createdAt || b.date) - (a.createdAt || a.date)).slice(0, 3);
-  const wallet = Object.entries(month.reduce((m, e) => { (m[e.category] ||= []).push(e); return m; }, {})).sort((a, b) => b[1].length - a[1].length);
+  const wallet = Object.entries(month.reduce((m, e) => { (m[e.category] ||= []).push(e); return m; }, Object.create(null))).sort((a, b) => b[1].length - a[1].length);
 
   const unread = root.KisSettings.unread(store);
   // A recap is on Home from its 30th for 4 more days; after that it is in Settings → "הסיכומים שלי".

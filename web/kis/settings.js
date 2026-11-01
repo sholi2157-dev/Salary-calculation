@@ -89,20 +89,21 @@ function importSheet(app) {
       if (!pending) return;
       const { data } = pending;
       try {
-        // Decided again against what is stored right now (another tab may have imported meanwhile), in one write.
-        store.load();
-        const keys = new Set(store.data.entries.map(e => e.seriesKey).filter(Boolean));
-        const fresh = root.WorkTransfer.missing(store.data.entries, data.entries).filter(e => !e.seriesKey || !keys.has(e.seriesKey));
-        const add = fresh.map(e => ({ ...e, id: store.uid(), kind: e.kind ?? 'shift', payKnown: e.payKnown ?? true, bonus: e.bonus ?? 0, seriesKey: e.seriesKey ?? null,
-          autoConfirmed: e.autoConfirmed ?? false, createdAt: e.createdAt ?? Date.now() }));
-        store.update(d => {
+        // Decided again against what is stored right now (another tab may have imported meanwhile): the shifts and the
+        // plans are written as one commit, so a failure leaves nothing half imported (audit D03).
+        const add = store.transact(n => {
+          const d = n.data, keys = new Set(d.entries.map(e => e.seriesKey).filter(Boolean));
+          const rows = root.WorkTransfer.missing(d.entries, data.entries).filter(e => !e.seriesKey || !keys.has(e.seriesKey))
+            .map(e => ({ ...e, id: store.uid(), kind: e.kind ?? 'shift', payKnown: e.payKnown ?? true, bonus: e.bonus ?? 0, seriesKey: e.seriesKey ?? null,
+              autoConfirmed: e.autoConfirmed ?? false, createdAt: e.createdAt ?? Date.now() }));
           for (const c of data.categories) if (!d.categories.some(x => x.name === c.name)) d.categories.push(c);
-          for (const e of add) if (!d.categories.some(x => x.name === e.category)) d.categories.push({ name: e.category, defaultRate: e.hourlyRate });
+          for (const e of rows) if (!d.categories.some(x => x.name === e.category)) d.categories.push({ name: e.category, defaultRate: e.hourlyRate });
           for (const w of data.workers || []) if (!d.workers.some(x => x.name === w.name)) d.workers.push(w);
-          d.entries.push(...add);
+          d.entries.push(...rows);
+          const plans = root.WorkTransfer.missingPlans(n.plans.series, n.plans.exceptions, data.series || [], data.exceptions || []);
+          n.plans.series.push(...plans.series); n.plans.exceptions.push(...plans.exceptions);
+          return rows;
         });
-        const plans = root.WorkTransfer.missingPlans(store.plans.series, store.plans.exceptions, data.series || [], data.exceptions || []);
-        if (plans.series.length) store.updatePlans(p => { p.series.push(...plans.series); p.exceptions.push(...plans.exceptions); });
         close(); U().toast(`נוספו ${add.length} משמרות ✓`);
       } catch (e) { sum.textContent = 'השמירה נכשלה. הנתונים הקיימים נשמרו. ' + e.message; }
     };
@@ -211,19 +212,28 @@ function placeForm(app, oldName, el, close, done, title = '') {
     el.querySelector('[data-a=ok]').onclick = () => {
       const name = el.querySelector('[data-f=n]').value.trim(), rate = Number((el.querySelector('[data-f=r]').value || '0').trim().replace(',', '.'));
       try {
-        const next = root.WorkCategories.rename(store.data, oldName || '', name, rate, money);
-        store.update(d => { Object.assign(d, next); });
-        if (oldName && oldName !== name) store.updatePlans(p => p.series.forEach(s => { if (s.category === oldName) s.category = name; }));
+        // Computed on what is stored now and written as one commit with the plans and a running timer (audit D02, D03).
+        store.transact(n => {
+          Object.assign(n.data, root.WorkCategories.rename(n.data, oldName || '', name, rate, money));
+          if (oldName && oldName !== name) {
+            n.plans.series.forEach(s => { if (s.category === oldName) s.category = name; });
+            if (n.timer && n.timer.category === oldName) n.timer = { ...n.timer, category: name };
+          }
+        });
         if (oldName && oldName !== name && Array.isArray(store.local.placeOrder)) store.setLocal('placeOrder', store.local.placeOrder.map(n => n === oldName ? name : n), true);
-        if (oldName && oldName !== name) { store.setLocal('color:' + oldName, undefined);
-          const t = store.timer(); if (t && t.category === oldName) store.restoreTimer({ ...t, category: name }); }
+        if (oldName && oldName !== name) store.setLocal('color:' + oldName, undefined);
         store.setLocal('color:' + name, color);
         close(); done?.(name);
       } catch (e) { el.querySelector('[data-f=err]').textContent = e.message; }
     };
     el.querySelector('[data-a=del]')?.addEventListener('click', () => U().confirmSheet(`למחוק את "${oldName}"?`, 'המשמרות שלו עוברות למקום ברירת המחדל. סכומים שמורים לא משתנים.', 'מחיקה', () => {
-      try { const next = root.WorkCategories.remove(store.data, oldName); const target = root.WorkCategories.defaultName(next.categories, next.webPreferences);
-        store.update(d => { Object.assign(d, next); }); store.updatePlans(p => p.series.forEach(s => { if (s.category === oldName) s.category = target; })); close(); done?.(); }
+      // The shifts, the plans and a running timer move to the default place together (audit D02, D03, CW-09); the timer
+      // keeps its own rate and currency, and no stored amount changes.
+      try { store.transact(n => { Object.assign(n.data, root.WorkCategories.remove(n.data, oldName));
+          const target = root.WorkCategories.defaultName(n.data.categories, n.data.webPreferences);
+          n.plans.series.forEach(s => { if (s.category === oldName) s.category = target; });
+          if (n.timer && n.timer.category === oldName) n.timer = { ...n.timer, category: target }; });
+        close(); done?.(); }
       catch (e) { el.querySelector('[data-f=err]').textContent = e.message; }
     }));
   }

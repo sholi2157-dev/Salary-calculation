@@ -36,7 +36,9 @@ const plans = { series: [{ id: 'series-rich', category: 'מסעדה', daysMask: 
 // D01: two identical rows without id, in the oldest storage format ("user_work_shifts").
 const legacyRow = { category: 'מסעדה', date: at(2025, 12, 1), hours: 4, hourlyRate: 45, totalEarnings: 180, isPaid: false, notes: '', currency: '₪' };
 const legacy = [legacyRow, { ...legacyRow }, { ...legacyRow, date: at(2025, 12, 2), hours: 3, totalEarnings: 135 }];
-const dir = __dirname;
-fs.writeFileSync(path.join(dir, 'rich-v2.json'), JSON.stringify({ work_complete_backup: rich, work_series_v1: plans }, null, 1) + '\n');
-fs.writeFileSync(path.join(dir, 'legacy-noid.json'), JSON.stringify({ user_work_shifts: legacy }, null, 1) + '\n');
+// Files are written only when this script is run directly; tests that require it for big() never touch the fixtures.
+if (require.main === module) {
+  fs.writeFileSync(path.join(__dirname, 'rich-v2.json'), JSON.stringify({ work_complete_backup: rich, work_series_v1: plans }, null, 1) + '\n');
+  fs.writeFileSync(path.join(__dirname, 'legacy-noid.json'), JSON.stringify({ user_work_shifts: legacy }, null, 1) + '\n');
+}
 module.exports = { big(n = 1000) { const out = []; for (let i = 0; i < n; i++) { const c = categories[i % categories.length]; out.push(row('b' + i, c.name, at(2025, 1, 1) + i * 43_200_000, 2 + (i % 7) * 0.25, c.defaultRate, i % 5 ? '₪' : '$', { isPaid: i % 3 === 0 })); } return { ...rich, entries: out }; } };

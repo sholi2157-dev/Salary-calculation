@@ -68,7 +68,7 @@ function summary(rows, scope, today) {
   });
   const pending = list.filter(r => !r.payKnown).length;
   const days = Array(7).fill(0); for (const r of list) days[weekday(r.date)] += r.hours;
-  const placeMap = {}; for (const r of list) placeMap[r.category] = (placeMap[r.category] || 0) + r.hours;
+  const placeMap = Object.create(null); for (const r of list) placeMap[r.category] = (placeMap[r.category] || 0) + r.hours;
   const places = Object.entries(placeMap).map(([name, h]) => ({ name, hours: r2(h) })).sort((a, b) => b.hours - a.hours || (a.name < b.name ? -1 : 1));
   const longest = list.reduce((a, r) => (!a || r.hours > a.hours || (r.hours === a.hours && r.date < a.date) ? r : a), null);
   const profile = hourProfile(list);

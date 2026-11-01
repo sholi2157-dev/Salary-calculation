@@ -149,10 +149,10 @@
   ]
  },
  "legacyRows": 3,
- "legacyDistinctIds": 2,
- "legacyDeleteOneRemoves": 2,
+ "legacyDistinctIds": 3,
+ "legacyDeleteOneRemoves": 1,
  "knownBug": {
-  "D01_identicalLegacyRowsShareId": true,
+  "D01_identicalLegacyRowsShareId": false,
   "CAL02_r11_storedNotHalfUp": 149.98
  }
 }
