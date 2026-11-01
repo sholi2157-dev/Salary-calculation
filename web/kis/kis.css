@@ -485,3 +485,14 @@ input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webki
 .paid-chip { min-height: 44px; border: 0; background: transparent; padding: 0 2px; font: inherit; }
 .paid-chip span { display: inline-block; font-size: 12px; border-radius: 99px; padding: 3px 10px; background: var(--sunk); color: var(--muted); }
 .paid-chip.on span { background: color-mix(in srgb, var(--paid) 18%, transparent); color: var(--paid); }
+
+/* Large text (M-33): the browser's text size at up to 200% on a phone. Nothing scrolls sideways (the decorative glow
+   is clipped, not the content); the navigation shrinks its padding before it would leave the screen; History's tools
+   move under the title instead of covering it; a shift's date stays on one line and its tags wrap. */
+html { overflow-x: clip; }
+.nav { max-width: calc(100vw - 16px); }
+.nav button { min-width: 0; padding-inline: clamp(8px, 3vw, 16px); }
+.title-row:has(.history-tool) { flex-wrap: wrap; }
+.title-row:has(.history-tool) .page-title { flex: 1 0 auto; }
+.shift .top { flex-wrap: wrap; row-gap: 2px; }
+.shift .top .label { white-space: nowrap; }
