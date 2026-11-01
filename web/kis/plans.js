@@ -129,9 +129,9 @@ function seriesSheet(app) {
       el.querySelector('[data-a=auto]').onclick = () => { store.setLocal('autoConfirm', store.local.autoConfirm === false); draw(); };
       el.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => rateSheet(app, b.dataset.rate, draw));
       el.querySelectorAll('[data-end]').forEach(b => b.onclick = () => U().confirmSheet('לסיים את הסדרה?', 'משמרות מתוכננות מעכשיו לא יופיעו יותר. מה שכבר נרשם נשאר כמו שהוא.', 'סיום', () => {
-        const today = root.KisPlan.dateOf(Date.now());
         store.updatePlans(p => { const s = p.series.find(x => x.id === b.dataset.end); if (!s) return;
-          if (s.fromDate > today) { p.series = p.series.filter(x => x !== s); p.exceptions = p.exceptions.filter(x => x.seriesId !== s.id); } else s.untilDate = s.untilDate < today ? s.untilDate : today; });
+          const until = root.KisPlan.endUntil(s, Date.now());
+          if (until == null) { p.series = p.series.filter(x => x !== s); p.exceptions = p.exceptions.filter(x => x.seriesId !== s.id); } else s.untilDate = until; });
         draw();
       }));
     };

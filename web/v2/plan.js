@@ -107,6 +107,24 @@ function overlaps(s1, e1, s2, e2) {
  return a1 < b2 && a2 < b1;
 }
 
+/** Like overlaps, with the second range starting `shift` minutes later (another day: ±1440). */
+function overlapsAt(s1, e1, s2, e2, shift) {
+ const range = (s, e) => { const a = Rules.toMinutes(s); let b = Rules.toMinutes(e); if (b <= a) b += 1440; return [a, b]; };
+ const [a1, b1] = range(s1, e1), [a2, b2] = range(s2, e2);
+ return a1 < b2 + shift && a2 + shift < b1;
+}
+
+/**
+ * "End the series" (audit CW-06): the last day it keeps. A shift later today that has not started yet goes with the series;
+ * one that already started stays, and so does everything recorded. null = nothing is left (the series is removed).
+ */
+function endUntil(s, now) {
+ const today = dateOf(now), started = startMillis(today, s.startTime) <= now;
+ const last = started ? today : Rules.civilFromDays(Rules.daysFromCivil(today) - 1);
+ if (s.fromDate > last) return null;
+ return s.untilDate < last ? s.untilDate : last;
+}
+
 function groupBy(list, f) { const m = new Map(); for (const x of list) { const k = f(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; }
 
 /** The dates a new series would create; dates that overlap a saved timed shift or another plan are not created. Returns {dates, clashes, created}. */
@@ -114,8 +132,12 @@ function preview(dayList, from, until, start, end, saved, planned) {
  const dates = from <= until ? Rules.seriesDates(dayList, from, until) : [];
  const timed = groupBy(saved.filter(e => e.isTimeRange && Rules.isTime(e.startTime) && Rules.isTime(e.endTime)), e => dateOf(e.date));
  const plans = groupBy(planned, o => o.date);
- const clashes = dates.filter(d => (timed.get(d) || []).some(e => overlaps(start, end, e.startTime, e.endTime)) ||
-  (plans.get(d) || []).some(o => overlaps(start, end, o.start, o.end)));
+ // Compared in absolute time with the day before and after too, so a shift from the evening before that runs past
+ // midnight is seen (audit CW-07). Touching ends do not clash.
+ const near = d => [-1, 0, 1].map(k => [Rules.civilFromDays(Rules.daysFromCivil(d) + k), k * 1440]);
+ const clashes = dates.filter(d => near(d).some(([day, shift]) =>
+  (timed.get(day) || []).some(e => overlapsAt(start, end, e.startTime, e.endTime, shift)) ||
+  (plans.get(day) || []).some(o => overlapsAt(start, end, o.start, o.end, shift))));
  const clash = new Set(clashes);
  return { dates, clashes, created: dates.filter(d => !clash.has(d)) };
 }
@@ -161,7 +183,7 @@ function applyRateFromToday(s, exceptions, rate, today, waiting) {
  return { series: { ...s, hourlyRate: rate }, changes: [...pins, ...cleared] };
 }
 
-const api = { PLANNED, AWAITING, key, dateOfKey, days, mask, exception, dateOf, startMillis, endMillis, occurrences, toConfirm, toEntry,
+const api = { PLANNED, AWAITING, key, dateOfKey, days, mask, exception, dateOf, startMillis, endMillis, endUntil, overlapsAt, occurrences, toConfirm, toEntry,
  overlaps, preview, split, applyRateFromToday };
 if (node) module.exports = api; else root.KisPlan = api;
 })(globalThis);
