@@ -19,9 +19,6 @@ object WorkPay {
     fun known(entries: List<WorkEntry>) = entries.filter { it.payKnown }
     fun pending(entries: List<WorkEntry>) = entries.filter { !it.payKnown }
 
-    /** Derived pay of workers/employer in group reports, unchanged since 2.0 (their rounding is not changed in 2.3; see audit CAL-03). */
-    fun amount(hours: Double, rate: Double, bonus: Double = 0.0): Double = Math.round((hours * rate + bonus) * 100.0) / 100.0
-
     /**
      * 2.3.0 money contract (audit CAL-02/CAL-05), identical to web KisRules.money: every NEW saved amount and its preview
      * is hours × rate + bonus in exact decimal arithmetic, rounded once, half up, to whole agorot/cents. Each input is first
@@ -74,40 +71,45 @@ object WorkPay {
     fun employerRate(w: Worker, e: WorkEntry): Double? = w.employerRate ?: e.employerRate ?: e.hourlyRate.takeIf { e.payKnown }
 
     /** What the worker should receive: a fixed sum on a job team, otherwise their hours at the worker rate plus their own bonus. */
-    fun workerPay(w: Worker, e: WorkEntry): Double? = if (isJob(e) && w.amount != null) Math.round((w.amount + w.bonus) * 100.0) / 100.0
-        else workerRate(w, e)?.let { amount(w.hours, it, w.bonus) }
+    fun workerPay(w: Worker, e: WorkEntry): Double? = if (isJob(e) && w.amount != null) money(1.0, w.amount, w.bonus)
+        else workerRate(w, e)?.let { money(w.hours, it, w.bonus) }
     /** What the employer pays for this worker. A worker's bonus is passed through, not profit. On a job the client pays one price, so it is the worker's pay. */
-    fun employerPay(w: Worker, e: WorkEntry): Double? = if (isJob(e)) workerPay(w, e) else employerRate(w, e)?.let { amount(w.hours, it, w.bonus) }
+    fun employerPay(w: Worker, e: WorkEntry): Double? = if (isJob(e)) workerPay(w, e) else employerRate(w, e)?.let { money(w.hours, it, w.bonus) }
 
     /** The team's pay on a job, or null while any worker's pay is missing. */
     fun teamPay(e: WorkEntry): Double? {
-        var sum = 0.0
-        for (w in workers(e)) sum += workerPay(w, e) ?: return null
-        return Math.round(sum * 100.0) / 100.0
+        var sum = 0L
+        for (w in workers(e)) sum += cents(workerPay(w, e) ?: return null)
+        return sum / 100.0
     }
 
     /** [employerTotal] is everything the employer owes for the shift, money passed through included. */
     data class GroupSummary(val employerTotal: Double, val profit: Double, val myNet: Double)
 
-    /** Null while any part is unknown: a partial group total would be misleading. */
+    /** Whole agorot/cents of an amount, so sums of rounded amounts add up exactly. */
+    private fun cents(v: Double): Long = Math.round(v * 100.0)
+
+    /**
+     * Null while any part is unknown: a partial group total would be misleading. Derived when shown, never stored (only the
+     * user's own totalEarnings is saved, and it is used as saved). Since 2.3.0 (CAL-03, same as web) every part reconciles
+     * exactly in whole agorot: profit = Σ employer pay − Σ worker pay (each rounded once), employerTotal = own + Σ employer
+     * pay + money passed through, myNet = own + profit.
+     */
     fun group(e: WorkEntry): GroupSummary? {
         val own = pay(e) ?: return null
         // A job: the user's pay and each worker's pay are separate; the employer owes all of them.
-        if (isJob(e)) { val team = teamPay(e) ?: return null; return GroupSummary(Math.round((own + team + e.passThrough) * 100.0) / 100.0, 0.0, own) }
-        var employer = 0.0
-        var profit = 0.0
+        if (isJob(e)) { val team = teamPay(e) ?: return null; return GroupSummary((cents(own) + cents(team) + cents(e.passThrough)) / 100.0, 0.0, own) }
+        var employer = 0L
+        var team = 0L
         for (w in workers(e)) {
-            val er = employerRate(w, e) ?: return null
-            val wr = workerRate(w, e) ?: return null
-            employer += amount(w.hours, er, w.bonus)
-            profit += w.hours * (er - wr)
+            employer += cents(employerPay(w, e) ?: return null)
+            team += cents(workerPay(w, e) ?: return null)
         }
-        fun r(v: Double) = Math.round(v * 100.0) / 100.0
-        return GroupSummary(r(own + employer + e.passThrough), r(profit), r(own + profit))
+        return GroupSummary((cents(own) + employer + cents(e.passThrough)) / 100.0, (employer - team) / 100.0, (cents(own) + employer - team) / 100.0)
     }
 
     /** What the employer owes for this entry (team and money passed through included), or null while any part is unknown. */
-    fun employerDue(e: WorkEntry): Double? = if (e.isGroupShift) group(e)?.employerTotal else pay(e)?.let { Math.round((it + e.passThrough) * 100.0) / 100.0 }
+    fun employerDue(e: WorkEntry): Double? = if (e.isGroupShift) group(e)?.employerTotal else pay(e)?.let { (cents(it) + cents(e.passThrough)) / 100.0 }
 
     /** On a [job] team each worker's pay is either a fixed amount or hours × their own rate, so exactly one of the two is written. */
     fun encodeWorkers(workers: List<Worker>, job: Boolean = false): String = JSONArray().apply {
