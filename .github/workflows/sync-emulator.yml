@@ -24,8 +24,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Unit tests (same as local)
-        run: npm test
+      - name: Build the site, then the unit tests (same as local)
+        run: |
+          npm run build
+          npm test
       - name: Sync and both delete actions against the emulator
         run: |
           npm install --no-save --package-lock=false firebase@10.8.0 firebase-tools@13.35.1
