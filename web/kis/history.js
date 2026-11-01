@@ -27,7 +27,10 @@ function matches(e, q) {
   const pay = root.KisPay.pay(e); return pay != null && (pay.toFixed(2).includes(q) || String(pay).includes(q));
 }
 function apply(entries, f, q) {
-  const toEnd = f.to + 864e5;
+  const nextDay = new Date(f.to);
+  nextDay.setDate(nextDay.getDate() + 1);
+  nextDay.setHours(0, 0, 0, 0);
+  const toEnd = nextDay.getTime();
   const rows = entries.filter(e => {
     const inPeriod = f.period === 'ALL' || (f.period === 'MONTH' ? U().monthKey(e.date) === f.month : U().startOfDay(e.date) >= f.from && U().startOfDay(e.date) < toEnd);
     const payOk = f.pay === 'ALL' || (f.pay === 'UNPAID' ? !e.isPaid : f.pay === 'PAID' ? e.isPaid : !e.payKnown);
