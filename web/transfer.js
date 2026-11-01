@@ -137,7 +137,13 @@ function decode(text){
  check([1,2,3].includes(root.formatVersion??1),'גרסת גיבוי לא נתמכת');check(Array.isArray(root.entries),'לא נמצאו משמרות בגיבוי');
  const categories=(root.categories||[]).map(c=>{check(typeof c.name==='string'&&c.name.trim(),'קטגוריה לא תקינה');return {name:c.name,defaultRate:number(c.defaultRate??40)};});
  const workers=(root.workers||[]).map(w=>{check(typeof w.name==='string','עובד לא תקין');return {name:w.name};});
- const entries=root.entries.map(normalize);
+ const entries=root.entries.map((e,i)=>{
+  // Validate at the import boundary only: historical storage/backup and duplicate
+  // signatures must not be rewritten. Keep the existing H:mm/trim compatibility.
+  for(const [field,label] of [['startTime','שעת התחלה'],['endTime','שעת סיום']])
+   check(e?.[field]==null||isTime(e[field]),`רשומה ${i+1}: ${label} לא תקינה — יש להזין שעה בטווח 00:00–23:59 או null`);
+  return normalize(e);
+ });
  // As Android (optJSONArray): a missing or non-array value means none.
  const series=(Array.isArray(root.series)?root.series:[]).map(seriesOf),exceptions=(Array.isArray(root.seriesExceptions)?root.seriesExceptions:[]).map(exceptionOf);
  // Like Android encode: version 3 only when 2.0 data is present; then (and only then) `series` and `exceptions` are returned.
@@ -193,6 +199,11 @@ function rangeHours(start,end,breakMinutes=0,original=null){
  return (minutes-pause)/60;
 }
 function totals(entries){const t={};for(const e of entries)t[e.currency]=(t[e.currency]||0)+e.totalEarnings;return t;}
-function csv(entries,delimiter=','){const fields=['category','date','hours','hourlyRate','totalEarnings','isPaid','notes','currency','startTime','endTime'];const quote=s=>'"'+String(s??'').replace(/"/g,'""')+'"';return '\ufeff'+[fields.join(delimiter),...entries.map(e=>fields.map(k=>quote(k==='date'?new Date(e.date).toLocaleDateString('en-GB'):e[k])).join(delimiter))].join('\r\n');}
+function spreadsheetCell(value){
+ if(typeof value==='number'&&Number.isFinite(value))return String(value);
+ const s=String(value??'');
+ return /^[\s\u0000-\u001f\u200e\u200f\u202a-\u202e\u2066-\u2069]*[=+\-@]/.test(s)?"'"+s:s;
+}
+function csv(entries,delimiter=','){const fields=['category','date','hours','hourlyRate','totalEarnings','isPaid','notes','currency','startTime','endTime'];const quote=s=>'"'+spreadsheetCell(s).replace(/"/g,'""')+'"';return '\ufeff'+[fields.join(delimiter),...entries.map(e=>fields.map(k=>quote(k==='date'?new Date(e.date).toLocaleDateString('en-GB'):e[k])).join(delimiter))].join('\r\n');}
 const api={decode,decodeTable,normalize,missing,missingPlans,encode,needsVersion3,planDate,totals,csv,number,table,rangeHours,inferredBreak};if(typeof module!=='undefined')module.exports=api;else root.WorkTransfer=api;
 })(globalThis);
