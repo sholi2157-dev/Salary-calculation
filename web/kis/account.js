@@ -87,6 +87,7 @@ function signedIn(fb, user) {
 }
 
 function signedOut() {
+  if (account.erasing) return; // eraseDevice wipes this device and starts the page again itself
   account.user = null; account.sync = null; stopListen?.(); stopListen = null; unsubscribe?.(); unsubscribe = null;
   const s = readState(localStorage);
   if (s.current) { s.current = null; writeState(localStorage, s); if (app.storage !== localStorage) { location.reload(); return; } }
@@ -183,18 +184,35 @@ async function signIn() {
 }
 
 /**
- * Settings → חשבון → מחיקת כל הנתונים: the browser's data is emptied (as a new browser starts, with the starter place),
- * the deletions go to the account like any other change, then the account signs out. False: offline, the account
- * is emptied with the next sync and stays signed in until then.
+ * Settings → חשבון → "מחיקה מהמכשיר הזה" (web/sync/erase.js). Signed in: refused while anything has not reached the
+ * account; otherwise the app's session signs out first (the account copy is never touched, and the Google account stays
+ * signed in to the browser), then this device's data and this account's sync memory are removed and the page starts
+ * again. Returns {ok} or {ok:false, unsent, conflicts}.
  */
-async function eraseAll(store) {
-  store.update(d => { d.entries = []; d.workers = []; d.categories = [{ name: 'עצמאי', defaultRate: 40 }]; d.webPreferences = root.WorkCategories.preferences({}); });
-  store.updatePlans(p => { p.series = []; p.exceptions = []; });
-  if (!account.user || !account.sync) return true;
-  try { await account.sync.sync(); } catch {}
-  if ((await account.sync.pending().catch(() => 1)) > 0) return false;
-  await signOut();
-  return true;
+async function eraseDevice(store) {
+  const E = root.WorkErase, s = readState(localStorage);
+  const prefix = s.current && s.bound && s.current !== s.bound ? 'acct:' + s.current + ':' : '';
+  const uid = account.user?.uid || null;
+  if (uid) {
+    const ready = await E.deviceReady(account.sync);
+    if (!ready.ok) return ready;
+    account.erasing = true; clearTimeout(timer); unsubscribe?.(); unsubscribe = null; stopListen?.(); stopListen = null; account.sync = null;
+    const fb = await loadFirebase();
+    await fb.auth().signOut();
+    const st = readState(localStorage); st.current = null; writeState(localStorage, st);
+  }
+  E.wipeDevice(localStorage, prefix, uid);
+  location.reload();
+  return { ok: true };
+}
+/**
+ * Settings → חשבון → "מחיקה מהחשבון ומכל המכשירים": only this account's Salary Calculation records, on every device.
+ * {ok, left}; ok only after the account was read again and holds nothing. Throws while offline (nothing changed).
+ */
+async function eraseAccount(store) {
+  if (!account.user || !account.sync) throw Error('not signed in');
+  const fb = await loadFirebase();
+  return root.WorkErase.eraseAccount({ store, sync: account.sync, transport: root.WorkSyncFirestore.firestoreTransport(fb), uid: account.user.uid });
 }
 async function signOut() {
   const fb = await loadFirebase();
@@ -306,5 +324,5 @@ async function undo(fb, uid, ref) {
 
 const GOOGLE = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
 
-root.KisAccount = { eraseAll, init, storageFor, scoped, readState, settingsHtml, bindSettings, conflictsSheet, assistantsSheet, state: account };
+root.KisAccount = { eraseDevice, eraseAccount, init, storageFor, scoped, readState, settingsHtml, bindSettings, conflictsSheet, assistantsSheet, state: account };
 })(globalThis);

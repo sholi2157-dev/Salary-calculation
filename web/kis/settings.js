@@ -23,7 +23,8 @@ function render(el, app) {
   ${group('חשבון', `<div class="row" style="padding:10px 0 4px"><input class="input grow" style="min-width:0" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input grow" style="min-width:0" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>
     <div data-testid="account-card">${root.KisAccount.settingsHtml()}</div>
-    <button class="link" style="justify-self:start;color:var(--danger,#c2362b);padding-inline:0" data-a="erase" data-testid="account-erase">מחיקת כל הנתונים</button>`, 'המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים עם האפליקציה לאנדרואיד ועם כל דפדפן שמחובר אליו.')}
+    <div style="display:grid;justify-items:start;padding:4px 0"><button class="link" style="color:var(--danger,#c2362b);padding-inline:0;min-height:44px" data-a="erase" data-testid="account-erase">מחיקה מהמכשיר הזה</button>
+    ${root.KisAccount.state.user ? '<button class="link" style="color:var(--danger,#c2362b);padding-inline:0;min-height:44px" data-a="erase-account" data-testid="account-erase-all">מחיקה מהחשבון ומכל המכשירים</button>' : ''}</div>`, 'המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים עם האפליקציה לאנדרואיד ועם כל דפדפן שמחובר אליו.')}
   </div><div class="row" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי</span></div>`;
 
   const q = s => el.querySelector(s);
@@ -35,6 +36,7 @@ function render(el, app) {
   q('[data-a=notify]').onclick = e => { const on = e.currentTarget.getAttribute('aria-checked') !== 'true';
     store.setLocal('notifyMonthly', on, true); store.setLocal('notifyRate', on, true); e.currentTarget.setAttribute('aria-checked', on); };
   q('[data-a=erase]').onclick = () => eraseSheet(app);
+  q('[data-a=erase-account]')?.addEventListener('click', () => eraseAccountSheet(app));
   q('[data-a=android-download]').onclick = () => root.KisDownload.open();
   q('[data-a=tour]').onclick = () => root.KisLaunch.tour(app);
   q('[data-a=places]').onclick = () => placesSheet(app);
@@ -233,25 +235,57 @@ function dragToReorder(list, onOrder, onLift = () => {}) {
   addEventListener('pointerup', drop); addEventListener('pointercancel', drop);
 }
 
-/** Deleting everything asks once, offers a backup first, and needs the word "מחיקה" typed. */
+/** Shared by both delete sheets: a backup first, then the word "מחיקה" typed. */
+function eraseForm(el, store, { title, body, okLabel, okTestid }, onOk, close) {
+  const { esc } = U();
+  el.innerHTML = `<h2>${esc(title)}</h2>${body.map(p => `<p style="margin:0">${p}</p>`).join('')}
+    <button class="btn ghost" data-a="backup" data-testid="erase-backup">הורדת גיבוי לפני המחיקה</button>
+    <label class="field">כדי למחוק, יש להקליד: מחיקה<input class="input" data-testid="erase-word" autocomplete="off"></label>
+    <div class="row"><button class="btn ghost grow" data-a="cancel">ביטול</button><button class="btn danger grow" data-a="ok" data-testid="${okTestid}" disabled>${esc(okLabel)}</button></div>`;
+  const ok = el.querySelector('[data-a=ok]');
+  el.querySelector('[data-testid=erase-word]').addEventListener('input', e => { ok.disabled = e.target.value.trim() !== 'מחיקה'; });
+  el.querySelector('[data-a=backup]').onclick = () => download('salary-backup.json', backupText(store), 'application/json');
+  el.querySelector('[data-a=cancel]').onclick = () => close();
+  ok.onclick = () => { ok.disabled = true; onOk(); };
+}
+const RUNNING = 'יש משמרת שרצה עכשיו. צריך לסיים אותה לפני המחיקה';
+
+/** "מחיקה מהמכשיר הזה": the account copy stays; when signed in, the app signs out so sync does not bring it straight back. */
 function eraseSheet(app) {
   const { store } = app, signedIn = !!root.KisAccount.state.user;
-  U().sheet('erase-sheet', (el, close) => {
-    el.innerHTML = `<h2>למחוק את כל הנתונים?</h2><p>${signedIn ? 'כל המשמרות, המקומות, המשמרות הקבועות והעובדים יימחקו מהדפדפן ומהחשבון, גם באפליקציה ובמכשירים האחרים. אחר כך החשבון יתנתק. אי אפשר לבטל.'
-        : 'כל המשמרות, המקומות, המשמרות הקבועות והעובדים יימחקו מהדפדפן הזה. אי אפשר לבטל.'}</p>
-      <button class="btn ghost" data-a="backup" data-testid="erase-backup">הורדת גיבוי לפני המחיקה</button>
-      <label class="field">לאישור כותבים: מחיקה<input class="input" data-testid="erase-word" autocomplete="off"></label>
-      <div class="row"><button class="btn ghost grow" data-a="cancel">ביטול</button><button class="btn danger grow" data-a="ok" data-testid="erase-ok" disabled>מחיקת הכל</button></div>`;
-    const ok = el.querySelector('[data-a=ok]');
-    el.querySelector('[data-testid=erase-word]').addEventListener('input', e => { ok.disabled = e.target.value.trim() !== 'מחיקה'; });
-    el.querySelector('[data-a=backup]').onclick = () => download('salary-backup.json', backupText(store), 'application/json');
-    el.querySelector('[data-a=cancel]').onclick = () => close();
-    ok.onclick = async () => {
-      ok.disabled = true; close();
-      const emptied = await root.KisAccount.eraseAll(store).catch(() => false);
-      U().toast(!signedIn ? 'כל הנתונים נמחקו' : emptied ? 'כל הנתונים נמחקו מהדפדפן ומהחשבון' : 'נמחק מהדפדפן. המחיקה מהחשבון תושלם כשיחזור החיבור');
-    };
-  });
+  if (store.timer()) { U().toast(RUNNING); return; }
+  U().sheet('erase-sheet', (el, close) => eraseForm(el, store, {
+    title: 'למחוק את הנתונים מהמכשיר הזה?',
+    body: ['יימחקו מהמכשיר הזה: המשמרות, מקומות העבודה, המשמרות הקבועות, העובדים, הגדרות העבודה, טיוטה שלא נשמרה והשם שלך.',
+      signedIn ? 'הנתונים בחשבון לא יימחקו. כדי שהסנכרון לא יחזיר אותם מיד, האפליקציה תתנתק מהחשבון במכשיר הזה. כשתתחבר שוב, הם יחזרו מהחשבון. חשבון Google עצמו לא נמחק ולא מתנתק מהמכשיר.'
+        : 'אין עותק בחשבון. אחרי המחיקה אפשר לשחזר רק מקובץ גיבוי.'],
+    okLabel: 'מחיקה מהמכשיר', okTestid: 'erase-ok' }, async () => {
+    const r = await root.KisAccount.eraseDevice(store).catch(() => ({ ok: false, failed: true }));
+    if (r.ok) return; // the page starts again
+    close();
+    U().toast(r.failed ? 'המחיקה לא בוצעה. שום דבר לא נמחק' : r.conflicts ? 'יש שינויים שממתינים לבחירה. אחרי הבחירה אפשר למחוק'
+      : `יש ${r.unsent === 1 ? 'שינוי אחד' : r.unsent + ' שינויים'} שעוד לא הגיע לחשבון. כדי לא לאבד אותו, צריך חיבור לאינטרנט. שום דבר לא נמחק`);
+  }, close));
+}
+
+/** "מחיקה מהחשבון ומכל המכשירים": only this account's Salary Calculation data; the Google account itself is not touched. */
+function eraseAccountSheet(app) {
+  const { store } = app, email = root.KisAccount.state.user?.email || '';
+  if (store.timer()) { U().toast(RUNNING); return; }
+  U().sheet('erase-account-sheet', (el, close) => eraseForm(el, store, {
+    title: 'למחוק את נתוני חישוב שכר מהחשבון?',
+    body: [`יימחקו כל נתוני חישוב שכר שנשמרו בחשבון <b dir="ltr">${U().esc(email)}</b>: המשמרות, מקומות העבודה, המשמרות הקבועות, העובדים והגדרות העבודה. הם יימחקו גם מהמכשיר הזה ומכל מכשיר ודפדפן שמחוברים לחשבון.`,
+      'חשבון Google עצמו לא נמחק, ושום דבר אחר בו לא מושפע. חשבונות אחרים לא מושפעים.',
+      'מכשיר שלא מחובר עכשיו לאינטרנט ימחק את הנתונים כשיתחבר. אם שינו בו משמרת בלי חיבור, הוא ישאל מה לעשות בה.',
+      '<b>אי אפשר לבטל.</b> כדי לשחזר בעתיד צריך קובץ גיבוי.'],
+    okLabel: 'מחיקה מהחשבון', okTestid: 'erase-account-ok' }, async () => {
+    el.querySelector('[data-a=ok]').textContent = 'מוחק מהחשבון…';
+    const r = await root.KisAccount.eraseAccount(store).catch(() => null);
+    close(); app.refresh?.();
+    U().toast(r?.ok ? 'נתוני חישוב שכר נמחקו מהחשבון ומהמכשיר הזה'
+      : r ? `המחיקה מהחשבון לא הושלמה: ${r.left === 1 ? 'פריט אחד נשאר' : r.left + ' פריטים נשארו'}. מה שנמחק לא שוחזר. אפשר לנסות שוב`
+      : 'אין חיבור לחשבון. שום דבר לא נמחק. אפשר לנסות שוב כשיהיה חיבור', r?.ok ? undefined : 'ניסיון נוסף', r?.ok ? undefined : () => eraseAccountSheet(app));
+  }, close));
 }
 
 /** Add or edit one workplace. Renaming moves its shifts and plans; stored amounts never change. */
