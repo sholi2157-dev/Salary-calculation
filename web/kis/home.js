@@ -26,7 +26,7 @@ function tiles(today, done) {
 
 function render(el, app) {
   const { store } = app, { esc, moneyHtml, shiftCard, placeOf, accent, upcoming } = U();
-  const now = Date.now(), entries = store.data.entries;
+  const now = Date.now(), entries = store.data.entries, review = root.KisPlans.awaitingReview(store, now).length;
   const done = entries.filter(e => !upcoming(e, now));
   const week = done.filter(e => e.date >= weekStart(now)), today = done.filter(e => e.date >= U().startOfDay(now));
   const month = done.filter(e => U().monthKey(e.date) === U().monthKey(now));
@@ -67,6 +67,7 @@ function render(el, app) {
   </section>
   <div class="home-side">${tiles(today, done)}
     ${pending ? `<div><button class="pending-flag" data-act="pending" data-testid="pending-flag">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button></div>` : ''}
+    ${review ? `<div><button class="pending-flag" data-act="plan-review" data-testid="plan-review-flag">${review === 1 ? 'משמרת קבועה אחת מחכה לאישור ←' : review + ' משמרות קבועות מחכות לאישור ←'}</button></div>` : ''}
     <section class="now-row" data-testid="now-row">${t ? liveCard(t) : '<button class="now" data-act="start" data-testid="live-start"><span class="dot"></span>אני מתחיל עכשיו</button>'}</section>
   ${fresh.map(scope => `<button class="story-entry home-recap" data-recap="${scope}" data-testid="home-recap-${scope}"><span><b>${esc(scope.length === 4 ? `השנה ${scope} שלך בכיס` : `${U().MONTHS[Number(scope.slice(5)) - 1]} שלך בכיס`)}</b><small>${scope.length === 4 ? 'הסיכום השנתי מוכן' : 'הסיכום החודשי מוכן'}</small></span>${U().logo(34)}</button>`).join('')}</div></div>
   <div class="home-cols">
@@ -80,6 +81,7 @@ function render(el, app) {
   // A damaged plans file is reported where the plans show, with its recovery (audit D04).
   if (store.plansBroken) { el.insertAdjacentHTML('afterbegin', root.KisSettings.recoveryPanel(app)); root.KisSettings.bindRecovery(el, app); }
 
+  el.querySelector('[data-act=plan-review]')?.addEventListener('click', () => root.KisPlans.reviewSheet(app, () => app.refresh()));
   el.querySelector('[data-act=android-download]').onclick = () => root.KisDownload.open();
   el.querySelector('[data-act=bell]').addEventListener('click', () => root.KisSettings.notificationsSheet(app));
   el.querySelector('[data-act=start]')?.addEventListener('click', () => app.startLive());

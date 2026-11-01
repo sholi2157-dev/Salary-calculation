@@ -8,24 +8,67 @@
 const U = () => root.KisUi;
 const status = o => String(o.status).toUpperCase();
 const isAwaiting = o => status(o) === 'AWAITING';
-const LOOK_BACK = 62;
+const LOOK_BACK = 62, REVIEW_BACK = 400;
 
-function occurrences(store, now = Date.now()) {
+function occurrences(store, now = Date.now(), back = LOOK_BACK) {
   const { series, exceptions } = store.plans;
   if (!series.length) return [];
   const today = root.KisPlan.dateOf(now), d = root.KisRules.daysFromCivil(today);
   const confirmed = new Set(store.data.entries.map(e => e.seriesKey).filter(Boolean));
-  return root.KisPlan.occurrences(series, exceptions, confirmed, root.KisRules.civilFromDays(d - LOOK_BACK), root.KisRules.civilFromDays(d + 28), now);
+  return root.KisPlan.occurrences(series, exceptions, confirmed, root.KisRules.civilFromDays(d - back), root.KisRules.civilFromDays(d + 28), now);
+}
+/** Ended plan days that are neither recorded nor skipped, back to REVIEW_BACK days (older ones are no longer lost, CW-05). */
+function dueDays(store, now = Date.now()) {
+  const have = new Set(store.data.entries.map(e => e.seriesKey).filter(Boolean));
+  return root.KisPlan.toConfirm(occurrences(store, now, REVIEW_BACK)).filter(o => !have.has(o.key)).sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+/** Days that wait for the person's review (see KisPlan.splitCatchUp); shown on Home and in the review sheet. */
+function awaitingReview(store, now = Date.now()) {
+  if (!store.plans.series.length) return [];
+  const due = dueDays(store, now);
+  return store.local.autoConfirm === false ? due : root.KisPlan.splitCatchUp(due, now).review;
 }
 
-/** Records every ended day that is not held (auto-record on). Returns the new shift ids. */
+/** Records the few days that just ended (auto-record on); more than that waits for review. Returns the new shift ids. */
 function catchUp(store, now = Date.now()) {
   if (store.local.autoConfirm === false || !store.plans.series.length) return [];
   store.load(); // another tab may have recorded meanwhile
-  const due = root.KisPlan.toConfirm(occurrences(store, now));
-  const have = new Set(store.data.entries.map(e => e.seriesKey).filter(Boolean));
-  const rows = due.filter(o => !have.has(o.key)).map(o => root.KisPlan.toEntry(o, true));
-  return rows.length ? store.addEntries(rows) : [];
+  const { auto } = root.KisPlan.splitCatchUp(dueDays(store, now), now);
+  return auto.length ? store.addEntries(auto.map(o => root.KisPlan.toEntry(o, true))) : [];
+}
+
+/** Review of plan days that were not recorded: the person records the ones they worked and skips the rest. */
+function reviewSheet(app, after) {
+  const { store } = app, { esc, money, dayLabel } = U();
+  U().sheet('plan-review-sheet', (el, close) => {
+    const list = awaitingReview(store), picked = new Set(list.map(o => o.key));
+    const draw = () => {
+      const chosen = list.filter(o => picked.has(o.key)), totals = {};
+      for (const o of chosen) if (o.rate != null) totals[o.currency] = (totals[o.currency] || 0) + root.KisPay.money((root.KisPlan.endMillis(o.date, o.start, o.end) - root.KisPlan.startMillis(o.date, o.start)) / 3600000, o.rate);
+      el.innerHTML = `<h2>משמרות קבועות שעברו</h2>
+        <p class="caption" style="margin:0">לא נרשמו לבד, כי הן רבות או ישנות. מה שמסומן יירשם. מה שלא, אפשר לדלג עליו.</p>
+        <div class="list" style="display:grid;gap:2px;max-height:50vh;overflow:auto" data-testid="plan-review-list">${list.map(o => `<label class="row" style="align-items:center;min-height:48px;gap:10px">
+          <input type="checkbox" data-k="${esc(o.key)}" ${picked.has(o.key) ? 'checked' : ''} style="width:22px;height:22px">
+          <span class="grow"><b class="label">${esc(dayLabel(root.KisPlan.startMillis(o.date, o.start)))}</b> <span class="caption">⁦${o.start}–${o.end}⁩ · ${esc(o.category)}</span></span>
+          <span class="caption">${o.rate == null ? 'תעריף חסר' : esc(money(root.KisPay.money((root.KisPlan.endMillis(o.date, o.start, o.end) - root.KisPlan.startMillis(o.date, o.start)) / 3600000, o.rate), o.currency))}</span></label>`).join('')}</div>
+        <button class="btn primary" data-a="record" data-testid="plan-review-record" ${chosen.length ? '' : 'disabled'}>רישום ${chosen.length} משמרות${Object.keys(totals).length ? ' · ' + Object.entries(totals).map(([c, v]) => esc(money(v, c))).join(' · ') : ''}</button>
+        <button class="btn ghost" data-a="skip" data-testid="plan-review-skip" ${list.length - chosen.length ? '' : 'disabled'}>לא עבדתי ב־${list.length - chosen.length} האחרות</button>`;
+      el.querySelectorAll('[data-k]').forEach(c => c.onchange = () => { if (c.checked) picked.add(c.dataset.k); else picked.delete(c.dataset.k); draw(); });
+      el.querySelector('[data-a=record]').onclick = () => {
+        // Recorded and the rest kept for later, as one commit; the key check keeps a day from being recorded twice.
+        const ids = store.transact(n => { const have = new Set(n.data.entries.map(e => e.seriesKey).filter(Boolean));
+          const rows = list.filter(o => picked.has(o.key) && !have.has(o.key)).map(o => ({ ...root.KisPlan.toEntry(o, false), id: store.uid() }));
+          n.data.entries.push(...rows); return rows.map(r => r.id); });
+        close(); U().toast(`נרשמו ${ids.length} משמרות`); after?.();
+      };
+      el.querySelector('[data-a=skip]').onclick = () => {
+        store.transact(n => { for (const o of list) if (!picked.has(o.key)) { const x = n.plans.exceptions.find(e => e.seriesId === o.seriesId && e.date === o.date);
+          if (x) x.cancelled = true; else n.plans.exceptions.push(store.exception(o.seriesId, o.date, { cancelled: true })); } });
+        list.splice(0, list.length, ...list.filter(o => picked.has(o.key))); draw(); if (!list.length) { close(); after?.(); }
+      };
+    };
+    draw();
+  });
 }
 
 function exceptionFor(store, o) { return store.plans.exceptions.find(x => x.seriesId === o.seriesId && x.date === o.date); }
@@ -155,5 +198,5 @@ function rateSheet(app, id, after) {
   });
 }
 
-root.KisPlans = { occurrences, catchUp, card, bind, act, createSeries, previewFor, seriesSheet, isAwaiting, exceptionFor };
+root.KisPlans = { occurrences, catchUp, awaitingReview, reviewSheet, dueDays, card, bind, act, createSeries, previewFor, seriesSheet, isAwaiting, exceptionFor };
 })(globalThis);

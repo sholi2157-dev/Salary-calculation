@@ -89,6 +89,17 @@ function occurrences(series, exceptions, confirmed, from, until, now) {
 
 /** Occurrences that ended and may be recorded by themselves (not held after an undo). */
 const toConfirm = list => list.filter(o => o.status === AWAITING && !o.hold);
+/*
+ * Automatic recording of ended plan days (audit CW-05, owner decision 2026-11-01): it stays for everyday use only, a few
+ * days that just ended. Anything more (many days at once, days that ended long ago, or older than the catch-up window)
+ * waits for the person's review, so nothing is silently skipped and no batch of pay appears unasked. Same as Android.
+ */
+const AUTO_MAX_DAYS = 3, AUTO_MAX_AGE_MS = 3 * 86400000;
+function splitCatchUp(due, now) {
+ const ends = due.map(o => endMillis(o.date, o.start, o.end));
+ const auto = due.length <= AUTO_MAX_DAYS && ends.every(e => now - e <= AUTO_MAX_AGE_MS);
+ return auto ? { auto: due, review: [] } : { auto: [], review: due };
+}
 
 /** The shift an occurrence becomes (web/Android entry JSON). An unknown rate stays unknown (never ₪0). */
 function toEntry(o, auto, createdAt = Date.now()) {
@@ -183,7 +194,7 @@ function applyRateFromToday(s, exceptions, rate, today, waiting) {
  return { series: { ...s, hourlyRate: rate }, changes: [...pins, ...cleared] };
 }
 
-const api = { PLANNED, AWAITING, key, dateOfKey, days, mask, exception, dateOf, startMillis, endMillis, endUntil, overlapsAt, occurrences, toConfirm, toEntry,
+const api = { PLANNED, AWAITING, key, dateOfKey, days, mask, exception, dateOf, startMillis, endMillis, endUntil, overlapsAt, occurrences, toConfirm, splitCatchUp, AUTO_MAX_DAYS, toEntry,
  overlaps, preview, split, applyRateFromToday };
 if (node) module.exports = api; else root.KisPlan = api;
 })(globalThis);
