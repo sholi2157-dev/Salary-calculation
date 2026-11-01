@@ -194,4 +194,51 @@ class WorkSyncEngineTest {
         assertEquals("18:00", b.workDao().getSeries().single().endTime)
         eb.synchronize(); assertTrue(eb.conflicts().isEmpty())
     }
+
+    // ---- M-13: the two delete actions across devices (same cases as web-tests/erase-two-actions.test.cjs) ----
+
+    private suspend fun seedRich(d: WorkDatabase) {
+        d.workDao().insertCategory(WorkCategory(name = "מסעדה", defaultRate = 40.25))
+        d.workDao().insertEntry(entry("א")); d.workDao().insertEntry(entry("ב").copy(totalEarnings = 300.5, date = 99_999))
+    }
+
+    @Test fun accountEraseDeletesRecordsThisPhoneNeverSawAndEmptiesTheOtherDevice() = runBlocking {
+        val a = db(); val b = db(); val server = Server(); val ea = engine(a, server, "A"); val eb = engine(b, server, "B")
+        seedRich(a); ea.synchronize(); eb.synchronize()
+        b.workDao().insertEntry(entry("רק בטלפון השני").copy(createdAt = 9)); eb.synchronize() // A has not seen it
+        ea.synchronize()
+        WorkErase.wipeLocal(a, forgetSync = false); ea.synchronize()
+        assertEquals(0, ea.remoteLeft())
+        assertEquals(0, server.live("owner").count { it.type == "entry" })
+        eb.synchronize()
+        assertTrue(b.workDao().getEntriesList().isEmpty())
+    }
+
+    @Test fun accountEraseNeverTouchesAnotherAccount() = runBlocking {
+        val a = db(); val o = db(); val server = Server(); val ea = engine(a, server, "A"); val eo = engine(o, server, "O", uid = "someone-else")
+        seedRich(a); seedRich(o); ea.synchronize(); eo.synchronize()
+        val before = server.live("someone-else").size
+        ea.synchronize(); WorkErase.wipeLocal(a, forgetSync = false); ea.synchronize()
+        assertEquals(before, server.live("someone-else").size); assertTrue(before > 0)
+    }
+
+    @Test fun deviceEraseSendsNothingAndTheNextSignInBringsEverythingBack() = runBlocking {
+        val a = db(); val server = Server(); val ea = engine(a, server, "A")
+        seedRich(a); ea.synchronize()
+        val snapshot = server.accounts["owner"]!!.toMap()
+        WorkErase.wipeLocal(a, forgetSync = true)
+        assertTrue(a.syncDao().pending().none { it.deleted })
+        // The next sign-in: a forgotten cursor (fresh state) reads the whole account and joins.
+        val again = engine(a, server, "A"); again.synchronize()
+        assertEquals("nothing deleted in the account", snapshot.values.count { !it.first.deleted }, server.live("owner").size)
+        assertEquals(setOf(60.38, 300.5), a.workDao().getEntriesList().map { it.totalEarnings }.toSet())
+    }
+
+    @Test fun controlKeepingTheOutboxWouldEmptyTheAccount() = runBlocking {
+        // Why "מחיקה מהמכשיר הזה" must drop the outbox: the same wipe with it kept deletes the account's shifts.
+        val a = db(); val server = Server(); val ea = engine(a, server, "A")
+        seedRich(a); ea.synchronize()
+        WorkErase.wipeLocal(a, forgetSync = false); ea.synchronize()
+        assertEquals(0, server.live("owner").count { it.type == "entry" })
+    }
 }

@@ -260,6 +260,7 @@ class WorkViewModel(
     }
 
     private suspend fun performSync() {
+        if (erasing) return
         val uid = owner.cloudUid ?: return
         if (currentUserSession.value?.uid != uid) return
         if (syncMutex.isLocked) return
@@ -318,28 +319,84 @@ class WorkViewModel(
         return done
     }
 
+    private suspend fun wipeLocal(db: com.example.data.WorkDatabase, forgetSync: Boolean) = com.example.data.WorkErase.wipeLocal(db, forgetSync, DEFAULT_RATE)
+
+    /** Set by [eraseDevice] just before the app signs out; no sync may run on this ViewModel after it. */
+    @Volatile private var erasing = false
+
+    /** The read cursor of every account that ever synced this database (keys "<storageKey>|<uid>|…"). */
+    private fun forgetSyncMemory() {
+        val prefs = getApplication<Application>().getSharedPreferences("work_sync_state", Context.MODE_PRIVATE)
+        prefs.edit().apply { prefs.all.keys.filter { it.startsWith(owner.storageKey + "|") }.forEach { remove(it) } }.commit()
+        lastSyncAt.value = null
+    }
+
+    /** M-13 results for the settings sheet. */
+    sealed interface EraseResult {
+        object Done : EraseResult
+        data class Unsent(val count: Int, val conflicts: Int) : EraseResult
+        data class Partial(val left: Int) : EraseResult
+        object Offline : EraseResult
+    }
+
     /**
-     * Settings → חשבון → מחיקת כל הנתונים: every shift, place, weekly plan, saved worker and setting goes, on this
-     * phone and (through the sync outbox, like any other delete) in the account, the website and other devices.
-     * The app starts again as a new install does, with the starter place. [onDone] says whether the account has
-     * already been emptied too (false: offline, it is sent with the next sync of this account).
+     * "מחיקה מהמכשיר הזה" (same rules as web/sync/erase.js). The account copy is never touched. Signed in: refused while
+     * anything has not reached the account or waits for a choice; then the data, the outbox and this account's sync
+     * memory go in one transaction (so the next sign-in downloads everything again and can never read the emptied phone
+     * as deletions) and the app's own session signs out. The Google account stays on the phone.
      */
-    fun deleteAllData(onDone: (Boolean) -> Unit) {
+    fun eraseDevice(context: Context, onDone: (EraseResult) -> Unit) {
         viewModelScope.launch {
             val db = owner.database(getApplication())
-            db.withTransaction {
-                val w = db.workDao()
-                w.deleteEntriesById(w.getEntriesList().map { it.id })
-                w.getSeries().forEach { w.deleteSeries(it.id) }
-                w.getWorkersList().forEach { w.deleteWorkerById(it.id) }
-                w.getCategoriesList().forEach { w.deleteCategoryById(it.id) }
-                w.getLocalPreferences().forEach { w.removeLocalPreference(it.name) }
-                w.insertCategory(WorkCategory(name = "עצמאי", defaultRate = DEFAULT_RATE))
+            val synced = owner.cloudUid != null && com.example.BuildConfig.VERSIONED_SYNC_ENABLED && currentUserSession.value?.uid == owner.cloudUid
+            if (synced) {
+                performSync()
+                val unsent = db.syncDao().observePending().first(); val waiting = db.syncDao().observeConflicts().first()
+                if (unsent > 0 || waiting > 0) { onDone(EraseResult.Unsent(unsent, waiting)); return@launch }
+                erasing = true
+                syncRetry?.cancel()
+                syncMutex.withLock { wipeLocal(db, forgetSync = true); forgetSyncMemory() }
+                performAutoBackup()
+                com.example.api.AuthManager.signOut(context)
+            } else {
+                // Signed out too: an account this data synced with before must forget it, or signing in again later
+                // would read the emptied phone as deletions and empty the account.
+                syncMutex.withLock { wipeLocal(db, forgetSync = true); forgetSyncMemory() }
+                performAutoBackup()
+            }
+            onDone(EraseResult.Done)
+        }
+    }
+
+    /**
+     * "מחיקה מהחשבון ומכל המכשירים": only this account's Salary Calculation records, on every device. Everything in the
+     * account is read first; the deletion goes as ordinary tombstones (every 2.x client applies them); Done only after the
+     * account is read again and holds nothing. Offline nothing is changed.
+     */
+    fun eraseAccount(onDone: (EraseResult) -> Unit) {
+        viewModelScope.launch {
+            val db = owner.database(getApplication())
+            val engine = versionedSync
+            if (engine == null || currentUserSession.value?.uid != owner.cloudUid) { onDone(EraseResult.Offline); return@launch }
+            var wiped = false
+            val result = syncMutex.withLock {
+                try {
+                    engine.synchronize() // everything in the account reaches the phone first
+                    var left = -1
+                    for (attempt in 1..3) {
+                        wiped = true
+                        wipeLocal(db, forgetSync = false)
+                        engine.conflicts().forEach { engine.resolve(it.syncId, keepLocal = true) } // the deletion wins
+                        engine.synchronize()
+                        left = engine.remoteLeft()
+                        if (left == 0) { wipeLocal(db, forgetSync = false); break }
+                    }
+                    if (left == 0) EraseResult.Done else EraseResult.Partial(left)
+                } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                catch (e: Exception) { if (!wiped) EraseResult.Offline else EraseResult.Partial(-1) }
             }
             performAutoBackup()
-            if (owner.cloudUid == null || !com.example.BuildConfig.VERSIONED_SYNC_ENABLED) { onDone(true); return@launch }
-            repeat(3) { if (db.syncDao().observePending().first() > 0) { performSync(); kotlinx.coroutines.delay(1_000) } }
-            onDone(db.syncDao().observePending().first() == 0)
+            onDone(result)
         }
     }
 

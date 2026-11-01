@@ -188,6 +188,8 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
     var leaving by rememberSaveable { mutableStateOf(false) }
     var assistants by rememberSaveable { mutableStateOf(false) }
     var erasing by rememberSaveable { mutableStateOf(false) }
+    var erasingAccount by rememberSaveable { mutableStateOf(false) }
+    val settings = Kis.settings
     val user = session
     // One compact block under the name: who is signed in and the sync state on one line, the two actions side by side.
     Column(Modifier.fillMaxWidth().padding(bottom = 8.dp).testTag("account_card"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -214,8 +216,10 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
                 KisButton("התנתקות", { leaving = true }, Modifier.weight(1f), KisButtonKind.GHOST, height = 44.dp, tag = "account_signout")
             }
         }
-        Text("מחיקת כל הנתונים", style = KisType.label, color = c.danger, modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick { erasing = true }
-            .testTag("account_erase").padding(vertical = 6.dp))
+        Text("מחיקה מהמכשיר הזה", style = KisType.label, color = c.danger, modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick { erasing = true }
+            .testTag("account_erase").heightIn(min = 44.dp).wrapContentHeight(Alignment.CenterVertically))
+        if (user != null) Text("מחיקה מהחשבון ומכל המכשירים", style = KisType.label, color = c.danger, modifier = Modifier.clip(RoundedCornerShape(8.dp))
+            .kisClick { erasingAccount = true }.testTag("account_erase_all").heightIn(min = 44.dp).wrapContentHeight(Alignment.CenterVertically))
     }
     if (assistants) AssistantsSheet(viewModel) { assistants = false }
     if (leaving) KisSheet(onDismiss = { leaving = false }, tag = "account_signout_sheet") {
@@ -226,36 +230,62 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
             KisButton("התנתקות", { leaving = false; if (viewModel.signOut(context)) onSignedOut() }, Modifier.weight(1f), KisButtonKind.DANGER, height = 52.dp, tag = "account_signout_ok")
         }
     }
-    if (erasing) EraseSheet(signedIn = user != null, onBackup = onBackup, onDismiss = { erasing = false }) {
+    fun toast(text: String) = android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
+    fun running(): Boolean = com.example.ShiftStateManager.hasActiveShift(context).also { if (it) toast("יש משמרת שרצה עכשיו. צריך לסיים אותה לפני המחיקה") }
+    if (erasing) EraseSheet(
+        title = "למחוק את הנתונים מהמכשיר הזה?",
+        body = listOf("יימחקו מהמכשיר הזה: המשמרות, מקומות העבודה, המשמרות הקבועות, העובדים, הגדרות העבודה והשם שלך.",
+            if (user != null) "הנתונים בחשבון לא יימחקו. כדי שהסנכרון לא יחזיר אותם מיד, האפליקציה תתנתק מהחשבון בטלפון הזה. כשתתחבר שוב, הם יחזרו מהחשבון. חשבון Google עצמו לא נמחק ולא מתנתק מהטלפון."
+            else "אין עותק בחשבון. אחרי המחיקה אפשר לשחזר רק מקובץ גיבוי."),
+        okLabel = "מחיקה מהמכשיר", okTag = "account_erase_ok", onBackup = onBackup, onDismiss = { erasing = false }) {
         erasing = false
-        if (com.example.ShiftStateManager.hasActiveShift(context)) {
-            android.widget.Toast.makeText(context, "יש לסיים את המשמרת הפעילה לפני המחיקה", android.widget.Toast.LENGTH_LONG).show()
-            return@EraseSheet
+        if (running()) return@EraseSheet
+        viewModel.eraseDevice(context) { r ->
+            when (r) {
+                is WorkViewModel.EraseResult.Unsent -> toast(if (r.conflicts > 0) "יש שינויים שממתינים לבחירה. אחרי הבחירה אפשר למחוק"
+                    else "יש ${if (r.count == 1) "שינוי אחד" else "${r.count} שינויים"} שעוד לא הגיע לחשבון. כדי לא לאבד אותו, צריך חיבור לאינטרנט. שום דבר לא נמחק")
+                else -> {
+                    settings.updateName(""); settings.updateLastName("")
+                    if (user != null) { toast("הנתונים נמחקו מהטלפון, והאפליקציה התנתקה מהחשבון"); onSignedOut() } else toast("הנתונים נמחקו מהטלפון")
+                }
+            }
         }
-        viewModel.deleteAllData { emptied ->
-            if (user == null) android.widget.Toast.makeText(context, "כל הנתונים נמחקו", android.widget.Toast.LENGTH_LONG).show()
-            else if (emptied) { android.widget.Toast.makeText(context, "כל הנתונים נמחקו מהטלפון ומהחשבון", android.widget.Toast.LENGTH_LONG).show(); if (viewModel.signOut(context)) onSignedOut() }
-            // Offline: staying signed in lets the next sync empty the account as well.
-            else android.widget.Toast.makeText(context, "נמחק מהטלפון. המחיקה מהחשבון תושלם כשיחזור החיבור", android.widget.Toast.LENGTH_LONG).show()
+    }
+    if (erasingAccount && user != null) EraseSheet(
+        title = "למחוק את נתוני חישוב שכר מהחשבון?",
+        body = listOf("יימחקו כל נתוני חישוב שכר שנשמרו בחשבון \u2066${user.email.orEmpty()}\u2069: המשמרות, מקומות העבודה, המשמרות הקבועות, העובדים והגדרות העבודה. הם יימחקו גם מהטלפון הזה ומכל מכשיר ודפדפן שמחוברים לחשבון.",
+            "חשבון Google עצמו לא נמחק, ושום דבר אחר בו לא מושפע. חשבונות אחרים לא מושפעים.",
+            "מכשיר שלא מחובר עכשיו לאינטרנט ימחק את הנתונים כשיתחבר. אם שינו בו משמרת בלי חיבור, הוא ישאל מה לעשות בה.",
+            "אי אפשר לבטל. כדי לשחזר בעתיד צריך קובץ גיבוי."),
+        okLabel = "מחיקה מהחשבון", okTag = "account_erase_all_ok", onBackup = onBackup, onDismiss = { erasingAccount = false }) {
+        erasingAccount = false
+        if (running()) return@EraseSheet
+        toast("מוחק מהחשבון…")
+        viewModel.eraseAccount { r ->
+            when (r) {
+                WorkViewModel.EraseResult.Done -> { settings.updateName(""); settings.updateLastName(""); toast("נתוני חישוב שכר נמחקו מהחשבון ומהטלפון הזה") }
+                WorkViewModel.EraseResult.Offline -> toast("אין חיבור לחשבון. שום דבר לא נמחק. אפשר לנסות שוב כשיהיה חיבור")
+                is WorkViewModel.EraseResult.Partial -> toast("המחיקה מהחשבון לא הושלמה" + (if (r.left > 0) ": ${if (r.left == 1) "פריט אחד נשאר" else "${r.left} פריטים נשארו"}" else "") + ". מה שנמחק לא שוחזר. אפשר לנסות שוב")
+                else -> {}
+            }
         }
     }
     if (reviewing) ConflictsSheet(viewModel) { reviewing = false }
 }
 
-/** Deleting everything asks once, offers a backup first, and needs the word "מחיקה" typed. */
+/** Both delete actions: what goes and what stays, a backup first, then the word "מחיקה" typed. */
 @Composable
-private fun EraseSheet(signedIn: Boolean, onBackup: () -> Unit, onDismiss: () -> Unit, onErase: () -> Unit) {
+private fun EraseSheet(title: String, body: List<String>, okLabel: String, okTag: String, onBackup: () -> Unit, onDismiss: () -> Unit, onErase: () -> Unit) {
     val c = Kis.colors
     var typed by rememberSaveable { mutableStateOf("") }
     KisSheet(onDismiss = onDismiss, tag = "account_erase_sheet") {
-        Text("למחוק את כל הנתונים?", style = KisType.title, color = c.ink)
-        Text(if (signedIn) "כל המשמרות, המקומות, המשמרות הקבועות והעובדים יימחקו מהטלפון ומהחשבון, גם באתר ובמכשירים האחרים. אחר כך החשבון יתנתק. אי אפשר לבטל."
-            else "כל המשמרות, המקומות, המשמרות הקבועות והעובדים יימחקו מהטלפון. אי אפשר לבטל.", style = KisType.body, color = c.ink)
+        Text(title, style = KisType.title, color = c.ink)
+        body.forEach { Text(it, style = KisType.body, color = c.ink) }
         KisButton("שמירת גיבוי לפני המחיקה", onBackup, Modifier.fillMaxWidth(), KisButtonKind.OUTLINE, height = 48.dp, tag = "account_erase_backup")
-        KisTextField(typed, { typed = it }, "לאישור כותבים: מחיקה", Modifier.fillMaxWidth().testTag("account_erase_word"))
+        KisTextField(typed, { typed = it }, "כדי למחוק, יש להקליד: מחיקה", Modifier.fillMaxWidth().testTag("account_erase_word"))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             KisButton("ביטול", onDismiss, Modifier.weight(1f), KisButtonKind.GHOST, height = 52.dp)
-            KisButton("מחיקת הכל", onErase, Modifier.weight(1f), KisButtonKind.DANGER, height = 52.dp, enabled = typed.trim() == "מחיקה", tag = "account_erase_ok")
+            KisButton(okLabel, onErase, Modifier.weight(1f), KisButtonKind.DANGER, height = 52.dp, enabled = typed.trim() == "מחיקה", tag = okTag)
         }
     }
 }

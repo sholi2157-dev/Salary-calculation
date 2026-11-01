@@ -196,6 +196,18 @@ class WorkSyncEngine(
 
     fun conflictsFlow() = dao.observeConflicts()
 
+    /**
+     * Live Salary Calculation records still in this account, read again from the server (M-13: "מחיקה מהחשבון" reports
+     * success only when this is 0). The starter place and settings do not count; they come back as defaults.
+     */
+    suspend fun remoteLeft(): Int {
+        checkOwner()
+        return transport.read(uid, null).records.count { r ->
+            !r.deleted && r.type != "preference" && !(r.type == "category" && r.payload != null &&
+                runCatching { WorkSyncProtocol.decode(r.type, r.payload).categories.single().name == SEED }.getOrDefault(false))
+        }
+    }
+
     suspend fun conflicts(): List<WorkSyncConflict> = database.withTransaction {
         dao.conflicts().map { WorkSyncConflict(it.syncId, it.entityType, journal.payload(it), WorkRemoteRecord.decode(it.conflictPayload!!).payload) } +
             dao.keyed().filter { it.conflictPayload != null }.map {
