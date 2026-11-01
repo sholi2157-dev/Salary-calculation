@@ -1,0 +1,20 @@
+// 2.3.0 (audit CW-10): a weekly series whose end date is before its start shows an error and cannot be saved. Synthetic data.
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright'); const http=require('http'),fs=require('fs'),path=require('path'),assert=require('assert/strict');
+const ROOT=path.resolve('public'), rich=JSON.parse(fs.readFileSync('web-tests/fixtures/synthetic/rich-v2.json','utf8'));
+const s=http.createServer((q,r)=>{let p=decodeURIComponent(new URL(q.url,'http://x').pathname);if(p==='/')p='/index.html';if(p==='/api/config'){r.end('{}');return;}const f=path.join(ROOT,p);if(!fs.existsSync(f)||fs.statSync(f).isDirectory()){r.writeHead(404);return r.end();}r.writeHead(200,{'content-type':{'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.ttf':'font/ttf'}[path.extname(f)]||'application/octet-stream'});fs.createReadStream(f).pipe(r);});
+s.listen(0,async()=>{const b=await chromium.launch();const c=await b.newContext({viewport:{width:390,height:844},locale:'he-IL',serviceWorkers:'block'});
+await c.addInitScript(d=>{if(!sessionStorage.getItem('s')){sessionStorage.setItem('s',1);localStorage.clear();for(const[k,v]of Object.entries(d))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('kis_web_v1',JSON.stringify({launched:2,tourDone:true}));localStorage.setItem('kis_ai_invited_v1','1');localStorage.setItem('kis_signin_skip_v1','1');}},rich);
+const p=await c.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+await p.goto('http://127.0.0.1:'+s.address().port+'/');await p.waitForSelector('[data-testid=home-hero]');
+await p.evaluate(()=>window.Kis.openNew()); await p.waitForTimeout(300);
+await p.click('[data-mode="CLOCK"]').catch(()=>{});
+await p.click('[data-testid=clock-start]'); await p.keyboard.type('0900'); await p.click('[data-testid=clock-end]'); await p.keyboard.type('1700'); await p.keyboard.press('Enter');
+await p.click('[data-testid=editor-more]').catch(()=>{}); await p.click('[data-testid=repeat-switch]');
+const before=await p.evaluate(()=>localStorage.getItem('work_series_v1'));
+const start=await p.evaluate(()=>window.KisPlan.dateOf(Date.now()));
+const y=new Date(start); y.setDate(y.getDate()-3); const bad=y.toISOString().slice(0,10);
+await p.evaluate(v=>{const i=document.querySelector('[data-f=until]'); i.value=v; i.dispatchEvent(new Event('change',{bubbles:true})); i.dispatchEvent(new Event('input',{bubbles:true}));}, bad);
+await p.waitForSelector('[data-testid=repeat-until-error]');
+assert.equal(await p.isDisabled('[data-testid=save-shift]'), true, 'cannot save a series that ends before it starts');
+assert.equal(await p.evaluate(()=>localStorage.getItem('work_series_v1')), before);
+assert.deepEqual(errs,[]); console.log('cw10 ok'); await b.close(); s.close();});

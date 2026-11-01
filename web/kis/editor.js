@@ -388,7 +388,9 @@ function open(app, { entry = null, restore = null } = {}) {
     const repeatOn = d.repeat && !base && d.mode === 'CLOCK' && d.start != null;
     const repeatDays = new Set(d.repeatDays ?? [new Date(d.day).getDay()]);
     const fromIso = root.KisPlan.dateOf(d.day), until = d.repeatUntil || root.KisRules.civilFromDays(root.KisRules.daysFromCivil(fromIso) + 56);
-    const preview = repeatOn ? root.KisPlans.previewFor(store, repeatDays, fromIso, until < fromIso ? fromIso : until, d.start, d.end) : null;
+    // An end date before the start is said where it is chosen, never moved quietly (preview and save use the same rule, CW-10).
+    const untilBad = repeatOn && until < fromIso;
+    const preview = repeatOn && !untilBad ? root.KisPlans.previewFor(store, repeatDays, fromIso, until, d.start, d.end) : null;
     const created = preview ? preview.dates.length - preview.clashes.length : 0;
     body.innerHTML = `
       <div class="days">${days.map(ms => `<button aria-pressed="${ms === d.day}" data-day="${ms}"><small>${ms === days[3] ? 'היום' : U().DAY_SHORT[new Date(ms).getDay()]}</small>${new Date(ms).getDate()}</button>`).join('')}</div>
@@ -404,8 +406,8 @@ function open(app, { entry = null, restore = null } = {}) {
       ${!base && d.mode === 'CLOCK' && d.start != null ? `<div class="card" style="display:grid;gap:10px"><div class="row" style="align-items:center"><div class="grow title-row"><b class="label">חוזרת כל שבוע</b>${U().infoDot('חוזרת כל שבוע', 'משמרת קבועה: תופיע מראש ב"מתוכנן" ותירשם לבד כשהזמן נגמר. תמיד אפשר לבטל.')}</div>
           <button class="switch" role="switch" aria-checked="${d.repeat}" aria-label="חוזרת כל שבוע" data-a="repeat" data-testid="repeat-switch"></button></div>
           ${d.repeat ? `<b class="label">בימים</b><div class="weekdays">${U().DAY_SHORT.map((n, i) => `<button aria-pressed="${repeatDays.has(i)}" data-wd="${i}" data-testid="repeat-day-${i}">${n}</button>`).join('')}</div>
-            <label class="chip" style="position:relative;justify-self:start">עד ${U().shortDate(root.KisPlan.startMillis(until, '12:00'))}<input type="date" data-f="until" value="${until}" aria-label="עד תאריך" style="position:absolute;inset:0;opacity:0"></label>
-            <p class="caption" data-testid="repeat-preview">${!preview.dates.length ? 'אין ימים בטווח שנבחר' : (created === 1 ? 'משמרת אחת תיכנס ללוח' : created + ' משמרות ייכנסו ללוח') + (preview.clashes.length ? ` · ${preview.clashes.length} חופפות למשמרת קיימת ולא ייווצרו` : '')}</p>
+            <label class="chip" style="position:relative;justify-self:start">עד ${U().shortDate(root.KisPlan.startMillis(until, '12:00'))}<input type="date" data-f="until" value="${until}" aria-label="עד תאריך" style="position:absolute;inset:0;opacity:0"></label>${untilBad ? '<p class="caption" role="alert" data-testid="repeat-until-error" style="margin:0;color:var(--danger)">תאריך הסיום לפני תאריך ההתחלה</p>' : ''}
+            <p class="caption" data-testid="repeat-preview">${!preview ? '' : !preview.dates.length ? 'אין ימים בטווח שנבחר' : (created === 1 ? 'משמרת אחת תיכנס ללוח' : created + ' משמרות ייכנסו ללוח') + (preview.clashes.length ? ` · ${preview.clashes.length} חופפות למשמרת קיימת ולא ייווצרו` : '')}</p>
             ${(left => left.length ? `<p class="caption" data-testid="repeat-not-kept">${left.length > 1 ? left.slice(0, -1).join(', ') + ' ו' + left[left.length - 1] : left[0]} לא נשמרים במשמרת קבועה</p>` : '')([d.breakMin > 0 ? 'הפסקה' : '', num(d.bonus) > 0 ? 'בונוס' : '', d.notes.trim() ? 'הערה' : '', passThroughOf(d) > 0 ? 'החזר הוצאות' : ''].filter(Boolean))}` : ''}</div>` : ''}
       ${more && d.mode !== 'JOB' ? `<div class="card" style="display:grid;gap:10px">
           ${clockMode ? `<b class="label">הפסקה</b><div class="chips">${[0, 15, 30, 45, 60].map(m => `<button class="chip" aria-pressed="${d.breakMin === m}" data-b="${m}" data-testid="break-${m}">${m ? m + ' דק׳' : 'ללא'}</button>`).join('')}
@@ -526,6 +528,7 @@ function open(app, { entry = null, restore = null } = {}) {
     const c = evaluate(d); if (!c.canSave) { U().haptic('warn'); return; }
     if (d.repeat && !base && d.mode === 'CLOCK' && d.start != null) {
       const from = root.KisPlan.dateOf(d.day), until = d.repeatUntil || root.KisRules.civilFromDays(root.KisRules.daysFromCivil(from) + 56);
+      if (until < from) { U().haptic('warn'); U().toast('תאריך הסיום לפני תאריך ההתחלה'); return; }
       const res = root.KisPlans.createSeries(store, { category: d.category, days: new Set(d.repeatDays ?? [new Date(d.day).getDay()]), from, until, start: d.start, end: d.end,
         rate: d.rateUnknown ? null : num(d.rate), currency: d.currency });
       close(true); U().haptic('success');
