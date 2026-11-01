@@ -3,6 +3,8 @@ package com.example.ui.kis
 import com.example.data.WorkEntry
 import com.example.data.WorkPay
 import org.json.JSONObject
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Calendar
 import java.util.Locale
 
@@ -61,8 +63,9 @@ object KisHistoryLogic {
         return String.format(Locale.US, "%.2f", pay).contains(q) || String.format(Locale.US, "%,.2f", pay).contains(q) || pay.toString().contains(q)
     }
 
-    fun apply(entries: List<WorkEntry>, f: HistoryFilter, query: String): List<WorkEntry> {
-        val toEnd = f.to + 86_400_000L
+    fun apply(entries: List<WorkEntry>, f: HistoryFilter, query: String, zone: ZoneId = ZoneId.systemDefault()): List<WorkEntry> {
+        val toEnd = Instant.ofEpochMilli(f.to).atZone(zone).toLocalDate()
+            .plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
         val rows = entries.filter { e ->
             val inPeriod = when (f.period) {
                 Period.ALL -> true
