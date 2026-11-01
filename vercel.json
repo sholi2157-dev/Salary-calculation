@@ -19,5 +19,11 @@
         }
       ]
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "release/**": false,
+      "work/**": false
+    }
+  }
 }
