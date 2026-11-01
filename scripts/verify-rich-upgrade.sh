@@ -35,6 +35,8 @@ adb shell am start -W -n "$pkg/com.example.MainActivity" | tee release-evidence/
 grep -F "Status: ok" release-evidence/rich/start-221.txt
 sleep 3
 adb exec-out screencap -p > release-evidence/rich/home-221.png || true
+# The snapshot is taken after 2.2.1 itself opened the data, so anything it does on its own is part of "before".
+rich_stage snapshot
 adb shell dumpsys package "$pkg" | grep -E "versionCode|versionName" | tee release-evidence/rich/version-before.txt
 adb install -r candidate-b.apk | tee release-evidence/rich/install-candidate.txt
 adb shell dumpsys package "$pkg" | grep -E "versionCode|versionName" | tee release-evidence/rich/version-after.txt

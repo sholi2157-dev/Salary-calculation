@@ -21,8 +21,9 @@ import java.io.File
  * because this test APK is compiled from the new code but runs inside whichever app version is installed.
  * Synthetic data only. Runs on a disposable emulator; never on a phone with real data.
  *
- * Stages (-e stage): seed (on 2.2.1: write data, snapshot to rich-before.json) · verify (on the candidate: snapshot
- * again to rich-after.json and require the user data to be identical).
+ * Stages (-e stage): seed (on 2.2.1: write data) · snapshot (on 2.2.1, after the app itself opened the data:
+ * rich-before.json) · verify (on the candidate: rich-after.json, and the user data must be identical). The series lie wholly
+ * in the past (beyond the 62-day catch-up window), so opening the app records nothing by itself.
  */
 @RunWith(AndroidJUnit4::class)
 class RichUpgradeTest {
@@ -43,13 +44,19 @@ class RichUpgradeTest {
             "seed" -> {
                 assertEquals("seed needs an empty store (fresh emulator)", 0, count(sql.query("SELECT COUNT(*) FROM work_entries")))
                 seed(context) { sql.execSQL(it) }
-                File(out, "rich-before.json").writeText(snapshot(context) { sql.query(it) }.toString(1))
             }
+            "snapshot" -> File(out, "rich-before.json").writeText(snapshot(context) { sql.query(it) }.toString(1))
             "verify" -> {
                 val before = JSONObject(File(out, "rich-before.json").readText())
                 val after = snapshot(context) { sql.query(it) }
                 File(out, "rich-after.json").writeText(after.toString(1))
-                for (table in userTables - "work_local_preferences") assertEquals("table $table changed across the update", before.getJSONArray(table).toString(), after.getJSONArray(table).toString())
+                for (table in userTables - "work_local_preferences") {
+                    val b0 = before.getJSONArray(table); val a0 = after.getJSONArray(table)
+                    // Every row that existed is still there, unchanged; any row the update added is reported by name.
+                    val added = (0 until a0.length()).map { a0.getJSONObject(it).toString() }.toSet() - (0 until b0.length()).map { b0.getJSONObject(it).toString() }.toSet()
+                    for (i in 0 until b0.length()) assertTrue("row changed or removed in $table: ${b0.getJSONObject(i)}", (0 until a0.length()).any { a0.getJSONObject(it).toString() == b0.getJSONObject(i).toString() })
+                    assertTrue("rows added to $table by the update: $added", added.isEmpty())
+                }
                 // The candidate may store new local preferences of its own; every one that existed must stay unchanged.
                 val afterPrefs = (0 until after.getJSONArray("work_local_preferences").length()).map { after.getJSONArray("work_local_preferences").getJSONObject(it).toString() }.toSet()
                 val lp = before.getJSONArray("work_local_preferences")
@@ -87,7 +94,7 @@ class RichUpgradeTest {
                 wj = """[{"name":"יוסי","hours":5.0,"rate":50.0,"paid":false},{"name":"מנחם מענדל","hours":4.0,"rate":50.0,"paid":true}]"""),
             R("מסעדה", 8, false, null, null, 1.234567, 34.123456, 42.12345, notes = "סכום מיובא חריג שאסור לחשב מחדש"),
             R("עצמאי", 9, false, null, null, 7.75, 40.0, 310.0, paid = true, notes = "x".repeat(300)),
-            R("מסעדה", 10, true, "09:00", "17:00", 8.0, 50.0, 400.0, sk = "series-rich@2026-01-01", auto = true),
+            R("מסעדה", 10, true, "09:00", "17:00", 8.0, 50.0, 400.0, sk = "series-rich@2025-06-02", auto = true),
         )
         for (r in rows) exec(
             "INSERT INTO work_entries (category, date, isTimeRange, startTime, endTime, hours, hourlyRate, totalEarnings, isPaid, notes, createdAt, " +
@@ -95,11 +102,11 @@ class RichUpgradeTest {
                 "${q(r.c)}, ${base - r.d * day}, ${if (r.tr) 1 else 0}, ${q(r.s)}, ${q(r.e)}, ${r.h}, ${r.r}, ${r.t}, ${if (r.paid) 1 else 0}, ${q(r.notes)}, ${base - r.d * day + 1000}, " +
                 "${if (r.g) 1 else 0}, ${r.er ?: "NULL"}, ${r.wr ?: "NULL"}, ${q(r.wj)}, ${q(r.cur)}, ${q(r.kind)}, ${if (r.known) 1 else 0}, ${r.bonus}, ${q(r.sk)}, ${if (r.auto) 1 else 0}, ${r.pass})")
         exec("INSERT INTO shift_series (id, category, daysMask, startTime, endTime, hourlyRate, currency, fromDate, untilDate, createdAt) VALUES " +
-            "('series-rich', 'מסעדה', 42, '09:00', '17:00', 50.0, '₪', '2026-01-01', '2027-12-31', ${base - 30 * day}), " +
-            "('series-night', 'אירועים', 64, '22:00', '03:00', NULL, '₪', '2026-01-01', '2027-06-30', ${base - 20 * day})")
+            "('series-rich', 'מסעדה', 42, '09:00', '17:00', 50.0, '₪', '2025-06-01', '2025-08-31', ${base - 300 * day}), " +
+            "('series-night', 'אירועים', 64, '22:00', '03:00', NULL, '₪', '2025-06-01', '2025-07-31', ${base - 290 * day})")
         exec("INSERT INTO series_exceptions (seriesId, date, cancelled, hold, startTime, endTime, rateOverridden, hourlyRate) VALUES " +
-            "('series-rich', '2026-02-02', 1, 0, NULL, NULL, 0, NULL), ('series-rich', '2026-02-04', 0, 1, NULL, NULL, 0, NULL), " +
-            "('series-night', '2026-02-07', 0, 0, '21:00', '02:30', 1, 65.0)")
+            "('series-rich', '2025-06-09', 1, 0, NULL, NULL, 0, NULL), ('series-rich', '2025-06-11', 0, 1, NULL, NULL, 0, NULL), " +
+            "('series-night', '2025-06-07', 0, 0, '21:00', '02:30', 1, 65.0)")
         context.getSharedPreferences("kis_ui", Context.MODE_PRIVATE).edit()
             .putString("theme", "dark").putBoolean("haptics", false).putString("name", "בודק").putString("lastName", "סינתטי")
             .putString("placeOrder", JSONArray(listOf("Tech Support", "מסעדה")).toString())
