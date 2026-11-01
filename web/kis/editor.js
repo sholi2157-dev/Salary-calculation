@@ -172,6 +172,14 @@ function evaluate(d) {
   const total = errors.length ? null : raw;
   return { ...ev, total, errors, canSave: errors.length === 0, clock: clockish };
 }
+/**
+ * Who the group bonus is for, exactly as Android (EntryDraft.withBonusTarget, audit CW-01/M-07): for the team or for
+ * everyone, each worker without a bonus of their own gets it; back to "שלי" clears the workers' bonuses. Only on an
+ * explicit choice, so opening an older group shift never changes its workers' bonuses.
+ */
+function withBonusTarget(d, t) {
+  return { ...d, bonusTarget: t, workers: d.workers.map(w => t === 'ME' ? { ...w, bonus: '' } : { ...w, bonus: String(w.bonus ?? '').trim() ? w.bonus : d.bonus }) };
+}
 /** The stored shift, exactly as Android builds it (EntryDraft.toEntry), keeping untouched stored values. */
 function toEntry(d, base) {
   const was = base ? fromEntry(base) : null, c = evaluate(d), job = d.mode === 'JOB', clock = c.clock;
@@ -192,7 +200,7 @@ function toEntry(d, base) {
     && (d.mode !== 'JOB' || sameRate(was) === sameRate(d) && (!sameRate(d) || was.amount === d.amount));
   // A job worker's pay is exactly what the form shows, with no separate bonus.
   const groupJson = team ? root.KisPay.encodeWorkers(d.workers.map(w => ({ name: w.name.trim(), hours: durationHours(w.hours || '') || 0, isPaid: !!w.isPaid, bonus: 0,
-    workerRate: null, amount: jobWorkerPay(w, d), source: w.source || {} })), true) : d.mode === 'GROUP' ? JSON.stringify(d.workers.map(w => { const o = { ...(w.source || {}), name: w.name.trim(), hours: Number.isFinite(w.source?.hours) && clean(w.source.hours) === w.hours ? w.source.hours : durationHours(w.hours) || 0, isPaid: !!w.isPaid }; const b = num(w.bonus); if (b > 0) o.bonus = b; else delete o.bonus; return o; })) : '';
+    workerRate: null, amount: jobWorkerPay(w, d), source: w.source || {} })), true) : d.mode === 'GROUP' ? JSON.stringify(d.workers.map(w => { const o = { ...(w.source || {}), name: w.name.trim(), hours: Number.isFinite(w.source?.hours) && clean(w.source.hours) === w.hours ? w.source.hours : durationHours(w.hours) || 0, isPaid: !!w.isPaid }; const b = num(String(w.bonus ?? '').trim() || d.bonusTarget === 'ME' ? w.bonus : d.bonus); if (b > 0) o.bonus = b; else delete o.bonus; return o; })) : '';
   const total = !payKnown ? 0 : job ? amountN
     : base && base.payKnown && base.kind !== 'job' && hours === base.hours && rate === base.hourlyRate && myBonus === (base.bonus || 0) ? base.totalEarnings
     : root.KisPay.money(hours, rate, myBonus);
@@ -496,7 +504,7 @@ function open(app, { entry = null, restore = null } = {}) {
     q('[data-a=job-add-worker]')?.addEventListener('click', () => addJob(q('[data-testid=job-worker-name]')?.value, true));
     q('[data-testid=job-worker-name]')?.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); if (!addJob(ev.target.value, true)) ev.target.blur(); } });
     q('[data-a=pass-open]')?.addEventListener('click', () => { passOpen = true; draw(); host.querySelector('[data-f=passThrough]')?.focus(); });
-    all('[data-bt]').forEach(b => b.onclick = () => set({ bonusTarget: b.dataset.bt }));
+    all('[data-bt]').forEach(b => b.onclick = () => set(withBonusTarget(d, b.dataset.bt)));
     rulerBind(host, d, t => { target = t; }, (h, v) => { d = h === 'START' ? { ...d, start: v } : { ...d, end: v }; persist(); draw(); });
   }
   function refreshMeta() {
@@ -590,6 +598,7 @@ function open(app, { entry = null, restore = null } = {}) {
     return `<div class="card" style="display:grid;gap:10px" data-testid="group-block"><b class="label">עובדים איתי</b>
       ${dr.workers.map((w, i) => `<div class="row" style="align-items:center"><input class="input grow" placeholder="שם" value="${esc(w.name)}" data-w="${i}:name" aria-label="שם עובד">
         <input class="input" style="width:84px" inputmode="decimal" placeholder="1:40" dir="ltr" value="${esc(durationDisplay(w.hours))}" data-w="${i}:hours" aria-label="שעות ודקות">
+        ${num(w.bonus) > 0 || (dr.bonusTarget !== 'ME' && num(dr.bonus) > 0) ? `<span class="caption" data-testid="worker-bonus-${i}">+${esc(U().money(num(w.bonus) > 0 ? num(w.bonus) : num(dr.bonus), dr.currency))}</span>` : ''}
         <label class="caption" style="display:flex;align-items:center;gap:4px"><input type="checkbox" ${w.isPaid ? 'checked' : ''} data-w="${i}:isPaid">שולם</label>
         <button class="icon-btn" aria-label="הסרה" data-wdel="${i}">${U().ICON.close}</button></div>`).join('')}
       <div class="chips"><button class="chip" data-a="add-worker" data-testid="add-worker">+ עובד</button>${known.map(n => `<button class="chip dashed" data-wname="${esc(n)}">${esc(n)}</button>`).join('')}</div>
@@ -631,5 +640,5 @@ function rulerBind(host, d, select, change) {
 }
 function pendingDraft(storage) { try { const d = JSON.parse(storage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
 
-root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, withTab, withTeam, tabOf, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
+root.KisEditor = { open, toEntry, withBonusTarget, fromEntry, evaluate, newDraft, withTab, withTeam, tabOf, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
 })(globalThis);
