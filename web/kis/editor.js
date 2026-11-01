@@ -160,8 +160,16 @@ function evaluate(d) {
     if (d.workers.some(w => jobWorkerPay(w, d) == null)) errors.push('חסר כמה מקבל כל עובד');
   }
   if (String(d.passThrough ?? '').trim() && !(num(d.passThrough) >= 0)) errors.push('סכום ההחזר לא תקין');
+  // Numbers are checked where they are typed, never turned into 0 or a default without a word (audit CW-03/CW-04/CW-14).
+  if (String(d.rate ?? '').trim() && !d.rateUnknown && d.mode !== 'JOB' && num(d.rate) == null) errors.push('התעריף לא תקין');
+  if (num(d.rate) != null && num(d.rate) < 0 && !d.rateUnknown && d.mode !== 'JOB') errors.push('תעריף לא יכול להיות שלילי');
+  if (String(d.bonus ?? '').trim() && !(num(d.bonus) >= 0)) errors.push('הבונוס לא תקין');
+  if (d.mode === 'GROUP' && d.separateRates && [d.employerRate, d.workerRate].some(v => v.trim() && num(v) != null && num(v) < 0)) errors.push('תעריף לא יכול להיות שלילי');
+  if (d.mode === 'JOB' && !d.amountUnknown && String(d.amount ?? '').trim() && !(num(d.amount) > 0)) errors.push('הסכום לא תקין');
   // A job shows the user's own amount, which is what is stored and counted (a team is paid on top of it).
-  const total = ev.total == null || d.mode === 'JOB' || clockish ? ev.total : root.KisPay.money(durationHours(d.hours) || 0, num(d.rate) || 0, ev.bonus);
+  const raw = ev.total == null || d.mode === 'JOB' || clockish ? ev.total : root.KisPay.money(durationHours(d.hours) || 0, num(d.rate) || 0, ev.bonus);
+  // No total is shown for values that cannot be saved (a negative rate showed "₪-200").
+  const total = errors.length ? null : raw;
   return { ...ev, total, errors, canSave: errors.length === 0, clock: clockish };
 }
 /** The stored shift, exactly as Android builds it (EntryDraft.toEntry), keeping untouched stored values. */
@@ -309,7 +317,8 @@ function open(app, { entry = null, restore = null } = {}) {
     // The whole time was selected: a digit starts it over, a delete takes back its last digit.
     if (fresh) { fresh = false; if (k === 'del') cursor = 4; else { buf = '····'; cursor = 0; } }
     const next = typeTimeOrNull(buf, cursor, k, target === 'HOURS' ? 24 : 23);
-    if (!next) { U().haptic?.('warn'); return draw(); }
+    // A refused digit is said, not silently dropped (audit U-07/M-06): 25:00 does not quietly become 20:00.
+    if (!next) { U().haptic?.('warn'); U().toast(target === 'HOURS' ? 'אפשר עד 24 שעות' : 'אין שעה כזאת. אפשר עד 23:59'); return draw(); }
     dirtyDigits = true; [buf, cursor] = next;
     // A complete, valid value shows at once (total). A full time stays on its last digit: more keys change only that digit.
     const v = !buf.includes('·') && parseDigits(buf);
@@ -328,7 +337,10 @@ function open(app, { entry = null, restore = null } = {}) {
   function metaHtml(c) {
     const { moneyHtml } = U();
     const total = base && c.canSave ? root.KisPay.pay(toEntry(d, base)) : c.total;
-    return `<span class="grow">${c.minutes > 0 && d.mode !== 'JOB' && !c.errors.some(e => e.startsWith('שעת') || e.startsWith('ההפסקה')) ? U().hm(c.minutes) + ' שעות' : ''}</span>
+    // An end before the start is a shift that ends the next day: say so, and mark an unusually long one.
+    const sp = c.clock && R().isTime(d.start) && R().isTime(d.end) ? R().span(d.start, d.end, d.breakMin) : null;
+    const note = sp && !sp.invalid ? (sp.overnight ? ' · הסיום למחרת' : '') + (sp.long ? ' · ארוכה מ־16 שעות' : '') : '';
+    return `<span class="grow">${c.minutes > 0 && d.mode !== 'JOB' && !c.errors.some(e => e.startsWith('שעת') || e.startsWith('ההפסקה')) ? U().hm(c.minutes) + ' שעות' + note : ''}</span>
       ${total != null ? `<b class="amount" data-testid="editor-total">${moneyHtml(total, d.currency)}</b>` : d.rateUnknown && d.mode !== 'JOB' ? '<b class="label">תעריף חסר</b>' : d.amountUnknown && d.mode === 'JOB' ? '<b class="label">סכום חסר</b>' : ''}`;
   }
   function durationControl(optional = false) {
@@ -504,6 +516,7 @@ function open(app, { entry = null, restore = null } = {}) {
     }
   }
 
+  let confirmedUnusual = false;
   function save() {
     // A name typed in "עובד חדש" but not added yet joins the team instead of being lost.
     const pending = host.querySelector('[data-testid=job-worker-name]')?.value.trim();
@@ -517,6 +530,9 @@ function open(app, { entry = null, restore = null } = {}) {
       U().toast((res.created === 1 ? 'נוצרה משמרת קבועה אחת' : `נוצרו ${res.created} משמרות קבועות`) + (res.recorded.length ? ` · ${res.recorded.length} שכבר עברו נרשמו` : ''));
       return;
     }
+    // Unusual values are saved only after a clear question (audit M-06): a shift over 16 hours or a very large amount.
+    const unusual = c.minutes > R().LONG_SHIFT_MINUTES ? `משמרת של ${U().hm(c.minutes)} שעות` : c.total != null && c.total >= 10000 ? `משמרת של ${U().money(c.total, d.currency)}` : null;
+    if (unusual && !confirmedUnusual) { U().confirmSheet(`לשמור ${unusual}?`, 'זה יותר מהרגיל, אז כדאי לבדוק את השעות והתעריף.', 'שמירה', () => { confirmedUnusual = true; save(); }, false); return; }
     const row = toEntry(d, base);
     try {
       if (base) { store.replaceEntry(base.id, row, base); close(true); U().haptic('success'); U().toast('השינויים נשמרו ✓', 'ביטול', () => store.replaceEntry(base.id, base)); }
