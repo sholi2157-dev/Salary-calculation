@@ -95,7 +95,7 @@ fun KisHome(
             val day = remember(now) { com.example.domain.V2Summary.today() }
             remember(entries, day) { freshRecaps(entries, day) }.forEach { scope ->
                 RecapEntry(if (scope.length == 4) "השנה $scope שלך בכיס" else "${KisFormat.MONTHS[(monthKeyOf(scope) ?: 0) % 12]} שלך בכיס",
-                    if (scope.length == 4) "הסיכום השנתי מוכן" else "הסיכום החודשי מוכן", "home_recap_$scope", Modifier.padding(top = 12.dp)) { onRecap(scope) }
+                    if (scope.length == 4) "הסיכום השנתי מוכן" else "הסיכום החודשי מוכן", "home_recap_$scope", Modifier.padding(top = 12.dp), soft = true) { onRecap(scope) }
             }
             val upcoming = remember(entries, now) { entries.filter { KisHistoryLogic.upcoming(it, now) } }
             NextUp(plans, upcoming, categories, planActions, onOpen, onAllPlans)
@@ -246,30 +246,32 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
             // The clock is the big number (what people glance at); with a rate, the money earned so far (to the agora, by
             // the second) sits under it, smaller.
             val earning = live.rate > 0
-            // The bar takes the whole width so the big clock always fits; "ביטול" sits on the line below it.
-            Row {
-                Row(Modifier.weight(1f).heightIn(min = if (earning) 72.dp else 64.dp).clip(RoundedCornerShape(18.dp)).background(c.ink).kisClick(haptic = KisSettings.Haptic.SUCCESS) {
-                    if (System.currentTimeMillis() - live.start < 60_000L) confirmShort = true else onStop()
-                }
-                    .testTag("live_shift_stop").padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(10.dp).clip(CircleShape).background(Workplaces[1].accent(true).copy(alpha = a)))
-                    Spacer(Modifier.width(10.dp))
-                    val ltr = TextDirection.Ltr
-                    Column(Modifier.weight(1f)) {
-                        Text(time, style = KisType.body.copy(fontSize = 30.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum", textDirection = ltr),
-                            color = c.onInk, maxLines = 1, softWrap = false, modifier = Modifier.testTag("active_shift_timer"))
-                        if (earning) Text(liveMoney(WorkPay.money(seconds / 3600.0, live.rate), live.currency),
-                            style = KisType.body.copy(fontSize = 15.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum", textDirection = ltr),
-                            color = c.onInk.copy(alpha = 0.78f), maxLines = 1, softWrap = false, modifier = Modifier.testTag("active_shift_money"))
+            // 2.3.0 (approved choice B): a raised light card with a brand line on top (dark: #2D323A with #9398FF); the running
+            // clock is the main number, the money under it, and "סיום ושמירה" is the strong button.
+            val shape = RoundedCornerShape(18.dp)
+            val brand = if (c.dark) androidx.compose.ui.graphics.Color(0xFF9398FF) else androidx.compose.ui.graphics.Color(0xFF5145E8)
+            Column(Modifier.fillMaxWidth().clip(shape).background(if (c.dark) androidx.compose.ui.graphics.Color(0xFF2D323A) else c.surface)
+                .border(1.dp, if (c.dark) androidx.compose.ui.graphics.Color(0xFF3A404A) else c.line, shape).testTag("live_card")) {
+                Box(Modifier.fillMaxWidth().height(4.dp).background(brand))
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(10.dp).clip(CircleShape).background(Workplaces[1].accent(c.dark).copy(alpha = a)))
+                        Spacer(Modifier.width(8.dp))
+                        Text("משמרת פעילה · ${live.category}", style = KisType.caption, color = c.muted, maxLines = 1, modifier = Modifier.weight(1f))
+                        CurrencyToggle(live.currency, onCurrency, "active_shift_currency")
                     }
-                    Text("סיום ושמירה", style = KisType.label, color = c.onInk)
+                    val ltr = TextDirection.Ltr
+                    Text(time, style = KisType.body.copy(fontSize = 38.sp, lineHeight = 44.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum", textDirection = ltr),
+                        color = c.ink, maxLines = 1, softWrap = false, modifier = Modifier.fillMaxWidth().testTag("active_shift_timer"))
+                    if (earning) Text(liveMoney(WorkPay.money(seconds / 3600.0, live.rate), live.currency),
+                        style = KisType.body.copy(fontSize = 20.sp, lineHeight = 26.sp, fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum", textDirection = ltr),
+                        color = c.muted, maxLines = 1, softWrap = false, modifier = Modifier.fillMaxWidth().testTag("active_shift_money"))
+                    Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        KisButton("סיום ושמירה", { if (System.currentTimeMillis() - live.start < 60_000L) confirmShort = true else onStop() }, Modifier.weight(1f),
+                            height = 52.dp, haptic = KisSettings.Haptic.SUCCESS, tag = "live_shift_stop")
+                        KisButton("ביטול", { confirmCancel = true }, Modifier, KisButtonKind.OUTLINE, height = 52.dp, tag = "cancel_active_shift")
+                    }
                 }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(live.category, style = KisType.caption, color = c.muted, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
-                Spacer(Modifier.weight(1f))
-                CurrencyToggle(live.currency, onCurrency, "active_shift_currency")
-                KisButton("ביטול", { confirmCancel = true }, Modifier, KisButtonKind.OUTLINE, height = 44.dp, tag = "cancel_active_shift")
             }
         }
     }

@@ -60,10 +60,11 @@ val KisLight = KisColors(
 
 val KisDark = KisColors(
     dark = true,
-    bg = Color(0xFF121212), surface = Color(0xFF1E1E1E), sunk = Color(0xFF2A2A2A), ink = Color.White, muted = Color(0xFFB3B3B3), line = Color(0xFF303030),
+    // 2.3.0 (approved choice B): a very dark blue-black instead of neutral grey; text contrast kept (muted on surface > 9:1).
+    bg = Color(0xFF0F1216), surface = Color(0xFF181B20), sunk = Color(0xFF282C34), ink = Color(0xFFEDF0F6), muted = Color(0xFFB3B9C5), line = Color(0xFF32373F),
     pending = Color(0xFFFFC266), pendingSoft = Color(0xFF3A2D12), paid = Color(0xFF34C79A), danger = Color(0xFFFF8A7A),
-    edit = Color(0xFF2A2A2A), editInk = Color(0xFFF1F3F7), nav = Color(0xFF181818), navInk = Color(0xFFB3B3B3), navOn = Color.White, navOnInk = Color(0xFF121212),
-    bar = Color(0xFF2C2E33), onBar = Color(0xFFF1F3F7),
+    edit = Color(0xFF282C34), editInk = Color(0xFFEDF0F6), nav = Color(0xFF1B1F25), navInk = Color(0xFFB3B9C5), navOn = Color(0xFFEDF0F6), navOnInk = Color(0xFF0F1216),
+    bar = Color(0xFF2D323A), onBar = Color(0xFFEDF0F6),
 )
 
 /** The 8 fixed workplace colours. Blocks run from [from] (amount side) to the darker [to] (name side). */
