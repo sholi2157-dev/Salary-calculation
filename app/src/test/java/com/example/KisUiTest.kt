@@ -951,9 +951,15 @@ class KisUiTest {
         ui.onNodeWithTag("group_employer_due", useUnmergedTree = true).assertTextEquals("$395")
         ui.onNodeWithTag("group_team_pay", useUnmergedTree = true).assertTextEquals("$300")
         runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-detail-top.png") }
-        listOf("edit_entry_btn_81", "share_entry_btn_81", "copy_entry_btn_81", "delete_entry_btn_81").forEach {
+        // Design decision B: the main amount is labelled as the user's part; every report is under one "שיתוף".
+        ui.onNodeWithTag("detail_amount_label", useUnmergedTree = true).assertTextEquals("החלק שלי")
+        ui.onNodeWithTag("group_summary_share").performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(44.dp)
+        ui.onNodeWithTag("group_worker_more_0").performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(44.dp)
+        ui.onNodeWithTag("group_worker_paid_0").assertHeightIsAtLeast(44.dp)
+        listOf("edit_entry_btn_81", "delete_entry_btn_81").forEach {
             ui.onNodeWithTag(it).performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(60.dp)
         }
+        ui.onNodeWithTag("share_entry_btn_81").assertDoesNotExist()
         runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-detail-bottom.png") }
     }
 

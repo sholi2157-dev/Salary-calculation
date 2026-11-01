@@ -14,6 +14,11 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -99,8 +104,12 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
                 Text(entry.category, style = KisType.label.copy(fontSize = 16.sp), color = workplace.on, maxLines = 1)
                 Text(dayLabelLong(entry.date) + if (entry.autoConfirmed) " · נרשמה לבד בסוף הזמן המתוכנן" else "", style = KisType.caption, color = workplace.on.copy(alpha = 0.85f))
             }
-            if (pay != null) MoneyText(pay, entry.currency, KisType.amount.copy(fontSize = 30.sp), color = workplace.on, modifier = Modifier.testTag("detail_amount"))
-            else Text(WorkPay.missingLabel(entry), style = KisType.label, color = workplace.on, modifier = Modifier.testTag("detail_amount"))
+            // A group shift: the amount is the user's own part, the one the lists and totals show (design decision B).
+            Column(horizontalAlignment = Alignment.End) {
+                if (entry.isGroupShift) Text("החלק שלי", style = KisType.caption, color = workplace.on.copy(alpha = 0.85f), modifier = Modifier.testTag("detail_amount_label"))
+                if (pay != null) MoneyText(pay, entry.currency, KisType.amount.copy(fontSize = 30.sp), color = workplace.on, modifier = Modifier.testTag("detail_amount"))
+                else Text(WorkPay.missingLabel(entry), style = KisType.label, color = workplace.on, modifier = Modifier.testTag("detail_amount"))
+            }
         }
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.bg).padding(horizontal = 14.dp)) {
             @Composable fun fact(k: String, v: @Composable () -> Unit) {
@@ -131,7 +140,7 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
             }
             if (entry.notes.isNotBlank() && !WorkPay.isJob(entry)) fact("הערה") { value(entry.notes) }
             // Money passed through is owed by the employer but is not the user's: shown apart, with what the employer owes in all.
-            if (entry.passThrough > 0) {
+            if (entry.passThrough > 0 && !entry.isGroupShift) {
                 fact("החזר הוצאות") { value(KisFormat.money(entry.passThrough, entry.currency) + " · לא שלך", "detail_pass_through") }
                 if (!entry.isGroupShift) WorkPay.employerDue(entry)?.let { due -> fact("לקבל מהמעסיק") { value(KisFormat.money(due, entry.currency), "detail_employer_due") } }
             }
@@ -145,8 +154,11 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
         if (entry.isGroupShift) group()
         Row(Modifier.fillMaxWidth().coachTarget(CoachTarget.SHARE).testTag("entry_actions_${entry.id}"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             KisAction("עריכה", Icons.Rounded.Edit, onEdit, Modifier.weight(1f), primary = true, tag = "edit_entry_btn_${entry.id}")
-            KisAction(if (entry.isGroupShift) "החלק שלי" else "שיתוף", Icons.Rounded.Share, onShare, Modifier.weight(1f), tag = "share_entry_btn_${entry.id}")
-            KisAction("העתקה", Icons.Rounded.ContentCopy, onCopy, Modifier.weight(1f), tag = "copy_entry_btn_${entry.id}")
+            // A group shift has every report (its own part too) under the team's "שיתוף" (design decision B).
+            if (!entry.isGroupShift) {
+                KisAction("שיתוף", Icons.Rounded.Share, onShare, Modifier.weight(1f), tag = "share_entry_btn_${entry.id}")
+                KisAction("העתקה", Icons.Rounded.ContentCopy, onCopy, Modifier.weight(1f), tag = "copy_entry_btn_${entry.id}")
+            }
             KisAction("מחיקה", Icons.Rounded.DeleteOutline, onDelete, Modifier.weight(1f), danger = true, tag = "delete_entry_btn_${entry.id}")
         }
     }
@@ -160,47 +172,65 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
     val workers = WorkPay.workers(entry)
     val summary = WorkPay.group(entry)
     val job = WorkPay.isJob(entry)
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.bg).padding(12.dp).testTag("group_detail"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("הצוות", style = KisType.label.copy(fontSize = 16.sp), color = c.ink)
-        if (summary != null) {
+    val future = KisHistoryLogic.upcoming(entry)
+    // The team's pay, summed in whole agorot (null while any worker's pay is unknown).
+    val team: Double? = if (job) WorkPay.teamPay(entry) else workers.fold(0L as Long?) { acc, w -> acc?.let { a -> WorkPay.workerPay(w, entry)?.let { a + Math.round(it * 100) } } }?.let { it / 100.0 }
+    var reports by rememberSaveable { mutableStateOf(false) }
+    var workerMenu by rememberSaveable { mutableStateOf<Int?>(null) }
+    // Design decision B: one block with every total (all from WorkPay, reconciled in whole agorot), one "שיתוף" for the
+    // reports, and one row per worker with its paid state and ⋯ for share, copy and paid.
+    Column(Modifier.fillMaxWidth().testTag("group_detail"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (summary != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sunk).padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             @Composable fun line(k: String, v: Double, tag: String, strong: Boolean = false) = Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(k, style = if (strong) KisType.label else KisType.caption, color = if (strong) c.ink else c.muted, modifier = Modifier.weight(1f))
+                Text(k, style = if (strong) KisType.label else KisType.body.copy(fontSize = 15.sp), color = c.ink, modifier = Modifier.weight(1f))
                 MoneyText(v, entry.currency, if (strong) KisType.label.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold) else KisType.label, modifier = Modifier.testTag(tag))
             }
-            // The user's pay is the amount on top; the team's pay is on top of it, and the employer owes all of it.
-            // Same order as the editor: my part, the team's, money passed through, then what the employer owes.
-            line(if (job) "שלי" else "ההכנסה שלי (כולל עמלה)", summary.myNet, "group_mine")
-            if (job) line("לצוות", Math.round((summary.employerTotal - summary.myNet - entry.passThrough) * 100.0) / 100.0, "group_team_pay")
-            if (entry.passThrough > 0) line("החזר הוצאות", entry.passThrough, "group_pass_through")
+            if (!job) { line("עמלה מהצוות", summary.profit, "group_profit"); line("ההכנסה שלי כולל עמלה", summary.myNet, "group_my_net") }
+            if (team != null) line("לצוות (${workers.size})", team, "group_team_pay")
+            if (entry.passThrough > 0) line("החזר הוצאות · לא שלך", entry.passThrough, "group_pass_through")
+            KisDivider()
             line("לקבל מהמעסיק", summary.employerTotal, "group_employer_due", strong = true)
         } else Text(if (job) "הסכומים יופיעו אחרי שיושלם הסכום שלך." else "הסכומים יופיעו אחרי שיושלם התעריף.", style = KisType.caption, color = c.muted)
+        KisButton("שיתוף", { reports = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, icon = Icons.Rounded.Share, height = 48.dp, tag = "group_summary_share")
+        Text("${if (job) "הצוות" else "הקבוצה"} · ${workers.size}", style = KisType.label.copy(fontSize = 16.sp), color = c.ink, modifier = Modifier.padding(top = 4.dp))
         workers.forEachIndexed { i, w ->
             val wPay = WorkPay.workerPay(w, entry)
-            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.surface)
-                .kisClick { viewModel.toggleWorkerPaid(entry.id, i) }
-                .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp).testTag("group_worker_$i"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Icon(if (w.isPaid) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked, if (w.isPaid) "שולם" else "לא שולם", tint = if (w.isPaid) c.paid else c.muted)
+            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("group_worker_$i"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(Modifier.weight(1f)) {
-                    Text(w.name, style = KisType.label, color = c.ink)
-                    // A job worker is paid by the job: just their sum (an old one saved as hours × rate shows how).
+                    Text(w.name, style = KisType.label, color = c.ink, maxLines = 1)
                     val fixed = job && w.amount != null
-                    val time = if (job && fixed) null else if (job) "${KisFormat.duration(w.hours)} שעות × ${WorkPay.workerRate(w, entry)?.let { KisFormat.money(it, entry.currency) } ?: "?"}" else "${KisFormat.hours(w.hours)} שעות"
-                    Text(listOfNotNull(time, wPay?.let { KisFormat.money(it, entry.currency) } ?: "תעריף חסר", if (w.bonus > 0) "בונוס ${KisFormat.money(w.bonus, entry.currency)}" else null).joinToString(" · "),
+                    val time = if (fixed) "סכום קבוע" else if (job) "${KisFormat.duration(w.hours)} שעות × ${WorkPay.workerRate(w, entry)?.let { KisFormat.money(it, entry.currency) } ?: "?"}" else "${KisFormat.duration(w.hours)} שעות"
+                    Text(listOfNotNull(time, if (w.bonus > 0) "בונוס ${KisFormat.money(w.bonus, entry.currency)}" else null).joinToString(" · "),
                         style = KisType.caption.copy(textDirection = TextDirection.Rtl), color = c.muted)
                 }
-                Icon(Icons.Rounded.ContentCopy, "העתק פרטי משמרת לעובד", tint = c.ink, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp))
-                    .kisClick { KisShare.copy(context, WorkShareText.worker(entry, w, technical = true, future = KisHistoryLogic.upcoming(entry))); onMessage("הועתק ✓") }.padding(10.dp))
-                Icon(Icons.Rounded.Share, "שתף פרטי משמרת לעובד", tint = c.ink, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp))
-                    .kisClick { KisShare.shareOrCopy(context, WorkShareText.worker(entry, w, future = KisHistoryLogic.upcoming(entry)), "שליחה ל${w.name}", onMessage) }.padding(10.dp))
+                Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(99.dp)).kisClick { viewModel.toggleWorkerPaid(entry.id, i) }
+                    .semantics { contentDescription = "${w.name}: ${if (w.isPaid) "שולם" else "לא שולם"}"; selected = w.isPaid }.testTag("group_worker_paid_$i"), contentAlignment = Alignment.Center) {
+                    Text(if (w.isPaid) "שולם ✓" else "לא שולם", style = KisType.micro, color = if (w.isPaid) c.paid else c.muted,
+                        modifier = Modifier.clip(RoundedCornerShape(99.dp)).background(if (w.isPaid) c.paid.copy(alpha = 0.18f) else c.sunk).padding(horizontal = 10.dp, vertical = 3.dp))
+                }
+                if (wPay != null) MoneyText(wPay, entry.currency, KisType.label, modifier = Modifier.testTag("group_worker_pay_$i"))
+                else Text("חסר", style = KisType.caption, color = c.pending)
+                Icon(Icons.Rounded.MoreHoriz, "פעולות ל${w.name}", tint = c.ink, modifier = Modifier.size(44.dp).clip(CircleShape).kisClick { workerMenu = i }.testTag("group_worker_more_$i").padding(10.dp))
             }
-        }
-        // The two team reports side by side: the team's rows and the shift's own actions stay in view together.
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisButton("למעסיק", { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName, future = KisHistoryLogic.upcoming(entry)), "סיכום לקבלן", onMessage) }, Modifier.weight(1f),
-                KisButtonKind.GHOST, icon = Icons.Rounded.ReceiptLong, height = 44.dp, tag = "group_summary_share")
-            KisButton("העתקת הדוח", { KisShare.copy(context, WorkShareText.employer(entry, myName, technical = true, future = KisHistoryLogic.upcoming(entry))); onMessage("הדוח הועתק ✓") }, Modifier.weight(1f), KisButtonKind.GHOST, height = 44.dp, tag = "group_summary_copy")
+            if (i < workers.lastIndex) KisDivider()
         }
     }
+    @Composable fun ActionsSheet(title: String, tag: String, onDismiss: () -> Unit, items: List<Pair<String, () -> Unit>>) = KisSheet(onDismiss = onDismiss, tag = tag) {
+        Text(title, style = KisType.title, color = c.ink)
+        items.forEachIndexed { i, (label, act) ->
+            Text(label, style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(12.dp))
+                .kisClick { onDismiss(); act() }.testTag("${tag}_$i").wrapContentHeight(Alignment.CenterVertically).padding(horizontal = 12.dp))
+        }
+    }
+    if (reports) ActionsSheet("שיתוף", "group_reports", { reports = false }, listOf(
+        "דו״ח למעסיק" to { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName, future = future), "סיכום לקבלן", onMessage) },
+        "העתקת דוח הצוות" to { KisShare.copy(context, WorkShareText.employer(entry, myName, technical = true, future = future)); onMessage("הדוח הועתק ✓") },
+        "החלק שלי" to { KisShare.shareOrCopy(context, WorkShareText.entry(entry, future = future), "שיתוף משמרת", onMessage) },
+        "העתקת החלק שלי" to { KisShare.copy(context, WorkShareText.entry(entry, technical = true, future = future)); onMessage("הועתק ✓") }))
+    workerMenu?.let { i -> workers.getOrNull(i)?.let { w -> ActionsSheet(w.name, "group_worker_menu", { workerMenu = null }, listOf(
+        "שיתוף ל${w.name}" to { KisShare.shareOrCopy(context, WorkShareText.worker(entry, w, future = future), "שליחה ל${w.name}", onMessage) },
+        "העתקה" to { KisShare.copy(context, WorkShareText.worker(entry, w, technical = true, future = future)); onMessage("הועתק ✓") },
+        (if (w.isPaid) "סימון כלא שולם" else "סימון כשולם") to { viewModel.toggleWorkerPaid(entry.id, i) })) } }
 }
 
 /**

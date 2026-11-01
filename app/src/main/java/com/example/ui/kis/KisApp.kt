@@ -29,6 +29,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -54,8 +56,22 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-/** A short message at the bottom, optionally with one action (usually undo). */
-data class KisMessage(val text: String, val action: String? = null, val onAction: (() -> Unit)? = null, val id: Long = System.nanoTime())
+/**
+ * A short message at the bottom, optionally with one action (usually undo). Design decision "משוב והודעות" B, as on the
+ * web: one at a time, with a sign by kind (✓ done, ↺ can be undone, ! failed); the kind is read from the wording.
+ */
+data class KisMessage(val text: String, val action: String? = null, val onAction: (() -> Unit)? = null, val id: Long = System.nanoTime()) {
+    enum class Kind { OK, UNDO, ERROR, INFO }
+    val kind: Kind get() = when {
+        FAILED.containsMatchIn(text) -> Kind.ERROR
+        text.contains('✓') -> Kind.OK
+        action != null -> Kind.UNDO
+        else -> Kind.INFO
+    }
+    /** The text without the ✓ that the sign already shows. */
+    val shown: String get() = if (kind == Kind.OK) text.replace(Regex("\\s*✓\\s*"), " ").trim() else text
+    companion object { val FAILED = Regex("נכשל|לא הושלם|לא בוצע|לא תקין|לא הצליח|אין חיבור|אין שעה כזאת|אפשר עד") }
+}
 
 /** Requests the shell can receive from outside (system shortcuts, notifications). */
 /** What a shortcut or a notification asks the app to open. HISTORY opens the summary of [KisApp]'s requestedMonth (else last month). */
@@ -201,7 +217,7 @@ fun KisApp(
     LaunchedEffect(editorBaseId, entries) {
         if (editorBaseId != null && entries.isNotEmpty() && entries.none { it.id == editorBaseId }) { editorJson = null; editorBaseId = null }
     }
-    LaunchedEffect(message?.id) { if (message != null) { delay(if (message?.action != null) 6000 else 2600); message = null } }
+    LaunchedEffect(message?.id) { if (message != null) { delay(if (message?.kind == KisMessage.Kind.ERROR) 8000 else if (message?.action != null) 6000 else 2600); message = null } }
     // History handles its own Back for selection and search, but only on its page; elsewhere Back goes Home.
     BackHandler(enabled = editorJson == null && pager.currentPage != 0 && !(pager.currentPage == 1 && (history.selecting || history.searching || history.planned))) { go(0) }
     // A plan whose time ends while the app is open turns to "waiting" without leaving the screen.
@@ -273,9 +289,16 @@ fun KisApp(
             val above = if (history.selecting && pager.currentPage == 1) history.barHeight + 8.dp else navHeight
             Row(Modifier.align(Alignment.BottomCenter).padding(bottom = above, start = 16.dp, end = 16.dp)
                 .shadow(14.dp, RoundedCornerShape(99.dp), ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.25f))
-                .clip(RoundedCornerShape(99.dp)).background(c.bar).border(1.dp, c.line, RoundedCornerShape(99.dp)).padding(start = 18.dp, end = 6.dp).heightIn(min = 48.dp).semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite }.testTag("kis_message"),
+                .clip(RoundedCornerShape(16.dp)).background(c.bar).border(1.dp, if (m.kind == KisMessage.Kind.ERROR) c.danger.copy(alpha = 0.55f) else c.line, RoundedCornerShape(16.dp))
+                .padding(start = 12.dp, end = 6.dp).heightIn(min = 48.dp)
+                .semantics { liveRegion = if (m.kind == KisMessage.Kind.ERROR) androidx.compose.ui.semantics.LiveRegionMode.Assertive else androidx.compose.ui.semantics.LiveRegionMode.Polite }.testTag("kis_message"),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(m.text, style = KisType.label, color = c.onBar, modifier = Modifier.padding(vertical = 10.dp))
+                val sign = when (m.kind) { KisMessage.Kind.OK -> "✓"; KisMessage.Kind.UNDO -> "↺"; KisMessage.Kind.ERROR -> "!"; else -> null }
+                if (sign != null) Box(Modifier.size(26.dp).clip(CircleShape).background(when (m.kind) { KisMessage.Kind.OK -> c.paid; KisMessage.Kind.ERROR -> c.danger; else -> c.onBar.copy(alpha = 0.18f) })
+                    .clearAndSetSemantics { }.testTag("kis_message_sign"), contentAlignment = Alignment.Center) {
+                    Text(sign, style = KisType.label, color = if (m.kind == KisMessage.Kind.UNDO) c.onBar else Color.White)
+                }
+                Text(m.shown, style = KisType.label.copy(fontWeight = FontWeight.Medium), color = c.onBar, modifier = Modifier.weight(1f, fill = false).padding(vertical = 10.dp))
                 if (m.action != null) Text(m.action, style = KisType.label, color = if (c.dark) Workplaces[3].accent(true) else Workplaces[0].from,
                     modifier = Modifier.clip(RoundedCornerShape(99.dp)).kisClick { m.onAction?.invoke(); message = null }.testTag("kis_message_action").padding(horizontal = 12.dp, vertical = 10.dp))
                 else Spacer(Modifier.width(12.dp))
