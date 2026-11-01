@@ -94,5 +94,11 @@
       "source": "/mcp",
       "destination": "/api/mcp"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "release/**": false,
+      "work/**": false
+    }
+  }
 }
