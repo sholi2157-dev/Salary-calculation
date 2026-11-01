@@ -261,13 +261,14 @@ function open(app, { entry = null, restore = null } = {}) {
   };
   document.addEventListener('keydown', onKey);
   app.editorOpen = true;
-  const persist = () => { if (!base) try { localStorage.setItem(DRAFT, JSON.stringify(d)); } catch {} };
+  // The draft lives in the signed-in account's own storage, like its data, so it never reaches another account (audit CW-13).
+  const persist = () => { if (!base) try { app.storage.setItem(DRAFT, JSON.stringify(d)); } catch {} };
   const changed = () => JSON.stringify(d) !== original;
   function close(force = false) {
     if (!force && changed()) return U().confirmSheet(base ? 'לצאת בלי לשמור את השינויים?' : 'לצאת בלי לשמור את המשמרת?', 'מה שהקלדת לא יישמר.', 'לצאת', () => close(true));
     host.remove(); document.removeEventListener('keydown', onKey); behind.forEach(b => b && (b.inert = false));
     if (opener?.isConnected) opener.focus({ preventScroll: true });
-    app.editorOpen = false; if (!base) localStorage.removeItem(DRAFT); app.refresh();
+    app.editorOpen = false; if (!base) try { app.storage.removeItem(DRAFT); } catch {} app.refresh();
   }
   app.closeEditor = () => close();
   // Back / Escape: typing a time ends first, then the editor (asking when something was typed).
@@ -607,7 +608,7 @@ function rulerBind(host, d, select, change) {
     });
   });
 }
-function pendingDraft() { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
+function pendingDraft(storage) { try { const d = JSON.parse(storage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
 
 root.KisEditor = { open, toEntry, fromEntry, evaluate, newDraft, withTab, withTeam, tabOf, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
 })(globalThis);

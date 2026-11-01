@@ -323,12 +323,16 @@ const seed = {
   // Before the 30th there is no story at all (no spoilers); from the 30th it is on Home, then in Settings.
   {
     const { ctx, page } = await open();
-    const real = new Date(); const recapDay = Math.min(30, new Date(real.getFullYear(), real.getMonth() + 1, 0).getDate());
+    // Pinned to the 15th: on the first days of a month the previous month's recap is (rightly) still on Home, which made
+    // this check depend on the day it ran.
+    const now = new Date(), real = new Date(now.getFullYear(), now.getMonth(), 15, 12);
+    await page.clock.install({ time: real }); await page.reload(); await page.waitForSelector(tid('home-hero'));
+    const recapDay = Math.min(30, new Date(real.getFullYear(), real.getMonth() + 1, 0).getDate());
     if (real.getDate() < recapDay) {
       assert.equal(await page.locator(tid('home-month-summary')).count(), 0, 'no month summary link on Home');
       assert.equal(await page.locator('[data-testid^=home-recap-]').count(), 0);
       await page.keyboard.press('Escape');
-      await page.clock.install({ time: new Date(real.getFullYear(), real.getMonth(), recapDay, 12) });
+      await page.clock.setSystemTime(new Date(real.getFullYear(), real.getMonth(), recapDay, 12));
       await page.reload(); await page.waitForSelector(tid('home-hero'));
     }
     const scope = await page.evaluate(() => KisSummary.recapNew(KisPlan.dateOf(Date.now())).month);

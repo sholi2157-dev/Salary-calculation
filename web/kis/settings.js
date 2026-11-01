@@ -59,6 +59,54 @@ function backupText(store) {
     androidLocalPreferences: root.WorkRuntime.androidPreferences(d.webPreferences), series: store.plans.series, exceptions: store.plans.exceptions });
 }
 
+/**
+ * Recovery when stored data cannot be read (audit CW-15, D04). Reachable from the screen that reports the problem, not
+ * only from Settings. The unreadable text can be downloaded as it is; a checked backup replaces it only after
+ * confirmation, and the unreadable text is kept on the device under a key of its own first.
+ */
+function recoveryPanel(app) {
+  const { store } = app, which = store.broken ? 'הנתונים השמורים' : 'המשמרות הקבועות';
+  return `<div class="card" role="alert" data-testid="recovery-panel" style="display:grid;gap:10px">
+    <h2 style="margin:0">אי אפשר לקרוא את ${which}</h2>
+    <p class="caption" style="margin:0">${U().esc(store.broken || store.plansBroken)}. שום דבר לא נמחק ולא שונה.${store.broken ? '' : ' המשמרות עצמן לא נפגעו.'}</p>
+    <button class="btn ghost small" data-recover="download" data-testid="recovery-download">הורדת הנתונים כמו שהם</button>
+    <button class="btn primary small" data-recover="restore" data-testid="recovery-restore">שחזור מקובץ גיבוי</button></div>`;
+}
+function bindRecovery(el, app) {
+  const { store } = app;
+  el.querySelector('[data-recover=download]')?.addEventListener('click', () => {
+    const raw = store.broken ? app.storage.getItem('work_complete_backup') : store.rawPlans();
+    download(store.broken ? 'salary-data-as-stored.txt' : 'salary-plans-as-stored.txt', raw || '', 'text/plain');
+  });
+  el.querySelector('[data-recover=restore]')?.addEventListener('click', () => recoverySheet(app));
+}
+function recoverySheet(app) {
+  const { store } = app;
+  U().sheet('recovery-sheet', (el, close) => {
+    let decoded = null;
+    el.innerHTML = `<h2>שחזור מקובץ גיבוי</h2>
+      <p class="caption" style="margin:0">הנתונים שאי אפשר לקרוא יישמרו בצד במכשיר הזה לפני השחזור.</p>
+      <label class="btn ghost small" style="position:relative">בחירת קובץ<input type="file" accept=".json,.txt" data-f="file" style="position:absolute;inset:0;opacity:0"></label>
+      <textarea class="input" rows="4" data-f="t" placeholder="או הדבקת תוכן הגיבוי" data-testid="recovery-text"></textarea>
+      <p class="caption" data-f="sum" data-testid="recovery-summary" aria-live="polite"></p>
+      <button class="btn primary" data-a="ok" disabled data-testid="recovery-confirm">שחזור</button>`;
+    const t = el.querySelector('[data-f=t]'), sum = el.querySelector('[data-f=sum]'), ok = el.querySelector('[data-a=ok]');
+    const check = () => {
+      try { decoded = root.WorkTransfer.decode(t.value);
+        sum.textContent = `בגיבוי ${decoded.entries.length} משמרות, ${decoded.categories.length} מקומות` + ((decoded.series || []).length ? ` ו־${decoded.series.length} משמרות קבועות` : '') + '.';
+        ok.disabled = false; }
+      catch (e) { decoded = null; ok.disabled = true; sum.textContent = t.value.trim() ? 'הקובץ לא נקרא: ' + e.message : ''; }
+    };
+    t.oninput = check;
+    el.querySelector('[data-f=file]').onchange = async e => { const f = e.target.files[0]; if (f) { t.value = await f.text(); check(); } };
+    ok.onclick = () => {
+      if (!decoded) return;
+      try { store.restoreDamaged(decoded); close(); app.refresh(); U().toast('השחזור הושלם'); }
+      catch (e) { sum.textContent = e.message; }
+    };
+  });
+}
+
 function importSheet(app) {
   const { store } = app;
   U().sheet('import-sheet', (el, close) => {
@@ -67,19 +115,31 @@ function importSheet(app) {
       <textarea class="input" rows="6" data-f="t" placeholder="הדבקת נתונים" data-testid="import-text"></textarea>
       <label class="btn ghost small" style="position:relative">בחירת קובץ<input type="file" accept=".json,.csv,.tsv,.txt" data-f="file" style="position:absolute;inset:0;opacity:0"></label>
       <button class="btn ghost" data-a="check" data-testid="import-check">בדיקה</button><p class="caption" data-f="sum" data-testid="import-summary" style="white-space:pre-line"></p>
+      <label class="row" data-f="prefsRow" hidden style="align-items:center;gap:10px;min-height:44px"><input type="checkbox" data-f="prefs" data-testid="import-prefs"><span data-f="prefsText"></span></label>
       <button class="btn primary" data-a="save" disabled data-testid="import-save">שמירת הנתונים</button>`;
     const t = el.querySelector('[data-f=t]'), sum = el.querySelector('[data-f=sum]'), save = el.querySelector('[data-a=save]');
+    const prefsRow = el.querySelector('[data-f=prefsRow]'), prefsText = el.querySelector('[data-f=prefsText]'), prefsBox = el.querySelector('[data-f=prefs]');
     const check = () => {
       try {
         const data = root.WorkTransfer.decode(t.value);
         const keys = new Set(store.data.entries.map(e => e.seriesKey).filter(Boolean));
         const fresh = root.WorkTransfer.missing(store.data.entries, data.entries).filter(e => !e.seriesKey || !keys.has(e.seriesKey));
         const series = (data.series || []).filter(s => !store.plans.series.some(x => x.id === s.id));
-        pending = { data, fresh, series };
+        // Places, workers and settings count too (audit D05): a backup of only those can be imported.
+        const cats = data.categories.filter(c => !store.data.categories.some(x => x.name === c.name));
+        const workers = (data.workers || []).filter(w => !store.data.workers.some(x => x.name === w.name));
+        const p = data.webPreferences ? root.WorkCategories.preferences(data.webPreferences) : null, here = store.data.webPreferences;
+        // A place that already exists here keeps its currency (explicit or the default); only new places take theirs.
+        const currencies = p ? Object.entries(p.categoryCurrencies).filter(([n]) => cats.some(c => c.name === n)) : [];
+        const main = p && (p.mainCurrency !== here.mainCurrency || p.defaultCategory !== here.defaultCategory) ? p : null;
+        pending = { data, fresh, series, cats, workers, currencies, main };
         const tt = root.KisHome.sortedTotals(fresh);
         sum.textContent = `נקראו ${data.entries.length} משמרות. חדשות: ${fresh.length}. קיימות: ${data.entries.length - fresh.length}.` +
-          (tt.length ? `\nיתווסף: ${tt.map(([c, v]) => U().money(v, c)).join(' · ')}` : '') + (series.length ? `\nמשמרות קבועות חדשות: ${series.length}` : '');
-        save.disabled = !(fresh.length || series.length);
+          (tt.length ? `\nיתווסף: ${tt.map(([c, v]) => U().money(v, c)).join(' · ')}` : '') + (series.length ? `\nמשמרות קבועות חדשות: ${series.length}` : '') +
+          (cats.length ? `\nמקומות חדשים: ${cats.length}` : '') + (workers.length ? `\nעובדים חדשים: ${workers.length}` : '') + (currencies.length ? `\nמטבע למקומות החדשים: ${currencies.length}` : '');
+        prefsRow.hidden = !main;
+        if (main) { prefsText.textContent = `גם הגדרות ברירת המחדל מהגיבוי (מטבע ${main.mainCurrency}, מקום: ${main.defaultCategory})`; prefsBox.checked = false; }
+        save.disabled = !(fresh.length || series.length || cats.length || workers.length || currencies.length || main);
       } catch (e) { pending = null; sum.textContent = e.message; save.disabled = true; }
     };
     t.oninput = () => { pending = null; save.disabled = true; sum.textContent = ''; };
@@ -92,7 +152,7 @@ function importSheet(app) {
         // Decided again against what is stored right now (another tab may have imported meanwhile): the shifts and the
         // plans are written as one commit, so a failure leaves nothing half imported (audit D03).
         const add = store.transact(n => {
-          const d = n.data, keys = new Set(d.entries.map(e => e.seriesKey).filter(Boolean));
+          const d = n.data, keys = new Set(d.entries.map(e => e.seriesKey).filter(Boolean)), existing = new Set(d.categories.map(c => c.name));
           const rows = root.WorkTransfer.missing(d.entries, data.entries).filter(e => !e.seriesKey || !keys.has(e.seriesKey))
             .map(e => ({ ...e, id: store.uid(), kind: e.kind ?? 'shift', payKnown: e.payKnown ?? true, bonus: e.bonus ?? 0, seriesKey: e.seriesKey ?? null,
               autoConfirmed: e.autoConfirmed ?? false, createdAt: e.createdAt ?? Date.now() }));
@@ -102,6 +162,14 @@ function importSheet(app) {
           d.entries.push(...rows);
           const plans = root.WorkTransfer.missingPlans(n.plans.series, n.plans.exceptions, data.series || [], data.exceptions || []);
           n.plans.series.push(...plans.series); n.plans.exceptions.push(...plans.exceptions);
+          // Settings never overwrite what is set here: a currency only for a place without one; the defaults only when asked.
+          if (data.webPreferences) {
+            const p = root.WorkCategories.preferences(data.webPreferences), cur = d.webPreferences;
+            const merged = { ...cur, categoryCurrencies: { ...cur.categoryCurrencies } };
+            for (const [name, c] of Object.entries(p.categoryCurrencies)) if (!existing.has(name) && !Object.hasOwn(cur.categoryCurrencies, name)) Object.defineProperty(merged.categoryCurrencies, name, { value: c, enumerable: true, writable: true, configurable: true });
+            if (prefsBox.checked) { merged.mainCurrency = p.mainCurrency; if (d.categories.some(c => c.name === p.defaultCategory)) merged.defaultCategory = p.defaultCategory; }
+            d.webPreferences = root.WorkCategories.preferences(merged);
+          }
           return rows;
         });
         close(); U().toast(`נוספו ${add.length} משמרות ✓`);
@@ -373,5 +441,5 @@ function feedbackSheet(app) {
   });
 }
 
-root.KisSettings = { render, feedbackSheet, feedbackReport, event, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };
+root.KisSettings = { render, recoveryPanel, bindRecovery, recoverySheet, feedbackSheet, feedbackReport, event, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };
 })(globalThis);

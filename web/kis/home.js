@@ -77,6 +77,8 @@ function render(el, app) {
   ${wallet.length ? `<section class="home-block"><div class="section-title"><h2>הכיס של החודש</h2></div><div class="list">${wallet.map(([c, rows]) => {
       const tt = sortedTotals(rows); return `<div class="shift" style="cursor:default">${U().avatar(c, store)}<span class="meta"><b class="label">${esc(c)}</b><span class="sub">${rows.length === 1 ? 'משמרת אחת' : rows.length + ' משמרות'} · ${U().hours(rows.reduce((s, e) => s + e.hours, 0))} ש׳</span></span><span class="pay">${tt.map(([cur, v]) => moneyHtml(v, cur)).join(' ') || '—'}</span></div>`; }).join('')}</div></section>` : ''}</div>
   ${entries.length ? '' : '<div class="empty"><h3>ברוך הבא</h3></div>'}`;
+  // A damaged plans file is reported where the plans show, with its recovery (audit D04).
+  if (store.plansBroken) { el.insertAdjacentHTML('afterbegin', root.KisSettings.recoveryPanel(app)); root.KisSettings.bindRecovery(el, app); }
 
   el.querySelector('[data-act=android-download]').onclick = () => root.KisDownload.open();
   el.querySelector('[data-act=bell]').addEventListener('click', () => root.KisSettings.notificationsSheet(app));

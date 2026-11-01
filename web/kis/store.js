@@ -137,6 +137,24 @@ function createStore(storage, { now = () => Date.now() } = {}) {
   function updatePlans(fn) { transact(n => fn(n.plans)); }
   function setLocal(key, value, quiet = false) { local = { ...local, [key]: value }; storage.setItem(LOCAL, JSON.stringify(local)); if (!quiet) emit(); }
 
+  /**
+   * Recovery while the stored data cannot be read (audit CW-15) or the plans file is damaged (D04): the unreadable text
+   * is first kept, unchanged, under a key of its own; then the checked backup becomes the data, in one commit. Nothing
+   * runs without the person's confirmation in the recovery screen.
+   */
+  function restoreDamaged(decoded) {
+    const keep = Object.fromEntries([['work_complete_backup', broken], [PLANS, plansBroken]].filter(([, bad]) => bad).map(([k]) => [k, storage.getItem(k)]));
+    if (!Object.keys(keep).length) throw Error('אין נתונים פגומים לשחזור');
+    const copyKey = 'work_damaged_copy_' + now();
+    const writes = { [copyKey]: JSON.stringify({ savedAt: now(), values: keep }) };
+    if (broken) writes['work_complete_backup'] = JSON.stringify({ entries: decoded.entries.map(e => stored(withDefaults({ ...e, id: uid() }))),
+      categories: decoded.categories || [], workers: decoded.workers || [], webPreferences: root.WorkCategories.preferences(decoded.webPreferences || {}) });
+    if (plansBroken) writes[PLANS] = JSON.stringify({ series: decoded.series || [], exceptions: decoded.exceptions || [] });
+    commitKeys(storage, writes);
+    load(); emit();
+    return copyKey;
+  }
+
   // ---- shifts ----
   function addEntries(rows) { const added = rows.map(r => withDefaults({ ...r, id: r.keepId || uid(), keepId: undefined })).map(({ keepId, ...e }) => e);
     update(d => { for (const e of added) if (!d.entries.some(x => x.id === e.id)) d.entries.push(e); }); return added.map(e => e.id); }
@@ -171,7 +189,7 @@ function createStore(storage, { now = () => Date.now() } = {}) {
   function exception(seriesId, date, over = {}) { return { seriesId, date, cancelled: false, hold: false, startTime: null, endTime: null, rateOverridden: false, hourlyRate: null, ...over }; }
 
   return {
-    load, update, updatePlans, transact, setLocal, addEntries, replaceEntry, deleteEntries, restoreEntries, markPlanDays, setPaid,
+    load, update, updatePlans, transact, restoreDamaged, setLocal, addEntries, replaceEntry, deleteEntries, restoreEntries, markPlanDays, setPaid,
     timer, startTimer, cancelTimer, restoreTimer, exception, uid,
     get data() { return data; }, get plans() { return plans; }, get local() { return local; }, get broken() { return broken; },
     /** The plans file could not be read; it is kept untouched (rawPlans) and plan changes are refused until it is restored. */

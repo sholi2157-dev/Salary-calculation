@@ -24,7 +24,8 @@ function render() {
   const main = document.getElementById('page');
   const opts = app.pageOpts || {}; app.pageOpts = {};
   main.dataset.page = app.page;
-  if (store.broken) { main.innerHTML = `<div class="card" role="alert"><h2>אי אפשר לקרוא את הנתונים השמורים</h2><p class="caption">${U().esc(store.broken)}. לא בוצע שום שינוי. אפשר לשחזר מגיבוי בהגדרות.</p></div>`; }
+  // Unreadable stored data: the recovery is on this screen itself, since no other page can open (audit CW-15).
+  if (store.broken) { main.innerHTML = root.KisSettings.recoveryPanel(app); root.KisSettings.bindRecovery(main, app); }
   else if (app.page === 'history') root.KisHistory.render(main, app, opts);
   else if (app.page === 'settings') root.KisSettings.render(main, app);
   else root.KisHome.render(main, app);
@@ -142,7 +143,7 @@ function start() {
   if (monthly) U().toast(monthly.title, 'לצפייה', () => root.KisSummaryUi.story(app, monthly.scope));
   else if (notes[0]) U().toast(notes[0].title, 'להשלמה', () => app.completePending());
   // A new shift typed before a reload or an update comes back as it was.
-  const draft = root.KisEditor.pendingDraft();
+  const draft = root.KisEditor.pendingDraft(app.storage);
   if (draft && !draft.id) { root.KisEditor.open(app, { restore: draft }); U().toast('הטיוטה שוחזרה'); }
 }
 
