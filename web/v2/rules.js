@@ -102,7 +102,7 @@ function number(text) {
 /**
  * Draft (what the user has typed; strings mirror form fields, blank = not entered):
  *  {mode:'CLOCK'|'HOURS'|'JOB'|'GROUP', start=null, end=null, breakMinutes=0, hours='', rate=null,
- *   rateUnknown=false, bonus=0, bonusTarget='ME'|'ALL'|'OTHERS', amount='', amountUnknown=false}
+ *   rateUnknown=false, bonus=0, bonusTarget='ME'|'ALL'|'OTHERS', amount='', amountUnknown=false, organizerOnly=false}
  * Returns {errors, minutes, bonus, total, canSave}.
  * Unknown pay is never zero: total stays null until the rate (or job amount) is known.
  */
@@ -112,7 +112,7 @@ function evaluate(input) {
   breakMinutes: input.breakMinutes ?? 0, hours: input.hours ?? '', rate: input.rate ?? null,
   rateUnknown: input.rateUnknown ?? false, bonus: input.bonus ?? 0,
   bonusTarget: String(input.bonusTarget ?? 'ME').toUpperCase(), amount: input.amount ?? '',
-  amountUnknown: input.amountUnknown ?? false,
+  amountUnknown: input.amountUnknown ?? false, organizerOnly: input.organizerOnly === true,
  };
  if (!MODES.includes(d.mode)) throw Error('Unknown mode ' + input.mode);
  if (!BONUS_TARGETS.includes(d.bonusTarget)) throw Error('Unknown bonus target ' + input.bonusTarget);
@@ -121,10 +121,12 @@ function evaluate(input) {
  if (d.mode === 'JOB') {
   const amount = d.amountUnknown ? null : number(d.amount);
   let h = number(d.hours); if (Number.isNaN(h)) h = 0;
-  if (!d.amountUnknown && !(amount !== null && amount > 0)) errors.push('הזן סכום, או סמן "לא יודע עדיין"');
+  // A job team with an amount per worker: the user may only have organized it, so 0 is a known own pay (D-7, AND-C06).
+  const zero = d.organizerOnly && amount === 0;
+  if (!d.amountUnknown && !(amount !== null && (amount > 0 || zero))) errors.push('הזן סכום, או סמן "לא יודע עדיין"');
   if (h > 24) errors.push('יותר מ-24 שעות ביום');
   const minutes = h > 0 ? Math.round(h * 60) : null;
-  const total = amount !== null && amount > 0 ? money(1, amount) : null;
+  const total = amount !== null && amount > 0 ? money(1, amount) : zero ? 0 : null;
   return result(minutes, 0, total);
  }
  let minutes = null;

@@ -32,3 +32,15 @@ test('opening an older group shift (target "שלי" by default) never changes it
   const { ws } = saved(group());
   assert.deepEqual(ws.map(w => w.bonus), [0, 20]);
 });
+
+// M-48 (D-7 / AND-C06): a job team with an amount per worker can be saved with own pay 0 (only organizing); same as Android.
+test('organizer-only job team: own 0 is a known 0; one amount for all, or no team, still needs an amount', () => {
+  const job = (o = {}) => ({ mode: 'JOB', category: 'שיפוצים', day: 1760000000000, hours: '', rate: '', rateUnknown: false, currency: '₪', bonus: '', bonusTarget: 'ME', amount: '0', amountUnknown: false,
+    notes: '', start: null, end: null, breakMin: 0, team: true, teamSameRate: false, isPaid: false, workers: [{ name: 'דני', hours: '', isPaid: false, bonus: '', amount: '400', source: {} }, { name: 'יוסי', hours: '', isPaid: false, bonus: '', amount: '350', source: {} }], ...o });
+  const ev = E.evaluate(job());
+  assert.deepEqual(ev.errors, []); assert.equal(ev.total, 0);
+  const e = E.toEntry(job());
+  assert.equal(e.payKnown, true); assert.equal(e.totalEarnings, 0); assert.equal(P.group(e).employerTotal, 750);
+  assert.ok(E.evaluate(job({ teamSameRate: true })).errors.length > 0);
+  assert.ok(E.evaluate(job({ workers: [], team: false })).errors.length > 0);
+});
