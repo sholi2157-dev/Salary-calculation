@@ -223,7 +223,7 @@ data class EntryDraft(
         rate = rateValue(), rateUnknown = rateUnknown,
         bonus = if (groupByHours && bonusTarget == BonusTarget.OTHERS) 0.0 else bonusValue(),
         bonusTarget = when (bonusTarget) { BonusTarget.ALL -> V2Rules.BonusTarget.ALL; BonusTarget.ME -> V2Rules.BonusTarget.ME; BonusTarget.OTHERS -> V2Rules.BonusTarget.OTHERS },
-        amount = amount, amountUnknown = amountUnknown,
+        amount = amount, amountUnknown = amountUnknown, organizerOnly = teamJob && !teamSameRate,
     )
 
     data class Check(val errors: List<String>, val warnings: List<String>, val minutes: Int?, val total: Double?, val overnight: Boolean) {

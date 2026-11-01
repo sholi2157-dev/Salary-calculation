@@ -40,6 +40,19 @@ class V2JobTeamTest {
         assertTrue(json.has("amount")); assertFalse(json.has("workerRate")); assertEquals(0.0, json.getDouble("hours"), 0.0)
     }
 
+    /** D-7 / AND-C06 (M-48): with an amount per worker the user may only have organized the team, so their own 0 is saved as known 0. */
+    @Test fun anOrganizerOnlyTeamJobSavesWithZeroOwnPay() {
+        val d = draft(WorkerDraft("דני", amount = "400"), WorkerDraft("יוסי", amount = "350"), amount = "0")
+        assertTrue(d.check().errors.toString(), d.check().canSave)
+        assertEquals(0.0, d.check().total!!, 0.0)
+        val e = d.toEntry()
+        assertTrue(e.payKnown); assertEquals(0.0, e.totalEarnings, 0.0)
+        assertEquals(750.0, WorkPay.group(e)!!.employerTotal, 0.0)
+        // One amount for everyone: 0 would pay the team 0 too, so it stays an error; a job without a team as well.
+        assertFalse(draft(WorkerDraft("דני"), amount = "0", same = true).check().canSave)
+        assertFalse(draft(amount = "0").check().canSave)
+    }
+
     @Test fun oneAmountForAllFollowsTheUsersAmount() {
         val d = draft(WorkerDraft("דני"), WorkerDraft("יוסי", amount = "10"), same = true)
         val e = d.toEntry()
