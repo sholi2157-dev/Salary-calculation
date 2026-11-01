@@ -80,7 +80,7 @@ function render(el, app, opts = {}) {
       ${n ? '<button class="chip" data-a="reset" data-testid="history-reset">הצגת הכול</button>' : ''}</div>
     ${f.period === 'MONTH' ? `<div class="row" style="align-items:center"><b class="grow" style="font:22px/28px var(--display)" data-testid="history-month">${esc(U().monthName(f.month))}</b>
       <button class="icon-btn" aria-label="חודש קודם" data-a="prev">${ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-a="next">${ICON.next}</button></div>` : ''}
-    <div class="card" style="margin-top:10px" data-testid="history-total"><div class="caption">${rows.length} משמרות · ${U().hours(rows.reduce((s, e) => s + e.hours, 0))} שעות</div>
+    <div class="card" style="margin-top:10px" data-testid="history-total"><div class="caption">${rows.length} משמרות · ${U().hours(rows.reduce((s, e) => s + e.hours, 0))} שעות${(h => h > 0 ? ` · מתוכן ${U().hours(h)} עוד לא עברו` : '')(rows.filter(e => U().upcoming(e)).reduce((s, e) => s + e.hours, 0))}</div>
       <div style="display:flex;gap:14px">${totals.length ? totals.map(([c, v]) => `<b class="amount">${moneyHtml(v, c)}</b>`).join('') : '<b class="amount">—</b>'}</div>
       ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}</div>`}
   <div class="list" style="margin-top:8px;${sel.length ? 'padding-bottom:150px' : ''}" data-testid="history-list">${list}</div>
