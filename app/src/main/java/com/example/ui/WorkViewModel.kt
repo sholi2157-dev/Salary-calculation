@@ -1009,8 +1009,8 @@ class WorkViewModel(
     fun endSeries(seriesId: String) {
         viewModelScope.launch {
             val s = localDao.getSeries().firstOrNull { it.id == seriesId } ?: return@launch
-            val today = com.example.domain.V2Plan.dateOf(System.currentTimeMillis())
-            if (s.fromDate > today) localDao.deleteSeries(s.id) else localDao.upsertSeries(s.copy(untilDate = minOf(s.untilDate, today)))
+            val until = com.example.domain.V2Plan.endUntil(s, System.currentTimeMillis())
+            if (until == null) localDao.deleteSeries(s.id) else localDao.upsertSeries(s.copy(untilDate = until))
             performAutoBackup()
         }
     }

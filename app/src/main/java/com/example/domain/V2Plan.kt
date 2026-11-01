@@ -94,10 +94,33 @@ object V2Plan {
         val dates = if (from <= until) V2Rules.seriesDates(days, from, until) else emptyList()
         val timed = saved.filter { it.isTimeRange && V2Rules.isTime(it.startTime) && V2Rules.isTime(it.endTime) }.groupBy { dateOf(it.date) }
         val plans = planned.groupBy { it.date }
+        // Compared in absolute time with the day before and after too, so a shift from the evening before that runs past
+        // midnight is seen (audit CW-07). Touching ends do not clash. Same as web plan.js preview.
         val clashes = dates.filter { d ->
-            timed[d].orEmpty().any { overlaps(start, end, it.startTime!!, it.endTime!!) } || plans[d].orEmpty().any { overlaps(start, end, it.start, it.end) }
+            (-1..1).any { k ->
+                val day = V2Rules.civilFromDays(V2Rules.daysFromCivil(d) + k); val shift = k * 1440
+                timed[day].orEmpty().any { overlapsAt(start, end, it.startTime!!, it.endTime!!, shift) } || plans[day].orEmpty().any { overlapsAt(start, end, it.start, it.end, shift) }
+            }
         }
         return Preview(dates, clashes)
+    }
+
+    /**
+     * "End the series" (audit AND-C04): the last day it keeps. A shift later today that has not started yet goes with the
+     * series; one that already started stays, and so does everything recorded. null = nothing is left. Same as web endUntil.
+     */
+    fun endUntil(s: ShiftSeries, now: Long): String? {
+        val today = dateOf(now)
+        val last = if (startMillis(today, s.startTime) <= now) today else V2Rules.civilFromDays(V2Rules.daysFromCivil(today) - 1)
+        if (s.fromDate > last) return null
+        return if (s.untilDate < last) s.untilDate else last
+    }
+
+    /** Like overlaps, with the second range starting [shift] minutes later (another day: ±1440). */
+    fun overlapsAt(s1: String, e1: String, s2: String, e2: String, shift: Int): Boolean {
+        fun range(s: String, e: String): Pair<Int, Int> { val a = V2Rules.toMinutes(s); var b = V2Rules.toMinutes(e); if (b <= a) b += 1440; return a to b }
+        val (a1, b1) = range(s1, e1); val (a2, b2) = range(s2, e2)
+        return a1 < b2 + shift && a2 + shift < b1
     }
 
     data class Split(val oldId: String, val old: ShiftSeries?, val new: ShiftSeries, val moved: List<SeriesException>, val dropped: List<SeriesException>)
