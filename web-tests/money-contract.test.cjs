@@ -10,6 +10,3 @@ test('preview and save agree: clock 08:00–08:30 at 2.05 and a missing rate com
   const bulk = R.bulkRate([{ id: 'x', isJob: false, start: null, end: null, breakMinutes: 0, hours: 1.234567, rate: null, bonus: 0 }], 100);
   assert.equal(bulk.updated[0].total, P.money(1.234567, 100)); assert.equal(bulk.updated[0].total, 123.46);
 });
-test('derived group amounts keep their 2.0 rounding (commission semantics unchanged pending review)', () => {
-  assert.equal(P.amount(1.5, 99.99), 149.98);
-});

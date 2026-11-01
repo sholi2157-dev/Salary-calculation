@@ -27,7 +27,11 @@ const server = http.createServer((q, r) => { let p = decodeURIComponent(new URL(
   await page.click(tid('plan-review-flag'));
   const boxes = page.locator(`${tid('plan-review-list')} input[type=checkbox]`), n = await boxes.count();
   assert.ok(n >= 19, 'about 20 days wait: ' + n);
-  for (let i = 2; i < n; i++) await boxes.nth(i).uncheck();
+  // Nothing is ticked at first, so one tap cannot record days that were not worked.
+  for (let i = 0; i < n; i++) assert.equal(await boxes.nth(i).isChecked(), false, 'day ' + i + ' starts unticked');
+  assert.equal(await page.isDisabled(tid('plan-review-record')), true, 'nothing to record until a day is marked');
+  await boxes.nth(0).check(); await boxes.nth(1).check();
+  assert.match(await page.textContent(tid('plan-review-record')), /רישום 2 משמרות/);
   await page.click(tid('plan-review-skip'));
   await page.click(tid('plan-review-record')); await page.waitForTimeout(300);
   assert.equal(await count(), 2);

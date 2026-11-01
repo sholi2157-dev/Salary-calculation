@@ -1,0 +1,263 @@
+{
+ "note": "CAL-03 (2.3.0): team amounts reconcile in whole agorot. Shared by web-tests and Android unit tests. legacy = the 2.2 display, for the record only.",
+ "cases": [
+  {
+   "name": "thirds of an hour",
+   "entry": {
+    "id": "g",
+    "category": "אירועים",
+    "date": 0,
+    "isTimeRange": false,
+    "hours": 5,
+    "hourlyRate": 70,
+    "totalEarnings": 350,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "kind": "shift",
+    "payKnown": true,
+    "bonus": 0,
+    "isGroupShift": true,
+    "employerRate": 40.01,
+    "workerRate": 30,
+    "passThrough": 0,
+    "groupWorkersJson": "[{\"name\":\"א\",\"hours\":0.3333333333333333,\"isPaid\":false,\"bonus\":0,\"workerRate\":null,\"employerRate\":null},{\"name\":\"ב\",\"hours\":0.3333333333333333,\"isPaid\":false,\"bonus\":0,\"workerRate\":null,\"employerRate\":null},{\"name\":\"ג\",\"hours\":0.3333333333333333,\"isPaid\":false,\"bonus\":0,\"workerRate\":null,\"employerRate\":null}]"
+   },
+   "expected": {
+    "employerTotal": 390.02,
+    "profit": 10.02,
+    "myNet": 360.02,
+    "workers": [
+     {
+      "worker": 10,
+      "employer": 13.34
+     },
+     {
+      "worker": 10,
+      "employer": 13.34
+     },
+     {
+      "worker": 10,
+      "employer": 13.34
+     }
+    ]
+   },
+   "legacy": {
+    "employerTotal": 390.02,
+    "profit": 10.01,
+    "myNet": 360.01
+   }
+  },
+  {
+   "name": "half-agora per worker",
+   "entry": {
+    "id": "g",
+    "category": "אירועים",
+    "date": 0,
+    "isTimeRange": false,
+    "hours": 5,
+    "hourlyRate": 70,
+    "totalEarnings": 350,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "kind": "shift",
+    "payKnown": true,
+    "bonus": 0,
+    "isGroupShift": true,
+    "employerRate": 10.01,
+    "workerRate": 10,
+    "passThrough": 0,
+    "groupWorkersJson": "[{\"name\":\"א\",\"hours\":0.5,\"isPaid\":false,\"bonus\":0,\"workerRate\":null,\"employerRate\":null},{\"name\":\"ב\",\"hours\":0.5,\"isPaid\":false,\"bonus\":0,\"workerRate\":null,\"employerRate\":null},{\"name\":\"ג\",\"hours\":0.5,\"isPaid\":false,\"bonus\":0,\"workerRate\":null,\"employerRate\":null}]"
+   },
+   "expected": {
+    "employerTotal": 365.03,
+    "profit": 0.03,
+    "myNet": 350.03,
+    "workers": [
+     {
+      "worker": 5,
+      "employer": 5.01
+     },
+     {
+      "worker": 5,
+      "employer": 5.01
+     },
+     {
+      "worker": 5,
+      "employer": 5.01
+     }
+    ]
+   },
+   "legacy": {
+    "employerTotal": 365.03,
+    "profit": 0.01,
+    "myNet": 350.02
+   }
+  },
+  {
+   "name": "own rates, bonus and pass-through",
+   "entry": {
+    "id": "g",
+    "category": "אירועים",
+    "date": 0,
+    "isTimeRange": false,
+    "hours": 5,
+    "hourlyRate": 70,
+    "totalEarnings": 350,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "kind": "shift",
+    "payKnown": true,
+    "bonus": 0,
+    "isGroupShift": true,
+    "employerRate": 70,
+    "workerRate": 50,
+    "passThrough": 45.5,
+    "groupWorkersJson": "[{\"name\":\"יוסי\",\"hours\":4.25,\"isPaid\":false,\"bonus\":20,\"workerRate\":47.5,\"employerRate\":71.3},{\"name\":\"מנחם מענדל\",\"hours\":3.4,\"isPaid\":false,\"bonus\":0,\"workerRate\":null,\"employerRate\":null}]"
+   },
+   "expected": {
+    "employerTotal": 956.53,
+    "profit": 169.15,
+    "myNet": 519.15,
+    "workers": [
+     {
+      "worker": 221.88,
+      "employer": 323.03
+     },
+     {
+      "worker": 170,
+      "employer": 238
+     }
+    ]
+   },
+   "legacy": {
+    "employerTotal": 956.52,
+    "profit": 169.15,
+    "myNet": 519.15
+   }
+  },
+  {
+   "name": "imported odd own amount",
+   "entry": {
+    "id": "g",
+    "category": "אירועים",
+    "date": 0,
+    "isTimeRange": false,
+    "hours": 5,
+    "hourlyRate": 70,
+    "totalEarnings": 42.12345,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "kind": "shift",
+    "payKnown": true,
+    "bonus": 0,
+    "isGroupShift": true,
+    "employerRate": 70,
+    "workerRate": 50,
+    "passThrough": 0,
+    "groupWorkersJson": "[{\"name\":\"א\",\"hours\":1.234567,\"isPaid\":false,\"bonus\":0,\"workerRate\":34.123456,\"employerRate\":51.987654}]"
+   },
+   "expected": {
+    "employerTotal": 106.3,
+    "profit": 22.05,
+    "myNet": 64.17,
+    "workers": [
+     {
+      "worker": 42.13,
+      "employer": 64.18
+     }
+    ]
+   },
+   "legacy": {
+    "employerTotal": 106.3,
+    "profit": 22.05,
+    "myNet": 64.18
+   }
+  },
+  {
+   "name": "float trap 1.005",
+   "entry": {
+    "id": "g",
+    "category": "אירועים",
+    "date": 0,
+    "isTimeRange": false,
+    "hours": 5,
+    "hourlyRate": 70,
+    "totalEarnings": 350,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "kind": "shift",
+    "payKnown": true,
+    "bonus": 0,
+    "isGroupShift": true,
+    "employerRate": 70,
+    "workerRate": 50,
+    "passThrough": 0,
+    "groupWorkersJson": "[{\"name\":\"א\",\"hours\":1.005,\"isPaid\":false,\"bonus\":0,\"workerRate\":1,\"employerRate\":2},{\"name\":\"ב\",\"hours\":1.005,\"isPaid\":false,\"bonus\":0,\"workerRate\":1,\"employerRate\":2}]"
+   },
+   "expected": {
+    "employerTotal": 354.02,
+    "profit": 2,
+    "myNet": 352,
+    "workers": [
+     {
+      "worker": 1.01,
+      "employer": 2.01
+     },
+     {
+      "worker": 1.01,
+      "employer": 2.01
+     }
+    ]
+   },
+   "legacy": {
+    "employerTotal": 354.02,
+    "profit": 2.01,
+    "myNet": 352.01
+   }
+  },
+  {
+   "name": "job team, fixed and hourly",
+   "entry": {
+    "id": "g",
+    "category": "אירועים",
+    "date": 0,
+    "isTimeRange": false,
+    "hours": 0,
+    "hourlyRate": 0,
+    "totalEarnings": 850,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "kind": "job",
+    "payKnown": true,
+    "bonus": 0,
+    "isGroupShift": true,
+    "employerRate": null,
+    "workerRate": null,
+    "passThrough": 12.34,
+    "groupWorkersJson": "[{\"name\":\"א\",\"hours\":0,\"isPaid\":false,\"bonus\":0,\"amount\":333.335,\"workerRate\":null,\"employerRate\":null},{\"name\":\"ב\",\"hours\":2.5,\"isPaid\":false,\"bonus\":10,\"workerRate\":41.3,\"employerRate\":null}]"
+   },
+   "expected": {
+    "employerTotal": 1308.93,
+    "profit": 0,
+    "myNet": 850,
+    "workers": [
+     {
+      "worker": 333.34,
+      "employer": 333.34
+     },
+     {
+      "worker": 113.25,
+      "employer": 113.25
+     }
+    ]
+   },
+   "legacy": null
+  }
+ ]
+}

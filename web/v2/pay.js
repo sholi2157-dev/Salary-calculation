@@ -96,10 +96,7 @@ const pay = e => payKnownOf(e) ? e.totalEarnings : null;
 const known = entries => entries.filter(payKnownOf);
 const pending = entries => entries.filter(e => !payKnownOf(e));
 
-/** Same rounding the app has always stored, so new rows match historical ones. */
-/** Derived pay of workers/employer in group reports, unchanged since 2.0 (their rounding is not changed in 2.3; see audit CAL-03). */
-function amount(h, rate, bonus = 0) { return Math.round((h * rate + bonus) * 100) / 100; }
-/** Every NEW saved amount and its preview (2.3.0 money contract, see KisRules.money). */
+/** Every NEW saved amount and its preview, and every derived team amount (2.3.0 money contract, see KisRules.money). */
 const money = (h, rate, bonus = 0) => (root.KisRules || require('./rules.js')).money(h, rate, bonus);
 
 /** "תעריף חסר" for a shift, "סכום חסר" for a job. */
@@ -148,37 +145,42 @@ const workerRate = (w, e) => isJob(e) ? w.workerRate ?? e.workerRate ?? null : w
 const employerRate = (w, e) => w.employerRate ?? e.employerRate ?? (payKnownOf(e) ? e.hourlyRate : null);
 /** What the worker should receive: a fixed sum on a job team, otherwise their hours at the worker rate plus their own bonus. */
 function workerPay(w, e) {
- if (isJob(e) && w.amount != null) return Math.round((w.amount + w.bonus) * 100) / 100;
- const r = workerRate(w, e); return r == null ? null : amount(w.hours, r, w.bonus);
+ if (isJob(e) && w.amount != null) return money(1, w.amount, w.bonus);
+ const r = workerRate(w, e); return r == null ? null : money(w.hours, r, w.bonus);
 }
 /** What the employer pays for this worker. A worker's bonus is passed through, not profit. On a job the client pays one price, so it is the worker's pay. */
-function employerPay(w, e) { if (isJob(e)) return workerPay(w, e); const r = employerRate(w, e); return r == null ? null : amount(w.hours, r, w.bonus); }
+function employerPay(w, e) { if (isJob(e)) return workerPay(w, e); const r = employerRate(w, e); return r == null ? null : money(w.hours, r, w.bonus); }
 /** The team's pay on a job, or null while any worker's pay is missing. */
 function teamPay(e) {
  let sum = 0;
- for (const w of workers(e)) { const p = workerPay(w, e); if (p == null) return null; sum += p; }
- return Math.round(sum * 100) / 100;
+ for (const w of workers(e)) { const p = workerPay(w, e); if (p == null) return null; sum += cents(p); }
+ return sum / 100;
 }
 
 const passThroughOf = e => Number(e.passThrough ?? 0) || 0;
-/** {employerTotal, profit, myNet}, or null while any part is unknown: a partial group total would be misleading. employerTotal includes money passed through. */
+/** Whole agorot/cents of an amount, so sums of rounded amounts add up exactly. */
+const cents = v => Math.round(v * 100);
+/**
+ * {employerTotal, profit, myNet}, or null while any part is unknown: a partial group total would be misleading.
+ * Derived when shown, never stored (only the user's own totalEarnings is saved, and it is used as saved). Since 2.3.0
+ * (CAL-03) every part reconciles exactly in whole agorot: profit = Σ employer pay − Σ worker pay (each rounded once),
+ * employerTotal = own + Σ employer pay + money passed through, myNet = own + profit.
+ */
 function group(e) {
  const own = pay(e);
  if (own == null) return null;
  // A job: the user's pay and each worker's pay are separate; the employer owes all of them.
- if (isJob(e)) { const team = teamPay(e); return team == null ? null : { employerTotal: Math.round((own + team + passThroughOf(e)) * 100) / 100, profit: 0, myNet: own }; }
- let employer = 0, profit = 0;
+ if (isJob(e)) { const team = teamPay(e); return team == null ? null : { employerTotal: (cents(own) + cents(team) + cents(passThroughOf(e))) / 100, profit: 0, myNet: own }; }
+ let employer = 0, team = 0;
  for (const w of workers(e)) {
-  const er = employerRate(w, e); if (er == null) return null;
-  const wr = workerRate(w, e); if (wr == null) return null;
-  employer += amount(w.hours, er, w.bonus);
-  profit += w.hours * (er - wr);
+  const ep = employerPay(w, e); if (ep == null) return null;
+  const wp = workerPay(w, e); if (wp == null) return null;
+  employer += cents(ep); team += cents(wp);
  }
- const r = v => Math.round(v * 100) / 100;
- return { employerTotal: r(own + employer + passThroughOf(e)), profit: r(profit), myNet: r(own + profit) };
+ return { employerTotal: (cents(own) + employer + cents(passThroughOf(e))) / 100, profit: (employer - team) / 100, myNet: (cents(own) + employer - team) / 100 };
 }
 /** What the employer owes for this entry (team and money passed through included), or null while any part is unknown. */
-function employerDue(e) { if (e.isGroupShift) { const g = group(e); return g ? g.employerTotal : null; } const own = pay(e); return own == null ? null : Math.round((own + passThroughOf(e)) * 100) / 100; }
+function employerDue(e) { if (e.isGroupShift) { const g = group(e); return g ? g.employerTotal : null; } const own = pay(e); return own == null ? null : (cents(own) + cents(passThroughOf(e))) / 100; }
 
 /** Back to groupWorkersJson; keys of `source` keep their place, bonus is written only when > 0. On a job team exactly one of amount / workerRate is written. */
 function encodeWorkers(list, job = false) {
@@ -220,7 +222,7 @@ function report(entries, workerName = null) {
   rows.map(r => r.category + ': ' + (r.payKnown ? format(r.totalEarnings, r.currency) : 'תעריף חסר') + ' — ' + (r.isPaid ? 'שולם' : 'ממתין')).join('\n');
 }
 
-const api = { KIND_SHIFT, KIND_JOB, isJob, payKnown: payKnownOf, bonus: bonusOf, pay, known, pending, amount, money, missingLabel, totals,
+const api = { KIND_SHIFT, KIND_JOB, isJob, payKnown: payKnownOf, bonus: bonusOf, pay, known, pending, money, missingLabel, totals,
  workers, workerRate, employerRate, workerPay, employerPay, group, encodeWorkers, isTeamJob, teamPay, employerDue, passThrough: passThroughOf,
  format, summary, report, moneyWorkerRate, moneyEmployerRate, fixed2, hours, javaParseDouble };
 if (typeof module !== 'undefined') module.exports = api; else root.KisPay = api;
