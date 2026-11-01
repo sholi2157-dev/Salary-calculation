@@ -43,7 +43,8 @@ function render(el, app, opts = {}) {
   if (!state.filter) state.filter = defaults();
   if (opts.planned != null) state.planned = opts.planned;
   if (opts.month != null) state.filter = { ...state.filter, period: 'MONTH', month: opts.month };
-  if (opts.selectPending) { state.planned = false; state.selection = new Set(store.data.entries.filter(e => !upcoming(e) && !e.payKnown && e.kind !== 'job').map(e => e.id)); }
+  // From Home's "waiting for a rate": every such shift shows, whatever filter or search was left on (audit CW-08).
+  if (opts.selectPending) { state.planned = false; state.filter = defaults(); state.query = ''; state.searching = false; state.selection = new Set(store.data.entries.filter(e => !upcoming(e) && !e.payKnown && e.kind !== 'job').map(e => e.id)); }
   const f = state.filter, all = store.data.entries;
   const done = all.filter(e => !upcoming(e)), future = all.filter(e => upcoming(e)).sort((a, b) => a.date - b.date);
   const plans = root.KisPlans.occurrences(store);
