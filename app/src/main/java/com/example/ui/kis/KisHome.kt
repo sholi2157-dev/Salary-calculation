@@ -262,10 +262,10 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
                     }
                     val ltr = TextDirection.Ltr
                     Text(time, style = KisType.body.copy(fontSize = 38.sp, lineHeight = 44.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum", textDirection = ltr),
-                        color = c.ink, maxLines = 1, softWrap = false, modifier = Modifier.fillMaxWidth().testTag("active_shift_timer"))
+                        color = c.ink, maxLines = 1, softWrap = false, textAlign = androidx.compose.ui.text.style.TextAlign.Right, modifier = Modifier.fillMaxWidth().testTag("active_shift_timer"))
                     if (earning) Text(liveMoney(WorkPay.money(seconds / 3600.0, live.rate), live.currency),
                         style = KisType.body.copy(fontSize = 20.sp, lineHeight = 26.sp, fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum", textDirection = ltr),
-                        color = c.muted, maxLines = 1, softWrap = false, modifier = Modifier.fillMaxWidth().testTag("active_shift_money"))
+                        color = c.muted, maxLines = 1, softWrap = false, textAlign = androidx.compose.ui.text.style.TextAlign.Right, modifier = Modifier.fillMaxWidth().testTag("active_shift_money"))
                     Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         KisButton("סיום ושמירה", { if (System.currentTimeMillis() - live.start < 60_000L) confirmShort = true else onStop() }, Modifier.weight(1f),
                             height = 52.dp, haptic = KisSettings.Haptic.SUCCESS, tag = "live_shift_stop")
