@@ -251,7 +251,7 @@ interface WorkDao {
         for (id in ids.distinct()) {
             val entry = getEntryById(id) ?: continue
             if (entry.payKnown || entry.kind == WorkEntry.KIND_JOB) continue
-            updateEntry(entry.copy(hourlyRate = rate, payKnown = true, totalEarnings = WorkPay.amount(entry.hours, rate, entry.bonus)))
+            updateEntry(entry.copy(hourlyRate = rate, payKnown = true, totalEarnings = WorkPay.money(entry.hours, rate, entry.bonus)))
             completed++
         }
         return completed

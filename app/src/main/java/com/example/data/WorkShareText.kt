@@ -133,7 +133,7 @@ object WorkShareText {
             add("שעות: ${o.start}–${o.end}" + if (o.end <= o.start) " (למחרת)" else "")
             add("כמות שעות: ${hours(h)}")
             add("תעריף לשעה: " + (o.rate?.let { money(it, o.currency) } ?: "עדיין לא ידוע"))
-            add("צפי בלבד: " + (o.rate?.let { money(WorkPay.amount(h, it), o.currency) } ?: "ממתין להשלמת תעריף"))
+            add("צפי בלבד: " + (o.rate?.let { money(WorkPay.money(h, it), o.currency) } ?: "ממתין להשלמת תעריף"))
             if (!technical) add("תודה!")
         }.joinToString("\n")
     }

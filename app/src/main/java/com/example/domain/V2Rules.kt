@@ -85,7 +85,7 @@ object V2Rules {
             if (!d.amountUnknown && !(amount != null && amount > 0)) errors += "הזן סכום, או סמן \"לא יודע עדיין\""
             if (h > 24) errors += "יותר מ-24 שעות ביום"
             val minutes = if (h > 0) (h * 60).roundToLong().toInt() else null
-            val total = if (amount != null && amount > 0) round2(amount) else null
+            val total = if (amount != null && amount > 0) com.example.data.WorkPay.money(1.0, amount) else null
             return Evaluation(errors, minutes, 0.0, total)
         }
         var minutes: Int? = null
@@ -107,7 +107,7 @@ object V2Rules {
         if (!d.rateUnknown && !(rate != null && rate >= 0)) errors += "הזן תעריף, או סמן \"תעריף חסר\""
         val myBonus = if (d.mode == Mode.GROUP && d.bonusTarget == BonusTarget.OTHERS) 0.0 else d.bonus
         val base = if (minutes != null && !invalid && rate != null) minutes / 60.0 * rate else null
-        return Evaluation(errors, minutes, myBonus, base?.let { round2(it + myBonus) })
+        return Evaluation(errors, minutes, myBonus, if (base != null) com.example.data.WorkPay.money(minutes!! / 60.0, rate!!, myBonus) else null)
     }
 
     /** Quiet hours: a notification due inside the window waits until it ends; it is never dropped. */
@@ -186,6 +186,7 @@ object V2Rules {
     /** Writes only to shifts whose rate is missing. Known amounts and fixed-price jobs never change. */
     fun bulkRate(records: List<PayRecord>, rate: Double): BulkResult {
         val targets = records.filter { it.rate == null && !it.isJob }
-        return BulkResult(targets.map { it.id to round2(recordMinutes(it) / 60.0 * rate + it.bonus) }, records.size - targets.size)
+        // The same hours that will be saved (the exact stored ones when known), not minutes rounded for display (audit CAL-05).
+        return BulkResult(targets.map { it.id to com.example.data.WorkPay.money(it.hours ?: (recordMinutes(it) / 60.0), rate, it.bonus) }, records.size - targets.size)
     }
 }

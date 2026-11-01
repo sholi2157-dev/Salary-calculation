@@ -68,7 +68,7 @@ fun PlannedCard(o: V2Plan.Occurrence, categories: List<WorkCategory>, onWorked: 
                 Text("${o.start}–${o.end}${if (overnight) " · למחרת" else ""} · ${o.category}", style = KisType.caption, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             val minutes = V2Rules.span(o.start, o.end).minutes
-            if (o.rate != null) MoneyText(WorkPay.amount(minutes / 60.0, o.rate), o.currency, KisType.amount.copy(fontSize = 17.sp), color = c.muted)
+            if (o.rate != null) MoneyText(WorkPay.money(minutes / 60.0, o.rate), o.currency, KisType.amount.copy(fontSize = 17.sp), color = c.muted)
             else Text("?", style = KisType.amount.copy(fontSize = 17.sp), color = c.muted)
         }
         // Two rows of two: every label stays whole on a narrow phone and each button is a full 48dp target.

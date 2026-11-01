@@ -44,7 +44,7 @@ object WorkEntryEdits {
             proposed.kind == WorkEntry.KIND_JOB -> proposed.totalEarnings
             original.hours == proposed.hours && original.hourlyRate == proposed.hourlyRate && original.bonus == proposed.bonus &&
                 original.kind == proposed.kind && original.payKnown -> original.totalEarnings
-            else -> WorkPay.amount(proposed.hours, proposed.hourlyRate, proposed.bonus)
+            else -> WorkPay.money(proposed.hours, proposed.hourlyRate, proposed.bonus)
         },
         hourlyRate = if (proposed.payKnown && proposed.kind != WorkEntry.KIND_JOB) proposed.hourlyRate else 0.0
     )

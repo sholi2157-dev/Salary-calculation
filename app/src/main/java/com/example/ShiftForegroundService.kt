@@ -88,16 +88,13 @@ class ShiftForegroundService : Service() {
                 val startTime = shiftState.activeShiftStartTime.value
                 val rate = shiftState.activeShiftRate.value
                 if (startTime != null) {
-                    val currentSystemTimeSeconds = System.currentTimeMillis() / 1000L
-                    val startSystemTimeSeconds = startTime / 1000L
-                    val elapsedSecs = currentSystemTimeSeconds - startSystemTimeSeconds
+                    val elapsedSecs = com.example.data.WorkPay.elapsedSeconds(startTime, System.currentTimeMillis())
                     val hours = elapsedSecs / 3600
                     val mins = (elapsedSecs % 3600) / 60
                     val secs = elapsedSecs % 60
                     val elapsedString = String.format(java.util.Locale.US, "%02d:%02d:%02d", hours, mins, secs)
                     
-                    val liveEarnings = elapsedSecs * (rate / 3600.0)
-                    val accumulatedEarnings = Math.round(liveEarnings * 100.0) / 100.0
+                    val accumulatedEarnings = com.example.data.WorkPay.money(elapsedSecs / 3600.0, rate)
                     val earningsString = shiftState.activeShiftCurrency.value + String.format(java.util.Locale.US, "%,.2f", accumulatedEarnings)
                     
                     val notification = buildNotification(elapsedString, earningsString)
@@ -120,17 +117,15 @@ class ShiftForegroundService : Service() {
         val rate = sourceState.activeShiftRate.value
 
         if (startTime != null) {
-            val currentSystemTimeSeconds = System.currentTimeMillis() / 1000L
-            val startSystemTimeSeconds = startTime / 1000L
-            val elapsedSeconds = (currentSystemTimeSeconds - startSystemTimeSeconds).coerceAtLeast(0L)
+            val elapsedFromStart = com.example.data.WorkPay.elapsedSeconds(startTime, System.currentTimeMillis())
+            val elapsedSeconds = elapsedFromStart
             val hours = elapsedSeconds.toDouble() / 3600.0
 
             // Save Entry to Room database
             serviceScope.launch {
               try {
                 val db = sourceState.owner.database(context)
-                val liveEarnings = elapsedSeconds * (rate / 3600.0)
-                val roundedEarnings = Math.round(liveEarnings * 100.0) / 100.0
+                val roundedEarnings = com.example.data.WorkPay.money(hours, rate)
                 val entry = WorkEntry(
                     category = category,
                     date = startTime,

@@ -532,12 +532,12 @@ class WorkViewModel(
         val rate = activeShiftRate.value
         val category = activeShiftCategory.value
         val currency = shiftState.activeShiftCurrency.value
-        val elapsed = ((System.currentTimeMillis() / 1000L) - (start / 1000L)).coerceAtLeast(0L)
+        val elapsed = com.example.data.WorkPay.elapsedSeconds(start, System.currentTimeMillis())
         viewModelScope.launch {
             try {
                 val entry = if (save) WorkEntry(category = category, date = start, isTimeRange = false,
                     hours = elapsed / 3600.0, hourlyRate = rate,
-                    totalEarnings = Math.round(elapsed * rate / 3600.0 * 100.0) / 100.0,
+                    totalEarnings = com.example.data.WorkPay.money(elapsed / 3600.0, rate),
                     notes = "משמרת פעילה (טיימר החישוב)", currency = currency) else null
                 val id = owner.database(getApplication()).workDao().finishTimer(start, entry)
                 if (id > 0) {
@@ -643,7 +643,7 @@ class WorkViewModel(
                 endTime = endTime,
                 hours = finalHours,
                 hourlyRate = rate,
-                totalEarnings = Math.round((finalHours * rate) * 100.0) / 100.0,
+                totalEarnings = com.example.data.WorkPay.money(finalHours, rate),
                 isPaid = isPaid,
                 notes = notes,
                 isGroupShift = isGroupShift,
@@ -685,7 +685,7 @@ class WorkViewModel(
                         endTime = null,
                         hours = shift.hours,
                         hourlyRate = shift.hourlyRate,
-                        totalEarnings = Math.round((shift.hours * shift.hourlyRate) * 100.0) / 100.0,
+                        totalEarnings = com.example.data.WorkPay.money(shift.hours, shift.hourlyRate),
                         isPaid = false,
                         notes = shift.notes,
                         isGroupShift = shift.isGroup,
@@ -786,7 +786,7 @@ class WorkViewModel(
         val entry = when {
             !draft.payKnown -> draft.copy(hourlyRate = 0.0, totalEarnings = 0.0)
             draft.kind == WorkEntry.KIND_JOB -> draft.copy(hourlyRate = 0.0, totalEarnings = Math.round(draft.totalEarnings * 100.0) / 100.0)
-            else -> draft.copy(totalEarnings = com.example.data.WorkPay.amount(draft.hours, draft.hourlyRate, draft.bonus))
+            else -> draft.copy(totalEarnings = com.example.data.WorkPay.money(draft.hours, draft.hourlyRate, draft.bonus))
         }.copy(id = 0)
         if (!valid(entry)) { onFailed(); return }
         viewModelScope.launch {

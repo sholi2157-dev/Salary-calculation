@@ -258,7 +258,7 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
                     Column(Modifier.weight(1f)) {
                         Text(time, style = KisType.body.copy(fontSize = 30.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum", textDirection = ltr),
                             color = c.onInk, maxLines = 1, softWrap = false, modifier = Modifier.testTag("active_shift_timer"))
-                        if (earning) Text(liveMoney(seconds * live.rate / 3600.0, live.currency),
+                        if (earning) Text(liveMoney(WorkPay.money(seconds / 3600.0, live.rate), live.currency),
                             style = KisType.body.copy(fontSize = 15.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum", textDirection = ltr),
                             color = c.onInk.copy(alpha = 0.78f), maxLines = 1, softWrap = false, modifier = Modifier.testTag("active_shift_money"))
                     }
@@ -335,7 +335,7 @@ private fun EmptyHome() {
 /** Money with its agorot always shown, so a live count ticks without jumping between "₪12" and "₪12.01". */
 private fun liveMoney(amount: Double, currency: String) = buildAnnotatedString {
     withStyle(SpanStyle(fontFamily = Rubik, fontWeight = FontWeight.SemiBold, fontSize = 0.7.em)) { append(currency) }
-    append(String.format(Locale.US, "%,.2f", Math.floor(amount * 100) / 100))
+    append(String.format(Locale.US, "%,.2f", amount)) // already the saved amount's rounding (WorkPay.money)
 }
 
 /** "Where are you working?" before the live timer starts: one tap with the default workplace. */

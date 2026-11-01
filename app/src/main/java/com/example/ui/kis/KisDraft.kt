@@ -256,7 +256,7 @@ data class EntryDraft(
         // Persist decimal hours; the duration UI converts hours and minutes at this boundary.
         val payHours = if (mode == EntryMode.HOURS || groupByHours) DurationInput.hours(hours) ?: 0.0 else (ev.minutes ?: 0) / 60.0
         // A job shows the user's own amount, which is what is stored and counted (a team is paid on top of it).
-        val total = if (mode == EntryMode.JOB) ev.total else ev.total?.let { WorkPay.amount(payHours, rateValue() ?: 0.0, ev.bonus) }
+        val total = if (mode == EntryMode.JOB) ev.total else ev.total?.let { WorkPay.money(payHours, rateValue() ?: 0.0, ev.bonus) }
         return Check(errors, warnings, ev.minutes, total, overnight)
     }
 
@@ -305,7 +305,7 @@ data class EntryDraft(
                 job -> amountNumber
                 // Nothing that defines the amount changed: keep the stored (possibly imported) amount exactly.
                 base != null && base.payKnown && base.kind == WorkEntry.KIND_SHIFT && hoursValue == base.hours && rateNumber == base.hourlyRate && myBonus == base.bonus -> base.totalEarnings
-                else -> WorkPay.amount(hoursValue, rateNumber, myBonus)
+                else -> WorkPay.money(hoursValue, rateNumber, myBonus)
             },
             notes = notes.trim(), currency = currency, kind = if (job) WorkEntry.KIND_JOB else WorkEntry.KIND_SHIFT, payKnown = payKnown, bonus = myBonus,
             passThrough = if (was != null && was.passThrough == passThrough) base!!.passThrough else passThroughValue(),

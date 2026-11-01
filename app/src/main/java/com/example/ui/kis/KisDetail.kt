@@ -228,7 +228,7 @@ fun RateCompletionSheet(selected: List<WorkEntry>, viewModel: WorkViewModel, onD
                         Text("${e.category} · ${dayLabel(e.date)}", style = KisType.label, color = c.ink, maxLines = 1)
                         Text(timeLabel(e), style = KisType.caption, color = c.muted)
                     }
-                    if (rate != null) MoneyText(WorkPay.amount(e.hours, rate, e.bonus), e.currency, KisType.label.copy(fontSize = 16.sp))
+                    if (rate != null) MoneyText(WorkPay.money(e.hours, rate, e.bonus), e.currency, KisType.label.copy(fontSize = 16.sp))
                     else Text("?", style = KisType.label, color = c.muted)
                 }
             }

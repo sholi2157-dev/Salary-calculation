@@ -19,8 +19,21 @@ object WorkPay {
     fun known(entries: List<WorkEntry>) = entries.filter { it.payKnown }
     fun pending(entries: List<WorkEntry>) = entries.filter { !it.payKnown }
 
-    /** Same rounding the app has always stored, so new rows match historical ones. */
+    /** Derived pay of workers/employer in group reports, unchanged since 2.0 (their rounding is not changed in 2.3; see audit CAL-03). */
     fun amount(hours: Double, rate: Double, bonus: Double = 0.0): Double = Math.round((hours * rate + bonus) * 100.0) / 100.0
+
+    /**
+     * 2.3.0 money contract (audit CAL-02/CAL-05), identical to web KisRules.money: every NEW saved amount and its preview
+     * is hours × rate + bonus in exact decimal arithmetic, rounded once, half up, to whole agorot/cents. Each input is first
+     * fixed to 10 decimal places from its exact binary value. Saved amounts are never recalculated with it.
+     */
+    fun money(hours: Double, rate: Double, bonus: Double = 0.0): Double {
+        fun d(x: Double) = java.math.BigDecimal(x).setScale(10, java.math.RoundingMode.HALF_UP)
+        return d(hours).multiply(d(rate)).add(d(bonus)).setScale(2, java.math.RoundingMode.HALF_UP).toDouble()
+    }
+
+    /** Whole seconds a timer ran: the difference first, then truncated, the same for the screen and the saved shift (audit AND-C07). */
+    fun elapsedSeconds(startMillis: Long, nowMillis: Long): Long = ((nowMillis - startMillis) / 1000L).coerceAtLeast(0L)
 
     /** "תעריף חסר" for a shift, "סכום חסר" for a job. */
     fun missingLabel(e: WorkEntry) = if (isJob(e)) "סכום חסר" else "תעריף חסר"

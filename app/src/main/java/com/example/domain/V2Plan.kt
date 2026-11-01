@@ -76,7 +76,7 @@ object V2Plan {
         val minutes = V2Rules.span(o.start, o.end).minutes
         val hours = minutes / 60.0
         return WorkEntry(category = o.category, date = startMillis(o.date, o.start), isTimeRange = true, startTime = o.start, endTime = o.end,
-            hours = hours, hourlyRate = o.rate ?: 0.0, totalEarnings = o.rate?.let { WorkPay.amount(hours, it) } ?: 0.0,
+            hours = hours, hourlyRate = o.rate ?: 0.0, totalEarnings = o.rate?.let { WorkPay.money(hours, it) } ?: 0.0,
             payKnown = o.rate != null, currency = o.currency, seriesKey = o.key, autoConfirmed = auto)
     }
 
