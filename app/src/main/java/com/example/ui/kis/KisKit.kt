@@ -225,7 +225,7 @@ fun <T> KisSegmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) 
     Row(modifier.clip(RoundedCornerShape(12.dp)).background(c.sunk).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         options.forEach { (value, label) ->
             val on = value == selected
-            Box(Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(9.dp)).background(if (on) c.surface else Color.Transparent)
+            Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(9.dp)).background(if (on) c.surface else Color.Transparent)
                 .kisClick(role = Role.RadioButton) { onSelect(value) }.semantics { this.selected = on }
                 .then(if (tagPrefix != null) Modifier.testTag("${tagPrefix}_$value") else Modifier)
                 .padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
@@ -243,7 +243,7 @@ fun CurrencyToggle(currency: String, onCurrency: (String) -> Unit, tag: String, 
         listOf("₪", "$").forEach { value ->
             val on = currency == value
             // Light: the chosen currency is a soft tinted cell with bold ink, not a black one.
-            Box(Modifier.size(width = 48.dp, height = 40.dp).background(if (on) (if (c.dark) c.ink else c.sunk) else c.surface)
+            Box(Modifier.size(width = 48.dp, height = 44.dp).background(if (on) (if (c.dark) c.ink else c.sunk) else c.surface)
                 .kisClick(role = Role.RadioButton) { onCurrency(value) }.semantics { this.selected = on; contentDescription = if (value == "₪") "שקל" else "דולר" }
                 .testTag("${tag}_$value"), contentAlignment = Alignment.Center) {
                 Text(value, style = KisType.label.copy(fontFamily = Rubik, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium),

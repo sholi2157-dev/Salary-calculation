@@ -505,7 +505,7 @@ private fun ModeTabs(mode: EntryMode?, ink: Color, bg: Color, ai: Boolean, onAi:
     val c = Kis.colors
     // Light: a raised white tab on a soft track (no black slab); dark keeps the light tab on the dark track.
     @Composable fun RowScope.tab(label: String, on: Boolean, tag: String, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, onClick: () -> Unit) =
-        Row(Modifier.weight(1f).heightIn(min = 38.dp)
+        Row(Modifier.weight(1f).heightIn(min = 44.dp)
             .then(if (on && !c.dark) Modifier.shadow(2.dp, RoundedCornerShape(9.dp), ambientColor = ink.copy(alpha = 0.10f), spotColor = ink.copy(alpha = 0.10f)) else Modifier)
             .clip(RoundedCornerShape(9.dp)).background(if (!on) Color.Transparent else if (c.dark) ink else c.surface)
             .kisClick(role = Role.Tab, onClick = onClick).semantics { selected = on }.testTag(tag), verticalAlignment = Alignment.CenterVertically,
@@ -525,14 +525,14 @@ private fun ModeTabs(mode: EntryMode?, ink: Color, bg: Color, ai: Boolean, onAi:
 private fun CategoryChips(categories: List<WorkCategory>, selected: String, ink: Color, bg: Color, accent: Color, accentInk: Color, onPick: (WorkCategory) -> Unit, onAdd: () -> Unit) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         // Adding a place comes first, where it is always in reach (the places follow in the user's order).
-        Box(Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(99.dp)).border(1.5.dp, ink.copy(alpha = 0.4f), RoundedCornerShape(99.dp))
+        Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(99.dp)).border(1.5.dp, ink.copy(alpha = 0.4f), RoundedCornerShape(99.dp))
             .kisClick(onClick = onAdd).testTag("editor_add_place").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
             Text("+ מקום", color = ink, style = KisType.label)
         }
         categories.forEach { cat ->
             val on = cat.name == selected
             // The chosen place is the one spot that carries its own colour.
-            Box(Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(99.dp)).background(if (on) accent else bg.copy(alpha = 0.6f))
+            Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(99.dp)).background(if (on) accent else bg.copy(alpha = 0.6f))
                 .border(1.5.dp, if (on) accent else ink.copy(alpha = 0.25f), RoundedCornerShape(99.dp))
                 .kisClick { onPick(cat) }.semantics { this.selected = on }.testTag("editor_category_${cat.name}").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
                 Text(cat.name, color = if (on) accentInk else ink, style = KisType.label, maxLines = 1)
@@ -600,7 +600,7 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
                     DigitClock(value, label, style, ink.copy(alpha = if (empty && edit == null) 0.45f else 1f), ink, accent, edit, tag) { i -> onOpen(t, if (empty) null else i) }
                     if (onNudge != null && !empty) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(-15, 15).forEach { n ->
-                            Box(Modifier.weight(1f).heightIn(min = 36.dp).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+                            Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
                                 .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(10.dp)))
                                 .kisClick(haptic = KisSettings.Haptic.TICK) { onNudge(t, n) }
                                 .semantics { contentDescription = "$label ${if (n > 0) "$n דקות קדימה" else "${-n} דקות אחורה"}" }
@@ -636,7 +636,7 @@ private fun HoursDisplay(value: String, edit: DigitEdit?, ink: Color, accent: Co
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(2, 4, 6, 8).forEach { h ->
-            Box(Modifier.weight(1f).heightIn(min = 38.dp).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+            Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
                 .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(10.dp))).kisClick { onQuick(h) }.testTag("quick_hours_$h"),
                 contentAlignment = Alignment.Center) { Text("$h ש׳", color = ink, style = KisType.label) }
         }
@@ -664,7 +664,7 @@ private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color
             if (d.teamJob && !d.teamSameRate) Text("רק ארגנתי את הצוות? אפשר 0", color = ink.copy(alpha = 0.7f), style = KisType.caption, modifier = Modifier.testTag("job_organizer_hint"))
         }
     }
-    val tile = Modifier.heightIn(min = 38.dp).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+    val tile = Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
         .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(10.dp)))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (!d.amountUnknown) Box(tile.kisClick(onClick = onUnknown).testTag("job_unknown").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {

@@ -42,7 +42,7 @@ import com.example.ui.WorkViewModel
 fun InfoDot(title: String, text: String, tag: String? = null) {
     val c = Kis.colors
     var open by rememberSaveable { mutableStateOf(false) }
-    Box(Modifier.size(40.dp).clip(CircleShape).kisClick { open = true }.semantics { contentDescription = "הסבר: $title" }
+    Box(Modifier.size(44.dp).clip(CircleShape).kisClick { open = true }.semantics { contentDescription = "הסבר: $title" }
         .then(if (tag != null) Modifier.testTag(tag) else Modifier), contentAlignment = Alignment.Center) {
         Icon(Icons.Outlined.Info, null, tint = c.muted, modifier = Modifier.size(20.dp))
     }
