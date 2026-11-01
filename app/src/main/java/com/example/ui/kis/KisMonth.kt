@@ -20,14 +20,20 @@ import com.example.data.WorkEntry
 /** Month key (HistoryFilter.monthKey) of a "YYYY-MM" string, or null. */
 fun monthKeyOf(month: String): Int? = runCatching { val (y, m) = month.split("-").map { it.toInt() }; y * 12 + m - 1 }.getOrNull()
 
-/** The way into a recap: the app's purple card with its name and the logo. */
+/**
+ * The way into a recap: the app's purple card with its name and the logo. [soft] (Home, 2.3.0 approved choice B): a soft
+ * brand background with brand-coloured text, so it invites without competing with the main amount and the live card.
+ */
 @Composable
-fun RecapEntry(title: String, subtitle: String, tag: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Row(modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(listOf(Workplaces[0].from, Workplaces[4].from)))
+fun RecapEntry(title: String, subtitle: String, tag: String, modifier: Modifier = Modifier, soft: Boolean = false, onClick: () -> Unit) {
+    val dark = Kis.colors.dark
+    val ink = if (!soft) Color.White else if (dark) Color(0xFFC9CCFF) else Color(0xFF3A33B8)
+    val bg = if (!soft) Brush.linearGradient(listOf(Workplaces[0].from, Workplaces[4].from)) else androidx.compose.ui.graphics.SolidColor(if (dark) Color(0xFF2C2E56) else Color(0xFFE8ECFF))
+    Row(modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(bg)
         .kisClick(onClick = onClick).testTag(tag).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = KisType.title, color = Color.White)
-            Text(subtitle, style = KisType.caption, color = Color.White.copy(alpha = .85f))
+            Text(title, style = KisType.title, color = ink)
+            Text(subtitle, style = KisType.caption, color = ink.copy(alpha = .85f))
         }
         KisLogo(Modifier.size(34.dp))
     }
