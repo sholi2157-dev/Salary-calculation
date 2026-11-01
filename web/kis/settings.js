@@ -194,7 +194,7 @@ function placesSheet(app) {
         <div class="list" data-testid="places-panel" style="display:grid;gap:4px">${places.map(c => `<div class="place-drag" data-drag="${esc(c.name)}" data-testid="place-row-${esc(c.name)}">
           <button class="shift grow" style="background:none;border:0;padding:0" data-def="${esc(c.name)}" aria-pressed="${c.name === def}">${U().avatar(c.name, store, false, 32)}
           <span class="meta"><b class="label">${esc(c.name)}${c.name === def ? ' · ברירת מחדל' : ''}</b><span class="sub">${esc(U().money(c.defaultRate, root.WorkCategories.currency(c.name, store.data.webPreferences)))} לשעה</span></span></button>
-          <button class="chip" data-edit="${esc(c.name)}" aria-expanded="${open === c.name}">עריכה</button>
+          <button class="icon-btn place-edit" data-edit="${esc(c.name)}" aria-expanded="${open === c.name}" aria-label="עריכת ${esc(c.name)}" data-testid="place-edit-${esc(c.name)}">${U().ICON.edit}</button>
           <span class="grip" data-grip aria-label="הזזת ${esc(c.name)}" data-testid="place-drag-${esc(c.name)}">${U().ICON.grip}</span></div>
           ${open === c.name ? '<div class="card" data-inline-edit style="display:grid;gap:10px"></div>' : ''}`).join('')}</div>
         <button class="btn ghost" data-a="add" data-testid="place-add">+ מקום עבודה חדש</button>`;

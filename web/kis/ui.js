@@ -146,6 +146,7 @@ const ICON = {
   person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>',
   share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>',
   next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 6-6 6 6 6"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>',
 };
 /** ⓘ: the explanation of a title, opened only when asked for. Screens say what things are; how-to lives here. */
 const infoDot = (title, text, testid = '') => `<button type="button" class="icon-btn info-dot" data-info-title="${esc(title)}" data-info="${esc(text)}" aria-label="הסבר: ${esc(title)}"${testid ? ` data-testid="${testid}"` : ''}>${ICON.info}</button>`;
