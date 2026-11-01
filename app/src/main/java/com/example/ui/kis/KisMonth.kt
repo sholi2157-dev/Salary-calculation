@@ -58,7 +58,7 @@ fun RecapArchiveSheet(entries: List<WorkEntry>, onStory: (String) -> Unit, onDis
         } else Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             list.forEach { scope ->
                 val s = remember(done, scope) { com.example.domain.V2Summary.summary(done.map { com.example.domain.V2Summary.row(it) }, scope, today) }
-                RecapEntry(recapTitle(scope), "${if (s.count == 1) "משמרת אחת" else "${s.count} משמרות"} · ${KisFormat.hours(s.hours)} שעות", "recap_$scope") { onStory(scope) }
+                RecapEntry(recapTitle(scope), "${if (s.count == 1) "משמרת אחת" else "${s.count} משמרות"} · ${KisFormat.duration(s.hours)} שעות", "recap_$scope") { onStory(scope) }
             }
         }
     }

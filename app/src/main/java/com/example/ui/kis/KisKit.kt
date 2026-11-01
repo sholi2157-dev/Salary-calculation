@@ -97,6 +97,8 @@ object KisFormat {
     }
     /** Minutes as h:mm (7:30). */
     fun hm(minutes: Int): String = "${minutes / 60}:${String.format(Locale.US, "%02d", minutes % 60)}"
+    /** A duration on screen, always h:mm ("2:30 שעות", M-36, same as web KisUi.duration); rates and shared texts keep decimals. */
+    fun duration(h: Double): String = hm(Math.round((if (h.isFinite()) h else 0.0) * 60).toInt())
 
     val DAY_SHORT = listOf("א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳")
     val DAY_LONG = listOf("ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת")

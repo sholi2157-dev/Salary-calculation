@@ -944,5 +944,5 @@ fun timeLabel(e: WorkEntry): String = when {
     e.isTimeRange && e.startTime != null && e.endTime != null -> "⁦${e.startTime}–${e.endTime}⁩"
     // A job paid by the job has no hours to show unless some were typed.
     e.kind == WorkEntry.KIND_JOB && e.hours <= 0 -> "קבלנות"
-    else -> "${KisFormat.hours(e.hours)} שעות"
+    else -> "${KisFormat.duration(e.hours)} שעות"
 }
