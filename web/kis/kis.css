@@ -157,15 +157,15 @@ button { cursor: pointer; }
 .toast button { border: 0; background: transparent; color: var(--glow); font-weight: 700; padding: 10px 12px; border-radius: 99px; min-height: 44px; }
 
 /* Sheets */
-.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
-.sheet { background: var(--surface); width: 100%; max-width: 560px; max-height: 92dvh; overflow: auto; border-radius: 26px 26px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom));
+.scrim { position: fixed; inset: 0; top: var(--vvt, 0); bottom: auto; height: var(--vvh, 100dvh); background: rgba(0,0,0,.45); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.sheet { background: var(--surface); width: 100%; max-width: 560px; max-height: min(92dvh, calc(var(--vvh, 100dvh) * .92)); overflow: auto; overscroll-behavior: contain; border-radius: 26px 26px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom));
   display: grid; gap: 12px; }
 .sheet::before { content: ''; justify-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
 .sheet h2 { margin: 0; font: 22px/28px var(--display); }
 @media (min-width: 900px) { .scrim { align-items: center; } .sheet { border-radius: 26px; } }
 
 /* Editor */
-.editor { position: fixed; inset: 0; z-index: 30; background: var(--bg); overflow: auto; }
+.editor { position: fixed; inset: 0; top: var(--vvt, 0); bottom: auto; height: var(--vvh, 100dvh); z-index: 30; background: var(--bg); overflow: auto; overscroll-behavior: contain; scroll-padding-bottom: 96px; }
 .editor.framed { background: rgba(0,0,0,.45); padding: 10px; }
 .editor.framed .editor-in { border: 2px solid #fff; border-radius: 26px; overflow: auto; height: 100%; background: var(--bg); position: relative; }
 .editor-in { max-width: 560px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; position: relative; }

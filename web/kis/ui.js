@@ -160,6 +160,28 @@ document.addEventListener('click', e => {
 }, true);
 const logo = (size = 38) => `<span class="logo" style="width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 64 64" width="${size}" height="${size}"><g stroke-width="7" stroke-linecap="round"><path d="M19 44V30" stroke="#7C8CFF"/><path d="M32 44V20" stroke="#FFC54D"/><path d="M45 44V25" stroke="#34C79A"/><path d="M19 44h26" stroke="#EDF0F5"/></g></svg></span>`;
 
+/*
+ * The on-screen keyboard (editor and sheets, design decision "גלילה ומקלדת"). --vvh/--vvt follow the part of the page the
+ * keyboard leaves visible, so the editor, its save bar and the sheets end above the keyboard in every browser (Chrome
+ * resizes the page itself; Safari only shrinks the visual viewport). A field that gets focus is scrolled to the middle
+ * of what is left, once the keyboard has opened. The hidden typing field and the invisible date pickers are left alone.
+ */
+function followKeyboard() {
+  const vv = root.visualViewport, doc = root.document?.documentElement;
+  if (!doc) return;
+  if (vv) {
+    const set = () => { doc.style.setProperty('--vvh', Math.round(vv.height) + 'px'); doc.style.setProperty('--vvt', Math.round(vv.offsetTop) + 'px'); };
+    vv.addEventListener('resize', set); vv.addEventListener('scroll', set); set();
+  }
+  root.document.addEventListener('focusin', e => {
+    const t = e.target;
+    if (!t?.matches?.('input, textarea, select') || t.classList.contains('key-sink') || getComputedStyle(t).opacity === '0' || !t.closest('.editor, .sheet')) return;
+    const calm = root.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    setTimeout(() => { if (root.document.activeElement === t) t.scrollIntoView({ block: 'center', behavior: calm ? 'auto' : 'smooth' }); }, 280);
+  });
+}
+if (root.document) followKeyboard();
+
 root.KisUi = { orderedPlaces, DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, duration, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
   isDark, placeOf, accent, accentInk, avatar, timeLabel, subtitle, upcoming, shiftCard, toast, sheet, closeTopSheet, anySheet, confirmSheet, copy, shareOrCopy,
   showText, haptic, ICON, logo, infoDot };
