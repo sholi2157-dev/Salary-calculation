@@ -147,7 +147,7 @@ function withTeam(d, on) {
 function evaluate(d) {
   const clockish = d.mode === 'CLOCK' || (d.mode === 'GROUP' && d.start != null);
   const ev = R().evaluate({ mode: d.mode === 'GROUP' && !clockish ? 'HOURS' : d.mode, start: clockish ? d.start : null, end: clockish ? d.end : null, breakMinutes: clockish ? d.breakMin : 0,
-    hours: durationHours(d.hours) ?? 'invalid', rate: num(d.rate), rateUnknown: d.rateUnknown, bonus: num(d.bonus) || 0, bonusTarget: d.bonusTarget, amount: d.amount, amountUnknown: d.amountUnknown });
+    hours: durationHours(d.hours) ?? 'invalid', rate: num(d.rate), rateUnknown: d.rateUnknown, bonus: num(d.bonus) || 0, bonusTarget: d.bonusTarget, amount: d.amount, amountUnknown: d.amountUnknown, organizerOnly: teamJob(d) && !sameRate(d) });
   const errors = [...ev.errors];
   if (!d.category) errors.unshift('בחר מקום עבודה');
   if (d.mode === 'GROUP' && d.workers.some(w => !w.name.trim())) errors.push('לכל עובד צריך שם');
@@ -165,7 +165,7 @@ function evaluate(d) {
   if (num(d.rate) != null && num(d.rate) < 0 && !d.rateUnknown && d.mode !== 'JOB') errors.push('תעריף לא יכול להיות שלילי');
   if (String(d.bonus ?? '').trim() && !(num(d.bonus) >= 0)) errors.push('הבונוס לא תקין');
   if (d.mode === 'GROUP' && d.separateRates && [d.employerRate, d.workerRate].some(v => v.trim() && num(v) != null && num(v) < 0)) errors.push('תעריף לא יכול להיות שלילי');
-  if (d.mode === 'JOB' && !d.amountUnknown && String(d.amount ?? '').trim() && !(num(d.amount) > 0)) errors.push('הסכום לא תקין');
+  if (d.mode === 'JOB' && !d.amountUnknown && String(d.amount ?? '').trim() && !(num(d.amount) > 0 || (teamJob(d) && !sameRate(d) && num(d.amount) === 0))) errors.push('הסכום לא תקין');
   // A job shows the user's own amount, which is what is stored and counted (a team is paid on top of it).
   const raw = ev.total == null || d.mode === 'JOB' || clockish ? ev.total : root.KisPay.money(durationHours(d.hours) || 0, num(d.rate) || 0, ev.bonus);
   // No total is shown for values that cannot be saved (a negative rate showed "₪-200").
@@ -377,7 +377,7 @@ function open(app, { entry = null, restore = null } = {}) {
       ${base ? `<div class="caption" data-testid="was-banner" style="background:color-mix(in srgb,var(--ink) 8%,transparent);border-radius:10px;padding:6px 10px">${changed() ? '<span class="tag warn">שונה</span> ' : ''}לפני: ${esc(U().dayLabel(base.date))} · ${esc(U().timeLabel(base))} · ${root.KisPay.pay(base) != null ? esc(U().money(base.totalEarnings, base.currency)) : base.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</div>` : ''}
       <div class="modes" role="tablist" aria-label="סוג הרישום">${MODES.map(([m, l]) => `<button role="tab" aria-selected="${tabOf(d) === m}" aria-pressed="${tabOf(d) === m}" data-mode="${m}" data-testid="mode-${m.toLowerCase()}">${l}</button>`).join('')}</div>
       <div class="places"><button data-a="add-place" data-testid="add-place">+ מקום</button>${cats.map(x => `<button aria-pressed="${x.name === d.category}" data-cat="${esc(x.name)}" data-testid="place-${esc(x.name)}">${esc(x.name)}</button>`).join('')}</div>
-      ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">${teamJob(d) ? 'כמה אתה הרווחת (רק שלך)' : 'כמה הרווחת'} (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount"></label>
+      ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">${teamJob(d) ? 'כמה אתה הרווחת (רק שלך)' : 'כמה הרווחת'} (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount" ${teamJob(d) && !sameRate(d) ? 'placeholder="רק ארגנתי את הצוות? אפשר 0"' : ''}></label>
           <div>${durationControl(true)}</div></div>
           <button class="chip${d.amountUnknown ? ' on' : ''}" data-a="amount-unknown">${d.amountUnknown ? 'סכום חסר · נגיעה להזנה' : 'לא יודע עדיין'}</button>`
         : clockMode ? `<div class="clock-row">${[['START', 'התחלה'], ['END', 'סיום']].map(([t, label]) => { const v = shown(t) || '--:--', id = t === 'START' ? 'clock-start' : 'clock-end';
