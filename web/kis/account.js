@@ -201,7 +201,9 @@ async function eraseDevice(store) {
     await fb.auth().signOut();
     const st = readState(localStorage); st.current = null; writeState(localStorage, st);
   }
-  E.wipeDevice(localStorage, prefix, uid);
+  // Signed out too: the account this data last synced with must forget it, or its next sign-in would read the
+  // emptied device as deletions. The browser's own data belongs to the bound account, a copy to its own account.
+  E.wipeDevice(localStorage, prefix, uid || (prefix ? prefix.slice(5, -1) : s.bound) || null);
   location.reload();
   return { ok: true };
 }

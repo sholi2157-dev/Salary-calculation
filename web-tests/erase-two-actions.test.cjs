@@ -85,6 +85,16 @@ test('device: why the sync memory is forgotten — keeping it would read the emp
   assert.equal(s.live('owner', 'entry'), 0, 'control: this is exactly what eraseDevice must never do');
 });
 
+test('device while signed out: the sync memory of the account this data belongs to goes too, so signing in later deletes nothing', async () => {
+  const s = server(), local = storage(), a = device(s, 'owner', local); await rich(a); await a.sync.sync();
+  const live = s.live('owner');
+  // (signed out earlier; the sync memory "work_sync_v1:owner" is still in the browser)
+  assert.ok(local.getItem('work_sync_v1:owner'));
+  E.wipeDevice(local, '', 'owner'); // eraseDevice passes the bound account when nobody is signed in
+  const later = device(s, 'owner', local); await later.sync.sync();
+  assert.equal(s.live('owner'), live, 'the account keeps everything'); assert.equal(later.store.data.entries.length, 2);
+});
+
 test('device: refused while a change has not reached the account (offline), so nothing that exists only here is lost', async () => {
   const s = server(), a = device(s); await rich(a); await a.sync.sync();
   a.store.addEntries([shift({ notes: 'חדש', createdAt: 77 })]); s.online = false;
