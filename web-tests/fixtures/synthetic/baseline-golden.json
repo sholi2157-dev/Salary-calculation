@@ -1,0 +1,158 @@
+{
+ "richLoadWritesNothing": true,
+ "richEntries": [
+  {
+   "id": "r01",
+   "pay": 300,
+   "known": true,
+   "stored": 300,
+   "hours": 6
+  },
+  {
+   "id": "r02",
+   "pay": 175,
+   "known": true,
+   "stored": 175,
+   "hours": 3.5
+  },
+  {
+   "id": "r03",
+   "pay": 200,
+   "known": true,
+   "stored": 200,
+   "hours": 1.6666666666666667
+  },
+  {
+   "id": "r04",
+   "pay": 120,
+   "known": true,
+   "stored": 120,
+   "hours": 4
+  },
+  {
+   "id": "r05",
+   "pay": null,
+   "known": false,
+   "stored": 0,
+   "hours": 5
+  },
+  {
+   "id": "r06",
+   "pay": 850,
+   "known": true,
+   "stored": 850,
+   "hours": 0
+  },
+  {
+   "id": "r07",
+   "pay": null,
+   "known": false,
+   "stored": 0,
+   "hours": 2
+  },
+  {
+   "id": "r08",
+   "pay": 370,
+   "known": true,
+   "stored": 370,
+   "hours": 5,
+   "group": {
+    "employerTotal": 1045,
+    "profit": 180,
+    "myNet": 550
+   }
+  },
+  {
+   "id": "r09",
+   "pay": 42.12345,
+   "known": true,
+   "stored": 42.12345,
+   "hours": 1.234567
+  },
+  {
+   "id": "r10",
+   "pay": 310,
+   "known": true,
+   "stored": 310,
+   "hours": 7.75
+  },
+  {
+   "id": "r11",
+   "pay": 149.98,
+   "known": true,
+   "stored": 149.98,
+   "hours": 1.5
+  },
+  {
+   "id": "r12",
+   "pay": 432,
+   "known": true,
+   "stored": 432,
+   "hours": 9
+  },
+  {
+   "id": "r13",
+   "pay": 210.03,
+   "known": true,
+   "stored": 210.03,
+   "hours": 3,
+   "group": {
+    "employerTotal": 211.2,
+    "profit": 0.33,
+    "myNet": 210.36
+   }
+  },
+  {
+   "id": "r14",
+   "pay": 85,
+   "known": true,
+   "stored": 85,
+   "hours": 2.5
+  },
+  {
+   "id": "r15",
+   "pay": 250,
+   "known": true,
+   "stored": 250,
+   "hours": 5
+  }
+ ],
+ "richTotals": {
+  "₪": 3289.1334500000003,
+  "$": 205
+ },
+ "plans": {
+  "series": [
+   {
+    "id": "series-rich",
+    "category": "מסעדה",
+    "daysMask": 42,
+    "startTime": "09:00",
+    "endTime": "17:00",
+    "hourlyRate": 50,
+    "currency": "₪",
+    "fromDate": "2026-01-01",
+    "untilDate": "2027-12-31"
+   }
+  ],
+  "exceptions": [
+   {
+    "seriesId": "series-rich",
+    "date": "2026-02-02",
+    "cancelled": true
+   },
+   {
+    "seriesId": "series-rich",
+    "date": "2026-02-04",
+    "hold": true
+   }
+  ]
+ },
+ "legacyRows": 3,
+ "legacyDistinctIds": 2,
+ "legacyDeleteOneRemoves": 2,
+ "knownBug": {
+  "D01_identicalLegacyRowsShareId": true,
+  "CAL02_r11_storedNotHalfUp": 149.98
+ }
+}

@@ -1,0 +1,370 @@
+{
+ "work_complete_backup": {
+  "entries": [
+   {
+    "id": "r01",
+    "category": "מסעדה",
+    "date": 1772366400000,
+    "createdAt": 1772366401000,
+    "isTimeRange": true,
+    "startTime": "11:00",
+    "endTime": "17:00",
+    "hours": 6,
+    "hourlyRate": 50,
+    "totalEarnings": 300,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": ""
+   },
+   {
+    "id": "r02",
+    "category": "מסעדה",
+    "date": 1772452800000,
+    "createdAt": 1772452801000,
+    "isTimeRange": true,
+    "startTime": "22:00",
+    "endTime": "02:00",
+    "hours": 3.5,
+    "hourlyRate": 50,
+    "totalEarnings": 175,
+    "isPaid": false,
+    "notes": "לילה, חצי שעה הפסקה",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": ""
+   },
+   {
+    "id": "r03",
+    "category": "שיעורים פרטיים במתמטיקה ופיזיקה לתיכון",
+    "date": 1772539200000,
+    "createdAt": 1772539201000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 1.6666666666666667,
+    "hourlyRate": 120,
+    "totalEarnings": 200,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": ""
+   },
+   {
+    "id": "r04",
+    "category": "Tech Support",
+    "date": 1772625600000,
+    "createdAt": 1772625601000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 4,
+    "hourlyRate": 30,
+    "totalEarnings": 120,
+    "isPaid": true,
+    "notes": "",
+    "currency": "$",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": ""
+   },
+   {
+    "id": "r05",
+    "category": "מסעדה",
+    "date": 1772712000000,
+    "createdAt": 1772712001000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 5,
+    "hourlyRate": 0,
+    "totalEarnings": 0,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": "",
+    "payKnown": false
+   },
+   {
+    "id": "r06",
+    "category": "הובלות",
+    "date": 1772798400000,
+    "createdAt": 1772798401000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 0,
+    "hourlyRate": 0,
+    "totalEarnings": 850,
+    "isPaid": false,
+    "notes": "הובלת דירה",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": "",
+    "kind": "job"
+   },
+   {
+    "id": "r07",
+    "category": "הובלות",
+    "date": 1772884800000,
+    "createdAt": 1772884801000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 2,
+    "hourlyRate": 0,
+    "totalEarnings": 0,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": "",
+    "kind": "job",
+    "payKnown": false
+   },
+   {
+    "id": "r08",
+    "category": "אירועים",
+    "date": 1772971200000,
+    "createdAt": 1772971201000,
+    "isTimeRange": true,
+    "startTime": "18:00",
+    "endTime": "23:00",
+    "hours": 5,
+    "hourlyRate": 70,
+    "totalEarnings": 370,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "isGroupShift": true,
+    "employerRate": 70,
+    "workerRate": 50,
+    "groupWorkersJson": "[{\"name\":\"יוסי\",\"hours\":5,\"rate\":50},{\"name\":\"מנחם מענדל\",\"hours\":4,\"rate\":50,\"paid\":true}]",
+    "bonus": 20,
+    "passThrough": 45
+   },
+   {
+    "id": "r09",
+    "category": "מסעדה",
+    "date": 1773057600000,
+    "createdAt": 1773057601000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 1.234567,
+    "hourlyRate": 34.123456,
+    "totalEarnings": 42.12345,
+    "isPaid": false,
+    "notes": "סכום מיובא חריג: אסור לחשב מחדש",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": ""
+   },
+   {
+    "id": "r10",
+    "category": "עצמאי",
+    "date": 1773144000000,
+    "createdAt": 1773144001000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 7.75,
+    "hourlyRate": 40,
+    "totalEarnings": 310,
+    "isPaid": true,
+    "notes": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": ""
+   },
+   {
+    "id": "r11",
+    "category": "מסעדה",
+    "date": 1773230400000,
+    "createdAt": 1773230401000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 1.5,
+    "hourlyRate": 99.99,
+    "totalEarnings": 149.98,
+    "isPaid": false,
+    "notes": "CAL-02: נשמר 149.98",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": ""
+   },
+   {
+    "id": "r12",
+    "category": "מוקד לילה",
+    "date": 1774699200000,
+    "createdAt": 1774699201000,
+    "isTimeRange": true,
+    "startTime": "22:00",
+    "endTime": "07:00",
+    "hours": 9,
+    "hourlyRate": 48,
+    "totalEarnings": 432,
+    "isPaid": false,
+    "notes": "לילה של מעבר לשעון קיץ",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": ""
+   },
+   {
+    "id": "r13",
+    "category": "אירועים",
+    "date": 1775131200000,
+    "createdAt": 1775131201000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 3,
+    "hourlyRate": 70.01,
+    "totalEarnings": 210.03,
+    "isPaid": false,
+    "notes": "",
+    "currency": "₪",
+    "isGroupShift": true,
+    "employerRate": 70.01,
+    "workerRate": 50.02,
+    "groupWorkersJson": "[{\"name\":\"עובד א\",\"hours\":0.016666666666666666,\"rate\":50.02}]"
+   },
+   {
+    "id": "r14",
+    "category": "Tech Support",
+    "date": 1775217600000,
+    "createdAt": 1775217601000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 2.5,
+    "hourlyRate": 30,
+    "totalEarnings": 85,
+    "isPaid": false,
+    "notes": "",
+    "currency": "$",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": "",
+    "bonus": 10
+   },
+   {
+    "id": "r15",
+    "category": "מסעדה",
+    "date": 1799064000000,
+    "createdAt": 1799064001000,
+    "isTimeRange": false,
+    "startTime": null,
+    "endTime": null,
+    "hours": 5,
+    "hourlyRate": 50,
+    "totalEarnings": 250,
+    "isPaid": false,
+    "notes": "עתידית",
+    "currency": "₪",
+    "isGroupShift": false,
+    "employerRate": null,
+    "workerRate": null,
+    "groupWorkersJson": ""
+   }
+  ],
+  "categories": [
+   {
+    "name": "עצמאי",
+    "defaultRate": 40
+   },
+   {
+    "name": "מסעדה",
+    "defaultRate": 50
+   },
+   {
+    "name": "שיעורים פרטיים במתמטיקה ופיזיקה לתיכון",
+    "defaultRate": 120
+   },
+   {
+    "name": "Tech Support",
+    "defaultRate": 30
+   },
+   {
+    "name": "הובלות",
+    "defaultRate": 60
+   },
+   {
+    "name": "אירועים",
+    "defaultRate": 70
+   },
+   {
+    "name": "מוקד לילה",
+    "defaultRate": 48
+   }
+  ],
+  "workers": [
+   {
+    "name": "יוסי"
+   },
+   {
+    "name": "מנחם מענדל"
+   }
+  ],
+  "webPreferences": {
+   "mainCurrency": "₪",
+   "defaultCategory": "מסעדה",
+   "categoryCurrencies": {
+    "Tech Support": "$"
+   }
+  }
+ },
+ "work_series_v1": {
+  "series": [
+   {
+    "id": "series-rich",
+    "category": "מסעדה",
+    "daysMask": 42,
+    "startTime": "09:00",
+    "endTime": "17:00",
+    "hourlyRate": 50,
+    "currency": "₪",
+    "fromDate": "2026-01-01",
+    "untilDate": "2027-12-31"
+   }
+  ],
+  "exceptions": [
+   {
+    "seriesId": "series-rich",
+    "date": "2026-02-02",
+    "cancelled": true
+   },
+   {
+    "seriesId": "series-rich",
+    "date": "2026-02-04",
+    "hold": true
+   }
+  ]
+ }
+}

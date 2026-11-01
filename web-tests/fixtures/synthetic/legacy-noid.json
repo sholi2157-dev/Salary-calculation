@@ -1,0 +1,34 @@
+{
+ "user_work_shifts": [
+  {
+   "category": "מסעדה",
+   "date": 1764590400000,
+   "hours": 4,
+   "hourlyRate": 45,
+   "totalEarnings": 180,
+   "isPaid": false,
+   "notes": "",
+   "currency": "₪"
+  },
+  {
+   "category": "מסעדה",
+   "date": 1764590400000,
+   "hours": 4,
+   "hourlyRate": 45,
+   "totalEarnings": 180,
+   "isPaid": false,
+   "notes": "",
+   "currency": "₪"
+  },
+  {
+   "category": "מסעדה",
+   "date": 1764676800000,
+   "hours": 3,
+   "hourlyRate": 45,
+   "totalEarnings": 135,
+   "isPaid": false,
+   "notes": "",
+   "currency": "₪"
+  }
+ ]
+}
