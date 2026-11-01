@@ -685,12 +685,12 @@ class KisUiTest {
         host { KisStory(scope, rows(), categories, onClose = {}, onMessage = {}) }
         ui.mainClock.advanceTimeBy(7_500)
         ui.onNodeWithTag("story_hours").assertExists()
-        ui.onNodeWithTag("story_hours_value", useUnmergedTree = true).assertTextEquals("2.5")
+        ui.onNodeWithTag("story_hours_value", useUnmergedTree = true).assertTextEquals("2:30")
         ui.onNodeWithText("שעות עבודה במשמרת אחת.").assertExists()
         runCatching { ui.onNodeWithTag("story_root").captureRoboImage(filePath = "/tmp/kis-story-thin-hours.png") }
         val s = com.example.domain.V2Summary.summary(rows().map { com.example.domain.V2Summary.row(it) }, scope, com.example.domain.V2Summary.today())
         assertEquals(listOf("intro", "hours", "money", "card"), com.example.domain.V2Summary.slides(s))
-        assertEquals(listOf("סכום (₪)" to "₪100", "שעות" to "2.5", "משמרות" to "1", "מקום מוביל" to "מסעדה"), posterCells(s, null, com.example.domain.V2Summary.slides(s).toSet()))
+        assertEquals(listOf("סכום (₪)" to "₪100", "שעות" to "2:30", "משמרות" to "1", "מקום מוביל" to "מסעדה"), posterCells(s, null, com.example.domain.V2Summary.slides(s).toSet()))
     }
 
     @Test fun bellSheetListsRecentAndOpensTheirMonth() {
