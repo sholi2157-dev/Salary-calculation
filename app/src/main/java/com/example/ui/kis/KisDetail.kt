@@ -116,11 +116,11 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
             if (WorkPay.isJob(entry)) {
                 fact("סוג") { value("עבודה קבלנית") }
                 fact("מה עשית") { value(entry.notes.ifBlank { "—" }) }
-                fact("זמן") { value(if (entry.hours > 0) "${KisFormat.hours(entry.hours)} שעות" else "לא צוין") }
+                fact("זמן") { value(if (entry.hours > 0) "${KisFormat.duration(entry.hours)} שעות" else "לא צוין") }
                 if (pay == null) fact("סכום") { link("להשלמה ←", "detail_fill_amount") }
             } else {
                 val overnight = entry.isTimeRange && entry.startTime != null && entry.endTime != null && entry.endTime <= entry.startTime
-                fact("שעות") { value(timeLabel(entry) + (if (overnight) " · למחרת" else "") + if (entry.isTimeRange) " · ${KisFormat.hours(entry.hours)} ש׳" else "", "detail_hours") }
+                fact("שעות") { value(timeLabel(entry) + (if (overnight) " · למחרת" else "") + if (entry.isTimeRange) " · ${KisFormat.duration(entry.hours)} ש׳" else "", "detail_hours") }
                 fact("תעריף") {
                     if (!entry.payKnown) link("להשלמה ←", "detail_fill_rate")
                     else value("${KisFormat.money(entry.hourlyRate, entry.currency)} לשעה")
@@ -184,7 +184,7 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                     Text(w.name, style = KisType.label, color = c.ink)
                     // A job worker is paid by the job: just their sum (an old one saved as hours × rate shows how).
                     val fixed = job && w.amount != null
-                    val time = if (job && fixed) null else if (job) "${KisFormat.hours(w.hours)} שעות × ${WorkPay.workerRate(w, entry)?.let { KisFormat.money(it, entry.currency) } ?: "?"}" else "${KisFormat.hours(w.hours)} שעות"
+                    val time = if (job && fixed) null else if (job) "${KisFormat.duration(w.hours)} שעות × ${WorkPay.workerRate(w, entry)?.let { KisFormat.money(it, entry.currency) } ?: "?"}" else "${KisFormat.hours(w.hours)} שעות"
                     Text(listOfNotNull(time, wPay?.let { KisFormat.money(it, entry.currency) } ?: "תעריף חסר", if (w.bonus > 0) "בונוס ${KisFormat.money(w.bonus, entry.currency)}" else null).joinToString(" · "),
                         style = KisType.caption.copy(textDirection = TextDirection.Rtl), color = c.muted)
                 }

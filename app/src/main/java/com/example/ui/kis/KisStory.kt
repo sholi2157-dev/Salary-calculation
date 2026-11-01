@@ -77,7 +77,7 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
     val top = s.places.firstOrNull()
     val persona = s.persona?.let { V2Summary.PERSONAS[it] }
     val personaLine = persona?.line?.replace("#", when (s.persona) {
-        "marathon" -> KisFormat.hours(hrs / maxOf(1, s.count)); else -> s.places.size.toString() })
+        "marathon" -> KisFormat.duration(hrs / maxOf(1, s.count)); else -> s.places.size.toString() })
     // Only the slides with something real to say (V2Summary.slides, the same rule as the website).
     val shows = remember(s) { V2Summary.slides(s).toSet() }
     val slides = buildList {
@@ -89,7 +89,7 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
         add(Slide(place(0), 3, 4, tag = "story_hours") {
             Kick(say("hoursKick"))
             // Under 10 hours the exact value (2.5), not a rounded 3.
-            if (hrs < 10) Huge(KisFormat.hours(hrs), Modifier.testTag("story_hours_value")) else CountUp(Math.round(hrs).toInt(), Modifier.testTag("story_hours_value"))
+            if (hrs < 10) Huge(KisFormat.duration(hrs), Modifier.testTag("story_hours_value")) else CountUp(Math.round(hrs).toInt(), Modifier.testTag("story_hours_value"))
             Head((if (hrs == 1.0) "שעת עבודה" else "שעות עבודה") + if (s.count == 1) " במשמרת אחת." else " ב-${s.count} משמרות.")
             s.comparison?.let { Para("זה בערך ${it.count} ${V2Summary.FUN[it.key]}. ${say("funTail")}") }
         })
@@ -100,7 +100,7 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
                     Text("${i + 1}", style = TextStyle(fontFamily = SecularOne, fontSize = if (i == 0) 28.sp else 22.sp), color = LocalStoryInk.current.copy(alpha = if (i == 0) 1f else .7f))
                     Box(Modifier.size(14.dp).clip(CircleShape).background(workplaceOf(p.name, categories).from))
                     Text(p.name, style = TextStyle(fontFamily = Rubik, fontWeight = FontWeight.SemiBold, fontSize = if (i == 0) 26.sp else 20.sp), color = LocalStoryInk.current, maxLines = 1, modifier = Modifier.weight(1f))
-                    Text("${KisFormat.hours(p.hours)} ש׳", style = TextStyle(fontFamily = Rubik, fontSize = 16.sp), color = LocalStoryInk.current.copy(alpha = .75f))
+                    Text("${KisFormat.duration(p.hours)} ש׳", style = TextStyle(fontFamily = Rubik, fontSize = 16.sp), color = LocalStoryInk.current.copy(alpha = .75f))
                 }
             }
             top?.let { Para(say("placesLine", "p" to "${Math.round(it.hours / maxOf(0.01, hrs) * 100)}", "name" to it.name)) }
@@ -112,7 +112,7 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
         })
         s.longest?.takeIf { "longest" in shows }?.let { l -> add(Slide(place(2), 4, 3, tag = "story_longest") {
             Kick(say("longestKick"))
-            Huge(KisFormat.hours(l.hours))
+            Huge(KisFormat.duration(l.hours))
             Head("שעות, " + dayLabel(millisOf(l.date)))
             Para((if (l.start != null && l.end != null) "⁦${l.start}–${l.end}⁩. " else "") + say("longestTail") + when (s.nights) { 0 -> ""; 1 -> " ופעם אחת סיימתם אחרי 23:00."; else -> " ו-${s.nights} פעמים סיימתם אחרי 23:00." })
         }) }
@@ -325,7 +325,7 @@ private val LocalStoryInk = staticCompositionLocalOf { Color.White }
 internal fun posterCells(s: V2Summary.Summary, persona: String?, shows: Set<String>): List<Pair<String, String>> =
     s.currencies.map { "סכום (${it.currency})" to KisFormat.money(it.total, it.currency) } +
     (if (s.pending > 0) listOf("סכום חסר" to if (s.pending == 1) "משמרת אחת" else "${s.pending} משמרות") else emptyList()) + listOfNotNull(
-    "שעות" to KisFormat.hours(if (s.hours < 10) s.hours else Math.round(s.hours).toDouble()), "משמרות" to "${s.count}",
+    "שעות" to (if (s.hours < 10) KisFormat.duration(s.hours) else Math.round(s.hours).toString()), "משמרות" to "${s.count}",
     s.places.firstOrNull()?.let { "מקום מוביל" to it.name },
     persona?.let { "טיפוס" to it },
     s.bestDay?.takeIf { "days" in shows }?.let { "היום החזק" to "יום ${KisFormat.DAY_LONG[it]}" },
@@ -381,7 +381,7 @@ internal fun signed(context: Context, shot: android.graphics.Bitmap, name: Strin
 }
 
 /** A length, never mistaken for a time of day: "7 ש׳", "6.5 ש׳". */
-private fun longLabel(hours: Double) = "${KisFormat.hours(hours)} ש׳"
+private fun longLabel(hours: Double) = "${KisFormat.duration(hours)} ש׳"
 private fun millisOf(date: String) = LocalDate.parse(date).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
 /** The card as a picture through the Android share sheet. False when nothing can receive it. */

@@ -63,12 +63,12 @@ fun subtitle(e: WorkEntry): String {
     val parts = mutableListOf<String>()
     if (WorkPay.isJob(e)) {
         parts += "קבלנות: ${e.notes.ifBlank { e.category }}"
-        if (e.hours > 0) parts += "${KisFormat.hours(e.hours)} ש׳"
+        if (e.hours > 0) parts += "${KisFormat.duration(e.hours)} ש׳"
     } else {
         parts += timeLabel(e)
         if (e.isTimeRange && e.startTime != null && e.endTime != null) {
             if (e.endTime <= e.startTime) parts += "למחרת"
-            parts += "${KisFormat.hours(e.hours)} ש׳"
+            parts += "${KisFormat.duration(e.hours)} ש׳"
         }
         parts += e.category
     }

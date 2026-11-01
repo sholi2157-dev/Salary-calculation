@@ -300,7 +300,7 @@ private fun Pass(name: String, list: List<WorkEntry>, categories: List<WorkCateg
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(name, style = KisType.label.copy(fontSize = 16.sp), color = w.on, maxLines = 1)
-                Text("${KisFormat.hours(list.sumOf { it.hours })} שעות · ${list.size} משמרות${if (pending > 0) " · $pending בלי תעריף" else ""}",
+                Text("${KisFormat.duration(list.sumOf { it.hours })} שעות · ${list.size} משמרות${if (pending > 0) " · $pending בלי תעריף" else ""}",
                     style = KisType.caption, color = w.on.copy(alpha = 0.85f))
             }
             if (totals.isEmpty()) Text(if (pending > 0) "?" else "—", style = KisType.amount, color = w.on)

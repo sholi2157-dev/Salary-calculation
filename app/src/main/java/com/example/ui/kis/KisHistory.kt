@@ -205,7 +205,7 @@ fun KisHistory(
                     item(key = "w$week") {
                         Row(Modifier.fillMaxWidth().padding(top = 10.dp, start = 4.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(KisHistoryLogic.weekLabel(week), style = KisType.label.copy(fontSize = 13.sp), color = c.muted, modifier = Modifier.weight(1f))
-                            Text("${KisFormat.hours(list.sumOf { it.hours })} ש׳", style = KisType.label.copy(fontSize = 13.sp), color = c.muted)
+                            Text("${KisFormat.duration(list.sumOf { it.hours })} ש׳", style = KisType.label.copy(fontSize = 13.sp), color = c.muted)
                         }
                     }
                     items(list, key = { it.id }) { e -> HistoryCard(e, categories, ui, onOpen) }
@@ -306,7 +306,7 @@ private fun Totals(rows: List<WorkEntry>, onPending: () -> Unit) {
     KisCard(padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), radius = 18.dp, modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}.testTag("history_total")) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("${rows.size} משמרות · ${KisFormat.hours(rows.sumOf { it.hours })} שעות", style = KisType.caption, color = c.muted)
+                Text("${rows.size} משמרות · ${KisFormat.duration(rows.sumOf { it.hours })} שעות", style = KisType.caption, color = c.muted)
                 if (totals.isEmpty()) Text("—", style = KisType.amount, color = c.ink)
                 else Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) { totals.forEach { (cur, v) -> MoneyText(v, cur, KisType.amount) } }
             }
