@@ -159,6 +159,8 @@ object PlanJobs {
     fun planNotificationId(key: String) = 3000 + (key.hashCode() and 0x3FFF)
     /** How far back plans are shown and recorded. */
     const val LOOK_BACK_DAYS = 62
+    /** How far back ended plan days still wait for review instead of disappearing (audit CW-05). */
+    const val REVIEW_BACK_DAYS = 400
 
     /** One idempotent daily job, plus a wake-up at the next plan end or monthly summary (and a catch-up on every app start/resume). */
     fun schedule(context: Context) {
@@ -225,11 +227,13 @@ object PlanJobs {
         if (!settings.autoConfirm) return emptyList()
         val series = dao.getSeries()
         if (series.isEmpty()) return emptyList()
-        // The same window the screens show: an old restored plan never floods the history with years of days.
+        // The same window the screens show. Only a few days that just ended are recorded by themselves; more, or older,
+        // wait for the person's review on Home and in History (audit CW-05): nothing is skipped or created in bulk.
         val today = V2Plan.dateOf(now)
-        val from = maxOf(series.minOf { it.fromDate }, V2Rules.civilFromDays(V2Rules.daysFromCivil(today) - LOOK_BACK_DAYS))
+        val from = maxOf(series.minOf { it.fromDate }, V2Rules.civilFromDays(V2Rules.daysFromCivil(today) - REVIEW_BACK_DAYS))
         val occurrences = V2Plan.occurrences(series, dao.getExceptions(), dao.confirmedKeys().toSet(), from, today, now)
-        return dao.confirmOccurrences(V2Plan.toConfirm(occurrences).map { V2Plan.toEntry(it, auto = true) })
+        val auto = V2Plan.splitCatchUp(V2Plan.toConfirm(occurrences), now).auto
+        return if (auto.isEmpty()) emptyList() else dao.confirmOccurrences(auto.map { V2Plan.toEntry(it, auto = true) })
     }
 
     /**

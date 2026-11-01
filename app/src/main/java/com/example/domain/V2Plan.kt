@@ -116,6 +116,18 @@ object V2Plan {
         return if (s.untilDate < last) s.untilDate else last
     }
 
+    /**
+     * Automatic recording of ended plan days (audit CW-05, owner decision 2026-11-01): only everyday use, up to 3 days that
+     * ended within 3 days. Anything more (many days, old days) waits for the person's review. Same as web splitCatchUp.
+     */
+    const val AUTO_MAX_DAYS = 3
+    private const val AUTO_MAX_AGE_MS = 3 * 86_400_000L
+    data class CatchUp(val auto: List<Occurrence>, val review: List<Occurrence>)
+    fun splitCatchUp(due: List<Occurrence>, now: Long): CatchUp {
+        val auto = due.size <= AUTO_MAX_DAYS && due.all { now - endMillis(it.date, it.start, it.end) <= AUTO_MAX_AGE_MS }
+        return if (auto) CatchUp(due, emptyList()) else CatchUp(emptyList(), due)
+    }
+
     /** Like overlaps, with the second range starting [shift] minutes later (another day: ±1440). */
     fun overlapsAt(s1: String, e1: String, s2: String, e2: String, shift: Int): Boolean {
         fun range(s: String, e: String): Pair<Int, Int> { val a = V2Rules.toMinutes(s); var b = V2Rules.toMinutes(e); if (b <= a) b += 1440; return a to b }

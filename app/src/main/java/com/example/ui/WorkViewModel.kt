@@ -886,13 +886,13 @@ class WorkViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     private val planClock = kotlinx.coroutines.flow.MutableStateFlow(System.currentTimeMillis())
 
-    /** Occurrences from two months back (still waiting to be recorded) to four weeks ahead. Never stored, never summed. */
+    /** Occurrences from REVIEW_BACK_DAYS back (days still waiting for review) to four weeks ahead. Never stored, never summed. */
     val occurrences: StateFlow<List<com.example.domain.V2Plan.Occurrence>> = kotlinx.coroutines.flow.combine(series, seriesExceptions, entries, planClock) { s, x, e, now ->
         if (s.isEmpty()) emptyList() else {
             val today = com.example.domain.V2Plan.dateOf(now)
             val days = com.example.domain.V2Rules.daysFromCivil(today)
             com.example.domain.V2Plan.occurrences(s, x, e.mapNotNull { it.seriesKey }.toSet(),
-                com.example.domain.V2Rules.civilFromDays(days - com.example.PlanJobs.LOOK_BACK_DAYS), com.example.domain.V2Rules.civilFromDays(days + 28), now)
+                com.example.domain.V2Rules.civilFromDays(days - com.example.PlanJobs.REVIEW_BACK_DAYS), com.example.domain.V2Rules.civilFromDays(days + 28), now)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

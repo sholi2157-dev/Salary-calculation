@@ -19,6 +19,17 @@ class V2PlanEdgesTest {
         assertEquals("2026-03-05", V2Plan.endUntil(s.copy(untilDate = "2026-03-05"), at("2026-03-10", "12:00")))
     }
 
+    /** 2.3.0 (audit CW-05): same cases as web plan-review.test.cjs. */
+    @Test fun onlyAFewDaysThatJustEndedAreRecordedByThemselves() {
+        fun d(date: String) = V2Plan.Occurrence("s@$date", "s", "מסעדה", date, "09:00", "17:00", 50.0, "₪", false, false, V2Plan.Status.AWAITING)
+        val now = at("2026-03-10", "20:00")
+        val three = listOf(d("2026-03-08"), d("2026-03-09"), d("2026-03-10"))
+        assertEquals(three, V2Plan.splitCatchUp(three, now).auto)
+        val four = listOf(d("2026-03-07")) + three
+        assertEquals(0, V2Plan.splitCatchUp(four, now).auto.size); assertEquals(4, V2Plan.splitCatchUp(four, now).review.size)
+        assertEquals(1, V2Plan.splitCatchUp(listOf(d("2026-03-01")), now).review.size)
+    }
+
     @Test fun anOvernightShiftFromTheEveningBeforeBlocksAnEarlyPlan() {
         val saved = listOf(WorkEntry(category = "מסעדה", date = at("2026-03-09", "22:00"), isTimeRange = true, startTime = "22:00", endTime = "06:00",
             hours = 8.0, hourlyRate = 50.0, totalEarnings = 400.0))
