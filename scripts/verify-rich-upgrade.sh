@@ -6,6 +6,13 @@ set -euo pipefail
 pkg=com.aistudio.worktracker.qztvdw.distribution
 if adb shell pm list packages | grep -Fx "package:$pkg"; then echo 'Expected fresh emulator; refusing to overwrite existing data'; exit 1; fi
 mkdir -p release-evidence/rich
+# On failure, print what happened (the evidence artifact may not be reachable from every reviewer).
+diagnose() {
+  echo '===== rich upgrade: failure diagnostics ====='
+  for f in release-evidence/rich/*.txt; do echo "--- $f"; tail -n 60 "$f"; done
+  adb logcat -d 2>/dev/null | grep -E "RichUpgradeTest|TestRunner|AndroidRuntime|SQLite|System.err" | tail -n 120 || true
+}
+trap 'rc=$?; [ $rc -ne 0 ] && diagnose; exit $rc' EXIT
 echo "c62691480f7cdb81259af5d8179328ec3620c20a1fc367e4916740035d6d8882  candidate-prev.apk" | sha256sum -c -
 adb shell wm size 720x1600
 adb shell wm density 320
