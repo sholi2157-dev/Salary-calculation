@@ -466,7 +466,9 @@ function open(app, { entry = null, restore = null } = {}) {
       else { i.oninput = () => { d = { ...d, [f]: f === 'hours' ? durationEdit(i.value) : i.value }; persist(); refreshMeta(); }; i.onchange = () => { apply(); refreshMeta(); }; }
     });
     all('[data-w]').forEach(i => { const [idx, f] = i.dataset.w.split(':'); const ev = f === 'isPaid' ? 'change' : 'input';
-      i.addEventListener(ev, () => { const ws = d.workers.map((w, k) => k === +idx ? { ...w, [f]: f === 'isPaid' ? i.checked : f === 'hours' ? durationEdit(i.value) : i.value } : w); d = { ...d, workers: ws }; persist(); if (f !== 'name') refreshMeta(); }); });
+      i.addEventListener(ev, () => { const ws = d.workers.map((w, k) => k === +idx ? { ...w, [f]: f === 'isPaid' ? i.checked : f === 'hours' ? durationEdit(i.value) : i.value } : w); d = { ...d, workers: ws }; persist();
+        // The save state follows every field, the name too (audit CW-12); refreshMeta updates in place, so focus stays.
+        refreshMeta(); }); });
     all('[data-wdel]').forEach(b => b.onclick = () => set({ workers: d.workers.filter((_, k) => k !== +b.dataset.wdel) }));
     q('[data-a=add-worker]')?.addEventListener('click', () => set({ workers: [...d.workers, { name: '', hours: d.start ? String((evaluate(d).minutes || 0) / 60) : d.hours, isPaid: false, bonus: '', source: {} }] }));
     all('[data-wname]').forEach(b => b.onclick = () => set({ workers: [...d.workers, { name: b.dataset.wname, hours: d.start ? String((evaluate(d).minutes || 0) / 60) : d.hours, isPaid: false, bonus: '', source: {} }] }));
