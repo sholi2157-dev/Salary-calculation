@@ -379,6 +379,9 @@ button { cursor: pointer; }
 .history-tool { width:44px; height:44px; flex-shrink:0; border-radius:12px; border:1.5px solid var(--line); background:var(--surface); }
 
 .title-row:has(.history-tool) { gap:6px; }
+.title-row .page-title { min-width: 0; }
+/* A 320px phone (M-33): the filter button keeps its icon and count; its words stay for screen readers. */
+@media (max-width: 359px) { [data-testid="history-filters"] .chip-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
 
 /* ---- A computer (wide window): navigation as a side bar, wider pages, home and settings in columns ---- */
 .nav-brand { display: none; }

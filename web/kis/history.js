@@ -70,7 +70,7 @@ function render(el, app, opts = {}) {
   el.innerHTML = `
   <div class="title-row"><h1 class="page-title">היסטוריה</h1>${state.planned ? '' : `
     <button class="icon-btn history-tool" aria-label="חיפוש" data-a="search" data-testid="history-search">${ICON.search}</button>
-    `}<button class="chip${n ? ' on' : ''}" data-a="filters" data-testid="history-filters">${ICON.filter}${n ? 'סינון ומיון · ' + n : 'סינון ומיון'}</button>${state.planned ? '' : `
+    `}<button class="chip${n ? ' on' : ''}" data-a="filters" data-testid="history-filters">${ICON.filter}<span class="chip-label">סינון ומיון</span>${n ? `<span aria-hidden="true">· ${n}</span><span class="sr-only">, ${n} פעילים</span>` : ''}</button>${state.planned ? '' : `
     <button class="icon-btn history-tool" aria-label="העתקת דוח" data-a="copy" data-testid="history-copy">${ICON.copy}</button>`}</div>
   ${state.planned ? '' : `
     ${state.searching ? `<div class="row" style="align-items:center;margin-bottom:8px"><input class="input grow" type="search" placeholder="חיפוש: מקום, הערה, עובד, סכום" value="${esc(state.query)}" data-f="q" aria-label="חיפוש" data-testid="history-search-input">
