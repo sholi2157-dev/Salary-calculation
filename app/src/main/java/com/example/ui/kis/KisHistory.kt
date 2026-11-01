@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.rounded.DeleteOutline
@@ -101,8 +102,11 @@ fun KisHistory(
     val context = LocalContext.current
     // Done vs planned: shifts on a later day are planned, like weekly plans. They are never in totals, copy or Excel.
     val showPlans = ui.planned
-    val doneEntries = remember(entries) { KisHistoryLogic.done(entries) }
-    val upcoming = remember(entries) { entries.filter { KisHistoryLogic.upcoming(it) }.sortedBy { it.date } }
+    // The same moving clock as Home: after midnight a planned shift becomes history without new data (audit AND-C03).
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { delay(60_000); now = System.currentTimeMillis() } }
+    val doneEntries = remember(entries, now) { KisHistoryLogic.done(entries, now) }
+    val upcoming = remember(entries, now) { entries.filter { KisHistoryLogic.upcoming(it, now) }.sortedBy { it.date } }
     val plannedCount = upcoming.size + plans.size
     var filter by rememberSaveable(stateSaver = FilterSaver) { mutableStateOf(HistoryFilter()) }
     var showFilters by rememberSaveable { mutableStateOf(false) }
