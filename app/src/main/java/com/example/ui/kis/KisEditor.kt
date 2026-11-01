@@ -90,6 +90,8 @@ fun KisEditorPage(
     interactive: Boolean = true,
 ) {
     val c = Kis.colors
+    var refused by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(refused) { if (refused != null) { kotlinx.coroutines.delay(2500); refused = null } }
     val settings = Kis.settings
     val context = LocalContext.current
     val focus = LocalFocusManager.current
@@ -186,7 +188,9 @@ fun KisEditorPage(
                 fresh = false
                 if (k == "⌫") cursor = 4 else { buf = "····"; cursor = 0 }
             }
-            val (next, at) = typeTimeOrNull(buf, cursor, k, if (isDuration(target)) 24 else 23) ?: run { settings.haptic(KisSettings.Haptic.WARN); return }
+            // A refused digit is said, not silently dropped (audit M-06): 25:00 does not quietly become 20:00.
+            val (next, at) = typeTimeOrNull(buf, cursor, k, if (isDuration(target)) 24 else 23) ?: run {
+                settings.haptic(KisSettings.Haptic.WARN); refused = if (isDuration(target)) "אפשר עד 24 שעות" else "אין שעה כזאת. אפשר עד 23:59"; return }
             digitsDirty = true
             buf = next; cursor = at
             // Every complete, valid value shows at once (total, ruler). A full time stays on its last digit: more keys
@@ -430,7 +434,7 @@ fun KisEditorPage(
             typing = buf.isNotEmpty(), next = if (target == KeyTarget.START && d.mode != EntryMode.HOURS && !d.groupByHours) "לשעת הסיום" else null,
             onNext = { open(KeyTarget.END) }, onDone = ::done)
         else SaveBar(check, if (repeatOn(d, repeat)) "יצירת הסדרה" else saveLabel(d, changed),
-            check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatPreview?.created?.isNotEmpty() == true), ::save)
+            check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatPreview?.created?.isNotEmpty() == true), ::save, refused)
     }
     }
 
@@ -873,9 +877,10 @@ private fun KeySink(target: KeyTarget, ask: Int, active: Boolean, onFocus: (Bool
 }
 
 @Composable
-private fun SaveBar(check: EntryDraft.Check, label: String, enabled: Boolean, onSave: () -> Unit) {
+private fun SaveBar(check: EntryDraft.Check, label: String, enabled: Boolean, onSave: () -> Unit, refused: String? = null) {
     val c = Kis.colors
     Column(Modifier.fillMaxWidth().background(c.surface).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        refused?.let { Text(it, style = KisType.caption, color = c.danger, modifier = Modifier.fillMaxWidth().testTag("time_refused")) }
         if (check.errors.isNotEmpty()) Text(check.errors.first(), style = KisType.caption, color = c.muted, modifier = Modifier.fillMaxWidth().testTag("save_hint"),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         KisButton(label, onSave, Modifier.fillMaxWidth(), enabled = enabled, haptic = null, tag = "save_shift_button")

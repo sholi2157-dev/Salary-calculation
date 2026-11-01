@@ -345,6 +345,7 @@ fun StartLiveSheet(categories: List<WorkCategory>, defaultCategory: String, curr
     var cat by rememberSaveable { mutableStateOf(categories.firstOrNull { it.name == defaultCategory }?.name ?: categories.firstOrNull()?.name ?: "") }
     val category = categories.firstOrNull { it.name == cat }
     var rate by rememberSaveable(cat) { mutableStateOf(category?.defaultRate?.let(KisFormat::hours) ?: "") }
+    var rateError by remember(cat) { mutableStateOf(false) }
     var currency by rememberSaveable(cat) { mutableStateOf(currencyOf(cat)) }
     KisSheet(onDismiss = onDismiss, tag = "start_live_sheet") {
         Text("איפה עובדים עכשיו?", style = KisType.title, color = c.ink)
@@ -352,11 +353,17 @@ fun StartLiveSheet(categories: List<WorkCategory>, defaultCategory: String, curr
             categories.forEach { k -> KisChip(k.name, selected = k.name == cat, onClick = { cat = k.name }, tag = "live_category_${k.name}") }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisTextField(rate, { rate = it.filter { ch -> ch.isDigit() || ch == '.' } }, "תעריף לשעה", Modifier.weight(1f).testTag("live_rate"),
+            // A decimal comma is a decimal point (40,5 = 40.5, never 405); a value that is not a rate is said, not
+            // replaced by the default (audit AND-C05). An empty field still means the place's default rate.
+            KisTextField(rate, { rate = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }.replace(',', '.'); rateError = false }, "תעריף לשעה", Modifier.weight(1f).testTag("live_rate"),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
             CurrencyToggle(currency, { currency = it }, "quick_shift_currency")
         }
-        KisButton("התחלה", { onStart(cat, rate.toDoubleOrNull() ?: category?.defaultRate ?: 40.0, currency) }, Modifier.fillMaxWidth(),
-            enabled = cat.isNotBlank(), haptic = KisSettings.Haptic.SUCCESS, tag = "live_start_confirm")
+        if (rateError) Text("התעריף לא תקין", style = KisType.caption, color = c.danger, modifier = Modifier.testTag("live_rate_error"))
+        KisButton("התחלה", {
+            val typed = rate.trim()
+            val value = if (typed.isEmpty()) category?.defaultRate ?: 40.0 else typed.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 && it < 100_000 }
+            if (value == null) rateError = true else onStart(cat, value, currency)
+        }, Modifier.fillMaxWidth(), enabled = cat.isNotBlank(), haptic = KisSettings.Haptic.SUCCESS, tag = "live_start_confirm")
     }
 }
