@@ -22,6 +22,7 @@ const server = http.createServer((q, r) => { let p = decodeURIComponent(new URL(
   const tid = t => `[data-testid="${t}"]`;
   await page.goto(base + '#settings'); await page.waitForTimeout(600);
   if (!(await page.locator(tid('account-erase')).count())) { await page.click('[data-nav=settings], [data-page=settings]').catch(() => {}); await page.waitForTimeout(400); }
+  await page.click(tid('settings-open-חשבון')); // M-31: one category at a time on a phone
   assert.equal(await page.locator(tid('account-erase-all')).count(), 0, 'no account-wide delete without an account');
   // A running shift blocks the delete.
   await page.evaluate(() => localStorage.setItem('work_active_shift_v1:guest', JSON.stringify({ id: 't1', category: 'מסעדה', currency: '₪', startedAt: Date.now() - 60000, rate: 40 })));

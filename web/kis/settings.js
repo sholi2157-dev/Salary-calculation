@@ -2,13 +2,24 @@
 (function (root) {
 'use strict';
 const U = () => root.KisUi;
-const group = (title, body, info) => `<section class="set-group"><div class="title-row" style="margin:22px 0 10px"><h2 class="section-title" style="margin:0;font:22px/28px var(--display)" data-testid="settings-${title}">${title}</h2>${info ? U().infoDot(title, info) : ''}</div><div class="card" style="display:grid;gap:4px;padding:6px 16px">${body}</div></section>`;
+/** The open category on a phone (M-31, as in Android 2.2.3): null shows the list of categories. */
+let section = null;
+const group = (title, body, info) => `<section class="set-group${section === title ? ' on' : ''}" data-group="${title}"><div class="title-row" style="margin:22px 0 10px"><h2 class="section-title" style="margin:0;font:22px/28px var(--display)" data-testid="settings-${title}">${title}</h2>${info ? U().infoDot(title, info) : ''}</div><div class="card" style="display:grid;gap:4px;padding:6px 16px">${body}</div></section>`;
 const rowHtml = (title, hint, control, info) => `<div class="row" style="align-items:center;min-height:58px;padding:8px 0"><div class="grow"><div class="title-row"><span style="font-weight:500">${title}</span>${info ? U().infoDot(title, info) : ''}</div>${hint ? `<div class="caption">${hint}</div>` : ''}</div>${control}</div>`;
 
 function render(el, app) {
   const { store } = app, { esc } = U(), prefs = store.data.webPreferences, def = root.WorkCategories.defaultName(store.data.categories, prefs);
   const theme = store.local.theme || 'system';
-  el.innerHTML = `<h1 class="page-title">הגדרות</h1><div class="set-groups">
+  const acct = root.KisAccount.state.user;
+  // A phone shows the categories as a list; a tap opens one category with a way back. A computer shows them all.
+  const cats = [['משוב ותקלות', 'דיווח על תקלה או הצעה'], ['עבודה', def ? `מקום ברירת מחדל: ${def}` : 'מקומות, מטבע ומשמרות קבועות'],
+    ['מראה ותחושה', ({ system: 'אוטומטי', light: 'בהיר', dark: 'כהה' })[theme] || 'אוטומטי'], ['הסיכומים שלי', 'כל הסיכומים החודשיים והשנתיים'],
+    ['התראות', store.local.notifyMonthly === true || store.local.notifyRate === true ? 'פועלות' : 'כבויות'], ['גיבוי ונתונים', 'גיבוי, ייבוא ואקסל'],
+    ['עזרה', 'האפליקציה לאנדרואיד וההדרכה'], ['חשבון', acct ? (acct.email || 'מחובר') : 'השם שלך · לא מחובר']];
+  el.innerHTML = `<h1 class="page-title">הגדרות</h1>
+  ${section ? '' : `<nav class="set-list" aria-label="קטגוריות ההגדרות">${cats.map(([t, sub]) => `<button class="set-row" data-section="${t}" data-testid="settings-open-${t}"><span class="grow"><b>${t}</b><small>${esc(sub)}</small></span>${U().ICON.next}</button>`).join('')}</nav>`}
+  <div class="set-groups" data-open="${section ? esc(section) : ''}">
+  ${section ? `<button class="set-back" data-a="settings-back" data-testid="settings-back">${U().ICON.prev}<span>הגדרות</span></button>` : ''}
   ${group('משוב ותקלות', rowHtml('דיווח על תקלה או הצעה', null, '<button class="chip" data-a="feedback" data-testid="feedback-button">כתיבה</button>'))}
   ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר אוטומטית במשמרת חדשה.')}
     <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', null, `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`, 'למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה, ושקלים ודולרים לא מתחברים לסכום אחד.')}
@@ -28,6 +39,9 @@ function render(el, app) {
   </div><div class="row" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי</span></div>`;
 
   const q = s => el.querySelector(s);
+  el.querySelectorAll('[data-section]').forEach(b => b.onclick = () => { section = b.dataset.section; render(el, app); window.scrollTo({ top: 0 });
+    el.querySelector('.set-group.on h2')?.setAttribute('tabindex', '-1'); el.querySelector('.set-group.on h2')?.focus({ preventScroll: true }); });
+  q('[data-a=settings-back]')?.addEventListener('click', () => { const was = section; section = null; render(el, app); el.querySelector(`[data-section="${was}"]`)?.focus(); });
   root.KisAccount.bindSettings(el);
   // Saved as typed, without redrawing the page (no lost taps or focus).
   q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
@@ -365,7 +379,7 @@ function notificationsSheet(app) {
       if (n.kind === 'ai') { close(); root.KisAccount.assistantsSheet({ explain: true }); return; }
       if (n.month == null) return; close();
       if (n.scope) root.KisSummaryUi.story(app, n.scope); else app.go('history', { planned: false, month: n.month }); });
-    el.querySelector('[data-a=settings]').onclick = () => { close(); app.go('settings'); };
+    el.querySelector('[data-a=settings]').onclick = () => { close(); app.go('settings', { section: 'התראות' }); };
   }, { onClose: () => app.refresh() });
 }
 
@@ -475,5 +489,5 @@ function feedbackSheet(app) {
   });
 }
 
-root.KisSettings = { render, recoveryPanel, bindRecovery, recoverySheet, feedbackSheet, feedbackReport, event, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };
+root.KisSettings = { open: name => { section = name || null; }, render, recoveryPanel, bindRecovery, recoverySheet, feedbackSheet, feedbackReport, event, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };
 })(globalThis);

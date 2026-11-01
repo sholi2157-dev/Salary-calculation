@@ -442,3 +442,17 @@ button { cursor: pointer; }
 .place-drag .grip { width: 44px; height: 44px; padding: 10px; color: var(--muted); touch-action: none; cursor: grab; }
 /* 2.3.0 (M-35): the app's own clear button and "סגירה" are the search controls; the browser's built-in × is hidden. */
 input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
+
+/* Settings categories (M-31): a list on a phone, one category at a time with a way back; all of them on a computer. */
+.set-list { display: grid; gap: 8px; margin-top: 8px; }
+.set-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); font: inherit; text-align: start; }
+.set-row > span { flex: 1; min-width: 0; }
+.set-row b { display: block; font-weight: 600; } .set-row small { display: block; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.set-row svg { width: 20px; height: 20px; color: var(--muted); flex-shrink: 0; }
+.set-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px 0 4px; margin-top: 4px; border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 500; }
+.set-back svg { width: 20px; height: 20px; }
+.set-groups[data-open=""] .set-group, .set-groups:not([data-open=""]) .set-group:not(.on) { display: none; }
+@media (min-width: 900px) {
+  .set-list, .set-back { display: none; }
+  .set-groups[data-open=""] .set-group, .set-groups:not([data-open=""]) .set-group:not(.on) { display: block; }
+}
