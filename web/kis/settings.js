@@ -403,9 +403,7 @@ function dueReminders(app) {
   return out;
 }
 
-/* Feedback goes as one JSON report to the owner's Google Apps Script relay, which mails it from the owner's account
-   (docs/feedback-relay.md). Until FEEDBACK_URL is set the sheet opens a mail draft. The trail keeps fixed event names
-   and code positions only: never typed text, amounts, workplaces, names, emails or keys. */
+/* Existing Apps Script relay; web mail contains only the explicit feedback allowlist. */
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycbwDfq5iA_2NSGYj57js0uwAuoSjErBWN-mB7jkjse4HKS476TPyqEIKAqitrVD47PmR/exec';
 const FEEDBACK_TOKEN = 'salary-feedback-v1';
 const TRAIL_KEY = 'kis_diagnostics_v1', TRAIL_MAX = 80;
@@ -420,29 +418,10 @@ if (typeof addEventListener === 'function') {
   addEventListener('error', ev => event('error', `${ev.error?.name || 'Error'} ${file(ev.filename)}:${ev.lineno || 0}`));
   addEventListener('unhandledrejection', ev => event('rejection', ev.reason?.name || 'Error'));
 }
-const feedbackDraft = { kind: 'תקלה', message: '', image: null };
+const feedbackDraft = { kind: 'תקלה', message: '', contactEmail: '' };
 
-/** The report without the screenshot. Only the listed fields leave the browser. */
-function feedbackReport(app, kind, message, now = Date.now()) {
-  const { store } = app, nav = globalThis.navigator || {}, scr = globalThis.screen || {};
-  return {
-    token: FEEDBACK_TOKEN, kind, message: String(message).trim(), sentAt: now,
-    app: { platform: 'web', version: root.WorkBuild?.buildId || '' },
-    device: { userAgent: nav.userAgent || '', language: nav.language || '', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      screen: `${scr.width || 0}x${scr.height || 0}`, viewport: `${globalThis.innerWidth || 0}x${globalThis.innerHeight || 0}`, pixelRatio: globalThis.devicePixelRatio || 1,
-      standalone: !!globalThis.matchMedia?.('(display-mode: standalone)').matches, online: nav.onLine !== false },
-    state: { page: app.page || '', theme: store.local.theme || 'system', haptics: store.local.haptics !== false, signedIn: !!root.KisAccount?.state.user,
-      sync: root.KisAccount?.state.status || '', entries: store.data.entries.length, categories: store.data.categories.length, weeklySeries: store.plans.series.length },
-    events: trail.slice()
-  };
-}
-
-/** The picked image as JPEG of at most 1600 px (re-encoding also drops its location data). */
-async function shrink(blob) {
-  const bmp = await createImageBitmap(blob), k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
-  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
-  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-  return { name: 'screenshot.jpg', mime: 'image/jpeg', base64: c.toDataURL('image/jpeg', 0.82).split(',')[1] };
+function feedbackReport(app, kind, message, now = Date.now(), contactEmail = '') {
+  return root.WorkFeedback.report(kind, message, contactEmail, now);
 }
 
 function feedbackSheet(app) {
@@ -451,40 +430,38 @@ function feedbackSheet(app) {
     const relay = !!FEEDBACK_URL;
     el.innerHTML = `<h2>משוב ותקלות</h2>
       <div class="row" style="gap:6px">${['תקלה', 'הצעה', 'הערה'].map(k => `<button class="chip" aria-pressed="${d.kind === k}" data-kind="${k}">${k}</button>`).join('')}</div>
-      <textarea class="input" rows="4" data-f="msg" placeholder="מה קרה, או מה תרצה להציע?" aria-label="תיאור" data-testid="feedback-message"></textarea>
-      ${relay ? `<label class="btn ghost small" style="position:relative" data-f="pick">צירוף צילום מסך<input type="file" accept="image/*" data-f="img" style="position:absolute;inset:0;opacity:0" aria-label="צירוף צילום מסך"></label>
-      <div class="row" data-f="att" hidden style="align-items:center"><span class="grow">צילום מסך מצורף</span><button class="btn small ghost" data-a="unattach">הסרה</button></div>` : ''}
-      <p class="caption">${relay ? 'יישלחו התיאור, הגרסה, פרטי הדפדפן ויומן פעולות קצר. סכומים, מקומות עבודה, שמות ומפתחות לא נשלחים.' : 'תיפתח טיוטת מייל עם התיאור ופרטי הדפדפן. נתוני העבודה לא מצורפים.'}</p>
+      <textarea class="input" rows="4" data-f="msg" maxlength="2000" placeholder="מה קרה, או מה תרצה להציע?" aria-label="תיאור" data-testid="feedback-message"></textarea>
+      <input class="input" type="email" maxlength="254" data-f="email" placeholder="דוא״ל לחזרה (לא חובה)" aria-label="דוא״ל לחזרה (לא חובה)">
+      <p class="caption">יישלחו התיאור, הגרסה, המסך, השפה והשעה. נתוני העבודה לא מצורפים. עד 2,000 תווים; עד 40 הודעות ביום באתר.</p>
       <button class="btn primary" data-a="send" data-testid="feedback-send" disabled>${relay ? 'שליחה' : 'פתיחת טיוטת מייל'}</button>
       <p class="caption" data-f="err" hidden data-testid="feedback-failed">השליחה לא הצליחה. אפשר לנסות שוב, או <a href="#" data-a="mail">לשלוח כטיוטת מייל</a>.</p>`;
     const q = s => el.querySelector(s), msg = q('[data-f=msg]'), send = q('[data-a=send]');
-    const sync = () => { send.disabled = !msg.value.trim(); if (relay) { q('[data-f=pick]').hidden = !!d.image; q('[data-f=att]').hidden = !d.image; } };
+    const email = q('[data-f=email]');
+    const sync = () => { send.disabled = !root.WorkFeedback.clean(msg.value) || !email.validity.valid; };
+    email.value = d.contactEmail;
+    email.addEventListener('input', () => { d.contactEmail = email.value; sync(); });
     msg.value = d.message; sync();
     msg.addEventListener('input', () => { d.message = msg.value; q('[data-f=err]').hidden = true; sync(); });
     el.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => { d.kind = b.dataset.kind; el.querySelectorAll('[data-kind]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
     const mail = () => {
-      const r = feedbackReport(app, d.kind, d.message);
-      location.href = `mailto:sholi2157+salaryfeedback@gmail.com?subject=${encodeURIComponent(`[${d.kind}] שכר עבודות אתר`)}&body=${encodeURIComponent(`סוג: ${d.kind}\nדפדפן: ${r.device.userAgent}\n\n${r.message}`)}`;
+      if (send.disabled) return;
+      const r = feedbackReport(app, d.kind, d.message, Date.now(), d.contactEmail);
+      location.href = root.WorkFeedback.mailto(r);
     };
     q('[data-a=mail]').onclick = e => { e.preventDefault(); mail(); };
-    if (relay) {
-      q('[data-f=img]').onchange = e => { d.image = e.target.files[0] || null; e.target.value = ''; sync(); };
-      q('[data-a=unattach]').onclick = () => { d.image = null; sync(); };
-    }
     send.onclick = async () => {
       if (!relay) { mail(); return; }
       send.disabled = true; send.textContent = 'שולח…';
       let ok = false;
       try {
-        const report = feedbackReport(app, d.kind, d.message);
-        if (d.image) report.screenshot = await shrink(d.image).catch(() => null);
+        const report = feedbackReport(app, d.kind, d.message, Date.now(), d.contactEmail);
         // text/plain keeps it a simple request, so Apps Script answers without a CORS preflight.
-        const res = await fetch(FEEDBACK_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(report) });
+        const res = await fetch(FEEDBACK_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ ...report, token: FEEDBACK_TOKEN }) });
         ok = (await res.json()).ok === true;
       } catch { ok = false; }
       event(ok ? 'feedback_sent' : 'feedback_failed');
       send.textContent = 'שליחה'; sync();
-      if (ok) { d.message = ''; d.image = null; close(); U().toast('המשוב נשלח. תודה!'); } else q('[data-f=err]').hidden = false;
+      if (ok) { d.message = ''; d.contactEmail = ''; close(); U().toast('המשוב נשלח. תודה!'); } else q('[data-f=err]').hidden = false;
     };
   });
 }

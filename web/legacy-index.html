@@ -53,7 +53,7 @@
 <select id="default-currency" hidden><option>₪</option><option>$</option></select>
 </details>
 <details id="system-settings"><summary>מערכת ומשוב</summary><h3 class="settings-subheading muted">עדכונים</h3><button class="text-button" onclick="WebUpdateManager.check(true)">בדוק עדכון</button>
-<section class="feedback-section" aria-labelledby="feedback-heading"><h3 id="feedback-heading" class="settings-subheading muted">משוב ודיווח על תקלה</h3><div class="feedback-types" role="group" aria-label="סוג המשוב"><button type="button" aria-pressed="true" onclick="selectFeedbackType(this)">תקלה</button><button type="button" aria-pressed="false" onclick="selectFeedbackType(this)">הצעה</button><button type="button" aria-pressed="false" onclick="selectFeedbackType(this)">הערה</button></div><label class="sr-only" for="feedback-message">מה קרה, או מה תרצה להציע?</label><textarea id="feedback-message" class="form-input" rows="3" placeholder="מה קרה, או מה תרצה להציע?" oninput="document.getElementById('feedback-open').disabled=!this.value.trim()"></textarea><p class="settings-help">יצורפו רק גרסת האתר ופרטי הדפדפן. נתוני העבודה לא מצורפים.</p><button id="feedback-open" type="button" class="btn-primary" disabled onclick="openFeedbackDraft()">פתח טיוטת דוא״ל</button></section></details>
+<section class="feedback-section" aria-labelledby="feedback-heading"><h3 id="feedback-heading" class="settings-subheading muted">משוב ודיווח על תקלה</h3><div class="feedback-types" role="group" aria-label="סוג המשוב"><button type="button" aria-pressed="true" onclick="selectFeedbackType(this)">תקלה</button><button type="button" aria-pressed="false" onclick="selectFeedbackType(this)">הצעה</button><button type="button" aria-pressed="false" onclick="selectFeedbackType(this)">הערה</button></div><label class="sr-only" for="feedback-message">מה קרה, או מה תרצה להציע?</label><textarea id="feedback-message" maxlength="2000" class="form-input" rows="3" placeholder="מה קרה, או מה תרצה להציע?" oninput="document.getElementById('feedback-open').disabled=!this.value.trim()"></textarea><p class="settings-help">יצורפו הגרסה, המסך, השפה והשעה. עד 2,000 תווים. נתוני העבודה לא מצורפים.</p><button id="feedback-open" type="button" class="btn-primary" disabled onclick="openFeedbackDraft()">פתח טיוטת דוא״ל</button></section></details>
 <details id="maintenance-section"><summary>גיבוי ונתונים</summary>
 <p class="settings-help">ייבוא וייצוא נתונים לצורך גיבוי ושחזור.</p>
 <section class="maintenance-import" aria-labelledby="import-heading"><h3 id="import-heading" class="settings-subheading">ייבוא נתונים (אקסל או JSON)</h3>
@@ -134,6 +134,7 @@
 
 <script src="web/features.js"></script>
 <script src="web/build.js"></script>
+<script src="web/feedback.js"></script>
 <script src="web/transfer.js"></script>
 <script src="web/history.js"></script>
 <script src="web/selection.js"></script>

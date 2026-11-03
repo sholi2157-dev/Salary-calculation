@@ -62,5 +62,5 @@ function renderCategorySettings(){if(!settingsDraft)return;document.getElementBy
 
 // User-triggered mail draft: no financial data or storage is included.
 function selectFeedbackType(button){document.querySelectorAll('.feedback-types button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));}
-function feedbackDraft(){const type=document.querySelector('.feedback-types [aria-pressed="true"]').textContent,message=document.getElementById('feedback-message').value.trim();return {subject:'['+type+'] שכר עבודות Web',body:'סוג: '+type+'\nגרסת Web: '+(window.WorkBuild?.buildId||'RC13')+'\nדפדפן: '+navigator.userAgent+'\n\n'+message};}
-function openFeedbackDraft(){if(!document.getElementById('feedback-message').value.trim())return;const draft=feedbackDraft();location.href='mailto:sholi2157+salaryfeedback@gmail.com?subject='+encodeURIComponent(draft.subject)+'&body='+encodeURIComponent(draft.body);}
+function feedbackDraft(){const r=WorkFeedback.report(document.querySelector('.feedback-types [aria-pressed="true"]').textContent,document.getElementById('feedback-message').value);return {subject:'משוב — חישוב שכר Web',body:JSON.stringify(r,null,2)};}
+function openFeedbackDraft(){if(!WorkFeedback.clean(document.getElementById('feedback-message').value))return;const r=WorkFeedback.report(document.querySelector('.feedback-types [aria-pressed="true"]').textContent,document.getElementById('feedback-message').value);location.href=WorkFeedback.mailto(r);}

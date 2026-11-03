@@ -1,5 +1,5 @@
 // ממסר משוב ל"חישוב שכר": מקבל דיווח מהאפליקציה או מהאתר ושולח מייל מהחשבון שלך.
-// אין לשנות שום דבר למטה חוץ מ-TO אם רוצים כתובת אחרת.
+// Web routing uses the FEEDBACK_TO Script Property; Android keeps TO.
 
 const TO = 'sholi2157+salaryfeedback@gmail.com';
 const TOKEN = 'salary-feedback-v1';      // אותו ערך נמצא באפליקציה ובאתר, מסנן בקשות אקראיות
@@ -12,6 +12,7 @@ function doPost(e) {
     if (!raw || raw.length > MAX_BYTES) return reply_(false, 'size');
     const report = JSON.parse(raw);
     if (report.token !== TOKEN) return reply_(false, 'token');
+    if (report.app && report.app.platform === 'web') return sendWebFeedback_(report);
     if (!underDailyLimit_()) return reply_(false, 'limit');
 
     const shot = report.screenshot;       // { name, mime, base64 } או null
@@ -71,4 +72,29 @@ function testSend() {
     token: TOKEN, kind: 'בדיקה', message: 'מייל בדיקה מהממסר', app: { platform: 'test', version: '0' }, events: []
   }) } };
   Logger.log(doPost(fake).getContent());
+}
+
+// Website only: never forward the submitted object, diagnostics or attachments.
+function sendWebFeedback_(input) {
+  const clean = (value, max) => String(value || '').replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/g, '').trim().slice(0, max);
+  const message = clean(input.message, 2000);
+  if (!message) return reply_(false, 'message');
+  const email = String(input.contactEmail || '').trim();
+  if (email && (email.length > 254 || !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$/.test(email))) return reply_(false, 'email');
+  const report = {
+    schema: 'salary-feedback-v1', kind: ['תקלה', 'הצעה', 'הערה'].includes(input.kind) ? input.kind : 'הערה',
+    message: message, timestamp: new Date(input.timestamp).toISOString(),
+    app: { platform: 'web', version: clean(input.app.version, 120) },
+    screen: 'settings/feedback', language: clean(input.language, 20)
+  };
+  if (email) report.contactEmail = email;
+  // Script Properties are this existing Apps Script runtime's server-side configuration.
+  const to = PropertiesService.getScriptProperties().getProperty('FEEDBACK_TO') || 'israelshimon1313-vzptcg@mail.grokbot.com';
+  if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$/.test(to)) return reply_(false, 'destination');
+  if (!underDailyLimit_()) return reply_(false, 'limit');
+  const body = JSON.stringify(report, null, 2);
+  MailApp.sendEmail({ to: to, subject: 'משוב — חישוב שכר Web', body: body,
+    attachments: [Utilities.newBlob(body, 'application/json', 'feedback.json')] });
+  return reply_(true);
 }
