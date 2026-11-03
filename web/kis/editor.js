@@ -10,8 +10,10 @@ const U = () => root.KisUi, R = () => root.KisRules;
 const DRAFT = 'kis_web_draft_v1';
 /** The tabs. A group shift is not a tab: the "קבוצה" button at the top gives the same tabs with people. */
 const MODES = [['CLOCK', 'שעון'], ['HOURS', 'ידני'], ['JOB', 'קבלנות']];
-const num = s => { const t = String(s ?? '').trim().replace(',', '.'); if (!t) return null; const n = Number(t); return Number.isFinite(n) ? n : null; };
+const num = s => R().inputNumber(s);
 const clean = v => v == null ? '' : String(Math.round(v * 100) / 100);
+// KisEditor.setNumber(BREAK): integer minutes, constrained to 0–600; empty/unparseable means no break.
+const breakInput = s => Math.min(600, Math.max(0, R().toIntOrNull(String(s)) ?? 0));
 // New UI typing uses H:MM; existing decimal drafts and persisted hours keep their meaning.
 const durationEdit = s => String(s).replace(/[.,]/g, ':');
 function durationHours(s) {
@@ -147,11 +149,12 @@ function withTeam(d, on) {
 function evaluate(d) {
   const clockish = d.mode === 'CLOCK' || (d.mode === 'GROUP' && d.start != null);
   const ev = R().evaluate({ mode: d.mode === 'GROUP' && !clockish ? 'HOURS' : d.mode, start: clockish ? d.start : null, end: clockish ? d.end : null, breakMinutes: clockish ? d.breakMin : 0,
-    hours: durationHours(d.hours) ?? 'invalid', rate: num(d.rate), rateUnknown: d.rateUnknown, bonus: num(d.bonus) || 0, bonusTarget: d.bonusTarget, amount: d.amount, amountUnknown: d.amountUnknown, organizerOnly: teamJob(d) && !sameRate(d) });
+    hours: durationHours(d.hours) ?? 'invalid', rate: num(d.rate), rateUnknown: d.rateUnknown, bonus: d.mode === 'GROUP' && !clockish && d.bonusTarget === 'OTHERS' ? 0 : num(d.bonus) || 0, bonusTarget: d.bonusTarget, amount: d.amount, amountUnknown: d.amountUnknown, organizerOnly: teamJob(d) && !sameRate(d) });
   const errors = [...ev.errors];
   if (!d.category) errors.unshift('בחר מקום עבודה');
   if (d.mode === 'GROUP' && d.workers.some(w => !w.name.trim())) errors.push('לכל עובד צריך שם');
   if (d.mode === 'GROUP' && d.workers.some(w => w.hours.trim() && (durationHours(w.hours) == null || durationHours(w.hours) < 0 || durationHours(w.hours) > 24))) errors.push('שעות העובד לא תקינות');
+  if (d.mode === 'GROUP' && d.workers.some(w => String(w.bonus ?? '').trim() && (num(w.bonus) == null || num(w.bonus) < 0))) errors.push('בונוס העובד לא תקין');
   if (d.mode === 'GROUP' && d.separateRates && [d.employerRate, d.workerRate].some(v => v.trim() && num(v) == null)) errors.push('תעריף לא תקין');
   if (d.mode === 'JOB' && d.hours.trim() && (durationHours(d.hours) == null || durationHours(d.hours) < 0 || durationHours(d.hours) > 24)) errors.push('משך לא תקין');
   if (d.team && !d.workers.length) errors.push('הוסף לפחות אדם אחד לקבוצה');
@@ -159,11 +162,11 @@ function evaluate(d) {
     if (d.workers.some(w => !w.name.trim())) errors.push('לכל עובד צריך שם');
     if (d.workers.some(w => jobWorkerPay(w, d) == null)) errors.push('חסר כמה מקבל כל עובד');
   }
-  if (String(d.passThrough ?? '').trim() && !(num(d.passThrough) >= 0)) errors.push('סכום ההחזר לא תקין');
+  if (String(d.passThrough ?? '').trim() && (num(d.passThrough) == null || num(d.passThrough) < 0)) errors.push('סכום ההחזר לא תקין');
   // Numbers are checked where they are typed, never turned into 0 or a default without a word (audit CW-03/CW-04/CW-14).
   if (String(d.rate ?? '').trim() && !d.rateUnknown && d.mode !== 'JOB' && num(d.rate) == null) errors.push('התעריף לא תקין');
   if (num(d.rate) != null && num(d.rate) < 0 && !d.rateUnknown && d.mode !== 'JOB') errors.push('תעריף לא יכול להיות שלילי');
-  if (String(d.bonus ?? '').trim() && !(num(d.bonus) >= 0)) errors.push('הבונוס לא תקין');
+  if (String(d.bonus ?? '').trim() && (num(d.bonus) == null || num(d.bonus) < 0)) errors.push('הבונוס לא תקין');
   if (d.mode === 'GROUP' && d.separateRates && [d.employerRate, d.workerRate].some(v => v.trim() && num(v) != null && num(v) < 0)) errors.push('תעריף לא יכול להיות שלילי');
   if (d.mode === 'JOB' && !d.amountUnknown && String(d.amount ?? '').trim() && !(num(d.amount) > 0 || (teamJob(d) && !sameRate(d) && num(d.amount) === 0))) errors.push('הסכום לא תקין');
   // A job shows the user's own amount, which is what is stored and counted (a team is paid on top of it).
@@ -467,13 +470,13 @@ function open(app, { entry = null, restore = null } = {}) {
       const apply = () => {
         if (f === 'date' || f === 'until') { if (!i.value) return; if (f === 'until') return set({ repeatUntil: i.value });
           const [y, m, dd] = i.value.split('-').map(Number); const day = new Date(y, m - 1, dd).getTime(); return set({ day, repeatDays: d.repeatDays ? [...new Set([...d.repeatDays, new Date(day).getDay()])] : null }); }
-        if (f === 'break') return set({ breakMin: Math.max(0, Math.round(num(i.value) || 0)) });
+        if (f === 'break') return set({ breakMin: breakInput(i.value) });
         d = { ...d, [f]: f === 'hours' ? durationEdit(i.value) : i.value }; persist();
       };
       if (f === 'notes') i.oninput = () => { apply(); refreshMeta(); };
       else if (f === 'date' || f === 'until') i.onchange = apply;
       // Numbers update the totals and the save bar in place: a tap on "שמירה" right after typing is never lost.
-      else { i.oninput = () => { d = { ...d, [f]: f === 'hours' ? durationEdit(i.value) : i.value }; persist(); refreshMeta(); }; i.onchange = () => { apply(); refreshMeta(); }; }
+      else { i.oninput = () => { d = { ...d, [f === 'break' ? 'breakMin' : f]: f === 'break' ? breakInput(i.value) : f === 'hours' ? durationEdit(i.value) : i.value }; persist(); refreshMeta(); }; i.onchange = () => { apply(); refreshMeta(); }; }
     });
     all('[data-w]').forEach(i => { const [idx, f] = i.dataset.w.split(':'); const ev = f === 'isPaid' ? 'change' : 'input';
       i.addEventListener(ev, () => { const ws = d.workers.map((w, k) => k === +idx ? { ...w, [f]: f === 'isPaid' ? i.checked : f === 'hours' ? durationEdit(i.value) : i.value } : w); d = { ...d, workers: ws }; persist();
@@ -486,7 +489,7 @@ function open(app, { entry = null, restore = null } = {}) {
     // Job team (קבלנות): each person gets a fixed sum or hours × their own rate.
     // The first worker's amount carries to the later ones; the others' fields are refreshed in place (no lost caret).
     all('[data-jw]').forEach(i => { const idx = +i.dataset.jw;
-      i.addEventListener('input', () => { d = withJobWorkerAmount(d, idx, i.value.replace(',', '.').replace(/[^\d.]/g, '')); persist();
+      i.addEventListener('input', () => { d = withJobWorkerAmount(d, idx, i.value); persist();
         if (idx === 0) all('[data-jw]').forEach(o => { if (o !== i) o.value = d.workers[+o.dataset.jw].amount; });
         refreshMeta(); });
       // A filled-in amount is selected as a whole, so typing replaces it instead of joining the digits.
@@ -640,5 +643,5 @@ function rulerBind(host, d, select, change) {
 }
 function pendingDraft(storage) { try { const d = JSON.parse(storage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
 
-root.KisEditor = { open, toEntry, withBonusTarget, fromEntry, evaluate, newDraft, withTab, withTeam, tabOf, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
+root.KisEditor = { open, toEntry, withBonusTarget, fromEntry, evaluate, newDraft, withTab, withTeam, tabOf, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, breakInput, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
 })(globalThis);

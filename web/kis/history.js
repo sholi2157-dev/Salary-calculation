@@ -149,14 +149,16 @@ function bulkRate(app, after) {
     const input = el.querySelector('[data-f=r]'), ok = el.querySelector('[data-a=ok]'), p = el.querySelector('[data-f=p]');
     const records = targets.map(e => ({ id: e.id, isJob: false, start: e.isTimeRange ? e.startTime : null, end: e.isTimeRange ? e.endTime : null,
       breakMinutes: e.isTimeRange && e.startTime && e.endTime ? Math.max(0, Math.round(root.KisRules.span(e.startTime, e.endTime).minutes - e.hours * 60)) : 0, hours: e.hours, rate: null, bonus: e.bonus || 0 }));
-    const rateOf = () => Number(input.value.trim().replace(',', '.'));
-    input.oninput = () => { const r = rateOf(); ok.disabled = !(input.value.trim() && r >= 0);
+    const rateOf = () => root.KisRules.inputNumber(input.value);
+    const valid = r => r != null && r >= 0 && root.KisRules.bulkRate(records, r).updated.every(x => Number.isFinite(x.total));
+    input.oninput = () => { const r = rateOf(); ok.disabled = !valid(r); p.textContent = ok.disabled && input.value.trim() ? 'התעריף לא תקין' : '';
       if (!ok.disabled) { // ₪ and $ are never added together
         const res = root.KisRules.bulkRate(records, r), cur = new Map(targets.map(e => [e.id, e.currency])), by = {};
         for (const x of res.updated) by[cur.get(x.id)] = (by[cur.get(x.id)] || 0) + x.total;
         p.textContent = 'יתווסף: ' + Object.entries(by).map(([c, v]) => U().money(Math.round(v * 100) / 100, c)).join(' · '); } };
     ok.onclick = () => {
       const rate = rateOf(), byId = new Map(targets.map(e => [e.id, e])), before = [];
+      if (!valid(rate)) return;
       store.update(d => d.entries.forEach(e => { const t = byId.get(e.id); if (!t || e.payKnown || e.kind === 'job') return; before.push({ ...e });
         e.hourlyRate = rate; e.totalEarnings = root.KisPay.money(e.hours, rate, e.bonus || 0); e.payKnown = true; }));
       state.selection.clear(); close(); U().haptic('success');

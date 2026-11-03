@@ -190,7 +190,8 @@ function rateSheet(app, id, after) {
     el.innerHTML = `<h2>תעריף חדש לסדרה</h2><p class="caption">יחול מהיום והלאה. מה שכבר נרשם לא משתנה.</p>
       <label class="field">לשעה (${U().esc(s.currency)})<input class="input" inputmode="decimal" value="${s.hourlyRate ?? ''}" data-f="r"></label><button class="btn primary" data-a="ok">החלה</button>`;
     el.querySelector('[data-a=ok]').onclick = () => {
-      const raw = el.querySelector('[data-f=r]').value.trim(), rate = Number(raw.replace(',', '.')); if (!(rate >= 0) || raw === '') return;
+      const rate = root.KisRules.inputNumber(el.querySelector('[data-f=r]').value);
+      if (rate == null || rate < 0 || !Number.isFinite(root.KisPay.money(root.KisRules.span(s.startTime, s.endTime).minutes / 60, rate))) return U().toast('התעריף לא תקין');
       const today = root.KisPlan.dateOf(Date.now());
       const waiting = root.KisPlan.occurrences([s], store.plans.exceptions, new Set(store.data.entries.map(e => e.seriesKey).filter(Boolean)), s.fromDate, today, Date.now()).filter(isAwaiting);
       const { series: updated, changes } = root.KisPlan.applyRateFromToday(s, store.plans.exceptions, rate, today, waiting);
