@@ -128,8 +128,8 @@ function startLive() {
 <p class="caption" data-f="err" role="alert" data-testid="live-error" style="margin:0;color:var(--danger)"></p><button class="btn primary" data-a="go" data-testid="live-go">התחלה</button>`;
       el.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { cat = b.dataset.c; draw(); });
       // A decimal comma means a decimal point (40,5 = 40.5); anything else that is not a rate is said, not ignored (audit M-09).
-      el.querySelector('[data-a=go]').onclick = () => { const raw = el.querySelector('[data-f=r]').value.trim().replace(',', '.'), r = raw === '' ? null : Number(raw);
-        if (r != null && !(Number.isFinite(r) && r >= 0 && r < 100000)) { el.querySelector('[data-f=err]').textContent = 'התעריף לא תקין'; U().haptic('warn'); return; }
+      el.querySelector('[data-a=go]').onclick = () => { const raw = el.querySelector('[data-f=r]').value.trim(), r = root.KisRules.inputNumber(raw);
+        if (raw && !(r != null && r >= 0 && r < 100000)) { el.querySelector('[data-f=err]').textContent = 'התעריף לא תקין'; U().haptic('warn'); return; }
         store.startTimer(cat, r, root.WorkCategories.currency(cat, store.data.webPreferences)); close(); U().haptic('success'); render(); };
     };
     draw();

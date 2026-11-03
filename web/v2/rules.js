@@ -34,6 +34,13 @@ function toDoubleOrNull(text) {
  return m[1] === '-' ? -v : v;
 }
 
+/** EntryDraft.num: decimal comma, no blank/default coercion; non-finite input cannot be saved. */
+function inputNumber(text) {
+ const t = String(text ?? '').trim().replace(/,/g, '.');
+ const n = t ? toDoubleOrNull(t) : null;
+ return Number.isFinite(n) ? n : null;
+}
+
 /** Tolerates malformed stored times (old imports): anything unreadable counts as 0 instead of crashing. */
 function toMinutes(time) {
  const parts = String(time).trim().split(':');
@@ -71,11 +78,19 @@ function round2(value) { return Math.floor((value + Number.EPSILON) * 100 + 0.5)
  * Saved amounts are never recalculated with it.
  */
 function money(hours, rate, bonus = 0) {
- const units = x => { const t = Number(x).toFixed(10), neg = t.startsWith('-'); const v = BigInt(t.replace('-', '').replace('.', '')); return neg ? -v : v; };
+ // BigDecimal(double) also accepts finite values above toFixed's exponential-notation boundary.
+ const units = value => {
+  const x = Number(value);
+  if (Math.abs(x) >= 1e21) return BigInt(x) * 10000000000n;
+  const t = x.toFixed(10), neg = t.startsWith('-');
+  const v = BigInt(t.replace('-', '').replace('.', ''));
+  return neg ? -v : v;
+ };
  const total = units(hours) * units(rate) + units(bonus) * 10000000000n; // in 10^-20
  const den = 1000000000000000000n, neg = total < 0n, abs = neg ? -total : total;
  const cents = (abs + den / 2n) / den;
- return Number(neg ? -cents : cents) / 100;
+ // Convert the decimal amount: cents may overflow Double even when the amount does not.
+ return Number((neg && cents !== 0n ? '-' : '') + (cents / 100n) + '.' + String(cents % 100n).padStart(2, '0'));
 }
 
 /** An end earlier than the start means the shift crosses midnight; the date stays the start day. */
@@ -117,16 +132,19 @@ function evaluate(input) {
  if (!MODES.includes(d.mode)) throw Error('Unknown mode ' + input.mode);
  if (!BONUS_TARGETS.includes(d.bonusTarget)) throw Error('Unknown bonus target ' + input.bonusTarget);
  const errors = [];
- const result = (minutes, bonus, total) => ({ errors, minutes, bonus, total, canSave: errors.length === 0 });
+ const result = (minutes, bonus, total) => {
+  if (total !== null && !Number.isFinite(total)) { errors.push('הסכום לא תקין'); total = null; }
+  return { errors, minutes, bonus, total, canSave: errors.length === 0 };
+ };
  if (d.mode === 'JOB') {
   const amount = d.amountUnknown ? null : number(d.amount);
   let h = number(d.hours); if (Number.isNaN(h)) h = 0;
   // A job team with an amount per worker: the user may only have organized it, so 0 is a known own pay (D-7, AND-C06).
   const zero = d.organizerOnly && amount === 0;
-  if (!d.amountUnknown && !(amount !== null && (amount > 0 || zero))) errors.push('הזן סכום, או סמן "לא יודע עדיין"');
+  if (!d.amountUnknown && !(Number.isFinite(amount) && (amount > 0 || zero))) errors.push('הזן סכום, או סמן "לא יודע עדיין"');
   if (h > 24) errors.push('יותר מ-24 שעות ביום');
   const minutes = h > 0 ? Math.round(h * 60) : null;
-  const total = amount !== null && amount > 0 ? money(1, amount) : zero ? 0 : null;
+  const total = Number.isFinite(amount) && amount > 0 ? money(1, amount) : zero ? 0 : null;
   return result(minutes, 0, total);
  }
  let minutes = null;
@@ -145,9 +163,10 @@ function evaluate(input) {
   }
  }
  const rate = d.rateUnknown ? null : d.rate;
- if (!d.rateUnknown && !(rate !== null && rate >= 0)) errors.push('הזן תעריף, או סמן "תעריף חסר"');
+ if (!d.rateUnknown && !(Number.isFinite(rate) && rate >= 0)) errors.push('הזן תעריף, או סמן "תעריף חסר"');
+ if (!Number.isFinite(d.bonus) || d.bonus < 0) errors.push('הבונוס לא תקין');
  const myBonus = d.mode === 'GROUP' && d.bonusTarget === 'OTHERS' ? 0 : d.bonus;
- const known = minutes !== null && !invalid && rate !== null;
+ const known = minutes !== null && Number.isFinite(minutes) && !invalid && Number.isFinite(rate) && Number.isFinite(myBonus);
  return result(minutes, myBonus, known ? money(minutes / 60, rate, myBonus) : null);
 }
 
@@ -217,7 +236,7 @@ function bulkRate(records, rate) {
  return { updated: targets.map(r => ({ id: r.id, total: money(r.hours ?? recordMinutes(r) / 60, rate, r.bonus ?? 0) })), skipped: records.length - targets.length };
 }
 
-const api = { LONG_SHIFT_MINUTES, MODES, BONUS_TARGETS, toIntOrNull, toDoubleOrNull, toMinutes, isTime, fromMinutes, roundedEnd, round2, money, span,
+const api = { LONG_SHIFT_MINUTES, MODES, BONUS_TARGETS, toIntOrNull, toDoubleOrNull, inputNumber, toMinutes, isTime, fromMinutes, roundedEnd, round2, money, span,
  evaluate, quietDelay, daysFromCivil, civilFromDays, weekday, seriesDates, recordMinutes, bulkRate };
 if (typeof module !== 'undefined') module.exports = api; else root.KisRules = api;
 })(globalThis);
