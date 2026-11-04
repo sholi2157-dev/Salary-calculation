@@ -572,7 +572,10 @@ class WorkViewModel(
     }
 
     fun cancelActiveShift(expectedStart: Long?) {
-        if (expectedStart == null || activeShiftStartTime.value != expectedStart) return
+        if (expectedStart == null || activeShiftStartTime.value != expectedStart) {
+            com.example.ui.kis.KisNotices.post("המשמרת הפעילה השתנתה, לא בוטלה")
+            return
+        }
         finishActiveShift(save = false, expectedStart = expectedStart)
     }
 
@@ -603,6 +606,7 @@ class WorkViewModel(
                 }
                 if (shiftState.clear(start)) getApplication<Application>().stopService(
                     Intent(getApplication(), ShiftForegroundService::class.java))
+                else if (!save) com.example.ui.kis.KisNotices.post("המשמרת הפעילה השתנתה, לא בוטלה")
                 performAutoBackup()
             } catch (_: Exception) {
                 com.example.ui.kis.KisNotices.post("המשמרת לא נשמרה. הטיימר נשאר פעיל; אפשר לנסות שוב")

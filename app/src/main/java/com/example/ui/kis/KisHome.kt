@@ -60,7 +60,7 @@ fun KisHome(
     bottomInset: Dp,
     onStartLive: () -> Unit,
     onStopLive: () -> Unit,
-    onCancelLive: () -> Unit,
+    onCancelLive: (Long) -> Unit,
     onLiveCurrency: (String) -> Unit,
     onOpen: (WorkEntry) -> Unit,
     onPending: () -> Unit,
@@ -213,31 +213,33 @@ private fun StatTile(label: String, rows: List<WorkEntry>, caption: String?, mod
 }
 
 @Composable
-private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, onCancel: () -> Unit, onCurrency: (String) -> Unit) {
+private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, onCancel: (Long) -> Unit, onCurrency: (String) -> Unit) {
     val c = Kis.colors
-    var confirmCancel by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(live?.start) { confirmCancel = false }
-    var confirmShort by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(live?.start) { confirmShort = false }
+    // Keep the timer identity shown when confirmation opened, even if the live timer changes.
+    var cancelStart by rememberSaveable { mutableStateOf<Long?>(null) }
+    var shortStart by rememberSaveable { mutableStateOf<Long?>(null) }
+    LaunchedEffect(live?.start) { shortStart = null }
     Column(Modifier.padding(top = 22.dp).coachTarget(CoachTarget.SHIFT), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (live == null) {
+        val pendingCancel = cancelStart
+        val pendingShort = shortStart
+        if (pendingCancel != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                KisButton("לבטל בלי לשמור", { cancelStart = null; onCancel(pendingCancel) }, Modifier.weight(1f), KisButtonKind.DANGER, height = 56.dp, haptic = KisSettings.Haptic.WARN, tag = "confirm_cancel_active_shift")
+                KisButton("המשך במשמרת", { cancelStart = null }, Modifier.weight(1f), KisButtonKind.GHOST, height = 56.dp)
+            }
+        } else if (live == null) {
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(18.dp)).background(c.surface).border(1.5.dp, c.line, RoundedCornerShape(18.dp))
                 .kisClick(onClick = onStart).testTag("live_shift_fab"), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(10.dp).clip(CircleShape).background(Workplaces[1].accent(c.dark)))
                 Spacer(Modifier.width(10.dp))
                 Text("אני מתחיל עכשיו", style = KisType.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
             }
-        } else if (confirmShort) {
+        } else if (pendingShort != null) {
             // A timer stopped within its first minute is almost always a mis-tap: ask before saving a 0-hour shift.
             Text("המשמרת נמשכה פחות מדקה. לשמור בכל זאת?", style = KisType.body, color = c.ink, modifier = Modifier.testTag("short_live_question"))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KisButton("ביטול בלי שמירה", { confirmShort = false; onCancel() }, Modifier.weight(1f), KisButtonKind.GHOST, height = 56.dp, tag = "short_live_discard")
-                KisButton("שמירה", { confirmShort = false; onStop() }, Modifier.weight(1f), height = 56.dp, tag = "short_live_save")
-            }
-        } else if (confirmCancel) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KisButton("לבטל בלי לשמור", { confirmCancel = false; onCancel() }, Modifier.weight(1f), KisButtonKind.DANGER, height = 56.dp, haptic = KisSettings.Haptic.WARN, tag = "confirm_cancel_active_shift")
-                KisButton("המשך במשמרת", { confirmCancel = false }, Modifier.weight(1f), KisButtonKind.GHOST, height = 56.dp)
+                KisButton("ביטול בלי שמירה", { shortStart = null; onCancel(pendingShort) }, Modifier.weight(1f), KisButtonKind.GHOST, height = 56.dp, tag = "short_live_discard")
+                KisButton("שמירה", { shortStart = null; onStop() }, Modifier.weight(1f), height = 56.dp, tag = "short_live_save")
             }
         } else {
             var seconds by remember(live.start) { mutableLongStateOf(0L) }
@@ -271,9 +273,9 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
                         style = KisType.body.copy(fontSize = 20.sp, lineHeight = 26.sp, fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum", textDirection = ltr),
                         color = c.muted, maxLines = 1, softWrap = false, textAlign = androidx.compose.ui.text.style.TextAlign.Right, modifier = Modifier.fillMaxWidth().testTag("active_shift_money"))
                     Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        KisButton("סיום ושמירה", { if (System.currentTimeMillis() - live.start < 60_000L) confirmShort = true else onStop() }, Modifier.weight(1f),
+                        KisButton("סיום ושמירה", { if (System.currentTimeMillis() - live.start < 60_000L) shortStart = live.start else onStop() }, Modifier.weight(1f),
                             height = 52.dp, haptic = KisSettings.Haptic.SUCCESS, tag = "live_shift_stop")
-                        KisButton("ביטול", { confirmCancel = true }, Modifier, KisButtonKind.OUTLINE, height = 52.dp, tag = "cancel_active_shift")
+                        KisButton("ביטול", { cancelStart = live.start }, Modifier, KisButtonKind.OUTLINE, height = 52.dp, tag = "cancel_active_shift")
                     }
                 }
             }
