@@ -70,11 +70,13 @@ test('assistant server: connect, read, add, edit, permissions, sync format, log 
  assert.deepEqual(json(await call(t2.access_token,'list_shifts',{})),[]);
 
  // Refresh works while the grant lives; removing it in the app cuts the assistant off at once.
- const [rs,r]=await A.token(env,{grant_type:'refresh_token',refresh_token:t.refresh_token});assert.equal(rs,200);
+ // The refresh token is bound to its client (M-23): the assistant presents its own client_id.
+ const cid=A.open(env,'rt',t.refresh_token).c;
+ const [rs,r]=await A.token(env,{grant_type:'refresh_token',refresh_token:t.refresh_token,client_id:cid});assert.equal(rs,200);
  const grants=await db.list('assistants');assert.equal(grants.length,1);assert.equal(grants[0].data.name,'Test assistant');
  assert.ok(await db.remove('assistants/'+grants[0].id));
  assert.equal((await A.mcp(env,req(r.access_token),{jsonrpc:'2.0',id:1,method:'tools/list'}))[0],401);
- assert.equal((await A.token(env,{grant_type:'refresh_token',refresh_token:t.refresh_token}))[0],400);
+ assert.equal((await A.token(env,{grant_type:'refresh_token',refresh_token:r.refresh_token,client_id:cid}))[0],400);
 
  // A personal key (for an assistant without OAuth) works the same way.
  const [ks,k]=await A.grant(env,{refreshToken:me.refreshToken,personal:true,name:'Grok',scopes:['shifts.delete'],duration:'hour',tz:'Asia/Jerusalem'});
