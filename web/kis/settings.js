@@ -157,6 +157,7 @@ function importSheet(app) {
         const series = (data.series || []).filter(s => !store.plans.series.some(x => x.id === s.id));
         // Places, workers and settings count too (audit D05): a backup of only those can be imported.
         const cats = data.categories.filter(c => !store.data.categories.some(x => x.name === c.name));
+        for (const s of series) if (!store.data.categories.some(c => c.name === s.category) && !cats.some(c => c.name === s.category) && !fresh.some(e => e.category === s.category)) cats.push({ name: s.category, defaultRate: s.hourlyRate ?? 40 });
         const workers = (data.workers || []).filter(w => !store.data.workers.some(x => x.name === w.name));
         const p = data.webPreferences ? root.WorkCategories.preferences(data.webPreferences) : null, here = store.data.webPreferences;
         // A place that already exists here keeps its currency (explicit or the default); only new places take theirs.
@@ -192,6 +193,7 @@ function importSheet(app) {
           for (const w of data.workers || []) if (!d.workers.some(x => x.name === w.name)) d.workers.push(w);
           d.entries.push(...rows);
           const plans = root.WorkTransfer.missingPlans(n.plans.series, n.plans.exceptions, data.series || [], data.exceptions || []);
+          for (const s of plans.series) if (!d.categories.some(c => c.name === s.category)) d.categories.push({ name: s.category, defaultRate: s.hourlyRate ?? 40 });
           n.plans.series.push(...plans.series); n.plans.exceptions.push(...plans.exceptions);
           // Settings never overwrite what is set here: a currency only for a place without one; the defaults only when asked.
           if (data.webPreferences) {
