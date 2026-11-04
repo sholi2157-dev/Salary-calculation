@@ -20,14 +20,28 @@ object WorkPay {
     fun pending(entries: List<WorkEntry>) = entries.filter { !it.payKnown }
 
     /**
-     * 2.3.0 money contract (audit CAL-02/CAL-05), identical to web KisRules.money: every NEW saved amount and its preview
-     * is hours × rate + bonus in exact decimal arithmetic, rounded once, half up, to whole agorot/cents. Each input is first
-     * fixed to 10 decimal places from its exact binary value. Saved amounts are never recalculated with it.
+     * 2.3.0 money contract (audit CAL-02/CAL-05, M-08, decision D-5), identical to web KisRules.money: every NEW saved amount
+     * and its preview is hours × rate + bonus in exact decimal arithmetic, rounded once, half up, to whole agorot/cents.
+     * Saved amounts are never recalculated with it.
+     *  - Hours that are whole seconds (every clock shift is minutes / 60, every timer is seconds / 3600) are taken as that
+     *    exact fraction: seconds × rate / 3600, so 50 minutes × 33.33 = 27.775 → 27.78 (M-08). The tolerance (1e-6 s) is
+     *    far below anything a person types and far above the binary error of minutes / 60.
+     *  - Any other hours value (typed decimal hours such as 2.675) is fixed to 10 decimal places from its exact binary value.
+     *  - The rate and bonus are always fixed to 10 decimal places.
      */
     fun money(hours: Double, rate: Double, bonus: Double = 0.0): Double {
         fun d(x: Double) = java.math.BigDecimal(x).setScale(10, java.math.RoundingMode.HALF_UP)
+        val seconds = hours * 3600.0
+        val whole = Math.round(seconds)
+        if (seconds.isFinite() && kotlin.math.abs(seconds) < 1e15 && kotlin.math.abs(seconds - whole.toDouble()) <= SECONDS_TOLERANCE) {
+            val perHour = java.math.BigDecimal(3600)
+            return java.math.BigDecimal.valueOf(whole).multiply(d(rate)).add(d(bonus).multiply(perHour))
+                .divide(perHour, 2, java.math.RoundingMode.HALF_UP).toDouble()
+        }
         return d(hours).multiply(d(rate)).add(d(bonus)).setScale(2, java.math.RoundingMode.HALF_UP).toDouble()
     }
+
+    private const val SECONDS_TOLERANCE = 1e-6
 
     /** Whole seconds a timer ran: the difference first, then truncated, the same for the screen and the saved shift (audit AND-C07). */
     fun elapsedSeconds(startMillis: Long, nowMillis: Long): Long = ((nowMillis - startMillis) / 1000L).coerceAtLeast(0L)
