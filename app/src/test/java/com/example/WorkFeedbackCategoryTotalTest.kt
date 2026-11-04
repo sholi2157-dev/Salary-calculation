@@ -24,7 +24,7 @@ import java.util.TimeZone
  * never recomputed from hours × rate, other places and pending amounts left out, ₪ and $ never added together.
  * Synthetic data only.
  */
-class FeedbackCategoryTotalTest {
+class WorkFeedbackCategoryTotalTest {
     private val zone = ZoneId.of("Asia/Jerusalem")
     private lateinit var previousZone: TimeZone
 
