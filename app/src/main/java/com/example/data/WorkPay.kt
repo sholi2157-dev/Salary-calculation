@@ -46,14 +46,14 @@ object WorkPay {
     /**
      * FB-08, identical to web KisRules.retroRate: a workplace's rate changed with "שינוי רטרואקטיבי" on, so its existing
      * shifts that are still unpaid get the new amount from [money] (the same function as every new amount). Only a plain
-     * shift of [place], unpaid, with a known rate equal to the place's [oldRate] and in the place's [currency] changes.
-     * Paid shifts, shifts with a rate of their own, shifts still without a rate, fixed-price jobs and team shifts (whose
+     * shift of [place], unpaid, with no known rate or a rate exactly equal to [oldRate], and in the place's [currency] changes.
+     * Paid shifts, shifts with a different known rate, fixed-price jobs and team shifts (whose
      * workers' pay follows the shift rate) never change. Returns (id, new total) for the rows whose rate changes.
      */
     fun retroRate(entries: List<WorkEntry>, place: String, oldRate: Double, newRate: Double, currency: String): List<Pair<Int, Double>> {
         if (!newRate.isFinite() || newRate < 0 || newRate == oldRate) return emptyList()
-        return entries.filter { it.category == place && !it.isPaid && it.payKnown && it.kind != WorkEntry.KIND_JOB && !it.isGroupShift
-            && it.hourlyRate == oldRate && it.currency == currency }
+        return entries.filter { it.category == place && !it.isPaid && it.kind != WorkEntry.KIND_JOB && !it.isGroupShift
+            && (!it.payKnown || it.hourlyRate == oldRate) && it.currency == currency }
             .map { it.id to money(it.hours, newRate, it.bonus) }
     }
 

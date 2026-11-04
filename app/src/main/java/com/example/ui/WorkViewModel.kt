@@ -59,7 +59,7 @@ class WorkViewModel(
         if (repository.getCategoryByName(name) != null) localDao.setLocalPreference(com.example.data.WorkLocalPreference("defaultCategory", name))
     } }
     fun categoryCurrency(name: String): String = localPreferences.value["categoryCurrency:$name"] ?: defaultCurrency.value
-    /** [retro]: "שינוי רטרואקטיבי" (FB-08), the place's unpaid shifts at the previous rate take the new one; offered with undo. */
+    /** [retro]: "שינוי רטרואקטיבי" (FB-08), the place's unpaid shifts at the previous rate or without a rate take the new one; offered with undo. */
     fun editCategory(category: WorkCategory, name: String, rate: Double, currency: String, retro: Boolean = false) { viewModelScope.launch {
         try {
             val changed = localDao.editCategorySafely(category, name, rate, currency, retro)

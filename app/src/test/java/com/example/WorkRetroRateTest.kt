@@ -13,7 +13,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * FB-08: editing a workplace's rate with "שינוי רטרואקטיבי" on gives its unpaid shifts at the previous rate the new rate
+ * FB-08: editing a workplace's rate with "שינוי רטרואקטיבי" on gives its unpaid shifts at the previous rate or without a rate the new rate
  * and an amount from WorkPay.money; off (the default) changes nothing stored. Paid shifts never change. Same cases as
  * web-tests/fb08-retro-rate.test.cjs. Synthetic data only.
  */
@@ -30,11 +30,12 @@ class WorkRetroRateTest {
         WorkEntry(id = id, category = category, date = 1_000L * id, isTimeRange = false, hours = hours, hourlyRate = rate, totalEarnings = total,
             isPaid = paid, currency = currency, kind = kind, payKnown = payKnown, isGroupShift = group, bonus = bonus, createdAt = 1L)
 
-    @Test fun onlyUnpaidPlainShiftsAtThePreviousRateAndCurrencyChange() {
+    @Test fun onlyUnpaidPlainShiftsAtTheExactPreviousRateOrWithoutARateAndSameCurrencyChange() {
         val rows = listOf(shift(1), shift(2, paid = true), shift(3, category = "עצמאי"), shift(4, rate = 60.0, total = 120.0),
             shift(5, rate = 0.0, total = 0.0, payKnown = false), shift(6, rate = 0.0, total = 300.0, kind = WorkEntry.KIND_JOB),
-            shift(7, group = true), shift(8, currency = "$"), shift(9, bonus = 15.0, total = 115.0))
-        assertEquals(listOf(1 to 110.0, 9 to 125.0), WorkPay.retroRate(rows, "מסעדה", 50.0, 55.0, "₪"))
+            shift(7, group = true), shift(8, currency = "$"), shift(9, bonus = 15.0, total = 115.0), shift(10, rate = 0.0, payKnown = false, paid = true),
+            shift(11, rate = 0.0, payKnown = false, group = true), shift(12, rate = 50.00000001))
+        assertEquals(listOf(1 to 110.0, 5 to 110.0, 9 to 125.0), WorkPay.retroRate(rows, "מסעדה", 50.0, 55.0, "₪"))
     }
 
     @Test fun noChangeForTheSameOrAnInvalidRate() {
@@ -54,12 +55,45 @@ class WorkRetroRateTest {
 
     @Test fun offByDefaultChangesNoStoredAmount() = runBlocking {
         dao.insertCategory(WorkCategory(name = "מסעדה", defaultRate = 50.0))
-        listOf(shift(1), shift(2, paid = true)).forEach { dao.insertEntry(it) }
+        listOf(shift(1), shift(2, paid = true), shift(3, rate = 0.0, total = 0.0, payKnown = false)).forEach { dao.insertEntry(it) }
         val before = dao.getEntriesList()
         val cat = dao.getCategoryByName("מסעדה")!!
         assertTrue(dao.editCategorySafely(cat, "מסעדה", 55.0, "₪").isEmpty())
         assertEquals(55.0, dao.getCategoryByName("מסעדה")!!.defaultRate, 0.0)
         assertEquals(before, dao.getEntriesList())
+    }
+
+    @Test fun missingRateBecomesKnownAndUndoRestoresTheExactPendingEntry() = runBlocking {
+        dao.insertCategory(WorkCategory(name = "מסעדה", defaultRate = 50.0))
+        val pending = shift(1, hours = 50 / 60.0, rate = 0.0, total = 0.0, payKnown = false, bonus = 3.0)
+        val excluded = listOf(shift(2, rate = 0.0, total = 0.0, payKnown = false, paid = true),
+            shift(3, rate = 0.0, total = 0.0, payKnown = false, group = true), shift(4, rate = 60.0, total = 120.0))
+        (listOf(pending) + excluded).forEach { dao.insertEntry(it) }
+        val changed = dao.editCategorySafely(dao.getCategoryByName("מסעדה")!!, "מסעדה", 33.33, "₪", retro = true)
+        assertEquals(listOf(1), changed.map { it.id })
+        val filled = dao.getEntryById(1)!!
+        assertEquals(pending.copy(hourlyRate = 33.33, totalEarnings = 30.78, payKnown = true), filled)
+        assertTrue(WorkPay.pending(listOf(filled)).isEmpty())
+        excluded.forEach { assertEquals(it, dao.getEntryById(it.id)) }
+        assertEquals(1, dao.restoreRetroRate(changed))
+        assertEquals(pending, dao.getEntryById(1))
+    }
+
+    @Test fun weeklyPlanAndRunningTimerKeepTheirOwnRatesEvenWhenThePlaceIsRenamed() = runBlocking {
+        dao.insertCategory(WorkCategory(name = "מסעדה", defaultRate = 50.0))
+        val plan = ShiftSeries("retro-plan", "מסעדה", 2, "09:00", "11:00", 50.0, "₪", "2026-11-01", "2026-11-30")
+        dao.upsertSeries(plan)
+        val timer = ShiftStateManager.forAccount(app, WorkAccountScope(null))
+        timer.clear()
+        assertTrue(timer.start("מסעדה", 50.0, 1000L))
+        try {
+            dao.editCategorySafely(dao.getCategoryByName("מסעדה")!!, "חדש", 55.0, "₪", retro = true)
+            timer.renameCategory("מסעדה", "חדש") // Same call as WorkViewModel.editCategory.
+            assertEquals(plan.copy(category = "חדש"), dao.getSeries().single())
+            assertEquals(50.0, timer.activeShiftRate.value, 0.0)
+            assertEquals("חדש", timer.activeShiftCategory.value)
+            assertEquals(1000L, timer.activeShiftStartTime.value)
+        } finally { timer.clear(1000L) }
     }
 
     @Test fun onUpdatesUnpaidShiftsInTheSameSaveEvenWhenRenamedAndUndoRestoresOnlyUntouchedOnes() = runBlocking {

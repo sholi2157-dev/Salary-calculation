@@ -40,11 +40,11 @@ interface WorkDao {
     }
 
     /** One shift changed by a retroactive rate change (FB-08): what it held before and what the change wrote. */
-    data class RetroChange(val id: Int, val hourlyRate: Double, val totalEarnings: Double, val wroteRate: Double, val wroteTotal: Double)
+    data class RetroChange(val id: Int, val hourlyRate: Double, val totalEarnings: Double, val wroteRate: Double, val wroteTotal: Double, val payKnown: Boolean)
 
     /**
      * Renames the place and sets its rate and currency. With [retro] ("שינוי רטרואקטיבי") its unpaid shifts at the previous
-     * rate take the new rate and amount in the same transaction (WorkPay.retroRate); paid shifts never change.
+     * rate or without a rate take the new rate and amount in the same transaction (WorkPay.retroRate); paid shifts never change.
      * Returns the shifts it changed, so the screen can offer undo.
      */
     @Transaction
@@ -64,8 +64,8 @@ interface WorkDao {
         val rows = getEntriesList().associateBy { it.id }
         return WorkPay.retroRate(rows.values.toList(), name.trim(), oldRate, rate, currency).map { (id, total) ->
             val e = rows.getValue(id)
-            updateEntry(e.copy(hourlyRate = rate, totalEarnings = total))
-            RetroChange(id, e.hourlyRate, e.totalEarnings, rate, total)
+            updateEntry(e.copy(hourlyRate = rate, totalEarnings = total, payKnown = true))
+            RetroChange(id, e.hourlyRate, e.totalEarnings, rate, total, e.payKnown)
         }
     }
 
@@ -78,8 +78,8 @@ interface WorkDao {
         var n = 0
         for (c in changes) {
             val e = getEntryById(c.id) ?: continue
-            if (e.isPaid || e.hourlyRate != c.wroteRate || e.totalEarnings != c.wroteTotal) continue
-            updateEntry(e.copy(hourlyRate = c.hourlyRate, totalEarnings = c.totalEarnings)); n++
+            if (e.isPaid || !e.payKnown || e.hourlyRate != c.wroteRate || e.totalEarnings != c.wroteTotal) continue
+            updateEntry(e.copy(hourlyRate = c.hourlyRate, totalEarnings = c.totalEarnings, payKnown = c.payKnown)); n++
         }
         return n
     }

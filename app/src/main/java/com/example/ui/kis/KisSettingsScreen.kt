@@ -290,7 +290,7 @@ private fun WorkplaceEditor(cat: WorkCategory, categories: List<WorkCategory>, v
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f)) {
                 Text("שינוי רטרואקטיבי", style = KisType.label, color = c.ink)
-                Text(if (retro) "גם משמרות שעוד לא שולמו יעודכנו לתעריף החדש. משמרות ששולמו לא משתנות" else "התעריף החדש יחול רק על משמרות חדשות",
+                Text(if (retro) "יעודכנו משמרות שלא שולמו בתעריף הקודם או ללא תעריף. משמרות צוות לא משתנות" else "התעריף החדש יחול רק על משמרות חדשות",
                     style = KisType.caption, color = c.muted, modifier = Modifier.testTag("edit_category_retro_hint"))
             }
             KisSwitch(retro, { retro = it }, Modifier.testTag("edit_category_retro"), label = "שינוי רטרואקטיבי")
