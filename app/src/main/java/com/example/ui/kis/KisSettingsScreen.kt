@@ -1,6 +1,5 @@
 package com.example.ui.kis
 
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -185,7 +184,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 }
                 KisTextField(importText, { importText = it }, "הדבקת נתונים", Modifier.fillMaxWidth().heightIn(min = 90.dp).testTag("settings_import_text_field"), singleLine = false, minLines = 3)
                 KisButton("בדיקה וייבוא", {
-                    if (importText.isBlank()) Toast.makeText(context, "נא להדביק נתונים לייבוא", Toast.LENGTH_SHORT).show()
+                    if (importText.isBlank()) com.example.ui.kis.KisNotices.post("נא להדביק נתונים לייבוא")
                     else if (viewModel.importDataFromString(context, importText)) importText = ""
                 }, Modifier.fillMaxWidth().padding(vertical = 10.dp), height = 48.dp, tag = "settings_import_action_btn")
             }
@@ -356,7 +355,7 @@ private fun AiKeySheet(ownerUid: String?, onDismiss: () -> Unit) {
         KisButton("שמירת המפתח", {
             try {
                 PersonalAiKey.save(context, draft, ownerUid); draft = ""
-                Toast.makeText(context, "המפתח נשמר במכשיר. החיבור ייבדק בפענוח הראשון.", Toast.LENGTH_LONG).show()
+                com.example.ui.kis.KisNotices.post("המפתח נשמר במכשיר. החיבור ייבדק בפענוח הראשון.")
                 onDismiss()
             } catch (_: Exception) { status = "שמירת המפתח לא הצליחה. יש לבדוק את המפתח ולנסות שוב." }
         }, Modifier.fillMaxWidth(), enabled = draft.isNotBlank(), tag = "ai_key_save")

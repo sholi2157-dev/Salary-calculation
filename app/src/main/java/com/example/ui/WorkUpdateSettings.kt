@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.widget.Toast
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
@@ -160,9 +159,9 @@ fun WorkUpdateSettings() {
             try {
                 val update = WorkUpdates.check(context)
                 candidate = update
-                if (update == null) Toast.makeText(context, "אין עדכון יציב חדש", Toast.LENGTH_LONG).show()
+                if (update == null) com.example.ui.kis.KisNotices.post("אין עדכון יציב חדש")
             } catch (_: Exception) {
-                Toast.makeText(context, "לא ניתן לבדוק כעת. הנתונים והשימוש המקומי זמינים", Toast.LENGTH_LONG).show()
+                com.example.ui.kis.KisNotices.post("לא ניתן לבדוק כעת. הנתונים והשימוש המקומי זמינים")
             } finally { busy = false }
         }
     }

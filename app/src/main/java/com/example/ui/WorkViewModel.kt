@@ -5,7 +5,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -62,7 +61,7 @@ class WorkViewModel(
     fun categoryCurrency(name: String): String = localPreferences.value["categoryCurrency:$name"] ?: defaultCurrency.value
     fun editCategory(category: WorkCategory, name: String, rate: Double, currency: String) { viewModelScope.launch {
         try { localDao.editCategorySafely(category, name, rate, currency); shiftState.renameCategory(category.name, name.trim()); performAutoBackup() }
-        catch (_: IllegalArgumentException) { Toast.makeText(getApplication(), "שם כפול או ערכים לא תקינים", Toast.LENGTH_LONG).show() }
+        catch (_: IllegalArgumentException) { com.example.ui.kis.KisNotices.post("שם כפול או ערכים לא תקינים") }
     } }
     private val settings = com.example.data.WorkAccountPreferences.get(application, owner)
     private val shiftState = ShiftStateManager.forAccount(application, owner)
@@ -116,7 +115,7 @@ class WorkViewModel(
                     performAutoBackup()
                 } catch (e: kotlinx.coroutines.CancellationException) { throw e }
                 catch (_: Exception) {
-                    Toast.makeText(getApplication(), "הביטול לא הושלם. יש לבדוק את ההיסטוריה", Toast.LENGTH_LONG).show()
+                    com.example.ui.kis.KisNotices.post("הביטול לא הושלם. יש לבדוק את ההיסטוריה")
                 }
             }
         }
@@ -403,7 +402,7 @@ class WorkViewModel(
     fun signOut(context: Context): Boolean {
         if (com.example.api.AuthManager.currentUser.value?.uid != owner.cloudUid) return false
         if (ShiftStateManager.hasActiveShift(context)) {
-            Toast.makeText(context, "יש לסיים את המשמרת הפעילה לפני החלפת חשבון", Toast.LENGTH_LONG).show()
+            com.example.ui.kis.KisNotices.post("יש לסיים את המשמרת הפעילה לפני החלפת חשבון")
             return false
         }
         com.example.api.AuthManager.signOut(context)
@@ -553,7 +552,7 @@ class WorkViewModel(
         if (com.example.api.AuthManager.currentUser.value?.uid != owner.cloudUid) return
         val startTime = System.currentTimeMillis()
         if (!shiftState.start(category, rate, startTime, currency)) {
-            Toast.makeText(getApplication(), "כבר קיימת משמרת פעילה. יש לסיים אותה תחילה", Toast.LENGTH_LONG).show()
+            com.example.ui.kis.KisNotices.post("כבר קיימת משמרת פעילה. יש לסיים אותה תחילה")
             return
         }
         
@@ -568,7 +567,7 @@ class WorkViewModel(
     fun updateActiveShiftCurrency(currency: String, expectedStart: Long?) {
         if (com.example.api.AuthManager.currentUser.value?.uid != owner.cloudUid) return
         if (!shiftState.updateCurrency(currency, expectedStart)) {
-            Toast.makeText(getApplication(), "המטבע לא עודכן. יש לנסות שוב", Toast.LENGTH_SHORT).show()
+            com.example.ui.kis.KisNotices.post("המטבע לא עודכן. יש לנסות שוב")
         }
     }
 
@@ -606,7 +605,7 @@ class WorkViewModel(
                     Intent(getApplication(), ShiftForegroundService::class.java))
                 performAutoBackup()
             } catch (_: Exception) {
-                Toast.makeText(getApplication(), "המשמרת לא נשמרה. הטיימר נשאר פעיל; אפשר לנסות שוב", Toast.LENGTH_LONG).show()
+                com.example.ui.kis.KisNotices.post("המשמרת לא נשמרה. הטיימר נשאר פעיל; אפשר לנסות שוב")
             }
         }
     }
@@ -616,7 +615,7 @@ class WorkViewModel(
         viewModelScope.launch {
             val target = owner.database(context)
             if (target.workDao().receipt("legacy-guest-v1") != null) {
-                Toast.makeText(context, "הנתונים המקומיים כבר הועתקו לחשבון זה", Toast.LENGTH_LONG).show()
+                com.example.ui.kis.KisNotices.post("הנתונים המקומיים כבר הועתקו לחשבון זה")
                 return@launch
             }
             val reviewed = com.example.data.WorkLegacyAdoption.snapshot(com.example.data.WorkAccountScope(null).database(context))
@@ -632,10 +631,10 @@ class WorkViewModel(
                     viewModelScope.launch {
                         try {
                             val added = com.example.data.WorkLegacyAdoption.confirm(target, reviewed)
-                            Toast.makeText(context, "הועתקו $added משמרות", Toast.LENGTH_LONG).show()
+                            com.example.ui.kis.KisNotices.post("הועתקו $added משמרות")
                             performAutoBackup()
                         } catch (_: Exception) {
-                            Toast.makeText(context, "ההעתקה לא הושלמה. נתוני המקור נשמרו", Toast.LENGTH_LONG).show()
+                            com.example.ui.kis.KisNotices.post("ההעתקה לא הושלמה. נתוני המקור נשמרו")
                         }
                     }
                 }.show()
@@ -761,7 +760,7 @@ class WorkViewModel(
                 runCountAnimationTrigger.value = runCountAnimationTrigger.value + 1
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (_: Exception) {
-                Toast.makeText(getApplication(), "השמירה לא הושלמה. התיאור נשמר; אפשר לתקן ולנסות שוב", Toast.LENGTH_LONG).show()
+                com.example.ui.kis.KisNotices.post("השמירה לא הושלמה. התיאור נשמר; אפשר לתקן ולנסות שוב")
                 onComplete(false)
                 return@launch
             }
@@ -857,7 +856,7 @@ class WorkViewModel(
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (e: Exception) {
                 android.util.Log.e("WorkViewModel", "Saving a new entry failed", e)
-                Toast.makeText(getApplication(), "המשמרת לא נשמרה. הפרטים נשארו בטופס; אפשר לנסות שוב", Toast.LENGTH_LONG).show()
+                com.example.ui.kis.KisNotices.post("המשמרת לא נשמרה. הפרטים נשארו בטופס; אפשר לנסות שוב")
                 onFailed()
             }
         }
@@ -880,7 +879,7 @@ class WorkViewModel(
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (e: Exception) {
                 android.util.Log.e("WorkViewModel", "Saving an edit failed", e)
-                Toast.makeText(getApplication(), "השינוי לא נשמר. אפשר לנסות שוב", Toast.LENGTH_LONG).show()
+                com.example.ui.kis.KisNotices.post("השינוי לא נשמר. אפשר לנסות שוב")
                 onFailed()
             }
         }
@@ -1007,7 +1006,7 @@ class WorkViewModel(
                 onDone(preview.created.size, ids)
             } catch (e: Exception) {
                 android.util.Log.e("WorkViewModel", "Saving a plan failed", e)
-                Toast.makeText(getApplication(), "המשמרת הקבועה לא נשמרה. אפשר לנסות שוב", Toast.LENGTH_LONG).show()
+                com.example.ui.kis.KisNotices.post("המשמרת הקבועה לא נשמרה. אפשר לנסות שוב")
                 onFailed()
             }
         }
@@ -1154,7 +1153,7 @@ class WorkViewModel(
     fun deleteCategory(category: WorkCategory) {
         viewModelScope.launch {
             val target = localDao.categoryFallback(category)?.name
-            if (!localDao.removeCategorySafely(category)) Toast.makeText(getApplication(), "יש להשאיר לפחות קטגוריה אחת", Toast.LENGTH_LONG).show()
+            if (!localDao.removeCategorySafely(category)) com.example.ui.kis.KisNotices.post("יש להשאיר לפחות קטגוריה אחת")
             else if (target != null) shiftState.renameCategory(category.name, target)
             performAutoBackup()
         }
@@ -1207,8 +1206,8 @@ class WorkViewModel(
         try {
             val json = repository.exportSnapshot()
             (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Work Tracker Data", json))
-            Toast.makeText(context, "הגיבוי הועתק", Toast.LENGTH_SHORT).show()
-        } catch (_: Exception) { Toast.makeText(context, "הגיבוי נכשל", Toast.LENGTH_LONG).show() }
+            com.example.ui.kis.KisNotices.post("הגיבוי הועתק")
+        } catch (_: Exception) { com.example.ui.kis.KisNotices.post("הגיבוי נכשל") }
     } }
     fun saveBackup(context: Context, uri: android.net.Uri) { viewModelScope.launch {
         try {
@@ -1216,8 +1215,8 @@ class WorkViewModel(
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 checkNotNull(context.contentResolver.openOutputStream(uri, "wt")).use { it.write(json.toByteArray(Charsets.UTF_8)) }
             }
-            Toast.makeText(context, "הגיבוי נשמר", Toast.LENGTH_LONG).show()
-        } catch (_: Exception) { Toast.makeText(context, "הגיבוי לא נשמר", Toast.LENGTH_LONG).show() }
+            com.example.ui.kis.KisNotices.post("הגיבוי נשמר")
+        } catch (_: Exception) { com.example.ui.kis.KisNotices.post("הגיבוי לא נשמר") }
     } }
     fun shareExportData(context: Context) { viewModelScope.launch {
         try {
@@ -1229,7 +1228,7 @@ class WorkViewModel(
                 type = "application/json"; putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }, "שמירת גיבוי מחוץ לאפליקציה"))
-        } catch (_: Exception) { Toast.makeText(context, "הגיבוי נכשל", Toast.LENGTH_LONG).show() }
+        } catch (_: Exception) { com.example.ui.kis.KisNotices.post("הגיבוי נכשל") }
     } }
 
     private fun isValidDate(str: String): Boolean {
@@ -1268,7 +1267,7 @@ class WorkViewModel(
             else if (trimmed.startsWith("[")) com.example.data.WorkBackup.decode("{\"entries\":" + trimmed + "}")
             else com.example.data.WorkTableImport.decode(jsonStr)
         } catch (e: Exception) {
-            Toast.makeText(context, e.message ?: "לא ניתן לקרוא את הנתונים", Toast.LENGTH_LONG).show()
+            com.example.ui.kis.KisNotices.post(e.message ?: "לא ניתן לקרוא את הנתונים")
             return false
         }
         fun amount(value: Double) = String.format(Locale.US, "%.2f", value)
@@ -1292,10 +1291,10 @@ class WorkViewModel(
                     try {
                         val added = repository.importBackup(backup)
                         performAutoBackup()
-                        Toast.makeText(context, "נוספו $added משמרות", Toast.LENGTH_LONG).show()
+                        com.example.ui.kis.KisNotices.post("נוספו $added משמרות")
                     } catch (e: Exception) {
                         android.util.Log.e("WorkViewModel", "Import failed", e)
-                        Toast.makeText(context, "הייבוא לא הושלם. הנתונים הקיימים נשמרו.", Toast.LENGTH_LONG).show()
+                        com.example.ui.kis.KisNotices.post("הייבוא לא הושלם. הנתונים הקיימים נשמרו.")
                     }
                 }
             }.show()
@@ -1306,7 +1305,7 @@ class WorkViewModel(
     fun exportToCsvAndShare(context: Context) {
         val entryList = com.example.ui.kis.KisHistoryLogic.done(entries.value)
         if (entryList.isEmpty()) {
-            Toast.makeText(context, "אין משמרות לייצוא", Toast.LENGTH_SHORT).show()
+            com.example.ui.kis.KisNotices.post("אין משמרות לייצוא")
             return
         }
 
@@ -1322,7 +1321,7 @@ class WorkViewModel(
             }
 
             // Exact Export Confirmation Toast
-            Toast.makeText(context, "הקובץ נשמר בהצלחה!", Toast.LENGTH_SHORT).show()
+            com.example.ui.kis.KisNotices.post("הקובץ נשמר בהצלחה!")
 
             // Obtain shareable Uri using FileProvider
             val authority = "${context.packageName}.fileprovider"
@@ -1344,7 +1343,7 @@ class WorkViewModel(
             context.startActivity(chooser)
             
         } catch (e: Exception) {
-            Toast.makeText(context, "שגיאה בייצוא קובץ ה-CSV: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            com.example.ui.kis.KisNotices.post("שגיאה בייצוא קובץ ה-CSV: ${e.localizedMessage}")
         }
     }
 

@@ -216,7 +216,12 @@ fun KisHistory(
             SelectionBar(selectedRows, rows, ui,
                 onShare = { KisShare.shareOrCopy(context, WorkShareText.summary(selectedRows, WorkShareText.workerName(selectedRows, ui.query)), "שיתוף משמרות", onMessage); ui.selection = emptySet() },
                 onCopy = { KisShare.copy(context, WorkShareText.copy(selectedRows, WorkShareText.workerName(selectedRows, ui.query))); onMessage("הועתק ✓ · מוכן להדבקה"); ui.selection = emptySet() },
-                onPaid = { paid -> viewModel.setPaid(ui.selection, paid); settings.haptic(KisSettings.Haptic.SUCCESS); onMessage(if (paid) "סומן כשולם ✓" else "סומן כלא שולם"); ui.selection = emptySet() },
+                onPaid = { paid ->
+                    // M-37: the same message with undo as everywhere; undo puts back each shift's own previous paid mark.
+                    val before = selectedRows.groupBy({ it.isPaid }, { it.id })
+                    viewModel.setPaid(ui.selection, paid); settings.haptic(KisSettings.Haptic.SUCCESS)
+                    KisNotices.post(if (paid) "סומן כשולם ✓" else "סומן כלא שולם", "ביטול") { before.forEach { (was, ids) -> viewModel.setPaid(ids, was) } }
+                    ui.selection = emptySet() },
                 onBulk = { bulkOpen = true },
                 onDelete = { confirmDelete = true })
         }

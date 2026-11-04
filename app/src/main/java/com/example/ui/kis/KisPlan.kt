@@ -81,7 +81,7 @@ fun PlannedCard(o: V2Plan.Occurrence, categories: List<WorkCategory>, onWorked: 
                 KisButton("שינוי שעות", onHours, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "plan_hours_${o.key}")
                 KisButton("שיתוף", onShare, Modifier.weight(1f), KisButtonKind.GHOST, height = 48.dp, tag = "plan_share_${o.key}")
             }
-            KisButton("העתקה", { KisShare.copy(context, com.example.data.WorkShareText.planned(o, technical = true)); android.widget.Toast.makeText(context, "הועתק ✓", android.widget.Toast.LENGTH_SHORT).show() }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "plan_copy_${o.key}")
+            KisButton("העתקה", { KisShare.copy(context, com.example.data.WorkShareText.planned(o, technical = true)); com.example.ui.kis.KisNotices.post("הועתק ✓") }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "plan_copy_${o.key}")
         }
     }
 }
