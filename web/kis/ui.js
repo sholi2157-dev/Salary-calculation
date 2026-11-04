@@ -125,6 +125,61 @@ function sheet(testid, render, { onClose } = {}) {
   el.querySelector('button, input, select, textarea')?.focus({ preventScroll: true });
   return close;
 }
+/*
+ * Focus stays inside the top dialog (audit M-33): every sheet, the editor, the summary story, the launch, the tour and
+ * the sign-in are role="dialog" aria-modal="true". Tab and Shift+Tab wrap inside the top one, and focus that lands
+ * behind it (a click on the page under a sheet's scrim edge, an old element re-focused) returns to it. The toast stays
+ * reachable so its undo can be pressed.
+ */
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+function topDialog() {
+  const all = [...document.querySelectorAll('[aria-modal="true"]')].filter(d => !d.hidden && d.getClientRects().length);
+  return all[all.length - 1] || null;
+}
+const focusablesIn = d => [...d.querySelectorAll(FOCUSABLE)].filter(x => x.getClientRects().length && !x.closest('[hidden], [inert]'));
+const outsideOk = t => !!t?.closest?.('#toast');
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Tab' || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+  const d = topDialog(); if (!d) return;
+  const items = focusablesIn(d), active = document.activeElement;
+  if (outsideOk(active)) return;
+  if (!items.length) { e.preventDefault(); return; }
+  const first = items[0], last = items[items.length - 1];
+  if (!d.contains(active)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+  else if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+});
+document.addEventListener('focusin', e => {
+  const d = topDialog();
+  if (!d || d.contains(e.target) || outsideOk(e.target)) return;
+  (focusablesIn(d)[0] || d).focus({ preventScroll: true });
+});
+
+/*
+ * A page redraw (render() replaces the page's HTML) keeps the keyboard focus on the same control (audit M-33): before,
+ * the control is described by a stable attribute; after, the same control in the new HTML is focused again.
+ */
+const FOCUS_KEYS = ['data-testid', 'id', 'data-a', 'data-act', 'data-id', 'data-page', 'data-recap', 'data-f', 'aria-label'];
+function focusMark(container) {
+  const a = document.activeElement;
+  if (!a || a === document.body || !container.contains(a)) return null;
+  for (const k of FOCUS_KEYS) {
+    const v = a.getAttribute(k); if (!v) continue;
+    const sel = `[${k}="${CSS.escape(v)}"]`, same = [...container.querySelectorAll(sel)];
+    return { sel, i: Math.max(0, same.indexOf(a)), start: a.selectionStart ?? null, end: a.selectionEnd ?? null };
+  }
+  return null;
+}
+function focusRestore(container, mark) {
+  if (!mark) return;
+  const a = document.activeElement;
+  if (a && a !== document.body && a.isConnected) return; // something else already took the focus on purpose
+  const el = container.querySelectorAll(mark.sel)[mark.i] || container.querySelector(mark.sel);
+  if (!el) { container.focus?.({ preventScroll: true }); return; }
+  el.focus({ preventScroll: true });
+  if (mark.start != null) try { el.setSelectionRange(mark.start, mark.end); } catch {}
+}
+
 const closeTopSheet = () => { const c = sheets[sheets.length - 1]; if (c) { c(); return true; } return false; };
 const anySheet = () => sheets.length > 0;
 
@@ -202,7 +257,7 @@ function followKeyboard() {
 }
 if (root.document) followKeyboard();
 
-root.KisUi = { actionSheet, orderedPlaces, DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, duration, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
+root.KisUi = { focusMark, focusRestore, topDialog, actionSheet, orderedPlaces, DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, duration, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
   isDark, placeOf, accent, accentInk, avatar, timeLabel, subtitle, upcoming, shiftCard, toast, sheet, closeTopSheet, anySheet, confirmSheet, copy, shareOrCopy,
   showText, haptic, ICON, logo, infoDot };
 })(globalThis);

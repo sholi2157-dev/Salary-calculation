@@ -79,13 +79,13 @@ function render(el, app, opts = {}) {
     ${state.searching ? `<div class="row" style="align-items:center;margin-bottom:8px"><input class="input grow" type="search" placeholder="חיפוש: מקום, הערה, עובד, סכום" value="${esc(state.query)}" data-f="q" aria-label="חיפוש" data-testid="history-search-input">
       <button class="icon-btn" aria-label="ניקוי" data-a="clear" data-testid="history-search-clear">${ICON.close}</button><button class="chip" data-a="close-search" data-testid="history-search-close">סגירה</button></div>`
       : state.query ? `<div class="row" style="margin-bottom:8px"><button class="chip on" data-a="search" data-testid="history-query-chip">חיפוש: ${esc(state.query)}</button><button class="icon-btn" aria-label="ניקוי החיפוש" data-a="clear">${ICON.close}</button></div>` : ''}
-    <div class="row" style="align-items:center"><button class="plain caption grow" style="flex:1;color:var(--muted);font-size:13px;min-height:44px" data-a="filters" data-testid="history-scope">מוצג: ${esc(describe(f))}</button>
+    <div class="row" style="align-items:center"><button class="plain caption grow" style="flex:1;color:var(--muted);font-size:0.8125rem;min-height:44px" data-a="filters" data-testid="history-scope">מוצג: ${esc(describe(f))}</button>
       ${n ? '<button class="chip" data-a="reset" data-testid="history-reset">הצגת הכול</button>' : ''}</div>
-    ${f.period === 'MONTH' ? `<div class="row" style="align-items:center"><b class="grow" style="font:22px/28px var(--display)" data-testid="history-month">${esc(U().monthName(f.month))}</b>
+    ${f.period === 'MONTH' ? `<div class="row" style="align-items:center"><h2 class="grow" style="font:1.375rem/1.75rem var(--display);margin:0" data-testid="history-month" aria-live="polite">${esc(U().monthName(f.month))}</h2>
       <button class="icon-btn" aria-label="חודש קודם" data-a="prev">${ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-a="next">${ICON.next}</button></div>` : ''}
-    <div class="card" style="margin-top:10px" data-testid="history-total"><div class="caption">${rows.length} משמרות · ${U().duration(rows.reduce((s, e) => s + e.hours, 0))} שעות${(h => h > 0 ? ` · מתוכן ${U().duration(h)} עוד לא עברו` : '')(rows.filter(e => U().upcoming(e)).reduce((s, e) => s + e.hours, 0))}</div>
+    <section class="card" style="margin-top:10px" data-testid="history-total" aria-label="סיכום המשמרות המוצגות"><div class="caption">${rows.length} משמרות · ${U().duration(rows.reduce((s, e) => s + e.hours, 0))} שעות${(h => h > 0 ? ` · מתוכן ${U().duration(h)} עוד לא עברו` : '')(rows.filter(e => U().upcoming(e)).reduce((s, e) => s + e.hours, 0))}</div>
       <div style="display:flex;gap:14px">${totals.length ? totals.map(([c, v]) => `<b class="amount">${moneyHtml(v, c)}</b>`).join('') : '<b class="amount">—</b>'}</div>
-      ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}</div>`}
+      ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}</section>`}
   <div class="list" style="margin-top:8px;${sel.length ? 'padding-bottom:150px' : ''}" data-testid="history-list">${list}</div>
 
   ${sel.length ? selectionBar(sel, rows) : ''}`;
@@ -193,11 +193,11 @@ function filtersSheet(app, done, after) {
       const count = planned ? plannedCount : apply(done, f, state.query).length;
       el.innerHTML = `<h2>סינון ומיון</h2>
         <span class="caption">מצב המשמרות</span><div class="seg"><button aria-pressed="${!planned}" data-plan="false" data-testid="history-worked">עבדתי</button><button aria-pressed="${planned}" data-plan="true" data-testid="history-planned">מתוכנן · ${plannedCount}</button></div>
-        ${planned ? '' : `<div><b class="label" style="font-size:15px">אילו תאריכים להציג</b></div>${seg('period', PERIODS, 'period')}
+        ${planned ? '' : `<div><b class="label" style="font-size:0.9375rem">אילו תאריכים להציג</b></div>${seg('period', PERIODS, 'period')}
         ${f.period === 'MONTH' ? `<div class="row" style="align-items:center"><b class="grow">${esc(U().monthName(f.month))}</b><button class="icon-btn" aria-label="חודש קודם" data-m="-1">${U().ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-m="1">${U().ICON.next}</button></div>` : ''}
         ${f.period === 'RANGE' ? `<div class="row"><label class="field grow">מתאריך<input type="date" class="input" data-d="from" value="${iso(f.from)}"></label><label class="field grow">עד תאריך<input type="date" class="input" data-d="to" value="${iso(f.to)}"></label></div>` : ''}
-        <div class="divider"></div><div><b class="label" style="font-size:15px">סדר</b></div>${seg('sort', SORTS, 'sort')}
-        <div class="divider"></div><div><b class="label" style="font-size:15px">סינון</b></div>
+        <div class="divider"></div><div><b class="label" style="font-size:0.9375rem">סדר</b></div>${seg('sort', SORTS, 'sort')}
+        <div class="divider"></div><div><b class="label" style="font-size:0.9375rem">סינון</b></div>
         <span class="caption">תשלום</span>${seg('pay', PAYS, 'pay')}
         <span class="caption">מקום עבודה</span><div class="chips"><button class="chip" aria-pressed="${!f.category}" data-c="">הכול</button>${store.data.categories.map(c => `<button class="chip" aria-pressed="${f.category === c.name}" data-c="${esc(c.name)}">${esc(c.name)}</button>`).join('')}</div>
         <span class="caption">מטבע</span>${seg('currency', [[null, 'הכול'], ['₪', '₪ שקל'], ['$', '$ דולר']], 'currency')}`}
