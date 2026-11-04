@@ -42,9 +42,18 @@ data class KisColors(
     val edit: Color, val editInk: Color, val nav: Color, val navInk: Color, val navOn: Color, val navOnInk: Color,
     /** Floating bars and messages: dark in both themes (never a white slab in dark mode). */
     val bar: Color, val onBar: Color,
+    /** M-28 (Kis 2): the edge that is a control's only mark (outline button, field, off switch); [line] is for dividers. */
+    val lineStrong: Color,
+    /** Brand (+ button, glow, focus, message action). Never a workplace colour. */
+    val accent: Color, val accentInk: Color, val barAction: Color,
+    /** Text on a filled danger or paid surface. */
+    val onDanger: Color, val onPaid: Color,
 ) {
     /** Text/icon colour on an ink (primary action) surface. */
     val onInk get() = bg
+    /** A switch that is on is ink, not the money green; its thumb is the page colour. */
+    val controlOn get() = ink
+    val controlKnob get() = if (dark) bg else Color.White
 }
 
 // Light (2.0.8): ink is a deep navy, not black, and the page a softer grey-blue, so text keeps its contrast (about 15:1 on
@@ -52,19 +61,23 @@ data class KisColors(
 val KisLight = KisColors(
     dark = false,
     bg = Color(0xFFF1F3F8), surface = Color.White, sunk = Color(0xFFE4E8F0), ink = Color(0xFF1B2335), muted = Color(0xFF5A6478), line = Color(0xFFD2D8E3),
-    pending = Color(0xFF9A5000), pendingSoft = Color(0xFFFFEBC7), paid = Color(0xFF0B7F60), danger = Color(0xFFC2362B),
+    pending = Color(0xFF9A5201), pendingSoft = Color(0xFFFFEBC7), paid = Color(0xFF007453), danger = Color(0xFFBD2F28),
     // Light floating surfaces are frosted glass (translucent white, hairline edge, soft shadow), not black slabs.
     edit = Color(0xFF1B2335), editInk = Color.White, nav = Color(0xE6FFFFFF), navInk = Color(0xFF465066), navOn = Color(0xFF1B2335), navOnInk = Color.White,
     bar = Color(0xF2FFFFFF), onBar = Color(0xFF1B2335),
+    lineStrong = Color(0xFF778093), accent = Color(0xFF5145E8), accentInk = Color.White, barAction = Color(0xFF5145E8),
+    onDanger = Color.White, onPaid = Color.White,
 )
 
 val KisDark = KisColors(
     dark = true,
     // 2.3.0 (approved choice B): a very dark blue-black instead of neutral grey; text contrast kept (muted on surface > 9:1).
     bg = Color(0xFF0F1216), surface = Color(0xFF181B20), sunk = Color(0xFF282C34), ink = Color(0xFFEDF0F6), muted = Color(0xFFB3B9C5), line = Color(0xFF32373F),
-    pending = Color(0xFFFFC266), pendingSoft = Color(0xFF3A2D12), paid = Color(0xFF34C79A), danger = Color(0xFFFF8A7A),
-    edit = Color(0xFF282C34), editInk = Color(0xFFEDF0F6), nav = Color(0xFF1B1F25), navInk = Color(0xFFB3B9C5), navOn = Color(0xFFEDF0F6), navOnInk = Color(0xFF0F1216),
+    pending = Color(0xFFF6B75C), pendingSoft = Color(0xFF3E2B0F), paid = Color(0xFF45D09E), danger = Color(0xFFFF9183),
+    edit = Color(0xFF282C34), editInk = Color(0xFFEDF0F6), nav = Color(0xEB21252B), navInk = Color(0xFFB3B9C5), navOn = Color(0xFFEDF0F6), navOnInk = Color(0xFF0F1216),
     bar = Color(0xFF2D323A), onBar = Color(0xFFEDF0F6),
+    lineStrong = Color(0xFF717681), accent = Color(0xFF9398FF), accentInk = Color(0xFF15153A), barAction = Color(0xFFB0B7FF),
+    onDanger = Color(0xFF2B0E0B), onPaid = Color(0xFF011C11),
 )
 
 /** The 8 fixed workplace colours. Blocks run from [from] (amount side) to the darker [to] (name side). */
@@ -76,15 +89,17 @@ data class Workplace(val name: String, val from: Color, val to: Color, val on: C
     fun accentInk(dark: Boolean) = if (dark) accentDarkInk else on
 }
 
+// M-28 (Kis 2): same order and names, so a saved colour index stays valid; each colour moves inside its own hue so the
+// close pairs (indigo/purple, rose/burgundy) stay apart for colour-blind people, and indigo is no longer the brand colour.
 val Workplaces = listOf(
-    Workplace("אינדיגו", Color(0xFF5145E8), Color(0xFF1E1873), Color.White, Color(0xFF8F87FF), Color(0xFF120F3A)),
-    Workplace("ירוק", Color(0xFF0E8059), Color(0xFF073D2C), Color.White, Color(0xFF3DDC97), Color(0xFF03140E)),
-    Workplace("ורד", Color(0xFFD6336C), Color(0xFF5C1230), Color.White, Color(0xFFFF6B9A), Color(0xFF2E0A18)),
-    Workplace("חרדל", Color(0xFFF5B82E), Color(0xFFC98A10), Color(0xFF1A1200), Color(0xFFFFC94D), Color(0xFF2A1C00)),
-    Workplace("סגול", Color(0xFF7D3CF0), Color(0xFF2E1466), Color.White, Color(0xFFB48CFF), Color(0xFF1E0B3D)),
-    Workplace("תכלת", Color(0xFF1F72E0), Color(0xFF0C2F66), Color.White, Color(0xFF5AA9FF), Color(0xFF06203F)),
-    Workplace("טורקיז", Color(0xFF0E8A86), Color(0xFF063B3A), Color.White, Color(0xFF3CD3CB), Color(0xFF04201F)),
-    Workplace("בורדו", Color(0xFFB5294E), Color(0xFF4A0F21), Color.White, Color(0xFFFF6F8E), Color(0xFF2E0812)),
+    Workplace("אינדיגו", Color(0xFF393ECA), Color(0xFF150A6B), Color.White, Color(0xFF7D9BFF), Color(0xFF0E142A)),
+    Workplace("ירוק", Color(0xFF117D15), Color(0xFF013E03), Color.White, Color(0xFF44E994), Color(0xFF021C0D)),
+    Workplace("ורד", Color(0xFFC50E70), Color(0xFF690039), Color.White, Color(0xFFFA74A5), Color(0xFF260C16)),
+    Workplace("חרדל", Color(0xFFF5B82E), Color(0xFFD18F1F), Color(0xFF1A1200), Color(0xFFFFC732), Color(0xFF1E1400)),
+    Workplace("סגול", Color(0xFF9F4AE4), Color(0xFF5B2187), Color.White, Color(0xFFC874C8), Color(0xFF200E21)),
+    Workplace("תכלת", Color(0xFF0777A9), Color(0xFF003D59), Color.White, Color(0xFF8BC7FE), Color(0xFF031729)),
+    Workplace("טורקיז", Color(0xFF065E63), Color(0xFF012527), Color.White, Color(0xFF18AFA4), Color(0xFF001B19)),
+    Workplace("בורדו", Color(0xFF8B032A), Color(0xFF33000A), Color.White, Color(0xFFF05963), Color(0xFF270C0D)),
 )
 
 // ---- Type ----
@@ -240,17 +255,17 @@ fun KisTheme(settings: KisSettings = rememberKisSettings(), darkOverride: Boolea
     val scheme = if (dark) darkColorScheme(
         primary = c.ink, onPrimary = c.bg, primaryContainer = c.sunk, onPrimaryContainer = c.ink,
         secondary = c.muted, onSecondary = c.bg, secondaryContainer = c.sunk, onSecondaryContainer = c.ink,
-        tertiary = Workplaces[0].accentDark, background = c.bg, onBackground = c.ink, surface = c.surface, onSurface = c.ink,
+        tertiary = c.accent, background = c.bg, onBackground = c.ink, surface = c.surface, onSurface = c.ink,
         surfaceVariant = c.sunk, onSurfaceVariant = c.muted, surfaceTint = Color.Transparent, outline = c.line, outlineVariant = c.line,
-        error = c.danger, onError = c.bg, inverseSurface = c.ink, inverseOnSurface = c.bg,
+        error = c.danger, onError = c.onDanger, inverseSurface = c.ink, inverseOnSurface = c.bg,
         surfaceContainerLowest = c.bg, surfaceContainerLow = c.surface, surfaceContainer = c.surface, surfaceContainerHigh = c.surface, surfaceContainerHighest = c.sunk,
         surfaceBright = c.sunk, surfaceDim = c.bg, scrim = Color.Black,
     ) else lightColorScheme(
         primary = c.ink, onPrimary = c.bg, primaryContainer = c.sunk, onPrimaryContainer = c.ink,
         secondary = c.muted, onSecondary = c.bg, secondaryContainer = c.sunk, onSecondaryContainer = c.ink,
-        tertiary = Workplaces[0].from, background = c.bg, onBackground = c.ink, surface = c.surface, onSurface = c.ink,
+        tertiary = c.accent, background = c.bg, onBackground = c.ink, surface = c.surface, onSurface = c.ink,
         surfaceVariant = c.sunk, onSurfaceVariant = c.muted, surfaceTint = Color.Transparent, outline = c.line, outlineVariant = c.line,
-        error = c.danger, onError = Color.White, inverseSurface = c.ink, inverseOnSurface = c.bg,
+        error = c.danger, onError = c.onDanger, inverseSurface = c.ink, inverseOnSurface = c.bg,
         surfaceContainerLowest = Color.White, surfaceContainerLow = c.surface, surfaceContainer = c.surface, surfaceContainerHigh = c.surface, surfaceContainerHighest = c.sunk,
         surfaceBright = c.surface, surfaceDim = c.sunk, scrim = Color.Black,
     )
