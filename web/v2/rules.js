@@ -245,7 +245,23 @@ function bulkRate(records, rate) {
  return { updated: targets.map(r => ({ id: r.id, total: money(r.hours ?? recordMinutes(r) / 60, rate, r.bonus ?? 0) })), skipped: records.length - targets.length };
 }
 
+// ---- Retroactive rate change (FB-08) ----
+
+/**
+ * A workplace's rate changed and the person turned on "שינוי רטרואקטיבי": the new amounts of its existing shifts that are
+ * still unpaid, with the same money function as every new amount (hours × rate + bonus, once, half up, whole agorot).
+ * Only a plain shift of that place, unpaid, with a known rate equal to the place's previous rate and in the place's
+ * currency changes. Paid shifts, shifts with a rate of their own, shifts still without a rate, fixed-price jobs and team
+ * shifts (whose workers' pay follows the shift rate) never change. Returns [{id, total}] (only rows whose rate changes).
+ */
+function retroRate(entries, place, oldRate, newRate, currency) {
+ if (!Number.isFinite(newRate) || newRate < 0 || newRate === oldRate) return [];
+ return entries.filter(e => e.category === place && e.isPaid !== true && e.payKnown !== false && (e.kind ?? 'shift') !== 'job' && !e.isGroupShift
+   && e.hourlyRate === oldRate && e.currency === currency)
+  .map(e => ({ id: e.id, total: money(e.hours, newRate, Number(e.bonus ?? 0) || 0) }));
+}
+
 const api = { LONG_SHIFT_MINUTES, MODES, BONUS_TARGETS, toIntOrNull, toDoubleOrNull, inputNumber, toMinutes, isTime, fromMinutes, roundedEnd, round2, money, span,
- evaluate, quietDelay, daysFromCivil, civilFromDays, weekday, seriesDates, recordMinutes, bulkRate };
+ evaluate, quietDelay, daysFromCivil, civilFromDays, weekday, seriesDates, recordMinutes, bulkRate, retroRate };
 if (typeof module !== 'undefined') module.exports = api; else root.KisRules = api;
 })(globalThis);
