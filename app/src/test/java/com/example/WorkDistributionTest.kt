@@ -52,7 +52,7 @@ class WorkDistributionTest {
             assertEquals(expected, dao.getEntriesList())
             val backup = dao.exportSnapshot()
             val decoded = WorkBackup.decode(backup)
-            assertEquals(0, dao.importBackup(decoded))
+            assertEquals(0, dao.importBackup(decoded).added)
             db.close(); db = open()
             assertEquals(expected, db.workDao().getEntriesList())
             assertEquals("$", db.workDao().getLocalPreferences().first { it.name == "default_currency" }.value)

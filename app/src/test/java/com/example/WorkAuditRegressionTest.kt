@@ -80,12 +80,12 @@ class WorkAuditRegressionTest {
         val incoming = row(" work ")
         val backup = WorkBackup.Contents(listOf(WorkCategory(name = "WORK")), listOf(incoming), emptyList(),
             mapOf("defaultCategory" to " work ", "categoryCurrency:WORK" to "$"))
-        assertEquals(1, dao.importBackup(backup))
+        assertEquals(1, dao.importBackup(backup).added)
         val imported = dao.getEntriesList().single()
         assertEquals(incoming.copy(id = imported.id, category = "Work"), imported)
         assertEquals(mapOf("defaultCategory" to "Work", "categoryCurrency:Work" to "$"),
             dao.getLocalPreferences().associate { it.name to it.value })
-        assertEquals(0, dao.importBackup(backup))
+        assertEquals(0, dao.importBackup(backup).added)
         assertEquals(2, dao.getCategoriesList().size)
         val work = dao.getCategoriesList().first { it.id == workId }
         assertEquals(44.0, work.defaultRate, 0.0)
@@ -93,15 +93,44 @@ class WorkAuditRegressionTest {
         assertEquals(imported.copy(category = "עצמאי"), dao.getEntriesList().single())
     }
 
+    @Test fun importCountsOnlyInsertedRowsAndPreservesExistingSeriesAmounts() = runBlocking {
+        val db = database()
+        val dao = db.workDao()
+        val original = row().copy(seriesKey = "synthetic-plan@2026-10-01")
+        val backup = WorkBackup.Contents(emptyList(), listOf(original), emptyList())
+        assertEquals(WorkDao.ImportResult(1, 0), dao.importBackup(backup))
+        val before = dao.getEntriesList()
+        val journal = db.syncDao().pending()
+
+        assertEquals(WorkDao.ImportResult(0, 1), dao.importBackup(backup))
+        assertEquals(before, dao.getEntriesList())
+        assertEquals(journal, db.syncDao().pending())
+
+        val conflict = original.copy(hours = 5.0, totalEarnings = 200.0)
+        val conflictingBackup = backup.copy(entries = listOf(conflict))
+        assertEquals(WorkDao.ImportResult(0, 1), dao.importBackup(conflictingBackup))
+        assertEquals(before, dao.getEntriesList())
+        assertEquals(journal, db.syncDao().pending())
+
+        val fresh = row().copy(notes = "new synthetic shift")
+        val mixedBackup = backup.copy(entries = listOf(original, conflict, fresh))
+        assertEquals(WorkDao.ImportResult(1, 2), dao.importBackup(mixedBackup))
+        assertEquals(before.single(), dao.getEntryById(before.single().id))
+        assertEquals(2, dao.getEntriesList().size)
+        val after = dao.getEntriesList()
+        assertEquals(WorkDao.ImportResult(0, 3), dao.importBackup(mixedBackup))
+        assertEquals(after, dao.getEntriesList())
+    }
+
     @Test fun entryOnlyImportCanonicalizesNewCategoryAndKeepsExistingCurrencyPreference() = runBlocking {
         val dao = database().workDao()
         dao.setLocalPreference(WorkLocalPreference("categoryCurrency:Fresh", "₪"))
         val backup = WorkBackup.Contents(emptyList(), listOf(row(" Fresh "), row("fresh").copy(notes="second")), emptyList(),
             mapOf("categoryCurrency: FRESH " to "$"))
-        assertEquals(2, dao.importBackup(backup))
+        assertEquals(2, dao.importBackup(backup).added)
         assertEquals(setOf("Fresh"), dao.getEntriesList().map { it.category }.toSet())
         assertEquals("₪", dao.getLocalPreferences().single().value)
-        assertEquals(0, dao.importBackup(backup))
+        assertEquals(0, dao.importBackup(backup).added)
     }
     @Test fun failedBatchRollsBackEarlierRowsAndSyncJournal() = runBlocking {
         val db = database(); val dao = db.workDao()

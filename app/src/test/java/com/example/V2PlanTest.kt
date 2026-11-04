@@ -153,7 +153,7 @@ class V2PlanTest {
             val back = WorkBackup.decode(text)
             assertEquals(dao.getSeries(), back.series); assertEquals(dao.getExceptions(), back.exceptions)
             // Importing the same backup again adds nothing.
-            assertEquals(0, dao.importBackup(back)); assertEquals(1, dao.getSeries().size); assertEquals(1, dao.getExceptions().size)
+            assertEquals(0, dao.importBackup(back).added); assertEquals(1, dao.getSeries().size); assertEquals(1, dao.getExceptions().size)
             // Deleting the workplace moves its plan to the remaining one; nothing is deleted.
             dao.insertCategory(com.example.data.WorkCategory(name = "אחר", defaultRate = 40.0))
             dao.removeCategorySafely(dao.getCategoryByName("מסעדה")!!)

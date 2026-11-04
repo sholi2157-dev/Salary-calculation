@@ -1289,9 +1289,10 @@ class WorkViewModel(
             .setPositiveButton("שמירת הנתונים") { _, _ ->
                 viewModelScope.launch {
                     try {
-                        val added = repository.importBackup(backup)
+                        val result = repository.importBackup(backup)
                         performAutoBackup()
-                        com.example.ui.kis.KisNotices.post("נוספו $added משמרות")
+                        com.example.ui.kis.KisNotices.post("נוספו ${result.added} משמרות" +
+                            if (result.skipped > 0) " · דולגו ${result.skipped}" else "")
                     } catch (e: Exception) {
                         android.util.Log.e("WorkViewModel", "Import failed", e)
                         com.example.ui.kis.KisNotices.post("הייבוא לא הושלם. הנתונים הקיימים נשמרו.")
