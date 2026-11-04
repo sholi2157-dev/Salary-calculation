@@ -71,6 +71,8 @@ async function until(fn, what, ms = 15000) { const end = Date.now() + ms; for (;
     await A.waitForSelector(tid('signin'), { state: 'detached' });
     assert.deepEqual(await entries(A), [{ notes: '', total: 201.25 }, { notes: 'ראשונה', total: 322 }], 'nothing lost or changed');
     await A.click(tid('tab-settings')); await until(async () => /מסונכרן/.test(await A.textContent(tid('account-status'))), 'first sync');
+    // A phone's Settings opens as a list of categories (M-31): the account's controls are inside "חשבון".
+    await A.click(tid('settings-open-חשבון'));
     await A.screenshot({ path: path.join(OUT, 'account-settings-390.png') });
 
     // 2. A second browser of the same account, empty before: everything arrives, amounts exact.

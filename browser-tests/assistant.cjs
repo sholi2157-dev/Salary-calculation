@@ -88,6 +88,8 @@ const env = { MCP_SECRET: 'synthetic-test-secret-' + 'q'.repeat(32), FIRESTORE_E
     assert.ok(!r.result.isError, r.result.content[0].text);
     await until(async () => page.evaluate(() => window.Kis.store.data.entries.some(e => e.notes === 'מהעוזר' && e.totalEarnings === 161)), 'the assistant\'s shift arrives by itself');
     // Settings → assistants: the connection, its permission and its action.
+    // A phone's Settings opens as a list of categories (M-31): the account's controls are inside "חשבון".
+    await page.click(tid('settings-open-חשבון'));
     await page.click(tid('account-assistants')); await page.waitForSelector(tid('assistant-cut'));
     assert.match(await page.textContent(tid('assistants-sheet')), /ChatGPT[\s\S]*קריאה · הוספה/);
     await page.screenshot({ path: path.join(OUT, 'assistants-390.png') });
