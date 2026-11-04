@@ -82,8 +82,11 @@ fun subtitle(e: WorkEntry): String {
 @Composable
 fun PendingFlag(count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val c = Kis.colors
-    Row(modifier.clip(RoundedCornerShape(99.dp)).background(c.pendingSoft).kisClick(onClick = onClick).testTag("pending_flag")
-        .padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(if (count == 1) "משמרת אחת מחכה לתעריף ←" else "$count משמרות מחכות לתעריף ←", style = KisType.label, color = c.pending, fontWeight = FontWeight.SemiBold)
+    // M-46 (R-28): a full-width row like everything around it, not a half-width pill on one side.
+    Row(modifier.fillMaxWidth().heightIn(min = KisMinTouch).clip(RoundedCornerShape(16.dp)).background(c.pendingSoft).kisClick(onClick = onClick).testTag("pending_flag")
+        .padding(horizontal = 14.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(if (count == 1) "משמרת אחת מחכה לתעריף" else "$count משמרות מחכות לתעריף", style = KisType.label, color = c.pending, fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f, fill = false))
+        Text("←", style = KisType.label, color = c.pending, fontWeight = FontWeight.SemiBold)
     }
 }

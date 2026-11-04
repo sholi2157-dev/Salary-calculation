@@ -411,7 +411,8 @@ fun KisEditorPage(
                         Text("הפסקה", style = KisType.label, color = c.ink)
                         val quick = listOf(0, 15, 30, 45, 60)
                         val custom = d.breakMin !in quick
-                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // M-46 (R-33): the break chips wrap onto a second line instead of being cut at the edge.
+                        FlowRowCompat {
                             quick.forEach { m ->
                                 KisChip(if (m == 0) "ללא" else "$m דק׳", selected = d.breakMin == m && !(pad && target == KeyTarget.BREAK), tag = "break_$m", minHeight = KisMinTouch, onClick = {
                                     if (pad && target == KeyTarget.BREAK) { buf = ""; done() }
