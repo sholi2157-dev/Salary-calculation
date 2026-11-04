@@ -119,7 +119,10 @@ function bindLive(el, app, t) {
   };
   draw(); tick = setInterval(() => { if (!clock.isConnected) clearInterval(tick); else draw(); }, 1000);
   el.querySelector('[data-act=stop]').onclick = () => app.stopLive();
-  el.querySelector('[data-act=cancel]').onclick = () => U().confirmSheet('לבטל את המשמרת הפעילה?', 'הזמן שנצבר לא יישמר.', 'לבטל בלי לשמור', () => app.cancelLive());
+  el.querySelector('[data-act=cancel]').onclick = () => {
+    const id = app.store.timer()?.id;
+    U().confirmSheet('לבטל את המשמרת הפעילה?', 'הזמן שנצבר לא יישמר.', 'לבטל בלי לשמור', () => app.cancelLive(id));
+  };
 }
 
 root.KisHome = { render, weekStart, sortedTotals, totalsOf, liveMoney };
