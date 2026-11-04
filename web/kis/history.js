@@ -130,8 +130,14 @@ function bindSelection(el, app, sel, redraw) {
   b('all').onclick = () => { const rows = [...el.querySelectorAll('.shift[data-id]')].map(x => x.dataset.id); if (sel.length === rows.length) state.selection.clear(); else state.selection = new Set(rows); redraw(); };
   b('share').onclick = () => { U().shareOrCopy(root.KisShare.summary(sel, root.KisShare.workerName(sel, state.query)), 'שיתוף משמרות'); clear(); };
   b('copy').onclick = async () => { const text = root.KisShare.copy(sel, root.KisShare.workerName(sel, state.query)); if (await U().copy(text)) U().toast('הועתק ✓ · מוכן להדבקה בוואטסאפ'); else U().showText(text); clear(); };
-  b('paid').onclick = () => { store.setPaid(ids, true); U().toast('סומן כשולם ✓'); clear(); };
-  b('unpaid').onclick = () => { store.setPaid(ids, false); U().toast('סומן כלא שולם'); clear(); };
+  // M-37: the same message with undo as a single change; undo gives each shift back its own previous mark.
+  const paid = value => () => {
+    const was = Object.fromEntries(store.data.entries.filter(e => ids.includes(e.id)).map(e => [e.id, e.isPaid === true]));
+    store.setPaid(ids, value); clear();
+    U().toast(value ? 'סומן כשולם ✓' : 'סומן כלא שולם', 'ביטול', () => { store.restorePaid(was); app.refresh(); });
+  };
+  b('paid').onclick = paid(true);
+  b('unpaid').onclick = paid(false);
   b('rate')?.addEventListener('click', () => bulkRate(app, redraw));
   b('delete').onclick = () => U().confirmSheet(sel.length === 1 ? 'למחוק משמרת אחת?' : `למחוק ${sel.length} משמרות?`, 'אפשר לבטל מיד אחרי המחיקה.', 'מחיקה', () => {
     const gone = store.deleteEntries(ids); state.selection.clear(); U().haptic('warn');

@@ -178,6 +178,8 @@ function createStore(storage, { now = () => Date.now() } = {}) {
   }
   function markPlanDays(keys, skipped) { if (keys.length) transact(n => markDays(n.plans, keys, skipped)); }
   function setPaid(ids, paid) { update(d => d.entries.forEach(e => { if (ids.includes(e.id)) e.isPaid = paid; })); }
+  /** Undo of a bulk paid change (M-37): each shift gets back its own previous mark, in one commit. was = {id: isPaid}. */
+  function restorePaid(was) { update(d => d.entries.forEach(e => { if (Object.prototype.hasOwnProperty.call(was, e.id)) e.isPaid = was[e.id] === true; })); }
 
   // ---- timer ----
   function timer() { try { return root.WorkRuntime.readTimer(storage, null); } catch { return null; } }
@@ -189,7 +191,7 @@ function createStore(storage, { now = () => Date.now() } = {}) {
   function exception(seriesId, date, over = {}) { return { seriesId, date, cancelled: false, hold: false, startTime: null, endTime: null, rateOverridden: false, hourlyRate: null, ...over }; }
 
   return {
-    load, update, updatePlans, transact, restoreDamaged, setLocal, addEntries, replaceEntry, deleteEntries, restoreEntries, markPlanDays, setPaid,
+    load, update, updatePlans, transact, restoreDamaged, setLocal, addEntries, replaceEntry, deleteEntries, restoreEntries, markPlanDays, setPaid, restorePaid,
     timer, startTimer, cancelTimer, restoreTimer, exception, uid,
     get data() { return data; }, get plans() { return plans; }, get local() { return local; }, get broken() { return broken; },
     /** The plans file could not be read; it is kept untouched (rawPlans) and plan changes are refused until it is restored. */
