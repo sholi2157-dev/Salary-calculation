@@ -69,7 +69,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     // Kept here, not in the form, so folding the form keeps the draft.
     var feedbackText by rememberSaveable { mutableStateOf("") }
-    var feedbackImage by rememberSaveable { mutableStateOf<String?>(null) }
+    var feedbackContact by rememberSaveable { mutableStateOf("") }
     // Not saveable: a pasted backup can be far larger than what Android may keep in saved state.
     var importText by remember { mutableStateOf("") }
     val hasKey = remember(aiSheet) { runCatching { PersonalAiKey.read(context, viewModel.owner.uid).isNotBlank() }.getOrDefault(false) }
@@ -112,17 +112,14 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             // First, so a problem can be reported without scrolling past everything else. The form unfolds in place:
             // inside a bottom sheet its multi-line field never let the device settle after Enter.
             if (open == null) Spacer(Modifier.height(14.dp))
-            Group(nav, "משוב ותקלות", "דיווח על תקלה או הצעה לשיפור, עם צילום מסך אם רוצים.") {
+            Group(nav, "משוב ותקלות", "דיווח על תקלה או הצעה לשיפור.") {
                 Row_("דיווח על תקלה או הצעה", null, tag = "feedback_row", onClick = { focusManager.clearFocus(force = true); feedbackOpen = !feedbackOpen }) {
                     Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted,
                         modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = if (feedbackOpen) -90f else 0f })
                 }
                 if (feedbackOpen) Box(Modifier.padding(bottom = 10.dp)) {
-                    FeedbackForm(feedbackText, { feedbackText = it }, feedbackImage, { feedbackImage = it }, state = {
-                        mapOf("page" to "settings", "theme" to settings.theme.key, "haptics" to settings.haptics, "accounts" to BuildConfig.ACCOUNTS_ENABLED,
-                            "signedIn" to (viewModel.owner.uid != null), "entries" to viewModel.entries.value.size, "categories" to categories.size,
-                            "weeklySeries" to series.size, "personalAiKey" to hasKey)
-                    }, onSent = { focusManager.clearFocus(force = true); feedbackOpen = false })
+                    FeedbackForm(feedbackText, { feedbackText = it }, feedbackContact, { feedbackContact = it },
+                        onSent = { focusManager.clearFocus(force = true); feedbackOpen = false })
                 }
             }
             Group(nav, "עבודה", "מקומות העבודה והתעריפים, המטבע ומשמרות קבועות.", Modifier.coachTarget(CoachTarget.CATEGORIES)) {

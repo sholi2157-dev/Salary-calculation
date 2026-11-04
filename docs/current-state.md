@@ -1,3 +1,14 @@
+# Android feedback routing review — 2026-11-03
+
+Task branch `work/codex-feedback-dest-android`, baseline `fa811e6`. Android feedback
+uses the existing Apps Script relay and mail draft fallback, now with a small JSON
+payload and the requested assistant inbox. Android-only relay route/config source
+is prepared; **existing Apps Script deployment must be updated before rollout**.
+No deployment, push, merge, website client change, version change or APK delivery.
+Evidence, exact owner configuration, test results and remaining gates:
+`docs/android-feedback-destination.md`. Node relay contract tests, npm build and
+npm tests pass; Android tests cannot run here because Java/Gradle are absent.
+
 # Android 2.0.8 and the website published — 2026-10-25
 
 Branch `claude/project-thread-cudbls` (includes the job team from `claude/project-thread-l42q3d`); website

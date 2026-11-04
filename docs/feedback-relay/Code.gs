@@ -13,6 +13,8 @@ function doPost(e) {
     const report = JSON.parse(raw);
     if (report.token !== TOKEN) return reply_(false, 'token');
     if (!underDailyLimit_()) return reply_(false, 'limit');
+    // Android has its own recipient and strict payload; the website path below stays unchanged.
+    if (report.app && report.app.platform === 'android') return androidFeedback_(report);
 
     const shot = report.screenshot;       // { name, mime, base64 } או null
     delete report.screenshot;
@@ -71,4 +73,27 @@ function testSend() {
     token: TOKEN, kind: 'בדיקה', message: 'מייל בדיקה מהממסר', app: { platform: 'test', version: '0' }, events: []
   }) } };
   Logger.log(doPost(fake).getContent());
+}
+
+// Set the Script Property ANDROID_FEEDBACK_TO on the existing deployment (no new secret/provider).
+const ANDROID_FEEDBACK_DEFAULT_TO = 'israelshimon1313-vzptcg@mail.grokbot.com';
+function androidFeedback_(input) {
+  const clean = (value, max) => String(value || '').replace(/[\x00-\x09\x0b-\x1f\x7f-\x9f\p{Cf}]/gu, '').slice(0, max);
+  // Validate before sending; never attach the raw request, logs, screenshot or transport token.
+  if (input.schema !== 'android-feedback-v1' || typeof input.message !== 'string' ||
+      input.message.length > 4000 || !clean(input.message, 4000).trim() ||
+      !Number.isSafeInteger(input.sentAt) || !Number.isSafeInteger(input.app.code)) return reply_(false, 'payload');
+  const report = {
+    schema: 'android-feedback-v1', kind: clean(input.kind, 20).replace(/\n/g, ''),
+    message: clean(input.message, 4000).trim(), sentAt: input.sentAt,
+    screen: 'settings/feedback', language: clean(input.language, 40).replace(/\n/g, ''),
+    app: {platform: 'android', version: clean(input.app.version, 80), code: input.app.code,
+      buildType: clean(input.app.buildType, 40)}
+  };
+  const contact = clean(input.contactEmail, 254).replace(/\n/g, '').trim();
+  if (contact) report.contactEmail = contact; // Body only: never a recipient, header or replyTo.
+  const to = PropertiesService.getScriptProperties().getProperty('ANDROID_FEEDBACK_TO') || ANDROID_FEEDBACK_DEFAULT_TO;
+  if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(to)) return reply_(false, 'config');
+  MailApp.sendEmail({to: to, subject: 'Android feedback', body: JSON.stringify(report, null, 2)});
+  return reply_(true);
 }

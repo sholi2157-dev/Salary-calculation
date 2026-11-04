@@ -1,5 +1,14 @@
 # Feedback relay (Google Apps Script)
 
+Android routing update (2026-11-03): see `docs/android-feedback-destination.md` for
+required deployment/configuration, privacy schema, tests and limits. Android now
+uses `ANDROID_FEEDBACK_TO` (Script Property), default
+`israelshimon1313-vzptcg@mail.grokbot.com`; no new secrets. Its JSON body excludes
+state, device information, logs, screenshots and transport token. The description
+below records the existing website/legacy behavior, which this task does not change.
+
+## Existing website/legacy route
+
 "משוב ותקלות" is the first section of Settings. Its row unfolds the form in place; "שליחה" POSTs one JSON report to a
 Google Apps Script web app deployed from the owner's Google account, which mails it to
 `sholi2157+salaryfeedback@gmail.com` with the report as a `.json` attachment and the optional screenshot as an image.
