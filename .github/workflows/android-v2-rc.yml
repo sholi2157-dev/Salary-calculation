@@ -43,9 +43,12 @@ jobs:
         run: >-
           gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
           --tests 'com.example.NotificationJobs*Test' --tests 'com.example.GeminiCurrency*Test'
+          --tests 'com.example.ExampleUnitTest' --tests 'com.example.KisNoticesTest' --tests 'com.example.KisTimeRangeTest'
+          --tests 'com.example.ExampleRobolectricTest' --tests 'com.example.GreetingScreenshotTest'
           --tests 'com.example.KisUiTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.OnboardingExperienceTest'
           :app:testReleaseUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
           --tests 'com.example.NotificationJobs*Test' --tests 'com.example.GeminiCurrency*Test'
+          --tests 'com.example.ExampleUnitTest' --tests 'com.example.KisNoticesTest' --tests 'com.example.KisTimeRangeTest'
           -Proborazzi.test.record=true --console=plain
       - name: Count actual Android test results
         run: python3 scripts/summarize-android-tests.py
