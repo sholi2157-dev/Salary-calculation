@@ -54,7 +54,7 @@ function decodeTable(input) {
  const entries=rows.slice(1).map((row,i)=>{try{
   check(row.length===header.length,'מספר העמודות אינו תואם לכותרות');const cell=k=>clean(row[columns[k]]);
   check(cell('category'),'חסרה קטגוריה');const duration=cell('hours');let hours;
-  if(/^\d+:\d{2}$/.test(duration)){const p=duration.split(':').map(Number);check(p[1]<60,'דקות לא תקינות');hours=p[0]+p[1]/60;}else hours=number(duration);
+  if(/^\d+:\d{2}(?::\d{2})?$/.test(duration)){const p=duration.split(':').map(Number);check(p[1]<60&&(p[2]??0)<60,'דקות לא תקינות');hours=(p[0]*3600+p[1]*60+(p[2]??0))/3600;}else hours=number(duration);
   const job=['קבלנות','job'].includes(cell('kind')), modern=columns.kind>=0;
   const bonus=cell('bonus')?number(cell('bonus')):0;
   const payKnown=!modern || (job?!!cell('total'):!!cell('rate')||!!cell('total'));
@@ -66,7 +66,8 @@ function decodeTable(input) {
   const timestamp=date(cell('date'));
   return normalize({category:cell('category'),date:timestamp,createdAt:timestamp,hours,hourlyRate:rate,totalEarnings:total,isPaid:yes.includes(status),notes:cell('notes'),currency:currencies[0]||'₪',startTime:start,endTime:end,isTimeRange:Boolean(start),kind:job?'job':'shift',payKnown,bonus:job?0:bonus});
  }catch(e){throw Error(`שורה ${i+2}: ${e.message}`);}});
- return {formatVersion:2,entries,categories:[...new Map(entries.map(e=>[e.category,{name:e.category,defaultRate:e.hourlyRate}])).values()],workers:[]};
+ // fromTable: a table (CSV/Excel) is not a backup (D-13); duplicates are found with tableKey, see missing().
+ return {formatVersion:2,entries,categories:[...new Map(entries.map(e=>[e.category,{name:e.category,defaultRate:e.hourlyRate}])).values()],workers:[],fromTable:true};
 }
 // ---- 2.0 (backup formatVersion 3), ported from the Android data/WorkBackup.kt ----
 // Android org.json reading rules for the 2.0 fields: optBoolean accepts true/false (or "true"/"false"),
@@ -150,8 +151,18 @@ function decode(text){
  const v3=needsVersion3(entries)||series.length>0||exceptions.length>0;
  return {formatVersion:v3?3:2,entries,categories,workers,...(root.webPreferences?{webPreferences:root.webPreferences}:root.androidLocalPreferences?{webPreferences:androidPreferences(root.androidLocalPreferences)}:{}),...(v3?{series,exceptions}:{})};
 }
-function missing(existing,incoming){
- const signature=e=>JSON.stringify({...normalize(e),createdAt:0});const counts=new Map();
+/*
+ * A table row keeps only what the table shows (D-13, audit M-43): the place, the local day, the clock times, the exact
+ * duration in whole seconds, the currency, shift or job, and the saved amount in agorot (or unknown). Notes and the paid
+ * status may have been edited in Excel; they do not make the same shift new. A group or job shift exported as a row
+ * matches its own entry here.
+ */
+function tableKey(e){const d=new Date(e.date),job=(e.kind??KIND_SHIFT)===KIND_JOB,known=e.payKnown!==false;
+ return JSON.stringify([clean(e.category),d.getFullYear(),d.getMonth(),d.getDate(),clean(e.startTime),clean(e.endTime),
+  Math.round((Number(e.hours)||0)*3600),e.currency??'₪',job,known?Math.round((Number(e.totalEarnings)||0)*100):null]);}
+/** The incoming entries not already here. {table:true} for rows read from a table (decode(...).fromTable). */
+function missing(existing,incoming,{table=false}={}){
+ const signature=table?tableKey:e=>JSON.stringify({...normalize(e),createdAt:0});const counts=new Map();
  for(const e of existing){const k=signature(e);counts.set(k,(counts.get(k)||0)+1);}
  // Like Android importBackup: an occurrence already recorded here (same seriesKey) is the same shift and is never added twice.
  const seriesKeys=new Set(existing.map(e=>v2Fields(e).seriesKey).filter(Boolean));
@@ -205,5 +216,5 @@ function spreadsheetCell(value){
  return /^[\s\u0000-\u001f\u200e\u200f\u202a-\u202e\u2066-\u2069]*[=+\-@]/.test(s)?"'"+s:s;
 }
 function csv(entries,delimiter=','){const fields=['category','date','hours','hourlyRate','totalEarnings','isPaid','notes','currency','startTime','endTime'];const quote=s=>'"'+spreadsheetCell(s).replace(/"/g,'""')+'"';return '\ufeff'+[fields.join(delimiter),...entries.map(e=>fields.map(k=>quote(k==='date'?new Date(e.date).toLocaleDateString('en-GB'):e[k])).join(delimiter))].join('\r\n');}
-const api={decode,decodeTable,normalize,missing,missingPlans,encode,needsVersion3,planDate,totals,csv,number,table,rangeHours,inferredBreak};if(typeof module!=='undefined')module.exports=api;else root.WorkTransfer=api;
+const api={decode,decodeTable,normalize,missing,tableKey,missingPlans,encode,needsVersion3,planDate,totals,csv,number,table,rangeHours,inferredBreak};if(typeof module!=='undefined')module.exports=api;else root.WorkTransfer=api;
 })(globalThis);
