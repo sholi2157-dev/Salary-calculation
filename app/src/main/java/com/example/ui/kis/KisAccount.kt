@@ -230,7 +230,7 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
             KisButton("התנתקות", { leaving = false; if (viewModel.signOut(context)) onSignedOut() }, Modifier.weight(1f), KisButtonKind.DANGER, height = 52.dp, tag = "account_signout_ok")
         }
     }
-    fun toast(text: String) = android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
+    fun toast(text: String) = com.example.ui.kis.KisNotices.post(text)
     fun running(): Boolean = com.example.ShiftStateManager.hasActiveShift(context).also { if (it) toast("יש משמרת שרצה עכשיו. צריך לסיים אותה לפני המחיקה") }
     if (erasing) EraseSheet(
         title = "למחוק את הנתונים מהמכשיר הזה?",

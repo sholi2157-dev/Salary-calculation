@@ -4,7 +4,6 @@ import android.app.Application
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.example.ui.*
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -233,20 +232,20 @@ fun MainAppContent(
         contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) { result ->
         com.example.api.AuthManager.handleGoogleSignInResult(result.data) { success, errorMsg ->
-            Toast.makeText(context, if (success) "התחברת בהצלחה למערכת" else errorMsg ?: "ההתחברות בוטלה", Toast.LENGTH_SHORT).show()
+            com.example.ui.kis.KisNotices.post(if (success) "התחברת בהצלחה למערכת" else errorMsg ?: "ההתחברות בוטלה")
         }
     }
     val signInWithGoogle: () -> Unit = {
         if (com.example.api.WebPlatformBridge.isWebTarget) {
             com.example.api.WebPlatformBridge.signInWithWebOAuthPopup(context) { success, errorMsg ->
-                Toast.makeText(context, if (success) "התחברת בהצלחה למערכת" else errorMsg ?: "ההתחברות בוטלה", Toast.LENGTH_SHORT).show()
+                com.example.ui.kis.KisNotices.post(if (success) "התחברת בהצלחה למערכת" else errorMsg ?: "ההתחברות בוטלה")
             }
         } else try {
             val client = com.example.api.AuthManager.getGoogleSignInClient(context)
             if (client != null) googleSignInLauncher.launch(client.signInIntent)
-            else Toast.makeText(context, "החיבור לחשבון עדיין לא הוגדר. אפשר להמשיך להשתמש באפליקציה.", Toast.LENGTH_LONG).show()
+            else com.example.ui.kis.KisNotices.post("החיבור לחשבון עדיין לא הוגדר. אפשר להמשיך להשתמש באפליקציה.")
         } catch (t: Throwable) {
-            Toast.makeText(context, "לא ניתן להתחבר כעת. אפשר להמשיך להשתמש באפליקציה.", Toast.LENGTH_LONG).show()
+            com.example.ui.kis.KisNotices.post("לא ניתן להתחבר כעת. אפשר להמשיך להשתמש באפליקציה.")
         }
     }
     var showAccountDialog by remember { mutableStateOf(false) }

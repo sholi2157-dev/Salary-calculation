@@ -96,7 +96,7 @@ object SalaryFeedback {
                     DiagnosticLog.event(if (ok) "feedback_sent" else "feedback_failed")
                     if (ok) {
                         onMessage(""); onImage(null)
-                        android.widget.Toast.makeText(context, "המשוב נשלח. תודה!", android.widget.Toast.LENGTH_SHORT).show()
+                        com.example.ui.kis.KisNotices.post("המשוב נשלח. תודה!")
                         onSent()
                     } else failed = true
                 }
@@ -114,7 +114,7 @@ object SalaryFeedback {
             KisButton("העתקת המשוב והכתובת", {
                 val draft = SalaryFeedback.draft(context, type, message)
                 (context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("משוב", "${SalaryFeedback.RECIPIENT}\n${draft.subject}\n\n${draft.body}"))
-                android.widget.Toast.makeText(context, "המשוב והכתובת הועתקו", android.widget.Toast.LENGTH_SHORT).show()
+                com.example.ui.kis.KisNotices.post("המשוב והכתובת הועתקו")
             }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp)
         }
     }
