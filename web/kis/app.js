@@ -14,7 +14,11 @@ const app = {
     document.querySelector('meta[name=theme-color]')?.setAttribute('content', U().isDark() ? '#121212' : '#F1F3F8'); },
   openNew() { if (!store.data.categories.length) return root.KisSettings.placeSheet(app, null, () => root.KisEditor.open(app)); root.KisEditor.open(app); },
   openDetail(id) { const e = store.data.entries.find(x => x.id === id); if (e) detail(e); },
-  startLive, stopLive, cancelLive() { const t = store.cancelTimer(); U().toast('המשמרת הפעילה בוטלה', 'ביטול', () => store.restoreTimer(t)); },
+  startLive, stopLive, cancelLive(id) {
+    const live = store.timer();
+    if (!live || live.id !== id) { app.refresh(); U().toast('המשמרת הפעילה השתנתה, לא בוטלה'); return; }
+    const t = store.cancelTimer(); U().toast('המשמרת הפעילה בוטלה', 'ביטול', () => store.restoreTimer(t));
+  },
   completePending() { app.go('history', { selectPending: true }); setTimeout(() => root.KisHistory.bulkRate(app, () => render()), 0); },
 };
 root.Kis = app;
