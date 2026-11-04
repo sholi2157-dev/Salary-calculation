@@ -353,6 +353,22 @@ class KisUiTest {
         ui.onNodeWithTag("history_query_chip").assertDoesNotExist()
     }
 
+    /** M-46: a search with no result says so once (no "0 משמרות · —" card above it); clearing it brings the total back. */
+    @Test fun emptySearchShowsNoZeroTotalCard() {
+        val vm = model()
+        seed()
+        val state = seededHistory().apply { searching = true }
+        host { KisHistory(state, true, rows(), categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {}) }
+        ui.onNodeWithTag("history_total").assertExists()
+        ui.onNodeWithTag("history_search_input").performTextInput("zz-no-such-shift")
+        ui.onNodeWithText("אין משמרות להצגה").assertExists()
+        ui.onNodeWithTag("history_total").assertDoesNotExist()
+        ui.onNodeWithTag("history_search_clear").performClick()
+        assertEquals("", state.query)
+        ui.onNodeWithTag("history_total").assertExists()
+        ui.onNodeWithText("אין משמרות להצגה").assertDoesNotExist()
+    }
+
     @Test fun detailActionsAreLargeAndDistinct() {
         val entry = WorkEntry(id = 71, category = "מסעדה", date = day, isTimeRange = true, startTime = "22:00", endTime = "06:00", hours = 7.5, hourlyRate = 45.75,
             totalEarnings = 343.12, bonus = 0.0, currency = "$", notes = "לילה עם הפסקה")
@@ -609,8 +625,10 @@ class KisUiTest {
         }
         // Home: the future shift waits under "הבא בתור", marked as planned, and is not in today's or the week's money.
         ui.onNodeWithTag("next_entry_$futureId").performScrollTo().assertExists()
-        // Marked in "הבא בתור" and in "אחרונות" alike.
-        ui.onAllNodesWithTag("planned_tag_$futureId", useUnmergedTree = true).assertCountEquals(2)
+        // Marked as planned, and listed once: "אחרונות" leaves out what "הבא בתור" already shows (M-46).
+        ui.onAllNodesWithTag("planned_tag_$futureId", useUnmergedTree = true).assertCountEquals(1)
+        ui.onAllNodesWithTag("recent_shift_card_$futureId").assertCountEquals(0)
+        ui.onNodeWithTag("recent_shift_card_${rows().first { it.totalEarnings == 100.0 }.id}").assertExists()
         ui.onNodeWithTag("home_today_₪", useUnmergedTree = true).assertTextEquals("₪100")
         shot("home-future")
         ui.onNodeWithTag("next_up_all").performScrollTo().performClick()

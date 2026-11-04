@@ -86,6 +86,16 @@ fun PlannedCard(o: V2Plan.Occurrence, categories: List<WorkCategory>, onWorked: 
     }
 }
 
+/** The next few planned items "הבא בתור" shows, by time: weekly-plan days and saved future shifts (a short list: the rest is
+ *  one tap away in History, "הכול"). */
+internal fun nextUpItems(plans: List<V2Plan.Occurrence>, upcoming: List<com.example.data.WorkEntry>): List<Pair<Long, Any>> =
+    (plans.filter { it.status == V2Plan.Status.PLANNED }.map { V2Plan.startMillis(it.date, it.start) to it } +
+        upcoming.map { it.date to it }).sortedBy { it.first }.take(3)
+
+/** The saved shifts "הבא בתור" shows: Home's "אחרונות" leaves them out, so no shift is listed twice (audit M-46 / R-28). */
+internal fun nextUpEntries(plans: List<V2Plan.Occurrence>, upcoming: List<com.example.data.WorkEntry>): List<com.example.data.WorkEntry> =
+    nextUpItems(plans, upcoming).mapNotNull { it.second as? com.example.data.WorkEntry }
+
 /** Home: what ended and waits to be recorded, then the next few planned days (weekly plans and saved future shifts). */
 @Composable
 fun NextUp(occurrences: List<V2Plan.Occurrence>, upcoming: List<com.example.data.WorkEntry>, categories: List<WorkCategory>, actions: PlanActions?,
@@ -93,8 +103,7 @@ fun NextUp(occurrences: List<V2Plan.Occurrence>, upcoming: List<com.example.data
     val plans = if (actions != null) occurrences else emptyList()
     // A short list: the rest is one tap away in History ("הכול").
     val waiting = plans.filter { it.status == V2Plan.Status.AWAITING }.takeLast(3)
-    val next: List<Pair<Long, Any>> = (plans.filter { it.status == V2Plan.Status.PLANNED }.map { V2Plan.startMillis(it.date, it.start) to it } +
-        upcoming.map { it.date to it }).sortedBy { it.first }.take(3)
+    val next = nextUpItems(plans, upcoming)
     if (waiting.isEmpty() && next.isEmpty()) return
     Column(Modifier.padding(top = 4.dp).testTag("next_up")) {
         SectionTitle("הבא בתור", action = "הכול", onAction = onAll, actionTag = "next_up_all")

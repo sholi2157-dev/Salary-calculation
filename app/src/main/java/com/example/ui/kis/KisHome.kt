@@ -99,7 +99,9 @@ fun KisHome(
             }
             val upcoming = remember(entries, now) { entries.filter { KisHistoryLogic.upcoming(it, now) } }
             NextUp(plans, upcoming, categories, planActions, onOpen, onAllPlans)
-            val recent = remember(entries) { entries.sortedByDescending { it.createdAt }.take(3) }
+            // A shift already in "הבא בתור" is not shown again under "אחרונות" (audit M-46 / R-28); the next one fills its place.
+            val inNext = remember(plans, upcoming, planActions) { nextUpEntries(if (planActions != null) plans else emptyList(), upcoming).map { it.id }.toSet() }
+            val recent = remember(entries, inNext) { entries.filter { it.id !in inNext }.sortedByDescending { it.createdAt }.take(3) }
             if (recent.isNotEmpty()) {
                 SectionTitle("אחרונות", action = "הכול", onAction = onAllHistory, actionTag = "home_all_history")
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { recent.forEach { e -> ShiftCard(e, categories, onClick = { onOpen(e) }, tagPrefix = "recent_shift_card_") } }

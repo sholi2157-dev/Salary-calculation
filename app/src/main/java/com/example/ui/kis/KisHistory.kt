@@ -169,7 +169,8 @@ fun KisHistory(
                             if (filter.activeCount > 0) KisChip("הצגת הכול", onClick = { filter = HistoryFilter() }, tag = "history_reset", minHeight = 40.dp)
                         }
                         if (filter.period == Period.MONTH) MonthSwitcher(filter.month) { filter = filter.copy(month = it) }
-                        Totals(rows, onPending = {
+                        // With nothing to show, the empty message says so once: no "0 משמרות · —" card above it (audit M-46 / R-34).
+                        if (rows.isNotEmpty()) Totals(rows, onPending = {
                             ui.selection = rows.filter { !it.payKnown && !WorkPay.isJob(it) }.map { it.id }.toSet()
                             if (ui.selection.isNotEmpty()) bulkOpen = true
                         })
