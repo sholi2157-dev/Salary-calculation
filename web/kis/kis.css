@@ -496,3 +496,9 @@ html { overflow-x: clip; }
 .title-row:has(.history-tool) .page-title { flex: 1 0 auto; }
 .shift .top { flex-wrap: wrap; row-gap: 2px; }
 .shift .top .label { white-space: nowrap; }
+/* A computer: the side bar carries the app's logo and name, so Home's header and the Settings footer don't repeat them
+   (audit M-46 / R-35). Home's name stays for screen readers (the side bar's copy is aria-hidden). */
+@media (min-width: 1024px) {
+  .hello > .logo, .set-brand { display: none; }
+  .hello .caption + .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
