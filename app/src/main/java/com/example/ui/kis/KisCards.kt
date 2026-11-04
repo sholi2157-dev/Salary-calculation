@@ -32,7 +32,7 @@ fun ShiftCard(entry: WorkEntry, categories: List<WorkCategory>, onClick: () -> U
     val settings = Kis.settings
     val workplace = workplaceOf(entry.category, categories)
     val pay = WorkPay.pay(entry)
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(16.dp)
     Row(modifier.fillMaxWidth().clip(shape).background(if (selected) c.sunk else c.surface)
         .border(1.5.dp, if (selected) c.ink else Color.Transparent, shape)
         .combinedClickable(onClick = { settings.haptic(KisSettings.Haptic.TAP); onClick() },

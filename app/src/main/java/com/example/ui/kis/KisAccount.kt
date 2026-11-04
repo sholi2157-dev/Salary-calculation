@@ -150,7 +150,7 @@ private fun IntroBubble(text: String, delayMs: Long, mine: Boolean, small: Boole
         Text(text, style = KisType.body.copy(fontSize = if (small) 18.sp else 22.sp, lineHeight = if (small) 25.sp else 30.sp, fontWeight = FontWeight.SemiBold),
             color = if (mine) c.ink else c.onInk,
             modifier = Modifier.graphicsLayer { alpha = shown.value; translationY = (1f - shown.value) * 18.dp.toPx() }
-                .clip(RoundedCornerShape(22.dp)).background(if (mine) c.surface else c.ink).padding(horizontal = 18.dp, vertical = 12.dp))
+                .clip(RoundedCornerShape(24.dp)).background(if (mine) c.surface else c.ink).padding(horizontal = 18.dp, vertical = 12.dp))
     }
 }
 
@@ -317,7 +317,7 @@ fun AssistantsSheet(viewModel: WorkViewModel, explain: Boolean = false, onDismis
             if (explain) AiExplainCards(withHow = false)
             else Text("עוזר מחובר יכול לענות על שאלות על המשמרות שלך, לסכם, ולפי מה שאישרת גם להוסיף, לערוך או למחוק. הוא רואה רק את המשמרות שלך.",
                 style = KisType.caption, color = c.muted)
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.bg).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.bg).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("איך מחברים", style = KisType.label, color = c.ink)
                 Text("בהגדרות העוזר, בחיבורים (Connectors), מוסיפים חיבור חדש עם הכתובת:", style = KisType.caption, color = c.muted)
                 androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
@@ -395,7 +395,7 @@ private fun ConflictsSheet(viewModel: WorkViewModel, onDismiss: () -> Unit) {
         val first = list?.firstOrNull()
         if (first != null) Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("בטלפון הזה" to first.mine, "בחשבון" to first.theirs).forEach { (title, payload) ->
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.bg).padding(12.dp)) {
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.bg).padding(12.dp)) {
                     Text(title, style = KisType.micro, color = c.muted)
                     Text(describe(first.type, payload), style = KisType.body, color = c.ink)
                 }

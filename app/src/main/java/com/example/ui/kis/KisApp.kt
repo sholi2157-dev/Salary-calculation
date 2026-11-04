@@ -336,7 +336,7 @@ fun KisApp(
                     else Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f))
                         .pointerInput(Unit) { detectTapGestures { } } // the app behind is not touchable while editing
                         .systemBarsPadding().padding(horizontal = 10.dp, vertical = 10.dp)) {
-                        val frame = RoundedCornerShape(26.dp)
+                        val frame = RoundedCornerShape(24.dp)
                         Box(Modifier.fillMaxSize().clip(frame).border(2.dp, if (c.dark) Color.White.copy(alpha = 0.85f) else Color.White, frame).testTag("edit_frame")) { page() }
                     }
                 }

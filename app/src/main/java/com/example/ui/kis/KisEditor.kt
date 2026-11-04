@@ -283,7 +283,7 @@ fun KisEditorPage(
     }
     // A text field being typed in (not one of our values): the clock, ruler and places fold away.
     val typingText = imeOpen && !pad
-    val frame = RoundedCornerShape(26.dp)
+    val frame = RoundedCornerShape(24.dp)
     Box(Modifier.fillMaxSize().background(c.bg).then(if (d.team) Modifier.border(2.5.dp, accent, frame).testTag("team_frame") else Modifier)) {
     // Light: the page glows in the chosen place's colour, so the screen keeps to one colour (the place, its span on the
     // ruler, the digit being typed) instead of the app's purple meeting a place's pink or green.
@@ -491,7 +491,7 @@ private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics
 @Composable
 private fun WasBanner(base: WorkEntry, changed: Boolean, ink: Color) {
     val pay = com.example.data.WorkPay.pay(base)
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(ink.copy(alpha = 0.12f)).padding(horizontal = 10.dp, vertical = 6.dp).testTag("was_banner"),
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(ink.copy(alpha = 0.12f)).padding(horizontal = 10.dp, vertical = 6.dp).testTag("was_banner"),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (changed) Tag("שונה", color = Workplaces[3].from, ink = Workplaces[3].on)
         Text("לפני: ${dayLabel(base.date)} · ${timeLabel(base)} · ${pay?.let { KisFormat.money(it, base.currency) } ?: com.example.data.WorkPay.missingLabel(base)}",
@@ -505,11 +505,10 @@ private fun ModeTabs(mode: EntryMode?, ink: Color, bg: Color, ai: Boolean, onAi:
     // Light: a raised white tab on a soft track (no black slab); dark keeps the light tab on the dark track.
     @Composable fun RowScope.tab(label: String, on: Boolean, tag: String, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, onClick: () -> Unit) =
         Row(Modifier.weight(1f).heightIn(min = KisMinTouch)
-            .then(if (on && !c.dark) Modifier.shadow(2.dp, RoundedCornerShape(9.dp), ambientColor = ink.copy(alpha = 0.10f), spotColor = ink.copy(alpha = 0.10f)) else Modifier)
-            .clip(RoundedCornerShape(9.dp)).background(if (!on) Color.Transparent else if (c.dark) ink else c.surface)
+            .clip(RoundedCornerShape(KisRadius.tag)).kisSelected(on, c, RoundedCornerShape(KisRadius.tag))
             .kisClick(role = Role.Tab, onClick = onClick).semantics { selected = on }.testTag(tag), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
-            val fg = if (!on) ink.copy(alpha = if (c.dark) 0.9f else 0.7f) else if (c.dark) bg else ink
+            val fg = if (!on) ink.copy(alpha = if (c.dark) 0.9f else 0.7f) else c.selectedInk
             if (icon != null) Icon(icon, null, tint = fg, modifier = Modifier.size(15.dp))
             Text(label, color = fg, style = KisType.label)
         }
@@ -553,7 +552,7 @@ private fun DigitClock(value: String, label: String, style: androidx.compose.ui.
     val c = Kis.colors
     val marker = accent
     CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-        Row(Modifier.clip(RoundedCornerShape(10.dp)).background(if (edit?.all == true) marker.copy(alpha = if (c.dark) 0.30f else 0.20f) else Color.Transparent)
+        Row(Modifier.clip(RoundedCornerShape(8.dp)).background(if (edit?.all == true) marker.copy(alpha = if (c.dark) 0.30f else 0.20f) else Color.Transparent)
             .padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
             for (i in 0..3) {
                 if (i == 2) Text(":", color = color, style = style, maxLines = 1)
@@ -587,7 +586,7 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
         val style = KisType.hero.copy(fontSize = digits, lineHeight = digits * 1.05f, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum")
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             @Composable fun cell(label: String, value: String, t: KeyTarget, empty: Boolean, edit: DigitEdit?, tag: String) {
-                val shape = RoundedCornerShape(14.dp)
+                val shape = RoundedCornerShape(12.dp)
                 // The time being typed is a lifted card with the place's colour on its edge; the ruler's choice is a soft tint.
                 val lifted = edit != null
                 val chosen = !typing && active == t
@@ -599,8 +598,8 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
                     DigitClock(value, label, style, ink.copy(alpha = if (empty && edit == null) 0.45f else 1f), ink, accent, edit, tag) { i -> onOpen(t, if (empty) null else i) }
                     if (onNudge != null && !empty) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(-15, 15).forEach { n ->
-                            Box(Modifier.weight(1f).heightIn(min = KisMinTouch).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
-                                .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(10.dp)))
+                            Box(Modifier.weight(1f).heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+                                .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(8.dp)))
                                 .kisClick(haptic = KisSettings.Haptic.TICK) { onNudge(t, n) }
                                 .semantics { contentDescription = "$label ${if (n > 0) "$n דקות קדימה" else "${-n} דקות אחורה"}" }
                                 .testTag("nudge_${t.name.lowercase()}_$n"), contentAlignment = Alignment.Center) {
@@ -622,7 +621,7 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
 @Composable
 private fun HoursDisplay(value: String, edit: DigitEdit?, ink: Color, accent: Color, onOpen: (Int?) -> Unit, onQuick: (Int) -> Unit, onUseClock: (() -> Unit)?) {
     val c = Kis.colors
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(12.dp)
     Column(Modifier.fillMaxWidth().clip(shape).background(if (edit != null) (if (c.dark) ink.copy(alpha = 0.10f) else c.surface) else Color.Transparent)
         .then(if (edit != null) Modifier.border(1.5.dp, accent, shape) else Modifier)
         .kisClick { onOpen(null) }.testTag("hours_display").padding(horizontal = 8.dp, vertical = 6.dp)) {
@@ -635,8 +634,8 @@ private fun HoursDisplay(value: String, edit: DigitEdit?, ink: Color, accent: Co
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(2, 4, 6, 8).forEach { h ->
-            Box(Modifier.weight(1f).heightIn(min = KisMinTouch).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
-                .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(10.dp))).kisClick { onQuick(h) }.testTag("quick_hours_$h"),
+            Box(Modifier.weight(1f).heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+                .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(8.dp))).kisClick { onQuick(h) }.testTag("quick_hours_$h"),
                 contentAlignment = Alignment.Center) { Text("$h ש׳", color = ink, style = KisType.label) }
         }
     }
@@ -647,7 +646,7 @@ private fun HoursDisplay(value: String, edit: DigitEdit?, ink: Color, accent: Co
 @Composable
 private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color, accent: Color, onOpen: () -> Unit, onUnknown: () -> Unit, onKnown: () -> Unit, hoursLabel: String, onHours: () -> Unit) {
     val c = Kis.colors
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(12.dp)
     if (d.amountUnknown) {
         Column(Modifier.fillMaxWidth().clip(shape).kisClick(onClick = onKnown).testTag("job_amount_unknown").padding(8.dp)) {
             Text("כמה הרווחת", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
@@ -663,8 +662,8 @@ private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color
             if (d.teamJob && !d.teamSameRate) Text("רק ארגנתי את הצוות? אפשר 0", color = ink.copy(alpha = 0.7f), style = KisType.caption, modifier = Modifier.testTag("job_organizer_hint"))
         }
     }
-    val tile = Modifier.heightIn(min = KisMinTouch).clip(RoundedCornerShape(10.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
-        .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(10.dp)))
+    val tile = Modifier.heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+        .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(8.dp)))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (!d.amountUnknown) Box(tile.kisClick(onClick = onUnknown).testTag("job_unknown").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
             Text("עוד לא יודע", color = ink, style = KisType.label)
@@ -702,13 +701,12 @@ private fun DayStrip(day: Long, onDay: (Long) -> Unit) {
             val millis = Calendar.getInstance().apply { timeInMillis = today; add(Calendar.DAY_OF_MONTH, i) }.timeInMillis
             val cal = Calendar.getInstance().apply { timeInMillis = millis }
             val on = millis == day
-            val shape = RoundedCornerShape(14.dp)
-            // Light: the chosen day is a white card with an ink edge (like a chosen chip), the others sit back; no black tile.
+            val shape = RoundedCornerShape(KisRadius.small)
+            // M-30: the chosen day uses the one selected recipe (like a chosen chip) in both themes; the others sit back.
             Column(Modifier.weight(1f).heightIn(min = 56.dp).clip(shape)
-                .background(if (c.dark) (if (on) c.ink else c.surface) else if (on) c.surface else c.surface.copy(alpha = 0.55f))
-                .then(if (!c.dark && on) Modifier.border(2.dp, c.ink, shape) else Modifier)
+                .background(if (c.dark) c.surface else c.surface.copy(alpha = if (on) 1f else 0.55f)).kisSelected(on, c, shape)
                 .kisClick { onDay(millis) }.semantics { selected = on }.testTag("day_$i"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                val fg = if (c.dark && on) c.onInk else c.ink
+                val fg = if (on) c.selectedInk else c.ink
                 Text(if (i == 0) "היום" else KisFormat.DAY_SHORT[cal.get(Calendar.DAY_OF_WEEK) - 1], style = KisType.micro.copy(fontSize = 12.sp), color = if (on) fg else c.muted)
                 Text(cal.get(Calendar.DAY_OF_MONTH).toString(), style = KisType.body.copy(fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, fontSize = 17.sp), color = fg)
             }
@@ -768,7 +766,7 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
                     Text(w.name, style = KisType.body, color = c.ink, modifier = Modifier.weight(1f), maxLines = 1)
                     SmallNumberField(DurationInput.display(w.hours), "שעות:דקות", Modifier.width(90.dp).testTag("worker_hours_$i"), duration = true) { v -> onDraft(d.copy(workers = d.workers.toMutableList().also { it[i] = w.copy(hours = DurationInput.edit(v)) })) }
                     SmallNumberField(w.bonus, "בונוס", Modifier.width(76.dp).testTag("worker_bonus_$i")) { v -> onDraft(d.copy(workers = d.workers.toMutableList().also { it[i] = w.copy(bonus = v) })) }
-                    Icon(Icons.Rounded.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp))
+                    Icon(Icons.Rounded.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
                         .kisClick { onDraft(d.copy(workers = d.workers.filterIndexed { j, _ -> j != i })) }.padding(9.dp))
                 }
             }
@@ -784,7 +782,7 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = {
                         if (newName.isNotBlank()) { onDraft(d.copy(workers = d.workers + WorkerDraft(newName.trim(), defaultHours))); newName = "" } else focus.clearFocus()
                     }))
-                Icon(Icons.Rounded.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(c.ink)
+                Icon(Icons.Rounded.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(c.ink)
                     .kisClick(enabled = newName.isNotBlank()) { onDraft(d.copy(workers = d.workers + WorkerDraft(newName.trim(), defaultHours))); newName = "" }.padding(12.dp).testTag("worker_add"))
             }
             if (d.workers.isNotEmpty() && d.bonusValue() > 0) {

@@ -83,7 +83,7 @@ fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSetti
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Workplaces[0].from, Workplaces[4].from)))
                     .testTag("update_note").padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("גרסה ${r.name} זמינה", style = KisType.title, color = Color.White)
-                    Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).background(Color.White)
+                    Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp)).background(Color.White)
                         .kisClick { onUpdate(r) }.testTag("update_now"),
                         contentAlignment = Alignment.Center) {
                         Text("עדכון", style = KisType.label, color = Color(0xFF121212))
@@ -100,7 +100,7 @@ fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSetti
                     n.kind == "ai" && onAi != null -> onAi
                     else -> null
                 }
-                Column(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(c.bg)
+                Column(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(12.dp)).background(c.bg)
                     .then(if (open != null) Modifier.kisClick(onClick = open) else Modifier).testTag("recent_note_$i").padding(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(n.title, style = KisType.label, color = c.ink, modifier = Modifier.weight(1f, fill = false))
