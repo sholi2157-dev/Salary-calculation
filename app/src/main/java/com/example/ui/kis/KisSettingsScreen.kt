@@ -126,7 +126,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             }
             Group(nav, "עבודה", "מקומות העבודה והתעריפים, המטבע ומשמרות קבועות.", Modifier.coachTarget(CoachTarget.CATEGORIES)) {
                 Row_("מקום ברירת מחדל", null, tag = "default_category_picker", onClick = { pickingDefault = true },
-                    leading = { if (defaultCategory.isNotEmpty()) Box(Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(workplaceOf(defaultCategory, categories).brush)) }) {
+                    leading = { if (defaultCategory.isNotEmpty()) Box(Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(workplaceOf(defaultCategory, categories).brush)) }) {
                     Text(defaultCategory, style = KisType.label, color = c.ink, maxLines = 1)
                     Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
                 }
@@ -231,7 +231,7 @@ private class SettingsNav(val open: String?, val onOpen: (String) -> Unit)
 private fun Group(nav: SettingsNav, title: String, info: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val c = Kis.colors
     when (nav.open) {
-        null -> Row(Modifier.padding(bottom = 8.dp).fillMaxWidth().then(modifier).clip(RoundedCornerShape(18.dp)).background(c.surface)
+        null -> Row(Modifier.padding(bottom = 8.dp).fillMaxWidth().then(modifier).clip(RoundedCornerShape(16.dp)).background(c.surface)
             .kisClick { nav.onOpen(title) }.testTag("settings_section_$title").heightIn(min = 60.dp).padding(start = 16.dp, end = 10.dp),
             verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = KisType.title, color = c.ink, maxLines = 1, modifier = Modifier.semantics { heading() })
@@ -239,7 +239,7 @@ private fun Group(nav: SettingsNav, title: String, info: String, modifier: Modif
             InfoDot(title, info, tag = "settings_info_$title")
             Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(20.dp))
         }
-        title -> Column(Modifier.padding(top = 12.dp).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.surface)
+        title -> Column(Modifier.padding(top = 12.dp).fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(c.surface)
             .padding(horizontal = 16.dp, vertical = 4.dp).testTag("settings_page_$title"), content = content)
         else -> Unit
     }
@@ -279,7 +279,7 @@ private fun WorkplaceEditor(cat: WorkCategory, categories: List<WorkCategory>, v
     var retro by rememberSaveable { mutableStateOf(false) }
     val taken = categories.any { it.id != cat.id && it.name.trim().equals(name.trim(), true) }
     val rateValue = rate.toDoubleOrNull()?.takeIf { it >= 0 }
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sunk).padding(12.dp).testTag("edit_category_sheet"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.sunk).padding(12.dp).testTag("edit_category_sheet"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         KisTextField(name, { name = it }, "שם", Modifier.fillMaxWidth().testTag("edit_category_name"), isError = taken)
         if (taken) Text("כבר יש מקום בשם הזה", style = KisType.caption, color = c.danger)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -397,7 +397,7 @@ private fun PlacesPanel(categories: List<WorkCategory>, defaultCategory: String,
             val on = name == defaultCategory
             key(name) {
                 Row(Modifier.fillMaxWidth().height(56.dp).zIndex(if (lifted) 1f else 0f)
-                    .graphicsLayer { translationY = if (lifted) dragY else 0f; shadowElevation = if (lifted) 12f else 0f; shape = RoundedCornerShape(14.dp); clip = true }
+                    .graphicsLayer { translationY = if (lifted) dragY else 0f; shadowElevation = if (lifted) 12f else 0f; shape = RoundedCornerShape(12.dp); clip = true }
                     .background(if (lifted) c.surface else if (on) c.sunk else androidx.compose.ui.graphics.Color.Transparent)
                     .kisClick { onDefault(name) }.semantics { selected = on }
                     .testTag("default_category_option_$name").padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

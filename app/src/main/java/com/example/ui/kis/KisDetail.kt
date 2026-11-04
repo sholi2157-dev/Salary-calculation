@@ -97,9 +97,9 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
     val pay = WorkPay.pay(entry)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // M-34 (TalkBack): the header is read as one card (place, day, amount); the place's first letter is decoration.
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(workplace.brush).semantics(mergeDescendants = true) {}.padding(horizontal = 16.dp, vertical = 14.dp),
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(workplace.brush).semantics(mergeDescendants = true) {}.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(workplace.on.copy(alpha = 0.18f)).clearAndSetSemantics {}, contentAlignment = Alignment.Center) {
+            Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(workplace.on.copy(alpha = 0.18f)).clearAndSetSemantics {}, contentAlignment = Alignment.Center) {
                 Text(entry.category.take(1), style = KisType.title, color = workplace.on)
             }
             Column(Modifier.weight(1f)) {
@@ -182,7 +182,7 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
     // Design decision B: one block with every total (all from WorkPay, reconciled in whole agorot), one "שיתוף" for the
     // reports, and one row per worker with its paid state and ⋯ for share, copy and paid.
     Column(Modifier.fillMaxWidth().testTag("group_detail"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (summary != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sunk).padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (summary != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.sunk).padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             @Composable fun line(k: String, v: Double, tag: String, strong: Boolean = false) = Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(k, style = if (strong) KisType.label else KisType.body.copy(fontSize = 15.sp), color = c.ink, modifier = Modifier.weight(1f))
                 MoneyText(v, entry.currency, if (strong) KisType.label.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold) else KisType.label, modifier = Modifier.testTag(tag))

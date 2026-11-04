@@ -53,7 +53,7 @@ fun PlannedCard(o: V2Plan.Occurrence, categories: List<WorkCategory>, onWorked: 
     var open by rememberSaveable(o.key) { mutableStateOf(false) }
     val workplace = workplaceOf(o.category, categories)
     val waiting = o.status == V2Plan.Status.AWAITING
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(16.dp)
     Column(Modifier.fillMaxWidth().clip(shape).background(c.surface).border(1.dp, c.line, shape).kisClick { open = !open }
         .semantics { stateDescription = if (open) "פתוח" else "סגור" }.testTag("planned_card_${o.key}").padding(horizontal = 14.dp, vertical = 12.dp).animateContentSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -141,7 +141,7 @@ fun PlanHoursSheet(o: V2Plan.Occurrence, onDismiss: () -> Unit, onSave: (start: 
 fun TimeChip(label: String, value: String, modifier: Modifier, tag: String, onPick: (String) -> Unit) {
     val c = Kis.colors
     val context = LocalContext.current
-    Column(modifier.clip(RoundedCornerShape(14.dp)).background(c.sunk).kisClick {
+    Column(modifier.clip(RoundedCornerShape(12.dp)).background(c.sunk).kisClick {
         val m = V2Rules.toMinutes(value)
         TimePickerDialog(context, { _, h, mm -> onPick(V2Rules.fromMinutes(h * 60 + mm)) }, m / 60, m % 60, true).show()
     }.testTag(tag).padding(horizontal = 14.dp, vertical = 10.dp)) {

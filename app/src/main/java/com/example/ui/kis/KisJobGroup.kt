@@ -90,7 +90,7 @@ internal fun JobTeamBlock(d: EntryDraft, directory: List<WorkerDirectory>, onFor
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
                             keyboardActions = KeyboardActions(onNext = { runCatching { nameFocus.requestFocus() } }), selectAllOnFocus = true)
                     }
-                    Icon(Icons.Rounded.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp))
+                    Icon(Icons.Rounded.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
                         .kisClick { onDraft(d.copy(workers = d.workers.filterIndexed { j, _ -> j != i })) }.padding(9.dp))
                 }
             }
@@ -103,7 +103,7 @@ internal fun JobTeamBlock(d: EntryDraft, directory: List<WorkerDirectory>, onFor
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     // "הבא" adds the name and goes to their amount (or, with one amount for all, stays for the next name); empty closes the keyboard.
                     keyboardActions = KeyboardActions(onNext = { if (newName.isNotBlank()) { add(newName.trim()); newName = "" } else focus.clearFocus() }))
-                Icon(Icons.Rounded.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(c.ink)
+                Icon(Icons.Rounded.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(c.ink)
                     .kisClick(enabled = newName.isNotBlank()) { add(newName.trim()); newName = "" }.padding(12.dp).testTag("job_worker_add"))
             }
             // A name typed but not added yet would be lost on save: say how to add it.
