@@ -4,7 +4,7 @@
 const U = () => root.KisUi;
 /** The open category on a phone (M-31, as in Android 2.2.3): null shows the list of categories. */
 let section = null;
-const group = (title, body, info) => `<section class="set-group${section === title ? ' on' : ''}" data-group="${title}"><div class="title-row" style="margin:22px 0 10px"><h2 class="section-title" style="margin:0;font:22px/28px var(--display)" data-testid="settings-${title}">${title}</h2>${info ? U().infoDot(title, info) : ''}</div><div class="card" style="display:grid;gap:4px;padding:6px 16px">${body}</div></section>`;
+const group = (title, body, info) => `<section class="set-group${section === title ? ' on' : ''}" data-group="${title}"><div class="title-row" style="margin:22px 0 10px"><h2 class="section-title" style="margin:0;font:1.375rem/1.75rem var(--display)" data-testid="settings-${title}">${title}</h2>${info ? U().infoDot(title, info) : ''}</div><div class="card" style="display:grid;gap:4px;padding:6px 16px">${body}</div></section>`;
 /** The kinds of in-site reminder (M-31), titles and explanations as in the Android app: [stored key, title, info, testid]. */
 const NOTIFY_KINDS = [
   ['notifyMonthly', 'הסיכום החודשי', 'מה-30 לכל חודש (בפברואר מהיום האחרון), כשנכנסים לאתר: כמה עבדת וכמה הרווחת החודש. רק כשיש משמרות בחודש.', 'notify-monthly'],
@@ -390,7 +390,7 @@ function notificationsSheet(app) {
   store.setLocal('seenAt', Date.now(), true);
   U().sheet('notifications-sheet', (el, close) => {
     el.innerHTML = `<h2>התראות</h2>${list.length ? '' : '<p class="caption" data-testid="notifications-empty">אין התראות</p>'}
-      <div class="list">${list.map((n, i) => `<button class="shift" data-i="${i}" data-testid="recent-note-${i}" ${n.month == null && n.kind !== 'ai' ? 'style="cursor:default"' : ''}><span class="meta"><b class="label">${esc(n.title)}${n.kind === 'monthly' && n.scope && !n.opened ? ' <span class="chip" style="min-height:0;padding:2px 8px;font-size:12px">חדש</span>' : ''}</b><span class="sub">${esc(n.text)}</span><span class="caption">${U().shortDate(n.time)}</span></span></button>`).join('')}</div>
+      <div class="list">${list.map((n, i) => `<button class="shift" data-i="${i}" data-testid="recent-note-${i}" ${n.month == null && n.kind !== 'ai' ? 'style="cursor:default"' : ''}><span class="meta"><b class="label">${esc(n.title)}${n.kind === 'monthly' && n.scope && !n.opened ? ' <span class="chip" style="min-height:0;padding:2px 8px;font-size:0.75rem">חדש</span>' : ''}</b><span class="sub">${esc(n.text)}</span><span class="caption">${U().shortDate(n.time)}</span></span></button>`).join('')}</div>
       <button class="btn ghost" data-a="settings" data-testid="notifications-settings">הגדרות התראות</button>`;
     el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const n = list[+b.dataset.i];
       if (n.kind === 'ai') { close(); root.KisAccount.assistantsSheet({ explain: true }); return; }

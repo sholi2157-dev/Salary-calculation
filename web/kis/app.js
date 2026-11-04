@@ -24,12 +24,15 @@ function render() {
   const main = document.getElementById('page');
   const opts = app.pageOpts || {}; app.pageOpts = {};
   main.dataset.page = app.page;
+  // The same control keeps the keyboard focus across the redraw (audit M-33); a page change starts at the page.
+  const mark = main.dataset.drawn === app.page ? U().focusMark(main) : null; main.dataset.drawn = app.page;
   // Unreadable stored data: the recovery is on this screen itself, since no other page can open (audit CW-15).
   if (store.broken) { main.innerHTML = root.KisSettings.recoveryPanel(app); root.KisSettings.bindRecovery(main, app); }
   else if (app.page === 'history') root.KisHistory.render(main, app, opts);
   else if (app.page === 'settings') root.KisSettings.render(main, app);
   else root.KisHome.render(main, app);
   document.querySelectorAll('.nav [data-page]').forEach(b => b.setAttribute('aria-current', b.dataset.page === app.page ? 'page' : 'false'));
+  U().focusRestore(main, mark);
   document.querySelector('.nav-wrap').hidden = app.page === 'history' && root.KisHistory.state.selection.size > 0;
 }
 
@@ -39,7 +42,7 @@ function detail(e) {
   U().sheet('shift-detail', (el, close) => {
     const sum = e.isGroupShift ? root.KisPay.group(e) : null;
     if (e.isGroupShift) el.innerHTML = groupDetailHtml(e, sum, group); else el.innerHTML = `<div class="row" style="align-items:center">${U().avatar(e.category, store, U().upcoming(e))}<div class="grow"><b class="label">${esc(e.category)}</b><div class="caption">${esc(U().dayLabelLong(e.date))} · ${esc(U().timeLabel(e))}</div></div></div>
-      <div style="display:flex;align-items:baseline;gap:10px">${pay != null ? `<b class="hero" style="font-size:44px" data-testid="detail-amount">${moneyHtml(pay, e.currency)}</b>` : `<span class="tag warn">${e.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</span>`}
+      <div style="display:flex;align-items:baseline;gap:10px">${pay != null ? `<b class="hero" style="font-size:2.75rem" data-testid="detail-amount">${moneyHtml(pay, e.currency)}</b>` : `<span class="tag warn">${e.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</span>`}
         <span class="caption">${e.kind === 'job' ? 'קבלנות' : `${U().duration(e.hours)} שעות${e.payKnown ? ' · ' + esc(U().money(e.hourlyRate, e.currency)) + ' לשעה' : ''}`}${e.bonus > 0 ? ' · בונוס ' + esc(U().money(e.bonus, e.currency)) : ''}</span></div>
       ${e.notes ? `<p style="margin:0">${esc(e.notes)}</p>` : ''}
       ${e.passThrough > 0 ? `<p class="caption" style="margin:0" data-testid="detail-pass-through">החזר הוצאות ${esc(U().money(e.passThrough, e.currency))} · לא שלך${!e.isGroupShift && root.KisPay.employerDue(e) != null ? ` · <b>לקבל מהמעסיק ${esc(U().money(root.KisPay.employerDue(e), e.currency))}</b>` : ''}</p>` : ''}
