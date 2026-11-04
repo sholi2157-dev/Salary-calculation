@@ -48,7 +48,9 @@ function render(el, app) {
       ...entries.filter(e => upcoming(e, now)).map(e => ({ at: e.date, e }))].sort((a, b) => a.at - b.at).slice(0, 3);
     return [...waiting, ...next];
   })();
-  const recent = [...entries].sort((a, b) => (b.createdAt || b.date) - (a.createdAt || a.date)).slice(0, 3);
+  // A shift already in "הבא בתור" is not shown again under "אחרונות" (audit M-46 / R-28); the next one fills its place.
+  const inNext = new Set(nextItems.filter(x => x.e).map(x => x.e));
+  const recent = entries.filter(e => !inNext.has(e)).sort((a, b) => (b.createdAt || b.date) - (a.createdAt || a.date)).slice(0, 3);
   const wallet = Object.entries(month.reduce((m, e) => { (m[e.category] ||= []).push(e); return m; }, Object.create(null))).sort((a, b) => b[1].length - a[1].length);
 
   const unread = root.KisSettings.unread(store);
@@ -74,7 +76,7 @@ function render(el, app) {
   ${nextItems.length ? `<section class="home-block"><div class="section-title"><h2>הבא בתור</h2><button class="link" data-act="all-planned" data-testid="next-all">הכול</button></div>
     <div class="list" data-testid="next-up">${nextItems.map(x => x.e ? shiftCard(x.e, store, { tag: 'next' }) : root.KisPlans.card(x.o, store)).join('')}</div></section>` : ''}
   ${recent.length ? `<section class="home-block"><div class="section-title"><h2>אחרונות</h2><button class="link" data-act="history">הכול</button></div>
-    <div class="list">${recent.map(e => shiftCard(e, store, { tag: 'recent' })).join('')}</div></section>` : ''}
+    <div class="list" data-testid="recent">${recent.map(e => shiftCard(e, store, { tag: 'recent' })).join('')}</div></section>` : ''}
   ${wallet.length ? `<section class="home-block"><div class="section-title"><h2>הכיס של החודש</h2></div><div class="list">${wallet.map(([c, rows]) => {
       const tt = sortedTotals(rows); return `<div class="shift" style="cursor:default">${U().avatar(c, store)}<span class="meta"><b class="label">${esc(c)}</b><span class="sub">${rows.length === 1 ? 'משמרת אחת' : rows.length + ' משמרות'} · ${U().duration(rows.reduce((s, e) => s + e.hours, 0))} ש׳</span></span><span class="pay">${tt.map(([cur, v]) => moneyHtml(v, cur)).join(' ') || '—'}</span></div>`; }).join('')}</div></section>` : ''}</div>
   ${entries.length ? '' : '<div class="empty"><h3>ברוך הבא</h3></div>'}`;
