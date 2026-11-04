@@ -150,7 +150,7 @@ function evaluate(input) {
   let h = number(d.hours); if (Number.isNaN(h)) h = 0;
   // A job team with an amount per worker: the user may only have organized it, so 0 is a known own pay (D-7, AND-C06).
   const zero = d.organizerOnly && amount === 0;
-  if (!d.amountUnknown && !(Number.isFinite(amount) && (amount > 0 || zero))) errors.push('הזן סכום, או סמן "לא יודע עדיין"');
+  if (!d.amountUnknown && !(Number.isFinite(amount) && (amount > 0 || zero))) errors.push('מזינים סכום, או מסמנים "לא יודע עדיין"');
   if (h > 24) errors.push('יותר מ-24 שעות ביום');
   const minutes = h > 0 ? Math.round(h * 60) : null;
   const total = Number.isFinite(amount) && amount > 0 ? money(1, amount) : zero ? 0 : null;
@@ -160,10 +160,10 @@ function evaluate(input) {
  let invalid = false;
  if (d.mode === 'HOURS') {
   const h = number(d.hours);
-  if (!(h > 0)) errors.push('הזן מספר שעות'); else if (h > 24) errors.push('יותר מ-24 שעות ביום');
+  if (!(h > 0)) errors.push('מזינים מספר שעות'); else if (h > 24) errors.push('יותר מ-24 שעות ביום');
   if (h > 0) minutes = Math.round(h * 60);
  } else {
-  if (d.start === null) errors.push('בחר שעת התחלה');
+  if (d.start === null) errors.push('בוחרים שעת התחלה');
   if (d.start !== null && d.end !== null) {
    const sp = span(d.start, d.end, d.breakMinutes);
    minutes = sp.minutes;
@@ -172,7 +172,7 @@ function evaluate(input) {
   }
  }
  const rate = d.rateUnknown ? null : d.rate;
- if (!d.rateUnknown && !(Number.isFinite(rate) && rate >= 0)) errors.push('הזן תעריף, או סמן "תעריף חסר"');
+ if (!d.rateUnknown && !(Number.isFinite(rate) && rate >= 0)) errors.push('מזינים תעריף, או מסמנים "תעריף חסר"');
  if (!Number.isFinite(d.bonus) || d.bonus < 0) errors.push('הבונוס לא תקין');
  const myBonus = d.mode === 'GROUP' && d.bonusTarget === 'OTHERS' ? 0 : d.bonus;
  const known = minutes !== null && Number.isFinite(minutes) && !invalid && Number.isFinite(rate) && Number.isFinite(myBonus);

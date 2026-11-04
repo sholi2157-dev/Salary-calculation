@@ -74,7 +74,7 @@ function signedIn(fb, user) {
   // 2.1: once per browser, the bell invites to connect a personal AI assistant.
   if (localStorage.getItem('kis_ai_invited_v1') !== '1') {
     localStorage.setItem('kis_ai_invited_v1', '1');
-    app.store.addRecent({ kind: 'ai', title: 'מחברים את ה-AI שלך', text: 'כמה דקות, ואפשר לשאול את ChatGPT או Claude על המשמרות. נגיעה להסבר', time: Date.now(), month: null });
+    app.store.addRecent({ kind: 'ai', title: 'מחברים את ה-AI שלך', text: 'כמה דקות, ואפשר לשאול את ChatGPT או Claude על המשמרות. לחיצה להסבר', time: Date.now(), month: null });
     app.refresh?.();
   }
   const transport = root.WorkSyncFirestore.firestoreTransport(fb);
@@ -126,7 +126,7 @@ function showGate() {
 function explainCards(withHow = true) {
   return [['מה זה', 'מדברים עם העוזר בשפה רגילה: "כמה הרווחתי החודש?" או "תוסיף משמרת מחר מ-9 עד 5 במסעדה". הוא עונה ומעדכן לפי המשמרות שלך.'],
     ['איך מחברים', 'בהגדרות העוזר מוסיפים חיבור (Connector) עם הכתובת שמופיעה בהגדרות ← עוזרי AI. נפתח דף, מתחברים עם Google ובוחרים מה מותר לו.'],
-    ['הרשאות', 'לראות משמרות מותר תמיד. להוסיף, לערוך או למחוק רק אם הפעלת. בוחרים לכמה זמן: שעה, יום, 30 יום או עד שתנתק.'],
+    ['הרשאות', 'לראות משמרות מותר תמיד. להוסיף, לערוך או למחוק רק אם הפעלת. בוחרים לכמה זמן: שעה, יום, 30 יום או עד הניתוק.'],
     ['בטוח', 'העוזר רואה רק את המשמרות שלך ולא מקבל את הסיסמה. כל שינוי שלו נרשם ואפשר לבטל אותו, ומנתקים אותו בכל רגע.']]
     .filter(([t]) => withHow || t !== 'איך מחברים').map(([t, b], i) => `<div class="card intro-card" style="--d:${(i * 0.12).toFixed(2)}s"><b>${t}</b><p style="margin:4px 0 0">${b}</p></div>`).join('');
 }
@@ -138,7 +138,7 @@ function draw() {
       ? `<div class="launch-in"><div class="grow"></div>
         <p class="intro-label" style="--d:.1s" data-testid="intro-line-1">חישוב שכר</p><p class="intro-label muted" style="--d:.3s">${updated ? 'גרסה 2.2.2' : 'ברוכים הבאים'}</p>
         <h1 class="intro-head" id="signin-title" style="--d:.6s" data-testid="intro-line-3">כעת סוכן ה-AI שלך מכיר אותך ואת העבודה שלך.</h1>
-        <p class="intro-label" style="--d:1.1s">בקשו מהסוכן שלכם:</p>
+        <p class="intro-label" style="--d:1.1s">מבקשים מהסוכן:</p>
         <div class="intro-chat small"><p class="mine" style="--d:1.4s">כמה הרווחתי החודש?</p><p class="mine" style="--d:1.8s">עבדתי אתמול בכינוס השלוחים 15 שעות, ושניאור נגר ביקש ממני לרשום בהערה סידור כסאות. תוסיף לי בבקשה.</p></div>
         <p class="intro-done" style="--d:2.3s">והוא יעשה זאת בשבילכם!</p>
         <div class="intro-ais" style="--d:2.7s"><span class="caption">מחובר עם</span><div>${['ChatGPT', 'Claude', 'Grok', 'Muse'].map(n => `<b dir="ltr">${n}</b>`).join('')}</div></div>
@@ -178,7 +178,7 @@ async function signIn() {
       throw e;
     }
   } catch (e) {
-    account.error = e.code === 'auth/network-request-failed' || !navigator.onLine ? 'אין חיבור לאינטרנט. נסה שוב כשהחיבור יחזור.' : 'ההתחברות לא הושלמה. אפשר לנסות שוב.';
+    account.error = e.code === 'auth/network-request-failed' || !navigator.onLine ? 'אין חיבור לאינטרנט. אפשר לנסות שוב כשהחיבור יחזור.' : 'ההתחברות לא הושלמה. אפשר לנסות שוב.';
     if (gate) draw();
   }
 }
@@ -278,7 +278,7 @@ async function assistantsSheet(opts = {}) {
       try {
         [grants, log] = await Promise.all([me.collection('assistants').get({ source: 'server' }).then(q => q.docs),
           me.collection('assistant_log').orderBy('at', 'desc').limit(20).get({ source: 'server' }).then(q => q.docs)]);
-      } catch { el.innerHTML = '<h2>עוזרי AI</h2><p class="caption">אין חיבור כרגע. נסה שוב בעוד רגע.</p>'; return; }
+      } catch { el.innerHTML = '<h2>עוזרי AI</h2><p class="caption">אין חיבור כרגע. אפשר לנסות שוב בעוד רגע.</p>'; return; }
       const live = grants.filter(g => !g.get('until') || Date.parse(g.get('until')) > Date.now());
       el.innerHTML = `<h2>עוזרי AI</h2>
         ${opts.explain ? explainCards(false) : '<p class="caption" style="margin:0">עוזר מחובר יכול לענות על שאלות על המשמרות שלך, לסכם, ולפי מה שאישרת גם להוסיף, לערוך או למחוק. הוא רואה רק את המשמרות שלך.</p>'}
@@ -288,7 +288,7 @@ async function assistantsSheet(opts = {}) {
           <div class="caption">העוזר יפתח דף שבו מתחברים עם Google ובוחרים מה מותר לו. לעוזר בלי אפשרות כזו: <a href="/connect?personal=1" data-testid="assistants-key">מפתח אישי</a>.</div></div>
         <h3 style="margin:6px 0 0">מחוברים</h3>
         ${live.length ? live.map(g => `<div class="row" style="align-items:center;min-height:58px"><div class="grow" style="min-width:0"><b>${esc(g.get('name'))}</b>
-          <div class="caption">${(g.get('scopes') || []).map(x => PERM_LABEL[x]).filter(Boolean).join(' · ')} · ${g.get('until') ? 'עד ' + esc(new Date(g.get('until')).toLocaleDateString('he-IL')) : 'עד שתנתק'}</div></div>
+          <div class="caption">${(g.get('scopes') || []).map(x => PERM_LABEL[x]).filter(Boolean).join(' · ')} · ${g.get('until') ? 'עד ' + esc(U().dayLabelLong(new Date(g.get('until')).getTime())) : 'עד הניתוק'}</div></div>
           <button class="chip warn" data-cut="${esc(g.id)}" data-testid="assistant-cut">ניתוק</button></div>`).join('<div class="divider"></div>') : '<p class="caption" data-testid="assistants-none">אין עוזרים מחוברים.</p>'}
         ${log.length ? `<h3 style="margin:6px 0 0">פעולות אחרונות</h3>${log.map(l => {
           const d = l.data(), item = d.after || d.before, type = d.type || 'entry';
@@ -297,7 +297,7 @@ async function assistantsSheet(opts = {}) {
             ${d.undone ? '<span class="caption">בוטל</span>' : `<button class="chip" data-undo="${esc(l.id)}" data-testid="assistant-undo">ביטול</button>`}</div>`; }).join('<div class="divider"></div>')}` : ''}`;
       el.querySelector('[data-x=copy]').onclick = async e => { try { await navigator.clipboard.writeText(mcpUrl); e.target.textContent = 'הועתק'; } catch {} };
       el.querySelectorAll('[data-cut]').forEach(b => b.onclick = () => U().confirmSheet('לנתק את העוזר?', 'הוא לא יוכל יותר לראות או לשנות משמרות. מה שכבר שינה נשאר, ואפשר לבטל אותו כאן.', 'ניתוק', async () => {
-        try { await me.collection('assistants').doc(b.dataset.cut).delete(); } catch { U().toast('הניתוק לא הושלם. נסה שוב'); } draw(); }));
+        try { await me.collection('assistants').doc(b.dataset.cut).delete(); } catch { U().toast('הניתוק לא הושלם. אפשר לנסות שוב'); } draw(); }));
       el.querySelectorAll('[data-undo]').forEach(b => b.onclick = async () => {
         b.disabled = true;
         try { await undo(fb, uid, me.collection('assistant_log').doc(b.dataset.undo)); U().toast('בוטל'); schedule(0); }

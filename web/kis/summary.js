@@ -34,7 +34,7 @@ function insightText(i) {
   if (i.kind === 'unpaid') return i.amounts.map(a => U().money(a.amount, a.currency)).join(' · ') + ' עדיין לא סומנו כשולמו';
   if (i.kind === 'pending') return i.count === 1 ? 'משמרת אחת ממתינה לתעריף' : `${i.count} משמרות ממתינות לתעריף`;
   if (i.kind === 'trend') return `${Math.abs(i.percent)}% ${i.percent > 0 ? 'יותר' : 'פחות'} שעות מ${U().MONTHS[Number(i.previousMonth.slice(5)) - 1]}`;
-  return `יום ${DAY_LONG[i.day]} הוא היום העמוס שלכם`;
+  return `יום ${DAY_LONG[i.day]} הוא היום העמוס ביותר`;
 }
 
 /** The story: moves on by itself; a tap on the left moves forward, on the right back; holding pauses. Amounts are
@@ -62,11 +62,11 @@ function story(app, scope) {
     showPer && { bg: PLACE(s.persona === 'owl' ? 4 : s.persona === 'bird' ? 3 : 2), a: 4, b: 3, tag: 'persona', html: () => `<div class="kick">${say('personaKick')}</div><h3 class="big" data-testid="story-persona-name">${esc(per.name)}</h3><p>${esc(perLine)}</p>` },
     shows.has('longest') && { bg: PLACE(2), a: 4, b: 3, tag: 'longest', html: () => { const l = s.longest;
       const [y, m, d] = l.date.split('-').map(Number);
-      return `<div class="kick">${say('longestKick')}</div><div class="huge">${U().duration(l.hours)}</div><h3>שעות, ${esc(U().dayLabel(new Date(y, m - 1, d).getTime()))}</h3><p>${l.start ? `⁦${l.start}–${l.end}⁩. ` : ''}${say('longestTail')}${s.nights === 1 ? ' ופעם אחת סיימתם אחרי 23:00.' : s.nights ? ` ו-${s.nights} פעמים סיימתם אחרי 23:00.` : ''}</p>`; } },
+      return `<div class="kick">${say('longestKick')}</div><div class="huge">${U().duration(l.hours)}</div><h3>שעות, ${esc(U().dayLabel(new Date(y, m - 1, d).getTime()))}</h3><p>${l.start ? `⁦${l.start}–${l.end}⁩. ` : ''}${say('longestTail')}${s.nights === 1 ? ' ופעם אחת המשמרת נגמרה אחרי 23:00.' : s.nights ? ` ו-${s.nights} פעמים המשמרת נגמרה אחרי 23:00.` : ''}</p>`; } },
     shows.has('days') && { bg: '#121212', a: 5, b: 1, tag: 'days', html: () => { const mx = Math.max(1e-9, ...s.days);
       return `<div class="kick">${say('daysKick')}</div><h3>${say('daysLine', { day: DAY_LONG[s.bestDay] })}</h3><div class="wbars">${s.days.map((h, j) => `<div><i style="--h:${(h / mx).toFixed(3)};--d:${j * 80}ms;background:${j === s.bestDay ? PLACE(3) : '#3A3A3A'}"></i><span>${U().DAY_SHORT[j]}</span></div>`).join('')}</div>`; } },
     shows.has('hour') && { bg: PLACE(5), a: 3, b: 4, tag: 'hour', html: () => { const p = s.hourMinutes, mx = Math.max(1, ...p), h = s.peakHour;
-      const joke = h >= 22 || h < 5 ? 'בזמן שכולם רואים סדרה במיטה, אתם בשטח.' : h < 11 ? 'קפה ראשון? אתם כבר באמצע העבודה.' : h < 17 ? 'שעות השיא של העולם. וגם שלכם.' : 'השעה שבה כולם חוזרים הביתה, ואתם בדיוק בשיא.';
+      const joke = h >= 22 || h < 5 ? 'בזמן שכולם רואים סדרה במיטה, העבודה בעיצומה.' : h < 11 ? 'קפה ראשון? וכבר באמצע העבודה.' : h < 17 ? 'שעות השיא של העולם. וגם של העבודה.' : 'השעה שבה כולם חוזרים הביתה, והעבודה בדיוק בשיא.';
       return `<div class="kick">${say('hourKick')}</div><div class="huge">${pad(h)}:00</div><div class="hbars">${p.map((m, j) => `<i style="--h:${(m / mx).toFixed(3)};--d:${j * 25}ms;${j === h ? 'background:#fff' : ''}"></i>`).join('')}</div><p>${joke}</p>`; } },
     { bg: PLACE(1), a: 3, b: 0, tag: 'money', html: () => `<div class="kick">${say('moneyKick')}</div>${s.currencies.length ? s.currencies.map(c => `<div class="huge money" data-testid="${hidden ? 'story-money-hidden' : 'story-money-' + esc(c.currency)}">${hidden ? `<span class="cur">${esc(c.currency)}</span>•••` : U().moneyHtml(c.total, c.currency)}</div>`).join('') : '<h3>עוד חסר תעריף.</h3>'}
       <p>${s.pending ? `ועוד ${s.pending === 1 ? 'משמרת אחת שמחכה' : s.pending + ' משמרות שמחכות'} לתעריף. ` : ''}הסכומים מופיעים גם בכרטיס לשיתוף.</p>${s.currencies.length ? `<button class="reveal" data-rev data-testid="story-reveal">${hidden ? 'להציג' : 'להסתיר'}</button>` : ''}` },

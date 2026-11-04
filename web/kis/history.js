@@ -8,7 +8,7 @@
 const U = () => root.KisUi;
 const PERIODS = [['ALL', 'כל התאריכים'], ['MONTH', 'חודש'], ['RANGE', 'טווח']];
 const SORTS = [['NEWEST', 'החדש קודם', 'מהחדש לישן'], ['OLDEST', 'הישן קודם', 'מהישן לחדש'], ['ADDED', 'לפי הוספה', 'לפי סדר ההוספה']];
-const PAYS = [['ALL', 'הכול'], ['UNPAID', 'ממתין'], ['PAID', 'שולם'], ['PENDING', 'בלי תעריף']];
+const PAYS = [['ALL', 'הכול'], ['UNPAID', 'לא שולם'], ['PAID', 'שולם'], ['PENDING', 'בלי תעריף']];
 const defaults = () => ({ period: 'ALL', month: U().monthKey(Date.now()), from: U().startOfDay(Date.now() - 7 * 864e5), to: U().startOfDay(Date.now()),
   pay: 'ALL', category: null, currency: null, sort: 'NEWEST' });
 const state = { filter: null, query: '', searching: false, planned: false, selection: new Set() };

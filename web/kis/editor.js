@@ -151,13 +151,13 @@ function evaluate(d) {
   const ev = R().evaluate({ mode: d.mode === 'GROUP' && !clockish ? 'HOURS' : d.mode, start: clockish ? d.start : null, end: clockish ? d.end : null, breakMinutes: clockish ? d.breakMin : 0,
     hours: durationHours(d.hours) ?? 'invalid', rate: num(d.rate), rateUnknown: d.rateUnknown, bonus: d.mode === 'GROUP' && !clockish && d.bonusTarget === 'OTHERS' ? 0 : num(d.bonus) || 0, bonusTarget: d.bonusTarget, amount: d.amount, amountUnknown: d.amountUnknown, organizerOnly: teamJob(d) && !sameRate(d) });
   const errors = [...ev.errors];
-  if (!d.category) errors.unshift('בחר מקום עבודה');
+  if (!d.category) errors.unshift('בוחרים מקום עבודה');
   if (d.mode === 'GROUP' && d.workers.some(w => !w.name.trim())) errors.push('לכל עובד צריך שם');
   if (d.mode === 'GROUP' && d.workers.some(w => w.hours.trim() && (durationHours(w.hours) == null || durationHours(w.hours) < 0 || durationHours(w.hours) > 24))) errors.push('שעות העובד לא תקינות');
   if (d.mode === 'GROUP' && d.workers.some(w => String(w.bonus ?? '').trim() && (num(w.bonus) == null || num(w.bonus) < 0))) errors.push('בונוס העובד לא תקין');
   if (d.mode === 'GROUP' && d.separateRates && [d.employerRate, d.workerRate].some(v => v.trim() && num(v) == null)) errors.push('תעריף לא תקין');
   if (d.mode === 'JOB' && d.hours.trim() && (durationHours(d.hours) == null || durationHours(d.hours) < 0 || durationHours(d.hours) > 24)) errors.push('משך לא תקין');
-  if (d.team && !d.workers.length) errors.push('הוסף לפחות אדם אחד לקבוצה');
+  if (d.team && !d.workers.length) errors.push('מוסיפים לפחות אדם אחד לקבוצה');
   if (teamJob(d)) {
     if (d.workers.some(w => !w.name.trim())) errors.push('לכל עובד צריך שם');
     if (d.workers.some(w => jobWorkerPay(w, d) == null)) errors.push('חסר כמה מקבל כל עובד');
@@ -284,7 +284,7 @@ function open(app, { entry = null, restore = null } = {}) {
   const persist = () => { if (!base) try { app.storage.setItem(DRAFT, JSON.stringify(d)); } catch {} };
   const changed = () => JSON.stringify(d) !== original;
   function close(force = false) {
-    if (!force && changed()) return U().confirmSheet(base ? 'לצאת בלי לשמור את השינויים?' : 'לצאת בלי לשמור את המשמרת?', 'מה שהקלדת לא יישמר.', 'לצאת', () => close(true));
+    if (!force && changed()) return U().confirmSheet(base ? 'לצאת בלי לשמור את השינויים?' : 'לצאת בלי לשמור את המשמרת?', 'מה שהוקלד לא יישמר.', 'לצאת', () => close(true));
     host.remove(); document.removeEventListener('keydown', onKey); behind.forEach(b => b && (b.inert = false));
     if (opener?.isConnected) opener.focus({ preventScroll: true });
     app.editorOpen = false; if (!base) try { app.storage.removeItem(DRAFT); } catch {} app.refresh();
@@ -380,9 +380,9 @@ function open(app, { entry = null, restore = null } = {}) {
       ${base ? `<div class="caption" data-testid="was-banner" style="background:color-mix(in srgb,var(--ink) 8%,transparent);border-radius:10px;padding:6px 10px">${changed() ? '<span class="tag warn">שונה</span> ' : ''}לפני: ${esc(U().dayLabel(base.date))} · ${esc(U().timeLabel(base))} · ${root.KisPay.pay(base) != null ? esc(U().money(base.totalEarnings, base.currency)) : base.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</div>` : ''}
       <div class="modes" role="tablist" aria-label="סוג הרישום">${MODES.map(([m, l]) => `<button role="tab" aria-selected="${tabOf(d) === m}" aria-pressed="${tabOf(d) === m}" data-mode="${m}" data-testid="mode-${m.toLowerCase()}">${l}</button>`).join('')}</div>
       <div class="places"><button data-a="add-place" data-testid="add-place">+ מקום</button>${cats.map(x => `<button aria-pressed="${x.name === d.category}" data-cat="${esc(x.name)}" data-testid="place-${esc(x.name)}">${esc(x.name)}</button>`).join('')}</div>
-      ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">${teamJob(d) ? 'כמה אתה הרווחת (רק שלך)' : 'כמה הרווחת'} (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount" ${teamJob(d) && !sameRate(d) ? 'placeholder="רק ארגנתי את הצוות? אפשר 0"' : ''}></label>
+      ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">${teamJob(d) ? 'הסכום שלך בלבד' : 'הסכום שהתקבל'} (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount" ${teamJob(d) && !sameRate(d) ? 'placeholder="רק ארגנתי את הצוות? אפשר 0"' : ''}></label>
           <div>${durationControl(true)}</div></div>
-          <button class="chip${d.amountUnknown ? ' on' : ''}" data-a="amount-unknown">${d.amountUnknown ? 'סכום חסר · נגיעה להזנה' : 'לא יודע עדיין'}</button>`
+          <button class="chip${d.amountUnknown ? ' on' : ''}" data-a="amount-unknown">${d.amountUnknown ? 'סכום חסר · לחיצה להזנה' : 'לא יודע עדיין'}</button>`
         : clockMode ? `<div class="clock-row">${[['START', 'התחלה'], ['END', 'סיום']].map(([t, label]) => { const v = shown(t) || '--:--', id = t === 'START' ? 'clock-start' : 'clock-end';
             // A tap on the time selects all of it (typing starts it over); a tap on one digit changes only it. Each time has its own −15/+15.
             return `<div class="time-box${target === t && pad ? ' on' : ''}" data-t="${t}"><span class="caption">${label}</span>
@@ -409,7 +409,7 @@ function open(app, { entry = null, restore = null } = {}) {
           <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
         <div class="seg">${['₪', '$'].map(cur => `<button aria-pressed="${d.currency === cur}" data-cur="${cur}">${cur}</button>`).join('')}</div></div>
       ${d.mode !== 'JOB' ? `<div class="row" style="align-items:flex-end;flex-wrap:wrap"><label class="field grow" style="min-width:140px">תעריף לשעה (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="rate" value="${esc(d.rate)}" ${d.rateUnknown ? 'disabled' : ''} data-testid="rate-input"></label>
-          <button class="chip${d.rateUnknown ? ' warn' : ''}" style="min-height:52px" data-a="rate-unknown" data-testid="rate-unknown">${d.rateUnknown ? 'תעריף חסר · נגיעה להזנה' : 'לא יודע'}</button>
+          <button class="chip${d.rateUnknown ? ' warn' : ''}" style="min-height:52px" data-a="rate-unknown" data-testid="rate-unknown">${d.rateUnknown ? 'תעריף חסר · לחיצה להזנה' : 'לא יודע'}</button>
           <button class="chip" style="min-height:52px" data-a="more" data-testid="editor-more">${more ? 'פחות' : 'הפסקה · הערה · בונוס'}</button></div>
 ` : ''}
       ${d.mode === 'GROUP' ? groupBlock(d) : ''}

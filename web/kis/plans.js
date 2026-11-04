@@ -47,13 +47,13 @@ function reviewSheet(app, after) {
       const chosen = list.filter(o => picked.has(o.key)), totals = {};
       for (const o of chosen) if (o.rate != null) totals[o.currency] = (totals[o.currency] || 0) + root.KisPay.money((root.KisPlan.endMillis(o.date, o.start, o.end) - root.KisPlan.startMillis(o.date, o.start)) / 3600000, o.rate);
       el.innerHTML = `<h2>משמרות קבועות שעברו</h2>
-        <p class="caption" style="margin:0">לא נרשמו לבד, כי הן רבות או ישנות. מסמנים רק את הימים שעבדת בהם, והם יירשמו. את השאר אפשר לסמן כ״לא עבדתי״.</p>
+        <p class="caption" style="margin:0">לא נרשמו לבד, כי הן רבות או ישנות. מסמנים רק את הימים שבהם הייתה עבודה, והם יירשמו. את השאר אפשר לסמן כ״לא עבדתי״.</p>
         <button class="btn ghost small" data-a="all" data-testid="plan-review-all" style="justify-self:start">${chosen.length === list.length ? 'ניקוי הסימון' : 'סימון הכול'}</button>
         <div class="list" style="display:grid;gap:2px;max-height:50vh;overflow:auto" data-testid="plan-review-list">${list.map(o => `<label class="row" style="align-items:center;min-height:48px;gap:10px">
           <input type="checkbox" data-k="${esc(o.key)}" ${picked.has(o.key) ? 'checked' : ''} style="width:22px;height:22px">
           <span class="grow"><b class="label">${esc(dayLabel(root.KisPlan.startMillis(o.date, o.start)))}</b> <span class="caption">⁦${o.start}–${o.end}⁩ · ${esc(o.category)}</span></span>
           <span class="caption">${o.rate == null ? 'תעריף חסר' : esc(money(root.KisPay.money((root.KisPlan.endMillis(o.date, o.start, o.end) - root.KisPlan.startMillis(o.date, o.start)) / 3600000, o.rate), o.currency))}</span></label>`).join('')}</div>
-        <button class="btn primary" data-a="record" data-testid="plan-review-record" ${chosen.length ? '' : 'disabled'}>${chosen.length ? `רישום ${chosen.length === 1 ? 'משמרת אחת' : chosen.length + ' משמרות'}` : 'בחירת הימים שעבדת בהם'}${Object.keys(totals).length ? ' · ' + Object.entries(totals).map(([c, v]) => esc(money(v, c))).join(' · ') : ''}</button>
+        <button class="btn primary" data-a="record" data-testid="plan-review-record" ${chosen.length ? '' : 'disabled'}>${chosen.length ? `רישום ${chosen.length === 1 ? 'משמרת אחת' : chosen.length + ' משמרות'}` : 'בחירת הימים שבהם הייתה עבודה'}${Object.keys(totals).length ? ' · ' + Object.entries(totals).map(([c, v]) => esc(money(v, c))).join(' · ') : ''}</button>
         <button class="btn ghost" data-a="skip" data-testid="plan-review-skip" ${list.length - chosen.length ? '' : 'disabled'}>${chosen.length ? `לא עבדתי ב־${list.length - chosen.length} האחרות` : `לא עבדתי באף אחת מ־${list.length}`}</button>`;
       el.querySelector('[data-a=all]').onclick = () => { if (chosen.length === list.length) picked.clear(); else list.forEach(o => picked.add(o.key)); draw(); };
       el.querySelectorAll('[data-k]').forEach(c => c.onchange = () => { if (c.checked) picked.add(c.dataset.k); else picked.delete(c.dataset.k); draw(); });
