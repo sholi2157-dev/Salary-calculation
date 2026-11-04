@@ -1,7 +1,7 @@
 // ממסר משוב ל"חישוב שכר": מקבל דיווח מהאפליקציה או מהאתר ושולח מייל מהחשבון שלך.
 // אין לשנות שום דבר למטה חוץ מ-TO אם רוצים כתובת אחרת.
 
-const TO = 'sholi2157+salaryfeedback@gmail.com';
+const TO = 'israelshimon1313-vzptcg@mail.grokbot.com';
 const TOKEN = 'salary-feedback-v1';      // אותו ערך נמצא באפליקציה ובאתר, מסנן בקשות אקראיות
 const DAILY_LIMIT = 40;                   // הגנה מהצפה. Gmail רגיל מאפשר כ-100 מיילים ביום
 const MAX_BYTES = 6 * 1024 * 1024;        // תמונה + JSON, עד 6MB
