@@ -65,7 +65,7 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
                             IntroRise("חישוב שכר", 100, "intro_line_1", label = true)
                             IntroRise(if (updated) "גרסה 2.2.3" else "ברוכים הבאים", 300, "intro_version", label = true, muted = true)
                             IntroRise("כעת סוכן ה-AI שלך מכיר אותך ואת העבודה שלך.", 600, "intro_line_2", size = 36)
-                            IntroRise("בקשו מהסוכן שלכם:", 1100, "intro_line_3", label = true)
+                            IntroRise("מבקשים מהסוכן:", 1100, "intro_line_3", label = true)
                             IntroBubble("כמה הרווחתי החודש?", 1400, mine = true, small = true)
                             IntroBubble("עבדתי אתמול בכינוס השלוחים 15 שעות, ושניאור נגר ביקש ממני לרשום בהערה סידור כסאות. תוסיף לי בבקשה.", 1800, mine = true, small = true)
                             IntroRise("והוא יעשה זאת בשבילכם!", 2300, "intro_line_4", size = 26)
@@ -159,7 +159,7 @@ private fun IntroBubble(text: String, delayMs: Long, mine: Boolean, small: Boole
 fun AiExplainCards(withHow: Boolean = true) {
     IntroCard("מה זה", "מדברים עם העוזר בשפה רגילה: \"כמה הרווחתי החודש?\" או \"תוסיף משמרת מחר מ-9 עד 5 במסעדה\". הוא עונה ומעדכן לפי המשמרות שלך.", 0)
     if (withHow) IntroCard("איך מחברים", "בהגדרות העוזר מוסיפים חיבור (Connector) עם הכתובת שמופיעה בהגדרות ← עוזרי AI מחוברים. נפתח דף, מתחברים עם Google ובוחרים מה מותר לו.", 1)
-    IntroCard("הרשאות", "לראות משמרות מותר תמיד. להוסיף, לערוך או למחוק רק אם הפעלת. בוחרים לכמה זמן: שעה, יום, 30 יום או עד שתנתק.", 2)
+    IntroCard("הרשאות", "לראות משמרות מותר תמיד. להוסיף, לערוך או למחוק רק אם הפעלת. בוחרים לכמה זמן: שעה, יום, 30 יום או עד הניתוק.", 2)
     IntroCard("בטוח", "העוזר רואה רק את המשמרות שלך ולא מקבל את הסיסמה. כל שינוי שלו נרשם ואפשר לבטל אותו, ומנתקים אותו בכל רגע.", 3)
 }
 
@@ -235,7 +235,7 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
     if (erasing) EraseSheet(
         title = "למחוק את הנתונים מהמכשיר הזה?",
         body = listOf("יימחקו מהמכשיר הזה: המשמרות, מקומות העבודה, המשמרות הקבועות, העובדים, הגדרות העבודה והשם שלך.",
-            if (user != null) "הנתונים בחשבון לא יימחקו. כדי שהסנכרון לא יחזיר אותם מיד, האפליקציה תתנתק מהחשבון בטלפון הזה. כשתתחבר שוב, הם יחזרו מהחשבון. חשבון Google עצמו לא נמחק ולא מתנתק מהטלפון."
+            if (user != null) "הנתונים בחשבון לא יימחקו. כדי שהסנכרון לא יחזיר אותם מיד, האפליקציה תתנתק מהחשבון בטלפון הזה. אחרי התחברות מחדש הם יחזרו מהחשבון. חשבון Google עצמו לא נמחק ולא מתנתק מהטלפון."
             else "אין עותק בחשבון. אחרי המחיקה אפשר לשחזר רק מקובץ גיבוי."),
         okLabel = "מחיקה מהמכשיר", okTag = "account_erase_ok", onBackup = onBackup, onDismiss = { erasing = false }) {
         erasing = false
@@ -331,7 +331,7 @@ fun AssistantsSheet(viewModel: WorkViewModel, explain: Boolean = false, onDismis
             val (grants, log) = data ?: (emptyList<com.example.api.AssistantGrant>() to emptyList())
             when {
                 !loaded -> Text("טוען…", style = KisType.caption, color = c.muted)
-                data == null -> Text("אין חיבור כרגע. נסה שוב בעוד רגע.", style = KisType.caption, color = c.muted, modifier = Modifier.testTag("assistants_offline"))
+                data == null -> Text("אין חיבור כרגע. אפשר לנסות שוב בעוד רגע.", style = KisType.caption, color = c.muted, modifier = Modifier.testTag("assistants_offline"))
                 else -> {
                     Text("מחוברים", style = KisType.label, color = c.ink)
                     if (grants.isEmpty()) Text("אין עוזרים מחוברים.", style = KisType.caption, color = c.muted, modifier = Modifier.testTag("assistants_none"))
@@ -340,7 +340,7 @@ fun AssistantsSheet(viewModel: WorkViewModel, explain: Boolean = false, onDismis
                             horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Column(Modifier.weight(1f)) {
                                 Text(g.name.ifBlank { "עוזר AI" }, style = KisType.label, color = c.ink)
-                                Text((g.scopes.mapNotNull { PERM_LABEL[it] } + (g.until?.let { "עד ${KisShare.shortDate(it)}" } ?: "עד שתנתק")).joinToString(" · "),
+                                Text((g.scopes.mapNotNull { PERM_LABEL[it] } + (g.until?.let { "עד ${dayLabelLong(it)}" } ?: "עד הניתוק")).joinToString(" · "),
                                     style = KisType.caption, color = c.muted)
                             }
                             KisChip("ניתוק", onClick = { cutting = g }, warn = true, tag = "assistant_cut")
@@ -375,7 +375,7 @@ fun AssistantsSheet(viewModel: WorkViewModel, explain: Boolean = false, onDismis
                 KisButton("ביטול", { cutting = null }, Modifier.weight(1f), KisButtonKind.GHOST, height = 52.dp)
                 KisButton("ניתוק", {
                     cutting = null
-                    scope.launch { message = if (viewModel.cutOffAssistant(g.id)) null else "הניתוק לא הושלם. נסה שוב"; round++ }
+                    scope.launch { message = if (viewModel.cutOffAssistant(g.id)) null else "הניתוק לא הושלם. אפשר לנסות שוב"; round++ }
                 }, Modifier.weight(1f), KisButtonKind.DANGER, height = 52.dp, tag = "assistant_cut_ok")
             }
         }

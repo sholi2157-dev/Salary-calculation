@@ -86,7 +86,7 @@ enum class CoachScreen { HOME, FORM, AI, HISTORY, SHARE, CATEGORIES, API }
 enum class CoachTarget { SHIFT, FIELDS, AI, HISTORY, SHARE, CATEGORIES, API }
 data class CoachStep(val screen: CoachScreen, val target: CoachTarget?, val title: String, val body: String)
 val workOnboardingSteps = listOf(
-    CoachStep(CoachScreen.HOME, null, "ברוכים הבאים לחישוב שכר", "רושמים משמרות, רואים כמה הרווחתם ומשתפים בקלות. בוא נכיר את המקומות החשובים."),
+    CoachStep(CoachScreen.HOME, null, "ברוכים הבאים לחישוב שכר", "רושמים משמרות, רואים את ההכנסה ומשתפים בקלות. נכיר את המקומות החשובים."),
     CoachStep(CoachScreen.HOME, CoachTarget.SHIFT, "כאן מתחילים", "הכפתור + למטה מוסיף משמרת שכבר עבדת. ״אני מתחיל עכשיו״ מפעיל טיימר בזמן העבודה."),
     CoachStep(CoachScreen.FORM, CoachTarget.FIELDS, "השעות כבר מוצעות", "הסיום מעוגל לחצי השעה האחרונה, וההתחלה לפי ההרגל שלך. גוררים בסרגל או מקלידים — והסכום מחושב מיד."),
     CoachStep(CoachScreen.AI, CoachTarget.AI, "אפשר גם במילים", "כותבים או מכתיבים, לוחצים ״פענוח״, בודקים את התוצאה ורק אז שומרים."),
@@ -94,7 +94,7 @@ val workOnboardingSteps = listOf(
     CoachStep(CoachScreen.SHARE, CoachTarget.SHARE, "שולחים סיכום מסודר", "נגיעה במשמרת פותחת את הפרטים, ומשם משתפים לוואטסאפ או מעתיקים. בהדרכה לא נשלח דבר."),
     CoachStep(CoachScreen.CATEGORIES, CoachTarget.CATEGORIES, "עובד בכמה מקומות?", "בהגדרות מוסיפים מקום עבודה לכל עבודה, עם תעריף, מטבע וצבע משלו."),
     CoachStep(CoachScreen.API, CoachTarget.API, "רוצה להשתמש ב־AI?", "מוסיפים מפתח Gemini אישי. שאר האפליקציה עובדת גם בלי AI."),
-    CoachStep(CoachScreen.HOME, null, "זה הכול. אתה מוכן.", "מוסיפים משמרת — והחישובים עלינו. ההדרכה תמיד זמינה שוב בהגדרות.")
+    CoachStep(CoachScreen.HOME, null, "זה הכול. אפשר להתחיל.", "מוסיפים משמרת — והחישובים עלינו. ההדרכה תמיד זמינה שוב בהגדרות.")
 )
 
 @Stable

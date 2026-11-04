@@ -234,7 +234,7 @@ data class EntryDraft(
         val ev = V2Rules.evaluate(ruleDraft())
         val errors = ev.errors.toMutableList()
         val warnings = mutableListOf<String>()
-        if (category.isBlank()) errors.add(0, "בחר מקום עבודה")
+        if (category.isBlank()) errors.add(0, "בוחרים מקום עבודה")
         var overnight = false
         if ((mode == EntryMode.CLOCK || mode == EntryMode.GROUP) && start != null) {
             val sp = V2Rules.span(start, end, breakMin)
@@ -247,7 +247,7 @@ data class EntryDraft(
             if (separateRates && listOf(employerRate, workerRate).any { it.isNotBlank() && num(it) == null }) errors += "תעריף לא תקין"
         }
         if (mode == EntryMode.JOB && hours.isNotBlank() && (DurationInput.hours(hours)?.let { it < 0 || it > 24 } != false)) errors += "משך לא תקין"
-        if (team && workers.isEmpty()) errors += "הוסף לפחות אדם אחד לקבוצה"
+        if (team && workers.isEmpty()) errors += "מוסיפים לפחות אדם אחד לקבוצה"
         if (teamJob) {
             if (workers.any { it.name.isBlank() }) errors += "לכל עובד צריך שם"
             if (workers.any { jobWorkerPay(it) == null }) errors += "חסר כמה מקבל כל עובד"

@@ -114,7 +114,7 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
             Kick(say("longestKick"))
             Huge(KisFormat.duration(l.hours))
             Head("שעות, " + dayLabel(millisOf(l.date)))
-            Para((if (l.start != null && l.end != null) "⁦${l.start}–${l.end}⁩. " else "") + say("longestTail") + when (s.nights) { 0 -> ""; 1 -> " ופעם אחת סיימתם אחרי 23:00."; else -> " ו-${s.nights} פעמים סיימתם אחרי 23:00." })
+            Para((if (l.start != null && l.end != null) "⁦${l.start}–${l.end}⁩. " else "") + say("longestTail") + when (s.nights) { 0 -> ""; 1 -> " ופעם אחת המשמרת נגמרה אחרי 23:00."; else -> " ו-${s.nights} פעמים המשמרת נגמרה אחרי 23:00." })
         }) }
         s.bestDay?.takeIf { "days" in shows }?.let { best -> add(Slide(StoryDark, 5, 1, tag = "story_days") {
             Kick(say("daysKick"))
@@ -125,8 +125,8 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
             Kick(say("hourKick"))
             Huge("%02d:00".format(h))
             Bars(s.hourMinutes.map { it.toDouble() }, h, null, Color.White, 90.dp)
-            Para(when { h >= 22 || h < 5 -> "בזמן שכולם רואים סדרה במיטה, אתם בשטח."; h < 11 -> "קפה ראשון? אתם כבר באמצע העבודה."
-                h < 17 -> "שעות השיא של העולם. וגם שלכם."; else -> "השעה שבה כולם חוזרים הביתה, ואתם בדיוק בשיא." })
+            Para(when { h >= 22 || h < 5 -> "בזמן שכולם רואים סדרה במיטה, העבודה בעיצומה."; h < 11 -> "קפה ראשון? וכבר באמצע העבודה."
+                h < 17 -> "שעות השיא של העולם. וגם של העבודה."; else -> "השעה שבה כולם חוזרים הביתה, והעבודה בדיוק בשיא." })
         }) }
         add(Slide(place(1), 3, 0, tag = "story_money") {
             Kick(say("moneyKick"))

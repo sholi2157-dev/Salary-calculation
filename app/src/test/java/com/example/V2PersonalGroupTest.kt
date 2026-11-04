@@ -30,7 +30,7 @@ class V2PersonalGroupTest {
 
     @Test fun aGroupNeedsPeopleAndLeavingItDropsThem() {
         val g = clock.withTeam(true)
-        assertTrue(g.check().errors.contains("הוסף לפחות אדם אחד לקבוצה"))
+        assertTrue(g.check().errors.contains("מוסיפים לפחות אדם אחד לקבוצה"))
         val withDani = g.copy(workers = listOf(WorkerDraft("דני", "4")))
         assertTrue(withDani.check().errors.toString(), withDani.check().canSave)
         assertTrue(withDani.toEntry().isGroupShift)

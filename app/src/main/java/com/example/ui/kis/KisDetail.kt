@@ -225,7 +225,7 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
         }
     }
     if (reports) ActionsSheet("שיתוף", "group_reports", { reports = false }, listOf(
-        "דו״ח למעסיק" to { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName, future = future), "סיכום לקבלן", onMessage) },
+        "דוח למעסיק" to { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName, future = future), "סיכום לקבלן", onMessage) },
         "העתקת דוח הצוות" to { KisShare.copy(context, WorkShareText.employer(entry, myName, technical = true, future = future)); onMessage("הדוח הועתק ✓") },
         "החלק שלי" to { KisShare.shareOrCopy(context, WorkShareText.entry(entry, future = future), "שיתוף משמרת", onMessage) },
         "העתקת החלק שלי" to { KisShare.copy(context, WorkShareText.entry(entry, technical = true, future = future)); onMessage("הועתק ✓") }))

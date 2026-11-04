@@ -75,7 +75,7 @@ object SalaryFeedback {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("תקלה", "הצעה", "הערה").forEach { kind -> KisChip(kind, selected = type == kind, onClick = { type = kind }, tag = "feedback_type_$kind") }
         }
-        KisTextField(message, { onMessage(it); failed = false }, "מה קרה, או מה תרצה להציע?", Modifier.fillMaxWidth().testTag("feedback_message"), singleLine = false, minLines = 3,
+        KisTextField(message, { onMessage(it); failed = false }, "מה קרה, או מה ההצעה?", Modifier.fillMaxWidth().testTag("feedback_message"), singleLine = false, minLines = 3,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default))
         if (FeedbackReport.enabled) {
             if (image == null) KisButton("צירוף צילום מסך", {

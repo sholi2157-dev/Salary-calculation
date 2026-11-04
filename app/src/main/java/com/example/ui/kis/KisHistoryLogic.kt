@@ -9,7 +9,7 @@ import java.util.Calendar
 import java.util.Locale
 
 enum class Period(val label: String) { ALL("כל התאריכים"), MONTH("חודש"), RANGE("טווח") }
-enum class PayFilter(val label: String) { ALL("הכול"), UNPAID("ממתין"), PAID("שולם"), PENDING("בלי תעריף") }
+enum class PayFilter(val label: String) { ALL("הכול"), UNPAID("לא שולם"), PAID("שולם"), PENDING("בלי תעריף") }
 enum class SortOrder(val label: String, val short: String) { NEWEST("החדש קודם", "מהחדש לישן"), OLDEST("הישן קודם", "מהישן לחדש"), ADDED("לפי הוספה", "לפי סדר ההוספה") }
 
 /** History filters. Plain values so they survive rotation and can be tested. */
