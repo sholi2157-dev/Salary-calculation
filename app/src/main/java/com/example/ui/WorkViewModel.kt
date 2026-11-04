@@ -59,8 +59,15 @@ class WorkViewModel(
         if (repository.getCategoryByName(name) != null) localDao.setLocalPreference(com.example.data.WorkLocalPreference("defaultCategory", name))
     } }
     fun categoryCurrency(name: String): String = localPreferences.value["categoryCurrency:$name"] ?: defaultCurrency.value
-    fun editCategory(category: WorkCategory, name: String, rate: Double, currency: String) { viewModelScope.launch {
-        try { localDao.editCategorySafely(category, name, rate, currency); shiftState.renameCategory(category.name, name.trim()); performAutoBackup() }
+    /** [retro]: "שינוי רטרואקטיבי" (FB-08), the place's unpaid shifts at the previous rate or without a rate take the new one; offered with undo. */
+    fun editCategory(category: WorkCategory, name: String, rate: Double, currency: String, retro: Boolean = false) { viewModelScope.launch {
+        try {
+            val changed = localDao.editCategorySafely(category, name, rate, currency, retro)
+            shiftState.renameCategory(category.name, name.trim()); performAutoBackup()
+            if (changed.isNotEmpty()) com.example.ui.kis.KisNotices.post(
+                if (changed.size == 1) "התעריף עודכן למשמרת אחת שלא שולמה ✓" else "התעריף עודכן ל-${changed.size} משמרות שלא שולמו ✓", "ביטול") {
+                viewModelScope.launch { localDao.restoreRetroRate(changed); performAutoBackup() } }
+        }
         catch (_: IllegalArgumentException) { com.example.ui.kis.KisNotices.post("שם כפול או ערכים לא תקינים") }
     } }
     private val settings = com.example.data.WorkAccountPreferences.get(application, owner)

@@ -275,6 +275,8 @@ private fun WorkplaceEditor(cat: WorkCategory, categories: List<WorkCategory>, v
     var currency by rememberSaveable { mutableStateOf(viewModel.categoryCurrency(cat.name)) }
     var color by rememberSaveable { mutableIntStateOf(settings.workplaceIndex(cat.name, categories)) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    // FB-08: off by default (the new rate is only for new shifts).
+    var retro by rememberSaveable { mutableStateOf(false) }
     val taken = categories.any { it.id != cat.id && it.name.trim().equals(name.trim(), true) }
     val rateValue = rate.toDoubleOrNull()?.takeIf { it >= 0 }
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sunk).padding(12.dp).testTag("edit_category_sheet"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -285,7 +287,14 @@ private fun WorkplaceEditor(cat: WorkCategory, categories: List<WorkCategory>, v
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
             CurrencyToggle(currency, { currency = it }, "edit_category_currency")
         }
-        Text("שינוי התעריף חל רק על משמרות חדשות. סכומים שכבר נשמרו לא משתנים.", style = KisType.caption, color = c.muted)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text("שינוי רטרואקטיבי", style = KisType.label, color = c.ink)
+                Text(if (retro) "יעודכנו משמרות שלא שולמו בתעריף הקודם או ללא תעריף. משמרות צוות לא משתנות" else "התעריף החדש יחול רק על משמרות חדשות",
+                    style = KisType.caption, color = c.muted, modifier = Modifier.testTag("edit_category_retro_hint"))
+            }
+            KisSwitch(retro, { retro = it }, Modifier.testTag("edit_category_retro"), label = "שינוי רטרואקטיבי")
+        }
         Text("צבע", style = KisType.label, color = c.muted)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Workplaces.forEachIndexed { i, w ->
@@ -298,7 +307,7 @@ private fun WorkplaceEditor(cat: WorkCategory, categories: List<WorkCategory>, v
             if (clean.isNotEmpty() && !taken && rateValue != null) {
                 if (clean != cat.name) settings.renameWorkplaceColor(cat.name, clean)
                 settings.setWorkplaceColor(clean, color)
-                viewModel.editCategory(cat, clean, rateValue, currency)
+                viewModel.editCategory(cat, clean, rateValue, currency, retro)
                 settings.haptic(KisSettings.Haptic.SUCCESS)
                 onDismiss()
             }

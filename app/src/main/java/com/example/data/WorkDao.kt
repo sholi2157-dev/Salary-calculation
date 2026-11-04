@@ -39,10 +39,20 @@ interface WorkDao {
         return categories.firstOrNull { it.name == chosen && it.id != category.id } ?: categories.firstOrNull { it.id != category.id }
     }
 
+    /** One shift changed by a retroactive rate change (FB-08): what it held before and what the change wrote. */
+    data class RetroChange(val id: Int, val hourlyRate: Double, val totalEarnings: Double, val wroteRate: Double, val wroteTotal: Double, val payKnown: Boolean)
+
+    /**
+     * Renames the place and sets its rate and currency. With [retro] ("שינוי רטרואקטיבי") its unpaid shifts at the previous
+     * rate or without a rate take the new rate and amount in the same transaction (WorkPay.retroRate); paid shifts never change.
+     * Returns the shifts it changed, so the screen can offer undo.
+     */
     @Transaction
-    suspend fun editCategorySafely(category: WorkCategory, name: String, rate: Double, currency: String) {
+    suspend fun editCategorySafely(category: WorkCategory, name: String, rate: Double, currency: String, retro: Boolean = false): List<RetroChange> {
         require(name.isNotBlank() && rate.isFinite() && rate >= 0 && currency in listOf("₪", "$"))
         require(getCategoriesList().none { it.id != category.id && it.name.equals(name.trim(), true) })
+        // The previous rate as stored now, not as the screen last saw it.
+        val oldRate = getCategoriesList().firstOrNull { it.id == category.id }?.defaultRate ?: category.defaultRate
         updateCategory(category.copy(name = name.trim(), defaultRate = rate))
         updateCategoryForEntries(category.name, name.trim())
         updateCategoryForSeries(category.name, name.trim())
@@ -50,6 +60,28 @@ interface WorkDao {
             setLocalPreference(WorkLocalPreference("defaultCategory", name.trim()))
         removeLocalPreference("categoryCurrency:${category.name}")
         setLocalPreference(WorkLocalPreference("categoryCurrency:${name.trim()}", currency))
+        if (!retro) return emptyList()
+        val rows = getEntriesList().associateBy { it.id }
+        return WorkPay.retroRate(rows.values.toList(), name.trim(), oldRate, rate, currency).map { (id, total) ->
+            val e = rows.getValue(id)
+            updateEntry(e.copy(hourlyRate = rate, totalEarnings = total, payKnown = true))
+            RetroChange(id, e.hourlyRate, e.totalEarnings, rate, total, e.payKnown)
+        }
+    }
+
+    /**
+     * Undo of a retroactive rate change: a shift gets its previous rate and amount back only while it still holds exactly
+     * what the change wrote and is still unpaid, so a shift edited or paid since then is never touched. Returns how many.
+     */
+    @Transaction
+    suspend fun restoreRetroRate(changes: List<RetroChange>): Int {
+        var n = 0
+        for (c in changes) {
+            val e = getEntryById(c.id) ?: continue
+            if (e.isPaid || !e.payKnown || e.hourlyRate != c.wroteRate || e.totalEarnings != c.wroteTotal) continue
+            updateEntry(e.copy(hourlyRate = c.hourlyRate, totalEarnings = c.totalEarnings, payKnown = c.payKnown)); n++
+        }
+        return n
     }
 
     @Query("SELECT * FROM work_local_receipts WHERE operation = :operation")

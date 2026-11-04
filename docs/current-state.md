@@ -1,3 +1,17 @@
+# FB-08 owner decisions — 2026-11-04
+
+Current task on `claude/2.3-FB-08-retro-rate-android`, PR #55 (base `release/2.3-android`).
+The current owner request supersedes the historical Android-only release sequencing below.
+Scope and verification: `docs/fb08-retro-rate-20261104.md`.
+With retroactive rate change ON, unpaid non-team hourly shifts in the workplace currency
+get the new rate only if their known rate exactly equals the previous workplace rate,
+or their rate is unknown. Filling an unknown rate also sets `payKnown = true`; undo
+restores the original unknown state. Paid shifts, other known rates, jobs and team
+shifts stay unchanged. Weekly plans and the running timer retain their own rates.
+Verified source `3013064`: CI 41927913224 SUCCESS, 116 Android tests (7 FB-08),
+31 Web tests and both existing integration checks passed. All PR checks green.
+No release, signing, package, version, schema or shared-fixture changes.
+
 # Android 2.0.8 and the website published — 2026-10-25
 
 Branch `claude/project-thread-cudbls` (includes the job team from `claude/project-thread-l42q3d`); website
