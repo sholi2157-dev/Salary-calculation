@@ -71,12 +71,17 @@ function roundedEnd(nowMinutes) { return fromMinutes(Math.trunc(nowMinutes / 30)
 /** Two-decimal rounding with the same epsilon guard the existing app and web use. */
 function round2(value) { return Math.floor((value + Number.EPSILON) * 100 + 0.5) / 100; }
 /*
- * 2.3.0 money contract (audit CAL-02/CAL-05), identical to Android WorkPay.money: every new amount is
- * hours × rate + bonus in exact decimal arithmetic, rounded once, half up, to whole agorot/cents. Each input is first
- * fixed to 10 decimal places from its exact binary value (toFixed(10) here, BigDecimal.setScale(10, HALF_UP) there),
- * so a typed 1.5 × 99.99 is 149.99 and the preview and the saved amount always come from this one function.
- * Saved amounts are never recalculated with it.
+ * 2.3.0 money contract (audit CAL-02/CAL-05, M-08, decision D-5), identical to Android WorkPay.money: every new amount is
+ * hours × rate + bonus in exact decimal arithmetic, rounded once, half up, to whole agorot/cents, and the preview and the
+ * saved amount always come from this one function. Saved amounts are never recalculated with it.
+ *  - Hours that are whole seconds (every clock shift is minutes / 60, every timer is seconds / 3600) are taken as that
+ *    exact fraction: seconds × rate / 3600, so 50 minutes × 33.33 = 27.775 → 27.78 (M-08). The tolerance (1e-6 s) is
+ *    far below anything a person types and far above the binary error of minutes / 60.
+ *  - Any other hours value (typed decimal hours such as 2.675) is fixed to 10 decimal places from its exact binary
+ *    value (toFixed(10) here, BigDecimal.setScale(10, HALF_UP) there), so a typed 1.5 × 99.99 is 149.99.
+ *  - The rate and bonus are always fixed to 10 decimal places.
  */
+const SECONDS_TOLERANCE = 1e-6;
 function money(hours, rate, bonus = 0) {
  // BigDecimal(double) also accepts finite values above toFixed's exponential-notation boundary.
  const units = value => {
@@ -86,9 +91,13 @@ function money(hours, rate, bonus = 0) {
   const v = BigInt(t.replace('-', '').replace('.', ''));
   return neg ? -v : v;
  };
- const total = units(hours) * units(rate) + units(bonus) * 10000000000n; // in 10^-20
- const den = 1000000000000000000n, neg = total < 0n, abs = neg ? -total : total;
- const cents = (abs + den / 2n) / den;
+ const h = Number(hours), sec = h * 3600, whole = Math.round(sec);
+ const exactSeconds = Number.isFinite(sec) && Math.abs(sec) < 1e15 && Math.abs(sec - whole) <= SECONDS_TOLERANCE;
+ // Exact seconds: (seconds × rate + 3600 × bonus) in 10^-10 units, over 3600. Otherwise hours × rate + bonus in 10^-20 units.
+ const total = exactSeconds ? BigInt(whole) * units(rate) + 3600n * units(bonus)
+  : units(hours) * units(rate) + units(bonus) * 10000000000n;
+ const den = exactSeconds ? 3600n * 100000000n : 1000000000000000000n, neg = total < 0n, abs = neg ? -total : total;
+ const cents = (2n * abs + den) / (2n * den);
  // Convert the decimal amount: cents may overflow Double even when the amount does not.
  return Number((neg && cents !== 0n ? '-' : '') + (cents / 100n) + '.' + String(cents % 100n).padStart(2, '0'));
 }

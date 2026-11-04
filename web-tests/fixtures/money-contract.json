@@ -1,5 +1,5 @@
 {
- "contract": "2.3.0 money: exact decimal of each input fixed to 10 places, hours*rate+bonus, rounded once half up to 0.01. Shared by web (KisRules.money) and Android (WorkPay.money).",
+ "contract": "2.3.0 money: exact decimal, rounded once half up to 0.01. Hours that are whole seconds (clock minutes/60, timer seconds/3600, within 1e-6 s) are taken exactly: seconds*rate/3600+bonus (M-08). Other hours, and every rate and bonus, are fixed to 10 places: hours*rate+bonus. Shared by web (KisRules.money) and Android (WorkPay.money).",
  "cases": [
   {
    "hours": 1.5,
@@ -120,6 +120,48 @@
    "rate": 1,
    "bonus": 0,
    "expected": 2.68
+  },
+  {
+   "hours": 0.8333333333333334,
+   "rate": 33.33,
+   "bonus": 0,
+   "expected": 27.78
+  },
+  {
+   "hours": 0.08333333333333333,
+   "rate": 0.3,
+   "bonus": 0,
+   "expected": 0.03
+  },
+  {
+   "hours": 0.3333333333333333,
+   "rate": 850.005,
+   "bonus": 0,
+   "expected": 283.34
+  },
+  {
+   "hours": 1.6666666666666667,
+   "rate": 29.12,
+   "bonus": 0,
+   "expected": 48.53
+  },
+  {
+   "hours": 1.0002777777777778,
+   "rate": 36.01,
+   "bonus": 0,
+   "expected": 36.02
+  },
+  {
+   "hours": 12.083333333333334,
+   "rate": 45.55,
+   "bonus": 12.5,
+   "expected": 562.9
+  },
+  {
+   "hours": 0.0019444444444444444,
+   "rate": 0.3,
+   "bonus": 0,
+   "expected": 0
   }
  ]
 }
