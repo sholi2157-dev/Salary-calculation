@@ -63,7 +63,7 @@ test('numeric/null times become literal cells and invalid ranges do not invent b
   }
  }
  const cells=T.table(S.csv([{...base,hours:-0,hourlyRate:43.21,totalEarnings:301.17}]).slice(1),',')[1];
- assert.equal(cells[4],'-0.00');assert.equal(cells[6],'43.21');assert.equal(cells[7],'301.17');
+ assert.equal(cells[4],'0:00','the exact duration (M-43); -0 hours is no time');assert.equal(cells[6],'43.21');assert.equal(cells[7],'301.17');
 });
 test('export remains read-only for historical malformed times; JSON backup retains original fields',()=>{
  const row={...base,startTime:930,endTime:'=1+1'};

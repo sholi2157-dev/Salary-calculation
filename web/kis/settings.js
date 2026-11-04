@@ -36,7 +36,7 @@ function render(el, app) {
     + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${store.local[k] === true}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''),
     'הסיכום החודשי ותעריף חסר, כשנכנסים לאתר. באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה, וגם משמרת פעילה ומשמרת קבועה שהסתיימה.')}
   ${group('גיבוי ונתונים', `<div class="row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
-    <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'כשמחוברים לחשבון, הנתונים נשמרים בו ובדפדפן הזה. גיבוי לקובץ הוא העתק נוסף בשבילך, וגיבוי מהאפליקציה עובר לכאן ולהפך.')}
+    <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv" data-testid="csv-export">טבלה לאקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'כשמחוברים לחשבון, הנתונים נשמרים בו ובדפדפן הזה. גיבוי לקובץ הוא העתק נוסף בשבילך, וגיבוי מהאפליקציה עובר לכאן ולהפך. טבלה לאקסל היא לקריאה ולחישובים, לא גיבוי: היא לא שומרת הכול (למשל עובדי קבוצה).')}
   ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
   ${group('חשבון', `<div class="row" style="padding:10px 0 4px"><input class="input grow" style="min-width:0" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input grow" style="min-width:0" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>
@@ -141,7 +141,7 @@ function importSheet(app) {
   const { store } = app;
   U().sheet('import-sheet', (el, close) => {
     let pending = null;
-    el.innerHTML = `<div class="title-row"><h2>ייבוא נתונים</h2>${U().infoDot('ייבוא נתונים', 'גיבוי מהאפליקציה או מהאתר, או שורות מאקסל עם כותרות. לפני השמירה תוצג בדיקה; משמרות שכבר קיימות לא יתווספו שוב.')}</div>
+    el.innerHTML = `<div class="title-row"><h2>ייבוא נתונים</h2>${U().infoDot('ייבוא נתונים', 'גיבוי מהאפליקציה או מהאתר, או שורות מאקסל עם כותרות. לפני השמירה תוצג בדיקה; משמרות שכבר קיימות לא יתווספו שוב. לשחזור מלא משתמשים בגיבוי, לא בטבלה לאקסל.')}</div>
       <textarea class="input" rows="6" data-f="t" placeholder="הדבקת נתונים" data-testid="import-text"></textarea>
       <label class="btn ghost small" style="position:relative">בחירת קובץ<input type="file" accept=".json,.csv,.tsv,.txt" data-f="file" style="position:absolute;inset:0;opacity:0"></label>
       <button class="btn ghost" data-a="check" data-testid="import-check">בדיקה</button><p class="caption" data-f="sum" data-testid="import-summary" style="white-space:pre-line"></p>
@@ -153,7 +153,7 @@ function importSheet(app) {
       try {
         const data = root.WorkTransfer.decode(t.value);
         const keys = new Set(store.data.entries.map(e => e.seriesKey).filter(Boolean));
-        const fresh = root.WorkTransfer.missing(store.data.entries, data.entries).filter(e => !e.seriesKey || !keys.has(e.seriesKey));
+        const fresh = root.WorkTransfer.missing(store.data.entries, data.entries, { table: data.fromTable === true }).filter(e => !e.seriesKey || !keys.has(e.seriesKey));
         const series = (data.series || []).filter(s => !store.plans.series.some(x => x.id === s.id));
         // Places, workers and settings count too (audit D05): a backup of only those can be imported.
         const cats = data.categories.filter(c => !store.data.categories.some(x => x.name === c.name));
@@ -165,6 +165,7 @@ function importSheet(app) {
         pending = { data, fresh, series, cats, workers, currencies, main };
         const tt = root.KisHome.sortedTotals(fresh);
         sum.textContent = `נקראו ${data.entries.length} משמרות. חדשות: ${fresh.length}. קיימות: ${data.entries.length - fresh.length}.` +
+          (data.fromTable ? '\nזו טבלה מאקסל, לא גיבוי: משמרת שכבר קיימת (אותו מקום, יום, שעות וסכום) לא תתווסף שוב, וטבלה לא משנה משמרות קיימות.' : '') +
           (tt.length ? `\nיתווסף: ${tt.map(([c, v]) => U().money(v, c)).join(' · ')}` : '') + (series.length ? `\nמשמרות קבועות חדשות: ${series.length}` : '') +
           (cats.length ? `\nמקומות חדשים: ${cats.length}` : '') + (workers.length ? `\nעובדים חדשים: ${workers.length}` : '') + (currencies.length ? `\nמטבע למקומות החדשים: ${currencies.length}` : '');
         prefsRow.hidden = !main;
@@ -183,7 +184,7 @@ function importSheet(app) {
         // plans are written as one commit, so a failure leaves nothing half imported (audit D03).
         const add = store.transact(n => {
           const d = n.data, keys = new Set(d.entries.map(e => e.seriesKey).filter(Boolean)), existing = new Set(d.categories.map(c => c.name));
-          const rows = root.WorkTransfer.missing(d.entries, data.entries).filter(e => !e.seriesKey || !keys.has(e.seriesKey))
+          const rows = root.WorkTransfer.missing(d.entries, data.entries, { table: data.fromTable === true }).filter(e => !e.seriesKey || !keys.has(e.seriesKey))
             .map(e => ({ ...e, id: store.uid(), kind: e.kind ?? 'shift', payKnown: e.payKnown ?? true, bonus: e.bonus ?? 0, seriesKey: e.seriesKey ?? null,
               autoConfirmed: e.autoConfirmed ?? false, createdAt: e.createdAt ?? Date.now() }));
           for (const c of data.categories) if (!d.categories.some(x => x.name === c.name)) d.categories.push(c);
