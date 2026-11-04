@@ -656,7 +656,7 @@ private fun JobAmount(d: EntryDraft, amount: String, active: Boolean, ink: Color
         Column(Modifier.fillMaxWidth().clip(shape).background(if (active) (if (c.dark) ink.copy(alpha = 0.10f) else c.surface) else Color.Transparent)
             .then(if (active) Modifier.border(1.5.dp, accent, shape) else Modifier)
             .kisClick(onClick = onOpen).testTag("job_amount").padding(horizontal = 8.dp, vertical = 6.dp)) {
-            Text(if (d.teamJob) "כמה אתה הרווחת (רק שלך)" else "כמה הרווחת", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+            Text(if (d.teamJob) "הסכום שלך בלבד" else "הסכום שהתקבל", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
             MoneyText(amount.toDoubleOrNull() ?: 0.0, d.currency, KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp), color = ink.copy(alpha = if (amount.isEmpty()) 0.45f else 1f))
             // D-7: with an amount per worker, the user may only have organized the team.
             if (d.teamJob && !d.teamSameRate) Text("רק ארגנתי את הצוות? אפשר 0", color = ink.copy(alpha = 0.7f), style = KisType.caption, modifier = Modifier.testTag("job_organizer_hint"))
