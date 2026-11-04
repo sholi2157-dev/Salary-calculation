@@ -7,37 +7,38 @@ let section = null;
 const group = (title, body, info) => `<section class="set-group${section === title ? ' on' : ''}" data-group="${title}"><div class="title-row" style="margin:22px 0 10px"><h2 class="section-title" style="margin:0;font:1.375rem/1.75rem var(--display)" data-testid="settings-${title}">${title}</h2>${info ? U().infoDot(title, info) : ''}</div><div class="card" style="display:grid;gap:4px;padding:6px 16px">${body}</div></section>`;
 /** The kinds of in-site reminder (M-31), titles and explanations as in the Android app: [stored key, title, info, testid]. */
 const NOTIFY_KINDS = [
-  ['notifyMonthly', 'הסיכום החודשי', 'מה-30 לכל חודש (בפברואר מהיום האחרון), כשנכנסים לאתר: כמה עבדת וכמה הרווחת החודש. רק כשיש משמרות בחודש.', 'notify-monthly'],
-  ['notifyRate', 'תעריף חסר', 'לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.', 'notify-rate'],
+  ['notifyMonthly', 'הסיכום החודשי', 'מה-30 לכל חודש, כשיש משמרות בחודש.', 'notify-monthly'],
+  ['notifyRate', 'תעריף חסר', 'לכל היותר פעם בשבוע.', 'notify-rate'],
 ];
-const rowHtml = (title, hint, control, info) => `<div class="row" style="align-items:center;min-height:58px;padding:8px 0"><div class="grow"><div class="title-row"><span style="font-weight:500">${title}</span>${info ? U().infoDot(title, info) : ''}</div>${hint ? `<div class="caption">${hint}</div>` : ''}</div>${control}</div>`;
+// M-46 (R-30): a row explains itself in one short visible line, not behind an info dot; dots stay only on a few groups.
+const rowHtml = (title, hint, control, info) => `<div class="row" style="align-items:center;min-height:58px;padding:8px 0"><div class="grow"><div class="title-row"><span style="font-weight:500">${title}</span></div>${hint || info ? `<div class="caption">${[hint, info].filter(Boolean).join(' · ')}</div>` : ''}</div>${control}</div>`;
 
 function render(el, app) {
   const { store } = app, { esc } = U(), prefs = store.data.webPreferences, def = root.WorkCategories.defaultName(store.data.categories, prefs);
   const theme = store.local.theme || 'system';
   const acct = root.KisAccount.state.user;
   // A phone shows the categories as a list; a tap opens one category with a way back. A computer shows them all.
-  const cats = [['משוב ותקלות', 'דיווח על תקלה או הצעה'], ['עבודה', def ? `מקום ברירת מחדל: ${def}` : 'מקומות, מטבע ומשמרות קבועות'],
+  const cats = [['עבודה', def ? `מקום ברירת מחדל: ${def}` : 'מקומות, מטבע ומשמרות קבועות'],
     ['מראה ותחושה', ({ system: 'אוטומטי', light: 'בהיר', dark: 'כהה' })[theme] || 'אוטומטי'], ['הסיכומים שלי', 'כל הסיכומים החודשיים והשנתיים'],
     ['התראות', NOTIFY_KINDS.some(([k]) => store.local[k] === true) ? 'פועלות' : 'כבויות'], ['גיבוי ונתונים', 'גיבוי, ייבוא ואקסל'],
-    ['עזרה', 'האפליקציה לאנדרואיד וההדרכה'], ['חשבון', acct ? (acct.email || 'מחובר') : 'השם שלך · לא מחובר']];
+    ['עזרה', 'האפליקציה לאנדרואיד וההדרכה'], ['משוב ותקלות', 'דיווח על תקלה או הצעה'], ['חשבון', acct ? (acct.email || 'מחובר') : 'השם שלך · לא מחובר']];
   el.innerHTML = `<h1 class="page-title">הגדרות</h1>
   ${section ? '' : `<nav class="set-list" aria-label="קטגוריות ההגדרות">${cats.map(([t, sub]) => `<button class="set-row" data-section="${t}" data-testid="settings-open-${t}"><span class="grow"><b>${t}</b><small>${esc(sub)}</small></span>${U().ICON.next}</button>`).join('')}</nav>`}
   <div class="set-groups" data-open="${section ? esc(section) : ''}">
   ${section ? `<button class="set-back" data-a="settings-back" data-testid="settings-back">${U().ICON.prev}<span>הגדרות</span></button>` : ''}
-  ${group('משוב ותקלות', rowHtml('דיווח על תקלה או הצעה', null, '<button class="chip act" data-a="feedback" data-testid="feedback-button">כתיבה</button>'))}
-  ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip act" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר אוטומטית במשמרת חדשה.')}
-    <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', null, `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`, 'למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה, ושקלים ודולרים לא מתחברים לסכום אחד.')}
-    <div class="divider"></div>${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip act" data-a="series" data-testid="series-button">ניהול</button>', 'יוצרים במסך ההוספה: "חוזרת כל שבוע". כשהזמן נגמר המשמרת נרשמת לבד, ותמיד אפשר לבטל.')}`)}
+  ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip act" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר לבד במשמרת חדשה')}
+    <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', null, `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`, 'כל משמרת שומרת את המטבע שלה')}
+    <div class="divider"></div>${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip act" data-a="series" data-testid="series-button">ניהול</button>', 'נוצרות במסך ההוספה ונרשמות לבד')}`)}
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
-  ${group('הסיכומים שלי', rowHtml('כל הסיכומים', null, '<button class="chip act" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל סיכום חודשי ושנתי שכבר נפתח נשמר כאן.'))}
-  ${group('התראות', rowHtml('כל ההתראות', null, `<button class="switch" role="switch" aria-checked="${NOTIFY_KINDS.some(([k]) => store.local[k] === true)}" aria-label="כל ההתראות" data-a="notify" data-testid="notify-all"></button>`, 'מפעיל או מכבה את כולן יחד. אפשר לבחור כל סוג בנפרד כאן למטה.')
+  ${group('הסיכומים שלי', rowHtml('כל הסיכומים', null, '<button class="chip act" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל סיכום שכבר נפתח'))}
+  ${group('התראות', rowHtml('כל ההתראות', null, `<button class="switch" role="switch" aria-checked="${NOTIFY_KINDS.some(([k]) => store.local[k] === true)}" aria-label="כל ההתראות" data-a="notify" data-testid="notify-all"></button>`, 'כולן יחד')
     + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${store.local[k] === true}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''),
     'הסיכום החודשי ותעריף חסר, כשנכנסים לאתר. באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה, וגם משמרת פעילה ומשמרת קבועה שהסתיימה.')}
-  ${group('גיבוי ונתונים', `<div class="row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
-    <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv" data-testid="csv-export">טבלה לאקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'כשמחוברים לחשבון, הנתונים נשמרים בו ובדפדפן הזה. גיבוי לקובץ הוא העתק נוסף בשבילך, וגיבוי מהאפליקציה עובר לכאן ולהפך. טבלה לאקסל היא לקריאה ולחישובים, לא גיבוי: היא לא שומרת הכול (למשל עובדי קבוצה).')}
+  ${group('גיבוי ונתונים', `<div class="row backup-row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
+    <div class="row backup-row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv" data-testid="csv-export">טבלה לאקסל (CSV)</button><button class="btn small outline grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'כשמחוברים לחשבון, הנתונים נשמרים בו ובדפדפן הזה. גיבוי לקובץ הוא העתק נוסף בשבילך, וגיבוי מהאפליקציה עובר לכאן ולהפך. טבלה לאקסל היא לקריאה ולחישובים, לא גיבוי: היא לא שומרת הכול (למשל עובדי קבוצה).')}
   ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip act" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip act" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
+  ${group('משוב ותקלות', rowHtml('דיווח על תקלה או הצעה', null, '<button class="chip act" data-a="feedback" data-testid="feedback-button">כתיבה</button>'))}
   ${group('חשבון', `<div class="row" style="padding:10px 0 4px"><input class="input grow" style="min-width:0" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input grow" style="min-width:0" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>
     <div data-testid="account-card">${root.KisAccount.settingsHtml()}</div>
@@ -226,7 +227,7 @@ function placesSheet(app) {
           <button class="shift grow" style="background:none;border:0;padding:0" data-def="${esc(c.name)}" aria-pressed="${c.name === def}">${U().avatar(c.name, store, false, 32)}
           <span class="meta"><b class="label">${esc(c.name)}${c.name === def ? ' · ברירת מחדל' : ''}</b><span class="sub">${esc(U().money(c.defaultRate, root.WorkCategories.currency(c.name, store.data.webPreferences)))} לשעה</span></span></button>
           <button class="icon-btn place-edit" data-edit="${esc(c.name)}" aria-expanded="${open === c.name}" aria-label="עריכת ${esc(c.name)}" data-testid="place-edit-${esc(c.name)}">${U().ICON.edit}</button>
-          <span class="grip" data-grip aria-label="הזזת ${esc(c.name)}" data-testid="place-drag-${esc(c.name)}">${U().ICON.grip}</span></div>
+          <button type="button" class="grip" data-grip data-move="${esc(c.name)}" aria-label="הזזת ${esc(c.name)} (חצים למעלה ולמטה)" data-testid="place-drag-${esc(c.name)}">${U().ICON.grip}</button></div>
           ${open === c.name ? '<div class="card" data-inline-edit style="display:grid;gap:10px"></div>' : ''}`).join('')}</div>
         <button class="btn ghost" data-a="add" data-testid="place-add">+ מקום עבודה חדש</button>`;
       el.querySelectorAll('[data-def]').forEach(b => b.onclick = () => { store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, defaultCategory: b.dataset.def }); }); draw(); });
@@ -234,6 +235,16 @@ function placesSheet(app) {
       const inline = el.querySelector('[data-inline-edit]');
       if (inline) placeForm(app, open, inline, () => { open = null; }, () => { open = null; draw(); });
       el.querySelector('[data-a=add]').onclick = () => placeSheet(app, null, draw);
+      // M-46 (R-31): the same order change without a long press: focus a place's handle and use the arrow keys.
+      el.querySelectorAll('[data-move]').forEach(g => g.onkeydown = e => {
+        const step = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0; if (!step) return;
+        e.preventDefault();
+        const names = places.map(p => p.name), i = names.indexOf(g.dataset.move), j = i + step;
+        if (i < 0 || j < 0 || j >= names.length) return;
+        [names[i], names[j]] = [names[j], names[i]];
+        store.setLocal('placeOrder', names, true); draw();
+        el.querySelector(`[data-move="${CSS.escape(g.dataset.move)}"]`)?.focus();
+      });
       dragToReorder(el.querySelector('[data-testid=places-panel]'), names => store.setLocal('placeOrder', names, true), () => { if (open) { open = null; el.querySelector('[data-inline-edit]')?.remove(); } });
     };
     draw();
