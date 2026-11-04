@@ -202,7 +202,7 @@ fun NotificationsPrompt(onAllow: () -> Unit, onLater: () -> Unit) {
         Text("התראות מהאפליקציה?", style = KisType.title, color = c.ink)
         listOf("גרסה חדשה, עם הורדה בנגיעה אחת", "הסיכום החודשי, ב-30 לכל חודש", "משמרת קבועה שהסתיימה: נרשמה או לא").forEach {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.size(8.dp).clip(CircleShape).background(Workplaces[0].accent(c.dark)))
+                Box(Modifier.size(8.dp).clip(CircleShape).background(c.accent))
                 Text(it, style = KisType.body, color = c.ink)
             }
         }

@@ -163,7 +163,7 @@ fun KisButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
         KisButtonKind.OUTLINE -> Color.Transparent to c.ink
     }
     Row(modifier.heightIn(min = height).clip(RoundedCornerShape(16.dp)).background(bg)
-        .then(if (kind == KisButtonKind.OUTLINE) Modifier.border(1.5.dp, c.line, RoundedCornerShape(16.dp)) else Modifier)
+        .then(if (kind == KisButtonKind.OUTLINE) Modifier.border(1.5.dp, c.lineStrong, RoundedCornerShape(16.dp)) else Modifier)
         .graphicsLayer { alpha = if (enabled) 1f else 0.38f }
         .kisClick(enabled = enabled, haptic = haptic, onClick = onClick)
         .then(if (tag != null) Modifier.testTag(tag) else Modifier)
@@ -222,9 +222,9 @@ fun KisSwitch(checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier 
     val settings = Kis.settings
     Switch(checked = checked, onCheckedChange = { settings.haptic(KisSettings.Haptic.TAP); onChange(it) },
         modifier = modifier.then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier),
-        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Workplaces[1].accent(c.dark), checkedBorderColor = Color.Transparent,
-            // A visible edge when off (a white thumb on a pale track disappears on a white card).
-            uncheckedThumbColor = if (c.dark) Color.White else c.muted, uncheckedTrackColor = c.sunk, uncheckedBorderColor = c.muted))
+        // M-28: on is ink (not the money green); off has a strong edge (a pale thumb on a pale track disappears on a card).
+        colors = SwitchDefaults.colors(checkedThumbColor = c.controlKnob, checkedTrackColor = c.controlOn, checkedBorderColor = c.controlOn,
+            uncheckedThumbColor = c.lineStrong, uncheckedTrackColor = c.sunk, uncheckedBorderColor = c.lineStrong))
 }
 
 /** Segmented control (tseg): a sunk track with a raised surface for the chosen option. */
@@ -336,7 +336,7 @@ fun Modifier.keepInViewWhenFocused(): Modifier = composed {
 @Composable
 private fun kisFieldColors() = Kis.colors.let { c ->
     OutlinedTextFieldDefaults.colors(focusedContainerColor = c.bg, unfocusedContainerColor = c.bg, disabledContainerColor = c.bg,
-        focusedBorderColor = c.ink, unfocusedBorderColor = c.line, focusedLabelColor = c.ink, unfocusedLabelColor = c.muted, cursorColor = c.ink,
+        focusedBorderColor = c.ink, unfocusedBorderColor = c.lineStrong, focusedLabelColor = c.ink, unfocusedLabelColor = c.muted, cursorColor = c.ink,
         focusedTextColor = c.ink, unfocusedTextColor = c.ink, disabledTextColor = c.muted, errorBorderColor = c.danger, errorLabelColor = c.danger)
 }
 
@@ -375,10 +375,10 @@ fun KisLogo(modifier: Modifier = Modifier.size(38.dp)) {
 @Composable
 fun KisGlow(modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier, color: Color? = null) {
     val c = Kis.colors
-    val glow = color ?: Workplaces[0].accent(c.dark)
+    val glow = color ?: c.accent
     Canvas(modifier) {
         val radius = minOf(size.width * 1.1f, size.height * 0.75f)
-        drawRect(androidx.compose.ui.graphics.Brush.radialGradient(listOf(glow.copy(alpha = if (c.dark) 0.40f else 0.22f), glow.copy(alpha = if (c.dark) 0.12f else 0.06f), Color.Transparent),
+        drawRect(androidx.compose.ui.graphics.Brush.radialGradient(listOf(glow.copy(alpha = if (c.dark) 0.24f else 0.12f), glow.copy(alpha = if (c.dark) 0.12f else 0.06f), Color.Transparent),
             center = Offset(size.width * 0.15f, 0f), radius = radius))
     }
 }

@@ -93,7 +93,7 @@ fun UpdateSheet(release: WorkUpdates.Release, onDismiss: () -> Unit, onLater: ()
                 val shown by animateFloatAsState(progress, tween(250), label = "download")
                 Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(99.dp)).background(c.sunk)
                     .semantics { progressBarRangeInfo = ProgressBarRangeInfo(progress, 0f..1f) }.testTag("update_progress")) {
-                    Box(Modifier.fillMaxHeight().fillMaxWidth(shown).clip(RoundedCornerShape(99.dp)).background(Workplaces[0].accent(c.dark)))
+                    Box(Modifier.fillMaxHeight().fillMaxWidth(shown).clip(RoundedCornerShape(99.dp)).background(c.accent))
                 }
                 Text(if (phase == UpdatePhase.VERIFYING) "בודק שהקובץ שלם ומקורי…" else "${Math.round(progress * 100)}%",
                     style = KisType.label, color = c.ink, modifier = Modifier.testTag("update_percent"))
