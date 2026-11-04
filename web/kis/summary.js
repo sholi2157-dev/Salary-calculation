@@ -99,7 +99,7 @@ function story(app, scope) {
       <div class="top"><span>${U().logo(26)}${esc(label)}</span><span class="acts">${fileSharing && !sl.card ? `<button data-shares aria-label="שיתוף המסך כתמונה" data-testid="story-share-slide" disabled>${U().ICON.share}</button>` : ''}<button data-x aria-label="סגירה" data-testid="story-close">✕</button></span></div>
       <div class="stage"><span class="blob b1" style="background:${PLACE(sl.a)}"></span><span class="blob b2" style="background:${PLACE(sl.b)}"></span><span class="ring" style="border-color:${PLACE(sl.b)}"></span>
         <div class="slide2" data-testid="story-${sl.tag}">${sl.html()}</div></div>
-      <div class="story-nav"><button data-go="-1" aria-label="הקודם" data-testid="story-prev">›</button><button data-go="1" aria-label="הבא" data-testid="story-next">‹</button></div>`;
+      <div class="story-nav"><button data-go="-1" aria-label="הקודם" data-testid="story-prev">${U().ICON.prev}</button><button data-go="1" aria-label="הבא" data-testid="story-next">${U().ICON.next}</button></div>`;
     el.querySelectorAll('[data-count]').forEach(n => { const to = +n.dataset.count, s0 = performance.now(); const f = now => { const p = Math.min(1, (now - s0) / 900); n.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1 && n.isConnected) requestAnimationFrame(f); }; requestAnimationFrame(f); });
     if (sl.card && fileSharing) {
       preparing ||= cardImage(label, posterCells(), `${whose} שלי בכיס`).then(blob => new File([blob], 'kis-card.png', {type:'image/png'}));

@@ -91,7 +91,7 @@ function toast(text, action, onAction, kind) {
   const host = document.getElementById('toast');
   kind ||= FAILED.test(text) ? 'error' : /✓/.test(text) ? 'ok' : action ? 'undo' : 'info';
   const shown = kind === 'ok' ? String(text).replace(/\s*✓\s*/g, ' ').trim() : text;
-  const sign = { ok: '✓', undo: '↺', error: '!' }[kind];
+  const sign = { ok: ICON.check, undo: ICON.undo, error: ICON.alert }[kind]; // M-30: SVG icons, not font glyphs
   host.setAttribute('role', kind === 'error' ? 'alert' : 'status');
   host.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite');
   host.innerHTML = `<div class="t-${kind}" data-kind="${kind}">${sign ? `<span class="t-sign" aria-hidden="true">${sign}</span>` : ''}<span class="t-text">${esc(shown)}</span>${action ? `<button type="button" data-testid="toast-action">${esc(action)}</button>` : ''}</div>`;
@@ -219,6 +219,10 @@ const ICON = {
   bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
   person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>',
   share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>',
+  undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v6"/><path d="M12 17h.01"/></svg>',
   next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 6-6 6 6 6"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>',
 };

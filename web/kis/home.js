@@ -59,7 +59,7 @@ function render(el, app) {
   const me = U().PLACES[0];
   el.innerHTML = `
   <div class="hello">${U().logo()}<div><div class="caption" data-testid="home-greeting">${esc(name ? greeting() + ', ' + name : greeting())}</div><h1 class="label" style="font-size:1rem;margin:0">שכר עבודות אישי</h1></div>
-    <div class="hello-actions"><button class="apk-entry" data-act="android-download" data-testid="android-download-entry" aria-label="אפליקציה לאנדרואיד: הורדה"><span aria-hidden="true">↓</span> אפליקציה</button><button class="round-btn" data-act="bell" data-testid="home-bell" aria-label="${unread ? 'התראות · יש חדשות' : 'התראות'}">${U().ICON.bell}${unread ? `<span class="dot" style="background:${U().accent(me)}" data-testid="home-bell-dot"></span>` : ''}</button></div></div>
+    <div class="hello-actions"><button class="apk-entry" data-act="android-download" data-testid="android-download-entry" aria-label="אפליקציה לאנדרואיד: הורדה"><span class="ic" aria-hidden="true">${U().ICON.download}</span> אפליקציה</button><button class="round-btn" data-act="bell" data-testid="home-bell" aria-label="${unread ? 'התראות · יש חדשות' : 'התראות'}">${U().ICON.bell}${unread ? `<span class="dot" style="background:${U().accent(me)}" data-testid="home-bell-dot"></span>` : ''}</button></div></div>
   <div class="home-top"><section class="hero-card" data-testid="home-hero" aria-labelledby="home-week-title">
     <h2 class="label" id="home-week-title" style="color:var(--muted);font-weight:500;margin:0">השבוע</h2>
     <div style="display:flex;gap:18px;align-items:flex-end;overflow-x:auto;margin-top:6px">${hero}</div>
@@ -68,8 +68,8 @@ function render(el, app) {
       ${plannedWeek ? `<span>עוד ${plannedWeek} מתוכננות</span>` : ''}${byCat.slice(0, 3).map(([c]) => `<span><i style="background:${accent(placeOf(c, store))}"></i>${esc(c)}</span>`).join('')}</div>
   </section>
   <div class="home-side">${tiles(today, done)}
-    ${pending ? `<div><button class="pending-flag" data-act="pending" data-testid="pending-flag">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button></div>` : ''}
-    ${review ? `<div><button class="pending-flag" data-act="plan-review" data-testid="plan-review-flag">${review === 1 ? 'משמרת קבועה אחת מחכה לאישור ←' : review + ' משמרות קבועות מחכות לאישור ←'}</button></div>` : ''}
+    ${pending ? `<div><button class="pending-flag" data-act="pending" data-testid="pending-flag">${pending === 1 ? 'משמרת אחת מחכה לתעריף' : pending + ' משמרות מחכות לתעריף'} <span class="ic" aria-hidden="true">${U().ICON.next}</span></button></div>` : ''}
+    ${review ? `<div><button class="pending-flag" data-act="plan-review" data-testid="plan-review-flag">${review === 1 ? 'משמרת קבועה אחת מחכה לאישור' : review + ' משמרות קבועות מחכות לאישור'} <span class="ic" aria-hidden="true">${U().ICON.next}</span></button></div>` : ''}
     <section class="now-row" data-testid="now-row">${t ? liveCard(t) : '<button class="now" data-act="start" data-testid="live-start"><span class="dot"></span>אני מתחיל עכשיו</button>'}</section>
   ${fresh.map(scope => `<button class="story-entry home-recap" data-recap="${scope}" data-testid="home-recap-${scope}"><span><b>${esc(scope.length === 4 ? `השנה ${scope} שלך בכיס` : `${U().MONTHS[Number(scope.slice(5)) - 1]} שלך בכיס`)}</b><small>${scope.length === 4 ? 'הסיכום השנתי מוכן' : 'הסיכום החודשי מוכן'}</small></span>${U().logo(34)}</button>`).join('')}</div></div>
   <div class="home-cols">
