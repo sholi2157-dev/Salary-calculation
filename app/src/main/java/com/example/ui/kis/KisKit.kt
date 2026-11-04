@@ -85,6 +85,12 @@ import java.util.Locale
 
 // ---------------------------------------------------------------- formatting
 
+/**
+ * The minimum size of anything a person taps (audit M-34), in one place: every button, chip, row action and icon
+ * button uses it. 44dp, the same minimum as the web (44px). 44 vs 48dp is an open owner decision: change it here only.
+ */
+val KisMinTouch: Dp = 44.dp
+
 object KisFormat {
     /** "1,234" for whole amounts, "1,234.50" otherwise. */
     fun number(v: Double): String {
@@ -181,7 +187,7 @@ fun KisAction(label: String, icon: ImageVector, onClick: () -> Unit, modifier: M
 
 @Composable
 fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifier: Modifier = Modifier, dashed: Boolean = false, warn: Boolean = false,
-            leading: ImageVector? = null, tag: String? = null, minHeight: Dp = 44.dp, onLongClick: (() -> Unit)? = null) {
+            leading: ImageVector? = null, tag: String? = null, minHeight: Dp = KisMinTouch, onLongClick: (() -> Unit)? = null) {
     val c = Kis.colors
     val shape = RoundedCornerShape(12.dp)
     val bg = when { warn -> c.pendingSoft; else -> c.surface }
@@ -225,7 +231,7 @@ fun <T> KisSegmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) 
     Row(modifier.clip(RoundedCornerShape(12.dp)).background(c.sunk).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         options.forEach { (value, label) ->
             val on = value == selected
-            Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(9.dp)).background(if (on) c.surface else Color.Transparent)
+            Box(Modifier.heightIn(min = KisMinTouch).clip(RoundedCornerShape(9.dp)).background(if (on) c.surface else Color.Transparent)
                 .kisClick(role = Role.RadioButton) { onSelect(value) }.semantics { this.selected = on }
                 .then(if (tagPrefix != null) Modifier.testTag("${tagPrefix}_$value") else Modifier)
                 .padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
@@ -243,7 +249,7 @@ fun CurrencyToggle(currency: String, onCurrency: (String) -> Unit, tag: String, 
         listOf("₪", "$").forEach { value ->
             val on = currency == value
             // Light: the chosen currency is a soft tinted cell with bold ink, not a black one.
-            Box(Modifier.size(width = 48.dp, height = 44.dp).background(if (on) (if (c.dark) c.ink else c.sunk) else c.surface)
+            Box(Modifier.size(width = 48.dp, height = KisMinTouch).background(if (on) (if (c.dark) c.ink else c.sunk) else c.surface)
                 .kisClick(role = Role.RadioButton) { onCurrency(value) }.semantics { this.selected = on; contentDescription = if (value == "₪") "שקל" else "דולר" }
                 .testTag("${tag}_$value"), contentAlignment = Alignment.Center) {
                 Text(value, style = KisType.label.copy(fontFamily = Rubik, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium),

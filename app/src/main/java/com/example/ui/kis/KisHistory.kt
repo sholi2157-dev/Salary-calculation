@@ -144,7 +144,7 @@ fun KisHistory(
                             if (!showPlans) ToolIcon(Icons.Rounded.Search, "חיפוש", "history_search_button") { ui.searching = true }
                             // One button for everything that decides what is shown: dates, order, payment, place, currency.
                             KisChip(if (filter.activeCount == 0) "סינון ומיון" else "סינון ומיון · ${filter.activeCount}", selected = filter.activeCount > 0,
-                                leading = Icons.Rounded.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = 44.dp)
+                                leading = Icons.Rounded.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = KisMinTouch)
                             var copyMenu by remember { mutableStateOf(false) }
                             if (!showPlans) Box {
                                 ToolIcon(Icons.Rounded.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
@@ -253,7 +253,7 @@ private fun HistoryCard(e: WorkEntry, categories: List<WorkCategory>, ui: Histor
 
 @Composable
 private fun ToolIcon(icon: ImageVector, label: String, tag: String, onClick: () -> Unit) {
-    Icon(icon, label, tint = Kis.colors.ink, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Kis.colors.surface).border(1.5.dp, Kis.colors.line, RoundedCornerShape(12.dp)).kisClick(onClick = onClick).testTag(tag).padding(12.dp))
+    Icon(icon, label, tint = Kis.colors.ink, modifier = Modifier.size(KisMinTouch).clip(RoundedCornerShape(12.dp)).background(Kis.colors.surface).border(1.5.dp, Kis.colors.line, RoundedCornerShape(12.dp)).kisClick(onClick = onClick).testTag(tag).padding(12.dp))
 }
 
 @Composable
@@ -268,7 +268,7 @@ private fun SearchChip(query: String, onEdit: () -> Unit, onClear: () -> Unit) {
             Text("חיפוש: ", style = KisType.label, color = c.muted)
             Text(query, style = KisType.label, color = c.ink, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         }
-        Icon(Icons.Rounded.Close, "ניקוי החיפוש", tint = c.ink, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Kis.colors.surface).border(1.5.dp, Kis.colors.line, RoundedCornerShape(12.dp)).kisClick(onClick = onClear).testTag("history_query_clear").padding(12.dp))
+        Icon(Icons.Rounded.Close, "ניקוי החיפוש", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(RoundedCornerShape(12.dp)).background(Kis.colors.surface).border(1.5.dp, Kis.colors.line, RoundedCornerShape(12.dp)).kisClick(onClick = onClear).testTag("history_query_clear").padding(12.dp))
     }
 }
 
@@ -282,7 +282,7 @@ private fun SearchBar(ui: HistoryUi) {
         // Clear and close are separate on purpose: clearing keeps the field open.
         if (ui.query.isNotEmpty()) Text("ניקוי", style = KisType.label, color = c.ink, modifier = Modifier.clip(RoundedCornerShape(10.dp))
             .kisClick { ui.query = "" }.testTag("history_search_clear").padding(10.dp))
-        Icon(Icons.Rounded.Close, "סגירת החיפוש", tint = c.ink, modifier = Modifier.size(44.dp).clip(CircleShape).kisClick { ui.searching = false }.testTag("history_search_close").padding(10.dp))
+        Icon(Icons.Rounded.Close, "סגירת החיפוש", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { ui.searching = false }.testTag("history_search_close").padding(10.dp))
     }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 }
@@ -293,8 +293,8 @@ private fun MonthSwitcher(month: Int, onMonth: (Int) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(HistoryFilter.monthName(month), style = KisType.title, color = c.ink, modifier = Modifier.weight(1f).testTag("history_month"))
         // RTL: "previous" points right, "next" points left.
-        Icon(Icons.Rounded.ChevronRight, "חודש קודם", tint = c.ink, modifier = Modifier.size(44.dp).clip(CircleShape).kisClick { onMonth(month - 1) }.testTag("month_prev").padding(10.dp))
-        Icon(Icons.Rounded.ChevronLeft, "חודש הבא", tint = c.ink, modifier = Modifier.size(44.dp).clip(CircleShape).kisClick { onMonth(month + 1) }.testTag("month_next").padding(10.dp))
+        Icon(Icons.Rounded.ChevronRight, "חודש קודם", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { onMonth(month - 1) }.testTag("month_prev").padding(10.dp))
+        Icon(Icons.Rounded.ChevronLeft, "חודש הבא", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { onMonth(month + 1) }.testTag("month_next").padding(10.dp))
     }
 }
 
@@ -358,7 +358,7 @@ private fun SelAction(text: String, icon: androidx.compose.ui.graphics.vector.Im
 @Composable
 private fun BarButton(text: String, tag: String? = null, onClick: () -> Unit) {
     val c = Kis.colors
-    Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(c.onBar.copy(alpha = 0.08f)).kisClick(onClick = onClick)
+    Box(Modifier.heightIn(min = KisMinTouch).clip(RoundedCornerShape(12.dp)).background(c.onBar.copy(alpha = 0.08f)).kisClick(onClick = onClick)
         .then(if (tag != null) Modifier.testTag(tag) else Modifier).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
         Text(text, style = KisType.label, color = c.onBar, maxLines = 1)
     }

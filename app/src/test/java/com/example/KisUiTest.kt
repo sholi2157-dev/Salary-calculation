@@ -484,27 +484,36 @@ class KisUiTest {
             isGroupShift = true, employerRate = 70.0, workerRate = 50.0, groupWorkersJson = team, passThrough = 45.0)
         runBlocking { dao.insertEntry(entry) }
         val vm = model()
-        for (scale in listOf(1.3f, 2.0f)) {
-            var screen by mutableStateOf(0)
-            ui.setContent {
-                val base = LocalDensity.current
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalDensity provides Density(base.density, scale)) {
-                    KisTheme(darkOverride = false) { Box(Modifier.fillMaxSize().background(Kis.colors.bg)) {
-                        if (screen == 0) KisHome(emptyList(), categories, LiveShift(System.currentTimeMillis() - 90 * 60_000L, "שיעורים פרטיים", 40.0, "₪"), 80.dp, {}, {}, {}, {}, {}, {}, {}, {})
-                        else ShiftDetailSheet(entry, categories, vm, onDismiss = {}, onEdit = {}, onDeleted = {}, onMessage = {})
-                    } }
-                }
+        // One setContent per test (Compose test rule): the text scale and the screen are state, changed between the checks.
+        var scale by mutableStateOf(1.3f)
+        var screen by mutableStateOf(0)
+        val started = System.currentTimeMillis() - 90 * 60_000L
+        ui.setContent {
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalDensity provides Density(base.density, scale)) {
+                KisTheme(darkOverride = false) { Box(Modifier.fillMaxSize().background(Kis.colors.bg)) {
+                    if (screen == 0) KisHome(emptyList(), categories, LiveShift(started, "שיעורים פרטיים", 40.0, "₪"), 80.dp, {}, {}, {}, {}, {}, {}, {}, {})
+                    else ShiftDetailSheet(entry, categories, vm, onDismiss = {}, onEdit = {}, onDeleted = {}, onMessage = {})
+                } }
             }
+        }
+        for (s in listOf(1.3f, 2.0f)) {
+            ui.runOnIdle { scale = s; screen = 0 }; ui.waitForIdle()
             ui.mainClock.autoAdvance = false; ui.mainClock.advanceTimeBy(1_500)
             listOf("active_shift_timer", "active_shift_money", "live_shift_stop", "cancel_active_shift").forEach { ui.onNodeWithTag(it, useUnmergedTree = true).performScrollTo().assertIsDisplayed() }
-            ui.onNodeWithTag("live_shift_stop").assertHeightIsAtLeast(44.dp)
-            shot("scale-${(scale * 100).toInt()}-live")
+            ui.onNodeWithTag("live_shift_stop").assertHeightIsAtLeast(KisMinTouch)
+            shot("scale-${(s * 100).toInt()}-live")
             ui.mainClock.autoAdvance = true
             ui.runOnIdle { screen = 1 }; ui.waitForIdle()
             listOf("detail_amount", "group_profit", "group_my_net", "group_team_pay", "group_employer_due", "group_summary_share", "group_worker_more_0", "group_worker_paid_1")
                 .forEach { ui.onNodeWithTag(it, useUnmergedTree = true).performScrollTo().assertIsDisplayed() }
-            shot("scale-${(scale * 100).toInt()}-group")
+            shot("scale-${(s * 100).toInt()}-group")
         }
+    }
+
+    /** M-34: the touch target minimum is one constant (44dp now, the same as web; 44 vs 48 is the owner's open decision). */
+    @Test fun touchTargetMinimumIsOneConstant() {
+        assertEquals(44f, KisMinTouch.value, 0f)
     }
 
     /** With a rate the live bar counts money to the agora; the clock moves below it. Without one, the bar keeps the clock. */

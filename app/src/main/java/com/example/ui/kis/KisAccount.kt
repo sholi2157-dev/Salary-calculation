@@ -212,14 +212,14 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
                 Text(if (conflicts == 1) "שינוי אחד נעשה בשני מקומות. לבחירה" else "$conflicts שינויים נעשו בשני מקומות. לבחירה", style = KisType.caption, color = c.pending)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KisButton("עוזרי AI", { assistants = true }, Modifier.weight(1f), KisButtonKind.OUTLINE, height = 44.dp, tag = "account_assistants")
-                KisButton("התנתקות", { leaving = true }, Modifier.weight(1f), KisButtonKind.GHOST, height = 44.dp, tag = "account_signout")
+                KisButton("עוזרי AI", { assistants = true }, Modifier.weight(1f), KisButtonKind.OUTLINE, height = KisMinTouch, tag = "account_assistants")
+                KisButton("התנתקות", { leaving = true }, Modifier.weight(1f), KisButtonKind.GHOST, height = KisMinTouch, tag = "account_signout")
             }
         }
         Text("מחיקה מהמכשיר הזה", style = KisType.label, color = c.danger, modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick { erasing = true }
-            .testTag("account_erase").heightIn(min = 44.dp).wrapContentHeight(Alignment.CenterVertically))
+            .testTag("account_erase").heightIn(min = KisMinTouch).wrapContentHeight(Alignment.CenterVertically))
         if (user != null) Text("מחיקה מהחשבון ומכל המכשירים", style = KisType.label, color = c.danger, modifier = Modifier.clip(RoundedCornerShape(8.dp))
-            .kisClick { erasingAccount = true }.testTag("account_erase_all").heightIn(min = 44.dp).wrapContentHeight(Alignment.CenterVertically))
+            .kisClick { erasingAccount = true }.testTag("account_erase_all").heightIn(min = KisMinTouch).wrapContentHeight(Alignment.CenterVertically))
     }
     if (assistants) AssistantsSheet(viewModel) { assistants = false }
     if (leaving) KisSheet(onDismiss = { leaving = false }, tag = "account_signout_sheet") {
@@ -324,7 +324,7 @@ fun AssistantsSheet(viewModel: WorkViewModel, explain: Boolean = false, onDismis
                     Text(ASSISTANT_URL, style = KisType.body, color = c.ink, modifier = Modifier.testTag("assistants_url"))
                 }
                 KisButton(if (copied) "הועתק ✓" else "העתקת הכתובת", { KisShare.copy(context, ASSISTANT_URL, "כתובת לעוזר"); copied = true },
-                    Modifier.fillMaxWidth(), KisButtonKind.OUTLINE, height = 44.dp, tag = "assistants_copy")
+                    Modifier.fillMaxWidth(), KisButtonKind.OUTLINE, height = KisMinTouch, tag = "assistants_copy")
                 Text("העוזר יפתח דף שבו מתחברים עם Google ובוחרים מה מותר לו ולכמה זמן.", style = KisType.caption, color = c.muted)
             }
             message?.let { Text(it, style = KisType.caption, color = c.danger, modifier = Modifier.testTag("assistants_message")) }
