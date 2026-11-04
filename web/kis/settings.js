@@ -356,11 +356,12 @@ function placeForm(app, oldName, el, close, done, title = '') {
         store.transact(n => {
           const oldRate = n.data.categories.find(c => c.name === oldName)?.defaultRate;
           Object.assign(n.data, root.WorkCategories.rename(n.data, oldName || '', name, rate, money));
-          // FB-08: with "שינוי רטרואקטיבי" on, the place's unpaid shifts at its previous rate take the new one, in the same commit.
+          // FB-08: unpaid plain shifts at the previous exact rate, or without a rate, take the new one in the same commit.
           if (retro && oldName) for (const x of root.KisRules.retroRate(n.data.entries, name, oldRate, rate, money)) {
             const e = n.data.entries.find(r => r.id === x.id);
-            changed.push({ id: e.id, hourlyRate: e.hourlyRate, totalEarnings: e.totalEarnings, wrote: { hourlyRate: rate, totalEarnings: x.total } });
-            e.hourlyRate = rate; e.totalEarnings = x.total;
+            changed.push({ id: e.id, hourlyRate: e.hourlyRate, totalEarnings: e.totalEarnings, payKnown: e.payKnown,
+              wrote: { hourlyRate: rate, totalEarnings: x.total, payKnown: true } });
+            e.hourlyRate = rate; e.totalEarnings = x.total; e.payKnown = true;
           }
           if (oldName && oldName !== name) {
             n.plans.series.forEach(s => { if (s.category === oldName) s.category = name; });

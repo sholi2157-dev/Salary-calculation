@@ -13,11 +13,12 @@ function memory(init = {}) {
 }
 const shift = (id, x = {}) => ({ id, category: 'מסעדה', hours: 2, hourlyRate: 50, totalEarnings: 100, isPaid: false, currency: '₪', isGroupShift: false, ...x });
 
-test('only unpaid plain shifts of the place at its previous rate and currency change', () => {
+test('only unpaid plain shifts at the previous exact rate or without a rate change', () => {
   const rows = [shift('a'), shift('paid', { isPaid: true }), shift('other', { category: 'עצמאי' }), shift('own', { hourlyRate: 60, totalEarnings: 120 }),
     shift('pending', { payKnown: false, hourlyRate: 0, totalEarnings: 0 }), shift('job', { kind: 'job', hourlyRate: 0, totalEarnings: 300 }),
-    shift('team', { isGroupShift: true }), shift('usd', { currency: '$' }), shift('bonus', { bonus: 15, totalEarnings: 115 })];
-  assert.deepEqual(R.retroRate(rows, 'מסעדה', 50, 55, '₪'), [{ id: 'a', total: 110 }, { id: 'bonus', total: 125 }]);
+    shift('team', { isGroupShift: true }), shift('team-pending', { isGroupShift: true, payKnown: false }),
+    shift('paid-pending', { isPaid: true, payKnown: false }), shift('almost', { hourlyRate: 50.00000001 }), shift('usd', { currency: '$' }), shift('bonus', { bonus: 15, totalEarnings: 115 })];
+  assert.deepEqual(R.retroRate(rows, 'מסעדה', 50, 55, '₪'), [{ id: 'a', total: 110 }, { id: 'pending', total: 110 }, { id: 'bonus', total: 125 }]);
 });
 
 test('no change when the rate is the same or invalid', () => {
@@ -37,10 +38,10 @@ test('amounts use the one money function (M-08: exact, half up once, whole agoro
   rows.forEach((e, i) => assert.equal(out[i].total, P.money(e.hours, 33.33, e.bonus || 0)));
 });
 
-test('on the realistic synthetic data: מסעדה 50 → 55 changes r01, r02, r15 only; paid, other places and own rates stay', () => {
+test('on the realistic synthetic data: מסעדה 50 → 55 changes r01, r02, missing-rate r05, r15 only; paid, other places and own rates stay', () => {
   const d = rich.work_complete_backup;
   const out = R.retroRate(d.entries.map(e => ({ payKnown: true, ...e })), 'מסעדה', 50, 55, '₪');
-  assert.deepEqual(out, [{ id: 'r01', total: 330 }, { id: 'r02', total: 192.5 }, { id: 'r15', total: 275 }]);
+  assert.deepEqual(out, [{ id: 'r01', total: 330 }, { id: 'r02', total: 192.5 }, { id: 'r05', total: 275 }, { id: 'r15', total: 275 }]);
   assert.ok(!out.some(x => d.entries.find(e => e.id === x.id).isPaid));
 });
 
@@ -49,12 +50,12 @@ test('store: restoreRates undoes only shifts that still hold what was written an
   const changed = [];
   store.update(d => { for (const x of R.retroRate(d.entries, 'מסעדה', 50, 55, '₪')) { const e = d.entries.find(r => r.id === x.id);
     changed.push({ id: e.id, hourlyRate: e.hourlyRate, totalEarnings: e.totalEarnings, wrote: { hourlyRate: 55, totalEarnings: x.total } }); e.hourlyRate = 55; e.totalEarnings = x.total; } });
-  assert.equal(changed.length, 3);
+  assert.equal(changed.length, 4);
   const reloaded = S.createStore(st); reloaded.load();
   assert.equal(reloaded.data.entries.find(e => e.id === 'r01').totalEarnings, 330, 'saved');
   // Meanwhile r02 got paid and r15 was edited: undo leaves both alone.
   store.update(d => { d.entries.find(e => e.id === 'r02').isPaid = true; d.entries.find(e => e.id === 'r15').totalEarnings = 280; });
-  assert.equal(store.restoreRates(changed), 1);
+  assert.equal(store.restoreRates(changed), 2);
   const e = id => store.data.entries.find(x => x.id === id);
   assert.deepEqual([e('r01').hourlyRate, e('r01').totalEarnings], [50, 300]);
   assert.deepEqual([e('r02').hourlyRate, e('r02').totalEarnings, e('r02').isPaid], [55, 192.5, true]);
@@ -65,4 +66,35 @@ test('store: restoreRates undoes only shifts that still hold what was written an
     ch.push({ id: r.id, hourlyRate: r.hourlyRate, totalEarnings: r.totalEarnings, wrote: { hourlyRate: 55, totalEarnings: x.total } }); r.hourlyRate = 55; r.totalEarnings = x.total; } });
   s2.restoreRates(ch);
   assert.equal(JSON.stringify(s2.data.entries), orig);
+});
+
+
+test('a missing-rate shift uses stored hours and bonus with the existing money function, including zero rate', () => {
+  const row = shift('pending', { payKnown: false, hourlyRate: 0, hours: 50 / 60, bonus: 0.005, totalEarnings: 0 });
+  const before = structuredClone(row);
+  assert.deepEqual(R.retroRate([row], 'מסעדה', 50, 33.33, '₪'), [{ id: 'pending', total: P.money(row.hours, 33.33, row.bonus) }]);
+  assert.deepEqual(R.retroRate([row], 'מסעדה', 50, 0, '₪'), [{ id: 'pending', total: 0.01 }]);
+  assert.deepEqual(row, before, 'selection must not mutate stored data');
+});
+
+test('undo restores missing-rate state, but leaves shifts paid or edited after completion untouched', () => {
+  const rows = ['undo', 'paid', 'edited'].map(id => shift(id, { payKnown: false, hourlyRate: 0, totalEarnings: 0, customExtension: 'keep' }));
+  const st = memory({ work_complete_backup: { ...rich.work_complete_backup, entries: rows } });
+  const store = S.createStore(st); store.load(); const changed = [];
+  store.update(d => { for (const x of R.retroRate(d.entries, 'מסעדה', 50, 55, '₪')) {
+    const e = d.entries.find(r => r.id === x.id);
+    changed.push({ id: e.id, hourlyRate: e.hourlyRate, totalEarnings: e.totalEarnings, payKnown: e.payKnown,
+      wrote: { hourlyRate: 55, totalEarnings: x.total, payKnown: true } });
+    Object.assign(e, { hourlyRate: 55, totalEarnings: x.total, payKnown: true });
+  } });
+  const reload = S.createStore(st); reload.load();
+  assert.ok(reload.data.entries.every(e => e.payKnown && e.hourlyRate === 55 && e.totalEarnings === 110));
+  reload.update(d => { d.entries.find(e => e.id === 'paid').isPaid = true; d.entries.find(e => e.id === 'edited').payKnown = false; });
+  assert.equal(reload.restoreRates(changed), 1);
+  const again = S.createStore(st); again.load();
+  const entry = id => again.data.entries.find(e => e.id === id);
+  assert.deepEqual([entry('undo').hourlyRate, entry('undo').totalEarnings, entry('undo').payKnown], [0, 0, false]);
+  assert.deepEqual([entry('paid').hourlyRate, entry('paid').isPaid], [55, true]);
+  assert.equal(entry('edited').hourlyRate, 55);
+  assert.ok(again.data.entries.every(e => e.customExtension === 'keep'));
 });
