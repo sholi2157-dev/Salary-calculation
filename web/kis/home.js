@@ -9,8 +9,8 @@ function weekStart(ms) { const d = new Date(U().startOfDay(ms)); d.setDate(d.get
 
 function tile(label, rows, caption, testid, only, amountId) {
   const { moneyHtml, esc } = U(), t = only ? [only] : sortedTotals(rows);
-  const money = t.length ? t.map(([c, v]) => `<b class="amount" data-testid="${amountId || testid}-${c}" style="font-size:22px">${moneyHtml(v, c)}</b>`).join('')
-    : rows.length ? `<b class="amount" style="font-size:20px;color:var(--pending)">עוד לא ידוע</b>` : `<b class="amount" style="font-size:22px">${moneyHtml(0, '₪')}</b>`;
+  const money = t.length ? t.map(([c, v]) => `<b class="amount" data-testid="${amountId || testid}-${c}" style="font-size:1.375rem">${moneyHtml(v, c)}</b>`).join('')
+    : rows.length ? `<b class="amount" style="font-size:1.25rem;color:var(--pending)">עוד לא ידוע</b>` : `<b class="amount" style="font-size:1.375rem">${moneyHtml(0, '₪')}</b>`;
   return `<div class="tile" data-testid="${testid}"><span class="caption">${esc(label)}</span>${money}${caption ? `<span class="caption">${esc(caption)}</span>` : ''}</div>`;
 }
 
@@ -39,8 +39,8 @@ function render(el, app) {
   const wFrom = root.KisPlan.dateOf(weekStart(now)), wTo = root.KisRules.civilFromDays(root.KisRules.daysFromCivil(wFrom) + 6);
   const plannedWeek = plans.filter(o => !root.KisPlans.isAwaiting(o) && o.date >= wFrom && o.date <= wTo).length;
   const t = store.timer();
-  const hero = weekTotals.length ? weekTotals.map(([c, v], i) => `<b class="hero" data-testid="home-total-${c}" style="${i ? 'font-size:30px;color:var(--muted)' : ''}">${moneyHtml(v, c)}</b>`).join('')
-    : week.length ? '<b class="hero" style="font-size:40px;color:var(--pending)" data-testid="home-total">עוד לא ידוע</b>' : `<b class="hero" data-testid="home-total">${moneyHtml(0, '₪')}</b>`;
+  const hero = weekTotals.length ? weekTotals.map(([c, v], i) => `<b class="hero" data-testid="home-total-${c}" style="${i ? 'font-size:1.875rem;color:var(--muted)' : ''}">${moneyHtml(v, c)}</b>`).join('')
+    : week.length ? '<b class="hero" style="font-size:2.5rem;color:var(--pending)" data-testid="home-total">עוד לא ידוע</b>' : `<b class="hero" data-testid="home-total">${moneyHtml(0, '₪')}</b>`;
 
   const nextItems = (() => {
     const waiting = plans.filter(root.KisPlans.isAwaiting).slice(-3).map(o => ({ o }));
@@ -56,10 +56,10 @@ function render(el, app) {
   const fresh = root.KisSummaryUi.fresh(store);
   const me = U().PLACES[0];
   el.innerHTML = `
-  <div class="hello">${U().logo()}<div><div class="caption" data-testid="home-greeting">${esc(name ? greeting() + ', ' + name : greeting())}</div><div class="label" style="font-size:16px">שכר עבודות אישי</div></div>
-    <div class="hello-actions"><button class="apk-entry" data-act="android-download" data-testid="android-download-entry" aria-label="הורדת האפליקציה לאנדרואיד">↓ אפליקציה</button><button class="round-btn" data-act="bell" data-testid="home-bell" aria-label="${unread ? 'התראות · יש חדשות' : 'התראות'}">${U().ICON.bell}${unread ? `<span class="dot" style="background:${U().accent(me)}" data-testid="home-bell-dot"></span>` : ''}</button></div></div>
-  <div class="home-top"><section class="hero-card" data-testid="home-hero">
-    <div class="label" style="color:var(--muted);font-weight:500">השבוע</div>
+  <div class="hello">${U().logo()}<div><div class="caption" data-testid="home-greeting">${esc(name ? greeting() + ', ' + name : greeting())}</div><h1 class="label" style="font-size:1rem;margin:0">שכר עבודות אישי</h1></div>
+    <div class="hello-actions"><button class="apk-entry" data-act="android-download" data-testid="android-download-entry" aria-label="אפליקציה לאנדרואיד: הורדה"><span aria-hidden="true">↓</span> אפליקציה</button><button class="round-btn" data-act="bell" data-testid="home-bell" aria-label="${unread ? 'התראות · יש חדשות' : 'התראות'}">${U().ICON.bell}${unread ? `<span class="dot" style="background:${U().accent(me)}" data-testid="home-bell-dot"></span>` : ''}</button></div></div>
+  <div class="home-top"><section class="hero-card" data-testid="home-hero" aria-labelledby="home-week-title">
+    <h2 class="label" id="home-week-title" style="color:var(--muted);font-weight:500;margin:0">השבוע</h2>
     <div style="display:flex;gap:18px;align-items:flex-end;overflow-x:auto;margin-top:6px">${hero}</div>
     ${totalH > 0 ? `<div class="progress">${byCat.map(([c, h]) => `<span style="width:${Math.max(1, h / totalH * 100)}%;background:${accent(placeOf(c, store))};margin-inline-end:3px;border-radius:3px"></span>`).join('')}</div>` : ''}
     <div class="legend" style="${totalH > 0 ? '' : 'margin-top:8px'}"><span data-testid="home-week-count">${week.length === 1 ? 'משמרת אחת השבוע' : week.length + ' משמרות השבוע'}</span>
