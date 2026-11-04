@@ -52,14 +52,14 @@ function detail(e) {
       ${e.passThrough > 0 ? `<p class="caption" style="margin:0" data-testid="detail-pass-through">החזר הוצאות ${esc(U().money(e.passThrough, e.currency))} · לא שלך${!e.isGroupShift && root.KisPay.employerDue(e) != null ? ` · <b>לקבל מהמעסיק ${esc(U().money(root.KisPay.employerDue(e), e.currency))}</b>` : ''}</p>` : ''}
       ${!pay && e.kind !== 'job' ? '<button class="btn ghost small" data-a="rate">השלמת תעריף</button>' : ''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn ghost small" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small" data-a="share">${e.isGroupShift ? 'החלק שלי' : 'שיתוף'}</button><button class="btn ghost small" data-a="copy">העתקה</button><button class="btn ghost small" data-a="del" style="color:var(--danger)">מחיקה</button></div>
-      <button class="btn small ${e.isPaid ? 'ghost' : 'primary'}" data-a="paid" data-testid="detail-paid">${e.isPaid ? 'שולם ✓ · נגיעה לבטל' : 'סימון כשולם'}</button>
+      <button class="btn small ${e.isPaid ? 'ghost' : 'primary'}" data-a="paid" data-testid="detail-paid">${e.isPaid ? 'שולם ✓ · לחיצה לביטול' : 'סימון כשולם'}</button>
       ${group.length ? `<div class="divider"></div><b class="label">${e.kind === 'job' ? 'הצוות' : 'הקבוצה'}</b>${sum ? `<div class="team-sum" data-testid="group-summary">
           <div class="row"><span class="grow">${e.kind === 'job' ? 'שלי' : 'ההכנסה שלי (כולל עמלה)'}</span><b>${moneyHtml(sum.myNet, e.currency)}</b></div>
           ${e.kind === 'job' ? `<div class="row"><span class="grow">לצוות</span><b data-testid="group-team-pay">${moneyHtml(Math.round((sum.employerTotal - sum.myNet - (e.passThrough || 0)) * 100) / 100, e.currency)}</b></div>` : ''}
           ${e.passThrough > 0 ? `<div class="row"><span class="grow">החזר הוצאות</span><b>${moneyHtml(e.passThrough, e.currency)}</b></div>` : ''}
           <div class="row strong"><span class="grow">לקבל מהמעסיק</span><b data-testid="group-employer-due">${moneyHtml(sum.employerTotal, e.currency)}</b></div></div>`
           : `<p class="caption" style="margin:0">${e.kind === 'job' ? 'הסכומים יופיעו אחרי שיושלם הסכום שלך' : 'חסר תעריף לחלק מהקבוצה'}</p>`}
-        <div class="row"><button class="btn ghost small grow" data-a="employer">דו״ח למעסיק</button><button class="btn ghost small grow" data-a="employer-copy">העתקת דוח הצוות</button></div>
+        <div class="row"><button class="btn ghost small grow" data-a="employer">דוח למעסיק</button><button class="btn ghost small grow" data-a="employer-copy">העתקת דוח הצוות</button></div>
         ${group.map((w, i) => `<div style="display:grid;gap:6px"><div class="row" style="align-items:center"><span class="grow">${esc(w.name)}${e.kind === 'job' && w.amount != null ? '' : ' · ' + U().duration(w.hours) + ' ש׳'}${root.KisPay.workerPay(w, e) != null ? ' · ' + esc(U().money(root.KisPay.workerPay(w, e), e.currency)) : ''}</span><button class="chip" data-wp="${i}">${w.isPaid ? 'שולם ✓' : 'לא שולם'}</button></div><div class="row"><button class="btn ghost small grow" data-w="${i}">שיתוף לעובד</button><button class="btn ghost small grow" data-wc="${i}">העתקה</button></div></div>`).join('')}` : ''}`;
     const q = s => el.querySelector(s);
     q('[data-a=edit]').onclick = () => { close(); root.KisEditor.open(app, { entry: e }); };
@@ -71,7 +71,7 @@ function detail(e) {
     q('[data-a=copy]')?.addEventListener('click', copyMine);
     // Group B: one "שיתוף" with every report, and one ⋯ per worker.
     q('[data-a=reports]')?.addEventListener('click', () => U().actionSheet('שיתוף', [
-      { label: 'דו״ח למעסיק', onClick: shareEmployer, testid: 'report-employer' }, { label: 'העתקת דוח הצוות', onClick: copyEmployer, testid: 'report-employer-copy' },
+      { label: 'דוח למעסיק', onClick: shareEmployer, testid: 'report-employer' }, { label: 'העתקת דוח הצוות', onClick: copyEmployer, testid: 'report-employer-copy' },
       { label: 'החלק שלי', onClick: shareMine, testid: 'report-mine' }, { label: 'העתקת החלק שלי', onClick: copyMine, testid: 'report-mine-copy' }], 'reports-sheet'));
     el.querySelectorAll('[data-more]').forEach(b => b.onclick = () => { const i = +b.dataset.more, w = group[i];
       U().actionSheet(w.name, [
@@ -112,7 +112,7 @@ function groupDetailHtml(e, sum, group) {
       : `<p class="caption" style="margin:0" data-testid="group-summary-missing">${job ? 'הסכומים יופיעו אחרי שיושלם הסכום שלך' : 'חסר תעריף לחלק מהקבוצה'}</p>`}
     ${!pay && !job ? '<button class="btn ghost small" data-a="rate">השלמת תעריף</button>' : ''}
     <div class="gd-actions"><button class="btn ghost small" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small" data-a="reports" data-testid="detail-reports" aria-haspopup="dialog">שיתוף ▾</button><button class="btn ghost small danger-text" data-a="del" data-testid="detail-delete">מחיקה</button></div>
-    <button class="btn small ${e.isPaid ? 'ghost' : 'primary'}" data-a="paid" data-testid="detail-paid">${e.isPaid ? 'שולם ✓ · נגיעה לבטל' : 'סימון כשולם'}</button>
+    <button class="btn small ${e.isPaid ? 'ghost' : 'primary'}" data-a="paid" data-testid="detail-paid">${e.isPaid ? 'שולם ✓ · לחיצה לביטול' : 'סימון כשולם'}</button>
     <div class="divider"></div><b class="label">${job ? 'הצוות' : 'הקבוצה'} · ${group.length}</b>
     <div class="gd-workers">${group.map((w, i) => { const p = P.workerPay(w, e);
       return `<div class="gd-w" data-testid="worker-row-${i}"><span class="nm"><b>${esc(w.name)}</b><small>${job && w.amount != null ? 'סכום קבוע' : U().duration(w.hours) + ' שעות'}${w.bonus > 0 ? ' · בונוס ' + esc(U().money(w.bonus, e.currency)) : ''}</small></span>
