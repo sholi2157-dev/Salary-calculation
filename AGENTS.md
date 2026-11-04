@@ -4,9 +4,10 @@ Current owner request supersedes historical scope notes in older documents.
 Read `docs/current-state.md`, `docs/web-rc13-parity.md` and
 `docs/preservation-and-sync.md` before editing.
 
-- Active Web rebuild branch: `codex/web-android-rc13-parity`. Keep the existing
-  `codex/preserve-app-sync`/draft PR #1 and production branch intact.
-- Android RC13 on `codex/android-local-distribution` is authoritative for current
+- Active Web branch for 2.3.0: `release/2.3-web` (Android: `release/2.3-android`);
+  see `docs/current-state.md`. Keep the existing `codex/preserve-app-sync`/draft
+  PR #1 and production branch intact.
+- Current Android (`release/2.3-android`, public 2.2.1) is authoritative for
   product behavior/design. Do not modify Android implementation, package,
   signing, versions or distribution as part of Web work.
 - The exact previous web state is backed up remotely at

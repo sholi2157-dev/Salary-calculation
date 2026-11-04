@@ -1,3 +1,23 @@
+# Current state — 2026-11-04 (2.3.0 in progress)
+
+This section is the current state; everything below it is history and does not override it.
+
+- **Public now: 2.2.1.** Android 2.2.1 (versionCode 46) is the latest GitHub release
+  (`android-v2.2.1-code46`, 2026-10-27), and the website at
+  https://salary-calculation-eta.vercel.app/ is the matching 2.2.1 site. Existing users' 2.2.1 data must keep
+  loading unchanged.
+- **2.2.3: built, not published.** Its changes (notification settings per kind, the live card, categorized
+  settings) are being carried into 2.3.0 rather than released on their own.
+- **Target: 2.3.0, versionCode 49 (tentative).** The audit plan and its decisions are on
+  `audit/2.3-unified-plan` (PLAN.md, MAPPING.csv).
+- **One release for Android and the website together.** Each platform has its own release branch:
+  `release/2.3-web` (website and server) and `release/2.3-android`. Every fix goes on its own branch from the
+  right base, through a PR; a fix that touches both platforms is two branches. The shared fixtures
+  (`web-tests/fixtures/v2-*.json`, `money-contract.json`, `group-reconcile.json` and their copies in
+  `app/src/test/resources`) must stay byte-identical on both release branches.
+- Production (`main`, `codex/download-and-management-20261020`) is not touched by 2.3.0 work until the owner
+  approves the release.
+
 # Website automatic updates and Android 2.0.5 published — 2026-10-21
 
 Website source: 660e82ccc696bff62783d1614d8959f210cd4276.
