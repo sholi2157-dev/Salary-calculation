@@ -181,6 +181,22 @@ function createStore(storage, { now = () => Date.now() } = {}) {
   /** Undo of a bulk paid change (M-37): each shift gets back its own previous mark, in one commit. was = {id: isPaid}. */
   function restorePaid(was) { update(d => d.entries.forEach(e => { if (Object.prototype.hasOwnProperty.call(was, e.id)) e.isPaid = was[e.id] === true; })); }
 
+  /**
+   * Undo of a retroactive rate change (FB-08), in one commit. rows = [{id, hourlyRate, totalEarnings, payKnown, wrote: {hourlyRate,
+   * totalEarnings, payKnown}}]: a shift gets its previous rate, amount and missing-rate state back only while it still holds exactly what the change
+   * wrote and is still unpaid, so a shift edited or paid since then is never touched. Returns how many came back.
+   */
+  function restoreRates(rows) {
+    let n = 0;
+    update(d => d.entries.forEach(e => { const r = rows.find(x => x.id === e.id);
+      if (!r || e.isPaid === true || e.hourlyRate !== r.wrote.hourlyRate || e.totalEarnings !== r.wrote.totalEarnings
+        || ('payKnown' in r.wrote && e.payKnown !== r.wrote.payKnown)) return;
+      e.hourlyRate = r.hourlyRate; e.totalEarnings = r.totalEarnings;
+      if ('payKnown' in r) e.payKnown = r.payKnown;
+      n++; }));
+    return n;
+  }
+
   // ---- timer ----
   function timer() { try { return root.WorkRuntime.readTimer(storage, null); } catch { return null; } }
   function startTimer(category, rate, currency) { storage.setItem(timerKey, JSON.stringify({ id: uid(), category, rate: rate ?? 0, currency, startedAt: now(), rateUnknown: rate == null })); emit(); }
@@ -191,7 +207,7 @@ function createStore(storage, { now = () => Date.now() } = {}) {
   function exception(seriesId, date, over = {}) { return { seriesId, date, cancelled: false, hold: false, startTime: null, endTime: null, rateOverridden: false, hourlyRate: null, ...over }; }
 
   return {
-    load, update, updatePlans, transact, restoreDamaged, setLocal, addEntries, replaceEntry, deleteEntries, restoreEntries, markPlanDays, setPaid, restorePaid,
+    load, update, updatePlans, transact, restoreDamaged, setLocal, addEntries, replaceEntry, deleteEntries, restoreEntries, markPlanDays, setPaid, restorePaid, restoreRates,
     timer, startTimer, cancelTimer, restoreTimer, exception, uid,
     get data() { return data; }, get plans() { return plans; }, get local() { return local; }, get broken() { return broken; },
     /** The plans file could not be read; it is kept untouched (rawPlans) and plan changes are refused until it is restored. */

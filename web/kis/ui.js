@@ -4,11 +4,13 @@
 const DAY_SHORT = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 // The 8 fixed workplace colours (KisTheme.Workplaces): vivid end, dark end, ink on it, dark-mode accent and its ink.
+// M-28 (Kis 2): same order and names, so each saved colour index stays valid; each colour moves inside its own hue so
+// close pairs (indigo/purple, rose/burgundy) stay apart for colour-blind people and indigo is no longer the brand colour.
 const PLACES = [
-  ['אינדיגו', '#5145E8', '#1E1873', '#FFFFFF', '#8F87FF', '#120F3A'], ['ירוק', '#0E8059', '#073D2C', '#FFFFFF', '#3DDC97', '#03140E'],
-  ['ורד', '#D6336C', '#5C1230', '#FFFFFF', '#FF6B9A', '#2E0A18'], ['חרדל', '#F5B82E', '#C98A10', '#1A1200', '#FFC94D', '#2A1C00'],
-  ['סגול', '#7D3CF0', '#2E1466', '#FFFFFF', '#B48CFF', '#1E0B3D'], ['תכלת', '#1F72E0', '#0C2F66', '#FFFFFF', '#5AA9FF', '#06203F'],
-  ['טורקיז', '#0E8A86', '#063B3A', '#FFFFFF', '#3CD3CB', '#04201F'], ['בורדו', '#B5294E', '#4A0F21', '#FFFFFF', '#FF6F8E', '#2E0812'],
+  ['אינדיגו', '#393ECA', '#150A6B', '#FFFFFF', '#7D9BFF', '#0E142A'], ['ירוק', '#117D15', '#013E03', '#FFFFFF', '#44E994', '#021C0D'],
+  ['ורד', '#C50E70', '#690039', '#FFFFFF', '#FA74A5', '#260C16'], ['חרדל', '#F5B82E', '#D18F1F', '#1A1200', '#FFC732', '#1E1400'],
+  ['סגול', '#9F4AE4', '#5B2187', '#FFFFFF', '#C874C8', '#200E21'], ['תכלת', '#0777A9', '#003D59', '#FFFFFF', '#8BC7FE', '#031729'],
+  ['טורקיז', '#065E63', '#012527', '#FFFFFF', '#18AFA4', '#001B19'], ['בורדו', '#8B032A', '#33000A', '#FFFFFF', '#F05963', '#270C0D'],
 ].map(([name, from, to, on, accentDark, accentDarkInk]) => ({ name, from, to, on, accentDark, accentDarkInk }));
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
