@@ -145,10 +145,15 @@ object WorkShareText {
     private fun plannedText(text: String) = "מתוכנן — עוד לא בוצע\n" + text.replace("יתרה לתשלום:", "צפי שטרם בוצע:").replace("שולם:", "סומן בתכנון כשולם:").replace("סכום:", "צפי:").replace("סכום הצוות:", "צפי לצוות:").replace("השכר לתשלום:", "צפי השכר:").replace("מגיע לך:", "צפי השכר:").replace("נותר לתשלום", "צפי שטרם בוצע").replace("השכר הכולל:", "צפי השכר הכולל:").replace("השכר בסך", "צפי השכר בסך").replace(" שולם במלואו.", " סומן בתכנון כשולם.").replace("מתוכו שולם", "סומן בתכנון כשולם")
     private val excelHeaders = listOf("עבודה", "תאריך", "שעת התחלה", "שעת סיום", "שעות עבודה", "הפסקה בדקות", "תעריף שעתי", "סכום", "מטבע", "סטטוס תשלום", "סוג", "בונוס", "הערה", "שכר ידוע")
     private fun textCell(v: String) = if (Regex("^[\\s]*[=+\\-@]").containsMatchIn(v)) "'$v" else v
+    /** The exact duration, not hours rounded to 2 places (audit M-43, same as web KisShare.exactDuration): 1:40 stays 1:40, a timer's seconds stay (8:00:12). */
+    fun exactDuration(hours: Double): String {
+        val t = Math.round(hours * 3600); val s = t % 60; val m = (t / 60) % 60
+        return "${t / 3600}:" + String.format(Locale.US, "%02d", m) + if (s != 0L) ":" + String.format(Locale.US, "%02d", s) else ""
+    }
     private fun table(entries: List<WorkEntry>): List<List<String>> {
         fun n(v: Double) = String.format(Locale.US, "%.2f", v)
         return listOf(excelHeaders) + entries.sortedBy { it.date }.map { e -> listOf(
-            textCell(e.category), date(e.date), e.startTime ?: "", e.endTime ?: "", n(e.hours), pause(e)?.toString() ?: "",
+            textCell(e.category), date(e.date), e.startTime ?: "", e.endTime ?: "", if (e.hours.isFinite() && e.hours >= 0) exactDuration(e.hours) else n(e.hours), pause(e)?.toString() ?: "",
             if (!e.payKnown || WorkPay.isJob(e)) "" else n(e.hourlyRate), if (e.payKnown) n(e.totalEarnings) else "", textCell(e.currency),
             if (e.isPaid) "שולם" else "ממתין", if (WorkPay.isJob(e)) "קבלנות" else if (e.isGroupShift) "משמרת קבוצתית" else "משמרת",
             if (e.bonus > 0) n(e.bonus) else "", textCell(e.notes), if (e.payKnown) "כן" else "חסר"
