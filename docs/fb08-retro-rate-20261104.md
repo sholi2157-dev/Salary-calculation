@@ -28,7 +28,16 @@ that separate branch has already been updated.
 - Local `npm test`: 31/31 passed (the web tests available on this branch).
 - Local `npm run build`: passed.
 - `git diff --check`: passed.
-- Android tests run in CI only, as requested; results will be recorded after the push.
+- Android ran in CI only: [Android preview 41927913224](https://github.com/sholi2157-dev/Salary-calculation/actions/runs/41927913224)
+  succeeded on source `301306491e505ada5e9e0aff4ec495da7b81e788`.
+  `Work*Test`: 116 passed, zero failures/errors/skips; all seven `WorkRetroRateTest`
+  cases passed (downloaded HTML report inspected). Debug and Preview assembly passed.
+  CI Web tests: 31/31; existing Firebase-emulator integration checks: 2/2.
+  All PR checks, including Vercel, succeeded for that source.
+- Test reports: Actions artifact `android-test-results` (13369984320).
+  CI also generated `salary-android-updated` (13370064288) and `salary-trial-1.4`
+  (13370467979); these are development builds, not owner distribution candidates.
+  No distribution package/version/signature change was made or signed-update gate claimed.
 - `WorkRetroRateTest` now covers missing-rate completion and exact undo, paid/missing
   paid, team/missing team, other rates including near-equal rates, OFF preservation,
   unchanged weekly-plan/live-timer rates, existing money rounding and guarded undo.

@@ -8,6 +8,8 @@ get the new rate only if their known rate exactly equals the previous workplace 
 or their rate is unknown. Filling an unknown rate also sets `payKnown = true`; undo
 restores the original unknown state. Paid shifts, other known rates, jobs and team
 shifts stay unchanged. Weekly plans and the running timer retain their own rates.
+Verified source `3013064`: CI 41927913224 SUCCESS, 116 Android tests (7 FB-08),
+31 Web tests and both existing integration checks passed. All PR checks green.
 No release, signing, package, version, schema or shared-fixture changes.
 
 # Android 2.0.8 and the website published — 2026-10-25
