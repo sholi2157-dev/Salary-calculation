@@ -92,6 +92,9 @@ import java.util.Locale
 val KisMinTouch: Dp = 44.dp
 
 object KisFormat {
+    /** Keep start–end left-to-right within Hebrew planning rows, as in timeLabel. */
+    fun timeRange(start: String, end: String): String = "\u2066$start–$end\u2069"
+
     /** "1,234" for whole amounts, "1,234.50" otherwise. */
     fun number(v: Double): String {
         val cents = Math.round(v * 100)

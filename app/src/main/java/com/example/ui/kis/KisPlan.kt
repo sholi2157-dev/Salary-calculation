@@ -65,7 +65,7 @@ fun PlannedCard(o: V2Plan.Occurrence, categories: List<WorkCategory>, onWorked: 
                     Tag(if (waiting) "ממתין לאישור" else "מתוכנן", warn = waiting)
                 }
                 val overnight = V2Rules.toMinutes(o.end) <= V2Rules.toMinutes(o.start)
-                Text("${o.start}–${o.end}${if (overnight) " · למחרת" else ""} · ${o.category}", style = KisType.caption, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${KisFormat.timeRange(o.start, o.end)}${if (overnight) " · למחרת" else ""} · ${o.category}", style = KisType.caption, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             val minutes = V2Rules.span(o.start, o.end).minutes
             if (o.rate != null) MoneyText(WorkPay.money(minutes / 60.0, o.rate), o.currency, KisType.amount.copy(fontSize = 17.sp), color = c.muted)
@@ -201,7 +201,7 @@ fun SeriesSheet(series: List<ShiftSeries>, occurrences: List<V2Plan.Occurrence>,
                         Avatar(s.category, workplaceOf(s.category, categories), size = 36.dp, planned = true)
                         Column(Modifier.weight(1f)) {
                             Text(s.category, style = KisType.label, color = c.ink)
-                            Text("${daysLabel(s.daysMask)} · ${s.startTime}–${s.endTime} · עד ${KisShare.shortDate(V2Plan.startMillis(s.untilDate, "12:00"))}" +
+                            Text("${daysLabel(s.daysMask)} · ${KisFormat.timeRange(s.startTime, s.endTime)} · עד ${KisShare.shortDate(V2Plan.startMillis(s.untilDate, "12:00"))}" +
                                 if (left > 0) " · עוד $left" else "", style = KisType.caption, color = c.muted)
                         }
                     }
