@@ -43,7 +43,7 @@ function render(el, app) {
     <div data-testid="account-card">${root.KisAccount.settingsHtml()}</div>
     <div style="display:grid;justify-items:start;padding:4px 0"><button class="link" style="color:var(--danger,#c2362b);padding-inline:0;min-height:44px" data-a="erase" data-testid="account-erase">מחיקה מהמכשיר הזה</button>
     ${root.KisAccount.state.user ? '<button class="link" style="color:var(--danger,#c2362b);padding-inline:0;min-height:44px" data-a="erase-account" data-testid="account-erase-all">מחיקה מהחשבון ומכל המכשירים</button>' : ''}</div>`, 'המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים עם האפליקציה לאנדרואיד ועם כל דפדפן שמחובר אליו.')}
-  </div><div class="row" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי</span></div>`;
+  </div><div class="row set-brand" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי</span></div>`;
 
   const q = s => el.querySelector(s);
   el.querySelectorAll('[data-section]').forEach(b => b.onclick = () => { section = b.dataset.section; render(el, app); window.scrollTo({ top: 0 });

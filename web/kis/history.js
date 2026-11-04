@@ -70,6 +70,7 @@ function render(el, app, opts = {}) {
     list = weeks.map(([w, l]) => `<div class="week-head"><span>${esc(weekLabel(w))}</span><span>${U().duration(l.reduce((s, e) => s + e.hours, 0))} ש׳</span></div>${l.map(e => shiftCard(e, store, { selected: state.selection.has(e.id) })).join('')}`).join('');
   }
 
+  // With nothing to show, the empty message says so once: no "0 משמרות · —" card above it (audit M-46 / R-34).
   el.innerHTML = `
   <div class="title-row"><h1 class="page-title">היסטוריה</h1>${state.planned ? '' : `
     <button class="icon-btn history-tool" aria-label="חיפוש" data-a="search" data-testid="history-search">${ICON.search}</button>
@@ -83,9 +84,9 @@ function render(el, app, opts = {}) {
       ${n ? '<button class="chip" data-a="reset" data-testid="history-reset">הצגת הכול</button>' : ''}</div>
     ${f.period === 'MONTH' ? `<div class="row" style="align-items:center"><h2 class="grow" style="font:1.375rem/1.75rem var(--display);margin:0" data-testid="history-month" aria-live="polite">${esc(U().monthName(f.month))}</h2>
       <button class="icon-btn" aria-label="חודש קודם" data-a="prev">${ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-a="next">${ICON.next}</button></div>` : ''}
-    <section class="card" style="margin-top:10px" data-testid="history-total" aria-label="סיכום המשמרות המוצגות"><div class="caption">${rows.length} משמרות · ${U().duration(rows.reduce((s, e) => s + e.hours, 0))} שעות${(h => h > 0 ? ` · מתוכן ${U().duration(h)} עוד לא עברו` : '')(rows.filter(e => U().upcoming(e)).reduce((s, e) => s + e.hours, 0))}</div>
+    ${rows.length ? `<section class="card" style="margin-top:10px" data-testid="history-total" aria-label="סיכום המשמרות המוצגות"><div class="caption">${rows.length} משמרות · ${U().duration(rows.reduce((s, e) => s + e.hours, 0))} שעות${(h => h > 0 ? ` · מתוכן ${U().duration(h)} עוד לא עברו` : '')(rows.filter(e => U().upcoming(e)).reduce((s, e) => s + e.hours, 0))}</div>
       <div style="display:flex;gap:14px">${totals.length ? totals.map(([c, v]) => `<b class="amount">${moneyHtml(v, c)}</b>`).join('') : '<b class="amount">—</b>'}</div>
-      ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}</section>`}
+      ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}</section>` : ''}`}
   <div class="list" style="margin-top:8px;${sel.length ? 'padding-bottom:150px' : ''}" data-testid="history-list">${list}</div>
 
   ${sel.length ? selectionBar(sel, rows) : ''}`;
