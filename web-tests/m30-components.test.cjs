@@ -26,7 +26,7 @@ test('radii: only 8/12/16/24 and pills (hairline bars of 2-3px and circles aside
 test('disabled uses its own colours, not opacity; delete is filled with on-danger text', () => {
   assert.match(css, /\.btn\[disabled\][^{]*\{ background: var\(--disabled-bg\); color: var\(--disabled-ink\);/);
   assert.doesNotMatch(css, /\.btn\[disabled\] \{ opacity/);
-  assert.match(css, /\.btn\.danger \{ background: var\(--danger\); color: var\(--on-danger, #fff\); \}/);
+  assert.match(css, /\.btn\.danger \{ background: var\(--danger\); color: var\(--on-danger\); \}/);
 });
 test('icons: no font arrows or check marks drawn as icons in the interface', () => {
   for (const f of ['home.js', 'history.js', 'download.js', 'launch.js', 'summary.js']) {
