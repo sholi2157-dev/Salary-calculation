@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 class WorkRepository(private val workDao: WorkDao) {
     suspend fun exportSnapshot(): String = workDao.exportSnapshot()
-    suspend fun importBackup(backup: WorkBackup.Contents): Int = workDao.importBackup(backup)
+    suspend fun importBackup(backup: WorkBackup.Contents): WorkDao.ImportResult = workDao.importBackup(backup)
     val allEntries: Flow<List<WorkEntry>> = workDao.getAllEntries()
     val allCategories: Flow<List<WorkCategory>> = workDao.getAllCategories()
 

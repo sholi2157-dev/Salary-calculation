@@ -59,7 +59,7 @@ class DistributionUpdateTest {
             File(context.getExternalFilesDir(null), "$stage-before.json").writeText(dao.exportSnapshot())
             assertEquals(3, dao.getEntriesList().size)
             val old = WorkBackup.decode(evidence.getString("snapshot", null)!!)
-            assertEquals(0, dao.importBackup(old))
+            assertEquals(0, dao.importBackup(old).added)
             assertEquals(evidence.getString("snapshot", null), dao.exportSnapshot())
             if (stage == "updater") {
                 val candidateFile = File(context.getExternalFilesDir(null), "candidate-b.apk")
