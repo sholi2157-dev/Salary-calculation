@@ -78,14 +78,16 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  release='B';const background=await context.newPage();await background.goto(url);await ready(background,'B');await background.close();
  assert.equal(navigations,0);assert.equal(await durationValue(page),'1:40');assert.equal(await page.evaluate(()=>WorkBuild.commit),'A'.repeat(40));
  await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(navigations,1);assert.equal(await durationValue(page),'1:40');assert.equal(await page.evaluate(()=>localStorage.getItem('work_complete_backup')),snapshot);
- serverOffline=true;await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(await durationValue(page),'1:40');serverOffline=false;await context.setOffline(false);
+ // The server outage also covers native worker requests. Mixing it with CDP
+ // offline toggles can strand B's lifecycle and leave C waiting after skipWaiting.
+ serverOffline=true;await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));assert.equal(await durationValue(page),'1:40');serverOffline=false;
  // Finish the current page's registration before testing a separate failed install.
  await page.evaluate(async()=>{await navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'});});
  // Failed partial installation cannot replace the complete offline shell.
  release='C';broken=true;await page.evaluate(async()=>{try{await(await navigator.serviceWorker.getRegistration()).update();}catch{}});
  const failedDeadline=Date.now()+10000;while(!failedAssets&&Date.now()<failedDeadline)await page.waitForTimeout(50);assert.ok(failedAssets,'C installation actually requested the unavailable asset');
  await waitCheck(page,async()=>!(await navigator.serviceWorker.getRegistration()).installing);await ready(page,'B');
- serverOffline=true;await context.setOffline(true);await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));serverOffline=false;await context.setOffline(false);broken=false;
+ serverOffline=true;await page.reload();assert.equal(await page.evaluate(()=>WorkBuild.commit),'B'.repeat(40));serverOffline=false;broken=false;
  // Next ordinary opening sees C even if B is still its controller.
  const reopened=await context.newPage();await reopened.goto(url);assert.equal(await reopened.evaluate(()=>WorkBuild.commit),'C'.repeat(40));await ready(reopened,'C');
  assert.equal(await durationValue(reopened),'1:40');assert.equal(await reopened.evaluate(()=>localStorage.getItem('work_complete_backup')),snapshot);
