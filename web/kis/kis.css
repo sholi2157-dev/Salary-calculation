@@ -9,12 +9,14 @@
 :root {
   /* Light (2.0.8): a deep navy ink instead of black and a softer page; chosen things are white with an ink edge. */
   --bg: #F1F3F8; --surface: #FFFFFF; --sunk: #E4E8F0; --ink: #1B2335; --muted: #5A6478; --line: #D2D8E3;
-  --pending: #9A5000; --pending-soft: #FFEBC7; --paid: #0B7F60; --danger: #C2362B;
+  --pending: #9A5201; --pending-soft: #FFEBC7; --paid: #007453; --danger: #BD2F28; --on-danger: #FFFFFF;
+  /* M-28 (Kis 2): a strong line for edges that are a control's only mark, brand kept apart from workplaces, ink switch. */
+  --line-strong: #778093; --accent: #5145E8; --accent-ink: #FFFFFF; --on-paid: #FFFFFF; --control-on: var(--ink); --control-knob: #FFFFFF;
   --nav: rgba(255,255,255,.90); --nav-ink: #465066; --nav-on: #1B2335; --nav-on-ink: #FFFFFF;
   --bar: rgba(255,255,255,.95); --on-bar: #1B2335; --on-ink: #F1F3F8;
   --pick-bg: var(--surface); --pick-ink: var(--ink); --pick-edge: var(--ink); --tile: var(--surface); --tile-edge: var(--line);
   --track: var(--sunk); --tab-on: var(--surface); --tab-on-ink: var(--ink); --tab-shadow: 0 1px 3px rgba(27,35,53,.14);
-  --glow: #5145E8; --glow-a: .22; --glow-b: .06; --shadow: 0 10px 28px rgba(0,0,0,.18);
+  --glow: #5145E8; --glow-a: .12; --glow-b: .06; --shadow: 0 10px 28px rgba(0,0,0,.18);
   /* 2.3.0 (approved choices): a light raised live card with a brand line, and a soft recap banner. */
   --live-bg: var(--surface); --live-line: var(--line); --brand-line: #5145E8; --recap-bg: #E8ECFF; --recap-ink: #3A33B8;
   --text: Rubik, Heebo, system-ui, sans-serif; --display: 'Secular One', Rubik, Heebo, sans-serif;
@@ -23,20 +25,22 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0F1216; --surface: #181B20; --sunk: #282C34; --ink: #EDF0F6; --muted: #B3B9C5; --line: #32373F;
-    --pending: #FFC266; --pending-soft: #3A2D12; --paid: #34C79A; --danger: #FF8A7A;
-    --nav: #1B1F25; --nav-ink: #B3B9C5; --nav-on: #EDF0F6; --nav-on-ink: #0F1216; --bar: #2D323A; --on-bar: #EDF0F6; --on-ink: #0F1216;
+    --pending: #F6B75C; --pending-soft: #3E2B0F; --paid: #45D09E; --danger: #FF9183; --on-danger: #2B0E0B;
+    --line-strong: #717681; --accent: #9398FF; --accent-ink: #15153A; --on-paid: #011C11; --control-on: var(--ink); --control-knob: #0F1216;
+    --nav: rgb(33 37 43 / .92); --nav-ink: #B3B9C5; --nav-on: #EDF0F6; --nav-on-ink: #0F1216; --bar: #2D323A; --on-bar: #EDF0F6; --on-ink: #0F1216;
     --live-bg: #2D323A; --live-line: #3A404A; --brand-line: #9398FF; --recap-bg: #2C2E56; --recap-ink: #C9CCFF;
-    --glow: #8F87FF; --glow-a: .40; --glow-b: .12; --shadow: 0 10px 28px rgba(0,0,0,.6); color-scheme: dark;
+    --glow: #9398FF; --glow-a: .24; --glow-b: .12; --shadow: 0 10px 28px rgba(0,0,0,.6); color-scheme: dark;
     --pick-bg: var(--ink); --pick-ink: var(--on-ink); --pick-edge: var(--ink); --tile: color-mix(in srgb, var(--ink) 10%, transparent); --tile-edge: transparent;
     --track: color-mix(in srgb, var(--ink) 10%, transparent); --tab-on: var(--ink); --tab-on-ink: var(--bg); --tab-shadow: none;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0F1216; --surface: #181B20; --sunk: #282C34; --ink: #EDF0F6; --muted: #B3B9C5; --line: #32373F;
-  --pending: #FFC266; --pending-soft: #3A2D12; --paid: #34C79A; --danger: #FF8A7A;
-  --nav: #1B1F25; --nav-ink: #B3B9C5; --nav-on: #EDF0F6; --nav-on-ink: #0F1216; --bar: #2D323A; --on-bar: #EDF0F6; --on-ink: #0F1216;
+  --pending: #F6B75C; --pending-soft: #3E2B0F; --paid: #45D09E; --danger: #FF9183; --on-danger: #2B0E0B;
+    --line-strong: #717681; --accent: #9398FF; --accent-ink: #15153A; --on-paid: #011C11; --control-on: var(--ink); --control-knob: #0F1216;
+  --nav: rgb(33 37 43 / .92); --nav-ink: #B3B9C5; --nav-on: #EDF0F6; --nav-on-ink: #0F1216; --bar: #2D323A; --on-bar: #EDF0F6; --on-ink: #0F1216;
     --live-bg: #2D323A; --live-line: #3A404A; --brand-line: #9398FF; --recap-bg: #2C2E56; --recap-ink: #C9CCFF;
-  --glow: #8F87FF; --glow-a: .40; --glow-b: .12; --shadow: 0 10px 28px rgba(0,0,0,.6); color-scheme: dark;
+  --glow: #9398FF; --glow-a: .24; --glow-b: .12; --shadow: 0 10px 28px rgba(0,0,0,.6); color-scheme: dark;
   --pick-bg: var(--ink); --pick-ink: var(--on-ink); --pick-edge: var(--ink); --tile: color-mix(in srgb, var(--ink) 10%, transparent); --tile-edge: transparent;
   --track: color-mix(in srgb, var(--ink) 10%, transparent); --tab-on: var(--ink); --tab-on-ink: var(--bg); --tab-shadow: none;
 }
@@ -77,8 +81,8 @@ button { cursor: pointer; }
 .btn { min-height: 54px; border-radius: 16px; border: 0; padding: 0 18px; font-weight: 600; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .btn.primary { background: var(--ink); color: var(--on-ink); }
 .btn.ghost { background: var(--sunk); color: var(--ink); }
-.btn.danger { background: var(--danger); color: #fff; }
-.btn.outline { background: transparent; border: 1.5px solid var(--line); }
+.btn.danger { background: var(--danger); color: var(--on-danger); }
+.btn.outline { background: transparent; border: 1.5px solid var(--line-strong); }
 .btn[disabled] { opacity: .45; cursor: default; }
 .btn.small { min-height: 48px; font-size: 0.9375rem; border-radius: 14px; }
 .row { display: flex; gap: 8px; } .row > .grow { flex: 1; }
@@ -96,13 +100,14 @@ button { cursor: pointer; }
 .icon-btn { width: 48px; height: 48px; border-radius: 50%; border: 0; background: transparent; display: grid; place-items: center; color: var(--ink); }
 .icon-btn svg, .chip svg { width: 22px; height: 22px; }
 .field { display: grid; gap: 6px; }
-.field input, .field select, .field textarea, .input { min-height: 52px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); padding: 10px 14px; width: 100%; }
+.field input, .field select, .field textarea, .input { min-height: 52px; border-radius: 14px; border: 1.5px solid var(--line-strong); background: var(--surface); padding: 10px 14px; width: 100%; }
 .field textarea { min-height: 80px; resize: vertical; }
 .divider { height: 1px; background: var(--line); margin: 4px 0; }
-.switch { position: relative; width: 52px; height: 32px; border-radius: 99px; border: 0; background: var(--line); flex: none; }
-.switch::after { content: ''; position: absolute; top: 4px; inset-inline-start: 4px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: inset-inline-start .15s; }
-.switch[aria-checked="true"] { background: var(--paid); }
-.switch[aria-checked="true"]::after { inset-inline-start: 24px; }
+.switch { position: relative; width: 52px; height: 32px; border-radius: 99px; border: 1.5px solid var(--line-strong); background: var(--sunk); flex: none; }
+.switch::after { content: ''; position: absolute; top: 2.5px; inset-inline-start: 2.5px; width: 24px; height: 24px; border-radius: 50%; background: var(--line-strong); transition: inset-inline-start .15s; }
+.switch[aria-checked="true"] { background: var(--control-on); border-color: var(--control-on); }
+.switch[aria-checked="true"]::after { background: var(--control-knob); }
+.switch[aria-checked="true"]::after { inset-inline-start: 22.5px; }
 
 /* Shift cards */
 .shift { display: flex; align-items: center; gap: 12px; width: 100%; text-align: start; background: var(--surface); border: 1.5px solid transparent; border-radius: 18px; padding: 12px 14px; }
@@ -159,7 +164,7 @@ button { cursor: pointer; }
   border: 1px solid color-mix(in srgb, var(--line) 60%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 .nav button { min-height: 48px; border: 0; border-radius: 99px; background: transparent; color: var(--nav-ink); padding: 0 16px; font-weight: 600; font-size: 0.875rem; }
 .nav button[aria-current="page"] { background: var(--nav-on); color: var(--nav-on-ink); }
-.nav .add { width: 48px; padding: 0; background: var(--glow); color: #fff; font-size: 1.75rem; line-height: 1; }
+.nav .add { width: 48px; padding: 0; background: var(--accent); color: var(--accent-ink); font-size: 1.75rem; line-height: 1; }
 
 /* Messages */
 .toast { position: fixed; inset-inline: 16px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 76px); z-index: 40; display: flex; justify-content: center; pointer-events: none; }
@@ -170,9 +175,9 @@ button { cursor: pointer; }
 .toast div { border-radius: 16px; padding-block: 6px; font-weight: 500; line-height: 1.35; }
 .toast .t-text { flex: 1; min-width: 0; }
 .toast .t-sign { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-weight: 700; font-size: 0.9375rem; }
-.toast .t-ok .t-sign { background: var(--paid); color: #fff; }
+.toast .t-ok .t-sign { background: var(--paid); color: var(--on-paid); }
 .toast .t-undo .t-sign { background: color-mix(in srgb, var(--on-bar) 18%, transparent); }
-.toast .t-error .t-sign { background: var(--danger); color: #fff; }
+.toast .t-error .t-sign { background: var(--danger); color: var(--on-danger); }
 .toast .t-error { border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
 /* Action lists (a worker's ⋯, the reports of a group shift) */
 .action-list { display: grid; gap: 2px; }
@@ -252,8 +257,8 @@ button { cursor: pointer; }
 .key-sink { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; font-size: 1rem; pointer-events: none; }
 /* Light: the add page glows in the chosen place's colour, so the page keeps to one colour. */
 .editor .kis-glow { --glow: var(--acc); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .editor .kis-glow { --glow: #8F87FF; } }
-:root[data-theme="dark"] .editor .kis-glow { --glow: #8F87FF; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .editor .kis-glow { --glow: #9398FF; } }
+:root[data-theme="dark"] .editor .kis-glow { --glow: #9398FF; }
 
 /* Update notice keeps the existing manager's ids */
 .header-bar { display: none; }
