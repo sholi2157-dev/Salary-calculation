@@ -42,8 +42,10 @@ jobs:
       - name: Consolidated regression (logic on Debug and Release, screens on Debug)
         run: >-
           gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
+          --tests 'com.example.NotificationJobs*Test' --tests 'com.example.GeminiCurrency*Test'
           --tests 'com.example.KisUiTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.OnboardingExperienceTest'
           :app:testReleaseUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
+          --tests 'com.example.NotificationJobs*Test' --tests 'com.example.GeminiCurrency*Test'
           -Proborazzi.test.record=true --console=plain
       - name: Count actual Android test results
         run: python3 scripts/summarize-android-tests.py

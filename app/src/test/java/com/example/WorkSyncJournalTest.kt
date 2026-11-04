@@ -107,9 +107,9 @@ class WorkSyncJournalTest {
         val db = memory()
         val fixture = WorkBackup.Contents(
             listOf(WorkCategory(name = "synthetic")), listOf(entry(), entry()), emptyList())
-        assertEquals(2, db.workDao().importBackup(fixture))
+        assertEquals(2, db.workDao().importBackup(fixture).added)
         val first = db.syncDao().pending()
-        assertEquals(0, db.workDao().importBackup(fixture))
+        assertEquals(0, db.workDao().importBackup(fixture).added)
         assertEquals(first, db.syncDao().pending())
         val records = first.filter { it.entityType == "entry" }
         assertEquals(2, records.map { it.syncId }.distinct().size)

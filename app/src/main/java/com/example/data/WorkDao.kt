@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WorkDao {
+    data class ImportResult(val added: Int, val skipped: Int)
+
     @Query("SELECT * FROM work_local_preferences")
     fun observeLocalPreferences(): Flow<List<WorkLocalPreference>>
     @Query("SELECT * FROM work_local_preferences")
@@ -69,7 +71,7 @@ interface WorkDao {
     suspend fun adoptLegacy(backup: WorkBackup.Contents): Int {
         val key = "legacy-guest-v1"
         if (receipt(key) != null) return 0
-        val added = importBackup(backup)
+        val added = importBackup(backup).added
         insertReceipt(WorkLocalReceipt(key, added.toLong()))
         return added
     }
@@ -160,7 +162,7 @@ interface WorkDao {
     suspend fun getWorkersList(): List<WorkerDirectory>
 
     @Transaction
-    suspend fun importBackup(backup: WorkBackup.Contents): Int {
+    suspend fun importBackup(backup: WorkBackup.Contents): ImportResult {
         val wasEmpty = getEntriesList().isEmpty()
         fun categoryKey(name: String) = name.trim().lowercase(java.util.Locale.ROOT)
         val categoryNames = getCategoriesList().associate { categoryKey(it.name) to it.name }.toMutableMap()
@@ -190,10 +192,11 @@ interface WorkDao {
         // insertEntry REPLACEs on a unique-key clash; an imported series key must never
         // replace a row already recorded here, so a clashing key is dropped instead.
         val seriesKeys = getEntriesList().mapNotNull { it.seriesKey }.toMutableSet()
+        var added = 0
         for (entry in missing) {
             // An occurrence that is already recorded here is the same shift: it is not added a second time.
             if (entry.seriesKey != null && !seriesKeys.add(entry.seriesKey)) continue
-            insertEntry(entry.copy(id = 0))
+            if (insertEntry(entry.copy(id = 0)) > 0) added++
         }
         // Weekly plans: existing ones win; a plan already here (same id) is never duplicated or overwritten.
         val knownSeries = getSeries().map { it.id }.toMutableSet()
@@ -219,7 +222,7 @@ interface WorkDao {
             if ((wasEmpty || key.startsWith("categoryCurrency:")) && adoptedKeys.add(key))
                 setLocalPreference(WorkLocalPreference(key, value))
         }
-        return missing.size
+        return ImportResult(added = added, skipped = incoming.size - added)
     }
     // Work Entries
     @Query("SELECT * FROM work_entries ORDER BY date DESC, createdAt DESC")
