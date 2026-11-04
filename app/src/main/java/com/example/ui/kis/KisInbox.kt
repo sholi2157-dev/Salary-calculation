@@ -42,7 +42,7 @@ import com.example.ui.WorkViewModel
 fun InfoDot(title: String, text: String, tag: String? = null) {
     val c = Kis.colors
     var open by rememberSaveable { mutableStateOf(false) }
-    Box(Modifier.size(44.dp).clip(CircleShape).kisClick { open = true }.semantics { contentDescription = "הסבר: $title" }
+    Box(Modifier.size(KisMinTouch).clip(CircleShape).kisClick { open = true }.semantics { contentDescription = "הסבר: $title" }
         .then(if (tag != null) Modifier.testTag(tag) else Modifier), contentAlignment = Alignment.Center) {
         Icon(Icons.Outlined.Info, null, tint = c.muted, modifier = Modifier.size(20.dp))
     }
@@ -57,7 +57,7 @@ fun InfoDot(title: String, text: String, tag: String? = null) {
 @Composable
 fun HeaderActions(unread: Boolean, onBell: () -> Unit) {
     val c = Kis.colors
-    Box(Modifier.size(44.dp).clip(CircleShape).background(c.surface).border(1.dp, c.line, CircleShape).kisClick(onClick = onBell)
+    Box(Modifier.size(KisMinTouch).clip(CircleShape).background(c.surface).border(1.dp, c.line, CircleShape).kisClick(onClick = onBell)
         .semantics { contentDescription = if (unread) "התראות · יש חדשות" else "התראות" }.testTag("home_bell"), contentAlignment = Alignment.Center) {
         Icon(Icons.Outlined.Notifications, null, tint = c.ink, modifier = Modifier.size(22.dp))
         if (unread) Box(Modifier.align(Alignment.TopEnd).padding(9.dp).size(9.dp).clip(CircleShape).background(c.danger).testTag("home_bell_dot"))

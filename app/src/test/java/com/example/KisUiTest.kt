@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.LayoutDirection
@@ -470,6 +472,48 @@ class KisUiTest {
         ui.onNodeWithTag("entry_done").performClick()
         ui.onNodeWithTag("nudge_start_15").assertIsDisplayed()
         shot("editor-both-times")
+    }
+
+    /**
+     * M-34 text scaling: at 130% and 200% text on a 360dp phone, the live card keeps its clock, money and both buttons,
+     * and the group details keep every total and the worker actions. Screenshots go to the CI log for review.
+     */
+    @Test fun largeTextKeepsTheLiveCardAndGroupDetailsWhole() {
+        val team = """[{"name":"מנחם מענדל שניאורסון","hours":5.0,"isPaid":false,"workerRate":50.0},{"name":"יוסי","hours":4.0,"isPaid":true,"workerRate":50.0}]"""
+        val entry = WorkEntry(id = 91, category = "אירועים", date = day, isTimeRange = false, hours = 5.0, hourlyRate = 70.0, totalEarnings = 370.0, bonus = 20.0, currency = "₪",
+            isGroupShift = true, employerRate = 70.0, workerRate = 50.0, groupWorkersJson = team, passThrough = 45.0)
+        runBlocking { dao.insertEntry(entry) }
+        val vm = model()
+        // One setContent per test (Compose test rule): the text scale and the screen are state, changed between the checks.
+        var scale by mutableStateOf(1.3f)
+        var screen by mutableStateOf(0)
+        val started = System.currentTimeMillis() - 90 * 60_000L
+        ui.setContent {
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalDensity provides Density(base.density, scale)) {
+                KisTheme(darkOverride = false) { Box(Modifier.fillMaxSize().background(Kis.colors.bg)) {
+                    if (screen == 0) KisHome(emptyList(), categories, LiveShift(started, "שיעורים פרטיים", 40.0, "₪"), 80.dp, {}, {}, {}, {}, {}, {}, {}, {})
+                    else ShiftDetailSheet(entry, categories, vm, onDismiss = {}, onEdit = {}, onDeleted = {}, onMessage = {})
+                } }
+            }
+        }
+        for (s in listOf(1.3f, 2.0f)) {
+            ui.runOnIdle { scale = s; screen = 0 }; ui.waitForIdle()
+            ui.mainClock.autoAdvance = false; ui.mainClock.advanceTimeBy(1_500)
+            listOf("active_shift_timer", "active_shift_money", "live_shift_stop", "cancel_active_shift").forEach { ui.onNodeWithTag(it, useUnmergedTree = true).performScrollTo().assertIsDisplayed() }
+            ui.onNodeWithTag("live_shift_stop").assertHeightIsAtLeast(KisMinTouch)
+            shot("scale-${(s * 100).toInt()}-live")
+            ui.mainClock.autoAdvance = true
+            ui.runOnIdle { screen = 1 }; ui.waitForIdle()
+            listOf("detail_amount", "group_profit", "group_my_net", "group_team_pay", "group_employer_due", "group_summary_share", "group_worker_more_0", "group_worker_paid_1")
+                .forEach { ui.onNodeWithTag(it, useUnmergedTree = true).performScrollTo().assertIsDisplayed() }
+            shot("scale-${(s * 100).toInt()}-group")
+        }
+    }
+
+    /** M-34: the touch target minimum is one constant (44dp now, the same as web; 44 vs 48 is the owner's open decision). */
+    @Test fun touchTargetMinimumIsOneConstant() {
+        assertEquals(44f, KisMinTouch.value, 0f)
     }
 
     /** With a rate the live bar counts money to the agora; the clock moves below it. Without one, the bar keeps the clock. */

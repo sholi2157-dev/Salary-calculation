@@ -154,7 +154,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             Group(nav, "התראות", "מה מגיע לטלפון: משמרת פעילה, הסיכום החודשי, משמרת קבועה, תעריף חסר וגרסה חדשה.") { NotificationSwitches(viewModel) }
             Group(nav, "עזרה וכלים", "רישום במילים עם AI, ההדרכה ועדכוני גרסה.", Modifier.coachTarget(CoachTarget.API)) {
                 Row_("רישום במילים (AI)", if (hasKey) "פעיל" else null, tag = "ai_key_row", onClick = { aiSheet = true }) {
-                    Text("?", style = KisType.label, color = c.muted, modifier = Modifier.size(44.dp).clip(CircleShape).kisClick { aiHelp = true }.semantics { contentDescription = "מה זה מפתח אישי" }
+                    Text("?", style = KisType.label, color = c.muted, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { aiHelp = true }.semantics { contentDescription = "מה זה מפתח אישי" }
                         .padding(6.dp).clip(CircleShape).background(c.sunk).padding(top = 6.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
                 KisDivider()
@@ -398,9 +398,9 @@ private fun PlacesPanel(categories: List<WorkCategory>, defaultCategory: String,
                         Text("${KisFormat.money(cat.defaultRate, viewModel.categoryCurrency(name))} לשעה", style = KisType.caption, color = c.muted)
                     }
                     if (on) Icon(Icons.Rounded.Check, "ברירת מחדל", tint = c.ink)
-                    Icon(Icons.Rounded.Edit, "עריכת $name", tint = c.ink, modifier = Modifier.size(44.dp).clip(CircleShape)
+                    Icon(Icons.Rounded.Edit, "עריכת $name", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape)
                         .kisClick { open = if (open == name) null else name }.testTag("category_row_$name").padding(11.dp))
-                    Icon(Icons.Rounded.DragHandle, "הזזת $name", tint = c.muted, modifier = Modifier.size(44.dp)
+                    Icon(Icons.Rounded.DragHandle, "הזזת $name", tint = c.muted, modifier = Modifier.size(KisMinTouch)
                         .pointerInput(name) {
                             detectDragGesturesAfterLongPress(
                                 onDragStart = { open = null; dragging = name; dragY = 0f; settings.haptic(KisSettings.Haptic.SELECT) },

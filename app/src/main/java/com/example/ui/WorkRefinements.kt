@@ -1,5 +1,7 @@
 package com.example.ui
 
+import com.example.ui.kis.KisMinTouch
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -78,7 +80,7 @@ object SalaryFeedback {
         if (FeedbackReport.enabled) {
             if (image == null) KisButton("צירוף צילום מסך", {
                 pick.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
-            }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 44.dp, tag = "feedback_attach")
+            }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = KisMinTouch, tag = "feedback_attach")
             else Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text("צילום מסך מצורף", style = KisType.label, color = c.ink, modifier = Modifier.weight(1f).testTag("feedback_attached"))
                 KisButton("הסרה", { onImage(null) }, kind = KisButtonKind.GHOST, height = 40.dp, tag = "feedback_attach_remove")

@@ -17,6 +17,7 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material3.Icon
@@ -95,9 +96,10 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
     val workplace = workplaceOf(entry.category, categories)
     val pay = WorkPay.pay(entry)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(workplace.brush).padding(horizontal = 16.dp, vertical = 14.dp),
+        // M-34 (TalkBack): the header is read as one card (place, day, amount); the place's first letter is decoration.
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(workplace.brush).semantics(mergeDescendants = true) {}.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(workplace.on.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(workplace.on.copy(alpha = 0.18f)).clearAndSetSemantics {}, contentAlignment = Alignment.Center) {
                 Text(entry.category.take(1), style = KisType.title, color = workplace.on)
             }
             Column(Modifier.weight(1f)) {
@@ -203,14 +205,14 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                     Text(listOfNotNull(time, if (w.bonus > 0) "בונוס ${KisFormat.money(w.bonus, entry.currency)}" else null).joinToString(" · "),
                         style = KisType.caption.copy(textDirection = TextDirection.Rtl), color = c.muted)
                 }
-                Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(99.dp)).kisClick { viewModel.toggleWorkerPaid(entry.id, i) }
+                Box(Modifier.heightIn(min = KisMinTouch).clip(RoundedCornerShape(99.dp)).kisClick { viewModel.toggleWorkerPaid(entry.id, i) }
                     .semantics { contentDescription = "${w.name}: ${if (w.isPaid) "שולם" else "לא שולם"}"; selected = w.isPaid }.testTag("group_worker_paid_$i"), contentAlignment = Alignment.Center) {
                     Text(if (w.isPaid) "שולם ✓" else "לא שולם", style = KisType.micro, color = if (w.isPaid) c.paid else c.muted,
                         modifier = Modifier.clip(RoundedCornerShape(99.dp)).background(if (w.isPaid) c.paid.copy(alpha = 0.18f) else c.sunk).padding(horizontal = 10.dp, vertical = 3.dp))
                 }
                 if (wPay != null) MoneyText(wPay, entry.currency, KisType.label, modifier = Modifier.testTag("group_worker_pay_$i"))
                 else Text("חסר", style = KisType.caption, color = c.pending)
-                Icon(Icons.Rounded.MoreHoriz, "פעולות ל${w.name}", tint = c.ink, modifier = Modifier.size(44.dp).clip(CircleShape).kisClick { workerMenu = i }.testTag("group_worker_more_$i").padding(10.dp))
+                Icon(Icons.Rounded.MoreHoriz, "פעולות ל${w.name}", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { workerMenu = i }.testTag("group_worker_more_$i").padding(10.dp))
             }
             if (i < workers.lastIndex) KisDivider()
         }
