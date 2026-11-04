@@ -5,6 +5,11 @@ const U = () => root.KisUi;
 /** The open category on a phone (M-31, as in Android 2.2.3): null shows the list of categories. */
 let section = null;
 const group = (title, body, info) => `<section class="set-group${section === title ? ' on' : ''}" data-group="${title}"><div class="title-row" style="margin:22px 0 10px"><h2 class="section-title" style="margin:0;font:22px/28px var(--display)" data-testid="settings-${title}">${title}</h2>${info ? U().infoDot(title, info) : ''}</div><div class="card" style="display:grid;gap:4px;padding:6px 16px">${body}</div></section>`;
+/** The kinds of in-site reminder (M-31), titles and explanations as in the Android app: [stored key, title, info, testid]. */
+const NOTIFY_KINDS = [
+  ['notifyMonthly', 'הסיכום החודשי', 'מה-30 לכל חודש (בפברואר מהיום האחרון), כשנכנסים לאתר: כמה עבדת וכמה הרווחת החודש. רק כשיש משמרות בחודש.', 'notify-monthly'],
+  ['notifyRate', 'תעריף חסר', 'לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.', 'notify-rate'],
+];
 const rowHtml = (title, hint, control, info) => `<div class="row" style="align-items:center;min-height:58px;padding:8px 0"><div class="grow"><div class="title-row"><span style="font-weight:500">${title}</span>${info ? U().infoDot(title, info) : ''}</div>${hint ? `<div class="caption">${hint}</div>` : ''}</div>${control}</div>`;
 
 function render(el, app) {
@@ -14,7 +19,7 @@ function render(el, app) {
   // A phone shows the categories as a list; a tap opens one category with a way back. A computer shows them all.
   const cats = [['משוב ותקלות', 'דיווח על תקלה או הצעה'], ['עבודה', def ? `מקום ברירת מחדל: ${def}` : 'מקומות, מטבע ומשמרות קבועות'],
     ['מראה ותחושה', ({ system: 'אוטומטי', light: 'בהיר', dark: 'כהה' })[theme] || 'אוטומטי'], ['הסיכומים שלי', 'כל הסיכומים החודשיים והשנתיים'],
-    ['התראות', store.local.notifyMonthly === true || store.local.notifyRate === true ? 'פועלות' : 'כבויות'], ['גיבוי ונתונים', 'גיבוי, ייבוא ואקסל'],
+    ['התראות', NOTIFY_KINDS.some(([k]) => store.local[k] === true) ? 'פועלות' : 'כבויות'], ['גיבוי ונתונים', 'גיבוי, ייבוא ואקסל'],
     ['עזרה', 'האפליקציה לאנדרואיד וההדרכה'], ['חשבון', acct ? (acct.email || 'מחובר') : 'השם שלך · לא מחובר']];
   el.innerHTML = `<h1 class="page-title">הגדרות</h1>
   ${section ? '' : `<nav class="set-list" aria-label="קטגוריות ההגדרות">${cats.map(([t, sub]) => `<button class="set-row" data-section="${t}" data-testid="settings-open-${t}"><span class="grow"><b>${t}</b><small>${esc(sub)}</small></span>${U().ICON.next}</button>`).join('')}</nav>`}
@@ -27,7 +32,9 @@ function render(el, app) {
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
   ${group('הסיכומים שלי', rowHtml('כל הסיכומים', null, '<button class="chip" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל סיכום חודשי ושנתי שכבר נפתח נשמר כאן.'))}
-  ${group('התראות', rowHtml('התראות', null, `<button class="switch" role="switch" aria-checked="${store.local.notifyMonthly === true || store.local.notifyRate === true}" aria-label="התראות" data-a="notify" data-testid="notify-all"></button>`, 'הסיכום החודשי ותעריף חסר, כשנכנסים לאתר. באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה.'))}
+  ${group('התראות', rowHtml('כל ההתראות', null, `<button class="switch" role="switch" aria-checked="${NOTIFY_KINDS.some(([k]) => store.local[k] === true)}" aria-label="כל ההתראות" data-a="notify" data-testid="notify-all"></button>`, 'מפעיל או מכבה את כולן יחד. אפשר לבחור כל סוג בנפרד כאן למטה.')
+    + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${store.local[k] === true}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''),
+    'הסיכום החודשי ותעריף חסר, כשנכנסים לאתר. באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה, וגם משמרת פעילה ומשמרת קבועה שהסתיימה.')}
   ${group('גיבוי ונתונים', `<div class="row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
     <div class="row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv">אקסל (CSV)</button><button class="btn small primary grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'כשמחוברים לחשבון, הנתונים נשמרים בו ובדפדפן הזה. גיבוי לקובץ הוא העתק נוסף בשבילך, וגיבוי מהאפליקציה עובר לכאן ולהפך.')}
   ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
@@ -47,8 +54,15 @@ function render(el, app) {
   q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
   q('[data-f=last]').addEventListener('input', e => store.setLocal('lastName', e.target.value.trim().slice(0, 40), true));
   // One switch for every reminder.
+  // As Android 2.2.3 (M-31): the main switch turns every kind on or off together; each kind keeps its own switch, and the
+  // main one shows on while any kind is on. The same stored keys as before (notifyMonthly, notifyRate).
+  const notifySync = () => {
+    q('[data-a=notify]').setAttribute('aria-checked', NOTIFY_KINDS.some(([k]) => store.local[k] === true));
+    el.querySelectorAll('[data-notify]').forEach(b => b.setAttribute('aria-checked', store.local[b.dataset.notify] === true));
+  };
   q('[data-a=notify]').onclick = e => { const on = e.currentTarget.getAttribute('aria-checked') !== 'true';
-    store.setLocal('notifyMonthly', on, true); store.setLocal('notifyRate', on, true); e.currentTarget.setAttribute('aria-checked', on); };
+    for (const [k] of NOTIFY_KINDS) store.setLocal(k, on, true); notifySync(); };
+  el.querySelectorAll('[data-notify]').forEach(b => b.onclick = () => { store.setLocal(b.dataset.notify, store.local[b.dataset.notify] !== true, true); notifySync(); });
   q('[data-a=erase]').onclick = () => eraseSheet(app);
   q('[data-a=erase-account]')?.addEventListener('click', () => eraseAccountSheet(app));
   q('[data-a=android-download]').onclick = () => root.KisDownload.open();
