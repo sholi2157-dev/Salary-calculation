@@ -1,5 +1,6 @@
 package com.example.ui.kis
 
+import kotlinx.coroutines.flow.receiveAsFlow
 import androidx.lifecycle.repeatOnLifecycle
 import android.Manifest
 import android.content.pm.PackageManager
@@ -60,6 +61,19 @@ import kotlinx.coroutines.launch
  * A short message at the bottom, optionally with one action (usually undo). Design decision "משוב והודעות" B, as on the
  * web: one at a time, with a sign by kind (✓ done, ↺ can be undone, ! failed); the kind is read from the wording.
  */
+/**
+ * M-37: the app's one way to tell the person something outside a screen's own flow (the view model, sign-in, backups,
+ * imports, updates). There is no system Toast: every message goes to the same bottom message as everything else.
+ * Buffered until the app's screen collects it, so nothing posted while it is being created is lost, and each message is
+ * shown once.
+ */
+object KisNotices {
+    private val channel = kotlinx.coroutines.channels.Channel<KisMessage>(kotlinx.coroutines.channels.Channel.BUFFERED)
+    val flow: kotlinx.coroutines.flow.Flow<KisMessage> = channel.receiveAsFlow()
+    /** [action] (usually "ביטול") runs [onAction] when pressed. */
+    fun post(text: String, action: String? = null, onAction: (() -> Unit)? = null) { channel.trySend(KisMessage(text, action, onAction)) }
+}
+
 data class KisMessage(val text: String, val action: String? = null, val onAction: (() -> Unit)? = null, val id: Long = System.nanoTime()) {
     enum class Kind { OK, UNDO, ERROR, INFO }
     val kind: Kind get() = when {
@@ -217,6 +231,7 @@ fun KisApp(
     LaunchedEffect(editorBaseId, entries) {
         if (editorBaseId != null && entries.isNotEmpty() && entries.none { it.id == editorBaseId }) { editorJson = null; editorBaseId = null }
     }
+    LaunchedEffect(Unit) { KisNotices.flow.collect { message = it } }
     LaunchedEffect(message?.id) { if (message != null) { delay(if (message?.kind == KisMessage.Kind.ERROR) 8000 else if (message?.action != null) 6000 else 2600); message = null } }
     // History handles its own Back for selection and search, but only on its page; elsewhere Back goes Home.
     BackHandler(enabled = editorJson == null && pager.currentPage != 0 && !(pager.currentPage == 1 && (history.selecting || history.searching || history.planned))) { go(0) }

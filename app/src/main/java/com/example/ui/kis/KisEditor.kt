@@ -1,7 +1,6 @@
 package com.example.ui.kis
 
 import android.app.DatePickerDialog
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -149,7 +148,7 @@ fun KisEditorPage(
         if (buf.isEmpty()) return true
         if (isDigits(target) && buf.any { it != '·' } && (!isDuration(target) || digitsDirty)) {
             val h = if (isDuration(target)) DurationInput.parseDigits(buf) else parseTime(buf)
-            if (h == null) { Toast.makeText(context, if (isDuration(target)) "משך לא תקין" else "שעה לא תקינה", Toast.LENGTH_SHORT).show(); buf = fieldDigits(target); fresh = true; return false }
+            if (h == null) { com.example.ui.kis.KisNotices.post(if (isDuration(target)) "משך לא תקין" else "שעה לא תקינה"); buf = fieldDigits(target); fresh = true; return false }
             if (isDuration(target)) d = d.copy(hours = h) else setTime(target, h)
         }
         buf = ""; digitsDirty = false
