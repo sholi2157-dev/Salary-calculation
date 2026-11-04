@@ -319,7 +319,9 @@ function eraseAccountSheet(app) {
   }, close));
 }
 
-/** Add or edit one workplace. Renaming moves its shifts and plans; stored amounts never change. */
+/** FB-08: what the "שינוי רטרואקטיבי" switch does, off and on. */
+const RETRO_HINT = ['התעריף החדש יחול רק על משמרות חדשות', 'גם משמרות שעוד לא שולמו יעודכנו לתעריף החדש. משמרות ששולמו לא משתנות'];
+/** Add or edit one workplace. Renaming moves its shifts and plans; stored amounts change only with "שינוי רטרואקטיבי" on (FB-08). */
 function placeSheet(app, oldName, done) {
   const { store } = app, { esc } = U(), cat = store.data.categories.find(c => c.name === oldName);
   const cur = oldName ? root.WorkCategories.currency(oldName, store.data.webPreferences) : store.data.webPreferences.mainCurrency;
@@ -336,18 +338,31 @@ function placeForm(app, oldName, el, close, done, title = '') {
       <label class="field">שם<input class="input" data-f="n" value="${esc(oldName || '')}" data-testid="place-name"></label>
       <div class="row"><label class="field grow">תעריף לשעה<input class="input" inputmode="decimal" data-f="r" value="${cat ? cat.defaultRate : ''}" data-testid="place-rate"></label>
         <div class="field"><span>מטבע</span><div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${cur === c}" data-c="${c}">${c}</button>`).join('')}</div></div></div>
+      ${cat ? `<div class="row" style="align-items:center"><div class="grow"><span style="font-weight:500">שינוי רטרואקטיבי</span><div class="caption" data-f="retro-hint" data-testid="place-retro-hint">${RETRO_HINT[0]}</div></div>
+        <button class="switch" role="switch" aria-checked="false" aria-label="שינוי רטרואקטיבי" data-a="retro" data-testid="place-retro"></button></div>` : ''}
       <span class="caption">צבע</span><div class="chips">${U().PLACES.map((p, i) => `<button class="chip" aria-pressed="${i === color}" aria-label="${p.name}" data-col="${i}" style="width:44px;padding:0;background:${p.from}"></button>`).join('')}</div>
       <p class="caption" data-f="err" role="status"></p>
       <div class="row">${oldName && oldName !== root.WorkCategories.defaultName(store.data.categories, store.data.webPreferences) ? '<button class="btn ghost grow" data-a="del">מחיקה</button>' : ''}<button class="btn primary grow" data-a="ok" data-testid="place-save">שמירה</button></div>`;
-    let money = cur;
+    let money = cur, retro = false;
+    el.querySelector('[data-a=retro]')?.addEventListener('click', e => { retro = !retro; e.currentTarget.setAttribute('aria-checked', String(retro));
+      el.querySelector('[data-f=retro-hint]').textContent = RETRO_HINT[retro ? 1 : 0]; });
     el.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { money = b.dataset.c; el.querySelectorAll('[data-c]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
     el.querySelectorAll('[data-col]').forEach(b => b.onclick = () => { color = +b.dataset.col; el.querySelectorAll('[data-col]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
     el.querySelector('[data-a=ok]').onclick = () => {
       const name = el.querySelector('[data-f=n]').value.trim(), rate = Number((el.querySelector('[data-f=r]').value || '0').trim().replace(',', '.'));
+      const changed = [];
       try {
         // Computed on what is stored now and written as one commit with the plans and a running timer (audit D02, D03).
         store.transact(n => {
+          const oldRate = n.data.categories.find(c => c.name === oldName)?.defaultRate;
           Object.assign(n.data, root.WorkCategories.rename(n.data, oldName || '', name, rate, money));
+          // FB-08: unpaid plain shifts at the previous exact rate, or without a rate, take the new one in the same commit.
+          if (retro && oldName) for (const x of root.KisRules.retroRate(n.data.entries, name, oldRate, rate, money)) {
+            const e = n.data.entries.find(r => r.id === x.id);
+            changed.push({ id: e.id, hourlyRate: e.hourlyRate, totalEarnings: e.totalEarnings, payKnown: e.payKnown,
+              wrote: { hourlyRate: rate, totalEarnings: x.total, payKnown: true } });
+            e.hourlyRate = rate; e.totalEarnings = x.total; e.payKnown = true;
+          }
           if (oldName && oldName !== name) {
             n.plans.series.forEach(s => { if (s.category === oldName) s.category = name; });
             if (n.timer && n.timer.category === oldName) n.timer = { ...n.timer, category: name };
@@ -357,6 +372,9 @@ function placeForm(app, oldName, el, close, done, title = '') {
         if (oldName && oldName !== name) store.setLocal('color:' + oldName, undefined);
         store.setLocal('color:' + name, color);
         close(); done?.(name);
+        // The message (and its undo) shows under the places panel, so the panel closes first when shifts changed.
+        if (changed.length && !title) U().closeTopSheet();
+        if (changed.length) U().toast(changed.length === 1 ? 'התעריף עודכן למשמרת אחת שלא שולמה ✓' : `התעריף עודכן ל-${changed.length} משמרות שלא שולמו ✓`, 'ביטול', () => { store.restoreRates(changed); app.refresh?.(); });
       } catch (e) { el.querySelector('[data-f=err]').textContent = e.message; }
     };
     el.querySelector('[data-a=del]')?.addEventListener('click', () => U().confirmSheet(`למחוק את "${oldName}"?`, 'המשמרות שלו עוברות למקום ברירת המחדל. סכומים שמורים לא משתנים.', 'מחיקה', () => {
