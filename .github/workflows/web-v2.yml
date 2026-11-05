@@ -20,7 +20,7 @@ jobs:
           node-version: '22'
       - run: npm run build && npm test
       - name: Shared expected results are byte-identical to the Android branch
-        run: git fetch --no-tags origin release/2.3-android && node scripts/check-fixtures.cjs . origin/release/2.3-android
+        run: git fetch --no-tags origin +refs/heads/release/2.3-android:refs/remotes/origin/release/2.3-android && node scripts/check-fixtures.cjs . origin/release/2.3-android
       - name: Published Android 2.2.1 fixture backward-compatibility report (non-blocking)
         continue-on-error: true
         run: git fetch --no-tags origin tag android-v2.2.1-code46 && node scripts/check-fixtures.cjs . refs/tags/android-v2.2.1-code46

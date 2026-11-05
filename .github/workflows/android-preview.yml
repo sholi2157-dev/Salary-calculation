@@ -31,6 +31,8 @@ jobs:
           node-version: '22'
       - run: npm run build
       - run: npm test
+      - name: Shared fixtures are byte-identical to release/2.3-android (fails when the ref is missing)
+        run: git fetch --no-tags --depth=1 origin +refs/heads/release/2.3-android:refs/remotes/origin/release/2.3-android && node scripts/check-fixtures.cjs . origin/release/2.3-android
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
