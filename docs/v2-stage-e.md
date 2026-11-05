@@ -9,7 +9,7 @@ or merged; Vercel builds a Preview per push. Publishing is stage F and needs the
   ₪/$ always in Rubik. 360–1440px, RTL.
 - **Same rules as Android.** `web/v2/rules.js`, `pay.js`, `plan.js`, `share.js` are ports of `V2Rules`, `WorkPay`/`WorkMoney`,
   `V2Plan`, `WorkShareText`, tested on the very same fixture files (`web-tests/fixtures/`, checked byte-for-byte against
-  `claude/v2-android` by `scripts/check-fixtures.cjs` in CI) under several time zones.
+  `release/2.3-android` by `scripts/check-fixtures.cjs` in CI) under several time zones.
 - **Backup both ways.** `web/transfer.js` reads formats 1–3 and writes format 2 byte-identical to before when no 2.0 data
   exists, format 3 otherwise (kind, payKnown, bonus, seriesKey, autoConfirmed, worker bonus, series, seriesExceptions),
   so an Android 2.0 backup imports here and the site's backup imports in the app. Import never duplicates.
