@@ -133,7 +133,8 @@ function plannedText(text) { return 'מתוכנן — עוד לא בוצע\n'+te
 const excelHeaders=['עבודה','תאריך','שעת התחלה','שעת סיום','שעות עבודה','הפסקה בדקות','תעריף שעתי','סכום','מטבע','סטטוס תשלום','סוג','בונוס','הערה','שכר ידוע'];
 // Prevent spreadsheet formula execution from user-entered text; numeric columns stay numeric.
 const textCell=v=>{const s=String(v??'');return /^[\s\u0000-\u001f\u200e\u200f\u202a-\u202e\u2066-\u2069]*[=+\-@]/.test(s)?"'"+s:s;};
-const numberCell=v=>typeof v==='number'&&Number.isFinite(v)?Pay.fixed2(v):textCell(v);
+// Round table cells with the existing decimal money contract; never recalculate hours × rate or write back to history.
+const numberCell=v=>typeof v==='number'&&Number.isFinite(v)?Pay.fixed2(Pay.money(1,v)):textCell(v);
 // The exact duration, not hours rounded to 2 places (audit M-43): 1:40 is 1:40, a timer's seconds stay (8:00:12).
 const exactDuration=h=>{const t=Math.round((Number(h)||0)*3600),s=t%60,m=Math.floor(t/60)%60;return Math.floor(t/3600)+':'+String(m).padStart(2,'0')+(s?':'+String(s).padStart(2,'0'):'');};
 const validTime=t=>typeof t==='string'&&/^(?:[01]?\d|2[0-3]):[0-5]\d$/.test(t.trim());
@@ -142,7 +143,7 @@ function table(entries){return [excelHeaders,...ordered(entries).map(e=>{
  const pause=!job&&e.isTimeRange&&validTime(e.startTime)&&validTime(e.endTime)?Math.max(0,Math.round(Rules.span(e.startTime,e.endTime).minutes-e.hours*60)):null;
  return [textCell(e.category),date(e.date),textCell(e.startTime),textCell(e.endTime),typeof e.hours==='number'&&e.hours>=0&&Number.isFinite(e.hours)?exactDuration(e.hours):numberCell(e.hours),pause==null?'':textCell(pause),
   !known||job?'':numberCell(e.hourlyRate),known?numberCell(e.totalEarnings):'',textCell(e.currency),e.isPaid?'שולם':'ממתין',
-  job?'קבלנות':e.isGroupShift?'משמרת קבוצתית':'משמרת',Pay.bonus(e)>0?Pay.fixed2(Pay.bonus(e)):'',textCell(e.notes??''),known?'כן':'חסר'];
+  job?'קבלנות':e.isGroupShift?'משמרת קבוצתית':'משמרת',Pay.bonus(e)>0?numberCell(Pay.bonus(e)):'',textCell(e.notes??''),known?'כן':'חסר'];
  })];}
 const quote=(value,d)=>{const s=String(value??'');return s.includes(d)||/[\n\r"]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;};
 const excel=entries=>table(entries).map(row=>row.map(s=>quote(s,'\t')).join('\t')).join('\n');
