@@ -151,7 +151,8 @@ object WorkShareText {
         return "${t / 3600}:" + String.format(Locale.US, "%02d", m) + if (s != 0L) ":" + String.format(Locale.US, "%02d", s) else ""
     }
     private fun table(entries: List<WorkEntry>): List<List<String>> {
-        fun n(v: Double) = String.format(Locale.US, "%.2f", v)
+        // Format the stored value with the existing money contract; do not recompute hours × rate.
+        fun n(v: Double) = String.format(Locale.US, "%.2f", WorkPay.money(1.0, v))
         return listOf(excelHeaders) + entries.sortedBy { it.date }.map { e -> listOf(
             textCell(e.category), date(e.date), e.startTime ?: "", e.endTime ?: "", if (e.hours.isFinite() && e.hours >= 0) exactDuration(e.hours) else n(e.hours), pause(e)?.toString() ?: "",
             if (!e.payKnown || WorkPay.isJob(e)) "" else n(e.hourlyRate), if (e.payKnown) n(e.totalEarnings) else "", textCell(e.currency),

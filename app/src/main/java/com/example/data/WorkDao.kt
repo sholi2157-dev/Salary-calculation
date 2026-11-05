@@ -220,7 +220,9 @@ interface WorkDao {
         for (worker in backup.workers) {
             if (workerNames.add(worker.name.trim())) insertWorker(worker.copy(id = 0))
         }
-        val missing = WorkBackup.missingEntries(getEntriesList(), incoming)
+        val existing = getEntriesList()
+        val missing = if (backup.fromTable) WorkTableImport.missingEntries(existing, incoming)
+            else WorkBackup.missingEntries(existing, incoming)
         // insertEntry REPLACEs on a unique-key clash; an imported series key must never
         // replace a row already recorded here, so a clashing key is dropped instead.
         val seriesKeys = getEntriesList().mapNotNull { it.seriesKey }.toMutableSet()
