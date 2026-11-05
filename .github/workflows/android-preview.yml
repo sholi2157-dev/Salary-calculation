@@ -33,6 +33,16 @@ jobs:
       - run: npm test
       - name: Shared fixtures are byte-identical to release/2.3-android (fails when the ref is missing)
         run: git fetch --no-tags --depth=1 origin +refs/heads/release/2.3-android:refs/remotes/origin/release/2.3-android && node scripts/check-fixtures.cjs . origin/release/2.3-android
+      - name: Install browser QA for notification controls (Web PRs)
+        if: github.base_ref == 'release/2.3-web'
+        run: |
+          npm install --prefix /tmp/browser-qa --no-audit --no-fund playwright@1.62.1
+          /tmp/browser-qa/node_modules/.bin/playwright install --with-deps chromium
+      - name: Notification controls by type (synthetic data only)
+        if: github.base_ref == 'release/2.3-web'
+        env:
+          PLAYWRIGHT_MODULE: /tmp/browser-qa/node_modules/playwright
+        run: node browser-tests/m31-notify.cjs
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
