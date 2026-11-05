@@ -375,6 +375,25 @@ fun KisSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier, tag: String? 
     }
 }
 
+/** M-30 / R-46: one confirmation layout. Callers retain their wording, action identity and haptics. */
+@Composable
+fun KisConfirmSheet(title: String, onDismiss: () -> Unit, confirmText: String, onConfirm: () -> Unit,
+                    message: String? = null, cancelText: String = "ביטול", danger: Boolean = true,
+                    tag: String? = null, confirmTag: String? = null,
+                    confirmHaptic: KisSettings.Haptic? = KisSettings.Haptic.TAP) {
+    val c = Kis.colors
+    KisSheet(onDismiss = onDismiss, tag = tag) {
+        Text(title, style = KisType.title, color = c.ink)
+        if (message != null) Text(message, style = KisType.body, color = c.muted)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            KisButton(cancelText, onDismiss, Modifier.weight(1f), KisButtonKind.GHOST, tag = "confirm_cancel")
+            KisButton(confirmText, onConfirm, Modifier.weight(1f),
+                if (danger) KisButtonKind.DANGER else KisButtonKind.PRIMARY,
+                haptic = confirmHaptic, tag = confirmTag)
+        }
+    }
+}
+
 /** The "כיס" mark: three rising bars on a base line, on an ink tile. */
 @Composable
 fun KisLogo(modifier: Modifier = Modifier.size(38.dp)) {

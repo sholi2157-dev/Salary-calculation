@@ -22,7 +22,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -400,7 +400,7 @@ internal fun PillNav(page: Int, onPage: (Int) -> Unit, onSettings: () -> Unit, o
         item("הגדרות", page == 2, "settings_button") { onSettings() }
         Box(Modifier.size(48.dp).clip(CircleShape).background(c.accent).kisClick(onClick = onAdd).testTag("add_entry_button")
             .semantics { this.contentDescription = "משמרת חדשה" }, contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.Add, null, tint = c.accentInk, modifier = Modifier.size(28.dp))
+            Icon(Icons.Outlined.Add, null, tint = c.accentInk, modifier = Modifier.size(28.dp))
         }
     }
 }

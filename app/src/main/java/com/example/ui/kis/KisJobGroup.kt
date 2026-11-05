@@ -8,8 +8,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.PersonAdd
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -48,14 +48,14 @@ internal fun JobTeamBlock(d: EntryDraft, directory: List<WorkerDirectory>, onFor
         if (!d.sameRate) focusWorker = d.workers.size
     }
     forgetting?.let { name ->
-        KisSheet(onDismiss = { forgetting = null }, tag = "forget_worker_sheet") {
-            Text("להסיר את $name מהרשימה?", style = KisType.title, color = c.ink)
-            Text("השם לא יוצע יותר. עבודות קודמות שבהן הוא עבד לא משתנות.", style = KisType.body, color = c.muted)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KisButton("ביטול", { forgetting = null }, Modifier.weight(1f), KisButtonKind.GHOST)
-                KisButton("הסרה", { onForget(name); forgetting = null }, Modifier.weight(1f), KisButtonKind.DANGER, tag = "forget_worker_confirm")
-            }
-        }
+        KisConfirmSheet(
+            title = "להסיר את $name מהרשימה?",
+            onDismiss = { forgetting = null },
+            confirmText = "הסרה",
+            onConfirm = { onForget(name); forgetting = null },
+            message = "השם לא יוצע יותר. עבודות קודמות שבהן הוא עבד לא משתנות.",
+            tag = "forget_worker_sheet",
+            confirmTag = "forget_worker_confirm")
     }
     KisCard(padding = PaddingValues(14.dp), radius = 18.dp, modifier = Modifier.testTag("job_team_block")) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -90,7 +90,7 @@ internal fun JobTeamBlock(d: EntryDraft, directory: List<WorkerDirectory>, onFor
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
                             keyboardActions = KeyboardActions(onNext = { runCatching { nameFocus.requestFocus() } }), selectAllOnFocus = true)
                     }
-                    Icon(Icons.Rounded.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+                    Icon(Icons.Outlined.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
                         .kisClick { onDraft(d.copy(workers = d.workers.filterIndexed { j, _ -> j != i })) }.padding(9.dp))
                 }
             }
@@ -103,7 +103,7 @@ internal fun JobTeamBlock(d: EntryDraft, directory: List<WorkerDirectory>, onFor
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     // "הבא" adds the name and goes to their amount (or, with one amount for all, stays for the next name); empty closes the keyboard.
                     keyboardActions = KeyboardActions(onNext = { if (newName.isNotBlank()) { add(newName.trim()); newName = "" } else focus.clearFocus() }))
-                Icon(Icons.Rounded.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(c.ink)
+                Icon(Icons.Outlined.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(c.ink)
                     .kisClick(enabled = newName.isNotBlank()) { add(newName.trim()); newName = "" }.padding(12.dp).testTag("job_worker_add"))
             }
             // A name typed but not added yet would be lost on save: say how to add it.
