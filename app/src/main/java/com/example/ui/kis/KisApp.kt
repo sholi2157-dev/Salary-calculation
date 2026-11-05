@@ -311,10 +311,10 @@ fun KisApp(
                 val sign = when (m.kind) { KisMessage.Kind.OK -> "✓"; KisMessage.Kind.UNDO -> "↺"; KisMessage.Kind.ERROR -> "!"; else -> null }
                 if (sign != null) Box(Modifier.size(26.dp).clip(CircleShape).background(when (m.kind) { KisMessage.Kind.OK -> c.paid; KisMessage.Kind.ERROR -> c.danger; else -> c.onBar.copy(alpha = 0.18f) })
                     .clearAndSetSemantics { }.testTag("kis_message_sign"), contentAlignment = Alignment.Center) {
-                    Text(sign, style = KisType.label, color = if (m.kind == KisMessage.Kind.UNDO) c.onBar else Color.White)
+                    Text(sign, style = KisType.label, color = when (m.kind) { KisMessage.Kind.OK -> c.onPaid; KisMessage.Kind.ERROR -> c.onDanger; else -> c.onBar })
                 }
                 Text(m.shown, style = KisType.label.copy(fontWeight = FontWeight.Medium), color = c.onBar, modifier = Modifier.weight(1f, fill = false).padding(vertical = 10.dp))
-                if (m.action != null) Text(m.action, style = KisType.label, color = if (c.dark) Workplaces[3].accent(true) else Workplaces[0].from,
+                if (m.action != null) Text(m.action, style = KisType.label, color = c.barAction,
                     modifier = Modifier.clip(RoundedCornerShape(99.dp)).kisClick { m.onAction?.invoke(); message = null }.testTag("kis_message_action").padding(horizontal = 12.dp, vertical = 10.dp))
                 else Spacer(Modifier.width(12.dp))
             }
@@ -398,9 +398,9 @@ internal fun PillNav(page: Int, onPage: (Int) -> Unit, onSettings: () -> Unit, o
         item("בית", page == 0, "tab_0") { onPage(0) }
         item("היסטוריה", page == 1, "tab_1", Modifier.coachTarget(CoachTarget.HISTORY)) { onPage(1) }
         item("הגדרות", page == 2, "settings_button") { onSettings() }
-        Box(Modifier.size(48.dp).clip(CircleShape).background(Workplaces[0].accent(c.dark)).kisClick(onClick = onAdd).testTag("add_entry_button")
+        Box(Modifier.size(48.dp).clip(CircleShape).background(c.accent).kisClick(onClick = onAdd).testTag("add_entry_button")
             .semantics { this.contentDescription = "משמרת חדשה" }, contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.Add, null, tint = Workplaces[0].accentInk(c.dark), modifier = Modifier.size(28.dp))
+            Icon(Icons.Rounded.Add, null, tint = c.accentInk, modifier = Modifier.size(28.dp))
         }
     }
 }
