@@ -153,7 +153,7 @@ private fun Hero(week: List<WorkEntry>, today: List<WorkEntry>, all: List<WorkEn
             }
         }
         val total = hoursByCat.sumOf { it.second }
-        if (total > 0) Row(Modifier.padding(top = 16.dp, bottom = 10.dp).fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        if (total > 0) Row(Modifier.padding(top = 16.dp, bottom = 10.dp).fillMaxWidth().height(12.dp).clip(RoundedCornerShape(8.dp)), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             hoursByCat.forEach { (cat, h) ->
                 Box(Modifier.weight((h / total).toFloat().coerceAtLeast(0.01f)).fillMaxHeight().clip(RoundedCornerShape(3.dp)).background(workplaceOf(cat, categories).accent(c.dark)))
             }
@@ -202,7 +202,7 @@ private fun StatTile(label: String, rows: List<WorkEntry>, caption: String?, mod
     val c = Kis.colors
     val totals = only?.let { listOf(it) } ?: WorkPay.totals(rows).toList().sortedByDescending { it.second }
     val style = KisType.title.copy(fontSize = size, lineHeight = size * 1.27f)
-    Column(modifier.clip(RoundedCornerShape(18.dp)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(18.dp))
+    Column(modifier.clip(RoundedCornerShape(16.dp)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(16.dp))
         .padding(horizontal = 14.dp, vertical = 12.dp).semantics(mergeDescendants = true) {}.testTag(tag), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(label, style = KisType.caption, color = c.muted, maxLines = 1)
         if (totals.isEmpty() && rows.isNotEmpty()) Text("עוד לא ידוע", style = KisType.title, color = c.pending, modifier = Modifier.testTag("${tag}_pending"))
@@ -228,7 +228,7 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
                 KisButton("המשך במשמרת", { cancelStart = null }, Modifier.weight(1f), KisButtonKind.GHOST, height = 56.dp)
             }
         } else if (live == null) {
-            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(18.dp)).background(c.surface).border(1.5.dp, c.line, RoundedCornerShape(18.dp))
+            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(16.dp)).background(c.surface).border(1.5.dp, c.line, RoundedCornerShape(16.dp))
                 .kisClick(onClick = onStart).testTag("live_shift_fab"), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(10.dp).clip(CircleShape).background(Workplaces[1].accent(c.dark)))
                 Spacer(Modifier.width(10.dp))
@@ -252,7 +252,7 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
             val earning = live.rate > 0
             // 2.3.0 (approved choice B): a raised light card with a brand line on top (dark: #2D323A with #9398FF); the running
             // clock is the main number, the money under it, and "סיום ושמירה" is the strong button.
-            val shape = RoundedCornerShape(18.dp)
+            val shape = RoundedCornerShape(16.dp)
             val brand = if (c.dark) androidx.compose.ui.graphics.Color(0xFF9398FF) else androidx.compose.ui.graphics.Color(0xFF5145E8)
             Column(Modifier.fillMaxWidth().clip(shape).background(if (c.dark) androidx.compose.ui.graphics.Color(0xFF2D323A) else c.surface)
                 .border(1.dp, if (c.dark) androidx.compose.ui.graphics.Color(0xFF3A404A) else c.line, shape).testTag("live_card")) {
@@ -301,7 +301,7 @@ private fun Pass(name: String, list: List<WorkEntry>, categories: List<WorkCateg
     val totals = WorkPay.totals(list)
     val pending = WorkPay.pending(list).size
     // Collapsed passes tuck 14dp under the next one, like cards in a wallet.
-    Column(Modifier.fillMaxWidth().then(if (expanded || last) Modifier.padding(bottom = 10.dp) else Modifier.overlapNext(14.dp)).clip(RoundedCornerShape(22.dp)).background(w.brush)
+    Column(Modifier.fillMaxWidth().then(if (expanded || last) Modifier.padding(bottom = 10.dp) else Modifier.overlapNext(14.dp)).clip(RoundedCornerShape(24.dp)).background(w.brush)
         .kisClick(onClick = onToggle).semantics { stateDescription = if (expanded) "פתוח" else "סגור" }.testTag("pass_$name")
         .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = if (expanded || last) 18.dp else 30.dp).animateContentSize(),
         verticalArrangement = Arrangement.spacedBy(2.dp)) {

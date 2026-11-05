@@ -265,7 +265,7 @@ private fun ToolIcon(icon: ImageVector, label: String, tag: String, onClick: () 
 @Composable
 private fun SearchChip(query: String, onEdit: () -> Unit, onClear: () -> Unit) {
     val c = Kis.colors
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(12.dp)
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(shape).background(c.surface).border(1.5.dp, c.ink, shape).testTag("history_query_chip"),
         verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(1f).heightIn(min = 48.dp).kisClick(onClick = onEdit).semantics { contentDescription = "עריכת החיפוש: $query" }.padding(horizontal = 12.dp),
@@ -286,7 +286,7 @@ private fun SearchBar(ui: HistoryUi) {
         KisTextField(ui.query, { ui.query = it }, "חיפוש (מקום, הערה, עובד, סכום)", Modifier.weight(1f).focusRequester(focus).testTag("history_search_input"),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { ui.searching = false }))
         // Clear and close are separate on purpose: clearing keeps the field open.
-        if (ui.query.isNotEmpty()) Text("ניקוי", style = KisType.label, color = c.ink, modifier = Modifier.clip(RoundedCornerShape(10.dp))
+        if (ui.query.isNotEmpty()) Text("ניקוי", style = KisType.label, color = c.ink, modifier = Modifier.clip(RoundedCornerShape(8.dp))
             .kisClick { ui.query = "" }.testTag("history_search_clear").padding(10.dp))
         Icon(Icons.Rounded.Close, "סגירת החיפוש", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { ui.searching = false }.testTag("history_search_close").padding(10.dp))
     }

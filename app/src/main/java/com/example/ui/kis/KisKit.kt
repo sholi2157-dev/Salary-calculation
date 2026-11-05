@@ -150,21 +150,41 @@ fun Modifier.kisClick(enabled: Boolean = true, role: Role? = Role.Button, haptic
         onLongClick = { settings.haptic(KisSettings.Haptic.SELECT); onLongClick() }) { haptic?.let(settings::haptic); onClick() }
 }
 
+/*
+ * M-30 (D-3) component system: one "selected" recipe (a selected surface with a 2dp ink edge) for chips, days, currencies,
+ * tabs and segments in both themes; 3 button heights (touch targets stay at least 44dp); 4 radii plus pills; disabled
+ * colours instead of opacity; a filled delete button with its own text colour.
+ */
+object KisRadius { val tag = 8.dp; val small = 12.dp; val medium = 16.dp; val large = 24.dp; val pill = 99.dp }
+object KisButtonHeight { val large = 56.dp; val medium = 48.dp; val small = 44.dp }
+val KisColors.selectedBg get() = if (dark) Color(0xFF424853) else surface
+val KisColors.selectedInk get() = ink
+val KisColors.selectedEdge get() = ink
+val KisColors.disabledBg get() = if (dark) Color(0xFF21252B) else Color(0xFFE4E8F0)
+val KisColors.disabledInk get() = if (dark) Color(0xFF5F636C) else Color(0xFF9EA5B2)
+/** Text on a filled danger surface (readable in dark too, where danger is a light coral). */
+val KisColors.onDangerFill get() = if (dark) Color(0xFF2B0E0B) else Color.White
+
+/** The one "selected" look: selected surface and a 2dp ink edge in [shape]; nothing when not selected. */
+fun Modifier.kisSelected(on: Boolean, c: KisColors, shape: androidx.compose.ui.graphics.Shape): Modifier =
+    if (on) this.background(c.selectedBg, shape).border(2.dp, c.selectedEdge, shape) else this
+
 enum class KisButtonKind { PRIMARY, GHOST, DANGER, OUTLINE }
 
 @Composable
 fun KisButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, kind: KisButtonKind = KisButtonKind.PRIMARY, enabled: Boolean = true,
-              icon: ImageVector? = null, height: Dp = 54.dp, haptic: KisSettings.Haptic? = KisSettings.Haptic.TAP, tag: String? = null) {
+              icon: ImageVector? = null, height: Dp = KisButtonHeight.large, haptic: KisSettings.Haptic? = KisSettings.Haptic.TAP, tag: String? = null) {
     val c = Kis.colors
-    val (bg, fg) = when (kind) {
-        KisButtonKind.PRIMARY -> c.ink to c.onInk
-        KisButtonKind.GHOST -> c.sunk to c.ink
-        KisButtonKind.DANGER -> c.sunk to c.danger
-        KisButtonKind.OUTLINE -> Color.Transparent to c.ink
+    val (bg, fg) = when {
+        !enabled -> (if (kind == KisButtonKind.OUTLINE) Color.Transparent else c.disabledBg) to c.disabledInk
+        kind == KisButtonKind.PRIMARY -> c.ink to c.onInk
+        kind == KisButtonKind.GHOST -> c.sunk to c.ink
+        kind == KisButtonKind.DANGER -> c.danger to c.onDangerFill
+        else -> Color.Transparent to c.ink
     }
-    Row(modifier.heightIn(min = height).clip(RoundedCornerShape(16.dp)).background(bg)
-        .then(if (kind == KisButtonKind.OUTLINE) Modifier.border(1.5.dp, c.lineStrong, RoundedCornerShape(16.dp)) else Modifier)
-        .graphicsLayer { alpha = if (enabled) 1f else 0.38f }
+    val shape = RoundedCornerShape(if (height < KisButtonHeight.large) KisRadius.small else KisRadius.medium)
+    Row(modifier.heightIn(min = height).clip(shape).background(bg)
+        .then(if (kind == KisButtonKind.OUTLINE) Modifier.border(1.5.dp, c.lineStrong, shape) else Modifier)
         .kisClick(enabled = enabled, haptic = haptic, onClick = onClick)
         .then(if (tag != null) Modifier.testTag(tag) else Modifier)
         .padding(horizontal = 18.dp),
@@ -178,11 +198,11 @@ fun KisButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
 @Composable
 fun KisAction(label: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier, primary: Boolean = false, danger: Boolean = false, tag: String? = null, enabled: Boolean = true) {
     val c = Kis.colors
-    Column(modifier.heightIn(min = 64.dp).clip(RoundedCornerShape(14.dp)).background(if (primary) c.ink else c.sunk)
-        .graphicsLayer { alpha = if (enabled) 1f else 0.38f }
+    Column(modifier.heightIn(min = 64.dp).clip(RoundedCornerShape(KisRadius.small))
+        .background(if (!enabled) c.disabledBg else if (primary) c.ink else if (danger) c.danger else c.sunk)
         .kisClick(enabled = enabled, onClick = onClick).then(if (tag != null) Modifier.testTag(tag) else Modifier).padding(vertical = 8.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)) {
-        val fg = if (primary) c.onInk else if (danger) c.danger else c.ink
+        val fg = if (!enabled) c.disabledInk else if (primary) c.onInk else if (danger) c.onDangerFill else c.ink
         Icon(icon, null, tint = fg, modifier = Modifier.size(22.dp))
         Text(label, style = KisType.caption.copy(fontWeight = FontWeight.SemiBold), color = fg, maxLines = 1)
     }
@@ -193,13 +213,13 @@ fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifi
             leading: ImageVector? = null, tag: String? = null, minHeight: Dp = KisMinTouch, onLongClick: (() -> Unit)? = null) {
     val c = Kis.colors
     val shape = RoundedCornerShape(12.dp)
-    val bg = when { warn -> c.pendingSoft; else -> c.surface }
-    val fg = if (warn) c.pending else c.ink
+    val bg = when { warn -> c.pendingSoft; selected -> c.selectedBg; else -> c.surface }
+    val fg = if (warn) c.pending else if (selected) c.selectedInk else c.ink
     Row(modifier.heightIn(min = minHeight).clip(shape).background(bg)
         .then(when {
             warn -> Modifier
             dashed -> Modifier.dashedBorder(c.line, 12.dp)
-            selected -> Modifier.border(2.dp, c.ink, shape)
+            selected -> Modifier.border(2.dp, c.selectedEdge, shape)
             else -> Modifier.border(1.5.dp, c.line, shape)
         })
         .kisClick(onLongClick = onLongClick, onClick = onClick).then(if (tag != null) Modifier.testTag(tag) else Modifier)
@@ -234,11 +254,11 @@ fun <T> KisSegmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) 
     Row(modifier.clip(RoundedCornerShape(12.dp)).background(c.sunk).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         options.forEach { (value, label) ->
             val on = value == selected
-            Box(Modifier.heightIn(min = KisMinTouch).clip(RoundedCornerShape(9.dp)).background(if (on) c.surface else Color.Transparent)
+            Box(Modifier.heightIn(min = KisMinTouch).clip(RoundedCornerShape(KisRadius.tag)).kisSelected(on, c, RoundedCornerShape(KisRadius.tag))
                 .kisClick(role = Role.RadioButton) { onSelect(value) }.semantics { this.selected = on }
                 .then(if (tagPrefix != null) Modifier.testTag("${tagPrefix}_$value") else Modifier)
                 .padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                Text(label, style = KisType.label.copy(fontSize = 13.sp), color = if (on) c.ink else c.muted, maxLines = 1)
+                Text(label, style = KisType.label.copy(fontSize = 13.sp), color = if (on) c.selectedInk else c.muted, maxLines = 1)
             }
         }
     }
@@ -252,11 +272,11 @@ fun CurrencyToggle(currency: String, onCurrency: (String) -> Unit, tag: String, 
         listOf("₪", "$").forEach { value ->
             val on = currency == value
             // Light: the chosen currency is a soft tinted cell with bold ink, not a black one.
-            Box(Modifier.size(width = 48.dp, height = KisMinTouch).background(if (on) (if (c.dark) c.ink else c.sunk) else c.surface)
+            Box(Modifier.size(width = 48.dp, height = KisMinTouch).background(c.surface).kisSelected(on, c, RoundedCornerShape(KisRadius.small))
                 .kisClick(role = Role.RadioButton) { onCurrency(value) }.semantics { this.selected = on; contentDescription = if (value == "₪") "שקל" else "דולר" }
                 .testTag("${tag}_$value"), contentAlignment = Alignment.Center) {
                 Text(value, style = KisType.label.copy(fontFamily = Rubik, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium),
-                    color = if (on && c.dark) c.onInk else if (on) c.ink else c.muted)
+                    color = if (on) c.selectedInk else c.muted)
             }
         }
     }
@@ -270,7 +290,7 @@ fun KisCard(modifier: Modifier = Modifier, padding: PaddingValues = PaddingValue
 @Composable
 fun Tag(text: String, warn: Boolean = false, modifier: Modifier = Modifier, color: Color? = null, ink: Color? = null) {
     val c = Kis.colors
-    Text(text, modifier.clip(RoundedCornerShape(6.dp)).background(color ?: if (warn) c.pendingSoft else c.sunk).padding(horizontal = 7.dp, vertical = 1.dp),
+    Text(text, modifier.clip(RoundedCornerShape(8.dp)).background(color ?: if (warn) c.pendingSoft else c.sunk).padding(horizontal = 7.dp, vertical = 1.dp),
         style = KisType.micro, color = ink ?: if (warn) c.pending else c.muted, maxLines = 1)
 }
 
@@ -279,7 +299,7 @@ fun Tag(text: String, warn: Boolean = false, modifier: Modifier = Modifier, colo
 fun Avatar(name: String, workplace: Workplace, size: Dp = 44.dp, planned: Boolean = false) {
     val c = Kis.colors
     val accent = workplace.accent(c.dark)
-    Box(Modifier.size(size).clip(RoundedCornerShape(14.dp))
+    Box(Modifier.size(size).clip(RoundedCornerShape(12.dp))
         .then(if (planned) Modifier.dashedBorder(accent, 14.dp) else Modifier.background(accent)), contentAlignment = Alignment.Center) {
         Text(name.trim().take(1).ifEmpty { "?" }, style = KisType.title.copy(fontSize = 18.sp),
             color = if (planned) accent else workplace.accentInk(c.dark))
@@ -311,13 +331,13 @@ fun KisTextField(value: String, onValueChange: (String) -> Unit, label: String, 
             modifier = modifier.keepInViewWhenFocused().onFocusChanged { if (it.isFocused) field = field.copy(selection = androidx.compose.ui.text.TextRange(0, field.text.length)) }, label = { Text(label) },
             placeholder = placeholder?.let { { Text(it, color = c.muted) } }, singleLine = singleLine, minLines = minLines,
             keyboardOptions = keyboardOptions, keyboardActions = keyboardActions, isError = isError, enabled = enabled, visualTransformation = visualTransformation,
-            textStyle = KisType.body.copy(color = c.ink, textDirection = TextDirection.ContentOrRtl), shape = RoundedCornerShape(14.dp), colors = kisFieldColors())
+            textStyle = KisType.body.copy(color = c.ink, textDirection = TextDirection.ContentOrRtl), shape = RoundedCornerShape(12.dp), colors = kisFieldColors())
         return
     }
     OutlinedTextField(value = value, onValueChange = onValueChange, modifier = modifier.keepInViewWhenFocused(), label = { Text(label) },
         placeholder = placeholder?.let { { Text(it, color = c.muted) } }, singleLine = singleLine, minLines = minLines,
         keyboardOptions = keyboardOptions, keyboardActions = keyboardActions, isError = isError, enabled = enabled, visualTransformation = visualTransformation,
-        textStyle = KisType.body.copy(color = c.ink, textDirection = TextDirection.ContentOrRtl), shape = RoundedCornerShape(14.dp), colors = kisFieldColors())
+        textStyle = KisType.body.copy(color = c.ink, textDirection = TextDirection.ContentOrRtl), shape = RoundedCornerShape(12.dp), colors = kisFieldColors())
 }
 
 /**
