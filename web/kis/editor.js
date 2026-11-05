@@ -615,17 +615,28 @@ function open(app, { entry = null, restore = null } = {}) {
   return { close };
 }
 
-function ruler(d, target) {
-  if (!d.start) return `<div class="ruler" data-ruler><div class="track"></div>${handle('END', d.end, 46, 'סיום', target)}${ticks()}</div>`;
-  const a = R().toMinutes(d.start), b = R().toMinutes(d.end), pieces = b > a ? [[a, b]] : [[a, 1440], [0, b]];
-  return `<div class="ruler" data-ruler><div class="track"></div>${pieces.filter(([x, y]) => y > x).map(([x, y]) => `<div class="span" style="left:${(1 - y / 1440) * 100}%;width:${(y - x) / 1440 * 100}%"></div>`).join('')}
-    ${handle('START', d.start, 0, 'התחלה', target)}${handle('END', d.end, 46, 'סיום', target)}${ticks()}</div>`;
+/**
+ * R-33: the ruler is a 24-hour window, right to left. A night shift that crosses midnight inside noon→noon (20:30–00:30,
+ * 22:00–06:00) is drawn on a noon-to-noon window, so it is one span with 00 in the middle, not two pieces at the edges.
+ * Every other shift keeps the 00→24 window. Only the drawing changes: times, hours and money are the same.
+ */
+function rulerLayout(start, end) {
+  const a = start == null ? null : R().toMinutes(start), b = R().toMinutes(end);
+  const origin = a != null && a >= 720 && b < 720 ? 720 : 0, at = m => ((m - origin) % 1440 + 1440) % 1440;
+  const spans = a == null ? [] : at(b) > at(a) ? [[at(a), at(b)]] : [[at(a), 1440], [0, at(b)]].filter(([x, y]) => y > x);
+  const ticks = [0, 6, 12, 18, 24].map(h => ({ at: h * 60, label: String(h === 24 ? (origin ? 12 : 24) : (h + origin / 60) % 24).padStart(2, '0') }));
+  return { origin, at, spans, ticks, fromWindow: m => (m + origin) % 1440 };
 }
-const handle = (h, v, top, label, target) => `<div class="handle${target === h ? ' on' : ''}" data-h="${h}" data-testid="ruler-${h.toLowerCase()}" role="slider" aria-label="${label}" aria-valuemin="0" aria-valuemax="1439" aria-valuenow="${R().toMinutes(v)}" aria-valuetext="${v}" tabindex="0" style="top:${top}px;left:${(1 - R().toMinutes(v) / 1440) * 100}%">${label}</div>`;
-const ticks = () => `<div class="ticks">${[0, 6, 12, 18, 24].map(h => `<span style="left:${(1 - h / 24) * 100}%">${String(h).padStart(2, '0')}</span>`).join('')}</div>`;
+function ruler(d, target) {
+  const L = rulerLayout(d.start || null, d.end), x = m => (1 - m / 1440) * 100;
+  return `<div class="ruler" data-ruler data-origin="${L.origin}" data-testid="ruler"><div class="track"></div>${L.spans.map(([a, b]) => `<div class="span" style="left:${x(b)}%;width:${(b - a) / 1440 * 100}%"></div>`).join('')}
+    ${d.start ? handle('START', d.start, 0, 'התחלה', target, L) : ''}${handle('END', d.end, 46, 'סיום', target, L)}<div class="ticks">${L.ticks.map(t => `<span style="left:${x(t.at)}%">${t.label}</span>`).join('')}</div></div>`;
+}
+const handle = (h, v, top, label, target, L) => `<div class="handle${target === h ? ' on' : ''}" data-h="${h}" data-testid="ruler-${h.toLowerCase()}" role="slider" aria-label="${label}" aria-valuemin="0" aria-valuemax="1439" aria-valuenow="${R().toMinutes(v)}" aria-valuetext="${v}" tabindex="0" style="top:${top}px;left:${(1 - L.at(R().toMinutes(v)) / 1440) * 100}%">${label}</div>`;
 /** Handles move only after a deliberate 8px drag, in 15-minute steps (00 on the right, as in RTL). Arrow keys move by 15. */
 function rulerBind(host, d, select, change) {
   const box = host.querySelector('[data-ruler]'); if (!box) return;
+  const L = rulerLayout(d.start || null, d.end);
   box.querySelectorAll('[data-h]').forEach(h => {
     h.addEventListener('keydown', e => { const step = e.key === 'ArrowLeft' ? 15 : e.key === 'ArrowRight' ? -15 : 0; if (!step) return; e.preventDefault();
       const v = h.dataset.h === 'START' ? d.start : d.end; select(h.dataset.h); change(h.dataset.h, R().fromMinutes(R().toMinutes(v) + step)); });
@@ -633,8 +644,8 @@ function rulerBind(host, d, select, change) {
       const rect = box.getBoundingClientRect(), x0 = e.clientX; let live = false, last = null;
       h.setPointerCapture(e.pointerId);
       const move = ev => { if (!live && Math.abs(ev.clientX - x0) < 8) return; live = true;
-        const m = Math.min(1425, Math.max(0, Math.round((1 - (ev.clientX - rect.left) / rect.width) * 96) * 15));
-        if (m !== last) { last = m; h.style.left = (1 - m / 1440) * 100 + '%'; h.setAttribute('aria-valuetext', R().fromMinutes(m)); U().haptic('tick'); } };
+        const w = Math.min(1425, Math.max(0, Math.round((1 - (ev.clientX - rect.left) / rect.width) * 96) * 15)), m = L.fromWindow(w);
+        if (m !== last) { last = m; h.style.left = (1 - w / 1440) * 100 + '%'; h.setAttribute('aria-valuetext', R().fromMinutes(m)); U().haptic('tick'); } };
       const up = () => { h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up);
         select(h.dataset.h); if (live && last != null) change(h.dataset.h, R().fromMinutes(last)); else change(h.dataset.h, h.dataset.h === 'START' ? d.start : d.end); };
       h.addEventListener('pointermove', move); h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
@@ -643,5 +654,5 @@ function rulerBind(host, d, select, change) {
 }
 function pendingDraft(storage) { try { const d = JSON.parse(storage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
 
-root.KisEditor = { open, toEntry, withBonusTarget, fromEntry, evaluate, newDraft, withTab, withTeam, tabOf, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, breakInput, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
+root.KisEditor = { open, rulerLayout, toEntry, withBonusTarget, fromEntry, evaluate, newDraft, withTab, withTeam, tabOf, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, breakInput, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
 })(globalThis);
