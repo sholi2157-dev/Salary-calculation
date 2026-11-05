@@ -57,7 +57,30 @@
         {
           "key": "Cross-Origin-Embedder-Policy",
           "value": "unsafe-none"
-        },
+        }
+      ]
+    },
+    {
+      "source": "/mcp",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/oauth/(register|token)",
+      "headers": [
         {
           "key": "Access-Control-Allow-Origin",
           "value": "*"
