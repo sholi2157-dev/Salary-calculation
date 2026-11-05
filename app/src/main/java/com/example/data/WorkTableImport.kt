@@ -85,7 +85,26 @@ object WorkTableImport {
         val categories = entries.distinctBy { it.category }.map { c ->
             WorkCategory(name=c.category, defaultRate=entries.firstOrNull { it.category == c.category && it.payKnown && it.kind == WorkEntry.KIND_SHIFT }?.hourlyRate ?: 40.0)
         }
-        return WorkBackup.Contents(categories, entries, emptyList())
+        return WorkBackup.Contents(categories, entries, emptyList(), fromTable = true)
+    }
+
+    /** D-13: compare only table-visible identity, as web WorkTransfer.tableKey does. Never rewrite saved amounts.
+     * Notes/payment edits in Excel are still the same shift; occurrence counts retain genuine repeated rows. */
+    fun missingEntries(existing: List<WorkEntry>, incoming: List<WorkEntry>): List<WorkEntry> {
+        fun clockKey(t: String?) = clean(t.orEmpty()).let {
+            if (it.matches(Regex("[0-9]:[0-5][0-9]"))) "0$it" else it
+        }
+        fun key(e: WorkEntry): List<Any?> {
+            val day = Calendar.getInstance().apply { timeInMillis = e.date }
+            return listOf(clean(e.category), day.get(Calendar.YEAR), day.get(Calendar.MONTH), day.get(Calendar.DAY_OF_MONTH),
+                clockKey(e.startTime), clockKey(e.endTime), Math.round(e.hours * 3600), e.currency,
+                WorkPay.isJob(e), if (e.payKnown) WorkPay.money(1.0, e.totalEarnings) else null)
+        }
+        val counts = existing.groupingBy(::key).eachCount().toMutableMap()
+        return incoming.filter { e ->
+            val k = key(e); val n = counts[k] ?: 0
+            if (n > 0) { counts[k] = n - 1; false } else true
+        }
     }
 
     private fun duration(text: String): Double {

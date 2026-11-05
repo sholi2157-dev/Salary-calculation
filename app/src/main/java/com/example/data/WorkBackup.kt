@@ -6,7 +6,7 @@ import org.json.JSONObject
 /** Versioned transfer format shared with the website; legacy exports remain readable. */
 object WorkBackup {
     data class Contents(val categories: List<WorkCategory>, val entries: List<WorkEntry>, val workers: List<WorkerDirectory>, val localPreferences: Map<String, String> = emptyMap(),
-                        val series: List<ShiftSeries> = emptyList(), val exceptions: List<SeriesException> = emptyList())
+                        val series: List<ShiftSeries> = emptyList(), val exceptions: List<SeriesException> = emptyList(), val fromTable: Boolean = false)
 
     /**
      * Version 3 only when a 2.0 feature is actually used (unknown pay, bonus, fixed-price job,
