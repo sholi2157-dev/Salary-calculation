@@ -19,7 +19,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.PersonAdd
@@ -40,6 +39,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -284,6 +284,8 @@ fun KisEditorPage(
     // A text field being typed in (not one of our values): the clock, ruler and places fold away.
     val typingText = imeOpen && !pad
     val frame = RoundedCornerShape(24.dp)
+    val density = LocalDensity.current
+    var closeWidth by remember { mutableIntStateOf(0) }
     Box(Modifier.fillMaxSize().background(c.bg).then(if (d.team) Modifier.border(2.5.dp, accent, frame).testTag("team_frame") else Modifier)) {
     // Light: the page glows in the chosen place's colour, so the screen keeps to one colour (the place, its span on the
     // ruler, the digit being typed) instead of the app's purple meeting a place's pink or green.
@@ -295,16 +297,12 @@ fun KisEditorPage(
         Column(Modifier.fillMaxWidth()
             .statusBarsPadding().padding(horizontal = 16.dp).padding(top = 10.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                TopPill(if (d.editing) "סגירה" else "ביטול", onTop, tag = "editor_close") { close() }
+                TopPill(if (d.editing) "סגירה" else "ביטול", onTop, tag = "editor_close", modifier = Modifier.onSizeChanged { closeWidth = it.width }) { close() }
                 Text(when { d.editing && d.team -> "עריכת משמרת קבוצתית"; d.editing -> "עריכת משמרת"; d.team -> "משמרת קבוצתית"; else -> "משמרת חדשה" }, Modifier.weight(1f).semantics { heading() },
                     color = if (d.team) accent else onTop, style = KisType.label.copy(fontSize = 16.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 if (d.editing) TopPill("מחיקה", onTop, tag = "editor_delete") { confirmDelete = true }
-                // A shift is the user's own unless "קבוצה" is on: then the same tabs come with the people who worked.
-                else TopPill("קבוצה", onTop, icon = Icons.Outlined.Groups, tag = "editor_team", on = if (d.team) accent else null, onInk = workplace.accentInk(c.dark)) {
-                    commitBuf(); pad = false
-                    d = d.withTeam(!d.team)
-                    if (!aiMode) target = when (d.tab) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
-                }
+                // Keeps the title in the middle (the group switch is under the tabs now, R-33).
+                else Spacer(Modifier.width(with(density) { closeWidth.toDp() }))
             }
             // While the system keyboard is open (note, worker name) the clock, ruler and places fold away,
             // the mode tabs and total stay, so the form and the Save bar keep their room on small phones.
@@ -315,6 +313,14 @@ fun KisEditorPage(
                 aiMode = false
                 d = d.withTab(m)
                 target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
+            }
+            // R-33: a shift is the user's own unless "משמרת קבוצתית" is on: then the same tabs come with the people who worked.
+            // A switch under the tabs (the same one as "חוזרת כל שבוע"), not a header button where an edit has "מחיקה".
+            // New shifts only, as before; it folds away with the places while a value is typed.
+            if (!d.editing && !typingText && !(pad && imeOpen)) TeamSwitchRow(d.team, onTop) { on ->
+                commitBuf(); pad = false
+                d = d.withTeam(on)
+                if (!aiMode) target = when (d.tab) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
             }
             if (!aiMode) {
                 if (!typingText) {
@@ -477,11 +483,12 @@ private fun isWithinWeek(day: Long): Boolean {
 // ======================================================================= pieces
 
 @Composable
-private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, tag: String, on: Color? = null, onInk: Color = Color.White, onClick: () -> Unit) {
+private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, tag: String, on: Color? = null, onInk: Color = Color.White,
+                    modifier: Modifier = Modifier, onClick: () -> Unit) {
     val c = Kis.colors
     // [on]: a switch that is on (the group button) is filled with the page's one colour (the chosen place's, as on the ruler).
     val fg = if (on != null) onInk else ink
-    Row(Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(99.dp)).background(on ?: if (c.dark) ink.copy(alpha = 0.18f) else c.surface)
+    Row(modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(99.dp)).background(on ?: if (c.dark) ink.copy(alpha = 0.18f) else c.surface)
         .then(if (c.dark || on != null) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(99.dp))).kisClick(onClick = onClick)
         .then(if (on != null) Modifier.semantics { selected = true } else Modifier).testTag(tag).padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -490,6 +497,18 @@ private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics
     }
 }
 
+
+/** R-33: "משמרת קבוצתית" on/off, one line under the tabs; the same switch and info dot as "חוזרת כל שבוע". */
+@Composable
+private fun TeamSwitchRow(on: Boolean, ink: Color, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = KisMinTouch).padding(horizontal = 4.dp).testTag("team_row"), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Text("משמרת קבוצתית", style = KisType.label, color = ink)
+            InfoDot("משמרת קבוצתית", "רושמים גם את מי שעבד איתך.")
+        }
+        KisSwitch(on, onChange, Modifier.testTag("editor_team"), label = "משמרת קבוצתית")
+    }
+}
 
 @Composable
 private fun WasBanner(base: WorkEntry, changed: Boolean, ink: Color) {

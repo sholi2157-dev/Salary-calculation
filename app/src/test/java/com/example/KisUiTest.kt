@@ -171,7 +171,7 @@ class KisUiTest {
         // A note survives every mode switch (draft is kept).
         ui.onNodeWithTag("editor_more").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("טיוטה שנשמרת במעבר")
-        // "group" is the "קבוצה" button at the top (on, then off again back to the user's own shift).
+        // "group" is the "משמרת קבוצתית" switch under the tabs (on, then off again back to the user's own shift).
         for (mode in listOf("hours", "group", "clock")) {
             ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performClick()
             ui.onNodeWithTag("notes_input").performScrollTo().assertTextContains("טיוטה שנשמרת במעבר")
@@ -1069,7 +1069,62 @@ class KisUiTest {
         settings.updatePlaceOrder(emptyList())
     }
 
-    /** The add page: the user's own shift by default (four tabs, AI last, "+ מקום" first); "קבוצה" makes it a group shift. */
+    /**
+     * R-33: the header "קבוצה" button read as an action (an edit has "מחיקה" there). A group shift is a "משמרת קבוצתית"
+     * switch under the tabs, the same switch as "חוזרת כל שבוע"; same draft rule (tab kept, off drops the people). New shifts only.
+     */
+    @Test fun groupIsASwitchUnderTheTabsNotAHeaderButton() {
+        val vm = model()
+        host {
+            KisEditorPage(vm, EntryDraft(category = "מסעדה", rate = "50", currency = "₪", start = "09:00", end = "13:00", day = day), null, categories, emptyList(), emptyList(),
+                onClose = {}, onSaved = { _, _ -> }, onDeleted = {})
+        }
+        ui.onAllNodesWithText("קבוצה").assertCountEquals(0)
+        ui.onNode(hasTestTag("editor_team") and SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Switch))
+            .assertIsDisplayed().assertIsOff()
+        ui.onNodeWithTag("team_row", useUnmergedTree = true).assertIsDisplayed()
+        ui.onNodeWithText("משמרת קבוצתית").assertIsDisplayed()
+        ui.onNodeWithText("משמרת חדשה").assertIsDisplayed()
+        // Under the tabs: below them, above the places.
+        val tabs = ui.onNodeWithTag("mode_hours").fetchSemanticsNode().boundsInRoot
+        val row = ui.onNodeWithTag("team_row", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertTrue("switch row under the tabs", row.top >= tabs.bottom - 1f)
+        // The title stays in the middle of the header.
+        val closeBox = ui.onNodeWithTag("editor_close").fetchSemanticsNode().boundsInRoot
+        val title = ui.onNodeWithText("משמרת חדשה").fetchSemanticsNode().boundsInRoot
+        val rootBox = ui.onRoot().fetchSemanticsNode().boundsInRoot
+        assertTrue("the spacer matches ביטול", closeBox.width > 0f)
+        assertEquals((rootBox.left + rootBox.right) / 2f, (title.left + title.right) / 2f, 2f)
+        ui.onNodeWithTag("mode_hours").performClick()
+        ui.onNodeWithTag("editor_team").performClick()
+        ui.onNodeWithTag("editor_team").assertIsOn()
+        // The title says it too: the switch's label and the title.
+        ui.onAllNodesWithText("משמרת קבוצתית").assertCountEquals(2)
+        ui.onNodeWithTag("team_frame").assertExists()
+        ui.onNodeWithTag("group_block").performScrollTo().assertExists()
+        ui.onNodeWithTag("mode_hours").assertIsSelected()
+        shot("r33-group-switch-on")
+        ui.onNodeWithTag("editor_team").performClick()
+        ui.onNodeWithTag("editor_team").assertIsOff()
+        ui.onNodeWithTag("team_frame").assertDoesNotExist()
+        ui.onNodeWithTag("group_block").assertDoesNotExist()
+        ui.onNodeWithTag("mode_hours").assertIsSelected()
+    }
+
+    /** R-33: an edit keeps "מחיקה" at the top and has no group switch, as before. */
+    @Test fun editPageHasNoGroupSwitch() {
+        val vm = model()
+        runBlocking { dao.insertEntry(WorkEntry(category = "מסעדה", date = day + 9 * 3_600_000L, isTimeRange = true, startTime = "09:00", endTime = "13:00",
+            hours = 4.0, hourlyRate = 50.0, totalEarnings = 200.0)) }
+        val base = rows().single()
+        host { KisEditorPage(vm, EntryDraft.from(base), base, categories, listOf(base), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        ui.onNodeWithTag("editor_delete").assertIsDisplayed()
+        ui.onNodeWithTag("editor_team").assertDoesNotExist()
+        ui.onNodeWithTag("team_row", useUnmergedTree = true).assertDoesNotExist()
+        assertEquals(200.0, rows().single().totalEarnings, 0.0)
+    }
+
+    /** The add page: the user's own shift by default (four tabs, AI last, "+ מקום" first); "משמרת קבוצתית" makes it a group shift. */
     @Test fun personalByDefaultAndGroupFromTheTop() {
         val vm = model()
         host {
