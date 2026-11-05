@@ -75,7 +75,7 @@ class ReportKeyboardTest {
             }
         }
         ui.onNodeWithTag("quick_hours_4").performClick()
-        // "קבוצה" at the top: the same tab, now with the people who worked.
+        // "משמרת קבוצתית" under the tabs: the same tab, now with the people who worked.
         ui.onNodeWithTag("editor_team").performClick()
         focus("worker_name_input")
         ui.onNodeWithTag("worker_name_input").performTextReplacement("Synthetic worker")
@@ -84,6 +84,8 @@ class ReportKeyboardTest {
         saveVisible()
         Espresso.closeSoftKeyboard(); awaitIme(false)
         ui.onNodeWithTag("worker_name_input").performTextReplacement("")
+        // The switch folds away with the places while the keyboard is open (R-33).
+        Espresso.closeSoftKeyboard(); awaitIme(false)
         ui.onNodeWithTag("editor_team").performClick()
         ui.onNodeWithTag("mode_hours").performClick()
         focus("notes_input")
