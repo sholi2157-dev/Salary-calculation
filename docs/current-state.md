@@ -1,22 +1,36 @@
-# Current state — 2026-11-04 (2.3.0 in progress)
+# Current state — 2026-11-05 (release 2.3.0 integration)
 
-This section is the current state; everything below it is history and does not override it.
+This section supersedes the historical release and branch notes below. The current owner request
+covers Android and Web together; it does not authorize deployment or public distribution.
 
-- **Public now: 2.2.1.** Android 2.2.1 (versionCode 46) is the latest GitHub release
-  (`android-v2.2.1-code46`, 2026-10-27), and the website at
-  https://salary-calculation-eta.vercel.app/ is the matching 2.2.1 site. Existing users' 2.2.1 data must keep
-  loading unchanged.
-- **2.2.3: built, not published.** Its changes (notification settings per kind, the live card, categorized
-  settings) are being carried into 2.3.0 rather than released on their own.
-- **Target: 2.3.0, versionCode 49 (tentative).** The audit plan and its decisions are on
-  `audit/2.3-unified-plan` (PLAN.md, MAPPING.csv).
-- **One release for Android and the website together.** Each platform has its own release branch:
-  `release/2.3-web` (website and server) and `release/2.3-android`. Every fix goes on its own branch from the
-  right base, through a PR; a fix that touches both platforms is two branches. The shared fixtures
-  (`web-tests/fixtures/v2-*.json`, `money-contract.json`, `group-reconcile.json` and their copies in
-  `app/src/test/resources`) must stay byte-identical on both release branches.
-- Production (`main`, `codex/download-and-management-20261020`) is not touched by 2.3.0 work until the owner
-  approves the release.
+- **Public baseline: 2.2.1.** Android `android-v2.2.1-code46` (versionCode 46) and the matching
+  website at https://salary-calculation-eta.vercel.app/ remain the release baseline recorded in
+  the unified plan. Web production source is `da7a7c3`. No new live-site or physical-device
+  verification is claimed here.
+- **2.2.3 (code 48) is internal and unpublished.** Its improvements are included in the 2.3
+  work; it must not be released separately. **Target: 2.3.0, code 49, tentative.** The plan,
+  compatibility rules and decisions are on `audit/2.3-unified-plan` (`PLAN.md`,
+  `COMPATIBILITY.md`, `DECISIONS.md`).
+- **Active integration branches:** `release/2.3-web` (Web/server) and `release/2.3-android`.
+  Changes use isolated task branches and PRs to the corresponding release branch. `main` and
+  `codex/download-and-management-20261020` remain untouched. No deploy, production promotion,
+  signed candidate or public release is authorized by this integration task.
+- **Money and preservation:** the shared D-5 decimal contract computes new pay once, half up
+  to whole cents, from exact seconds when applicable. Loading, exporting, importing and editing
+  metadata must never recalculate historical amounts. CSV/Excel is a table, not a backup
+  (D-13); JSON retains the full saved financial and worker metadata. Duplicate imports use
+  occurrence counts so genuine repeated shifts survive. Optional accounts remain optional.
+- **Merge gates:** inspect the actual CI logs and the diff against the plan before each squash
+  merge. Use `cmp` on the release branches for all `v2-*.json`, `money-contract.json`,
+  `group-reconcile.json`, and `integration-tests/fixtures-erase-tombstones.json` against its Android
+  copy `app/src/test/resources/erase-tombstones-web.json`. Verify the release head CI after each
+  merge. Unit tests do not establish live Android/account sync or native-device parity.
+- **Still required before public delivery:** consolidated release verification, a signed
+  2.3.0 candidate using the existing permanent identity, the direct 2.2.1 → 2.3.0 retained-data
+  upgrade gate, owner phone review, a safe Web preview and explicit publication approval.
+  Keep the current Vercel project/origin, all stored data and provider credentials intact.
+
+Earlier evidence and task scopes follow as history.
 
 # Website automatic updates and Android 2.0.5 published — 2026-10-21
 
