@@ -76,3 +76,27 @@ test('M-43: a backup (JSON) still uses the full signature, unchanged', () => {
   assert.equal(backup.fromTable, undefined);
   assert.equal(T.missing(existing, backup.entries).length, 0);
 });
+
+
+test('M-43/D-13: CSV money cells and duplicate keys use the money contract, without changing history', () => {
+  const amounts = [1.005, 2.675, 149.985, 1.00499999999, 42.12345, 0];
+  const existing = amounts.map((totalEarnings, i) => ({ ...synthetic()[0], id: 'round-' + i,
+    date: at(11, i + 1), totalEarnings, hourlyRate: totalEarnings, bonus: totalEarnings }));
+  const before = JSON.stringify(existing);
+  for (const output of [S.csv(existing), S.excel(existing)]) {
+    const decoded = T.decode(output).entries;
+    decoded.forEach((e, i) => {
+      const expected = KisRules.money(1, amounts[i]);
+      assert.equal(e.totalEarnings, expected);
+      assert.equal(e.hourlyRate, expected);
+      assert.equal(e.bonus ?? 0, expected);
+    });
+    assert.deepEqual(T.missing(existing, decoded, { table: true }), []);
+    assert.equal(T.missing(existing, [...decoded, decoded[0]], { table: true }).length, 1);
+    assert.equal(T.missing(existing, [{ ...decoded[0], totalEarnings: 1.02 }], { table: true }).length, 1);
+  }
+  assert.equal(JSON.stringify(existing), before, 'export / comparison never writes rounded values to history');
+  const restored = T.decode(T.encode({ entries: existing, categories: [], workers: [] })).entries;
+  assert.deepEqual(restored.map(e => e.totalEarnings), amounts, 'JSON retains all stored decimals');
+  assert.deepEqual(T.missing(existing, restored), []);
+});

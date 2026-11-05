@@ -157,9 +157,10 @@ function decode(text){
  * status may have been edited in Excel; they do not make the same shift new. A group or job shift exported as a row
  * matches its own entry here.
  */
+// Match the exported money cell, including decimal half cents; binary Math.round(value * 100) differs at 1.005.
 function tableKey(e){const d=new Date(e.date),job=(e.kind??KIND_SHIFT)===KIND_JOB,known=e.payKnown!==false;
  return JSON.stringify([clean(e.category),d.getFullYear(),d.getMonth(),d.getDate(),clean(e.startTime),clean(e.endTime),
-  Math.round((Number(e.hours)||0)*3600),e.currency??'₪',job,known?Math.round((Number(e.totalEarnings)||0)*100):null]);}
+  Math.round((Number(e.hours)||0)*3600),e.currency??'₪',job,known?(root.KisRules||require('./v2/rules.js')).money(1,Number(e.totalEarnings)||0):null]);}
 /** The incoming entries not already here. {table:true} for rows read from a table (decode(...).fromTable). */
 function missing(existing,incoming,{table=false}={}){
  const signature=table?tableKey:e=>JSON.stringify({...normalize(e),createdAt:0});const counts=new Map();
