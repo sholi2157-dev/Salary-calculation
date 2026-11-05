@@ -98,11 +98,12 @@ object WorkPay {
     fun workerRate(w: Worker, e: WorkEntry): Double? = if (isJob(e)) w.workerRate ?: e.workerRate else w.workerRate ?: e.workerRate ?: e.hourlyRate.takeIf { e.payKnown }
     fun employerRate(w: Worker, e: WorkEntry): Double? = w.employerRate ?: e.employerRate ?: e.hourlyRate.takeIf { e.payKnown }
 
+    // Corrupt stored rates (including overflow such as 1e400) mean unknown derived pay; never change saved own pay.
     /** What the worker should receive: a fixed sum on a job team, otherwise their hours at the worker rate plus their own bonus. */
     fun workerPay(w: Worker, e: WorkEntry): Double? = if (isJob(e) && w.amount != null) money(1.0, w.amount, w.bonus)
-        else workerRate(w, e)?.let { money(w.hours, it, w.bonus) }
+        else workerRate(w, e)?.takeIf { it.isFinite() }?.let { money(w.hours, it, w.bonus) }
     /** What the employer pays for this worker. A worker's bonus is passed through, not profit. On a job the client pays one price, so it is the worker's pay. */
-    fun employerPay(w: Worker, e: WorkEntry): Double? = if (isJob(e)) workerPay(w, e) else employerRate(w, e)?.let { money(w.hours, it, w.bonus) }
+    fun employerPay(w: Worker, e: WorkEntry): Double? = if (isJob(e)) workerPay(w, e) else employerRate(w, e)?.takeIf { it.isFinite() }?.let { money(w.hours, it, w.bonus) }
 
     /** The team's pay on a job, or null while any worker's pay is missing. */
     fun teamPay(e: WorkEntry): Double? {
