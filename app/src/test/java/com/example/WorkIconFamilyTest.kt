@@ -17,7 +17,7 @@ class WorkIconFamilyTest {
             Icons.Outlined.Groups, Icons.Outlined.Notifications, Icons.AutoMirrored.Outlined.ArrowForward)) {
             assertEquals(24f, icon.viewportWidth)
             assertEquals(24f, icon.viewportHeight)
-            assertTrue(icon.name.startsWith("Outlined."))
+            assertTrue("unexpected icon family: ${icon.name}", icon.name.substringBeforeLast('.') in setOf("Outlined", "AutoMirrored.Outlined"))
         }
         assertTrue(Icons.AutoMirrored.Outlined.ArrowForward.autoMirror)
         val kis = listOf(File("src/main/java/com/example/ui/kis"), File("app/src/main/java/com/example/ui/kis")).first { it.isDirectory }
