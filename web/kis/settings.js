@@ -288,7 +288,7 @@ function eraseSheet(app) {
   U().sheet('erase-sheet', (el, close) => eraseForm(el, store, {
     title: 'למחוק את הנתונים מהמכשיר הזה?',
     body: ['יימחקו מהמכשיר הזה: המשמרות, מקומות העבודה, המשמרות הקבועות, העובדים, הגדרות העבודה, טיוטה שלא נשמרה והשם שלך.',
-      signedIn ? 'הנתונים בחשבון לא יימחקו. כדי שהסנכרון לא יחזיר אותם מיד, האפליקציה תתנתק מהחשבון במכשיר הזה. כשתתחבר שוב, הם יחזרו מהחשבון. חשבון Google עצמו לא נמחק ולא מתנתק מהמכשיר.'
+      signedIn ? 'הנתונים בחשבון לא יימחקו. כדי שהסנכרון לא יחזיר אותם מיד, האפליקציה תתנתק מהחשבון במכשיר הזה. אחרי התחברות מחדש הם יחזרו מהחשבון. חשבון Google עצמו לא נמחק ולא מתנתק מהמכשיר.'
         : 'אין עותק בחשבון. אחרי המחיקה אפשר לשחזר רק מקובץ גיבוי.'],
     okLabel: 'מחיקה מהמכשיר', okTestid: 'erase-ok' }, async () => {
     const r = await root.KisAccount.eraseDevice(store).catch(() => ({ ok: false, failed: true }));
@@ -486,7 +486,7 @@ function feedbackSheet(app) {
     const relay = !!FEEDBACK_URL;
     el.innerHTML = `<h2>משוב ותקלות</h2>
       <div class="row" style="gap:6px">${['תקלה', 'הצעה', 'הערה'].map(k => `<button class="chip" aria-pressed="${d.kind === k}" data-kind="${k}">${k}</button>`).join('')}</div>
-      <textarea class="input" rows="4" data-f="msg" placeholder="מה קרה, או מה תרצה להציע?" aria-label="תיאור" data-testid="feedback-message"></textarea>
+      <textarea class="input" rows="4" data-f="msg" placeholder="מה קרה, או מה ההצעה?" aria-label="תיאור" data-testid="feedback-message"></textarea>
       ${relay ? `<label class="btn ghost small" style="position:relative" data-f="pick">צירוף צילום מסך<input type="file" accept="image/*" data-f="img" style="position:absolute;inset:0;opacity:0" aria-label="צירוף צילום מסך"></label>
       <div class="row" data-f="att" hidden style="align-items:center"><span class="grow">צילום מסך מצורף</span><button class="btn small ghost" data-a="unattach">הסרה</button></div>` : ''}
       <p class="caption">${relay ? 'יישלחו התיאור, הגרסה, פרטי הדפדפן ויומן פעולות קצר. סכומים, מקומות עבודה, שמות ומפתחות לא נשלחים.' : 'תיפתח טיוטת מייל עם התיאור ופרטי הדפדפן. נתוני העבודה לא מצורפים.'}</p>
