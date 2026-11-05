@@ -146,10 +146,11 @@ const employerRate = (w, e) => w.employerRate ?? e.employerRate ?? (payKnownOf(e
 /** What the worker should receive: a fixed sum on a job team, otherwise their hours at the worker rate plus their own bonus. */
 function workerPay(w, e) {
  if (isJob(e) && w.amount != null) return money(1, w.amount, w.bonus);
- const r = workerRate(w, e); return r == null ? null : money(w.hours, r, w.bonus);
+ const r = workerRate(w, e); return Number.isFinite(r) ? money(w.hours, r, w.bonus) : null;
 }
 /** What the employer pays for this worker. A worker's bonus is passed through, not profit. On a job the client pays one price, so it is the worker's pay. */
-function employerPay(w, e) { if (isJob(e)) return workerPay(w, e); const r = employerRate(w, e); return r == null ? null : money(w.hours, r, w.bonus); }
+// M-06: a stored rate that is not a finite number (JSON 1e400 parses to Infinity) is unknown pay, never an exception in money().
+function employerPay(w, e) { if (isJob(e)) return workerPay(w, e); const r = employerRate(w, e); return Number.isFinite(r) ? money(w.hours, r, w.bonus) : null; }
 /** The team's pay on a job, or null while any worker's pay is missing. */
 function teamPay(e) {
  let sum = 0;
