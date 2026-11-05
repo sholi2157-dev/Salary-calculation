@@ -91,10 +91,13 @@ object WorkTableImport {
     /** D-13: compare only table-visible identity, as web WorkTransfer.tableKey does. Never rewrite saved amounts.
      * Notes/payment edits in Excel are still the same shift; occurrence counts retain genuine repeated rows. */
     fun missingEntries(existing: List<WorkEntry>, incoming: List<WorkEntry>): List<WorkEntry> {
+        fun clockKey(t: String?) = clean(t.orEmpty()).let {
+            if (it.matches(Regex("[0-9]:[0-5][0-9]"))) "0$it" else it
+        }
         fun key(e: WorkEntry): List<Any?> {
             val day = Calendar.getInstance().apply { timeInMillis = e.date }
             return listOf(clean(e.category), day.get(Calendar.YEAR), day.get(Calendar.MONTH), day.get(Calendar.DAY_OF_MONTH),
-                clean(e.startTime.orEmpty()), clean(e.endTime.orEmpty()), Math.round(e.hours * 3600), e.currency,
+                clockKey(e.startTime), clockKey(e.endTime), Math.round(e.hours * 3600), e.currency,
                 WorkPay.isJob(e), if (e.payKnown) WorkPay.money(1.0, e.totalEarnings) else null)
         }
         val counts = existing.groupingBy(::key).eachCount().toMutableMap()

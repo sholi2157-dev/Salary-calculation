@@ -21,7 +21,8 @@ class WorkTableMoneyTest {
         val day = Calendar.getInstance().apply { clear(); set(2026, Calendar.OCTOBER, i + 1, 12, 0) }.timeInMillis
         val amount = amounts[i % amounts.size]
         WorkEntry(category = "מקום ${i % 8}", date = day, createdAt = day + 1000,
-            isTimeRange = false, hours = 100 / 60.0, hourlyRate = amount, totalEarnings = amount, bonus = amount,
+            isTimeRange = i == 1, startTime = if (i == 1) "8:00" else null, endTime = if (i == 1) "09:40" else null,
+            hours = 100 / 60.0, hourlyRate = amount, totalEarnings = amount, bonus = amount,
             currency = if (i % 2 == 0) "₪" else "$", notes = "הערה מקורית",
             isGroupShift = i == 0, groupWorkersJson = if (i == 0) """[{"name":"בדיקה","hours":1,"future":"keep"}]""" else "")
     }
