@@ -90,7 +90,7 @@ fun KisAiEntry(viewModel: WorkViewModel, categories: List<WorkCategory>, modifie
                         val parsed = GeminiParser.parseNaturalLanguageToShifts(said, now.map { it.name }, now.associate { it.name to it.defaultRate }, PersonalAiKey.read(context, viewModel.owner.uid),
                             currencyOf = viewModel::categoryCurrency)
                         val result = if (team) parsed else parsed.map { it.copy(isGroup = false, groupMembers = emptyList()) }
-                        if (result.isNotEmpty()) proposal = result else error = "לא הצלחנו להבין את פרטי המשמרת. נסה להוסיף תאריך, שעות ותעריף ולפענח שוב."
+                        if (result.isNotEmpty()) proposal = result else error = "לא הצלחנו להבין את פרטי המשמרת. אפשר להוסיף תאריך, שעות ותעריף ולפענח שוב."
                     } catch (e: CancellationException) { throw e }
                     catch (_: Exception) { error = "הפענוח לא הושלם. בדוק את החיבור ואת המפתח האישי בהגדרות, או תקן את התיאור ונסה שוב." }
                     finally { parsing = false }

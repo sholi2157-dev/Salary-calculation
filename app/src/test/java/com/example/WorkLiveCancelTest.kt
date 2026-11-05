@@ -1,6 +1,8 @@
 package com.example
 
 import android.app.Application
+import android.content.ComponentName
+import androidx.activity.ComponentActivity
 import android.os.Looper
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -23,6 +25,8 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.rules.ExternalResource
+import org.junit.rules.RuleChain
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
@@ -34,7 +38,14 @@ import java.util.UUID
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [28], qualifiers = "w360dp-h800dp-xhdpi")
 class WorkLiveCancelTest {
-    @get:Rule val ui = createComposeRule()
+    val ui = createComposeRule()
+    // ui-test-manifest is debug-only. Register the same host in Robolectric before
+    // Compose launches it, so these cancellation checks also exercise Release.
+    @get:Rule val rules: RuleChain = RuleChain.outerRule(object : ExternalResource() {
+        override fun before() {
+            shadowOf(app.packageManager).addActivityIfNotPresent(ComponentName(app, ComponentActivity::class.java))
+        }
+    }).around(ui)
     private val app get() = ApplicationProvider.getApplicationContext<Application>()
     private val owner = WorkAccountScope("live-cancel-${UUID.randomUUID()}")
     private val models = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }

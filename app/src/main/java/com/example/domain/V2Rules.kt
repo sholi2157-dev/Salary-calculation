@@ -85,7 +85,7 @@ object V2Rules {
             val amount = if (d.amountUnknown) null else number(d.amount)
             val h = number(d.hours).let { if (it.isNaN()) 0.0 else it }
             val zero = d.organizerOnly && amount == 0.0
-            if (!d.amountUnknown && !(amount != null && (amount > 0 || zero))) errors += "הזן סכום, או סמן \"לא יודע עדיין\""
+            if (!d.amountUnknown && !(amount != null && (amount > 0 || zero))) errors += "מזינים סכום, או מסמנים \"לא יודע עדיין\""
             if (h > 24) errors += "יותר מ-24 שעות ביום"
             val minutes = if (h > 0) (h * 60).roundToLong().toInt() else null
             val total = if (amount != null && amount > 0) com.example.data.WorkPay.money(1.0, amount) else if (zero) 0.0 else null
@@ -95,10 +95,10 @@ object V2Rules {
         var invalid = false
         if (d.mode == Mode.HOURS) {
             val h = number(d.hours)
-            if (!(h > 0)) errors += "הזן מספר שעות" else if (h > 24) errors += "יותר מ-24 שעות ביום"
+            if (!(h > 0)) errors += "מזינים מספר שעות" else if (h > 24) errors += "יותר מ-24 שעות ביום"
             if (h > 0) minutes = (h * 60).roundToLong().toInt()
         } else {
-            if (d.start == null) errors += "בחר שעת התחלה"
+            if (d.start == null) errors += "בוחרים שעת התחלה"
             if (d.start != null && d.end != null) {
                 val sp = span(d.start, d.end, d.breakMinutes)
                 minutes = sp.minutes
@@ -107,7 +107,7 @@ object V2Rules {
             }
         }
         val rate = if (d.rateUnknown) null else d.rate
-        if (!d.rateUnknown && !(rate != null && rate >= 0)) errors += "הזן תעריף, או סמן \"תעריף חסר\""
+        if (!d.rateUnknown && !(rate != null && rate >= 0)) errors += "מזינים תעריף, או מסמנים \"תעריף חסר\""
         val myBonus = if (d.mode == Mode.GROUP && d.bonusTarget == BonusTarget.OTHERS) 0.0 else d.bonus
         val base = if (minutes != null && !invalid && rate != null) minutes / 60.0 * rate else null
         return Evaluation(errors, minutes, myBonus, if (base != null) com.example.data.WorkPay.money(minutes!! / 60.0, rate!!, myBonus) else null)
