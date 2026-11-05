@@ -7,19 +7,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.RadioButtonUnchecked
-import androidx.compose.material.icons.rounded.ReceiptLong
-import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -69,19 +69,19 @@ fun ShiftDetailSheet(entry: WorkEntry, categories: List<WorkCategory>, viewModel
             onCompleteRate = { if (WorkPay.isJob(entry)) onEdit(entry) else completing = true },
             group = { GroupDetail(entry, viewModel, onMessage) })
     }
-    if (confirmDelete) KisSheet(onDismiss = { confirmDelete = false }) {
-        Text("למחוק את המשמרת?", style = KisType.title, color = c.ink)
-        Text("אפשר לבטל מיד אחרי המחיקה.", style = KisType.body, color = c.muted)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisButton("ביטול", { confirmDelete = false }, Modifier.weight(1f), KisButtonKind.GHOST)
-            KisButton("מחיקה", {
-                confirmDelete = false
-                settings.haptic(KisSettings.Haptic.WARN)
-                viewModel.deleteEntries(listOf(entry)) { onDeleted(it) }
-                onDismiss()
-            }, Modifier.weight(1f), KisButtonKind.DANGER, haptic = null, tag = "confirm_delete")
-        }
-    }
+    if (confirmDelete) KisConfirmSheet(
+        title = "למחוק את המשמרת?",
+        onDismiss = { confirmDelete = false },
+        confirmText = "מחיקה",
+        onConfirm = {
+            confirmDelete = false
+            settings.haptic(KisSettings.Haptic.WARN)
+            viewModel.deleteEntries(listOf(entry)) { onDeleted(it) }
+            onDismiss()
+        },
+        message = "אפשר לבטל מיד אחרי המחיקה.",
+        confirmTag = "confirm_delete",
+        confirmHaptic = null)
     if (completing) RateCompletionSheet(listOf(entry), viewModel, onDismiss = { completing = false }) { n ->
         completing = false
         if (n > 0) { settings.haptic(KisSettings.Haptic.SUCCESS); onMessage("התעריף הושלם ✓") }
@@ -155,13 +155,13 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
         }
         if (entry.isGroupShift) group()
         Row(Modifier.fillMaxWidth().coachTarget(CoachTarget.SHARE).testTag("entry_actions_${entry.id}"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisAction("עריכה", Icons.Rounded.Edit, onEdit, Modifier.weight(1f), primary = true, tag = "edit_entry_btn_${entry.id}")
+            KisAction("עריכה", Icons.Outlined.Edit, onEdit, Modifier.weight(1f), primary = true, tag = "edit_entry_btn_${entry.id}")
             // A group shift has every report (its own part too) under the team's "שיתוף" (design decision B).
             if (!entry.isGroupShift) {
-                KisAction("שיתוף", Icons.Rounded.Share, onShare, Modifier.weight(1f), tag = "share_entry_btn_${entry.id}")
-                KisAction("העתקה", Icons.Rounded.ContentCopy, onCopy, Modifier.weight(1f), tag = "copy_entry_btn_${entry.id}")
+                KisAction("שיתוף", Icons.Outlined.Share, onShare, Modifier.weight(1f), tag = "share_entry_btn_${entry.id}")
+                KisAction("העתקה", Icons.Outlined.ContentCopy, onCopy, Modifier.weight(1f), tag = "copy_entry_btn_${entry.id}")
             }
-            KisAction("מחיקה", Icons.Rounded.DeleteOutline, onDelete, Modifier.weight(1f), danger = true, tag = "delete_entry_btn_${entry.id}")
+            KisAction("מחיקה", Icons.Outlined.DeleteOutline, onDelete, Modifier.weight(1f), danger = true, tag = "delete_entry_btn_${entry.id}")
         }
     }
 }
@@ -193,7 +193,7 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
             KisDivider()
             line("לקבל מהמעסיק", summary.employerTotal, "group_employer_due", strong = true)
         } else Text(if (job) "הסכומים יופיעו אחרי שיושלם הסכום שלך." else "הסכומים יופיעו אחרי שיושלם התעריף.", style = KisType.caption, color = c.muted)
-        KisButton("שיתוף", { reports = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, icon = Icons.Rounded.Share, height = 48.dp, tag = "group_summary_share")
+        KisButton("שיתוף", { reports = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, icon = Icons.Outlined.Share, height = 48.dp, tag = "group_summary_share")
         Text("${if (job) "הצוות" else "הקבוצה"} · ${workers.size}", style = KisType.label.copy(fontSize = 16.sp), color = c.ink, modifier = Modifier.padding(top = 4.dp))
         workers.forEachIndexed { i, w ->
             val wPay = WorkPay.workerPay(w, entry)
@@ -212,7 +212,7 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                 }
                 if (wPay != null) MoneyText(wPay, entry.currency, KisType.label, modifier = Modifier.testTag("group_worker_pay_$i"))
                 else Text("שכר לא ידוע", style = KisType.caption, color = c.pending, modifier = Modifier.testTag("group_worker_pay_$i"))
-                Icon(Icons.Rounded.MoreHoriz, "פעולות ל${w.name}", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { workerMenu = i }.testTag("group_worker_more_$i").padding(10.dp))
+                Icon(Icons.Outlined.MoreHoriz, "פעולות ל${w.name}", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { workerMenu = i }.testTag("group_worker_more_$i").padding(10.dp))
             }
             if (i < workers.lastIndex) KisDivider()
         }

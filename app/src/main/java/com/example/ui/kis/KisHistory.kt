@@ -20,13 +20,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Sort
-import androidx.compose.material.icons.rounded.ChevronLeft
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.FilterList
-import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.outlined.ChevronLeft
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -37,10 +37,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.RadioButtonUnchecked
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.border
@@ -141,13 +141,13 @@ fun KisHistory(
                     Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("היסטוריה", style = KisType.page, color = c.ink, modifier = Modifier.weight(1f))
                         run {
-                            if (!showPlans) ToolIcon(Icons.Rounded.Search, "חיפוש", "history_search_button") { ui.searching = true }
+                            if (!showPlans) ToolIcon(Icons.Outlined.Search, "חיפוש", "history_search_button") { ui.searching = true }
                             // One button for everything that decides what is shown: dates, order, payment, place, currency.
                             KisChip(if (filter.activeCount == 0) "סינון ומיון" else "סינון ומיון · ${filter.activeCount}", selected = filter.activeCount > 0,
-                                leading = Icons.Rounded.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = KisMinTouch)
+                                leading = Icons.Outlined.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = KisMinTouch)
                             var copyMenu by remember { mutableStateOf(false) }
                             if (!showPlans) Box {
-                                ToolIcon(Icons.Rounded.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
+                                ToolIcon(Icons.Outlined.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
                                 DropdownMenu(copyMenu, { copyMenu = false }) {
                                     DropdownMenuItem(text = { Text("Excel (טבלה)") }, onClick = { copyMenu = false; if (rows.isEmpty()) onMessage("אין שורות להעתקה") else { copyExcelToClipboard(context, rows); onMessage("הטבלה הועתקה ✓ · מוכנה להדבקה באקסל") } })
                                     DropdownMenuItem(text = { Text("סיכום טכני") }, onClick = {
@@ -234,20 +234,21 @@ fun KisHistory(
         settings.haptic(KisSettings.Haptic.SUCCESS)
         onMessage(if (n == 1) "תעריף הושלם למשמרת אחת ✓" else "תעריף הושלם ל-$n משמרות ✓")
     }
-    if (confirmDelete) KisSheet(onDismiss = { confirmDelete = false }, tag = "bulk_delete_sheet") {
-        Text(if (selectedRows.size == 1) "למחוק משמרת אחת?" else "למחוק ${selectedRows.size} משמרות?", style = KisType.title, color = c.ink)
-        Text("אפשר לבטל מיד אחרי המחיקה.", style = KisType.body, color = c.muted)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisButton("ביטול", { confirmDelete = false }, Modifier.weight(1f), KisButtonKind.GHOST)
-            KisButton("מחיקה", {
-                confirmDelete = false
-                settings.haptic(KisSettings.Haptic.WARN)
-                val doomed = selectedRows
-                ui.selection = emptySet()
-                viewModel.deleteEntries(doomed, onDeleted)
-            }, Modifier.weight(1f), KisButtonKind.DANGER, haptic = null, tag = "confirm_bulk_delete")
-        }
-    }
+    if (confirmDelete) KisConfirmSheet(
+        title = if (selectedRows.size == 1) "למחוק משמרת אחת?" else "למחוק ${selectedRows.size} משמרות?",
+        onDismiss = { confirmDelete = false },
+        confirmText = "מחיקה",
+        onConfirm = {
+            confirmDelete = false
+            settings.haptic(KisSettings.Haptic.WARN)
+            val doomed = selectedRows
+            ui.selection = emptySet()
+            viewModel.deleteEntries(doomed, onDeleted)
+        },
+        message = "אפשר לבטל מיד אחרי המחיקה.",
+        tag = "bulk_delete_sheet",
+        confirmTag = "confirm_bulk_delete",
+        confirmHaptic = null)
 }
 
 @Composable
@@ -270,11 +271,11 @@ private fun SearchChip(query: String, onEdit: () -> Unit, onClear: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(1f).heightIn(min = 48.dp).kisClick(onClick = onEdit).semantics { contentDescription = "עריכת החיפוש: $query" }.padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(Icons.Rounded.Search, null, tint = c.muted, modifier = Modifier.size(20.dp))
+            Icon(Icons.Outlined.Search, null, tint = c.muted, modifier = Modifier.size(20.dp))
             Text("חיפוש: ", style = KisType.label, color = c.muted)
             Text(query, style = KisType.label, color = c.ink, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         }
-        Icon(Icons.Rounded.Close, "ניקוי החיפוש", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(RoundedCornerShape(12.dp)).background(Kis.colors.surface).border(1.5.dp, Kis.colors.line, RoundedCornerShape(12.dp)).kisClick(onClick = onClear).testTag("history_query_clear").padding(12.dp))
+        Icon(Icons.Outlined.Close, "ניקוי החיפוש", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(RoundedCornerShape(12.dp)).background(Kis.colors.surface).border(1.5.dp, Kis.colors.line, RoundedCornerShape(12.dp)).kisClick(onClick = onClear).testTag("history_query_clear").padding(12.dp))
     }
 }
 
@@ -288,7 +289,7 @@ private fun SearchBar(ui: HistoryUi) {
         // Clear and close are separate on purpose: clearing keeps the field open.
         if (ui.query.isNotEmpty()) Text("ניקוי", style = KisType.label, color = c.ink, modifier = Modifier.clip(RoundedCornerShape(8.dp))
             .kisClick { ui.query = "" }.testTag("history_search_clear").padding(10.dp))
-        Icon(Icons.Rounded.Close, "סגירת החיפוש", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { ui.searching = false }.testTag("history_search_close").padding(10.dp))
+        Icon(Icons.Outlined.Close, "סגירת החיפוש", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { ui.searching = false }.testTag("history_search_close").padding(10.dp))
     }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 }
@@ -299,8 +300,8 @@ private fun MonthSwitcher(month: Int, onMonth: (Int) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(HistoryFilter.monthName(month), style = KisType.title, color = c.ink, modifier = Modifier.weight(1f).testTag("history_month"))
         // RTL: "previous" points right, "next" points left.
-        Icon(Icons.Rounded.ChevronRight, "חודש קודם", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { onMonth(month - 1) }.testTag("month_prev").padding(10.dp))
-        Icon(Icons.Rounded.ChevronLeft, "חודש הבא", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { onMonth(month + 1) }.testTag("month_next").padding(10.dp))
+        Icon(Icons.Outlined.ChevronRight, "חודש קודם", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { onMonth(month - 1) }.testTag("month_prev").padding(10.dp))
+        Icon(Icons.Outlined.ChevronLeft, "חודש הבא", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { onMonth(month + 1) }.testTag("month_next").padding(10.dp))
     }
 }
 
@@ -341,11 +342,11 @@ private fun SelectionBar(selected: List<WorkEntry>, rows: List<WorkEntry>, ui: H
             Text("השלמת תעריף · $pending", style = KisType.label, color = c.pending)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            SelAction("שיתוף", Icons.Rounded.Share, "selection_share", Modifier.weight(1f), onClick = onShare)
-            SelAction("העתקה", Icons.Rounded.ContentCopy, "selection_copy", Modifier.weight(1f), onClick = onCopy)
-            SelAction("שולם", Icons.Rounded.CheckCircle, "selection_paid", Modifier.weight(1f)) { onPaid(true) }
-            SelAction("לא שולם", Icons.Rounded.RadioButtonUnchecked, "selection_unpaid", Modifier.weight(1f)) { onPaid(false) }
-            SelAction("מחיקה", Icons.Rounded.DeleteOutline, "selection_delete", Modifier.weight(1f), danger = true, onClick = onDelete)
+            SelAction("שיתוף", Icons.Outlined.Share, "selection_share", Modifier.weight(1f), onClick = onShare)
+            SelAction("העתקה", Icons.Outlined.ContentCopy, "selection_copy", Modifier.weight(1f), onClick = onCopy)
+            SelAction("שולם", Icons.Outlined.CheckCircle, "selection_paid", Modifier.weight(1f)) { onPaid(true) }
+            SelAction("לא שולם", Icons.Outlined.RadioButtonUnchecked, "selection_unpaid", Modifier.weight(1f)) { onPaid(false) }
+            SelAction("מחיקה", Icons.Outlined.DeleteOutline, "selection_delete", Modifier.weight(1f), danger = true, onClick = onDelete)
         }
     }
 }

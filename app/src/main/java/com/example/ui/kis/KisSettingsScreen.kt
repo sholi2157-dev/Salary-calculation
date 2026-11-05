@@ -12,10 +12,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.DragHandle
-import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.DragHandle
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -98,7 +98,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         else Row(Modifier.statusBarsPadding().padding(start = 4.dp, end = 16.dp).padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(48.dp).clip(CircleShape).kisClick { leave() }
                 .semantics { contentDescription = "חזרה להגדרות" }.testTag("settings_back"), contentAlignment = Alignment.Center) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.ink, modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = 180f })
+                Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.ink, modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = 180f })
             }
             Text(open, style = KisType.page, color = c.ink, maxLines = 1, modifier = Modifier.semantics { heading() }.testTag("settings_page_title"))
         }
@@ -115,7 +115,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             if (open == null) Spacer(Modifier.height(14.dp))
             Group(nav, "משוב ותקלות", "דיווח על תקלה או הצעה לשיפור, עם צילום מסך אם רוצים.") {
                 Row_("דיווח על תקלה או הצעה", null, tag = "feedback_row", onClick = { focusManager.clearFocus(force = true); feedbackOpen = !feedbackOpen }) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted,
+                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted,
                         modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = if (feedbackOpen) -90f else 0f })
                 }
                 if (feedbackOpen) Box(Modifier.padding(bottom = 10.dp)) {
@@ -130,7 +130,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 Row_("מקום ברירת מחדל", null, tag = "default_category_picker", onClick = { pickingDefault = true },
                     leading = { if (defaultCategory.isNotEmpty()) Box(Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(workplaceOf(defaultCategory, categories).brush)) }) {
                     Text(defaultCategory, style = KisType.label, color = c.ink, maxLines = 1)
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
+                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
                 }
                 Row_("מטבע ברירת מחדל", null, info = "למקומות ולמשמרות חדשים. כל משמרת שומרת את המטבע שלה.") {
                     CurrencyToggle(defaultCurrency, { viewModel.updateDefaultCurrency(it) }, "settings_currency")
@@ -139,7 +139,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 Row_("משמרות קבועות", null, info = "משמרות שחוזרות כל שבוע. יוצרים אותן במסך ההוספה: \"חוזרת כל שבוע\". כשהזמן נגמר הן נרשמות לבד, ותמיד אפשר לבטל.",
                     tag = "series_row", onClick = { seriesSheet = true }) {
                     if (series.isNotEmpty()) Text("${series.size}", style = KisType.label, color = c.muted)
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
+                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
                 }
             }
             Group(nav, "מראה ותחושה", "ערכת צבעים בהירה או כהה, ורטט במגע.") {
@@ -150,7 +150,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             }
             Group(nav, "הסיכומים שלי", "כל סיכום חודשי ושנתי שכבר נפתח.") {
                 Row_("כל הסיכומים", null, tag = "recaps_row", onClick = onRecaps, info = "כל סיכום חודשי ושנתי שכבר נפתח נשמר כאן. סיכום חודשי נפתח ב-30 לחודש ומופיע בדף הבית עוד 4 ימים.") {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
+                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
                 }
             }
             Group(nav, "התראות", "מה מגיע לטלפון: משמרת פעילה, הסיכום החודשי, משמרת קבועה, תעריף חסר וגרסה חדשה.") { NotificationSwitches(viewModel) }
@@ -239,7 +239,7 @@ private fun Group(nav: SettingsNav, title: String, info: String, modifier: Modif
             Text(title, style = KisType.title, color = c.ink, maxLines = 1, modifier = Modifier.semantics { heading() })
             Spacer(Modifier.weight(1f))
             InfoDot(title, info, tag = "settings_info_$title")
-            Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = c.muted, modifier = Modifier.size(20.dp))
+            Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted, modifier = Modifier.size(20.dp))
         }
         title -> Column(Modifier.padding(top = 12.dp).fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(c.surface)
             .padding(horizontal = 16.dp, vertical = 4.dp).testTag("settings_page_$title"), content = content)
@@ -316,15 +316,14 @@ private fun WorkplaceEditor(cat: WorkCategory, categories: List<WorkCategory>, v
         }, Modifier.fillMaxWidth(), enabled = name.isNotBlank() && !taken && rateValue != null, haptic = null, tag = "edit_category_save")
         if (categories.size > 1) KisButton("מחיקת המקום", { confirmDelete = true }, Modifier.fillMaxWidth(), KisButtonKind.DANGER, height = 48.dp, tag = "delete_category_${cat.name}")
     }
-    if (confirmDelete) KisSheet(onDismiss = { confirmDelete = false }) {
-        Text("למחוק את \"${cat.name}\"?", style = KisType.title, color = c.ink)
-        Text("המשמרות שלו לא יימחקו: הן יעברו למקום ברירת המחדל, והסכומים שנשמרו יישארו כמו שהם.", style = KisType.body, color = c.muted)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisButton("ביטול", { confirmDelete = false }, Modifier.weight(1f), KisButtonKind.GHOST)
-            KisButton("מחיקה", { confirmDelete = false; settings.haptic(KisSettings.Haptic.WARN); viewModel.deleteCategory(cat); onDismiss() },
-                Modifier.weight(1f), KisButtonKind.DANGER, haptic = null, tag = "confirm_delete_category")
-        }
-    }
+    if (confirmDelete) KisConfirmSheet(
+        title = "למחוק את \"${cat.name}\"?",
+        onDismiss = { confirmDelete = false },
+        confirmText = "מחיקה",
+        onConfirm = { confirmDelete = false; settings.haptic(KisSettings.Haptic.WARN); viewModel.deleteCategory(cat); onDismiss() },
+        message = "המשמרות שלו לא יימחקו: הן יעברו למקום ברירת המחדל, והסכומים שנשמרו יישארו כמו שהם.",
+        confirmTag = "confirm_delete_category",
+        confirmHaptic = null)
 }
 
 @Composable
@@ -408,10 +407,10 @@ private fun PlacesPanel(categories: List<WorkCategory>, defaultCategory: String,
                         Text(name, style = KisType.body.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), color = c.ink, maxLines = 1)
                         Text("${KisFormat.money(cat.defaultRate, viewModel.categoryCurrency(name))} לשעה", style = KisType.caption, color = c.muted)
                     }
-                    if (on) Icon(Icons.Rounded.Check, "ברירת מחדל", tint = c.ink)
-                    Icon(Icons.Rounded.Edit, "עריכת $name", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape)
+                    if (on) Icon(Icons.Outlined.Check, "ברירת מחדל", tint = c.ink)
+                    Icon(Icons.Outlined.Edit, "עריכת $name", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape)
                         .kisClick { open = if (open == name) null else name }.testTag("category_row_$name").padding(11.dp))
-                    Icon(Icons.Rounded.DragHandle, "הזזת $name", tint = c.muted, modifier = Modifier.size(KisMinTouch)
+                    Icon(Icons.Outlined.DragHandle, "הזזת $name", tint = c.muted, modifier = Modifier.size(KisMinTouch)
                         .pointerInput(name) {
                             detectDragGesturesAfterLongPress(
                                 onDragStart = { open = null; dragging = name; dragY = 0f; settings.haptic(KisSettings.Haptic.SELECT) },

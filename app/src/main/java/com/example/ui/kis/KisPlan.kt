@@ -236,14 +236,14 @@ fun SeriesSheet(series: List<ShiftSeries>, occurrences: List<V2Plan.Occurrence>,
         }
     }
     ending?.let { s ->
-        KisSheet(onDismiss = { ending = null }, tag = "series_end_sheet") {
-            Text("לסיים את הסדרה?", style = KisType.title, color = c.ink)
-            Text("משמרות מתוכננות מעכשיו לא יופיעו יותר. מה שכבר נרשם נשאר כמו שהוא.", style = KisType.body, color = c.muted)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KisButton("ביטול", { ending = null }, Modifier.weight(1f), KisButtonKind.GHOST)
-                KisButton("סיום", { onEnd(s); ending = null }, Modifier.weight(1f), KisButtonKind.DANGER, tag = "series_end_confirm")
-            }
-        }
+        KisConfirmSheet(
+            title = "לסיים את הסדרה?",
+            onDismiss = { ending = null },
+            confirmText = "סיום",
+            onConfirm = { onEnd(s); ending = null },
+            message = "משמרות מתוכננות מעכשיו לא יופיעו יותר. מה שכבר נרשם נשאר כמו שהוא.",
+            tag = "series_end_sheet",
+            confirmTag = "series_end_confirm")
     }
 }
 

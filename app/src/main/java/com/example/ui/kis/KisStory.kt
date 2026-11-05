@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -220,10 +220,10 @@ fun KisStory(scope: String, entries: List<WorkEntry>, categories: List<WorkCateg
                     Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         KisLogo(Modifier.size(26.dp)); Spacer(Modifier.width(8.dp))
                         Text(label, style = TextStyle(fontFamily = Rubik, fontWeight = FontWeight.SemiBold, fontSize = 14.sp), color = ink, modifier = Modifier.weight(1f))
-                        if (slide.auto) Icon(Icons.Rounded.Share, "שיתוף המסך כתמונה", tint = ink, modifier = chrome.size(40.dp).clip(CircleShape).background(ink.copy(alpha = .14f))
+                        if (slide.auto) Icon(Icons.Outlined.Share, "שיתוף המסך כתמונה", tint = ink, modifier = chrome.size(40.dp).clip(CircleShape).background(ink.copy(alpha = .14f))
                             .kisClick { shareSlide() }.padding(10.dp).testTag("story_share_slide"))
                         Spacer(Modifier.width(8.dp))
-                        Icon(Icons.Rounded.Close, "סגירה", tint = ink, modifier = chrome.size(40.dp).clip(CircleShape).background(ink.copy(alpha = .14f))
+                        Icon(Icons.Outlined.Close, "סגירה", tint = ink, modifier = chrome.size(40.dp).clip(CircleShape).background(ink.copy(alpha = .14f))
                             .kisClick(onClick = onClose).padding(9.dp).testTag("story_close"))
                     }
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {

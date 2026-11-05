@@ -18,11 +18,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Groups
-import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.PersonAdd
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -300,7 +300,7 @@ fun KisEditorPage(
                     color = if (d.team) accent else onTop, style = KisType.label.copy(fontSize = 16.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 if (d.editing) TopPill("מחיקה", onTop, tag = "editor_delete") { confirmDelete = true }
                 // A shift is the user's own unless "קבוצה" is on: then the same tabs come with the people who worked.
-                else TopPill("קבוצה", onTop, icon = Icons.Rounded.Groups, tag = "editor_team", on = if (d.team) accent else null, onInk = workplace.accentInk(c.dark)) {
+                else TopPill("קבוצה", onTop, icon = Icons.Outlined.Groups, tag = "editor_team", on = if (d.team) accent else null, onInk = workplace.accentInk(c.dark)) {
                     commitBuf(); pad = false
                     d = d.withTeam(!d.team)
                     if (!aiMode) target = when (d.tab) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
@@ -360,7 +360,7 @@ fun KisEditorPage(
             if (d.mode == EntryMode.JOB) JobNote(d.notes, history) { d = d.copy(notes = it) }
             DayStrip(d.day) { d = d.copy(day = it) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                KisChip(dayLabelLong(d.day).takeIf { !isWithinWeek(d.day) } ?: "תאריך אחר", leading = Icons.Rounded.CalendarMonth, tag = "editor_other_date", onClick = {
+                KisChip(dayLabelLong(d.day).takeIf { !isWithinWeek(d.day) } ?: "תאריך אחר", leading = Icons.Outlined.CalendarMonth, tag = "editor_other_date", onClick = {
                     val cal = Calendar.getInstance().apply { timeInMillis = d.day }
                     DatePickerDialog(context, { _, y, m, day -> d = d.copy(day = Calendar.getInstance().apply { clear(); set(y, m, day) }.timeInMillis) },
                         cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
@@ -438,25 +438,27 @@ fun KisEditorPage(
     }
     }
 
-    if (confirmLeave) KisSheet(onDismiss = { confirmLeave = false }, tag = "leave_sheet") {
-        Text(if (d.editing) "לצאת בלי לשמור את השינויים?" else "לצאת בלי לשמור את המשמרת?", style = KisType.title, color = c.ink)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisButton("להמשיך לערוך", { confirmLeave = false }, Modifier.weight(1f), KisButtonKind.GHOST)
-            KisButton("לצאת", { confirmLeave = false; onClose() }, Modifier.weight(1f), tag = "leave_confirm")
-        }
-    }
-    if (confirmDelete && base != null) KisSheet(onDismiss = { confirmDelete = false }) {
-        Text("למחוק את המשמרת?", style = KisType.title, color = c.ink)
-        Text("אפשר לבטל מיד אחרי המחיקה.", style = KisType.body, color = c.muted)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisButton("ביטול", { confirmDelete = false }, Modifier.weight(1f), KisButtonKind.GHOST)
-            KisButton("מחיקה", {
-                confirmDelete = false
-                settings.haptic(KisSettings.Haptic.WARN)
-                viewModel.deleteEntries(listOf(base)) { onDeleted(it); onClose() }
-            }, Modifier.weight(1f), KisButtonKind.DANGER, haptic = null, tag = "editor_delete_confirm")
-        }
-    }
+    if (confirmLeave) KisConfirmSheet(
+        title = if (d.editing) "לצאת בלי לשמור את השינויים?" else "לצאת בלי לשמור את המשמרת?",
+        onDismiss = { confirmLeave = false },
+        confirmText = "לצאת",
+        onConfirm = { confirmLeave = false; onClose() },
+        cancelText = "להמשיך לערוך",
+        danger = false,
+        tag = "leave_sheet",
+        confirmTag = "leave_confirm")
+    if (confirmDelete && base != null) KisConfirmSheet(
+        title = "למחוק את המשמרת?",
+        onDismiss = { confirmDelete = false },
+        confirmText = "מחיקה",
+        onConfirm = {
+            confirmDelete = false
+            settings.haptic(KisSettings.Haptic.WARN)
+            viewModel.deleteEntries(listOf(base)) { onDeleted(it); onClose() }
+        },
+        message = "אפשר לבטל מיד אחרי המחיקה.",
+        confirmTag = "editor_delete_confirm",
+        confirmHaptic = null)
     if (addingPlace) AddWorkplaceSheet(viewModel, categories, onDismiss = { addingPlace = false }) { name, rate, currency ->
         addingPlace = false
         d = if (d.editing) d.copy(category = name) else d.copy(category = name, rate = KisFormat.hours(rate), rateUnknown = false, currency = currency)
@@ -516,7 +518,7 @@ private fun ModeTabs(mode: EntryMode?, ink: Color, bg: Color, ai: Boolean, onAi:
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.sunk).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         listOf(EntryMode.CLOCK, EntryMode.HOURS, EntryMode.JOB).forEach { m -> tab(m.label, m == mode, "mode_${m.name.lowercase()}") { onMode(m) } }
         // Describing the shift in words (the user's own Gemini key); not for an edit.
-        if (ai) tab("AI", mode == null, "mode_ai", Icons.Rounded.AutoAwesome, onAi)
+        if (ai) tab("AI", mode == null, "mode_ai", Icons.Outlined.AutoAwesome, onAi)
     }
 }
 
@@ -750,14 +752,14 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
     var newName by rememberSaveable { mutableStateOf("") }
     var forgetting by rememberSaveable { mutableStateOf<String?>(null) }
     forgetting?.let { name ->
-        KisSheet(onDismiss = { forgetting = null }, tag = "forget_worker_sheet") {
-            Text("להסיר את $name מהרשימה?", style = KisType.title, color = c.ink)
-            Text("השם לא יוצע יותר. משמרות קודמות שבהן הוא עבד לא משתנות.", style = KisType.body, color = c.muted)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KisButton("ביטול", { forgetting = null }, Modifier.weight(1f), KisButtonKind.GHOST)
-                KisButton("הסרה", { onForget(name); forgetting = null }, Modifier.weight(1f), KisButtonKind.DANGER, tag = "forget_worker_confirm")
-            }
-        }
+        KisConfirmSheet(
+            title = "להסיר את $name מהרשימה?",
+            onDismiss = { forgetting = null },
+            confirmText = "הסרה",
+            onConfirm = { onForget(name); forgetting = null },
+            message = "השם לא יוצע יותר. משמרות קודמות שבהן הוא עבד לא משתנות.",
+            tag = "forget_worker_sheet",
+            confirmTag = "forget_worker_confirm")
     }
     KisCard(padding = PaddingValues(14.dp), radius = 18.dp, modifier = Modifier.testTag("group_block")) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -767,7 +769,7 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
                     Text(w.name, style = KisType.body, color = c.ink, modifier = Modifier.weight(1f), maxLines = 1)
                     SmallNumberField(DurationInput.display(w.hours), "שעות:דקות", Modifier.width(90.dp).testTag("worker_hours_$i"), duration = true) { v -> onDraft(d.copy(workers = d.workers.toMutableList().also { it[i] = w.copy(hours = DurationInput.edit(v)) })) }
                     SmallNumberField(w.bonus, "בונוס", Modifier.width(76.dp).testTag("worker_bonus_$i")) { v -> onDraft(d.copy(workers = d.workers.toMutableList().also { it[i] = w.copy(bonus = v) })) }
-                    Icon(Icons.Rounded.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+                    Icon(Icons.Outlined.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
                         .kisClick { onDraft(d.copy(workers = d.workers.filterIndexed { j, _ -> j != i })) }.padding(9.dp))
                 }
             }
@@ -783,7 +785,7 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = {
                         if (newName.isNotBlank()) { onDraft(d.copy(workers = d.workers + WorkerDraft(newName.trim(), defaultHours))); newName = "" } else focus.clearFocus()
                     }))
-                Icon(Icons.Rounded.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(c.ink)
+                Icon(Icons.Outlined.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(c.ink)
                     .kisClick(enabled = newName.isNotBlank()) { onDraft(d.copy(workers = d.workers + WorkerDraft(newName.trim(), defaultHours))); newName = "" }.padding(12.dp).testTag("worker_add"))
             }
             if (d.workers.isNotEmpty() && d.bonusValue() > 0) {
