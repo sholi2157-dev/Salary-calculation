@@ -211,7 +211,7 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                         modifier = Modifier.clip(RoundedCornerShape(99.dp)).background(if (w.isPaid) c.paid.copy(alpha = 0.18f) else c.sunk).padding(horizontal = 10.dp, vertical = 3.dp))
                 }
                 if (wPay != null) MoneyText(wPay, entry.currency, KisType.label, modifier = Modifier.testTag("group_worker_pay_$i"))
-                else Text("חסר", style = KisType.caption, color = c.pending)
+                else Text("שכר לא ידוע", style = KisType.caption, color = c.pending, modifier = Modifier.testTag("group_worker_pay_$i"))
                 Icon(Icons.Rounded.MoreHoriz, "פעולות ל${w.name}", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { workerMenu = i }.testTag("group_worker_more_$i").padding(10.dp))
             }
             if (i < workers.lastIndex) KisDivider()

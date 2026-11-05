@@ -490,6 +490,18 @@ class KisUiTest {
         shot("editor-both-times")
     }
 
+    @Test fun storedInfiniteTeamRateShowsUnknownPayWithoutChangingHistory() {
+        val entry = WorkEntry(id = 92, category = "אירועים", date = day, isTimeRange = false, hours = 2.0,
+            hourlyRate = 50.0, totalEarnings = 123.45, isGroupShift = true, employerRate = 65.0,
+            groupWorkersJson = """[{"name":"נועה","hours":2,"workerRate":"Infinity","future":{"keep":true}}]""")
+        runBlocking { dao.insertEntry(entry) }
+        val vm = model()
+        host { ShiftDetailSheet(entry, categories, vm, onDismiss = {}, onEdit = {}, onDeleted = {}, onMessage = {}) }
+        ui.onNodeWithTag("group_worker_pay_0").performScrollTo().assertTextEquals("שכר לא ידוע")
+        ui.onNodeWithTag("group_employer_due").assertDoesNotExist()
+        assertEquals(entry, rows().single())
+    }
+
     /**
      * M-34 text scaling: at 130% and 200% text on a 360dp phone, the live card keeps its clock, money and both buttons,
      * and the group details keep every total and the worker actions. Screenshots go to the CI log for review.
