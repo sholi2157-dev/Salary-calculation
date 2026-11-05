@@ -29,7 +29,9 @@ import androidx.compose.ui.zIndex
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -421,6 +423,15 @@ private fun PlacesPanel(categories: List<WorkCategory>, defaultCategory: String,
                                     else if (dragY < -step / 2 && i > 0) { order = order.toMutableList().apply { add(i - 1, removeAt(i)) }; dragY += step; settings.haptic(KisSettings.Haptic.TICK) }
                                 },
                                 onDragEnd = { drop() }, onDragCancel = { drop() })
+                        }
+                        // M-46 (R-31): the same move without a long press, for TalkBack and switch access.
+                        .semantics {
+                            fun move(step: Int): Boolean {
+                                val i = order.indexOf(name); val j = i + step
+                                if (i < 0 || j !in order.indices) return false
+                                order = order.toMutableList().apply { add(j, removeAt(i)) }; settings.updatePlaceOrder(order); return true
+                            }
+                            customActions = listOf(CustomAccessibilityAction("הזזה למעלה") { move(-1) }, CustomAccessibilityAction("הזזה למטה") { move(1) })
                         }.testTag("place_drag_$name").padding(10.dp))
                 }
                 if (open == name) WorkplaceEditor(cat, categories, viewModel, onDismiss = { open = null })
