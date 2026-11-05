@@ -75,7 +75,7 @@ function render(el, app, opts = {}) {
   <div class="title-row"><h1 class="page-title">היסטוריה</h1>${state.planned ? '' : `
     <button class="icon-btn history-tool" aria-label="חיפוש" data-a="search" data-testid="history-search">${ICON.search}</button>
     `}<button class="chip${n ? ' on' : ''}" data-a="filters" data-testid="history-filters">${ICON.filter}<span class="chip-label">סינון ומיון</span>${n ? `<span aria-hidden="true">· ${n}</span><span class="sr-only">, ${n} פעילים</span>` : ''}</button>${state.planned ? '' : `
-    <button class="icon-btn history-tool" aria-label="העתקת דוח" data-a="copy" data-testid="history-copy">${ICON.copy}</button>`}</div>
+    <button class="icon-btn history-tool" aria-label="העתקת דוח" data-a="copy" data-testid="history-copy" ${rows.length ? '' : 'disabled'}>${ICON.copy}</button>`}</div>
   ${state.planned ? '' : `
     ${state.searching ? `<div class="row" style="align-items:center;margin-bottom:8px"><input class="input grow" type="search" placeholder="חיפוש: מקום, הערה, עובד, סכום" value="${esc(state.query)}" data-f="q" aria-label="חיפוש" data-testid="history-search-input">
       <button class="icon-btn" aria-label="ניקוי" data-a="clear" data-testid="history-search-clear">${ICON.close}</button><button class="chip" data-a="close-search" data-testid="history-search-close">סגירה</button></div>`
