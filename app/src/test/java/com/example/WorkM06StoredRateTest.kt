@@ -18,7 +18,8 @@ class WorkM06StoredRateTest {
         groupWorkersJson = """[{"name":"נועה","hours":2,"bonus":5,"workerRate":$worker,"employerRate":$employer,"future":{"keep":true}}]""")
 
     @Test fun storedNonFiniteWorkerAndEmployerRatesAreUnknown() {
-        for (invalid in listOf("1e400", "-1e400", "\"Infinity\"", "\"-Infinity\"", "\"NaN\"")) {
+        // Android JSONObject rejects bare overflowing JSON numbers; numeric strings reach getDouble as non-finite rates.
+        for (invalid in listOf("\"1e400\"", "\"-1e400\"", "\"Infinity\"", "\"-Infinity\"", "\"NaN\"")) {
             for (workerInvalid in listOf(true, false)) {
                 val e = if (workerInvalid) entry(worker = invalid) else entry(employer = invalid)
                 val before = e.copy()
