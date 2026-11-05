@@ -86,7 +86,7 @@ function render(el, app, opts = {}) {
       <button class="icon-btn" aria-label="חודש קודם" data-a="prev">${ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-a="next">${ICON.next}</button></div>` : ''}
     ${rows.length ? `<section class="card" style="margin-top:10px" data-testid="history-total" aria-label="סיכום המשמרות המוצגות"><div class="caption">${rows.length} משמרות · ${U().duration(rows.reduce((s, e) => s + e.hours, 0))} שעות${(h => h > 0 ? ` · מתוכן ${U().duration(h)} עוד לא עברו` : '')(rows.filter(e => U().upcoming(e)).reduce((s, e) => s + e.hours, 0))}</div>
       <div style="display:flex;gap:14px">${totals.length ? totals.map(([c, v]) => `<b class="amount">${moneyHtml(v, c)}</b>`).join('') : '<b class="amount">—</b>'}</div>
-      ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף ←' : pending + ' משמרות מחכות לתעריף ←'}</button>` : ''}</section>` : ''}`}
+      ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף' : pending + ' משמרות מחכות לתעריף'} <span class="ic" aria-hidden="true">${U().ICON.next}</span></button>` : ''}</section>` : ''}`}
   <div class="list" style="margin-top:8px;${sel.length ? 'padding-bottom:150px' : ''}" data-testid="history-list">${list}</div>
 
   ${sel.length ? selectionBar(sel, rows) : ''}`;

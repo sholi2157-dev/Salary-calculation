@@ -8,7 +8,7 @@ function open(onClose) {
     el.classList.add('android-download-sheet');
     el.innerHTML = `<div class="title-row"><h2>חישוב שכר בכיס שלך</h2><button class="icon-btn" aria-label="סגירת ההורדה" data-close>${U.ICON.close}</button></div>
       <p class="caption">האפליקציה לאנדרואיד · ללא הרשמה וללא בקשת גישה</p>
-      <a class="btn primary apk-download" href="/api/download" data-testid="apk-download">↓ הורדת האפליקציה</a>
+      <a class="btn primary apk-download" href="/api/download" data-testid="apk-download"><span class="ic" aria-hidden="true">${U.ICON.download}</span> הורדת האפליקציה</a>
       <p class="caption" data-release aria-live="polite">בודק גרסה…</p>
       <p class="caption" data-progress aria-live="polite"></p>
       <ol class="install-steps">

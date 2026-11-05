@@ -225,11 +225,11 @@ async function signOut() {
 // ---- settings: the account card and the conflicts ----
 function settingsHtml() {
   const { esc } = U(), s = readState(localStorage);
-  if (!account.user) return `<div class="row" style="align-items:center;min-height:58px"><div class="grow"><b>לא מחובר</b><div class="caption">הנתונים שמורים רק בדפדפן הזה</div></div><button class="chip" data-acc="signin" data-testid="account-signin">התחברות</button></div>`;
+  if (!account.user) return `<div class="row" style="align-items:center;min-height:58px"><div class="grow"><b>לא מחובר</b><div class="caption">הנתונים שמורים רק בדפדפן הזה</div></div><button class="chip act" data-acc="signin" data-testid="account-signin">התחברות</button></div>`;
   const st = account.sync?.status() || {}, when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : null;
   const line = account.status === 'syncing' ? 'מסנכרן…' : account.status === 'offline' ? 'אין חיבור. השינויים יישלחו כשהחיבור יחזור' : account.status === 'error' ? 'הסנכרון לא הצליח. ננסה שוב בקרוב' : when ? `מסונכרן · ${when}` : 'מסונכרן';
-  return `<div class="row" style="align-items:center;min-height:58px"><div class="grow" style="min-width:0"><b style="overflow-wrap:anywhere">${esc(s.email || account.user.email || '')}</b><div class="caption" data-testid="account-status">${esc(line)}</div></div><button class="chip" data-acc="now">סנכרון</button></div>
-    ${st.conflicts ? `<div class="divider"></div><div class="row" style="align-items:center;min-height:58px"><div class="grow"><b>${st.conflicts === 1 ? 'שינוי אחד ממתין לבחירה' : st.conflicts + ' שינויים ממתינים לבחירה'}</b><div class="caption">אותה משמרת השתנתה כאן ובמכשיר אחר</div></div><button class="chip" data-acc="conflicts" data-testid="account-conflicts">בחירה</button></div>` : ''}
+  return `<div class="row" style="align-items:center;min-height:58px"><div class="grow" style="min-width:0"><b style="overflow-wrap:anywhere">${esc(s.email || account.user.email || '')}</b><div class="caption" data-testid="account-status">${esc(line)}</div></div><button class="chip act" data-acc="now">סנכרון</button></div>
+    ${st.conflicts ? `<div class="divider"></div><div class="row" style="align-items:center;min-height:58px"><div class="grow"><b>${st.conflicts === 1 ? 'שינוי אחד ממתין לבחירה' : st.conflicts + ' שינויים ממתינים לבחירה'}</b><div class="caption">אותה משמרת השתנתה כאן ובמכשיר אחר</div></div><button class="chip act" data-acc="conflicts" data-testid="account-conflicts">בחירה</button></div>` : ''}
     <div class="row" style="padding:6px 0"><button class="btn small ghost grow" data-acc="assistants" data-testid="account-assistants">עוזרי AI</button><button class="btn small ghost grow" data-acc="signout" data-testid="account-signout">התנתקות</button></div>`;
 }
 function bindSettings(el) {
