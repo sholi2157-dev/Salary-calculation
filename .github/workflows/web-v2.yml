@@ -3,7 +3,7 @@ name: Web 2.0 (כיס) checks
 # This workflow never deploys, aliases or touches production; codex/web-rc15-live is the published website's branch.
 on:
   push:
-    branches: ['claude/v2-web', 'codex/web-rc15-live', 'codex/download-and-management-20261020', 'codex/sharing-web-20261021', 'release/2.3-web']
+    branches: ['claude/v2-web', 'codex/web-rc15-live', 'codex/download-and-management-20261020', 'codex/sharing-web-20261021', 'release/2.3-web', 'codex/2.3-fb23-web']
   workflow_dispatch:
 permissions:
   contents: read
