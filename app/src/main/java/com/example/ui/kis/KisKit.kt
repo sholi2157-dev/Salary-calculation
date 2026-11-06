@@ -271,12 +271,12 @@ fun CurrencyToggle(currency: String, onCurrency: (String) -> Unit, tag: String, 
     Row(modifier.clip(RoundedCornerShape(12.dp)).border(1.5.dp, c.line, RoundedCornerShape(12.dp)).testTag(tag)) {
         listOf("₪", "$").forEach { value ->
             val on = currency == value
-            // Light: the chosen currency is a soft tinted cell with bold ink, not a black one.
-            Box(Modifier.size(width = 48.dp, height = KisMinTouch).background(c.surface).kisSelected(on, c, RoundedCornerShape(KisRadius.small))
+            // Fill the selected cell in both themes; the other cell stays quiet.
+            Box(Modifier.size(width = 48.dp, height = KisMinTouch).background(if (on) c.accent else c.surface)
                 .kisClick(role = Role.RadioButton) { onCurrency(value) }.semantics { this.selected = on; contentDescription = if (value == "₪") "שקל" else "דולר" }
                 .testTag("${tag}_$value"), contentAlignment = Alignment.Center) {
                 Text(value, style = KisType.label.copy(fontFamily = Rubik, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium),
-                    color = if (on) c.selectedInk else c.muted)
+                    color = if (on) c.accentInk else c.muted)
             }
         }
     }

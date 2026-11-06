@@ -116,7 +116,7 @@ fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSetti
     }
 }
 
-/** The notification switches (a group in Settings), each explained behind its ⓘ. */
+/** The notification switches in Settings; the master is on only when every visible child is on. */
 @Composable
 fun NotificationSwitches(viewModel: WorkViewModel) {
     val c = Kis.colors
@@ -153,26 +153,24 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
             != android.content.pm.PackageManager.PERMISSION_GRANTED) { asking = kind; ask.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
         else turnOn(kind)
     }
-    @Composable fun line(title: String, info: String?, tag: String, checked: Boolean, strong: Boolean = false, onChange: (Boolean) -> Unit) {
+    @Composable fun line(title: String, tag: String, checked: Boolean, strong: Boolean = false, onChange: (Boolean) -> Unit) {
         Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = KisType.body.copy(fontWeight = if (strong) FontWeight.SemiBold else FontWeight.Medium), color = c.ink)
-            if (info != null) InfoDot(title, info)
             Spacer(Modifier.weight(1f))
             KisSwitch(checked, onChange, Modifier.testTag(tag), label = title)
         }
     }
     // The main switch turns all of them on or off together; each kind keeps its own switch below it (restored in 2.2.3).
-    val all = service || notifyMonthly || notifyPlans || notifyRate || (notifyUpdates && com.example.BuildConfig.LOCAL_DISTRIBUTION)
-    line("כל ההתראות", "מפעיל או מכבה את כולן יחד. אפשר לבחור כל סוג בנפרד כאן למטה.", "notify_all_switch", all, strong = true) { enable("all", it) }
+    val any = service || notifyMonthly || notifyPlans || notifyRate || (notifyUpdates && com.example.BuildConfig.LOCAL_DISTRIBUTION)
+    val all = service && notifyMonthly && notifyPlans && notifyRate && (!com.example.BuildConfig.LOCAL_DISTRIBUTION || notifyUpdates)
+    line("כל ההתראות", "notify_all_switch", all, strong = true) { enable("all", it) }
     KisDivider()
-    line("משמרת פעילה", "טיימר וסכום שנצבר בהתראה קבועה בזמן שהשעון רץ, עם כפתור לסיום.", "service_notification_switch", service) { enable("service", it) }
-    line("הסיכום החודשי", "ב-30 לכל חודש (בפברואר ביום האחרון) בשעה 20:00: כמה עבדת וכמה הרווחת החודש. נשלח רק כשיש משמרות בחודש.",
-        "notify_monthly_switch", notifyMonthly) { enable("monthly", it) }
-    line("משמרת קבועה שהסתיימה", "כשמשמרת קבועה נגמרת: \"נרשמה\" עם כפתור \"לא עבדתי\". אם הרישום האוטומטי כבוי, השאלה \"עבדת?\".",
-        "notify_plans_switch", notifyPlans) { enable("plans", it) }
-    line("תעריף חסר", "לכל היותר פעם בשבוע, ורק כשיש משמרות בלי תעריף.", "notify_rate_switch", notifyRate) { enable("rate", it) }
+    line("משמרת פעילה", "service_notification_switch", service) { enable("service", it) }
+    line("הסיכום החודשי", "notify_monthly_switch", notifyMonthly) { enable("monthly", it) }
+    line("משמרת קבועה שהסתיימה", "notify_plans_switch", notifyPlans) { enable("plans", it) }
+    line("תעריף חסר", "notify_rate_switch", notifyRate) { enable("rate", it) }
     if (com.example.BuildConfig.LOCAL_DISTRIBUTION)
-        line("גרסה חדשה", "פעם אחת לכל גרסה. ההתקנה תמיד באישור שלך.", "notify_updates_switch", notifyUpdates) { enable("updates", it) }
+        line("גרסה חדשה", "notify_updates_switch", notifyUpdates) { enable("updates", it) }
     // Switched on but the phone does not allow notifications: say so, with one tap to the phone's own setting.
     var allowed by remember { mutableStateOf(com.example.PlanJobs.canNotify(context)) }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -181,7 +179,7 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
         lifecycle.lifecycle.addObserver(observer)
         onDispose { lifecycle.lifecycle.removeObserver(observer) }
     }
-    if (denied || (all && !allowed)) Row(Modifier.fillMaxWidth().padding(bottom = 6.dp).clip(RoundedCornerShape(12.dp))
+    if (denied || (any && !allowed)) Row(Modifier.fillMaxWidth().padding(bottom = 6.dp).clip(RoundedCornerShape(12.dp))
         .background(c.pendingSoft).kisClick {
             runCatching { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                 .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)) }

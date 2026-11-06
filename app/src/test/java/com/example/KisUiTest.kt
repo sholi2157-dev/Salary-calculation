@@ -212,6 +212,33 @@ class KisUiTest {
         assertTrue(saved.contains("התעריף"))
     }
 
+    @Test fun savedEditReturnsToDetailWithUpdatedDateAndMoney() {
+        val vm = model()
+        val id = runBlocking { dao.insertEntry(WorkEntry(category = "מסעדה", date = day,
+            isTimeRange = false, hours = 2.0, hourlyRate = 50.0, totalEarnings = 100.0)).toInt() }
+        host { KisApp(vm) }
+        waitFor(10_000) { ui.onAllNodesWithTag("recent_shift_card_$id").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithTag("recent_shift_card_$id").performScrollTo().performClick()
+        ui.onNodeWithTag("detail_amount", useUnmergedTree = true).assertTextEquals("₪100")
+        ui.onNodeWithTag("edit_entry_btn_$id").performScrollTo().performClick()
+        ui.onNodeWithTag("day_-1").performClick()
+        ui.onNodeWithTag("editor_rate").performScrollTo().performClick()
+        type("60")
+        ui.onNodeWithTag("entry_done").performClick()
+        ui.onNodeWithTag("save_shift_button").performClick()
+        waitFor(10_000) { ui.onAllNodesWithTag("shift_detail").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithTag("detail_amount", useUnmergedTree = true).assertTextEquals("₪120")
+        val saved = rows().single()
+        assertEquals(120.0, saved.totalEarnings, 0.0)
+        assertEquals(EntryDraft.startOfDay(day - 86_400_000L), EntryDraft.startOfDay(saved.date))
+        ui.onNode(hasText(dayLabelLong(saved.date), substring = true) and hasAnyAncestor(hasTestTag("shift_detail"))).assertExists()
+        shot("fb23-edited-detail")
+        ui.onNodeWithTag("shift_detail").performTouchInput { swipeDown() }
+        ui.runOnIdle { KisNotices.post("אין עדכון יציב חדש") }
+        waitFor(5_000) { ui.onAllNodesWithText("אין עדכון יציב חדש").fetchSemanticsNodes().isNotEmpty() }
+        shot("fb23-clean-notice")
+    }
+
     @Test fun editKeepsStoredAmountUntilHoursRateOrBonusChange() {
         val vm = model()
         val id = runBlocking { dao.insertEntry(WorkEntry(category = "מסעדה", date = day + 17 * 3_600_000L, isTimeRange = true, startTime = "17:00", endTime = "22:30",
@@ -369,11 +396,32 @@ class KisUiTest {
         ui.onNodeWithText("אין משמרות להצגה").assertDoesNotExist()
     }
 
-    @Test fun detailActionsAreLargeAndDistinct() {
+    @Test fun currencySelectionIsExplicitInBothThemes() {
+        var currency by mutableStateOf("₪")
+        var dark by mutableStateOf(false)
+        ui.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                KisTheme(darkOverride = dark) { CurrencyToggle(currency, { currency = it }, "fb23_currency") }
+            }
+        }
+        listOf(false, true).forEach { mode ->
+            ui.runOnIdle { dark = mode }
+            listOf("₪", "$").forEach { selected ->
+                ui.onNodeWithTag("fb23_currency_$selected").performClick().assertIsSelected()
+                ui.onNodeWithTag("fb23_currency_${if (selected == "₪") "$" else "₪"}").assertIsNotSelected()
+                shot("fb23-currency-$mode-${if (selected == "₪") "ils" else "usd"}")
+            }
+        }
+    }
+
+    @Test fun detailActionsAreLargeAndDistinct() = detailActions(false)
+    @Test fun detailActionsAreLargeAndDistinctDark() = detailActions(true)
+
+    private fun detailActions(dark: Boolean) {
         val entry = WorkEntry(id = 71, category = "מסעדה", date = day, isTimeRange = true, startTime = "22:00", endTime = "06:00", hours = 7.5, hourlyRate = 45.75,
             totalEarnings = 343.12, bonus = 0.0, currency = "$", notes = "לילה עם הפסקה")
         var paid = 0; var edited = 0; var shared = 0; var copied = 0; var deleted = 0
-        host {
+        host(dark) {
             ShiftDetailContent(entry, categories, onPaid = { paid++ }, onEdit = { edited++ }, onShare = { shared++ }, onCopy = { copied++ }, onDelete = { deleted++ }, onCompleteRate = {}, group = {})
         }
         ui.onNodeWithTag("detail_amount", useUnmergedTree = true).assertTextEquals("$343.12")
@@ -385,7 +433,7 @@ class KisUiTest {
         assertEquals(listOf(1, 1, 1, 1), listOf(edited, shared, copied, deleted))
         ui.onNodeWithTag("toggle_payment_71").performClick()
         assertEquals(1, paid)
-        shot("detail")
+        shot(if (dark) "detail-dark" else "detail")
     }
 
     @Test fun homeShowsTodayWeekAndAllTimeWithoutFutureOrUnknownPay() {
@@ -902,10 +950,10 @@ class KisUiTest {
                 KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}, onRecaps = { recaps = true }) }
             }
         }
-        // FB23-F1: one page of category cards, in their order, each with its info dot; a tap opens the card in place.
+        // FB23-F1: one page of category cards, in their order, without info dots; a tap opens the card in place.
         listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "הסיכומים שלי", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
-            ui.onNodeWithTag("settings_info_$it", useUnmergedTree = true).assertExists()
+            ui.onNodeWithTag("settings_info_$it", useUnmergedTree = true).assertDoesNotExist()
         }
         ui.onNodeWithTag("theme_LIGHT").assertDoesNotExist()
         ui.onNodeWithTag("settings_back").assertDoesNotExist()
@@ -914,6 +962,7 @@ class KisUiTest {
             val click = androidx.compose.ui.semantics.SemanticsActions.OnClick
             ui.onNodeWithTag("settings_section_$section").performScrollTo().performSemanticsAction(click)
             ui.onNodeWithTag("settings_page_$section").assertExists()
+            ui.onAllNodes(hasContentDescription("הסבר:", substring = true) and hasAnyAncestor(hasTestTag("settings_page_$section"))).assertCountEquals(0)
         }
         open("מראה ותחושה")
         // In place: the other headers stay on the same page, and only one card is open at a time.
@@ -930,12 +979,23 @@ class KisUiTest {
         // The main notification switch turns them all off and on; each kind also has its own switch (device-only).
         open("התראות")
         assertTrue(vm.planSettings.notifyMonthly)
-        ui.onNodeWithTag("notify_all_switch").performScrollTo().performClick()
+        // Explicitly reach all-on even if a stored service preference starts off.
+        val master = ui.onNodeWithTag("notify_all_switch")
+        if (master.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ToggleableState] != androidx.compose.ui.state.ToggleableState.On)
+            master.performScrollTo().performClick()
+        master.assertIsOn()
+        master.performScrollTo().performClick()
+        master.assertIsOff()
         assertFalse(vm.planSettings.notifyMonthly); assertFalse(vm.planSettings.notifyPlans); assertFalse(vm.planSettings.notifyRate)
         ui.onNodeWithTag("notify_all_switch").performClick()
         assertTrue(vm.planSettings.notifyMonthly); assertTrue(vm.planSettings.notifyPlans); assertTrue(vm.planSettings.notifyRate)
+        master.assertIsOn()
         ui.onNodeWithTag("notify_rate_switch").performScrollTo().performClick()
         assertFalse(vm.planSettings.notifyRate); assertTrue(vm.planSettings.notifyMonthly)
+        master.assertIsOff() // Partial must never look fully enabled.
+        master.performScrollTo().performClick()
+        master.assertIsOn()
+        assertTrue(vm.planSettings.notifyRate)
         ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
         assertFalse(vm.planSettings.notifyMonthly); assertTrue(vm.planSettings.notifyPlans)
         listOf("service_notification_switch", "notify_plans_switch").forEach { ui.onNodeWithTag(it).performScrollTo().assertExists() }

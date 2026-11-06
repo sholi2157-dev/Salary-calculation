@@ -303,8 +303,8 @@ fun KisApp(
             // Above the selection bar while choosing shifts, so it never covers its buttons.
             val above = if (history.selecting && pager.currentPage == 1) history.barHeight + 8.dp else navHeight
             Row(Modifier.align(Alignment.BottomCenter).padding(bottom = above, start = 16.dp, end = 16.dp)
-                .shadow(14.dp, RoundedCornerShape(99.dp), ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.25f))
-                .clip(RoundedCornerShape(16.dp)).background(c.bar).border(1.dp, if (m.kind == KisMessage.Kind.ERROR) c.danger.copy(alpha = 0.55f) else c.line, RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(KisRadius.pill)).background(c.bar.copy(alpha = 1f))
+                .border(1.dp, if (m.kind == KisMessage.Kind.ERROR) c.danger.copy(alpha = 0.55f) else c.line, RoundedCornerShape(KisRadius.pill))
                 .padding(start = 12.dp, end = 6.dp).heightIn(min = 48.dp)
                 .semantics { liveRegion = if (m.kind == KisMessage.Kind.ERROR) androidx.compose.ui.semantics.LiveRegionMode.Assertive else androidx.compose.ui.semantics.LiveRegionMode.Polite }.testTag("kis_message"),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -327,7 +327,11 @@ fun KisApp(
                     val page = @Composable {
                         KisEditorPage(viewModel, EntryDraft.fromJson(json), base, categories, entries, workers,
                             onClose = { editorJson = null; editorBaseId = null },
-                            onSaved = { text, undo -> if (undo != null) say(text, "ביטול", undo) else say(text) },
+                            onSaved = { text, undo ->
+                                // Return to the edited shift by ID; the observed entries supply its saved facts.
+                                detailId = editorBaseId
+                                if (undo != null) say(text, "ביטול", undo) else say(text)
+                            },
                             onDeleted = onDeleted, startInAi = editorAi)
                     }
                     // Editing is the same page as adding, shown as a framed pop-up over the app so it is clearly an edit.
@@ -350,7 +354,7 @@ fun KisApp(
         }
     }
 
-    detailId?.let { id -> entries.firstOrNull { it.id == id } }?.let { e ->
+    detailId?.takeIf { editorJson == null }?.let { id -> entries.firstOrNull { it.id == id } }?.let { e ->
         ShiftDetailSheet(e, categories, viewModel, onDismiss = { detailId = null }, onEdit = { openEdit(it) }, onDeleted = onDeleted, onMessage = { say(it) })
     }
     if (pendingBulk && history.selecting) {
