@@ -1,5 +1,5 @@
 // M-31: notifications per kind on the web, as in Android 2.2.3: the main switch turns all kinds on or off, each kind has
-// its own switch, the main one shows on while any kind is on, and the in-site reminders follow each kind. Synthetic data.
+// its own switch, the main one shows on only when every kind is on, and the in-site reminders follow each kind. Synthetic data.
 const assert = require('node:assert/strict'), http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const ROOT = path.resolve('public');
@@ -35,18 +35,23 @@ const server = http.createServer((q, r) => {
     stored: [Kis.store.local.notifyMonthly === true, Kis.store.local.notifyRate === true] }));
   assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'false', stored: [false, false] }, 'off by default on the web, as before');
   await page.click('[data-testid=notify-rate]');
-  assert.deepEqual(await state(), { all: 'true', monthly: 'false', rate: 'true', stored: [false, true] }, 'one kind alone; the main switch shows on');
+  assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'true', stored: [false, true] }, 'one kind alone; the main switch stays off');
+  await page.click('[data-testid=notify-all]');
+  assert.deepEqual(await state(), { all: 'true', monthly: 'true', rate: 'true', stored: [true, true] }, 'main on from partial enables every kind');
   await page.click('[data-testid=notify-all]');
   assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'false', stored: [false, false] }, 'main off turns every kind off');
   await page.click('[data-testid=notify-all]');
   assert.deepEqual(await state(), { all: 'true', monthly: 'true', rate: 'true', stored: [true, true] }, 'main on turns every kind on');
   await page.click('[data-testid=notify-monthly]');
-  assert.deepEqual(await state(), { all: 'true', monthly: 'false', rate: 'true', stored: [false, true] });
+  assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'true', stored: [false, true] });
   await page.reload(); await page.waitForSelector('[data-testid=home-hero]'); await open(); await page.waitForSelector('[data-testid=notify-rate]');
-  assert.deepEqual(await state(), { all: 'true', monthly: 'false', rate: 'true', stored: [false, true] }, 'kept after reload');
+  assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'true', stored: [false, true] }, 'kept after reload');
   // The reminders follow each kind: with only "תעריף חסר" on, no monthly recap reminder is produced.
   const kinds = await page.evaluate(() => { Kis.store.setLocal('lastRate', 0, true); Kis.store.setLocal('lastMonthly', null, true); return KisSettings.dueReminders(Kis).map(n => n.kind); });
   assert.ok(!kinds.includes('monthly'), 'monthly is off: ' + kinds);
+  await page.click('[data-testid=notify-rate]');
+  await page.click('[data-testid=notify-monthly]');
+  assert.deepEqual(await state(), { all: 'false', monthly: 'true', rate: 'false', stored: [true, false] }, 'monthly alone also leaves master off');
   assert.equal(await page.evaluate(() => JSON.stringify(Kis.store.data)), before, 'shifts and places are never touched');
   // The switches are labelled for screen readers.
   for (const t of ['notify-all', 'notify-monthly', 'notify-rate']) assert.ok(await page.getAttribute(`[data-testid=${t}]`, 'aria-label'));

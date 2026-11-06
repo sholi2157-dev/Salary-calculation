@@ -58,7 +58,7 @@ function detail(e) {
       ${e.notes ? `<p style="margin:0">${esc(e.notes)}</p>` : ''}
       ${e.passThrough > 0 ? `<p class="caption" style="margin:0" data-testid="detail-pass-through">החזר הוצאות ${esc(U().money(e.passThrough, e.currency))} · לא שלך${!e.isGroupShift && root.KisPay.employerDue(e) != null ? ` · <b>לקבל מהמעסיק ${esc(U().money(root.KisPay.employerDue(e), e.currency))}</b>` : ''}</p>` : ''}
       ${!pay && e.kind !== 'job' ? '<button class="btn ghost small" data-a="rate">השלמת תעריף</button>' : ''}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn ghost small" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small" data-a="share">${e.isGroupShift ? 'החלק שלי' : 'שיתוף'}</button><button class="btn ghost small" data-a="copy">העתקה</button><button class="btn ghost small" data-a="del" style="color:var(--danger)">מחיקה</button></div>
+      <div class="detail-actions"><button class="btn ghost small" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small" data-a="share">${e.isGroupShift ? 'החלק שלי' : 'שיתוף'}</button><button class="btn ghost small" data-a="copy">העתקה</button><button class="btn ghost small danger-text" data-a="del">מחיקה</button></div>
       <button class="btn small ${e.isPaid ? 'ghost' : 'primary'}" data-a="paid" data-testid="detail-paid">${e.isPaid ? 'שולם ✓ · לחיצה לביטול' : 'סימון כשולם'}</button>
       ${group.length ? `<div class="divider"></div><b class="label">${e.kind === 'job' ? 'הצוות' : 'הקבוצה'}</b>${sum ? `<div class="team-sum" data-testid="group-summary">
           <div class="row"><span class="grow">${e.kind === 'job' ? 'שלי' : 'ההכנסה שלי (כולל עמלה)'}</span><b>${moneyHtml(sum.myNet, e.currency)}</b></div>
@@ -69,7 +69,7 @@ function detail(e) {
         <div class="row"><button class="btn ghost small grow" data-a="employer">דוח למעסיק</button><button class="btn ghost small grow" data-a="employer-copy">העתקת דוח הצוות</button></div>
         ${group.map((w, i) => `<div style="display:grid;gap:6px"><div class="row" style="align-items:center"><span class="grow">${esc(w.name)}${e.kind === 'job' && w.amount != null ? '' : ' · ' + U().duration(w.hours) + ' ש׳'}${root.KisPay.workerPay(w, e) != null ? ' · ' + esc(U().money(root.KisPay.workerPay(w, e), e.currency)) : ''}</span><button class="chip" data-wp="${i}">${w.isPaid ? 'שולם ✓' : 'לא שולם'}</button></div><div class="row"><button class="btn ghost small grow" data-w="${i}">שיתוף לעובד</button><button class="btn ghost small grow" data-wc="${i}">העתקה</button></div></div>`).join('')}` : ''}`;
     const q = s => el.querySelector(s);
-    q('[data-a=edit]').onclick = () => { close(); root.KisEditor.open(app, { entry: e }); };
+    q('[data-a=edit]').onclick = () => { close(); root.KisEditor.open(app, { entry: e, onSaved: id => app.openDetail(id) }); };
     const shareMine = () => U().shareOrCopy(root.KisShare.entry(e, false, U().upcoming(e)), 'שיתוף משמרת');
     const copyMine = async () => { const t = root.KisShare.entry(e, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); };
     const shareEmployer = () => U().shareOrCopy(root.KisShare.employer(e, (store.local.name || '').trim() || null, false, U().upcoming(e)), 'סיכום לקבלן');
@@ -118,7 +118,7 @@ function groupDetailHtml(e, sum, group) {
       <div class="row strong"><span class="grow">לקבל מהמעסיק</span><b data-testid="group-employer-due">${m(sum.employerTotal)}</b></div></div>`
       : `<p class="caption" style="margin:0" data-testid="group-summary-missing">${job ? 'הסכומים יופיעו אחרי שיושלם הסכום שלך' : 'חסר תעריף לחלק מהקבוצה'}</p>`}
     ${!pay && !job ? '<button class="btn ghost small" data-a="rate">השלמת תעריף</button>' : ''}
-    <div class="gd-actions"><button class="btn ghost small" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small" data-a="reports" data-testid="detail-reports" aria-haspopup="dialog">שיתוף ▾</button><button class="btn ghost small danger-text" data-a="del" data-testid="detail-delete">מחיקה</button></div>
+    <div class="gd-actions detail-actions"><button class="btn ghost small" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small" data-a="reports" data-testid="detail-reports" aria-haspopup="dialog">שיתוף ▾</button><button class="btn ghost small danger-text" data-a="del" data-testid="detail-delete">מחיקה</button></div>
     <button class="btn small ${e.isPaid ? 'ghost' : 'primary'}" data-a="paid" data-testid="detail-paid">${e.isPaid ? 'שולם ✓ · לחיצה לביטול' : 'סימון כשולם'}</button>
     <div class="divider"></div><b class="label">${job ? 'הצוות' : 'הקבוצה'} · ${group.length}</b>
     <div class="gd-workers">${group.map((w, i) => { const p = P.workerPay(w, e);

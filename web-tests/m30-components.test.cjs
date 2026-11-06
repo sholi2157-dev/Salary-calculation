@@ -4,14 +4,14 @@
 const { test } = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const dir = path.join(__dirname, '..', 'web', 'kis'), css = fs.readFileSync(path.join(dir, 'kis.css'), 'utf8');
 const block = sel => { const i = css.indexOf(sel + ' {'); assert.ok(i >= 0, sel); return css.slice(i, css.indexOf('\n}', i)); };
-test('selected: chips, days, tabs and segments all use the selected-* tokens; dark never paints a solid white tile', () => {
+test('selected: chips, days and tabs use selected-*; segments use a filled accent; dark never paints a solid white tile', () => {
   for (const sel of [':root', ':root[data-theme="dark"]', ':root:not([data-theme="light"])']) {
     const b = block(sel);
     assert.match(b, /--pick-bg: var\(--selected-bg\)/, sel); assert.match(b, /--tab-on: var\(--selected-bg\)/, sel);
   }
   assert.match(block(':root[data-theme="dark"]'), /--selected-bg: #424853; --selected-ink: #EDF0F6; --selected-edge: #EDF0F6;/);
   assert.match(css, /\.chip\[aria-pressed="true"\], \.chip\.on \{ background: var\(--selected-bg\); color: var\(--selected-ink\); border: 2px solid var\(--selected-edge\); \}/);
-  assert.match(css, /\.seg button\[aria-pressed="true"\] \{ background: var\(--selected-bg\);[^}]*2px var\(--selected-edge\)/);
+  assert.match(css, /\.seg button\[aria-pressed="true"\] \{ background: var\(--accent\);[^}]*2px var\(--accent\)/);
 });
 test('buttons: three heights, none below 44px', () => {
   assert.match(css, /--btn-lg: 56px; --btn-md: 48px; --btn-sm: 44px;/);

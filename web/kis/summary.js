@@ -259,7 +259,7 @@ function archive(app) {
   const { store } = app, { esc } = U();
   const list = S().recapArchive(today()).map(scope => ({ scope, s: summaryOf(store, scope) })).filter(x => x.s.count > 0);
   U().sheet('recaps-sheet', (el, close) => {
-    el.innerHTML = `<div class="title-row"><h2>הסיכומים שלי</h2>${U().infoDot('הסיכומים שלי', 'סיכום חודשי נפתח ב-30 לחודש (ביום האחרון בחודש קצר יותר), מופיע בדף הבית עוד 4 ימים ואז נשמר כאן. הסיכום השנתי נפתח יחד עם דצמבר.')}</div>
+    el.innerHTML = `<div class="title-row"><h2>הסיכומים שלי</h2></div>
       ${list.length ? `<div class="list">${list.map(({ scope, s }) => `<button class="story-entry recap-row" data-scope="${scope}" data-testid="recap-${scope}"><span><b>${esc(recapTitle(scope))}</b><small>${s.count === 1 ? 'משמרת אחת' : s.count + ' משמרות'} · ${U().duration(s.hours)} שעות</small></span>${U().logo(30)}</button>`).join('')}</div>`
         : `<p class="caption" data-testid="recaps-empty">הסיכום הראשון יגיע ב-${Number(S().recapDay(S().FIRST_RECAP).slice(8))} ב${U().MONTHS[Number(S().FIRST_RECAP.slice(5)) - 1]}.</p>`}`;
     el.querySelectorAll('[data-scope]').forEach(b => b.onclick = () => { close(); story(app, b.dataset.scope); });

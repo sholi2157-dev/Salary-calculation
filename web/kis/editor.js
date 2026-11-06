@@ -231,7 +231,7 @@ function changeMode(d, mode) {
   return { ...d, mode };
 }
 
-function open(app, { entry = null, restore = null } = {}) {
+function open(app, { entry = null, restore = null, onSaved = null } = {}) {
   const { store } = app, base = entry;
   let d = restore || (base ? fromEntry(base) : newDraft(store));
   // A draft kept before 2.2 has no "team": it was a group when it had people (or was a group shift).
@@ -551,7 +551,7 @@ function open(app, { entry = null, restore = null } = {}) {
     if (unusual && !confirmedUnusual) { U().confirmSheet(`לשמור ${unusual}?`, 'זה יותר מהרגיל, אז כדאי לבדוק את השעות והתעריף.', 'שמירה', () => { confirmedUnusual = true; save(); }, false); return; }
     const row = toEntry(d, base);
     try {
-      if (base) { store.replaceEntry(base.id, row, base); close(true); U().haptic('success'); U().toast('השינויים נשמרו ✓', 'ביטול', () => store.replaceEntry(base.id, base)); }
+      if (base) { store.replaceEntry(base.id, row, base); close(true); U().haptic('success'); U().toast('השינויים נשמרו ✓', 'ביטול', () => store.replaceEntry(base.id, base)); onSaved?.(base.id); }
       else {
         const [id] = store.addEntries([row]); remember(d); close(true); U().haptic('success');
         U().toast(row.payKnown ? 'המשמרת נשמרה ✓' : 'נשמרה · התעריף יחכה להשלמה', 'ביטול', () => { const gone = store.data.entries.filter(e => e.id === id); store.update(x => { x.entries = x.entries.filter(e => e.id !== id); }); return gone; });

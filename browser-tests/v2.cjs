@@ -316,9 +316,7 @@ const seed = {
     assert.equal(titles[titles.length - 1], 'חשבון', 'the name and the account are last, together');
     assert.equal(await page.locator('.caption:visible').filter({ hasText: 'ובדפדפן הזה' }).count(), 0, 'no explanation text on the page');
     await page.click(tid('settings-open-גיבוי ונתונים'));
-    await page.click('[data-info-title="גיבוי ונתונים"]');
-    assert.match(await page.textContent(tid('info-sheet')), /נשמרים בו ובדפדפן הזה/);
-    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('[data-info-title], #page .info-dot').count(), 0, 'settings categories have no info icon');
     await page.click(tid('settings-open-עזרה'));
     await page.click(tid('replay-tour')); assert.equal(await page.textContent(tid('tour-progress')), '1 מתוך 6'); await page.click(tid('tour-skip'));
     await ctx.close();
