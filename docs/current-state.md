@@ -11,8 +11,26 @@ RC16 and 2.2.1, whose suspend `importBackup` returns Int. The test-only compatib
 bridge invokes the stable suspend JVM signature and reads either Int or the newer
 result's added count. The zero-added and exact snapshot/identity assertions remain.
 No production implementation, signing, package or version changes are needed.
-Signed rebuild and all device gates are pending; do not deliver the failed run's APK.
-Task plan and final local delivery evidence: `/workspace/apk-2.3/rc-delivery.md`.
+Signed run [42141259466](https://github.com/sholi2157-dev/Salary-calculation/actions/runs/42141259466)
+succeeded on source `927ab7c485b0b8ed0e7a6b72e0880c9cadaddc8d`:
+274 Debug and 223 Release tests, zero failures/errors/skips; permanent signing identity;
+direct rich 2.2.1/code46 upgrade; RC16 restart/updater → 2.2.1 → candidate with exact
+snapshot retention, UI/keyboard/currency/plan/notification gates; fresh onboarding and
+cold reopen. All three crash logs are empty. Actual CI logs and artifact evidence inspected.
+Artifact `salary-2.3.0-code49-candidate` ID `13468034193` was downloaded and its APK
+independently verified locally with apksigner/aapt2 (v2 signature, non-debug signer,
+permanent package, versionCode49/versionName2.3.0).
+
+- APK SHA-256: `64a57f815778412e3b3d235973b7ef56e86ed7ea377d2f99c375d7f87629d478`.
+- Certificate SHA-256: `ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220`.
+- Owner delivery: `/workspace/apk-2.3/Salary-2.3.0-code49.apk`;
+  full local evidence: `/workspace/apk-2.3/rc-delivery.md`.
+- Back up 2.2.1 first, then install as an update without uninstalling or clearing data.
+  Physical owner-phone review remains. No live account-sync certification is claimed.
+
+No merge to release was needed; the release branch remains `c8649c2`. No public
+publication, deployment, GitHub Release or update-feed mutation occurred.
+This completion update changes documentation only; the APK source is pinned above.
 
 # Current state — 2026-11-05 (release 2.3.0 integration)
 
