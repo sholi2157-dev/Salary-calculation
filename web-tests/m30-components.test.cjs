@@ -39,6 +39,7 @@ test('icons: no font arrows or check marks drawn as icons in the interface', () 
 });
 test('settings: an action in a row is an action chip (chevron), not a filter chip', () => {
   const src = fs.readFileSync(path.join(dir, 'settings.js'), 'utf8');
-  for (const a of ['feedback', 'places', 'series', 'recaps', 'android-download']) assert.match(src, new RegExp(`class="chip act" data-a="${a}"`), a);
+  // FB23-F1: feedback is the feedback card's own form, so it has no action chip any more.
+  for (const a of ['places', 'series', 'recaps', 'android-download']) assert.match(src, new RegExp(`class="chip act" data-a="${a}"`), a);
   assert.match(css, /\.chip\.act::after \{/);
 });

@@ -2,9 +2,21 @@
 (function (root) {
 'use strict';
 const U = () => root.KisUi;
-/** The open category on a phone (M-31, as in Android 2.2.3): null shows the list of categories. */
+/**
+ * FB23-F1: on a phone Settings is one page of category cards; a tap on a card's header opens its content right under it, in
+ * the same card (one open at a time; a second tap folds it). No page of its own and no way back to find. A computer shows
+ * every category open, with its heading. [section] is the open card (null: all folded).
+ */
 let section = null;
-const group = (title, body, info) => `<section class="set-group${section === title ? ' on' : ''}" data-group="${title}"><div class="title-row" style="margin:22px 0 10px"><h2 class="section-title" style="margin:0;font:1.375rem/1.75rem var(--display)" data-testid="settings-${title}">${title}</h2>${info ? U().infoDot(title, info) : ''}</div><div class="card" style="display:grid;gap:4px;padding:6px 16px">${body}</div></section>`;
+const CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+let subs = {};
+const group = (title, body, info, sub = subs[title]) => {
+  const on = section === title, id = 'set-body-' + title.replace(/\s+/g, '-');
+  return `<section class="set-group${on ? ' on' : ''}" data-group="${title}">
+    <div class="set-head-row"><button class="set-row set-head" data-section="${title}" aria-expanded="${on}" aria-controls="${id}" data-testid="settings-open-${title}"><span class="grow"><b>${title}</b>${sub ? `<small>${U().esc(sub)}</small>` : ''}</span>${CHEVRON}</button>${info ? U().infoDot(title, info) : ''}</div>
+    <div class="title-row set-title"><h2 class="section-title" style="margin:0;font:1.375rem/1.75rem var(--display)" data-testid="settings-${title}">${title}</h2>${info ? U().infoDot(title, info) : ''}</div>
+    <div class="card set-body" id="${id}">${body}</div></section>`;
+};
 /** The kinds of in-site reminder (M-31), titles and explanations as in the Android app: [stored key, title, info, testid]. */
 const NOTIFY_KINDS = [
   ['notifyMonthly', 'הסיכום החודשי', 'מה-30 לכל חודש, כשיש משמרות בחודש.', 'notify-monthly'],
@@ -17,18 +29,17 @@ function render(el, app) {
   const { store } = app, { esc } = U(), prefs = store.data.webPreferences, def = root.WorkCategories.defaultName(store.data.categories, prefs);
   const theme = store.local.theme || 'system';
   const acct = root.KisAccount.state.user;
-  // A phone shows the categories as a list; a tap opens one category with a way back. A computer shows them all.
-  const cats = [['עבודה', def ? `מקום ברירת מחדל: ${def}` : 'מקומות, מטבע ומשמרות קבועות'],
+  // The short line under each card's name on a phone.
+  subs = Object.fromEntries([['עבודה', def ? `מקום ברירת מחדל: ${def}` : 'מקומות, מטבע ומשמרות קבועות'],
     ['מראה ותחושה', ({ system: 'אוטומטי', light: 'בהיר', dark: 'כהה' })[theme] || 'אוטומטי'], ['הסיכומים שלי', 'כל הסיכומים החודשיים והשנתיים'],
     ['התראות', NOTIFY_KINDS.some(([k]) => store.local[k] === true) ? 'פועלות' : 'כבויות'], ['גיבוי ונתונים', 'גיבוי, ייבוא ואקסל'],
-    ['עזרה', 'האפליקציה לאנדרואיד וההדרכה'], ['משוב ותקלות', 'דיווח על תקלה או הצעה'], ['חשבון', acct ? (acct.email || 'מחובר') : 'השם שלך · לא מחובר']];
+    ['עזרה', 'האפליקציה לאנדרואיד וההדרכה'], ['משוב ותקלות', 'דיווח על תקלה או הצעה'], ['חשבון', acct ? (acct.email || 'מחובר') : 'השם שלך · לא מחובר']]);
   el.innerHTML = `<h1 class="page-title">הגדרות</h1>
-  ${section ? '' : `<nav class="set-list" aria-label="קטגוריות ההגדרות">${cats.map(([t, sub]) => `<button class="set-row" data-section="${t}" data-testid="settings-open-${t}"><span class="grow"><b>${t}</b><small>${esc(sub)}</small></span>${U().ICON.next}</button>`).join('')}</nav>`}
-  <div class="set-groups" data-open="${section ? esc(section) : ''}">
-  ${section ? `<button class="set-back" data-a="settings-back" data-testid="settings-back">${U().ICON.prev}<span>הגדרות</span></button>` : ''}
+  <div class="set-groups">
   ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip act" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר לבד במשמרת חדשה')}
     <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', null, `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`, 'כל משמרת שומרת את המטבע שלה')}
-    <div class="divider"></div>${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip act" data-a="series" data-testid="series-button">ניהול</button>', 'נוצרות במסך ההוספה ונרשמות לבד')}`)}
+    <div class="divider"></div>${rowHtml('רישום אוטומטי של משמרות קבועות', null, `<button class="switch" role="switch" aria-checked="${store.local.autoConfirm !== false}" data-a="auto" aria-label="רישום אוטומטי" data-testid="auto-confirm"></button>`, 'כשהזמן נגמר היא נרשמת לבד. תמיד אפשר לבטל')}
+    ${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip act" data-a="series" data-testid="series-button">ניהול</button>', 'נוצרות במסך ההוספה')}`)}
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
   ${group('הסיכומים שלי', rowHtml('כל הסיכומים', null, '<button class="chip act" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל סיכום שכבר נפתח'))}
@@ -38,7 +49,7 @@ function render(el, app) {
   ${group('גיבוי ונתונים', `<div class="row backup-row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
     <div class="row backup-row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv" data-testid="csv-export">טבלה לאקסל (CSV)</button><button class="btn small outline grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'כשמחוברים לחשבון, הנתונים נשמרים בו ובדפדפן הזה. גיבוי לקובץ הוא העתק נוסף בשבילך, וגיבוי מהאפליקציה עובר לכאן ולהפך. טבלה לאקסל היא לקריאה ולחישובים, לא גיבוי: היא לא שומרת הכול (למשל עובדי קבוצה).')}
   ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip act" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip act" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
-  ${group('משוב ותקלות', rowHtml('דיווח על תקלה או הצעה', null, '<button class="chip act" data-a="feedback" data-testid="feedback-button">כתיבה</button>'))}
+  ${group('משוב ותקלות', '<div class="feedback-inline" data-testid="feedback-inline" style="display:grid;gap:10px;padding:10px 0"></div>')}
   ${group('חשבון', `<div class="row" style="padding:10px 0 4px"><input class="input grow" style="min-width:0" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input grow" style="min-width:0" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>
     <div data-testid="account-card">${root.KisAccount.settingsHtml()}</div>
@@ -47,9 +58,15 @@ function render(el, app) {
   </div><div class="row set-brand" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי</span></div>`;
 
   const q = s => el.querySelector(s);
-  el.querySelectorAll('[data-section]').forEach(b => b.onclick = () => { section = b.dataset.section; render(el, app); window.scrollTo({ top: 0 });
-    el.querySelector('.set-group.on h2')?.setAttribute('tabindex', '-1'); el.querySelector('.set-group.on h2')?.focus({ preventScroll: true }); });
-  q('[data-a=settings-back]')?.addEventListener('click', () => { const was = section; section = null; render(el, app); el.querySelector(`[data-section="${was}"]`)?.focus(); });
+  // A tap opens that card in place (folding any other) or folds it; focus stays on its header, which scrolls into view.
+  el.querySelectorAll('[data-section]').forEach(b => b.onclick = () => {
+    const t = b.dataset.section; section = section === t ? null : t; render(el, app);
+    const head = el.querySelector(`[data-section="${t}"]`); head?.focus({ preventScroll: true }); head?.scrollIntoView({ block: 'nearest' });
+  });
+  // Opened from elsewhere (the bell's "התראות"): that card is in view.
+  if (section) el.querySelector('.set-group.on')?.scrollIntoView({ block: 'nearest' });
+  // The feedback form is the feedback card's content (no second step); sending folds the card.
+  feedbackForm(q('[data-testid=feedback-inline]'), app, () => { section = null; render(el, app); });
   root.KisAccount.bindSettings(el);
   // Saved as typed, without redrawing the page (no lost taps or focus).
   q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
@@ -79,7 +96,7 @@ function render(el, app) {
   q('[data-a=share-backup]').onclick = () => U().shareOrCopy(backupText(store), 'גיבוי');
   q('[data-a=csv]').onclick = () => download('salary.csv', root.KisShare.csv(store.data.entries.filter(e => !U().upcoming(e))), 'text/csv');
   q('[data-a=import]').onclick = () => importSheet(app);
-  q('[data-a=feedback]').onclick = () => feedbackSheet(app);
+  q('[data-a=auto]').onclick = e => { store.setLocal('autoConfirm', store.local.autoConfirm === false, true); e.currentTarget.setAttribute('aria-checked', store.local.autoConfirm !== false); };
 }
 
 function download(name, text, type) { const url = URL.createObjectURL(new Blob([text], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
@@ -491,11 +508,13 @@ async function shrink(blob) {
   return { name: 'screenshot.jpg', mime: 'image/jpeg', base64: c.toDataURL('image/jpeg', 0.82).split(',')[1] };
 }
 
-function feedbackSheet(app) {
+function feedbackSheet(app) { U().sheet('feedback-sheet', (el, close) => feedbackForm(el, app, close, true)); }
+/** The feedback form, drawn into [el]: in its Settings card (FB23-F1) or in a sheet. [done] runs after a successful send. */
+function feedbackForm(el, app, close, heading = false) {
   const d = feedbackDraft;
-  U().sheet('feedback-sheet', (el, close) => {
+  {
     const relay = !!FEEDBACK_URL;
-    el.innerHTML = `<h2>משוב ותקלות</h2>
+    el.innerHTML = `${heading ? '<h2>משוב ותקלות</h2>' : ''}
       <div class="row" style="gap:6px">${['תקלה', 'הצעה', 'הערה'].map(k => `<button class="chip" aria-pressed="${d.kind === k}" data-kind="${k}">${k}</button>`).join('')}</div>
       <textarea class="input" rows="4" data-f="msg" placeholder="מה קרה, או מה ההצעה?" aria-label="תיאור" data-testid="feedback-message"></textarea>
       ${relay ? `<label class="btn ghost small" style="position:relative" data-f="pick">צירוף צילום מסך<input type="file" accept="image/*" data-f="img" style="position:absolute;inset:0;opacity:0" aria-label="צירוף צילום מסך"></label>
@@ -532,7 +551,7 @@ function feedbackSheet(app) {
       send.textContent = 'שליחה'; sync();
       if (ok) { d.message = ''; d.image = null; close(); U().toast('המשוב נשלח. תודה!'); } else q('[data-f=err]').hidden = false;
     };
-  });
+  }
 }
 
 root.KisSettings = { open: name => { section = name || null; }, render, recoveryPanel, bindRecovery, recoverySheet, feedbackSheet, feedbackReport, event, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };

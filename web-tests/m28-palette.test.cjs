@@ -14,7 +14,7 @@ const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) 
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 const TEXT = [['ink', 'bg'], ['ink', 'surface'], ['muted', 'surface'], ['muted', 'bg'], ['ink', 'sunk'], ['paid', 'bg'], ['paid', 'surface'],
   ['pending', 'surface'], ['pending', 'pending-soft'], ['danger', 'surface'], ['danger', 'bg'], ['on-danger', 'danger'], ['accent-ink', 'accent'],
-  ['on-paid', 'paid'], ['on-ink', 'ink'], ['control-knob', 'control-on'], ['nav-on-ink', 'nav-on']];
+  ['on-paid', 'paid'], ['on-ink', 'ink'], ['control-knob', 'control-on'], ['nav-on-ink', 'nav-on'], ['on-ink', 'ink-fill']];
 for (const [name, t] of [['light', light], ['dark', dark]]) {
   test(`${name}: text pairs reach 4.5:1`, () => {
     for (const [fg, bg] of TEXT) assert.ok(ratio(hex(t, fg), hex(t, bg)) >= 4.5, `${fg} on ${bg}: ${ratio(hex(t, fg), hex(t, bg)).toFixed(2)}`);
@@ -26,7 +26,10 @@ for (const [name, t] of [['light', light], ['dark', dark]]) {
 test('dark primary button is #EDF0F6 with dark text (D-4), and the dark prefers-color-scheme block matches', () => {
   assert.equal(hex(dark, 'ink').toUpperCase(), '#EDF0F6');
   assert.equal(hex(dark, 'on-ink').toUpperCase(), '#0F1216');
-  assert.match(css, /\.btn\.primary \{ background: var\(--ink\); color: var\(--on-ink\); \}/);
+  // FB23-F2: filled actions use --ink-fill, which is the ink itself in dark (D-4 unchanged) and a softer slate in light.
+  assert.match(css, /\.btn\.primary \{ background: var\(--ink-fill\); color: var\(--on-ink\); \}/);
+  assert.equal(hex(dark, 'ink-fill').toUpperCase(), '#EDF0F6');
+  assert.ok(lum(hex(light, 'ink-fill')) > lum(hex(light, 'ink')), 'light fills are softer than the text ink');
   const media = block(':root:not([data-theme="light"])');
   for (const k of Object.keys(block(':root[data-theme="dark"]'))) assert.equal(media[k], block(':root[data-theme="dark"]')[k], k);
 });

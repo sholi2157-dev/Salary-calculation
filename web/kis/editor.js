@@ -8,7 +8,7 @@
 'use strict';
 const U = () => root.KisUi, R = () => root.KisRules;
 const DRAFT = 'kis_web_draft_v1';
-/** The tabs. A group shift is not a tab: the "משמרת קבוצתית" switch gives the same tabs with people. */
+/** The tabs. A group shift is not a tab: the "קבוצה" button at the top gives the same tabs with people. */
 const MODES = [['CLOCK', 'שעון'], ['HOURS', 'ידני'], ['JOB', 'קבלנות']];
 const num = s => R().inputNumber(s);
 const clean = v => v == null ? '' : String(Math.round(v * 100) / 100);
@@ -140,21 +140,11 @@ function withTab(d, t) {
   const own = changeMode(d.mode === 'GROUP' ? { ...d, mode: tabOf(d) } : d, t);
   return d.team && t !== 'JOB' ? { ...own, mode: 'GROUP', start: t === 'HOURS' ? null : own.start } : own;
 }
-/** The "משמרת קבוצתית" switch: a group shift keeps the tab; back to the user's own shift drops the people. */
+/** The "קבוצה" button: a group shift keeps the tab; back to the user's own shift drops the people. */
 function withTeam(d, on) {
   if (!!d.team === on) return d;
   if (on) return withTab({ ...d, team: true }, tabOf(d));
   return { ...d, mode: tabOf(d), team: false, workers: [], separateRates: false, employerRate: '', workerRate: '', bonusTarget: 'ME', teamSameRate: true };
-}
-/**
- * R-33: on/off for a group shift is a labelled switch under the tabs (the same switch as "חוזרת כל שבוע"), where the kind of
- * record is chosen. It was a "קבוצה" button in the header, in the place where an edit has "מחיקה", and read as an action.
- * New shifts only, as before.
- */
-function teamSwitch(d) {
-  const label = 'משמרת קבוצתית';
-  return `<div class="row team-row" data-testid="team-card"><div class="grow title-row"><b class="label">${label}</b>${U().infoDot(label, 'רושמים גם את מי שעבד איתך.')}</div>
-    <button class="switch" role="switch" aria-checked="${!!d.team}" aria-label="${label}" data-a="team" data-testid="editor-team"></button></div>`;
 }
 function evaluate(d) {
   const clockish = d.mode === 'CLOCK' || (d.mode === 'GROUP' && d.start != null);
@@ -386,10 +376,9 @@ function open(app, { entry = null, restore = null } = {}) {
     const top = host.querySelector('[data-top]');
     top.innerHTML = `
       <div class="top-row"><button class="pill" data-a="close" data-testid="editor-close">${base ? 'סגירה' : 'ביטול'}</button><h1>${base ? (d.team ? 'עריכת משמרת קבוצתית' : 'עריכת משמרת') : d.team ? 'משמרת קבוצתית' : 'משמרת חדשה'}</h1>
-        ${base ? '<button class="pill" data-a="delete" data-testid="editor-delete">מחיקה</button>' : '<span class="pill" aria-hidden="true" style="visibility:hidden">ביטול</span>'}</div>
+        ${base ? '<button class="pill" data-a="delete" data-testid="editor-delete">מחיקה</button>' : `<button class="pill team-pill" data-a="team" aria-pressed="${!!d.team}" data-testid="editor-team">${U().ICON.people || ''}קבוצה</button>`}</div>
       ${base ? `<div class="caption" data-testid="was-banner" style="background:color-mix(in srgb,var(--ink) 8%,transparent);border-radius:10px;padding:6px 10px">${changed() ? '<span class="tag warn">שונה</span> ' : ''}לפני: ${esc(U().dayLabel(base.date))} · ${esc(U().timeLabel(base))} · ${root.KisPay.pay(base) != null ? esc(U().money(base.totalEarnings, base.currency)) : base.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</div>` : ''}
       <div class="modes" role="tablist" aria-label="סוג הרישום">${MODES.map(([m, l]) => `<button role="tab" aria-selected="${tabOf(d) === m}" aria-pressed="${tabOf(d) === m}" data-mode="${m}" data-testid="mode-${m.toLowerCase()}">${l}</button>`).join('')}</div>
-      ${base ? '' : teamSwitch(d)}
       <div class="places"><button data-a="add-place" data-testid="add-place">+ מקום</button>${cats.map(x => `<button aria-pressed="${x.name === d.category}" data-cat="${esc(x.name)}" data-testid="place-${esc(x.name)}">${esc(x.name)}</button>`).join('')}</div>
       ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">${teamJob(d) ? 'הסכום שלך בלבד' : 'הסכום שהתקבל'} (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount" ${teamJob(d) && !sameRate(d) ? 'placeholder="רק ארגנתי את הצוות? אפשר 0"' : ''}></label>
           <div>${durationControl(true)}</div></div>
@@ -665,5 +654,5 @@ function rulerBind(host, d, select, change) {
 }
 function pendingDraft(storage) { try { const d = JSON.parse(storage.getItem(DRAFT) || 'null'); return d && typeof d === 'object' && d.mode ? d : null; } catch { return null; } }
 
-root.KisEditor = { open, rulerLayout, toEntry, withBonusTarget, fromEntry, evaluate, newDraft, withTab, withTeam, teamSwitch, tabOf, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, breakInput, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
+root.KisEditor = { open, rulerLayout, toEntry, withBonusTarget, fromEntry, evaluate, newDraft, withTab, withTeam, tabOf, suggestStart, pendingDraft, DRAFT, typeTime, typeTimeOrNull, parseTime, timeDigits, defaultStart, DEFAULT_MINUTES, breakInput, durationHours, durationEdit, durationDisplay, durationDigits, parseDuration, changeMode };
 })(globalThis);

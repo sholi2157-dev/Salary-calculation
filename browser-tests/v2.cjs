@@ -306,19 +306,20 @@ const seed = {
     await shot(page, 'notifications'); await page.click(tid('notifications-settings'));
     assert.equal(await page.locator(tid('home-bell-dot')).count(), 0, 'opened means seen');
     // Settings: one notifications switch; the name and the account last, together.
-    assert.ok(await page.isVisible(tid('settings-התראות')));
+    assert.ok(await page.isVisible('[data-group="התראות"].on [data-testid=notify-all]'), 'the bell opened the התראות card');
     await page.click(tid('notify-all')); assert.equal(await page.getAttribute(tid('notify-all'), 'aria-checked'), 'true');
-    // M-31: a phone shows one category at a time; the bell's link opened 'התראות'.
-    await page.click(tid('settings-back')); await page.click(tid('settings-open-חשבון'));
+    // FB23-F1: a phone opens one card at a time, in place; opening 'חשבון' folds 'התראות'.
+    await page.click(tid('settings-open-חשבון'));
+    assert.equal(await page.isVisible(tid('notify-all')), false, 'one card open at a time');
     assert.equal(await page.inputValue(tid('profile-name')), 'שולי'); assert.equal(await page.inputValue(tid('profile-last-name')), 'כהן');
     const titles = await page.$$eval('.section-title', n => n.map(x => x.textContent));
     assert.equal(titles[titles.length - 1], 'חשבון', 'the name and the account are last, together');
     assert.equal(await page.locator('.caption:visible').filter({ hasText: 'ובדפדפן הזה' }).count(), 0, 'no explanation text on the page');
-    await page.click(tid('settings-back')); await page.click(tid('settings-open-גיבוי ונתונים'));
+    await page.click(tid('settings-open-גיבוי ונתונים'));
     await page.click('[data-info-title="גיבוי ונתונים"]');
     assert.match(await page.textContent(tid('info-sheet')), /נשמרים בו ובדפדפן הזה/);
     await page.keyboard.press('Escape');
-    await page.click(tid('settings-back')); await page.click(tid('settings-open-עזרה'));
+    await page.click(tid('settings-open-עזרה'));
     await page.click(tid('replay-tour')); assert.equal(await page.textContent(tid('tour-progress')), '1 מתוך 6'); await page.click(tid('tour-skip'));
     await ctx.close();
   }

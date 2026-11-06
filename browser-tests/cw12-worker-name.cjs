@@ -7,7 +7,7 @@ await c.addInitScript(d=>{if(!sessionStorage.getItem('s')){sessionStorage.setIte
 const p=await c.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
 await p.goto('http://127.0.0.1:'+s.address().port+'/');await p.waitForSelector('[data-testid=home-hero]');
 await p.evaluate(()=>window.Kis.openNew()); await p.waitForTimeout(300);
-await p.click('[data-mode="HOURS"]'); await p.click('[data-testid="editor-team"]'); await p.waitForTimeout(200);
+await p.click('[data-mode="HOURS"]'); await p.getByText('קבוצה').first().click(); await p.waitForTimeout(200);
 await p.click('[data-testid=add-worker]'); await p.waitForTimeout(200);
 const save='[data-testid=save-shift]'; assert.equal(await p.isDisabled(save), true, 'nameless worker blocks save');
 await p.locator('[data-w$=":name"]').first().type('דני'); await p.waitForTimeout(200);

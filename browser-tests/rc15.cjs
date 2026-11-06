@@ -102,8 +102,8 @@ async function section(p, name) { await p.click(tid('tab-settings')); const b = 
    assert.equal(row.currency, '₪'); assert.equal(row.hourlyRate, 37); assert.equal(row.category, 'ללא מטבע'); assert.ok(Math.abs(row.hours - 1) < 0.05, `hours ${row.hours}`);
    assert.equal(await timer(p), null);
 
-   // Feedback: Enter makes a new line; the sheet stays open.
-   await section(p, 'משוב ותקלות'); await p.click(tid('feedback-button'));
+   // Feedback: the card shows the form at once (FB23-F1); Enter makes a new line and the form stays.
+   await section(p, 'משוב ותקלות');
    const msg = p.locator(tid('feedback-message'));
    await msg.fill('שורה ראשונה'); await msg.press('End'); await msg.press('Enter'); await msg.pressSequentially('שורה שנייה');
    assert.equal(await msg.inputValue(), 'שורה ראשונה\nשורה שנייה');

@@ -16,8 +16,9 @@ test('places: the handle is a button and arrow keys move a place', () => {
   assert.match(settings, /<button type="button" class="grip" data-grip data-move=/);
   assert.match(settings, /e\.key === 'ArrowUp' \? -1 : e\.key === 'ArrowDown' \? 1 : 0/);
 });
-test('empty states: no auto-record switch without a series; no copy of 0 shifts', () => {
-  assert.match(read('plans.js'), /\$\{store\.plans\.series\.length \? `<div class="row" style="align-items:center"><div class="grow title-row"><div class="label">רישום אוטומטי/);
+test('empty states: auto-record lives on the Work card, not in the series sheet (FB23-F4); no copy of 0 shifts', () => {
+  assert.doesNotMatch(read('plans.js'), /data-testid="auto-confirm"/);
+  assert.match(settings, /rowHtml\('רישום אוטומטי של משמרות קבועות'[^\n]*data-testid="auto-confirm"/);
   assert.match(read('history.js'), /data-testid="history-copy" \$\{rows\.length \? '' : 'disabled'\}/);
 });
 test('editor breaks wrap; one page width on a computer; message action is not the brand colour', () => {
