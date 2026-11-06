@@ -11,7 +11,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** The add page: a shift is the user's own unless "משמרת קבוצתית" is on; the same tabs then come with the people who worked. */
+/** The add page: a shift is the user's own unless "קבוצה" is on; the same tabs then come with the people who worked. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], manifest = Config.NONE)
 class V2PersonalGroupTest {

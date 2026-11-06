@@ -50,8 +50,6 @@ class DistributionUiTest {
         ui.onNodeWithTag("editor_more").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("בדיקת טיוטה")
         for (mode in listOf("hours", "job", "group", "clock")) {
-            // The group switch folds away with the places while the keyboard is open (R-33).
-            if (mode == "group") { Espresso.closeSoftKeyboard(); ui.waitForIdle() }
             ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performClick()
             ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
             snap("v2-add-$mode")
