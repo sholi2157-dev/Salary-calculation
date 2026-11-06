@@ -155,7 +155,7 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
         }
         if (entry.isGroupShift) group()
         Row(Modifier.fillMaxWidth().coachTarget(CoachTarget.SHARE).testTag("entry_actions_${entry.id}"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KisAction("עריכה", Icons.Outlined.Edit, onEdit, Modifier.weight(1f), primary = true, tag = "edit_entry_btn_${entry.id}")
+            KisAction("עריכה", Icons.Outlined.Edit, onEdit, Modifier.weight(1f), tag = "edit_entry_btn_${entry.id}")
             // A group shift has every report (its own part too) under the team's "שיתוף" (design decision B).
             if (!entry.isGroupShift) {
                 KisAction("שיתוף", Icons.Outlined.Share, onShare, Modifier.weight(1f), tag = "share_entry_btn_${entry.id}")
