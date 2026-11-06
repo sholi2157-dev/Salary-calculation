@@ -13,6 +13,8 @@ import java.security.MessageDigest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -59,7 +61,7 @@ class DistributionUpdateTest {
             File(context.getExternalFilesDir(null), "$stage-before.json").writeText(dao.exportSnapshot())
             assertEquals(3, dao.getEntriesList().size)
             val old = WorkBackup.decode(evidence.getString("snapshot", null)!!)
-            assertEquals(0, dao.importBackup(old).added)
+            assertEquals(0, importedCount(dao, old))
             assertEquals(evidence.getString("snapshot", null), dao.exportSnapshot())
             if (stage == "updater") {
                 val candidateFile = File(context.getExternalFilesDir(null), "candidate-b.apk")
@@ -114,5 +116,16 @@ class DistributionUpdateTest {
                 File(context.getExternalFilesDir(null), "verify-after-edit.json").writeText(dao.exportSnapshot())
             } else assertEquals("restart", stage)
         }
+    }
+
+    // This test APK also runs inside RC16 and 2.2.1: their importBackup returns Int,
+    // while 2.3 returns ImportResult, a class those installed APKs do not contain.
+    // Reflect across the stable suspend JVM signature without linking the new result type.
+    private suspend fun importedCount(dao: WorkDao, backup: WorkBackup.Contents): Int {
+        val result = suspendCoroutineUninterceptedOrReturn<Any> { continuation ->
+            WorkDao::class.java.getMethod("importBackup", WorkBackup.Contents::class.java, Continuation::class.java)
+                .invoke(dao, backup, continuation)
+        }
+        return if (result is Int) result else result.javaClass.getMethod("getAdded").invoke(result) as Int
     }
 }
