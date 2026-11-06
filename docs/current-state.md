@@ -1,3 +1,19 @@
+# Signed 2.3.0 RC recovery — 2026-11-06
+
+Owner authorized a signed phone-test candidate only on `codex/2.3-signed-rc`, based on
+`release/2.3-android` at `c8649c234d7fc5f818688218d44e666e4fbfaf68`.
+Keep workflow RC_CODE=49, RC_NAME=2.3.0 and artifact `salary-2.3.0-code49-candidate`.
+No publishing, GitHub Release, update-feed changes or protected-branch changes.
+
+Run 42138632366 passed signing, identity and the direct rich 2.2.1 upgrade, but failed
+the RC16 restart test: the new test APK linked `WorkDao.ImportResult`, absent from
+RC16 and 2.2.1, whose suspend `importBackup` returns Int. The test-only compatibility
+bridge invokes the stable suspend JVM signature and reads either Int or the newer
+result's added count. The zero-added and exact snapshot/identity assertions remain.
+No production implementation, signing, package or version changes are needed.
+Signed rebuild and all device gates are pending; do not deliver the failed run's APK.
+Task plan and final local delivery evidence: `/workspace/apk-2.3/rc-delivery.md`.
+
 # Current state — 2026-11-05 (release 2.3.0 integration)
 
 This section supersedes the historical release and branch notes below. The current owner request
