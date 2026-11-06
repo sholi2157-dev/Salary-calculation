@@ -317,4 +317,12 @@ fun MainAppContent(
     if (askNotifications) com.example.ui.kis.NotificationsPrompt(
         onAllow = { plan.permissionAsked = true; askNotifications = false; permission.launch(android.Manifest.permission.POST_NOTIFICATIONS) },
         onLater = { plan.permissionAsked = true; askNotifications = false })
+    // FB23-F11: once after an update, the main highlights of this version (not after a fresh install).
+    var whatsNew by remember { mutableStateOf<com.example.ui.kis.WhatsNew.Note?>(null) }
+    LaunchedEffect(Unit) { whatsNew = com.example.ui.kis.WhatsNew.pending(context) }
+    whatsNew?.let { note ->
+        if (!launching && !onboarding.active && !askNotifications) com.example.ui.kis.WhatsNewSheet(note) {
+            com.example.ui.kis.WhatsNew.seen(context); whatsNew = null
+        }
+    }
 }

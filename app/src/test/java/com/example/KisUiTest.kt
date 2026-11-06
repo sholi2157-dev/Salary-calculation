@@ -895,27 +895,30 @@ class KisUiTest {
     @Test fun settingsSectionsAndThemeChoice() {
         val vm = model()
         lateinit var settings: KisSettings
+        var recaps = false
         ui.setContent {
             settings = rememberKisSettings()
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
+                KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}, onRecaps = { recaps = true }) }
             }
         }
-        // The list shows only the categories, in their order, each with its info dot; a tap opens its own page.
+        // FB23-F1: one page of category cards, in their order, each with its info dot; a tap opens the card in place.
         listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "הסיכומים שלי", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
             ui.onNodeWithTag("settings_info_$it", useUnmergedTree = true).assertExists()
         }
         ui.onNodeWithTag("theme_LIGHT").assertDoesNotExist()
+        ui.onNodeWithTag("settings_back").assertDoesNotExist()
         shot("settings-list")
         fun open(section: String) {
             val click = androidx.compose.ui.semantics.SemanticsActions.OnClick
-            if (ui.onAllNodesWithTag("settings_back").fetchSemanticsNodes().isNotEmpty()) ui.onNodeWithTag("settings_back").performSemanticsAction(click)
             ui.onNodeWithTag("settings_section_$section").performScrollTo().performSemanticsAction(click)
-            ui.onNodeWithTag("settings_page_title").assertTextEquals(section)
+            ui.onNodeWithTag("settings_page_$section").assertExists()
         }
         open("מראה ותחושה")
-        ui.onNodeWithTag("settings_section_עבודה").assertDoesNotExist()
+        // In place: the other headers stay on the same page, and only one card is open at a time.
+        ui.onNodeWithTag("settings_section_עבודה").assertExists()
+        ui.onNodeWithTag("settings_page_עבודה").assertDoesNotExist()
         ui.onNodeWithTag("theme_LIGHT").performScrollTo().performClick()
         assertEquals(ThemeChoice.LIGHT, settings.theme)
         shot("settings-light")
@@ -944,18 +947,28 @@ class KisUiTest {
         ui.onNodeWithTag("profile_last_name").performScrollTo().performTextReplacement("כהן")
         assertEquals("שולי", settings.name)
         assertEquals("כהן", settings.lastName)
-        // Weekly plans live here (device-only settings).
+        // Weekly plans (device-only settings): FB23-F4 puts the auto-register switch on the Work card itself, no sheet.
         open("עבודה")
-        ui.onNodeWithTag("series_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
-        ui.onNodeWithTag("auto_confirm_switch").performClick()
+        ui.onNodeWithTag("settings_page_חשבון").assertDoesNotExist()
+        ui.onNodeWithTag("auto_confirm_switch").performScrollTo().performClick()
         assertFalse(vm.planSettings.autoConfirm)
         ui.onNodeWithTag("auto_confirm_switch").performClick()
         assertTrue(vm.planSettings.autoConfirm)
-        // Feedback is the first section; its row unfolds the form in place.
+        ui.onNodeWithTag("series_sheet").assertDoesNotExist()
+        // Feedback is the first card; opening it shows the form itself (no second row to tap).
         open("משוב ותקלות")
-        ui.onNodeWithTag("feedback_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        ui.onNodeWithTag("feedback_row").assertDoesNotExist()
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("draft")
         shot("settings-feedback")
+        // A second tap folds the card; the draft is kept for the next time it opens.
+        ui.onNodeWithTag("settings_section_משוב ותקלות").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        ui.onNodeWithTag("feedback_message").assertDoesNotExist()
+        open("משוב ותקלות")
+        ui.onNodeWithTag("feedback_message").assertTextContains("draft")
+        // Summaries: the control inside the card opens the list, no empty page in between.
+        open("הסיכומים שלי")
+        ui.onNodeWithTag("recaps_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        assertTrue(recaps)
     }
 
     /**

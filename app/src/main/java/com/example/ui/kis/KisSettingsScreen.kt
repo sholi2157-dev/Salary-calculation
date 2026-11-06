@@ -222,6 +222,7 @@ private class SettingsNav(val open: String?, val onToggle: (String) -> Unit)
  * A category is one card: its header (name, the info dot, a chevron) is always there; a tap on it opens what is inside
  * right under the header, in the same card, and a second tap folds it. Only one card is open at a time.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun Group(nav: SettingsNav, title: String, info: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val c = Kis.colors
