@@ -71,6 +71,9 @@ const seed = { entries: [row('ils', 'עצמאי', day(1), 1.5, 40.25, '₪', 'ש
   await page.click(tid('editor-close')); if (await page.isVisible(tid('confirm-ok'))) await page.click(tid('confirm-ok')); await editorOff();
   assert.equal((await entry('usd')).notes, 'דולר סינתטי');
   await openUsd(); await page.fill(tid('notes-input'), 'עודכן'); await page.click(tid('save-shift')); await editorOff();
+  await page.waitForSelector(tid('shift-detail'));
+  assert.ok((await page.textContent(tid('shift-detail'))).includes('עודכן'), 'saved notes appear immediately in detail');
+  await page.keyboard.press('Escape');
   await page.reload(); await page.waitForSelector(tid('home-hero'));
   let usd = await entry('usd');
   assert.equal(usd.notes, 'עודכן'); assert.equal(usd.currency, '$'); assert.equal(usd.totalEarnings, 51); assert.equal(usd.customExtension, 'keep');

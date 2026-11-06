@@ -109,7 +109,7 @@ button { cursor: pointer; }
 .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
 .seg { display: inline-flex; background: var(--sunk); border-radius: 12px; padding: 3px; gap: 2px; flex-wrap: wrap; }
 .seg button { min-height: 38px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); padding: 0 12px; font-weight: 600; font-size: 0.8125rem; }
-.seg button[aria-pressed="true"] { background: var(--selected-bg); color: var(--selected-ink); box-shadow: inset 0 0 0 2px var(--selected-edge); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); box-shadow: inset 0 0 0 2px var(--accent); }
 .tag { display: inline-block; font-size: 0.6875rem; font-weight: 600; line-height: 0.8125rem; padding: 3px 7px; border-radius: 8px; background: var(--sunk); color: var(--muted); white-space: nowrap; }
 .tag.warn { background: var(--pending-soft); color: var(--pending); }
 .icon-btn { width: 48px; height: 48px; border-radius: 50%; border: 0; background: transparent; display: grid; place-items: center; color: var(--ink); }
@@ -184,9 +184,9 @@ button { cursor: pointer; }
 .nav .add { width: 48px; padding: 0; background: var(--accent); color: var(--accent-ink); font-size: 1.75rem; line-height: 1; }
 
 /* Messages */
-.toast { position: fixed; inset-inline: 16px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 76px); z-index: 40; display: flex; justify-content: center; pointer-events: none; }
+.toast { position: fixed; inset-inline: 16px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 76px); z-index: 40; display: flex; justify-content: center; pointer-events: none; background: transparent; border: 0; padding: 0; box-shadow: none; }
 .toast div { pointer-events: auto; display: flex; align-items: center; gap: 10px; background: var(--bar); color: var(--on-bar); border-radius: 99px; padding: 6px 6px 6px 18px;
-  padding-inline-start: 18px; min-height: 48px; box-shadow: var(--shadow); border: 1px solid var(--line); max-width: 520px; font-weight: 600; font-size: 0.875rem; }
+  padding-inline-start: 18px; min-height: 48px; box-shadow: none; border: 1px solid var(--line); max-width: 520px; font-weight: 600; font-size: 0.875rem; }
 .toast button { border: 0; background: transparent; color: var(--on-bar); text-decoration: underline; text-underline-offset: 3px; font-weight: 700; padding: 10px 12px; border-radius: 99px; min-height: 44px; }
 /* Messages B: one style, a sign by kind; the text may take two lines. */
 .toast div { border-radius: 16px; padding-block: 6px; font-weight: 500; line-height: 1.35; }
@@ -557,3 +557,8 @@ button.grip { border: 0; background: none; padding: 0; min-width: 44px; min-heig
 .whats-new { margin-top: 14px; border: 1px solid var(--line); }
 .whats-new ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; }
 .whats-new li::marker { color: var(--accent); }
+
+/* Shift actions share a surface; deletion retains its warning colour. */
+.detail-actions:not(.gd-actions) { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.detail-actions .btn { background: var(--sunk); color: var(--ink); }
+.detail-actions .btn.danger-text { color: var(--danger); }

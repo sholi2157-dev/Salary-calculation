@@ -10,11 +10,12 @@ const U = () => root.KisUi;
 let section = null;
 const CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 let subs = {};
-const group = (title, body, info, sub = subs[title]) => {
+// FB23-F10: category explanations are not shown; the accordion subtitle stays on the phone header.
+const group = (title, body, sub = subs[title]) => {
   const on = section === title, id = 'set-body-' + title.replace(/\s+/g, '-');
   return `<section class="set-group${on ? ' on' : ''}" data-group="${title}">
-    <div class="set-head-row"><button class="set-row set-head" data-section="${title}" aria-expanded="${on}" aria-controls="${id}" data-testid="settings-open-${title}"><span class="grow"><b>${title}</b>${sub ? `<small>${U().esc(sub)}</small>` : ''}</span>${CHEVRON}</button>${info ? U().infoDot(title, info) : ''}</div>
-    <div class="title-row set-title"><h2 class="section-title" style="margin:0;font:1.375rem/1.75rem var(--display)" data-testid="settings-${title}">${title}</h2>${info ? U().infoDot(title, info) : ''}</div>
+    <div class="set-head-row"><button class="set-row set-head" data-section="${title}" aria-expanded="${on}" aria-controls="${id}" data-testid="settings-open-${title}"><span class="grow"><b>${title}</b>${sub ? `<small>${U().esc(sub)}</small>` : ''}</span>${CHEVRON}</button></div>
+    <div class="title-row set-title"><h2 class="section-title" style="margin:0;font:1.375rem/1.75rem var(--display)" data-testid="settings-${title}">${title}</h2></div>
     <div class="card set-body" id="${id}">${body}</div></section>`;
 };
 /** The kinds of in-site reminder (M-31), titles and explanations as in the Android app: [stored key, title, info, testid]. */
@@ -22,7 +23,7 @@ const NOTIFY_KINDS = [
   ['notifyMonthly', 'הסיכום החודשי', 'מה-30 לכל חודש, כשיש משמרות בחודש.', 'notify-monthly'],
   ['notifyRate', 'תעריף חסר', 'לכל היותר פעם בשבוע.', 'notify-rate'],
 ];
-// M-46 (R-30): a row explains itself in one short visible line, not behind an info dot; dots stay only on a few groups.
+// A row explains itself in one short visible line.
 const rowHtml = (title, hint, control, info) => `<div class="row" style="align-items:center;min-height:58px;padding:8px 0"><div class="grow"><div class="title-row"><span style="font-weight:500">${title}</span></div>${hint || info ? `<div class="caption">${[hint, info].filter(Boolean).join(' · ')}</div>` : ''}</div>${control}</div>`;
 
 function render(el, app) {
@@ -32,9 +33,8 @@ function render(el, app) {
   // The short line under each card's name on a phone.
   subs = Object.fromEntries([['עבודה', def ? `מקום ברירת מחדל: ${def}` : 'מקומות, מטבע ומשמרות קבועות'],
     ['מראה ותחושה', ({ system: 'אוטומטי', light: 'בהיר', dark: 'כהה' })[theme] || 'אוטומטי'], ['הסיכומים שלי', 'כל הסיכומים החודשיים והשנתיים'],
-    ['התראות', NOTIFY_KINDS.some(([k]) => store.local[k] === true) ? 'פועלות' : 'כבויות'], ['גיבוי ונתונים', 'גיבוי, ייבוא ואקסל'],
-    ['עזרה', 'האפליקציה לאנדרואיד וההדרכה'], ['משוב ותקלות', 'דיווח על תקלה או הצעה'], ['חשבון', acct ? (acct.email || 'מחובר') : 'השם שלך · לא מחובר']]);
-  el.innerHTML = `<h1 class="page-title">הגדרות</h1>
+    ['התראות', NOTIFY_KINDS.every(([k]) => store.local[k] === true) ? 'פועלות' : 'כבויות'], ['גיבוי ונתונים', 'גיבוי, ייבוא ואקסל'],
+    ['עזרה', 'האפליקציה לאנדרואיד וההדרכה'], ['משוב ותקלות', 'דיווח על תקלה או הצעה'], ['חשבון', acct ? (acct.email || 'מחובר') : 'השם שלך · לא מחובר']]);  el.innerHTML = `<h1 class="page-title">הגדרות</h1>
   <div class="set-groups">
   ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip act" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר לבד במשמרת חדשה')}
     <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', null, `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`, 'כל משמרת שומרת את המטבע שלה')}
@@ -43,18 +43,17 @@ function render(el, app) {
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
   ${group('הסיכומים שלי', rowHtml('כל הסיכומים', null, '<button class="chip act" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל סיכום שכבר נפתח'))}
-  ${group('התראות', rowHtml('כל ההתראות', null, `<button class="switch" role="switch" aria-checked="${NOTIFY_KINDS.some(([k]) => store.local[k] === true)}" aria-label="כל ההתראות" data-a="notify" data-testid="notify-all"></button>`, 'כולן יחד')
-    + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${store.local[k] === true}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''),
-    'הסיכום החודשי ותעריף חסר, כשנכנסים לאתר. באפליקציה לאנדרואיד הן מגיעות גם כשהיא סגורה, וגם משמרת פעילה ומשמרת קבועה שהסתיימה.')}
+  ${group('התראות', rowHtml('כל ההתראות', null, `<button class="switch" role="switch" aria-checked="${NOTIFY_KINDS.every(([k]) => store.local[k] === true)}" aria-label="כל ההתראות" data-a="notify" data-testid="notify-all"></button>`, 'כולן יחד')
+    + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${store.local[k] === true}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''))}
   ${group('גיבוי ונתונים', `<div class="row backup-row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
-    <div class="row backup-row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv" data-testid="csv-export">טבלה לאקסל (CSV)</button><button class="btn small outline grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`, 'כשמחוברים לחשבון, הנתונים נשמרים בו ובדפדפן הזה. גיבוי לקובץ הוא העתק נוסף בשבילך, וגיבוי מהאפליקציה עובר לכאן ולהפך. טבלה לאקסל היא לקריאה ולחישובים, לא גיבוי: היא לא שומרת הכול (למשל עובדי קבוצה).')}
+    <div class="row backup-row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv" data-testid="csv-export">טבלה לאקסל (CSV)</button><button class="btn small outline grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`)}
   ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip act" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip act" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
   ${group('משוב ותקלות', '<div class="feedback-inline" data-testid="feedback-inline" style="display:grid;gap:10px;padding:10px 0"></div>')}
   ${group('חשבון', `<div class="row" style="padding:10px 0 4px"><input class="input grow" style="min-width:0" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input grow" style="min-width:0" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>
     <div data-testid="account-card">${root.KisAccount.settingsHtml()}</div>
     <div style="display:grid;justify-items:start;padding:4px 0"><button class="link" style="color:var(--danger,#c2362b);padding-inline:0;min-height:44px" data-a="erase" data-testid="account-erase">מחיקה מהמכשיר הזה</button>
-    ${root.KisAccount.state.user ? '<button class="link" style="color:var(--danger,#c2362b);padding-inline:0;min-height:44px" data-a="erase-account" data-testid="account-erase-all">מחיקה מהחשבון ומכל המכשירים</button>' : ''}</div>`, 'המשמרות, המקומות, המשמרות הקבועות וההגדרות נשמרים בחשבון Google שלך ומסתנכרנים עם האפליקציה לאנדרואיד ועם כל דפדפן שמחובר אליו.')}
+    ${root.KisAccount.state.user ? '<button class="link" style="color:var(--danger,#c2362b);padding-inline:0;min-height:44px" data-a="erase-account" data-testid="account-erase-all">מחיקה מהחשבון ומכל המכשירים</button>' : ''}</div>`)}
   </div><div class="row set-brand" style="align-items:center;margin-top:24px">${U().logo(28)}<span class="caption">שכר עבודות אישי</span></div>`;
 
   const q = s => el.querySelector(s);
@@ -72,10 +71,10 @@ function render(el, app) {
   q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
   q('[data-f=last]').addEventListener('input', e => store.setLocal('lastName', e.target.value.trim().slice(0, 40), true));
   // One switch for every reminder.
-  // As Android 2.2.3 (M-31): the main switch turns every kind on or off together; each kind keeps its own switch, and the
-  // main one shows on while any kind is on. The same stored keys as before (notifyMonthly, notifyRate).
+  // The main switch turns every kind on or off together; each kind keeps its own switch, and the
+  // main one shows on only when every kind is on. The same stored keys as before (notifyMonthly, notifyRate).
   const notifySync = () => {
-    q('[data-a=notify]').setAttribute('aria-checked', NOTIFY_KINDS.some(([k]) => store.local[k] === true));
+    q('[data-a=notify]').setAttribute('aria-checked', NOTIFY_KINDS.every(([k]) => store.local[k] === true));
     el.querySelectorAll('[data-notify]').forEach(b => b.setAttribute('aria-checked', store.local[b.dataset.notify] === true));
   };
   q('[data-a=notify]').onclick = e => { const on = e.currentTarget.getAttribute('aria-checked') !== 'true';
@@ -159,7 +158,7 @@ function importSheet(app) {
   const { store } = app;
   U().sheet('import-sheet', (el, close) => {
     let pending = null;
-    el.innerHTML = `<div class="title-row"><h2>ייבוא נתונים</h2>${U().infoDot('ייבוא נתונים', 'גיבוי מהאפליקציה או מהאתר, או שורות מאקסל עם כותרות. לפני השמירה תוצג בדיקה; משמרות שכבר קיימות לא יתווספו שוב. לשחזור מלא משתמשים בגיבוי, לא בטבלה לאקסל.')}</div>
+    el.innerHTML = `<div class="title-row"><h2>ייבוא נתונים</h2></div>
       <textarea class="input" rows="6" data-f="t" placeholder="הדבקת נתונים" data-testid="import-text"></textarea>
       <label class="btn ghost small" style="position:relative">בחירת קובץ<input type="file" accept=".json,.csv,.tsv,.txt" data-f="file" style="position:absolute;inset:0;opacity:0"></label>
       <button class="btn ghost" data-a="check" data-testid="import-check">בדיקה</button><p class="caption" data-f="sum" data-testid="import-summary" style="white-space:pre-line"></p>
