@@ -38,6 +38,11 @@ class DistributionUiTest {
         ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
         ui.onNodeWithTag("onboarding_skip").performClick()
         ui.onNodeWithTag("launch_root").assertDoesNotExist()
+        // FB23-F11: this update shows "מה חדש" once. Dismiss it, or Back closes that sheet
+        // instead of the editor's leave confirmation.
+        ui.waitUntil(5_000) { ui.onAllNodesWithTag("whats_new_ok").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithTag("whats_new_ok").performClick()
+        ui.onNodeWithTag("whats_new_sheet").assertDoesNotExist()
         ui.onNodeWithTag("home_greeting").assertTextContains("בודק", substring = true)
         assertEquals(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, ui.activity.requestedOrientation)
         assertEquals(Configuration.ORIENTATION_PORTRAIT, ui.activity.resources.configuration.orientation)
