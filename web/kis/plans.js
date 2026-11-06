@@ -163,16 +163,13 @@ function seriesSheet(app) {
   U().sheet('series-sheet', (el, close) => {
     const draw = () => {
       const occ = occurrences(store);
+      // FB23-F4: "רישום אוטומטי" is on Settings' Work card itself; this sheet lists the weekly plans.
       el.innerHTML = `<h2>משמרות קבועות</h2>
-        ${store.plans.series.length ? `<div class="row" style="align-items:center"><div class="grow title-row"><div class="label">רישום אוטומטי</div>${U().infoDot('רישום אוטומטי', 'כשהזמן נגמר המשמרת נרשמת לבד. תמיד אפשר לבטל.')}</div>
-          <button class="switch" role="switch" aria-checked="${store.local.autoConfirm !== false}" data-a="auto" aria-label="רישום אוטומטי" data-testid="auto-confirm"></button></div>
-        <div class="divider"></div>` : ''}
         ${store.plans.series.length ? '' : '<p class="caption">אין משמרות קבועות</p>'}
         ${store.plans.series.map(s => { const left = occ.filter(o => o.seriesId === s.id && !isAwaiting(o)).length;
           return `<div class="card" style="background:var(--bg);display:grid;gap:8px"><div class="row" style="align-items:center">${avatar(s.category, store, true, 36)}<div class="grow"><b class="label">${esc(s.category)}</b>
             <div class="caption">${esc(root.KisPlan.days(s.daysMask).sort().map(d => U().DAY_SHORT[d]).join(' '))} · ⁦${s.startTime}–${s.endTime}⁩ · עד ${shortDate(root.KisPlan.startMillis(s.untilDate, '12:00'))}${left ? ' · עוד ' + left : ''}</div></div></div>
             <div class="row"><button class="chip${s.hourlyRate == null ? ' warn' : ''}" data-rate="${esc(s.id)}">${s.hourlyRate == null ? 'תעריף חסר' : esc(money(s.hourlyRate, s.currency)) + ' לשעה'}</button><button class="chip" data-end="${esc(s.id)}">סיום הסדרה</button></div></div>`; }).join('')}`;
-      const auto = el.querySelector('[data-a=auto]'); if (auto) auto.onclick = () => { store.setLocal('autoConfirm', store.local.autoConfirm === false); draw(); };
       el.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => rateSheet(app, b.dataset.rate, draw));
       el.querySelectorAll('[data-end]').forEach(b => b.onclick = () => U().confirmSheet('לסיים את הסדרה?', 'משמרות מתוכננות מעכשיו לא יופיעו יותר. מה שכבר נרשם נשאר כמו שהוא.', 'סיום', () => {
         store.updatePlans(p => { const s = p.series.find(x => x.id === b.dataset.end); if (!s) return;

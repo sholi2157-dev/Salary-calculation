@@ -34,7 +34,14 @@ function render() {
   if (store.broken) { main.innerHTML = root.KisSettings.recoveryPanel(app); root.KisSettings.bindRecovery(main, app); }
   else if (app.page === 'history') root.KisHistory.render(main, app, opts);
   else if (app.page === 'settings') root.KisSettings.render(main, app);
-  else root.KisHome.render(main, app);
+  else {
+    root.KisHome.render(main, app);
+    // FB23-F11: once after a new release, the main highlights, under the greeting; closing it records that it was seen.
+    if (app.whatsNew) {
+      main.querySelector('.hello')?.insertAdjacentHTML('afterend', root.KisWhatsNew.cardHtml(app.whatsNew));
+      main.querySelector('[data-a=whats-new-ok]')?.addEventListener('click', () => { root.KisWhatsNew.seen(store); app.whatsNew = null; render(); });
+    }
+  }
   document.querySelectorAll('.nav [data-page]').forEach(b => b.setAttribute('aria-current', b.dataset.page === app.page ? 'page' : 'false'));
   U().focusRestore(main, mark);
   document.querySelector('.nav-wrap').hidden = app.page === 'history' && root.KisHistory.state.selection.size > 0;
@@ -164,6 +171,8 @@ function stopLive() {
 function start() {
   document.body.insertAdjacentHTML('afterbegin', '<div class="kis-glow" aria-hidden="true"></div>');
   store.load(); app.applyTheme();
+  // A browser that had this site before (its 2.0 launch is done) sees this release's highlights once (FB23-F11).
+  app.whatsNew = store.broken ? null : root.KisWhatsNew.pending(store, (store.local.launched || 0) >= root.KisLaunch.LAUNCH_VERSION);
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { app.applyTheme(); render(); });
   document.querySelectorAll('.nav [data-page]').forEach(b => b.onclick = () => { root.KisHistory.state.selection.clear(); app.go(b.dataset.page); });
   document.querySelector('.nav [data-a=add]').onclick = () => app.openNew();

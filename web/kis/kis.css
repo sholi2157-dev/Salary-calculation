@@ -7,17 +7,19 @@
 @font-face { font-family: Heebo; src: url(../fonts/heebo.ttf) format('truetype'); font-display: swap; }
 
 :root {
-  /* Light (2.0.8): a deep navy ink instead of black and a softer page; chosen things are white with an ink edge. */
-  --bg: #F1F3F8; --surface: #FFFFFF; --sunk: #E4E8F0; --ink: #1B2335; --muted: #5A6478; --line: #D2D8E3;
+  /* Light (2.0.8): a deep navy ink instead of black and a softer page; chosen things are white with an ink edge.
+     FB23-F2 (2.3.0): calmer light chrome, as in KisTheme.kt: the chosen tab is a soft brand tint (not a navy pill), filled
+     actions and switches use a slate a step lighter than the text ink (--ink-fill), sunk wells are paler. Text ink unchanged. */
+  --bg: #F1F3F8; --surface: #FFFFFF; --sunk: #EAEDF3; --ink-fill: #39445C; --ink: #1B2335; --muted: #5A6478; --line: #D2D8E3;
   --pending: #9A5201; --pending-soft: #FFEBC7; --paid: #007453; --danger: #BD2F28; --on-danger: #FFFFFF;
   /* M-28 (Kis 2): a strong line for edges that are a control's only mark, brand kept apart from workplaces, ink switch. */
-  --line-strong: #778093; --accent: #5145E8; --accent-ink: #FFFFFF; --on-paid: #FFFFFF; --control-on: var(--ink); --control-knob: #FFFFFF;
-  --nav: rgba(255,255,255,.90); --nav-ink: #465066; --nav-on: #1B2335; --nav-on-ink: #FFFFFF;
+  --line-strong: #778093; --accent: #5145E8; --accent-ink: #FFFFFF; --on-paid: #FFFFFF; --control-on: var(--ink-fill); --control-knob: #FFFFFF;
+  --nav: rgba(255,255,255,.90); --nav-ink: #465066; --nav-on: #E6E5FB; --nav-on-ink: #2F2A8A;
   --bar: rgba(255,255,255,.95); --on-bar: #1B2335; --on-ink: #F1F3F8;
   /* M-30: one "selected" recipe for every chip, day, currency, tab and segment (2px edge), disabled colours instead of
      opacity, 4 radii and 3 button heights (touch targets stay at least 44px). */
   --selected-bg: var(--surface); --selected-ink: var(--ink); --selected-edge: var(--ink);
-  --disabled-bg: #E4E8F0; --disabled-ink: #9EA5B2;
+  --disabled-bg: #EEF0F4; --disabled-ink: #9EA5B2;
   --r-tag: 8px; --r-sm: 12px; --r-md: 16px; --r-lg: 24px; --btn-lg: 56px; --btn-md: 48px; --btn-sm: 44px;
   --pick-bg: var(--selected-bg); --pick-ink: var(--selected-ink); --pick-edge: var(--selected-edge); --tile: var(--surface); --tile-edge: var(--line);
   --track: var(--sunk); --tab-on: var(--selected-bg); --tab-on-ink: var(--selected-ink); --tab-shadow: inset 0 0 0 2px var(--selected-edge);
@@ -29,7 +31,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0F1216; --surface: #181B20; --sunk: #282C34; --ink: #EDF0F6; --muted: #B3B9C5; --line: #32373F;
+    --bg: #0F1216; --surface: #181B20; --sunk: #282C34; --ink: #EDF0F6; --ink-fill: var(--ink); --muted: #B3B9C5; --line: #32373F;
     --pending: #F6B75C; --pending-soft: #3E2B0F; --paid: #45D09E; --danger: #FF9183; --on-danger: #2B0E0B;
     --line-strong: #717681; --accent: #9398FF; --accent-ink: #15153A; --on-paid: #011C11; --control-on: var(--ink); --control-knob: #0F1216;
     --nav: rgb(33 37 43 / .92); --nav-ink: #B3B9C5; --nav-on: #EDF0F6; --nav-on-ink: #0F1216; --bar: #2D323A; --on-bar: #EDF0F6; --on-ink: #0F1216;
@@ -41,7 +43,7 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0F1216; --surface: #181B20; --sunk: #282C34; --ink: #EDF0F6; --muted: #B3B9C5; --line: #32373F;
+  --bg: #0F1216; --surface: #181B20; --sunk: #282C34; --ink: #EDF0F6; --ink-fill: var(--ink); --muted: #B3B9C5; --line: #32373F;
   --pending: #F6B75C; --pending-soft: #3E2B0F; --paid: #45D09E; --danger: #FF9183; --on-danger: #2B0E0B;
     --line-strong: #717681; --accent: #9398FF; --accent-ink: #15153A; --on-paid: #011C11; --control-on: var(--ink); --control-knob: #0F1216;
   --nav: rgb(33 37 43 / .92); --nav-ink: #B3B9C5; --nav-on: #EDF0F6; --nav-on-ink: #0F1216; --bar: #2D323A; --on-bar: #EDF0F6; --on-ink: #0F1216;
@@ -86,7 +88,7 @@ button { cursor: pointer; }
 
 .card { background: var(--surface); border-radius: 24px; padding: 16px; }
 .btn { min-height: var(--btn-lg); border-radius: var(--r-md); border: 0; padding: 0 18px; font-weight: 600; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-.btn.primary { background: var(--ink); color: var(--on-ink); }
+.btn.primary { background: var(--ink-fill); color: var(--on-ink); }
 .btn.ghost { background: var(--sunk); color: var(--ink); }
 .btn.danger { background: var(--danger); color: var(--on-danger); }
 .btn.outline { background: transparent; border: 1.5px solid var(--line-strong); }
@@ -168,7 +170,7 @@ button { cursor: pointer; }
 /* The running clock is the main number (Rubik with even-width digits: Secular One has none); the money follows it. */
 .live .clock { font: 600 2.5rem/2.75rem var(--text); font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
 .live .live-money { font: 500 1.375rem/1.75rem var(--text); font-variant-numeric: tabular-nums; color: var(--muted); }
-.live .btn.stop { background: var(--ink); color: var(--on-ink); }
+.live .btn.stop { background: var(--ink-fill); color: var(--on-ink); }
 .live .btn.cancel { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .live { box-shadow: none; } }
 :root[data-theme="dark"] .live { box-shadow: none; }
@@ -475,18 +477,30 @@ button { cursor: pointer; }
 /* 2.3.0 (M-35): the app's own clear button and "סגירה" are the search controls; the browser's built-in × is hidden. */
 input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
 
-/* Settings categories (M-31): a list on a phone, one category at a time with a way back; all of them on a computer. */
-.set-list { display: grid; gap: 8px; margin-top: 8px; }
+/* Settings categories (FB23-F1): on a phone, one page of cards; a tap on a card's header opens its content in place, under
+   the header (one at a time). A computer shows every category open with its heading, as before. */
+.set-groups { display: grid; gap: 8px; margin-top: 8px; }
+.set-group { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; }
+.set-group.on { border-radius: 24px; }
 .set-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); font: inherit; text-align: start; }
 .set-row > span { flex: 1; min-width: 0; }
 .set-row b { display: block; font-weight: 600; } .set-row small { display: block; color: var(--muted); font-size: 0.8125rem; overflow-wrap: anywhere; }
-.set-row svg { width: 20px; height: 20px; color: var(--muted); flex-shrink: 0; }
-.set-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px 0 4px; margin-top: 4px; border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 500; }
-.set-back svg { width: 20px; height: 20px; }
-.set-groups[data-open=""] .set-group, .set-groups:not([data-open=""]) .set-group:not(.on) { display: none; }
+.set-row svg { width: 20px; height: 20px; color: var(--muted); flex-shrink: 0; transition: transform .18s ease; }
+.set-head-row { display: flex; align-items: center; padding-inline-end: 6px; }
+.set-head { flex: 1; min-width: 0; border: 0; border-radius: 0; background: transparent; }
+.set-group.on .set-head svg { transform: rotate(180deg); }
+.set-title { display: none; margin: 22px 0 10px; }
+.set-body { display: grid; gap: 4px; padding: 6px 16px; }
+.set-group:not(.on) .set-body { display: none; }
+.set-group .set-body.card { border-radius: 0; background: transparent; border-top: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { .set-row svg { transition: none; } }
 @media (min-width: 900px) {
-  .set-list, .set-back { display: none; }
-  .set-groups[data-open=""] .set-group, .set-groups:not([data-open=""]) .set-group:not(.on) { display: block; }
+  .set-groups { gap: 0 24px; margin-top: 0; }
+  .set-group, .set-group.on { border: 0; border-radius: 0; background: transparent; overflow: visible; }
+  .set-head-row { display: none; }
+  .set-title { display: flex; }
+  .set-group:not(.on) .set-body { display: grid; }
+  .set-group .set-body.card { border-radius: 24px; background: var(--surface); border-top: 0; }
 }
 
 /* Group shift details B */
@@ -538,3 +552,8 @@ button.grip { border: 0; background: none; padding: 0; min-width: 44px; min-heig
 @media (min-width: 1024px) {
   .toast { inset-inline-start: 280px; inset-inline-end: 16px; bottom: max(24px, env(safe-area-inset-bottom)); }
 }
+
+/* FB23-F11: "מה חדש" after a new release, a calm card under Home's greeting (no sheet in the way). */
+.whats-new { margin-top: 14px; border: 1px solid var(--line); }
+.whats-new ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; }
+.whats-new li::marker { color: var(--accent); }

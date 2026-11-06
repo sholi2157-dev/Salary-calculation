@@ -43,7 +43,7 @@ const server = http.createServer((q, r) => {
   assert.ok(Math.abs(flag.width - hero.width) <= 2, `pending flag is full width (${flag.width} vs ${hero.width})`);
   await page.screenshot({ path: path.join(SHOTS, 'm46-home-phone.png'), fullPage: true });
   await page.click('[data-testid=tab-settings]');
-  const order = await page.locator('.set-list .set-row b').allInnerTexts();
+  const order = await page.locator('.set-head b').allInnerTexts();
   assert.notEqual(order[0], 'משוב ותקלות', 'feedback is not the first category');
   assert.equal(order[order.length - 1], 'חשבון');
   await page.click('[data-testid="settings-open-עבודה"]');
@@ -64,7 +64,6 @@ const server = http.createServer((q, r) => {
   assert.deepEqual(await names(), before, 'ArrowUp moves it back');
   await page.screenshot({ path: path.join(SHOTS, 'm46-places.png') });
   await page.keyboard.press('Escape');
-  await page.click('[data-testid=settings-back]');
   await page.click('[data-testid="settings-open-גיבוי ונתונים"]');
   assert.equal(await page.locator('[data-testid=import-button]').evaluate(x => x.classList.contains('primary')), false, 'import is not the primary action');
   const dl = await page.locator('[data-testid=backup-download]').evaluate(x => x.getBoundingClientRect().height);
