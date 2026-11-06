@@ -26,6 +26,7 @@ class WorkPaletteTest {
         "onDanger/danger" to (c.onDanger to c.danger), "onPaid/paid" to (c.onPaid to c.paid), "accentInk/accent" to (c.accentInk to c.accent),
         "onInk/ink" to (c.onInk to c.ink), "knob/controlOn" to (c.controlKnob to c.controlOn), "onBar/bar(dark)" to (c.onBar to if (c.dark) c.bar else Color.White),
         "barAction/bar" to (c.barAction to if (c.dark) c.bar else Color.White),
+        "onInk/inkFill" to (c.onInk to c.inkFill), "navOnInk/navOn" to (c.navOnInk to c.navOn), "navInk/nav" to (c.navInk to if (c.dark) c.surface else Color.White),
     )
 
     @Test fun everyTextPairReachesAA() {
@@ -45,7 +46,10 @@ class WorkPaletteTest {
     }
 
     @Test fun switchIsInkNotMoneyGreen() {
-        for (c in listOf(KisLight, KisDark)) { assertEquals(c.ink, c.controlOn); assertNotEquals(c.paid, c.controlOn) }
+        for (c in listOf(KisLight, KisDark)) { assertEquals(c.inkFill, c.controlOn); assertNotEquals(c.paid, c.controlOn) }
+        // FB23-F2: dark keeps its ink fills; light fills are a softer slate than the text ink, never lighter than AA allows.
+        assertEquals(KisDark.ink, KisDark.inkFill)
+        assertTrue(KisLight.inkFill.luminance() > KisLight.ink.luminance())
     }
 
     @Test fun workplacesKeepOrderAndReadableTextAndAreNotTheBrand() {

@@ -804,7 +804,7 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = {
                         if (newName.isNotBlank()) { onDraft(d.copy(workers = d.workers + WorkerDraft(newName.trim(), defaultHours))); newName = "" } else focus.clearFocus()
                     }))
-                Icon(Icons.Outlined.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(c.ink)
+                Icon(Icons.Outlined.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(c.inkFill)
                     .kisClick(enabled = newName.isNotBlank()) { onDraft(d.copy(workers = d.workers + WorkerDraft(newName.trim(), defaultHours))); newName = "" }.padding(12.dp).testTag("worker_add"))
             }
             if (d.workers.isNotEmpty() && d.bonusValue() > 0) {
