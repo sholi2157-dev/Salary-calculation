@@ -87,11 +87,9 @@ class CurrencyFeedbackTest {
         // Feedback keeps Enter as a new line. It comes last: after Enter in its field the device check never settled
         // on the next page, so the test ends with the draft still in the open form.
         androidx.test.espresso.Espresso.closeSoftKeyboard()
-        ui.onNodeWithTag("settings_back").performClick()
-        // Feedback is the first category in Settings; its row unfolds the form in place.
-        ui.onNodeWithTag("settings_section_משוב ותקלות").performClick()
-        ui.onNodeWithTag("feedback_row").assertIsDisplayed().performClick()
-        ui.onNodeWithTag("feedback_message").performClick().performTextInput("first line")
+        // Feedback is the first card in Settings; opening it (which folds the Work card) shows the form in place.
+        ui.onNodeWithTag("settings_section_משוב ותקלות").performScrollTo().performClick()
+        ui.onNodeWithTag("feedback_message").performScrollTo().performClick().performTextInput("first line")
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
         automation.executeShellCommand("input keyevent KEYCODE_ENTER").use { d -> android.os.ParcelFileDescriptor.AutoCloseInputStream(d).use { it.readBytes() } }
         ui.waitForIdle()

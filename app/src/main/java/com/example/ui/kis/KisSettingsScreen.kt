@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -35,6 +36,8 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -65,7 +68,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     var addingDefault by rememberSaveable { mutableStateOf(false) }
     var aiSheet by rememberSaveable { mutableStateOf(false) }
     var aiHelp by rememberSaveable { mutableStateOf(false) }
-    var feedbackOpen by rememberSaveable { mutableStateOf(false) }
     // Focus leaves the text field before the form folds: the device never settled when a focused field was removed.
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     // Kept here, not in the form, so folding the form keeps the draft.
@@ -82,48 +84,35 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     var autoConfirm by remember { mutableStateOf(plan.autoConfirm) }
     val saveBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let { viewModel.saveBackup(context, it) } }
 
-    // Settings is a list of its categories; a tap opens one on a page of its own, and back returns to the list.
+    // FB23-F1: Settings is one page of category cards; a tap on a card's header opens its content right under it, in the
+    // same card (one open at a time), and a second tap folds it. No page of its own, so nothing is two taps deep.
     var section by rememberSaveable { mutableStateOf<String?>(null) }
-    LaunchedEffect(openSection) { if (openSection != null) { section = openSection; onSectionOpened() } }
-    // Leaving a page folds the feedback form the proven way first (focus out, then the field goes).
-    fun leave() { focusManager.clearFocus(force = true); feedbackOpen = false; section = null }
-    androidx.activity.compose.BackHandler(section != null) { leave() }
-    val nav = SettingsNav(section) { section = it }
+    // Folding a card folds the feedback form the proven way first (focus out, then the field goes).
+    fun toggle(title: String) { focusManager.clearFocus(force = true); section = if (section == title) null else title }
+    LaunchedEffect(openSection) { if (openSection != null) { focusManager.clearFocus(force = true); section = openSection; onSectionOpened() } }
+    val nav = SettingsNav(section, ::toggle)
 
     Box(Modifier.fillMaxSize().background(c.bg)) {
     KisGlow(Modifier.fillMaxSize())
     Column(Modifier.fillMaxSize().testTag("settings_root")) {
-        val open = section
-        if (open == null) Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
-        else Row(Modifier.statusBarsPadding().padding(start = 4.dp, end = 16.dp).padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(48.dp).clip(CircleShape).kisClick { leave() }
-                .semantics { contentDescription = "חזרה להגדרות" }.testTag("settings_back"), contentAlignment = Alignment.Center) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.ink, modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = 180f })
-            }
-            Text(open, style = KisType.page, color = c.ink, maxLines = 1, modifier = Modifier.semantics { heading() }.testTag("settings_page_title"))
-        }
+        Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
         // With the keyboard open the floating navigation is covered anyway: pad for the keyboard only, not both.
         val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
         // The scroll area ends above the floating navigation, so no row can sit (and be tapped) under it.
-        // Each page starts at its top. One scroll area for the list and every page: rebuilding it on each change left
-        // the device never settling after the feedback field had been used.
+        // One scroll area for every card: rebuilding it on each change left the device never settling after the
+        // feedback field had been used.
         val scroll = rememberScrollState()
-        LaunchedEffect(open) { scroll.scrollTo(0) }
         Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(scroll).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
-            // First, so a problem can be reported without scrolling past everything else. The form unfolds in place:
-            // inside a bottom sheet its multi-line field never let the device settle after Enter.
-            if (open == null) Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(14.dp))
+            // First, so a problem can be reported without scrolling past everything else. Opening the card shows the
+            // form itself (no extra row to tap); inside a bottom sheet its multi-line field never let the device settle after Enter.
             Group(nav, "משוב ותקלות", "דיווח על תקלה או הצעה לשיפור, עם צילום מסך אם רוצים.") {
-                Row_("דיווח על תקלה או הצעה", null, tag = "feedback_row", onClick = { focusManager.clearFocus(force = true); feedbackOpen = !feedbackOpen }) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted,
-                        modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = if (feedbackOpen) -90f else 0f })
-                }
-                if (feedbackOpen) Box(Modifier.padding(bottom = 10.dp)) {
+                Box(Modifier.padding(vertical = 10.dp)) {
                     FeedbackForm(feedbackText, { feedbackText = it }, feedbackImage, { feedbackImage = it }, state = {
                         mapOf("page" to "settings", "theme" to settings.theme.key, "haptics" to settings.haptics, "accounts" to BuildConfig.ACCOUNTS_ENABLED,
                             "signedIn" to (viewModel.owner.uid != null), "entries" to viewModel.entries.value.size, "categories" to categories.size,
                             "weeklySeries" to series.size, "personalAiKey" to hasKey)
-                    }, onSent = { focusManager.clearFocus(force = true); feedbackOpen = false })
+                    }, onSent = { focusManager.clearFocus(force = true); section = null })
                 }
             }
             Group(nav, "עבודה", "מקומות העבודה והתעריפים, המטבע ומשמרות קבועות.", Modifier.coachTarget(CoachTarget.CATEGORIES)) {
@@ -136,7 +125,11 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     CurrencyToggle(defaultCurrency, { viewModel.updateDefaultCurrency(it) }, "settings_currency")
                 }
                 KisDivider()
-                Row_("משמרות קבועות", null, info = "משמרות שחוזרות כל שבוע. יוצרים אותן במסך ההוספה: \"חוזרת כל שבוע\". כשהזמן נגמר הן נרשמות לבד, ותמיד אפשר לבטל.",
+                // FB23-F4: the switch is on the card itself; the list of weekly plans stays one tap away below it.
+                Row_("רישום אוטומטי של משמרות קבועות", null, info = "כשהזמן של משמרת קבועה נגמר היא נרשמת לבד. תמיד אפשר לבטל.") {
+                    KisSwitch(autoConfirm, { plan.autoConfirm = it; autoConfirm = it }, Modifier.testTag("auto_confirm_switch"), label = "רישום אוטומטי")
+                }
+                Row_("משמרות קבועות", null, info = "משמרות שחוזרות כל שבוע. יוצרים אותן במסך ההוספה: \"חוזרת כל שבוע\".",
                     tag = "series_row", onClick = { seriesSheet = true }) {
                     if (series.isNotEmpty()) Text("${series.size}", style = KisType.label, color = c.muted)
                     Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
@@ -160,7 +153,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                         .padding(6.dp).clip(CircleShape).background(c.sunk).padding(top = 6.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
                 KisDivider()
-                Row_("הצגת ההדרכה מחדש", null, tag = "replay_onboarding", onClick = { section = null; onReplayTour() }) {}
+                Row_("הצגת ההדרכה מחדש", null, tag = "replay_onboarding", onClick = { focusManager.clearFocus(force = true); section = null; onReplayTour() }) {}
                 if (BuildConfig.LOCAL_DISTRIBUTION) {
                     KisDivider()
                     Column(Modifier.padding(vertical = 8.dp).testTag("settings_updates")) {
@@ -195,7 +188,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 ProfileFields()
                 if (BuildConfig.ACCOUNTS_ENABLED) AccountRows(viewModel, onSignIn = onSignIn, onSignedOut = onClose, onBackup = { saveBackup.launch("salary-backup.json") })
             }
-            if (open == null) Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 KisLogo(Modifier.size(28.dp))
                 Text("${androidx.compose.ui.res.stringResource(com.example.R.string.app_name)} · ${BuildConfig.VERSION_NAME}", style = KisType.caption, color = c.muted)
             }
@@ -211,7 +204,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
         KisButton("+ מקום עבודה חדש", { pickingDefault = false; addingDefault = true; adding = true }, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "default_category_add")
     }
     if (adding) NewWorkplaceSheet(viewModel, categories, defaultCurrency, makeDefault = addingDefault, onDismiss = { adding = false; addingDefault = false })
-    if (seriesSheet) SeriesSheet(series, plans, categories, autoConfirm, onAuto = { plan.autoConfirm = it; autoConfirm = it },
+    if (seriesSheet) SeriesSheet(series, plans, categories,
         onRate = { s, rate -> viewModel.applySeriesRate(s.id, rate) }, onEnd = { s -> viewModel.endSeries(s.id) }, onDismiss = { seriesSheet = false })
     if (aiSheet) AiKeySheet(viewModel.owner.uid, onDismiss = { aiSheet = false })
     if (aiHelp) KisSheet(onDismiss = { aiHelp = false }, tag = "ai_help") {
@@ -223,27 +216,35 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     }
 }
 
-private class SettingsNav(val open: String?, val onOpen: (String) -> Unit)
+private class SettingsNav(val open: String?, val onToggle: (String) -> Unit)
 
 /**
- * On the list, a category is one card: its name, then what is inside it (the info dot) beside the arrow; a tap opens it.
- * On its own page only its content shows, in the same card. Other categories draw nothing.
+ * A category is one card: its header (name, the info dot, a chevron) is always there; a tap on it opens what is inside
+ * right under the header, in the same card, and a second tap folds it. Only one card is open at a time.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun Group(nav: SettingsNav, title: String, info: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val c = Kis.colors
-    when (nav.open) {
-        null -> Row(Modifier.padding(bottom = 8.dp).fillMaxWidth().then(modifier).clip(RoundedCornerShape(16.dp)).background(c.surface)
-            .kisClick { nav.onOpen(title) }.testTag("settings_section_$title").heightIn(min = 60.dp).padding(start = 16.dp, end = 10.dp),
+    val open = nav.open == title
+    val bring = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    // An opened card (a tap, or the bell's "התראות") scrolls into view once its content is there.
+    LaunchedEffect(open) { if (open) { kotlinx.coroutines.delay(60); bring.bringIntoView() } }
+    Column(Modifier.padding(bottom = 8.dp).fillMaxWidth().then(modifier).clip(RoundedCornerShape(if (open) 24.dp else 16.dp)).background(c.surface)
+        .bringIntoViewRequester(bring)) {
+        Row(Modifier.fillMaxWidth().kisClick { nav.onToggle(title) }
+            .semantics { heading(); stateDescription = if (open) "פתוח" else "סגור" }
+            .testTag("settings_section_$title").heightIn(min = 60.dp).padding(start = 16.dp, end = 10.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = KisType.title, color = c.ink, maxLines = 1, modifier = Modifier.semantics { heading() })
+            Text(title, style = KisType.title, color = c.ink, maxLines = 1)
             Spacer(Modifier.weight(1f))
             InfoDot(title, info, tag = "settings_info_$title")
-            Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted, modifier = Modifier.size(20.dp))
+            Icon(Icons.Outlined.ExpandMore, null, tint = c.muted, modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = if (open) 180f else 0f })
         }
-        title -> Column(Modifier.padding(top = 12.dp).fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(c.surface)
-            .padding(horizontal = 16.dp, vertical = 4.dp).testTag("settings_page_$title"), content = content)
-        else -> Unit
+        if (open) Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 4.dp).testTag("settings_page_$title")) {
+            KisDivider()
+            content()
+        }
     }
 }
 
@@ -408,7 +409,7 @@ private fun PlacesPanel(categories: List<WorkCategory>, defaultCategory: String,
                         Text("${KisFormat.money(cat.defaultRate, viewModel.categoryCurrency(name))} לשעה", style = KisType.caption, color = c.muted)
                     }
                     if (on) Icon(Icons.Outlined.Check, "ברירת מחדל", tint = c.ink)
-                    Icon(Icons.Outlined.Edit, "עריכת $name", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape)
+                    Icon(Icons.Outlined.Edit, "עריכת $name", tint = c.muted, modifier = Modifier.size(KisMinTouch).clip(CircleShape)
                         .kisClick { open = if (open == name) null else name }.testTag("category_row_$name").padding(11.dp))
                     Icon(Icons.Outlined.DragHandle, "הזזת $name", tint = c.muted, modifier = Modifier.size(KisMinTouch)
                         .pointerInput(name) {

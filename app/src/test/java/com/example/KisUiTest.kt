@@ -171,7 +171,7 @@ class KisUiTest {
         // A note survives every mode switch (draft is kept).
         ui.onNodeWithTag("editor_more").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("טיוטה שנשמרת במעבר")
-        // "group" is the "משמרת קבוצתית" switch under the tabs (on, then off again back to the user's own shift).
+        // "group" is the "קבוצה" button at the top (on, then off again back to the user's own shift).
         for (mode in listOf("hours", "group", "clock")) {
             ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performClick()
             ui.onNodeWithTag("notes_input").performScrollTo().assertTextContains("טיוטה שנשמרת במעבר")
@@ -895,27 +895,30 @@ class KisUiTest {
     @Test fun settingsSectionsAndThemeChoice() {
         val vm = model()
         lateinit var settings: KisSettings
+        var recaps = false
         ui.setContent {
             settings = rememberKisSettings()
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
+                KisTheme(settings) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}, onRecaps = { recaps = true }) }
             }
         }
-        // The list shows only the categories, in their order, each with its info dot; a tap opens its own page.
+        // FB23-F1: one page of category cards, in their order, each with its info dot; a tap opens the card in place.
         listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "הסיכומים שלי", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
             ui.onNodeWithTag("settings_info_$it", useUnmergedTree = true).assertExists()
         }
         ui.onNodeWithTag("theme_LIGHT").assertDoesNotExist()
+        ui.onNodeWithTag("settings_back").assertDoesNotExist()
         shot("settings-list")
         fun open(section: String) {
             val click = androidx.compose.ui.semantics.SemanticsActions.OnClick
-            if (ui.onAllNodesWithTag("settings_back").fetchSemanticsNodes().isNotEmpty()) ui.onNodeWithTag("settings_back").performSemanticsAction(click)
             ui.onNodeWithTag("settings_section_$section").performScrollTo().performSemanticsAction(click)
-            ui.onNodeWithTag("settings_page_title").assertTextEquals(section)
+            ui.onNodeWithTag("settings_page_$section").assertExists()
         }
         open("מראה ותחושה")
-        ui.onNodeWithTag("settings_section_עבודה").assertDoesNotExist()
+        // In place: the other headers stay on the same page, and only one card is open at a time.
+        ui.onNodeWithTag("settings_section_עבודה").assertExists()
+        ui.onNodeWithTag("settings_page_עבודה").assertDoesNotExist()
         ui.onNodeWithTag("theme_LIGHT").performScrollTo().performClick()
         assertEquals(ThemeChoice.LIGHT, settings.theme)
         shot("settings-light")
@@ -944,18 +947,28 @@ class KisUiTest {
         ui.onNodeWithTag("profile_last_name").performScrollTo().performTextReplacement("כהן")
         assertEquals("שולי", settings.name)
         assertEquals("כהן", settings.lastName)
-        // Weekly plans live here (device-only settings).
+        // Weekly plans (device-only settings): FB23-F4 puts the auto-register switch on the Work card itself, no sheet.
         open("עבודה")
-        ui.onNodeWithTag("series_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
-        ui.onNodeWithTag("auto_confirm_switch").performClick()
+        ui.onNodeWithTag("settings_page_חשבון").assertDoesNotExist()
+        ui.onNodeWithTag("auto_confirm_switch").performScrollTo().performClick()
         assertFalse(vm.planSettings.autoConfirm)
         ui.onNodeWithTag("auto_confirm_switch").performClick()
         assertTrue(vm.planSettings.autoConfirm)
-        // Feedback is the first section; its row unfolds the form in place.
+        ui.onNodeWithTag("series_sheet").assertDoesNotExist()
+        // Feedback is the first card; opening it shows the form itself (no second row to tap).
         open("משוב ותקלות")
-        ui.onNodeWithTag("feedback_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        ui.onNodeWithTag("feedback_row").assertDoesNotExist()
         ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("draft")
         shot("settings-feedback")
+        // A second tap folds the card; the draft is kept for the next time it opens.
+        ui.onNodeWithTag("settings_section_משוב ותקלות").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        ui.onNodeWithTag("feedback_message").assertDoesNotExist()
+        open("משוב ותקלות")
+        ui.onNodeWithTag("feedback_message").assertTextContains("draft")
+        // Summaries: the control inside the card opens the list, no empty page in between.
+        open("הסיכומים שלי")
+        ui.onNodeWithTag("recaps_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        assertTrue(recaps)
     }
 
     /**
@@ -1069,62 +1082,7 @@ class KisUiTest {
         settings.updatePlaceOrder(emptyList())
     }
 
-    /**
-     * R-33: the header "קבוצה" button read as an action (an edit has "מחיקה" there). A group shift is a "משמרת קבוצתית"
-     * switch under the tabs, the same switch as "חוזרת כל שבוע"; same draft rule (tab kept, off drops the people). New shifts only.
-     */
-    @Test fun groupIsASwitchUnderTheTabsNotAHeaderButton() {
-        val vm = model()
-        host {
-            KisEditorPage(vm, EntryDraft(category = "מסעדה", rate = "50", currency = "₪", start = "09:00", end = "13:00", day = day), null, categories, emptyList(), emptyList(),
-                onClose = {}, onSaved = { _, _ -> }, onDeleted = {})
-        }
-        ui.onAllNodesWithText("קבוצה").assertCountEquals(0)
-        ui.onNode(hasTestTag("editor_team") and SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Switch))
-            .assertIsDisplayed().assertIsOff()
-        ui.onNodeWithTag("team_row", useUnmergedTree = true).assertIsDisplayed()
-        ui.onNodeWithText("משמרת קבוצתית").assertIsDisplayed()
-        ui.onNodeWithText("משמרת חדשה").assertIsDisplayed()
-        // Under the tabs: below them, above the places.
-        val tabs = ui.onNodeWithTag("mode_hours").fetchSemanticsNode().boundsInRoot
-        val row = ui.onNodeWithTag("team_row", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        assertTrue("switch row under the tabs", row.top >= tabs.bottom - 1f)
-        // The title stays in the middle of the header.
-        val closeBox = ui.onNodeWithTag("editor_close").fetchSemanticsNode().boundsInRoot
-        val title = ui.onNodeWithText("משמרת חדשה").fetchSemanticsNode().boundsInRoot
-        val rootBox = ui.onRoot().fetchSemanticsNode().boundsInRoot
-        assertTrue("the spacer matches ביטול", closeBox.width > 0f)
-        assertEquals((rootBox.left + rootBox.right) / 2f, (title.left + title.right) / 2f, 2f)
-        ui.onNodeWithTag("mode_hours").performClick()
-        ui.onNodeWithTag("editor_team").performClick()
-        ui.onNodeWithTag("editor_team").assertIsOn()
-        // The title says it too: the switch's label and the title.
-        ui.onAllNodesWithText("משמרת קבוצתית").assertCountEquals(2)
-        ui.onNodeWithTag("team_frame").assertExists()
-        ui.onNodeWithTag("group_block").performScrollTo().assertExists()
-        ui.onNodeWithTag("mode_hours").assertIsSelected()
-        shot("r33-group-switch-on")
-        ui.onNodeWithTag("editor_team").performClick()
-        ui.onNodeWithTag("editor_team").assertIsOff()
-        ui.onNodeWithTag("team_frame").assertDoesNotExist()
-        ui.onNodeWithTag("group_block").assertDoesNotExist()
-        ui.onNodeWithTag("mode_hours").assertIsSelected()
-    }
-
-    /** R-33: an edit keeps "מחיקה" at the top and has no group switch, as before. */
-    @Test fun editPageHasNoGroupSwitch() {
-        val vm = model()
-        runBlocking { dao.insertEntry(WorkEntry(category = "מסעדה", date = day + 9 * 3_600_000L, isTimeRange = true, startTime = "09:00", endTime = "13:00",
-            hours = 4.0, hourlyRate = 50.0, totalEarnings = 200.0)) }
-        val base = rows().single()
-        host { KisEditorPage(vm, EntryDraft.from(base), base, categories, listOf(base), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
-        ui.onNodeWithTag("editor_delete").assertIsDisplayed()
-        ui.onNodeWithTag("editor_team").assertDoesNotExist()
-        ui.onNodeWithTag("team_row", useUnmergedTree = true).assertDoesNotExist()
-        assertEquals(200.0, rows().single().totalEarnings, 0.0)
-    }
-
-    /** The add page: the user's own shift by default (four tabs, AI last, "+ מקום" first); "משמרת קבוצתית" makes it a group shift. */
+    /** The add page: the user's own shift by default (four tabs, AI last, "+ מקום" first); "קבוצה" makes it a group shift. */
     @Test fun personalByDefaultAndGroupFromTheTop() {
         val vm = model()
         host {

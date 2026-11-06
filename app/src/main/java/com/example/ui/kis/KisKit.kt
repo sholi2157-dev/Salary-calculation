@@ -160,7 +160,7 @@ object KisButtonHeight { val large = 56.dp; val medium = 48.dp; val small = 44.d
 val KisColors.selectedBg get() = if (dark) Color(0xFF424853) else surface
 val KisColors.selectedInk get() = ink
 val KisColors.selectedEdge get() = ink
-val KisColors.disabledBg get() = if (dark) Color(0xFF21252B) else Color(0xFFE4E8F0)
+val KisColors.disabledBg get() = if (dark) Color(0xFF21252B) else Color(0xFFEEF0F4)
 val KisColors.disabledInk get() = if (dark) Color(0xFF5F636C) else Color(0xFF9EA5B2)
 /** Text on a filled danger surface (readable in dark too, where danger is a light coral). */
 val KisColors.onDangerFill get() = if (dark) Color(0xFF2B0E0B) else Color.White
@@ -177,7 +177,7 @@ fun KisButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
     val c = Kis.colors
     val (bg, fg) = when {
         !enabled -> (if (kind == KisButtonKind.OUTLINE) Color.Transparent else c.disabledBg) to c.disabledInk
-        kind == KisButtonKind.PRIMARY -> c.ink to c.onInk
+        kind == KisButtonKind.PRIMARY -> c.inkFill to c.onInk
         kind == KisButtonKind.GHOST -> c.sunk to c.ink
         kind == KisButtonKind.DANGER -> c.danger to c.onDangerFill
         else -> Color.Transparent to c.ink
@@ -199,7 +199,7 @@ fun KisButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
 fun KisAction(label: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier, primary: Boolean = false, danger: Boolean = false, tag: String? = null, enabled: Boolean = true) {
     val c = Kis.colors
     Column(modifier.heightIn(min = 64.dp).clip(RoundedCornerShape(KisRadius.small))
-        .background(if (!enabled) c.disabledBg else if (primary) c.ink else if (danger) c.danger else c.sunk)
+        .background(if (!enabled) c.disabledBg else if (primary) c.inkFill else if (danger) c.danger else c.sunk)
         .kisClick(enabled = enabled, onClick = onClick).then(if (tag != null) Modifier.testTag(tag) else Modifier).padding(vertical = 8.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)) {
         val fg = if (!enabled) c.disabledInk else if (primary) c.onInk else if (danger) c.onDangerFill else c.ink

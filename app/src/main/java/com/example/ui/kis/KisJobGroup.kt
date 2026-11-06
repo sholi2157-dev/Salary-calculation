@@ -103,7 +103,7 @@ internal fun JobTeamBlock(d: EntryDraft, directory: List<WorkerDirectory>, onFor
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     // "הבא" adds the name and goes to their amount (or, with one amount for all, stays for the next name); empty closes the keyboard.
                     keyboardActions = KeyboardActions(onNext = { if (newName.isNotBlank()) { add(newName.trim()); newName = "" } else focus.clearFocus() }))
-                Icon(Icons.Outlined.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(c.ink)
+                Icon(Icons.Outlined.PersonAdd, "הוספת עובד", tint = c.onInk, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(c.inkFill)
                     .kisClick(enabled = newName.isNotBlank()) { add(newName.trim()); newName = "" }.padding(12.dp).testTag("job_worker_add"))
             }
             // A name typed but not added yet would be lost on save: say how to add it.

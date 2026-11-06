@@ -186,21 +186,13 @@ fun daysLabel(mask: Int): String = V2Plan.days(mask).sorted().joinToString(" ") 
 
 /** Settings: every weekly plan with what is left of it; change its rate from today, or end it. */
 @Composable
-fun SeriesSheet(series: List<ShiftSeries>, occurrences: List<V2Plan.Occurrence>, categories: List<WorkCategory>, autoConfirm: Boolean, onAuto: (Boolean) -> Unit,
+fun SeriesSheet(series: List<ShiftSeries>, occurrences: List<V2Plan.Occurrence>, categories: List<WorkCategory>,
                 onRate: (ShiftSeries, Double?) -> Unit, onEnd: (ShiftSeries) -> Unit, onDismiss: () -> Unit) {
     val c = Kis.colors
     var rateFor by remember { mutableStateOf<ShiftSeries?>(null) }
     var ending by remember { mutableStateOf<ShiftSeries?>(null) }
     KisSheet(onDismiss = onDismiss, tag = "series_sheet") {
         Text("משמרות קבועות", style = KisType.title, color = c.ink)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                Text("רישום אוטומטי", style = KisType.label, color = c.ink)
-                InfoDot("רישום אוטומטי", "כשהזמן נגמר המשמרת נרשמת לבד. תמיד אפשר לבטל.")
-            }
-            KisSwitch(autoConfirm, onAuto, Modifier.testTag("auto_confirm_switch"), label = "רישום אוטומטי")
-        }
-        KisDivider()
         if (series.isEmpty()) Text("עוד אין משמרות קבועות. יוצרים אותן במסך ההוספה: \"חוזרת כל שבוע\".", style = KisType.body, color = c.muted)
         Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             series.forEach { s ->

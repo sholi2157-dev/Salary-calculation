@@ -71,7 +71,7 @@ data class EntryDraft(
     val passThrough: String = "",
     /** Job team: every worker gets the same amount as the user (true), or the user gets more and each worker has their own amount. */
     val teamSameRate: Boolean = true,
-    /** A group shift (the "משמרת קבוצתית" switch under the tabs): the same tabs, with the people who worked. Off = a shift of the user's own. */
+    /** A group shift (the "קבוצה" button at the top): the same tabs, with the people who worked. Off = a shift of the user's own. */
     val team: Boolean = false,
 ) {
     val editing get() = id != null
@@ -330,7 +330,7 @@ data class EntryDraft(
         return if (team && t != EntryMode.JOB) own.copy(mode = EntryMode.GROUP, start = if (t == EntryMode.HOURS) null else own.start) else own
     }
 
-    /** The "משמרת קבוצתית" switch: a group shift keeps the tab; back to the user's own shift drops the people. */
+    /** The "קבוצה" button: a group shift keeps the tab; back to the user's own shift drops the people. */
     fun withTeam(on: Boolean): EntryDraft {
         if (on == team) return this
         if (on) return copy(team = true).withTab(tab)

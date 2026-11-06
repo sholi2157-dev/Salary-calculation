@@ -50,8 +50,6 @@ class DistributionUiTest {
         ui.onNodeWithTag("editor_more").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("בדיקת טיוטה")
         for (mode in listOf("hours", "job", "group", "clock")) {
-            // The group switch folds away with the places while the keyboard is open (R-33).
-            if (mode == "group") { Espresso.closeSoftKeyboard(); ui.waitForIdle() }
             ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performClick()
             ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
             snap("v2-add-$mode")
@@ -102,24 +100,20 @@ class DistributionUiTest {
         ui.onNodeWithTag("settings_root").assertIsDisplayed()
         for (section in listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "הסיכומים שלי", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
         snap("v2-settings")
+        // FB23-F1: a card opens in place; the feedback card shows its form at once, and opening another card folds it.
         ui.onNodeWithTag("settings_section_משוב ותקלות").performScrollTo().performClick()
-        ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
-        ui.onNodeWithTag("feedback_message").performTextInput("Synthetic feedback draft")
+        ui.onNodeWithTag("feedback_message").performScrollTo().performTextInput("Synthetic feedback draft")
         Espresso.closeSoftKeyboard()
-        ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
-        ui.onNodeWithTag("settings_back").performClick()
         ui.onNodeWithTag("settings_section_התראות").performScrollTo().performClick()
+        ui.onNodeWithTag("feedback_message").assertDoesNotExist()
         snap("v2-settings-notifications")
-        Espresso.pressBack()
         ui.onNodeWithTag("settings_section_עזרה וכלים").performScrollTo().performClick()
         ui.onNodeWithTag("replay_onboarding").performScrollTo().performClick()
         ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
         ui.onNodeWithTag("onboarding_skip").performClick()
         ui.onNodeWithTag("settings_section_משוב ותקלות").performScrollTo().performClick()
-        ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
-        ui.onNodeWithTag("feedback_message").assertTextContains("Synthetic feedback draft")
-        ui.onNodeWithTag("feedback_row").performScrollTo().performClick()
-        ui.onNodeWithTag("settings_back").performClick()
+        ui.onNodeWithTag("feedback_message").performScrollTo().assertTextContains("Synthetic feedback draft")
+        ui.onNodeWithTag("settings_section_משוב ותקלות").performScrollTo().performClick()
         // Settings is the third swipe page: Home leaves it.
         ui.onNodeWithTag("settings_button").assertIsSelected()
         ui.onNodeWithTag("tab_0").performClick()
