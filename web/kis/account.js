@@ -82,7 +82,7 @@ function signedIn(fb, user) {
     currentUid: () => fb.auth().currentUser?.uid || null });
   unsubscribe?.(); unsubscribe = app.store.subscribe(() => schedule(1500));
   stopListen?.(); stopListen = transport.listen(user.uid, Date.now(), () => schedule(300));
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') schedule(0); });
+  if (!account.watchingVisibility) { account.watchingVisibility = true; document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') schedule(0); }); }
   schedule(0);
 }
 
@@ -102,7 +102,8 @@ function schedule(ms) {
     if (applying) return schedule(500);
     applying = true; account.status = 'syncing'; changed();
     try { const conflicts = await account.sync.sync(); account.status = navigator.onLine === false ? 'offline' : 'ok'; account.error = null;
-      if (conflicts && !account.toldConflicts) { account.toldConflicts = true; U().toast('משמרת השתנתה גם במכשיר אחר', 'לבחירה', () => conflictsSheet()); } }
+      if (conflicts && !account.toldConflicts) { account.toldConflicts = true; U().toast('משמרת השתנתה גם במכשיר אחר', 'לבחירה', () => conflictsSheet()); }
+      if (!conflicts) account.toldConflicts = false; }
     catch (e) { account.status = navigator.onLine === false ? 'offline' : 'error'; account.error = e.message; if (navigator.onLine !== false) schedule(30000); }
     finally { applying = false; changed(); }
   }, ms);
@@ -133,7 +134,7 @@ function explainCards(withHow = true) {
 function draw() {
   const offline = account.status === 'offline';
   if (introStep < 2) {
-    const updated = (app?.store?.local?.launched || 0) >= 2;
+    const updated = (app?.store ? root.KisLaunch.launched(app) : 0) >= 2;
     gate.innerHTML = introStep === 0
       ? `<div class="launch-in"><div class="grow"></div>
         <p class="intro-label" style="--d:.1s" data-testid="intro-line-1">חישוב שכר</p><p class="intro-label muted" style="--d:.3s">${updated ? 'גרסה 2.3.1' : 'ברוכים הבאים'}</p>
@@ -217,6 +218,8 @@ async function eraseAccount(store) {
   return root.WorkErase.eraseAccount({ store, sync: account.sync, transport: root.WorkSyncFirestore.firestoreTransport(fb), uid: account.user.uid });
 }
 async function signOut() {
+  // As in the app: a running shift would stay behind, out of sight, if another account signs in here.
+  if (app?.store?.timer()) throw Error('running');
   const fb = await loadFirebase();
   if (account.sync) try { await account.sync.sync(); } catch {}
   await fb.auth().signOut();
@@ -237,7 +240,7 @@ function bindSettings(el) {
   el.querySelector('[data-acc=now]')?.addEventListener('click', () => schedule(0));
   el.querySelector('[data-acc=conflicts]')?.addEventListener('click', conflictsSheet);
   el.querySelector('[data-acc=assistants]')?.addEventListener('click', assistantsSheet);
-  el.querySelector('[data-acc=signout]')?.addEventListener('click', () => U().confirmSheet('יציאה מהחשבון', 'הנתונים נשארים בחשבון. כדי להמשיך תצטרך להתחבר שוב.', 'יציאה', () => signOut().catch(() => U().toast('היציאה לא הושלמה'))));
+  el.querySelector('[data-acc=signout]')?.addEventListener('click', () => U().confirmSheet('יציאה מהחשבון', 'הנתונים נשארים בחשבון. כדי להמשיך תצטרך להתחבר שוב.', 'יציאה', () => signOut().catch(e => U().toast(e.message === 'running' ? 'יש משמרת שרצה עכשיו. צריך לסיים אותה לפני היציאה מהחשבון' : 'היציאה לא הושלמה'))));
 }
 
 function describe(type, item) {

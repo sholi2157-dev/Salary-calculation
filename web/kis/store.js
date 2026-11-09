@@ -199,7 +199,10 @@ function createStore(storage, { now = () => Date.now() } = {}) {
 
   // ---- timer ----
   function timer() { try { return root.WorkRuntime.readTimer(storage, null); } catch { return null; } }
-  function startTimer(category, rate, currency) { storage.setItem(timerKey, JSON.stringify({ id: uid(), category, rate: rate ?? 0, currency, startedAt: now(), rateUnknown: rate == null })); emit(); }
+  /** Never over a shift that already runs (another tab, or a sheet opened before it started): false, nothing written. */
+  function startTimer(category, rate, currency) {
+    return transact(n => { if (timer()) return false; n.timer = { id: uid(), category, rate: rate ?? 0, currency, startedAt: now(), rateUnknown: rate == null }; return true; });
+  }
   function cancelTimer() { const t = timer(); storage.removeItem(timerKey); emit(); return t; }
   function restoreTimer(t) { storage.setItem(timerKey, JSON.stringify(t)); emit(); }
 

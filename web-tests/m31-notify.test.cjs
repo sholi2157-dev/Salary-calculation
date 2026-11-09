@@ -30,7 +30,7 @@ test('M-31: reminder types are independently gated and never modify historical r
 });
 
 test('M-31: disabled reminders do not consume their delivery window', () => {
-  const app = setup();
+  const app = setup({ notifyMonthly: false });
   assert.deepEqual(app.due(), []);
   app.store.local.notifyRate = true;
   assert.deepEqual(app.due(), ['rate']);
@@ -40,7 +40,16 @@ test('M-31: disabled reminders do not consume their delivery window', () => {
 
 test('M-31: empty, paid-known and future-only histories produce no missing-rate reminders', () => {
   for (const entries of [[], [{ date: 1, payKnown: true }], [{ date: 1, payKnown: false, future: true }]]) {
-    const app = setup({ notifyRate: true }, entries);
+    const app = setup({ notifyRate: true, notifyMonthly: false }, entries);
     assert.deepEqual(app.due(), []);
   }
+});
+
+test('monthly summary is on unless switched off (as in the app), and a month without shifts is not used up', () => {
+  const app = setup({}, []);
+  assert.deepEqual(app.due(), [], 'nothing to sum up yet');
+  assert.equal(app.store.local.lastMonthly, undefined, 'an empty month is not marked as told');
+  app.store.data.entries.push({ date: 1, payKnown: true });
+  assert.deepEqual(app.due(), ['monthly'], 'on by default, once there is a shift in the month');
+  assert.deepEqual(app.due(), []);
 });

@@ -13,9 +13,18 @@ const STEPS = [
   { page: 'home', title: 'זה הכול. אפשר להתחיל.', body: 'מוסיפים משמרת, והחישובים עלינו. ההדרכה תמיד זמינה שוב בהגדרות.' },
 ];
 
+/**
+ * The launch already seen in this browser: by this account's own copy, or by the browser's own data (a second account
+ * signed in here has a copy of its own, which never saw the launch; this browser did).
+ */
+function launched(app) {
+  let browser = 0;
+  try { browser = (globalThis.localStorage && JSON.parse(localStorage.getItem('kis_web_v1') || '{}').launched) || 0; } catch { /* unreadable: the copy decides */ }
+  return Math.max(app.store.local.launched || 0, browser);
+}
 /** On open: the launch when it was not seen yet. */
 function maybeStart(app) {
-  if ((app.store.local.launched || 0) >= LAUNCH_VERSION) return false;
+  if (launched(app) >= LAUNCH_VERSION) return false;
   launch(app);
   return true;
 }
@@ -78,5 +87,5 @@ function tour(app) {
   show();
 }
 
-root.KisLaunch = { maybeStart, launch, tour, STEPS, LAUNCH_VERSION };
+root.KisLaunch = { maybeStart, launch, tour, launched, STEPS, LAUNCH_VERSION };
 })(globalThis);

@@ -48,8 +48,8 @@ function render(el, app) {
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('תאריכים', null, `<div class="seg">${[['GREG', 'לועזי'], ['HEB', 'עברי'], ['BOTH', 'שניהם']].map(([v, l]) => `<button aria-pressed="${(store.local.dateMode || 'BOTH') === v}" data-date-mode="${v}" data-testid="date-mode-${v.toLowerCase()}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
-  ${group('התראות', rowHtml('כל ההתראות', null, `<button class="switch" role="switch" aria-checked="${NOTIFY_KINDS.every(([k]) => store.local[k] === true)}" aria-label="כל ההתראות" data-a="notify" data-testid="notify-all"></button>`, 'כולן יחד')
-    + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${store.local[k] === true}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''))}
+  ${group('התראות', rowHtml('כל ההתראות', null, `<button class="switch" role="switch" aria-checked="${NOTIFY_KINDS.every(([k]) => notifyOn(store, k))}" aria-label="כל ההתראות" data-a="notify" data-testid="notify-all"></button>`, 'כולן יחד')
+    + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${notifyOn(store, k)}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''))}
   ${group('גיבוי ונתונים', `<div class="row backup-row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
     <div class="row backup-row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv" data-testid="csv-export">טבלה לאקסל (CSV)</button><button class="btn small outline grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`)}
   ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip act" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip act" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
@@ -87,12 +87,12 @@ function render(el, app) {
   // The main switch turns every kind on or off together; each kind keeps its own switch, and the
   // main one shows on only when every kind is on. The same stored keys as before (notifyMonthly, notifyRate).
   const notifySync = () => {
-    q('[data-a=notify]').setAttribute('aria-checked', NOTIFY_KINDS.every(([k]) => store.local[k] === true));
-    el.querySelectorAll('[data-notify]').forEach(b => b.setAttribute('aria-checked', store.local[b.dataset.notify] === true));
+    q('[data-a=notify]').setAttribute('aria-checked', NOTIFY_KINDS.every(([k]) => notifyOn(store, k)));
+    el.querySelectorAll('[data-notify]').forEach(b => b.setAttribute('aria-checked', notifyOn(store, b.dataset.notify)));
   };
   q('[data-a=notify]').onclick = e => { const on = e.currentTarget.getAttribute('aria-checked') !== 'true';
     for (const [k] of NOTIFY_KINDS) store.setLocal(k, on, true); notifySync(); };
-  el.querySelectorAll('[data-notify]').forEach(b => b.onclick = () => { store.setLocal(b.dataset.notify, store.local[b.dataset.notify] !== true, true); notifySync(); });
+  el.querySelectorAll('[data-notify]').forEach(b => b.onclick = () => { store.setLocal(b.dataset.notify, !notifyOn(store, b.dataset.notify), true); notifySync(); });
   q('[data-a=erase]').onclick = () => eraseSheet(app);
   q('[data-a=erase-account]')?.addEventListener('click', () => eraseAccountSheet(app));
   q('[data-a=android-download]').onclick = () => root.KisDownload.open();
@@ -322,6 +322,8 @@ function eraseForm(el, store, { title, body, okLabel, okTestid }, onOk, close) {
   ok.onclick = () => { ok.disabled = true; onOk(); };
 }
 const RUNNING = 'יש משמרת שרצה עכשיו. צריך לסיים אותה לפני המחיקה';
+/** The monthly summary is on unless switched off (as in the app); the other reminders are off unless switched on. */
+const notifyOn = (store, key) => key === 'notifyMonthly' ? store.local[key] !== false : store.local[key] === true;
 
 /** "מחיקה מהמכשיר הזה": the account copy stays; when signed in, the app signs out so sync does not bring it straight back. */
 function eraseSheet(app) {
@@ -466,10 +468,12 @@ function dueReminders(app) {
   const done = store.data.entries.filter(e => !U().upcoming(e));
   // The recap of a month, once, from its 30th for 4 more days (KisSummary.recapNew; never before the first one).
   const scope = root.KisSummary.recapNew(root.KisPlan.dateOf(now)).month;
-  if (store.local.notifyMonthly === true && scope && store.local.lastMonthly !== scope) {
+  // On unless switched off (the app's default too). A month without shifts yet is not marked as told: a shift added
+  // later in the same window still brings its summary, as in the app.
+  if (store.local.notifyMonthly !== false && scope && store.local.lastMonthly !== scope) {
     const rows = done.filter(e => root.KisPlan.dateOf(e.date).startsWith(scope)), month = root.KisSummaryUi.monthOf(scope);
-    if (rows.length) out.push({ kind: 'monthly', title: `${U().MONTHS[month % 12]} שלך בכיס מוכן`, text: rows.length === 1 ? 'משמרת אחת · לצפייה בסיכום' : `${rows.length} משמרות · לצפייה בסיכום`, time: now, month, scope });
-    store.setLocal('lastMonthly', scope);
+    if (rows.length) { out.push({ kind: 'monthly', title: `${U().MONTHS[month % 12]} שלך בכיס מוכן`, text: rows.length === 1 ? 'משמרת אחת · לצפייה בסיכום' : `${rows.length} משמרות · לצפייה בסיכום`, time: now, month, scope });
+      store.setLocal('lastMonthly', scope); }
   }
   const missing = done.filter(e => !e.payKnown).length;
   if (store.local.notifyRate === true && missing && now - (store.local.lastRate || 0) >= 7 * 864e5) {
@@ -497,7 +501,12 @@ if (typeof addEventListener === 'function') {
   addEventListener('error', ev => event('error', `${ev.error?.name || 'Error'} ${file(ev.filename)}:${ev.lineno || 0}`));
   addEventListener('unhandledrejection', ev => event('rejection', ev.reason?.name || 'Error'));
 }
-const feedbackDraft = { kind: 'תקלה', message: '', image: null };
+// The typed text survives a reload of the tab (as in the app); the picture stays in memory only.
+const FEEDBACK_DRAFT = 'kis_feedback_draft_v1';
+const feedbackDraft = { kind: 'תקלה', message: (() => { try { return sessionStorage.getItem(FEEDBACK_DRAFT) || ''; } catch { return ''; } })(), image: null };
+const keepFeedbackText = t => { try { if (t) sessionStorage.setItem(FEEDBACK_DRAFT, t); else sessionStorage.removeItem(FEEDBACK_DRAFT); } catch { /* optional */ } };
+/** True while a report is on its way; the page is not redrawn under it meanwhile. */
+let feedbackSending = false;
 
 /** The report without the screenshot. Only the listed fields leave the browser. */
 function feedbackReport(app, kind, message, now = Date.now()) {
@@ -539,7 +548,7 @@ function feedbackForm(el, app, close, heading = false) {
     const q = s => el.querySelector(s), msg = q('[data-f=msg]'), send = q('[data-a=send]');
     const sync = () => { send.disabled = !msg.value.trim(); if (relay) { q('[data-f=pick]').hidden = !!d.image; q('[data-f=att]').hidden = !d.image; } };
     msg.value = d.message; sync();
-    msg.addEventListener('input', () => { d.message = msg.value; q('[data-f=err]').hidden = true; sync(); });
+    msg.addEventListener('input', () => { d.message = msg.value; keepFeedbackText(d.message); q('[data-f=err]').hidden = true; sync(); });
     el.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => { d.kind = b.dataset.kind; el.querySelectorAll('[data-kind]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
     const mail = () => {
       const r = feedbackReport(app, d.kind, d.message);
@@ -552,21 +561,27 @@ function feedbackForm(el, app, close, heading = false) {
     }
     send.onclick = async () => {
       if (!relay) { mail(); return; }
-      send.disabled = true; send.textContent = 'שולח…';
+      send.disabled = true; send.textContent = 'שולח…'; feedbackSending = true;
       let ok = false;
       try {
         const report = feedbackReport(app, d.kind, d.message);
         if (d.image) report.screenshot = await shrink(d.image).catch(() => null);
         // text/plain keeps it a simple request, so Apps Script answers without a CORS preflight.
-        const res = await fetch(FEEDBACK_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(report) });
+        // Never "שולח…" forever: the same limit as the app (40 seconds).
+        const res = await fetch(FEEDBACK_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(report),
+          signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(40000) : undefined });
         ok = (await res.json()).ok === true;
       } catch { ok = false; }
+      feedbackSending = false;
       event(ok ? 'feedback_sent' : 'feedback_failed');
       send.textContent = 'שליחה'; sync();
-      if (ok) { d.message = ''; d.image = null; close(); U().toast('המשוב נשלח. תודה!'); } else q('[data-f=err]').hidden = false;
+      if (ok) { d.message = ''; d.image = null; keepFeedbackText(''); close(); U().toast('המשוב נשלח. תודה!'); }
+      // The form may have been closed meanwhile: the failure is then said as a message, not on a form no one sees.
+      else if (send.isConnected) q('[data-f=err]').hidden = false;
+      else U().toast('המשוב לא נשלח. הטקסט נשמר, ואפשר לנסות שוב מההגדרות');
     };
   }
 }
 
-root.KisSettings = { open: name => { section = name || null; }, render, recoveryPanel, bindRecovery, recoverySheet, feedbackSheet, feedbackReport, event, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };
+root.KisSettings = { feedbackSending: () => feedbackSending, open: name => { section = name || null; }, render, recoveryPanel, bindRecovery, recoverySheet, feedbackSheet, feedbackReport, event, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };
 })(globalThis);

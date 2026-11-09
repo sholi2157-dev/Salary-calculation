@@ -152,7 +152,10 @@ function startLive() {
       // A decimal comma means a decimal point (40,5 = 40.5); anything else that is not a rate is said, not ignored (audit M-09).
       el.querySelector('[data-a=go]').onclick = () => { const raw = el.querySelector('[data-f=r]').value.trim(), r = root.KisRules.inputNumber(raw);
         if (raw && !(r != null && r >= 0 && r < 100000)) { el.querySelector('[data-f=err]').textContent = 'התעריף לא תקין'; U().haptic('warn'); return; }
-        store.startTimer(cat, r, root.WorkCategories.currency(cat, store.data.webPreferences)); close(); U().haptic('success'); render(); };
+        let started = false;
+        try { started = store.startTimer(cat, r, root.WorkCategories.currency(cat, store.data.webPreferences)); } catch (e) { el.querySelector('[data-f=err]').textContent = e.message; return; }
+        close(); render();
+        if (started) U().haptic('success'); else { U().haptic('warn'); U().toast('כבר רצה משמרת (אולי בחלון אחר). אפשר לסיים אותה ולהתחיל חדשה'); } };
     };
     draw();
   });
@@ -165,9 +168,9 @@ function stopLive() {
     const now = Date.now();
     let row;
     try { row = root.WorkRuntime.stopEntry(t, now); } catch (e) { U().toast(e.message); return; }
-    const start = new Date(t.startedAt), end = new Date(now), hh = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     const unknown = t.rateUnknown === true;
-    const entry = { ...row, keepId: t.id, isTimeRange: true, startTime: hh(start), endTime: hh(end), kind: 'shift', payKnown: !unknown, bonus: 0,
+    // Saved exactly as the Android app saves a timer shift: its start (date), the exact hours, and the same note.
+    const entry = { ...row, keepId: t.id, isTimeRange: false, startTime: null, endTime: null, notes: 'משמרת פעילה (טיימר החישוב)', kind: 'shift', payKnown: !unknown, bonus: 0,
       hourlyRate: unknown ? 0 : t.rate, totalEarnings: unknown ? 0 : root.KisPay.money(row.hours, t.rate) };
     const [id] = store.addEntries([entry]); store.cancelTimer(); U().haptic('success');
     U().toast('המשמרת נשמרה ✓', 'ביטול', () => { store.update(d => { d.entries = d.entries.filter(e => e.id !== id); }); store.restoreTimer(t); });
@@ -180,7 +183,7 @@ function start() {
   document.body.insertAdjacentHTML('afterbegin', '<div class="kis-glow" aria-hidden="true"></div>');
   store.load(); app.applyTheme(); app.applyTextChoices();
   // A browser that had this site before (its 2.0 launch is done) sees this release's highlights once (FB23-F11).
-  app.whatsNew = store.broken ? null : root.KisWhatsNew.pending(store, (store.local.launched || 0) >= root.KisLaunch.LAUNCH_VERSION);
+  app.whatsNew = store.broken ? null : root.KisWhatsNew.pending(store, root.KisLaunch.launched(app) >= root.KisLaunch.LAUNCH_VERSION);
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { app.applyTheme(); render(); });
   document.querySelectorAll('.nav [data-page]').forEach(b => b.onclick = () => { root.KisHistory.state.selection.clear(); app.go(b.dataset.page); });
   document.querySelector('.nav [data-a=add]').onclick = () => app.openNew();
@@ -199,7 +202,7 @@ function start() {
         const x = p.exceptions.find(e => e.seriesId === sid && e.date === date); if (x) x.hold = true; else p.exceptions.push(store.exception(sid, date, { hold: true })); }));
     }); };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { store.load(); catchUp(); render(); } });
-  setInterval(() => { if (document.visibilityState === 'visible' && !app.editorOpen && !U().anySheet()) render(); }, 60000);
+  setInterval(() => { if (document.visibilityState === 'visible' && !app.editorOpen && !U().anySheet() && !root.KisSettings.feedbackSending?.()) render(); }, 60000);
   render();
   catchUp();
   root.KisAccount.init(app);
