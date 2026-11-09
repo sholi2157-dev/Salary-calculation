@@ -51,7 +51,7 @@ const server = http.createServer((q, r) => {
    assert.equal(got.chipBg, got.sel, `${scheme}: selected chip uses selected-bg`);
    assert.equal(got.segBg, got.accent, `${scheme}: selected segment has a filled accent`);
    assert.equal(got.chipEdge, '2px'); assert.match(got.segShadow, /inset/);
-   assert.equal(got.sel, scheme === 'dark' ? 'rgb(66, 72, 83)' : 'rgb(255, 255, 255)');
+   assert.equal(got.sel, scheme === 'dark' ? 'rgb(66, 72, 83)' : 'rgb(237, 239, 242)');
    assert.equal(got.offOpacity, '1', 'disabled uses colours, not opacity');
    assert.deepEqual(got.heights, [56, 48, 44]);
    assert.ok(got.toastSvg, 'toast sign is an SVG');
