@@ -84,6 +84,6 @@ fun WhatsNewSheet(note: WhatsNew.Note, onDismiss: () -> Unit) {
                 }
             }
         }
-        KisButton("מעולה", onDismiss, Modifier.fillMaxWidth(), height = 48.dp, tag = "whats_new_ok")
+        KisButton("קדימה!", onDismiss, Modifier.fillMaxWidth(), height = 48.dp, tag = "whats_new_ok")
     }
 }

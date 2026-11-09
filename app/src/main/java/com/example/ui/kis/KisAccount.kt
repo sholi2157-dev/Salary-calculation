@@ -245,7 +245,7 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
                 is WorkViewModel.EraseResult.Unsent -> toast(if (r.conflicts > 0) "יש שינויים שממתינים לבחירה. אחרי הבחירה אפשר למחוק"
                     else "יש ${if (r.count == 1) "שינוי אחד" else "${r.count} שינויים"} שעוד לא הגיע לחשבון. כדי לא לאבד אותו, צריך חיבור לאינטרנט. שום דבר לא נמחק")
                 else -> {
-                    settings.updateName(""); settings.updateLastName("")
+                    settings.updateName(""); settings.updateLastName(""); settings.updatePayZelle(""); settings.updatePayBit(""); settings.updatePayBank("")
                     if (user != null) { toast("הנתונים נמחקו מהטלפון, והאפליקציה התנתקה מהחשבון"); onSignedOut() } else toast("הנתונים נמחקו מהטלפון")
                 }
             }
@@ -263,7 +263,7 @@ fun AccountRows(viewModel: WorkViewModel, onSignIn: () -> Unit, onSignedOut: () 
         toast("מוחק מהחשבון…")
         viewModel.eraseAccount { r ->
             when (r) {
-                WorkViewModel.EraseResult.Done -> { settings.updateName(""); settings.updateLastName(""); toast("נתוני חישוב שכר נמחקו מהחשבון ומהטלפון הזה") }
+                WorkViewModel.EraseResult.Done -> { settings.updateName(""); settings.updateLastName(""); settings.updatePayZelle(""); settings.updatePayBit(""); settings.updatePayBank(""); toast("נתוני חישוב שכר נמחקו מהחשבון ומהטלפון הזה") }
                 WorkViewModel.EraseResult.Offline -> toast("אין חיבור לחשבון. שום דבר לא נמחק. אפשר לנסות שוב כשיהיה חיבור")
                 is WorkViewModel.EraseResult.Partial -> toast("המחיקה מהחשבון לא הושלמה" + (if (r.left > 0) ": ${if (r.left == 1) "פריט אחד נשאר" else "${r.left} פריטים נשארו"}" else "") + ". מה שנמחק לא שוחזר. אפשר לנסות שוב")
                 else -> {}

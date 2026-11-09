@@ -56,7 +56,7 @@ class ReportKeyboardTest {
         ui.onNodeWithTag("entry_done").performClick()
         awaitIme(false)
         ui.onNodeWithTag("entry_bar").assertDoesNotExist()
-        ui.onNodeWithTag("editor_more").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_note").performScrollTo().performClick()
         for (mode in listOf("clock", "hours")) {
             ui.onNodeWithTag("mode_$mode").performClick()
             repeat(2) {

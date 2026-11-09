@@ -100,6 +100,7 @@ fun KisHistory(
     val c = Kis.colors
     val settings = Kis.settings
     val context = LocalContext.current
+    val owedShare = rememberOwedShare(onMessage)
     // Done vs planned: shifts on a later day are planned, like weekly plans. They are never in totals, copy or Excel.
     val showPlans = ui.planned
     // The same moving clock as Home: after midnight a planned shift becomes history without new data (audit AND-C03).
@@ -215,7 +216,12 @@ fun KisHistory(
         }
         AnimatedVisibility(ui.selecting, modifier = Modifier.align(Alignment.BottomCenter), enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
             SelectionBar(selectedRows, rows, ui,
-                onShare = { KisShare.shareOrCopy(context, WorkShareText.summary(selectedRows, WorkShareText.workerName(selectedRows, ui.query)), "שיתוף משמרות", onMessage); ui.selection = emptySet() },
+                onShare = {
+                    // To a worker (a name searched): a plain report that asks for their details. The user's own shifts: may add the user's payment details.
+                    val worker = WorkShareText.workerName(selectedRows, ui.query)
+                    val text = WorkShareText.summary(selectedRows, worker)
+                    if (worker != null) KisShare.shareOrCopy(context, text, "שיתוף משמרות", onMessage) else owedShare(text, "שיתוף משמרות")
+                    ui.selection = emptySet() },
                 onCopy = { KisShare.copy(context, WorkShareText.copy(selectedRows, WorkShareText.workerName(selectedRows, ui.query))); onMessage("הועתק ✓ · מוכן להדבקה"); ui.selection = emptySet() },
                 onPaid = { paid ->
                     // M-37: the same message with undo as everywhere; undo puts back each shift's own previous paid mark.

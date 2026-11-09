@@ -58,11 +58,12 @@ fun ShiftDetailSheet(entry: WorkEntry, categories: List<WorkCategory>, viewModel
     val context = LocalContext.current
     var confirmDelete by remember { mutableStateOf(false) }
     var completing by remember { mutableStateOf(false) }
+    val owedShare = rememberOwedShare(onMessage)
     KisSheet(onDismiss = onDismiss, tag = "shift_detail") {
         ShiftDetailContent(entry, categories,
             onPaid = { viewModel.setPaid(listOf(entry.id), it) },
             onEdit = { onEdit(entry) },
-            onShare = { KisShare.shareOrCopy(context, WorkShareText.entry(entry, future = KisHistoryLogic.upcoming(entry)), "שיתוף משמרת", onMessage) },
+            onShare = { owedShare(WorkShareText.entry(entry, future = KisHistoryLogic.upcoming(entry)), "שיתוף משמרת") },
             // Close the sheet so the confirmation is visible above it.
             onCopy = { KisShare.copy(context, WorkShareText.entry(entry, technical = true, future = KisHistoryLogic.upcoming(entry))); onDismiss(); onMessage("הועתק ✓ · מוכן להדבקה") },
             onDelete = { confirmDelete = true },
@@ -168,6 +169,7 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
 
 @Composable
 private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (String) -> Unit) {
+    val owedShare = rememberOwedShare(onMessage)
     val c = Kis.colors
     val myName = Kis.settings.name
     val context = LocalContext.current
@@ -224,11 +226,28 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                 .kisClick { onDismiss(); act() }.testTag("${tag}_$i").wrapContentHeight(Alignment.CenterVertically).padding(horizontal = 12.dp))
         }
     }
-    if (reports) ActionsSheet("שיתוף", "group_reports", { reports = false }, listOf(
-        "דוח למעסיק" to { KisShare.shareOrCopy(context, WorkShareText.employer(entry, myName, future = future), "סיכום לקבלן", onMessage) },
-        "העתקת דוח הצוות" to { KisShare.copy(context, WorkShareText.employer(entry, myName, technical = true, future = future)); onMessage("הדוח הועתק ✓") },
-        "החלק שלי" to { KisShare.shareOrCopy(context, WorkShareText.entry(entry, future = future), "שיתוף משמרת", onMessage) },
-        "העתקת החלק שלי" to { KisShare.copy(context, WorkShareText.entry(entry, technical = true, future = future)); onMessage("הועתק ✓") }))
+    // Two reports, each one row: a tap shares it, the copy icon beside it copies the same report.
+    if (reports) KisSheet(onDismiss = { reports = false }, tag = "group_reports") {
+        Text("שיתוף", style = KisType.title, color = c.ink)
+        listOf(
+            Triple("דוח למעסיק", { owedShare(WorkShareText.employer(entry, myName, future = future), "סיכום לקבלן") },
+                { KisShare.copy(context, WorkShareText.employer(entry, myName, technical = true, future = future)); onMessage("הדוח הועתק ✓") }),
+            Triple("החלק שלי", { owedShare(WorkShareText.entry(entry, future = future), "שיתוף משמרת") },
+                { KisShare.copy(context, WorkShareText.entry(entry, technical = true, future = future)); onMessage("הועתק ✓") }),
+        ).forEachIndexed { i, (label, share, copy) ->
+            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(12.dp)).kisClick { reports = false; share() }
+                    .testTag("group_reports_share_$i").padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(Icons.Outlined.Share, null, tint = c.muted, modifier = Modifier.size(20.dp))
+                    Text(label, style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
+                }
+                Icon(Icons.Outlined.ContentCopy, "העתקת $label", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape)
+                    .kisClick { reports = false; copy() }.testTag("group_reports_copy_$i").padding(12.dp))
+            }
+            if (i == 0) KisDivider()
+        }
+    }
     workerMenu?.let { i -> workers.getOrNull(i)?.let { w -> ActionsSheet(w.name, "group_worker_menu", { workerMenu = null }, listOf(
         "שיתוף ל${w.name}" to { KisShare.shareOrCopy(context, WorkShareText.worker(entry, w, future = future), "שליחה ל${w.name}", onMessage) },
         "העתקה" to { KisShare.copy(context, WorkShareText.worker(entry, w, technical = true, future = future)); onMessage("הועתק ✓") },

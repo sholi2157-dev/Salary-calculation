@@ -169,7 +169,7 @@ class KisUiTest {
         ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪437.50")
         shot("editor-clock-$suffix")
         // A note survives every mode switch (draft is kept).
-        ui.onNodeWithTag("editor_more").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_note").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("טיוטה שנשמרת במעבר")
         // "group" is the "קבוצה" button at the top (on, then off again back to the user's own shift).
         for (mode in listOf("hours", "group", "clock")) {
@@ -186,6 +186,12 @@ class KisUiTest {
         ui.onNodeWithTag("mode_clock").performClick()
         // Unknown rate: saving is allowed and the total says what is missing instead of ₪0.
         // A break is one tap: 30 minutes off the shift, then back to none.
+        // The break is added from "+" (with the bonus and money passed on), not a button of its own.
+        ui.onNodeWithTag("editor_plus").performScrollTo().performClick()
+        ui.onNodeWithTag("plus_bonus").assertExists()
+        ui.onNodeWithTag("plus_pass").assertExists()
+        ui.onNodeWithTag("plus_break").performScrollTo().performClick()
+        ui.onNodeWithTag("plus_block").assertDoesNotExist()
         ui.onNodeWithTag("editor_scroll").performScrollToNode(hasTestTag("break_30"))
         ui.waitForIdle()
         shot("editor-break-scrolled-$suffix")
@@ -195,6 +201,9 @@ class KisUiTest {
         shot("editor-break-$suffix")
         ui.onNodeWithTag("break_0").performScrollTo().performClick()
         ui.onNodeWithTag("editor_meta").assertTextContains("8:45 שעות", substring = true)
+        // "לא יודע" is inside the rate: it shows only while the rate is typed.
+        ui.onNodeWithTag("editor_rate_unknown").assertDoesNotExist()
+        ui.onNodeWithTag("editor_rate").performScrollTo().performClick()
         ui.onNodeWithTag("editor_rate_unknown").performScrollTo().performClick()
         ui.onNodeWithTag("editor_meta").assertTextContains("תעריף חסר", substring = true)
         ui.onNodeWithTag("save_shift_button").assertIsEnabled()
@@ -951,7 +960,7 @@ class KisUiTest {
             }
         }
         // FB23-F1: one page of category cards, in their order, without info dots; a tap opens the card in place.
-        listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "הסיכומים שלי", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון").forEach {
+        listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון").forEach {
             ui.onNodeWithTag("settings_section_$it").performScrollTo().assertExists()
             ui.onNodeWithTag("settings_info_$it", useUnmergedTree = true).assertDoesNotExist()
         }
@@ -1025,9 +1034,10 @@ class KisUiTest {
         ui.onNodeWithTag("feedback_message").assertDoesNotExist()
         open("משוב ותקלות")
         ui.onNodeWithTag("feedback_message").assertTextContains("draft")
-        // Summaries: one tap on the card itself opens the list; the card has nothing to unfold.
-        ui.onNodeWithTag("settings_section_הסיכומים שלי").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
-        ui.onNodeWithTag("settings_page_הסיכומים שלי").assertDoesNotExist()
+        // Summaries live in the account card: one row there opens the list.
+        ui.onNodeWithTag("settings_section_הסיכומים שלי").assertDoesNotExist()
+        open("חשבון")
+        ui.onNodeWithTag("recaps_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
         assertTrue(recaps)
         // The personal-key help says step by step how to get one, and its address is a link that opens the site.
         open("עזרה וכלים")
@@ -1066,7 +1076,9 @@ class KisUiTest {
         ui.waitForIdle()
         // The second person starts with the first one's amount.
         ui.onNodeWithTag("job_worker_amount_1").assertTextContains("50", substring = true)
-        ui.onNodeWithTag("editor_pass_through").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_plus").performScrollTo().performClick()
+        ui.onNodeWithTag("plus_bonus").assertDoesNotExist()
+        ui.onNodeWithTag("plus_pass").performClick()
         type("20")
         ui.onNodeWithTag("entry_done").performClick()
         ui.onNodeWithTag("pass_through_note").assertExists()

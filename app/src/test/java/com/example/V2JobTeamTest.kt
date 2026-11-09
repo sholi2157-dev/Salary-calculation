@@ -139,7 +139,7 @@ class V2JobTeamTest {
     @Test fun sharingNamesTheFixedSumAndTheWorkersOwnPay() {
         val e = draft(WorkerDraft("דני", amount = "300"), amount = "700").toEntry()
         val report = WorkShareText.employer(e, "שולי")
-        assertTrue(report, report.contains("דני: סכום קבוע | ₪300.00"))
+        assertTrue(report, report.contains("דני: ₪300.00") && !report.contains("סכום קבוע"))
         assertTrue(report, report.contains("שולי: ₪700.00"))
         assertTrue(report, report.contains("סכום הצוות: ₪1,000.00"))
         val worker = WorkShareText.worker(e, WorkPay.workers(e).single())

@@ -142,8 +142,6 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 }
                 Row_("רטט במגע", null) { KisSwitch(settings.haptics, settings::updateHaptics, Modifier.testTag("haptics_switch"), label = "רטט במגע") }
             }
-            // One thing to do here, so the card itself opens the summaries: one tap, an arrow instead of the chevron.
-            Group(nav, "הסיכומים שלי", go = { focusManager.clearFocus(force = true); section = null; onRecaps() }) {}
             Group(nav, "התראות") { NotificationSwitches(viewModel) }
             Group(nav, "עזרה וכלים", Modifier.coachTarget(CoachTarget.API)) {
                 Row_("רישום במילים (AI)", if (hasKey) "פעיל" else null, tag = "ai_key_row", onClick = { aiSheet = true }) {
@@ -183,6 +181,11 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
             // The name and the Google account in one compact place; set once and rarely touched again, so it sits last.
             Group(nav, "חשבון") {
                 ProfileFields()
+                // The summaries of past months live with the profile: one row, one tap.
+                Row_("הסיכומים שלי", null, tag = "recaps_row", onClick = { focusManager.clearFocus(force = true); onRecaps() }) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
+                }
+                KisDivider()
                 if (BuildConfig.ACCOUNTS_ENABLED) AccountRows(viewModel, onSignIn = onSignIn, onSignedOut = onClose, onBackup = { saveBackup.launch("salary-backup.json") })
             }
             Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

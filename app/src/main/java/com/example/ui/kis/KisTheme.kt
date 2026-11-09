@@ -178,6 +178,17 @@ class KisSettings internal constructor(private val context: Context?) {
         colorVersion++
     }
     /** The order the user gave the places (settings → places → עריכה). Device-only, like the colours; new places come last. */
+    /** Where the user gets paid (device only, like the name): added to a shared report only when chosen each time. */
+    var payZelle by mutableStateOf(prefs?.getString("payZelle", "") ?: "")
+        private set
+    fun updatePayZelle(value: String) { payZelle = value.take(80); prefs?.edit()?.putString("payZelle", payZelle.trim())?.apply() }
+    var payBit by mutableStateOf(prefs?.getString("payBit", "") ?: "")
+        private set
+    fun updatePayBit(value: String) { payBit = value.take(40); prefs?.edit()?.putString("payBit", payBit.trim())?.apply() }
+    var payBank by mutableStateOf(prefs?.getString("payBank", "") ?: "")
+        private set
+    fun updatePayBank(value: String) { payBank = value.take(160); prefs?.edit()?.putString("payBank", payBank.trim())?.apply() }
+    fun paymentLines() = com.example.data.WorkShareText.paymentLines(payZelle, payBit, payBank)
     var placeOrder by mutableStateOf(runCatching { org.json.JSONArray(prefs?.getString("placeOrder", "[]") ?: "[]").let { a -> List(a.length()) { a.getString(it) } } }.getOrDefault(emptyList()))
         private set
     fun updatePlaceOrder(names: List<String>) { placeOrder = names; prefs?.edit()?.putString("placeOrder", org.json.JSONArray(names).toString())?.apply() }

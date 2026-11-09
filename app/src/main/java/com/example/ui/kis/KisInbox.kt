@@ -220,4 +220,13 @@ fun ProfileFields() {
         KisTextField(settings.name, settings::updateName, "שם פרטי", Modifier.weight(1f).testTag("profile_name"))
         KisTextField(settings.lastName, settings::updateLastName, "שם משפחה", Modifier.weight(1f).testTag("profile_last_name"))
     }
+    // Where the user gets paid. Each is optional; when sharing a report the user chooses each time whether to add them.
+    Column(Modifier.padding(bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("פרטים לקבלת תשלום (לא חובה)", style = KisType.label, color = Kis.colors.muted)
+        KisTextField(settings.payZelle, settings::updatePayZelle, "Zelle: מייל או טלפון", Modifier.fillMaxWidth().testTag("profile_pay_zelle"),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email))
+        KisTextField(settings.payBit, settings::updatePayBit, "ביט: מספר טלפון", Modifier.fillMaxWidth().testTag("profile_pay_bit"),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone))
+        KisTextField(settings.payBank, settings::updatePayBank, "חשבון בנק: בנק, סניף, מספר חשבון", Modifier.fillMaxWidth().testTag("profile_pay_bank"))
+    }
 }

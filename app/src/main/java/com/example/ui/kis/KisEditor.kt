@@ -108,7 +108,10 @@ fun KisEditorPage(
     var sinkFocused by remember { mutableStateOf(false) }
     var sinkSeen by remember { mutableStateOf(false) }
     var focusAsk by remember { mutableIntStateOf(0) }
-    var more by rememberSaveable { mutableStateOf(initial.breakMin > 0 || initial.notes.isNotBlank() && initial.mode != EntryMode.JOB) }
+    // The extras row has four buttons: the rate, "+" (bonus, money passed on, a break), a note, another date.
+    var showNote by rememberSaveable { mutableStateOf(initial.notes.isNotBlank() && initial.mode != EntryMode.JOB) }
+    var showBreak by rememberSaveable { mutableStateOf(initial.breakMin > 0) }
+    var plusOpen by rememberSaveable { mutableStateOf(false) }
     var confirmLeave by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var addingPlace by rememberSaveable { mutableStateOf(false) }
@@ -371,16 +374,31 @@ fun KisEditorPage(
             FlowRowCompat {
                 if (d.mode != EntryMode.JOB) {
                     if (d.rateUnknown) KisChip("תעריף חסר · להוספה", warn = true, tag = "editor_rate_known", onClick = { d = d.copy(rateUnknown = false); open(KeyTarget.RATE) })
-                    else {
-                        KisChip("${d.currency}${shown(KeyTarget.RATE).ifEmpty { "?" }} לשעה", selected = pad && target == KeyTarget.RATE, tag = "editor_rate", onClick = { open(KeyTarget.RATE) })
-                        KisChip("לא יודע", tag = "editor_rate_unknown", onClick = { if (pad && target == KeyTarget.RATE) { buf = ""; done() }; d = d.copy(rateUnknown = true) })
-                    }
-                    val b = shown(KeyTarget.BONUS)
-                    KisChip(if (b.isNotEmpty() && b != "0") "בונוס ${d.currency}$b" else "+ בונוס", selected = pad && target == KeyTarget.BONUS, tag = "editor_bonus", onClick = { open(KeyTarget.BONUS) })
+                    else KisChip("${d.currency}${shown(KeyTarget.RATE).ifEmpty { "?" }} לשעה", selected = pad && target == KeyTarget.RATE, tag = "editor_rate", onClick = { open(KeyTarget.RATE) })
+                    // "לא יודע" belongs to the rate: it shows while the rate is typed, not as a button of its own.
+                    if (pad && target == KeyTarget.RATE) KisChip("לא יודע", tag = "editor_rate_unknown", onClick = { buf = ""; done(); d = d.copy(rateUnknown = true) })
                 }
+                // What was added with "+" shows as its own chip (a tap edits it); nothing shows for what was not added.
+                val b = shown(KeyTarget.BONUS)
+                if (d.mode != EntryMode.JOB && (b.isNotEmpty() && b != "0" || pad && target == KeyTarget.BONUS))
+                    KisChip("בונוס ${d.currency}${b.ifEmpty { "0" }}", selected = pad && target == KeyTarget.BONUS, tag = "editor_bonus", onClick = { open(KeyTarget.BONUS) })
                 val p = shown(KeyTarget.PASS)
-                KisChip(if (p.isNotEmpty() && p != "0") "החזר הוצאות ${d.currency}$p" else "+ החזר הוצאות", selected = pad && target == KeyTarget.PASS, tag = "editor_pass_through", onClick = { open(KeyTarget.PASS) })
-                if (d.mode != EntryMode.JOB) KisChip(if (more) "פחות" else "הפסקה · הערה", tag = "editor_more", onClick = { more = !more })
+                if (p.isNotEmpty() && p != "0" || pad && target == KeyTarget.PASS)
+                    KisChip("החזר הוצאות ${d.currency}${p.ifEmpty { "0" }}", selected = pad && target == KeyTarget.PASS, tag = "editor_pass_through", onClick = { open(KeyTarget.PASS) })
+                KisChip("+", selected = plusOpen, tag = "editor_plus", onClick = { if (pad) done(); plusOpen = !plusOpen })
+                if (d.mode != EntryMode.JOB) KisChip("הערה", selected = showNote, tag = "editor_note", onClick = { if (pad) done(); showNote = !showNote })
+            }
+            // "+": one money line at a time (bonus or money passed on), or a break. Each kind once; adding it again edits it.
+            if (plusOpen) {
+                val canBreak = d.mode != EntryMode.JOB && d.start != null && d.mode != EntryMode.HOURS && !d.groupByHours
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("plus_block")) {
+                    Text("מה להוסיף?", style = KisType.label, color = c.muted)
+                    FlowRowCompat {
+                        if (d.mode != EntryMode.JOB) KisChip("בונוס", tag = "plus_bonus", onClick = { plusOpen = false; open(KeyTarget.BONUS) })
+                        KisChip("החזר הוצאות", tag = "plus_pass", onClick = { plusOpen = false; open(KeyTarget.PASS) })
+                        if (canBreak) KisChip("הפסקה", tag = "plus_break", onClick = { plusOpen = false; showBreak = true })
+                    }
+                }
             }
             // Money passed through (car, materials) is owed by the employer but is not the user's income; say so where it is typed.
             if (d.passThroughValue() > 0 || pad && target == KeyTarget.PASS) PassThroughNote(d, check.total)
@@ -405,9 +423,9 @@ fun KisEditorPage(
                     }
                 }
             }
-            if (more && d.mode != EntryMode.JOB) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
+            if ((showBreak || showNote) && d.mode != EntryMode.JOB) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (d.start != null && d.mode != EntryMode.HOURS && !d.groupByHours) Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("break_block")) {
+                    if (showBreak && d.start != null && d.mode != EntryMode.HOURS && !d.groupByHours) Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("break_block")) {
                         Text("הפסקה", style = KisType.label, color = c.ink)
                         val quick = listOf(0, 15, 30, 45, 60)
                         val custom = d.breakMin !in quick
@@ -423,7 +441,7 @@ fun KisEditorPage(
                                 tag = "editor_break", minHeight = KisMinTouch, onClick = { open(KeyTarget.BREAK) })
                         }
                     }
-                    KisTextField(d.notes, { d = d.copy(notes = it) }, "הערה", Modifier.fillMaxWidth().testTag("notes_input"), placeholder = "לא חובה", singleLine = false)
+                    if (showNote) KisTextField(d.notes, { d = d.copy(notes = it) }, "הערה", Modifier.fillMaxWidth().testTag("notes_input"), placeholder = "לא חובה", singleLine = false)
                 }
             }
             Spacer(Modifier.height(8.dp))

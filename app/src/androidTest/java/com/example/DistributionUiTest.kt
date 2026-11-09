@@ -52,7 +52,7 @@ class DistributionUiTest {
         // Add page: every mode, a typed note survives mode changes and an Activity recreation.
         ui.onNodeWithTag("add_entry_button").performClick()
         ui.onNodeWithTag("add_page").assertIsDisplayed()
-        ui.onNodeWithTag("editor_more").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_note").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("בדיקת טיוטה")
         for (mode in listOf("hours", "job", "group", "clock")) {
             ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performClick()
@@ -103,7 +103,7 @@ class DistributionUiTest {
         ui.activity.intentActionFlow.value = "com.example.ACTION_IMPORT_EXCEL"
         ui.waitForIdle()
         ui.onNodeWithTag("settings_root").assertIsDisplayed()
-        for (section in listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "הסיכומים שלי", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
+        for (section in listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון")) ui.onNodeWithTag("settings_section_$section").performScrollTo().assertExists()
         snap("v2-settings")
         // FB23-F1: a card opens in place; the feedback card shows its form at once, and opening another card folds it.
         ui.onNodeWithTag("settings_section_משוב ותקלות").performScrollTo().performClick()

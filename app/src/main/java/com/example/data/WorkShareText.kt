@@ -94,8 +94,22 @@ object WorkShareText {
                 add("${date(e.date)} | ${hours(e.hours)} שעות | ${amount(e)} | ${if (e.isPaid) "שולם" else "ממתין"}")
                 addAll(details(e))
             } }
+            // A report to someone the user pays asks for where to send the money.
+            if (name != null && rows.any { !it.isPaid && WorkPay.pay(it) != null }) add(ASK_PAYMENT)
             add("תודה!")
         }.joinToString("\n")
+    }
+    const val ASK_PAYMENT = "אפשר לשלוח לי את ה-Zelle, הביט או פרטי החשבון שלך, ואעביר את התשלום."
+    /** The user's own payment details (Zelle, Bit, bank), when they choose to add them to what they share. */
+    fun paymentLines(zelle: String, bit: String, bank: String): List<String> = listOfNotNull(
+        zelle.trim().takeIf { it.isNotEmpty() }?.let { "Zelle: $it" },
+        bit.trim().takeIf { it.isNotEmpty() }?.let { "ביט: $it" },
+        bank.trim().takeIf { it.isNotEmpty() }?.let { "חשבון בנק: $it" })
+    /** [text] with the payment details before its closing "תודה!" (or at its end). */
+    fun withPayment(text: String, lines: List<String>): String {
+        if (lines.isEmpty()) return text
+        val block = (listOf("לתשלום:") + lines).joinToString("\n")
+        return if (text.endsWith("\nתודה!")) text.removeSuffix("תודה!") + block + "\nתודה!" else "$text\n$block"
     }
     fun personal(e: WorkEntry) = summary(listOf(e))
     fun job(e: WorkEntry) = personal(e)
@@ -105,13 +119,13 @@ object WorkShareText {
         val total = if (own == null || pays.any { it == null }) null else Math.round((own + pays.sumOf { it!! } + e.passThrough) * 100) / 100.0
         val text = buildList {
             if (technical) { add("עבודה: ${e.category}"); add("כמות משמרות: 1"); add("כמות שעות: ${hours(e.hours + ws.sumOf { it.hours })}") }
-            else add("היי, סיכמתי פה את עבודת הצוות ב${e.category}:")
-            add("תאריכים: ${date(e.date)}")
+            else add("היי, סיכמתי פה את העבודה ב-${date(e.date)}:")
+            if (technical) add("תאריכים: ${date(e.date)}")
             add("סכום הצוות: " + (total?.let { money(it, e.currency) } ?: "ממתין להשלמת תעריף"))
             add("פירוט:")
             add("${ownName?.trim()?.takeIf { it.isNotEmpty() } ?: "החלק שלי"}: ${if (WorkPay.isJob(e) && e.hours == 0.0) "" else "${hours(e.hours)} שעות | "}${own?.let { money(it, e.currency) } ?: if (WorkPay.isJob(e)) "סכום חסר" else "תעריף חסר"}")
             // On a job team a fixed sum has no hours to show.
-            ws.forEachIndexed { i, w -> add("${w.name}: ${if (WorkPay.isJob(e) && w.amount != null && w.hours == 0.0) "סכום קבוע" else "${hours(w.hours)} שעות"} | ${pays[i]?.let { money(it, e.currency) } ?: "תעריף חסר"}") }
+            ws.forEachIndexed { i, w -> add("${w.name}: ${if (WorkPay.isJob(e) && w.amount != null && w.hours == 0.0) "" else "${hours(w.hours)} שעות | "}${pays[i]?.let { money(it, e.currency) } ?: "תעריף חסר"}") }
             if (e.passThrough > 0) add("החזר הוצאות: ${money(e.passThrough, e.currency)}")
             if (note(e).isNotEmpty()) add("הערה: ${note(e)}")
             if (!technical) add("תודה!")
@@ -121,7 +135,8 @@ object WorkShareText {
     fun worker(e: WorkEntry, w: WorkPay.Worker, technical: Boolean = false, future: Boolean = false): String {
         val single = e.copy(groupWorkersJson = org.json.JSONArray().put(w.source).toString())
         val text = if (technical) copy(listOf(single), w.name) else summary(listOf(single), w.name)
-        return if (future) plannedText(text) else text
+        // Nothing to pay yet for a planned shift, so it does not ask where to send money.
+        return if (future) plannedText(text.replace("\n$ASK_PAYMENT", "")) else text
     }
     fun planned(o: com.example.domain.V2Plan.Occurrence, technical: Boolean = false): String {
         val h = com.example.domain.V2Rules.span(o.start, o.end).minutes / 60.0
