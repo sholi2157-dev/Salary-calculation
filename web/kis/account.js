@@ -56,7 +56,7 @@ async function connect() {
   let fb;
   // Google cannot be reached: keep working here; the sign-in screen comes when it can.
   try { fb = await loadFirebase(); }
-  catch { account.status = 'offline'; return; }
+  catch (e) { account.status = 'offline'; if (e?.message === 'config') root.KisLaunch.deviceTour(app); return; }
   if (account.listening) return;
   account.listening = true;
   fb.auth().onAuthStateChanged(user => user ? signedIn(fb, user) : signedOut());
@@ -70,6 +70,10 @@ function signedIn(fb, user) {
   // The page holds another account's data: start again on this account's own copy.
   if (before !== user.uid && storageFor(localStorage) !== app.storage) { location.reload(); return; }
   account.user = user; account.status = 'syncing'; hideGate();
+  // F12: a new account's first successful connect opens the tour once (after the launch, if it is still showing).
+  if (localStorage.getItem('kis_signin_skip_v1') !== '1' &&
+      root.KisLaunch.claimAccount(localStorage, user.uid, Date.parse(user.metadata?.creationTime), Date.parse(user.metadata?.lastSignInTime))) root.KisLaunch.want(app);
+  else root.KisLaunch.maybeTour(app);
   if (!app.store.local.name && user.displayName) app.store.setLocal('name', user.displayName.split(' ')[0].slice(0, 40), true);
   // 2.1: once per browser, the bell invites to connect a personal AI assistant.
   if (localStorage.getItem('kis_ai_invited_v1') !== '1') {
@@ -114,8 +118,8 @@ const changed = () => document.dispatchEvent(new CustomEvent('kis-account'));
 const INTRO = 'kis_ai_intro_v1';
 let introStep = null;
 function showGate() {
-  // Automated checks of the public site run without an account.
-  if (localStorage.getItem('kis_signin_skip_v1') === '1') return;
+  // Automated checks of the public site run without an account (the tour then follows the browser).
+  if (localStorage.getItem('kis_signin_skip_v1') === '1') return root.KisLaunch.deviceTour(app);
   if (gate) return draw();
   gate = document.createElement('div');
   gate.className = 'launch signin'; gate.dataset.testid = 'signin'; gate.setAttribute('role', 'dialog'); gate.setAttribute('aria-modal', 'true'); gate.setAttribute('aria-labelledby', 'signin-title');

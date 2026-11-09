@@ -287,8 +287,8 @@ const seed = {
     assert.ok(await page.isDisabled(tid('launch-done')), 'a first name is needed to continue (or "later")');
     await page.fill(tid('launch-first'), 'שולי'); await page.fill(tid('launch-last'), 'כהן');
     await shot(page, 'launch-name'); await page.click(tid('launch-done'));
-    assert.equal(await page.textContent(tid('tour-progress')), '1 מתוך 6');
-    for (let i = 1; i < 6; i++) { await page.click(tid('tour-next')); assert.equal(await page.textContent(tid('tour-progress')), `${i + 1} מתוך 6`); if (i === 3) await shot(page, 'tour-history'); }
+    assert.equal(await page.textContent(tid('tour-progress')), '1 מתוך 7');
+    for (let i = 1; i < 7; i++) { await page.click(tid('tour-next')); assert.equal(await page.textContent(tid('tour-progress')), `${i + 1} מתוך 7`); if (i === 4) await shot(page, 'tour-history'); }
     await page.click(tid('tour-next'));
     assert.equal(await page.locator(tid('tour')).count(), 0);
     assert.match(await page.textContent(tid('home-greeting')), /שולי/);
@@ -318,7 +318,7 @@ const seed = {
     await page.click(tid('settings-open-גיבוי ונתונים'));
     assert.equal(await page.locator('[data-info-title], #page .info-dot').count(), 0, 'settings categories have no info icon');
     await page.click(tid('settings-open-עזרה'));
-    await page.click(tid('replay-tour')); assert.equal(await page.textContent(tid('tour-progress')), '1 מתוך 6'); await page.click(tid('tour-skip'));
+    await page.click(tid('replay-tour')); assert.equal(await page.textContent(tid('tour-progress')), '1 מתוך 7'); await page.click(tid('tour-skip'));
     await ctx.close();
   }
 

@@ -1,17 +1,48 @@
-/* The 2.0 launch (once per browser, new or returning): a few words in the new look, then the name, then a short tour from Home. */
+/* The 2.0 launch (once per browser, new or returning): a few words in the new look, then the name. The short tour from Home opens once per new account (see claimAccount). */
 (function (root) {
 'use strict';
 const U = () => root.KisUi;
 const LAUNCH_VERSION = 2;
 
 const STEPS = [
-  { title: 'ברוכים הבאים', body: 'רושמים משמרות, רואים את ההכנסה ומשתפים בקלות. נכיר את המקומות החשובים.' },
-  { target: '[data-testid=add-shift]', title: 'כאן מתחילים', body: 'הכפתור + מוסיף משמרת שכבר עבדת. "אני מתחיל עכשיו" בבית מפעיל טיימר בזמן העבודה.' },
-  { target: '[data-testid=home-bell]', title: 'התראות', body: 'כאן מופיעים הסיכום החודשי ותזכורות. את ההתראות עצמן מפעילים בהגדרות.' },
-  { page: 'history', target: '[data-testid=tab-history]', title: 'כל המשמרות במקום אחד', body: 'עבדתי ומתוכנן, חיפוש, סינון ומיון. לחיצה ארוכה בוחרת כמה משמרות: שיתוף, סימון תשלום או השלמת תעריף.' },
-  { page: 'settings', target: '[data-testid=tab-settings]', title: 'הגדרות', body: 'מקומות עבודה עם תעריף, מטבע וצבע, התראות, גיבוי והשם שלך.' },
-  { page: 'home', title: 'זה הכול. אפשר להתחיל.', body: 'מוסיפים משמרת, והחישובים עלינו. ההדרכה תמיד זמינה שוב בהגדרות.' },
+  { title: 'ברוכים הבאים לחישוב שכר', body: 'כאן רושמים משמרות, רואים כמה הרווחת ושולחים דוח מסודר למעסיק. דקה אחת, ומכירים את העיקר.' },
+  { target: '[data-testid=add-shift]', title: 'רישום משמרת', body: 'עבדת היום? לוחצים על + ורושמים. בטופס, בכפתור + מוסיפים בונוס, החזר הוצאות או הפסקה, והסכום מתעדכן מיד.' },
+  { target: '[data-testid=live-start]', title: 'שעון משמרת', body: 'מתחילים לעבוד עכשיו? "אני מתחיל עכשיו" מפעיל שעון, ובסוף עוצרים אותו והמשמרת נרשמת.' },
+  { target: '[data-testid=home-bell]', title: 'התראות', body: 'כאן מחכים הסיכום החודשי ותזכורות. את ההתראות עצמן מפעילים בהגדרות.' },
+  { page: 'history', target: '[data-testid=tab-history]', title: 'כל המשמרות', body: 'מסודרות לפי חודש ושבוע, עם חיפוש וסינון. לחיצה ארוכה בוחרת כמה משמרות יחד: לשתף, לסמן ששולם או להשלים תעריף.' },
+  { page: 'settings', target: '[data-testid=tab-settings]', title: 'הגדרות', body: 'מקומות עבודה עם תעריף, מטבע וצבע, מראה, התראות, גיבוי והחשבון שלך. גם ההדרכה הזו נמצאת שם, תחת עזרה.' },
+  { page: 'home', title: 'זהו, אפשר להתחיל', body: 'רושמים את המשמרת הראשונה, והחשבון עלינו.' },
 ];
+
+/*
+ * F12 (2.3.1): with Google accounts the tour belongs to the account, not the browser. It opens once, on a new account's
+ * first successful connect (Firebase stamps its creation and last sign-in together), after the launch and the sign-in
+ * screen are gone, and never again except from "הצגת ההדרכה מחדש". An account that already existed (an update,
+ * another browser, the app) never gets it. Until it is finished or skipped it stays pending, so a reload brings it back.
+ * Same rule as the app (WorkOnboarding.kt). Without accounts on this site, the tour follows the browser, as before.
+ */
+const TOUR_ACCOUNTS = 'kis_tour_accounts_v1', TOUR_PENDING = 'kis_tour_pending_v1', NEW_ACCOUNT_WINDOW_MS = 120000;
+function isNewAccount(created, last) {
+  return Number.isFinite(created) && Number.isFinite(last) && created > 0 && Math.abs(last - created) <= NEW_ACCOUNT_WINDOW_MS;
+}
+function claimAccount(storage, uid, created, last) {
+  let seen = [];
+  try { seen = JSON.parse(storage.getItem(TOUR_ACCOUNTS) || '[]'); if (!Array.isArray(seen)) seen = []; } catch { seen = []; }
+  if (seen.includes(uid)) return storage.getItem(TOUR_PENDING) === uid;
+  const fresh = isNewAccount(created, last);
+  storage.setItem(TOUR_ACCOUNTS, JSON.stringify([...seen, uid]));
+  if (fresh) storage.setItem(TOUR_PENDING, uid);
+  return fresh;
+}
+let wanted = false, touring = false;
+/** The tour as soon as nothing else covers the page (the launch, the sign-in screen). */
+function want(app) { wanted = true; maybeTour(app); }
+function maybeTour(app) {
+  if (!wanted || touring || document.querySelector('[data-testid=launch], [data-testid=signin]')) return;
+  wanted = false; tour(app);
+}
+/** This site has no accounts (or sign-in is skipped): the browser's own first time decides, as before. */
+function deviceTour(app) { if (!app.store.local.tourDone) want(app); }
 
 /**
  * The launch already seen in this browser: by this account's own copy, or by the browser's own data (a second account
@@ -36,7 +67,7 @@ function launch(app) {
   document.body.append(el);
   const others = [...document.body.children].filter(n => n !== el && !n.inert);
   others.forEach(n => { n.inert = true; });
-  const finish = () => { others.forEach(n => { n.inert = false; }); el.remove(); store.setLocal('launched', LAUNCH_VERSION, true); app.go('home'); tour(app); };
+  const finish = () => { others.forEach(n => { n.inert = false; }); el.remove(); store.setLocal('launched', LAUNCH_VERSION, true); app.go('home'); maybeTour(app); };
   const slogan = () => {
     el.innerHTML = `<div class="launch-in"><div class="grow"></div><h1 class="launch-words"><span style="--d:.15s" data-testid="launch-line-1">עיצוב חדש.</span><span style="--d:.7s" data-testid="launch-line-2">התחלה חדשה.</span></h1>
       <div class="grow"></div><button class="btn primary" data-a="next" data-testid="launch-next">הבא</button><button class="btn ghost" data-a="android" data-testid="launch-android-download"><span class="ic" aria-hidden="true">${U().ICON.download}</span> הורדת האפליקציה לאנדרואיד</button></div>`;
@@ -67,7 +98,8 @@ function tour(app) {
   const el = document.createElement('div');
   el.className = 'coach'; el.dataset.testid = 'tour';
   document.body.append(el);
-  const end = () => { el.remove(); window.removeEventListener('resize', draw); app.store.setLocal('tourDone', true, true); app.go('home'); };
+  touring = true;
+  const end = () => { touring = false; el.remove(); window.removeEventListener('resize', draw); app.store.setLocal('tourDone', true, true); try { localStorage.removeItem(TOUR_PENDING); } catch { /* storage closed */ } app.go('home'); };
   function draw() {
     const s = STEPS[i];
     const target = s.target && document.querySelector(s.target);
@@ -87,5 +119,5 @@ function tour(app) {
   show();
 }
 
-root.KisLaunch = { maybeStart, launch, tour, launched, STEPS, LAUNCH_VERSION };
+root.KisLaunch = { maybeStart, launch, tour, launched, want, maybeTour, deviceTour, claimAccount, isNewAccount, STEPS, LAUNCH_VERSION };
 })(globalThis);
