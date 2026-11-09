@@ -253,7 +253,7 @@ private fun NowRow(live: LiveShift?, onStart: () -> Unit, onStop: () -> Unit, on
             // 2.3.0 (approved choice B): a raised light card with a brand line on top (dark: #2D323A with #9398FF); the running
             // clock is the main number, the money under it, and "סיום ושמירה" is the strong button.
             val shape = RoundedCornerShape(16.dp)
-            val brand = if (c.dark) androidx.compose.ui.graphics.Color(0xFF9398FF) else androidx.compose.ui.graphics.Color(0xFF5145E8)
+            val brand = if (c.dark) androidx.compose.ui.graphics.Color(0xFF9398FF) else c.accent
             Column(Modifier.fillMaxWidth().clip(shape).background(if (c.dark) androidx.compose.ui.graphics.Color(0xFF2D323A) else c.surface)
                 .border(1.dp, if (c.dark) androidx.compose.ui.graphics.Color(0xFF3A404A) else c.line, shape).testTag("live_card")) {
                 Box(Modifier.fillMaxWidth().height(4.dp).background(brand))

@@ -28,7 +28,7 @@ fun monthKeyOf(month: String): Int? = runCatching { val (y, m) = month.split("-"
 fun RecapEntry(title: String, subtitle: String, tag: String, modifier: Modifier = Modifier, soft: Boolean = false, onClick: () -> Unit) {
     val dark = Kis.colors.dark
     val ink = if (!soft) Color.White else if (dark) Color(0xFFC9CCFF) else Color(0xFF3A33B8)
-    val bg = if (!soft) Brush.linearGradient(listOf(Workplaces[0].from, Workplaces[4].from)) else androidx.compose.ui.graphics.SolidColor(if (dark) Color(0xFF2C2E56) else Color(0xFFE8ECFF))
+    val bg = if (!soft) Brush.linearGradient(listOf(Workplaces[0].from, Workplaces[4].from)) else androidx.compose.ui.graphics.SolidColor(if (dark) Color(0xFF2C2E56) else Color(0xFFDCDDF5))
     Row(modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(bg)
         .kisClick(onClick = onClick).testTag(tag).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {

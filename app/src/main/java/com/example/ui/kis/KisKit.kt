@@ -160,8 +160,8 @@ object KisButtonHeight { val large = 56.dp; val medium = 48.dp; val small = 44.d
 val KisColors.selectedBg get() = if (dark) Color(0xFF424853) else surface
 val KisColors.selectedInk get() = ink
 val KisColors.selectedEdge get() = ink
-val KisColors.disabledBg get() = if (dark) Color(0xFF21252B) else Color(0xFFEEF0F4)
-val KisColors.disabledInk get() = if (dark) Color(0xFF5F636C) else Color(0xFF9EA5B2)
+val KisColors.disabledBg get() = if (dark) Color(0xFF21252B) else Color(0xFFD4D8DE)
+val KisColors.disabledInk get() = if (dark) Color(0xFF5F636C) else Color(0xFF8A91A0)
 /** Text on a filled danger surface (readable in dark too, where danger is a light coral). */
 val KisColors.onDangerFill get() = if (dark) Color(0xFF2B0E0B) else Color.White
 
