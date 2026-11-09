@@ -18,7 +18,7 @@ const STARTER = { name: 'עצמאי', defaultRate: 40 };
 /** Work data keys of one storage (the browser's own or an account copy); device choices such as theme stay. */
 const DATA_KEYS = ['work_complete_backup', 'user_work_shifts', 'work_transfer_meta', 'work_default_currency', 'work_series_v1',
   'kis_web_draft_v1', 'kis_commit_journal_v1', 'work_pre_v2_snapshot_v1', 'work_pre_v23_snapshot_v1', 'kis_web_recent_v1'];
-const PERSONAL = ['name', 'lastName', 'placeOrder', 'lastRate'];
+const PERSONAL = ['name', 'lastName', 'placeOrder', 'lastRate', 'payZelle', 'payBit', 'payBank'];
 
 /** Empties the work data of a store in one commit (as a new browser starts, with the starter place). */
 function emptyStore(store) {

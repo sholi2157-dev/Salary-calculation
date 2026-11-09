@@ -34,7 +34,7 @@ const server = http.createServer((q, r) => { let p = decodeURIComponent(new URL(
   assert.equal(c(own) + c(profit), c(net), 'own + commission = net');
   assert.equal(c(own) + c(profit) + c(team) + c(pass), c(due), 'own + commission + team + pass-through = employer owes');
   // Reports from one place; a worker's actions behind ⋯.
-  await page.click(tid('detail-reports')); assert.equal(await page.locator(`${tid('reports-sheet')} .action-item`).count(), 4); await page.keyboard.press('Escape');
+  await page.click(tid('detail-reports')); assert.equal(await page.locator(`${tid('reports-sheet')} [data-testid^=report-]`).count(), 4); await page.keyboard.press('Escape');
   await page.click(tid('worker-more-0')); assert.ok(await page.isVisible(tid('worker-paid'))); await page.keyboard.press('Escape');
   for (const b of await page.$$('.gd-w button')) { const r = await b.boundingBox(); assert.ok(r.height >= 44, 'touch target ' + r.height); }
   await page.keyboard.press('Escape');

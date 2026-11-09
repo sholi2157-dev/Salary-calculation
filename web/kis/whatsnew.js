@@ -39,10 +39,10 @@ function seen(store) { store.setLocal(KEY, VERSION, true); }
 function cardHtml(list) {
   const esc = root.KisUi.esc;
   return `<section class="card whats-new" data-testid="whats-new" aria-labelledby="whats-new-title">
-    <div class="row" style="align-items:center"><h2 id="whats-new-title" class="grow" style="margin:0;font:1.25rem/1.6rem var(--display)">מה חדש</h2>
-      <button class="link" data-a="whats-new-ok" data-testid="whats-new-ok">סגירה</button></div>
+    <h2 id="whats-new-title" style="margin:0;font:1.25rem/1.6rem var(--display)">מה חדש</h2>
     <p class="caption" style="margin:2px 0 8px">עודכן לגרסה ${esc(VERSION)}. הנתונים שלך נשארו כמו שהם.</p>
-    <ul>${list.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>`;
+    <ul>${list.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    <button class="btn primary" style="width:100%;margin-top:8px" data-a="whats-new-ok" data-testid="whats-new-ok">קדימה!</button></section>`;
 }
 const api = { VERSION, NOTES, KEY, decide, pending, seen, cardHtml };
 root.KisWhatsNew = api;

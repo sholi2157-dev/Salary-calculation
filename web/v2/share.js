@@ -91,19 +91,26 @@ function summary(entries,name=null) {
  const out=[intro, ...(n===1?['בתאריך '+dates(rows)+(rows.some(e=>!Pay.isJob(e)||e.hours>0)?' '+who+' '+totalHours+' שעות.':'.')]:['סה״כ '+who+' '+totalHours+' שעות.']),...humanAmounts(rows,!!name)];
  if (n===1) out.push(...details(rows[0]));
  else { out.push('פירוט המשמרות:');for(const e of ordered(rows)) out.push(date(e.date)+' | '+hours(e.hours)+' שעות | '+amount(e)+' | '+(e.isPaid?'שולם':'ממתין'),...details(e)); }
+ // A report to someone the user pays asks for where to send the money.
+ if (name&&rows.some(e=>!e.isPaid&&Pay.pay(e)!=null)) out.push(ASK_PAYMENT);
  out.push('תודה!');return out.join('\n');
 }
+const ASK_PAYMENT='אפשר לשלוח לי את ה-Zelle, הביט או פרטי החשבון שלך, ואעביר את התשלום.';
+/** The user's own payment details (Zelle, Bit, bank), when they choose to add them to what they share. */
+const paymentLines=(zelle,bit,bank)=>[[zelle,'Zelle: '],[bit,'ביט: '],[bank,'חשבון בנק: ']].map(([v,l])=>String(v??'').trim()?l+String(v).trim():null).filter(Boolean);
+/** [text] with the payment details before its closing "תודה!" (or at its end). */
+function withPayment(text,lines){ if(!lines.length)return text; const block=['לתשלום:',...lines].join('\n'); return text.endsWith('\nתודה!')?text.slice(0,-'תודה!'.length)+block+'\nתודה!':text+'\n'+block; }
 const personal=e=>summary([e]);
 const job=personal;
 function employer(e,ownName=null,technical=false,future=false) {
  const own=Pay.pay(e), ws=Pay.workers(e), pays=ws.map(w=>Pay.employerPay(w,e));
  const total=own==null||pays.some(p=>p==null)?null:Math.round((own+pays.reduce((a,b)=>a+b,0)+Pay.passThrough(e))*100)/100;
- const out=[...(technical?['עבודה: '+e.category,'כמות משמרות: 1','כמות שעות: '+hours(e.hours+ws.reduce((n,w)=>n+w.hours,0))]:['היי, סיכמתי פה את עבודת הצוות ב'+e.category+':']),
-  'תאריכים: '+date(e.date),'סכום הצוות: '+(total==null?'ממתין להשלמת תעריף':money(total,e.currency)),'פירוט:'];
+ const out=[...(technical?['עבודה: '+e.category,'כמות משמרות: 1','כמות שעות: '+hours(e.hours+ws.reduce((n,w)=>n+w.hours,0))]:['היי, סיכמתי פה את העבודה ב-'+date(e.date)+':']),
+  ...(technical?['תאריכים: '+date(e.date)]:[]),'סכום הצוות: '+(total==null?'ממתין להשלמת תעריף':money(total,e.currency)),'פירוט:'];
  const job=Pay.isJob(e);
  out.push((String(ownName??'').trim()||'החלק שלי')+': '+(job&&e.hours===0?'':hours(e.hours)+' שעות | ')+(own==null?(job?'סכום חסר':'תעריף חסר'):money(own,e.currency)));
  // On a job team a fixed sum has no hours to show.
- ws.forEach((w,i)=>out.push(w.name+': '+(job&&w.amount!=null&&w.hours===0?'סכום קבוע':hours(w.hours)+' שעות')+' | '+(pays[i]==null?'תעריף חסר':money(pays[i],e.currency))));
+ ws.forEach((w,i)=>out.push(w.name+': '+(job&&w.amount!=null&&w.hours===0?'':hours(w.hours)+' שעות | ')+(pays[i]==null?'תעריף חסר':money(pays[i],e.currency))));
  if(Pay.passThrough(e)>0)out.push('החזר הוצאות: '+money(Pay.passThrough(e),e.currency));
  if(note(e))out.push('הערה: '+note(e));
  if(!technical)out.push('תודה!');return future?plannedText(out.join('\n')):out.join('\n');
@@ -111,7 +118,9 @@ function employer(e,ownName=null,technical=false,future=false) {
 function worker(e,w,technical=false,future=false) {
  // Pass one worker only, even if two workers happen to share a name.
  const single={...e,groupWorkersJson:JSON.stringify([w.source??w])};
- const text=technical?copy([single],w.name):summary([single],w.name);return future?plannedText(text):text;
+ const text=technical?copy([single],w.name):summary([single],w.name);
+ // Nothing to pay yet for a planned shift, so it does not ask where to send money.
+ return future?plannedText(text.replace('\n'+ASK_PAYMENT,'')):text;
 }
 function planned(o,technical=false) {
  const h=Rules.span(o.start,o.end).minutes/60;
@@ -148,6 +157,6 @@ function table(entries){return [excelHeaders,...ordered(entries).map(e=>{
 const quote=(value,d)=>{const s=String(value??'');return s.includes(d)||/[\n\r"]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;};
 const excel=entries=>table(entries).map(row=>row.map(s=>quote(s,'\t')).join('\t')).join('\n');
 const csv=entries=>'\ufeff'+table(entries).map(row=>row.map(s=>quote(s,',')).join(',')).join('\r\n');
-const api={date,money,hours,personal,job,employer,worker,planned,summary,copy,entry,workerName,excel,csv,exactDuration};
+const api={date,money,hours,personal,job,employer,worker,planned,summary,copy,entry,workerName,excel,csv,exactDuration,ASK_PAYMENT,paymentLines,withPayment};
 if(node)module.exports=api;else root.KisShare=api;
 })(globalThis);

@@ -37,7 +37,7 @@ function render(el, app) {
   const acct = root.KisAccount.state.user;
   // The short line under each card's name on a phone.
   subs = Object.fromEntries([['עבודה', def ? `מקום ברירת מחדל: ${def}` : 'מקומות, מטבע ומשמרות קבועות'],
-    ['מראה ותחושה', ({ system: 'אוטומטי', light: 'בהיר', dark: 'כהה' })[theme] || 'אוטומטי'], ['הסיכומים שלי', 'כל הסיכומים החודשיים והשנתיים'],
+    ['מראה ותחושה', ({ system: 'אוטומטי', light: 'בהיר', dark: 'כהה' })[theme] || 'אוטומטי'],
     ['התראות', NOTIFY_KINDS.every(([k]) => store.local[k] === true) ? 'פועלות' : 'כבויות'], ['גיבוי ונתונים', 'גיבוי, ייבוא ואקסל'],
     ['עזרה', 'האפליקציה לאנדרואיד וההדרכה'], ['משוב ותקלות', 'דיווח על תקלה או הצעה'], ['חשבון', acct ? (acct.email || 'מחובר') : 'השם שלך · לא מחובר']]);  el.innerHTML = `<h1 class="page-title">הגדרות</h1>
   <div class="set-groups">
@@ -47,7 +47,6 @@ function render(el, app) {
     ${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip act" data-a="series" data-testid="series-button">ניהול</button>', 'נוצרות במסך ההוספה')}`)}
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
-  ${group('הסיכומים שלי', rowHtml('כל הסיכומים', null, '<button class="chip act" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל סיכום שכבר נפתח'), undefined, 'recaps')}
   ${group('התראות', rowHtml('כל ההתראות', null, `<button class="switch" role="switch" aria-checked="${NOTIFY_KINDS.every(([k]) => store.local[k] === true)}" aria-label="כל ההתראות" data-a="notify" data-testid="notify-all"></button>`, 'כולן יחד')
     + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${store.local[k] === true}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''))}
   ${group('גיבוי ונתונים', `<div class="row backup-row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
@@ -56,6 +55,13 @@ function render(el, app) {
   ${group('משוב ותקלות', '<div class="feedback-inline" data-testid="feedback-inline" style="display:grid;gap:10px;padding:10px 0"></div>')}
   ${group('חשבון', `<div class="row" style="padding:10px 0 4px"><input class="input grow" style="min-width:0" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input grow" style="min-width:0" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>
+    <div style="display:grid;gap:8px;padding:6px 0" data-testid="pay-fields"><b class="label">פרטים לקבלת תשלום (לא חובה)</b>
+      <span class="caption">בכל שיתוף של דוח אפשר לבחור אם לצרף אותם. נשמרים רק במכשיר הזה.</span>
+      ${[['payZelle', 'Zelle (מייל או טלפון)', 80, 'profile-pay-zelle'], ['payBit', 'מספר ביט', 40, 'profile-pay-bit'], ['payBank', 'פרטי חשבון בנק', 160, 'profile-pay-bank']].map(([k, l, max, id]) =>
+        `<input class="input" data-pay="${k}" value="${esc(store.local[k] || '')}" placeholder="${l}" aria-label="${l}" maxlength="${max}" data-testid="${id}"${k === 'payBit' ? ' inputmode="tel"' : ''}>`).join('')}</div>
+    <div class="divider"></div>
+    ${rowHtml('הסיכומים שלי', null, '<button class="chip act" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל הסיכומים החודשיים והשנתיים')}
+    <div class="divider"></div>
     <div data-testid="account-card">${root.KisAccount.settingsHtml()}</div>
     <div style="display:grid;justify-items:start;padding:4px 0"><button class="link" style="color:var(--danger,#c2362b);padding-inline:0;min-height:44px" data-a="erase" data-testid="account-erase">מחיקה מהמכשיר הזה</button>
     ${root.KisAccount.state.user ? '<button class="link" style="color:var(--danger,#c2362b);padding-inline:0;min-height:44px" data-a="erase-account" data-testid="account-erase-all">מחיקה מהחשבון ומכל המכשירים</button>' : ''}</div>`)}
@@ -75,6 +81,7 @@ function render(el, app) {
   // Saved as typed, without redrawing the page (no lost taps or focus).
   q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
   q('[data-f=last]').addEventListener('input', e => store.setLocal('lastName', e.target.value.trim().slice(0, 40), true));
+  el.querySelectorAll('[data-pay]').forEach(i => i.addEventListener('input', () => store.setLocal(i.dataset.pay, i.value.trim().slice(0, +i.maxLength), true)));
   // One switch for every reminder.
   // The main switch turns every kind on or off together; each kind keeps its own switch, and the
   // main one shows on only when every kind is on. The same stored keys as before (notifyMonthly, notifyRate).

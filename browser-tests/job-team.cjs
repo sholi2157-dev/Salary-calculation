@@ -50,7 +50,7 @@ const tid = t => `[data-testid="${t}"]`;
       assert.equal(await page.evaluate(() => document.activeElement?.dataset.testid), 'job-worker-amount-1');
       // The first person's amount carries to the next one.
       assert.equal(await page.inputValue(tid('job-worker-amount-1')), '50');
-      await page.click(tid('editor-pass-through')); await page.fill(tid('pass-through-input'), '20');
+      await page.click(tid('editor-plus')); await page.click(tid('plus-pass')); await page.fill(tid('pass-through-input'), '20');
       assert.match(await page.textContent(tid('job-mine')), /75/);
       assert.match(await page.textContent(tid('job-team-pay')), /100/);
       assert.match(await page.textContent(tid('job-employer-due')), /195/);

@@ -9,7 +9,7 @@ await p.goto('http://127.0.0.1:'+s.address().port+'/');await p.waitForSelector('
 await p.evaluate(()=>window.Kis.openNew()); await p.waitForTimeout(300);
 await p.click('[data-mode="CLOCK"]').catch(()=>{});
 await p.click('[data-testid=clock-start]'); await p.keyboard.type('0900'); await p.click('[data-testid=clock-end]'); await p.keyboard.type('1700'); await p.keyboard.press('Enter');
-await p.click('[data-testid=editor-more]').catch(()=>{}); await p.click('[data-testid=repeat-switch]');
+await p.click('[data-testid=repeat-switch]');
 const before=await p.evaluate(()=>localStorage.getItem('work_series_v1'));
 const start=await p.evaluate(()=>window.KisPlan.dateOf(Date.now()));
 const y=new Date(start); y.setDate(y.getDate()-3); const bad=y.toISOString().slice(0,10);

@@ -106,7 +106,7 @@ const shoot = (p, name, width) => [360, 390, 1440].includes(width) ? p.screensho
    await p.keyboard.press('Escape'); await p.waitForSelector(tid('places-sheet'), { state: 'detached' });
    // One note edited; after a reload everything else is as it was.
    await p.click(tid('tab-history')); await p.click(tid('shift-existing-1')); await p.click(tid('detail-edit')); await p.waitForSelector(tid('save-shift'));
-   if (!await p.isVisible(tid('notes-input'))) await p.click(tid('editor-more'));
+   if (!await p.isVisible(tid('notes-input'))) await p.click(tid('editor-note'));
    await p.fill(tid('notes-input'), 'שינוי מטאדאטה'); await p.click(tid('save-shift')); await p.waitForSelector(tid('save-shift'), { state: 'detached' });
    await p.reload(); await p.waitForSelector(tid('home-hero'));
    const after = JSON.parse(await work(p));

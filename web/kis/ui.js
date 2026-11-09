@@ -202,6 +202,17 @@ async function shareOrCopy(text, title = 'שיתוף') {
   if (await copy(text)) { toast('הועתק ✓ · מוכן להדבקה'); return; }
   showText(text, title);
 }
+/** Sharing what someone owes the user: when payment details are saved, ask each time whether to add them (owner feedback 2.3). */
+function owedShare(text, title = 'שיתוף') {
+  const l = root.Kis?.store?.local || {}, lines = root.KisShare ? root.KisShare.paymentLines(l.payZelle, l.payBit, l.payBank) : [];
+  if (!lines.length) return shareOrCopy(text, title);
+  sheet('pay-prompt', (el, close) => {
+    el.innerHTML = `<h2>לצרף את פרטי התשלום שלך?</h2><p class="caption" style="white-space:pre-line">${esc(lines.join('\n'))}</p>
+      <button class="btn primary" data-testid="pay-with">כן, לצרף</button><button class="btn ghost" data-testid="pay-without">בלי</button>`;
+    el.querySelector('[data-testid=pay-with]').onclick = () => { close(); shareOrCopy(root.KisShare.withPayment(text, lines), title); };
+    el.querySelector('[data-testid=pay-without]').onclick = () => { close(); shareOrCopy(text, title); };
+  });
+}
 function showText(text, title = 'טקסט לשיתוף') {
   sheet('share-text-sheet', (el, close) => {
     el.innerHTML = `<h2>${esc(title)}</h2><p class="caption">אפשר לסמן ולהעתיק את הטקסט.</p><textarea class="input" rows="8" readonly>${esc(text)}</textarea><button class="btn primary">סגירה</button>`;
@@ -264,6 +275,6 @@ function followKeyboard() {
 if (root.document) followKeyboard();
 
 root.KisUi = { focusMark, focusRestore, topDialog, actionSheet, orderedPlaces, DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, duration, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
-  isDark, placeOf, accent, accentInk, avatar, timeLabel, subtitle, upcoming, shiftCard, toast, sheet, closeTopSheet, anySheet, confirmSheet, copy, shareOrCopy,
+  isDark, placeOf, accent, accentInk, avatar, timeLabel, subtitle, upcoming, shiftCard, toast, sheet, closeTopSheet, anySheet, confirmSheet, copy, shareOrCopy, owedShare,
   showText, haptic, ICON, logo, infoDot };
 })(globalThis);

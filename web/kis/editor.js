@@ -241,7 +241,9 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
   // Times are edited digit by digit: [buf] holds the four digits ("·" = not set) and [cursor] the one the next key writes.
   // [fresh]: the time was opened as a whole (not on one digit), so the first key starts it over.
   // [pad]: a time is typed with the device's own keyboard, through the hidden [sink] field.
-  let target = 'START', pad = false, fresh = false, dirtyDigits = false, buf = '', cursor = 0, more = d.breakMin > 0 || !!d.notes || !!d.bonus, passOpen = false;
+  let target = 'START', pad = false, fresh = false, dirtyDigits = false, buf = '', cursor = 0, passOpen = false;
+  // Extras (owner feedback 2.3): rate, "+" (bonus / expenses / break), note and date. A field shows only once chosen or filled.
+  let plusOpen = false, showNote = !!String(d.notes || '').trim(), showBreak = d.breakMin > 0, showBonus = !!String(d.bonus || '').trim();
   const host = document.createElement('div');
   host.className = 'editor' + (base ? ' framed' : '');
   host.setAttribute('data-testid', base ? 'edit-page' : 'add-page');
@@ -408,10 +410,10 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
       <div class="row" style="align-items:center;flex-wrap:wrap"><label class="chip" style="position:relative">${days.includes(d.day) ? 'תאריך אחר' : esc(U().dayLabelLong(d.day))}
           <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
         <div class="seg">${['₪', '$'].map(cur => `<button aria-pressed="${d.currency === cur}" data-cur="${cur}">${cur}</button>`).join('')}</div></div>
-      ${d.mode !== 'JOB' ? `<div class="row" style="align-items:flex-end;flex-wrap:wrap"><label class="field grow" style="min-width:140px">תעריף לשעה (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="rate" value="${esc(d.rate)}" ${d.rateUnknown ? 'disabled' : ''} data-testid="rate-input"></label>
-          <button class="chip${d.rateUnknown ? ' warn' : ''}" style="min-height:52px" data-a="rate-unknown" data-testid="rate-unknown">${d.rateUnknown ? 'תעריף חסר · לחיצה להזנה' : 'לא יודע'}</button>
-          <button class="chip" style="min-height:52px" data-a="more" data-testid="editor-more">${more ? 'פחות' : 'הפסקה · הערה · בונוס'}</button></div>
-` : ''}
+      ${d.mode !== 'JOB' ? `<div class="field" data-testid="rate-field"><div class="row" style="align-items:center"><span class="grow">תעריף לשעה (${esc(d.currency)})</span>
+          <button class="chip${d.rateUnknown ? ' warn' : ''}" style="min-height:32px;padding:0 12px" data-a="rate-unknown" data-testid="rate-unknown" aria-pressed="${!!d.rateUnknown}">${d.rateUnknown ? 'תעריף חסר · לחיצה להזנה' : 'לא יודע'}</button></div>
+          <input class="input" inputmode="decimal" data-f="rate" value="${esc(d.rate)}" ${d.rateUnknown ? 'disabled' : ''} aria-label="תעריף לשעה" data-testid="rate-input"></div>` : ''}
+      ${extrasRow(d, clockMode)}
       ${d.mode === 'GROUP' ? groupBlock(d) : ''}
       ${d.mode === 'JOB' && d.team ? jobTeamBlock(d) : ''}
       ${!base && d.mode === 'CLOCK' && d.start != null ? `<div class="card" style="display:grid;gap:10px"><div class="row" style="align-items:center"><div class="grow title-row"><b class="label">חוזרת כל שבוע</b>${U().infoDot('חוזרת כל שבוע', 'משמרת קבועה: תופיע מראש ב"מתוכנן" ותירשם לבד כשהזמן נגמר. תמיד אפשר לבטל.')}</div>
@@ -420,11 +422,10 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
             <label class="chip" style="position:relative;justify-self:start">עד ${U().shortDate(root.KisPlan.startMillis(until, '12:00'))}<input type="date" data-f="until" value="${until}" aria-label="עד תאריך" style="position:absolute;inset:0;opacity:0"></label>${untilBad ? '<p class="caption" role="alert" data-testid="repeat-until-error" style="margin:0;color:var(--danger)">תאריך הסיום לפני תאריך ההתחלה</p>' : ''}
             <p class="caption" data-testid="repeat-preview">${!preview ? '' : !preview.dates.length ? 'אין ימים בטווח שנבחר' : (created === 1 ? 'משמרת אחת תיכנס ללוח' : created + ' משמרות ייכנסו ללוח') + (preview.clashes.length ? ` · ${preview.clashes.length} חופפות למשמרת קיימת ולא ייווצרו` : '')}</p>
             ${(left => left.length ? `<p class="caption" data-testid="repeat-not-kept">${left.length > 1 ? left.slice(0, -1).join(', ') + ' ו' + left[left.length - 1] : left[0]} לא נשמרים במשמרת קבועה</p>` : '')([d.breakMin > 0 ? 'הפסקה' : '', num(d.bonus) > 0 ? 'בונוס' : '', d.notes.trim() ? 'הערה' : '', passThroughOf(d) > 0 ? 'החזר הוצאות' : ''].filter(Boolean))}` : ''}</div>` : ''}
-      ${more && d.mode !== 'JOB' ? `<div class="card" style="display:grid;gap:10px">
-          ${clockMode ? `<b class="label">הפסקה</b><div class="chips wrap">${[0, 15, 30, 45, 60].map(m => `<button class="chip" aria-pressed="${d.breakMin === m}" data-b="${m}" data-testid="break-${m}">${m ? m + ' דק׳' : 'ללא'}</button>`).join('')}
-            <input class="input" style="width:90px;min-height:44px" inputmode="numeric" data-f="break" value="${[0, 15, 30, 45, 60].includes(d.breakMin) ? '' : d.breakMin}" placeholder="אחר" aria-label="הפסקה בדקות"></div>` : ''}
-          <label class="field">בונוס (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="bonus" value="${esc(d.bonus)}" placeholder="לא חובה"></label>
-          <label class="field">הערה<textarea data-f="notes" placeholder="לא חובה" data-testid="notes-input">${esc(d.notes)}</textarea></label></div>` : ''}
+      ${showBreak && clockMode ? `<div class="card" style="display:grid;gap:10px" data-testid="break-block"><b class="label">הפסקה</b><div class="chips wrap">${[0, 15, 30, 45, 60].map(m => `<button class="chip" aria-pressed="${d.breakMin === m}" data-b="${m}" data-testid="break-${m}">${m ? m + ' דק׳' : 'ללא'}</button>`).join('')}
+            <input class="input" style="width:90px;min-height:44px" inputmode="numeric" data-f="break" value="${[0, 15, 30, 45, 60].includes(d.breakMin) ? '' : d.breakMin}" placeholder="אחר" aria-label="הפסקה בדקות"></div></div>` : ''}
+      ${showBonus && d.mode !== 'JOB' ? `<label class="field" data-testid="bonus-block">בונוס (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="bonus" value="${esc(d.bonus)}" placeholder="לא חובה" data-testid="bonus-input"></label>` : ''}
+      ${showNote && d.mode !== 'JOB' ? `<label class="field">הערה<textarea data-f="notes" placeholder="לא חובה" data-testid="notes-input">${esc(d.notes)}</textarea></label>` : ''}
       ${passBlock(d)}
       ${d.mode === 'JOB' ? `<label class="field">מה עשית<textarea data-f="notes" placeholder="לא חובה" data-testid="notes-input">${esc(d.notes)}</textarea></label>` : ''}`;
 
@@ -461,7 +462,11 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     all('[data-wd]').forEach(b => b.onclick = () => { const s = new Set(d.repeatDays ?? [new Date(d.day).getDay()]); const i = +b.dataset.wd; s.has(i) ? s.delete(i) : s.add(i); set({ repeatDays: [...s].sort() }); });
     q('[data-a=rate-unknown]')?.addEventListener('click', () => set({ rateUnknown: !d.rateUnknown }));
     q('[data-a=amount-unknown]')?.addEventListener('click', () => set({ amountUnknown: !d.amountUnknown }));
-    q('[data-a=more]')?.addEventListener('click', () => { more = !more; draw(); });
+    q('[data-a=plus]')?.addEventListener('click', () => { plusOpen = !plusOpen; draw(); });
+    q('[data-a=note]')?.addEventListener('click', () => { showNote = true; plusOpen = false; draw(); host.querySelector('[data-testid=notes-input]')?.focus(); });
+    all('[data-plus]').forEach(b => b.onclick = () => { const k = b.dataset.plus; plusOpen = false;
+      if (k === 'bonus') showBonus = true; else if (k === 'pass') passOpen = true; else showBreak = true;
+      draw(); host.querySelector(k === 'bonus' ? '[data-f=bonus]' : k === 'pass' ? '[data-f=passThrough]' : '[data-testid=break-block] button')?.focus(); });
     q('[data-a=repeat]')?.addEventListener('click', () => set({ repeat: !d.repeat }));
     q('[data-a=save]')?.addEventListener('click', save);
     // Text fields update the draft without redrawing (no lost caret); numbers redraw the totals on change.
@@ -506,7 +511,6 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     all('[data-jwname]').forEach(b => b.onclick = () => addJob(b.dataset.jwname, false));
     q('[data-a=job-add-worker]')?.addEventListener('click', () => addJob(q('[data-testid=job-worker-name]')?.value, true));
     q('[data-testid=job-worker-name]')?.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); if (!addJob(ev.target.value, true)) ev.target.blur(); } });
-    q('[data-a=pass-open]')?.addEventListener('click', () => { passOpen = true; draw(); host.querySelector('[data-f=passThrough]')?.focus(); });
     all('[data-bt]').forEach(b => b.onclick = () => set(withBonusTarget(d, b.dataset.bt)));
     rulerBind(host, d, t => { target = t; }, (h, v) => { d = h === 'START' ? { ...d, start: v } : { ...d, end: v }; persist(); draw(); });
   }
@@ -563,10 +567,20 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     const names = dr.workers.map(w => w.name.trim()).filter(Boolean).filter(n => !store.data.workers.some(w => w.name === n));
     if (names.length) store.update(x => { x.workers.push(...names.map(name => ({ name }))); });
   }
+  /** "+" adds what is not shown yet: bonus (not in a job), expenses, and a break when the shift has clock times. "הערה" opens the note. */
+  function extrasRow(dr, clockMode) {
+    const opts = [dr.mode !== 'JOB' && !showBonus ? ['bonus', 'בונוס'] : null, !passOpen && !String(dr.passThrough || '').trim() ? ['pass', 'החזר הוצאות'] : null,
+      clockMode && !showBreak ? ['break', 'הפסקה'] : null].filter(Boolean);
+    const note = dr.mode !== 'JOB' && !showNote;
+    if (!opts.length && !note) return '';
+    return `<div class="chips wrap" data-testid="editor-extras">${opts.length ? `<button class="chip" aria-expanded="${plusOpen}" aria-label="הוספה: ${opts.map(o => o[1]).join(', ')}" data-a="plus" data-testid="editor-plus" style="min-width:52px;font-size:1.25rem">+</button>` : ''}
+      ${plusOpen ? opts.map(([k, l]) => `<button class="chip dashed" data-plus="${k}" data-testid="plus-${k}">+ ${l}</button>`).join('') : ''}
+      ${note ? '<button class="chip" data-a="note" data-testid="editor-note">הערה</button>' : ''}</div>`;
+  }
   /** Money passed through (car, materials): owed by the employer, never income. A chip until used, in every kind of entry. */
   function passBlock(dr) {
     const { esc } = U();
-    if (!passOpen && !String(dr.passThrough || '').trim()) return '<button class="chip dashed" data-a="pass-open" data-testid="editor-pass-through" style="justify-self:start">+ החזר הוצאות</button>';
+    if (!passOpen && !String(dr.passThrough || '').trim()) return '';
     return `<div class="card" style="display:grid;gap:6px" data-testid="pass-block"><label class="field">החזר הוצאות (${esc(dr.currency)})<input class="input" inputmode="decimal" data-f="passThrough" value="${esc(dr.passThrough || '')}" placeholder="למשל כסף על הרכב" data-testid="pass-through-input"></label>
       ${passNote(dr, evaluate(dr))}</div>`;
   }

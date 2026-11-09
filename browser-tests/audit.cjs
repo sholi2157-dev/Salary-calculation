@@ -25,7 +25,7 @@ async function openEdit(p) {
   await p.click(tid('tab-history')); await p.click(tid('shift-audit')); await p.click(tid('detail-edit'));
   await p.waitForSelector(tid('save-shift'));
   // A shift with a note opens with the extras shown; otherwise "הפסקה · הערה · בונוס" opens them.
-  if (!await p.isVisible(tid('notes-input'))) await p.click(tid('editor-more'));
+  if (!await p.isVisible(tid('notes-input'))) await p.click(tid('editor-note'));
   await p.waitForSelector(tid('notes-input'));
 }
 (async () => {

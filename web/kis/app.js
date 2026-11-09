@@ -70,16 +70,21 @@ function detail(e) {
         ${group.map((w, i) => `<div style="display:grid;gap:6px"><div class="row" style="align-items:center"><span class="grow">${esc(w.name)}${e.kind === 'job' && w.amount != null ? '' : ' · ' + U().duration(w.hours) + ' ש׳'}${root.KisPay.workerPay(w, e) != null ? ' · ' + esc(U().money(root.KisPay.workerPay(w, e), e.currency)) : ''}</span><button class="chip" data-wp="${i}">${w.isPaid ? 'שולם ✓' : 'לא שולם'}</button></div><div class="row"><button class="btn ghost small grow" data-w="${i}">שיתוף לעובד</button><button class="btn ghost small grow" data-wc="${i}">העתקה</button></div></div>`).join('')}` : ''}`;
     const q = s => el.querySelector(s);
     q('[data-a=edit]').onclick = () => { close(); root.KisEditor.open(app, { entry: e, onSaved: id => app.openDetail(id) }); };
-    const shareMine = () => U().shareOrCopy(root.KisShare.entry(e, false, U().upcoming(e)), 'שיתוף משמרת');
+    const shareMine = () => U().owedShare(root.KisShare.entry(e, false, U().upcoming(e)), 'שיתוף משמרת');
     const copyMine = async () => { const t = root.KisShare.entry(e, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); };
-    const shareEmployer = () => U().shareOrCopy(root.KisShare.employer(e, (store.local.name || '').trim() || null, false, U().upcoming(e)), 'סיכום לקבלן');
+    const shareEmployer = () => U().owedShare(root.KisShare.employer(e, (store.local.name || '').trim() || null, false, U().upcoming(e)), 'סיכום לקבלן');
     const copyEmployer = async () => { const t = root.KisShare.employer(e, store.local.name, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הדוח הועתק ✓'); else U().showText(t); };
     q('[data-a=share]')?.addEventListener('click', shareMine);
     q('[data-a=copy]')?.addEventListener('click', copyMine);
     // Group B: one "שיתוף" with every report, and one ⋯ per worker.
-    q('[data-a=reports]')?.addEventListener('click', () => U().actionSheet('שיתוף', [
-      { label: 'דוח למעסיק', onClick: shareEmployer, testid: 'report-employer' }, { label: 'העתקת דוח הצוות', onClick: copyEmployer, testid: 'report-employer-copy' },
-      { label: 'החלק שלי', onClick: shareMine, testid: 'report-mine' }, { label: 'העתקת החלק שלי', onClick: copyMine, testid: 'report-mine-copy' }], 'reports-sheet'));
+    // Two reports, each shared by a tap on its row or copied by the icon beside it (owner feedback 2.3).
+    q('[data-a=reports]')?.addEventListener('click', () => U().sheet('reports-sheet', (sh, close) => {
+      const rows = [['דוח למעסיק', shareEmployer, copyEmployer, 'report-employer'], ['החלק שלי', shareMine, copyMine, 'report-mine']];
+      sh.innerHTML = `<h2>שיתוף</h2><div class="action-list">${rows.map(([l, , , id], i) => `<div class="row" style="align-items:center;gap:4px"><button class="action-item grow" data-rs="${i}" data-testid="${id}"><span aria-hidden="true" style="display:inline-flex;width:20px;height:20px;vertical-align:middle;margin-inline-end:8px">${U().ICON.share}</span>${l}</button>
+        <button class="icon-btn" data-rc="${i}" aria-label="העתקה: ${l}" data-testid="${id}-copy"><span aria-hidden="true" style="display:inline-flex;width:20px;height:20px">${U().ICON.copy}</span></button></div>`).join('')}</div>`;
+      sh.querySelectorAll('[data-rs]').forEach(b => b.onclick = () => { close(); rows[+b.dataset.rs][1](); });
+      sh.querySelectorAll('[data-rc]').forEach(b => b.onclick = () => { close(); rows[+b.dataset.rc][2](); });
+    }));
     el.querySelectorAll('[data-more]').forEach(b => b.onclick = () => { const i = +b.dataset.more, w = group[i];
       U().actionSheet(w.name, [
         { label: `שיתוף ל${w.name}`, onClick: () => U().shareOrCopy(root.KisShare.worker(e, w, false, U().upcoming(e)), 'שיתוף לעובד'), testid: 'worker-share' },

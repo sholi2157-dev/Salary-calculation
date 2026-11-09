@@ -24,7 +24,7 @@ const server = http.createServer((q, r) => { let p = decodeURIComponent(new URL(
   await page.goto(base); await page.waitForSelector(tid('home-hero'));
   // Editor: the note at the bottom, then the keyboard opens.
   await page.evaluate(() => window.Kis.openNew()); await page.waitForTimeout(300);
-  await page.click(tid('editor-more')); await page.waitForTimeout(200);
+  await page.click(tid('editor-note')); await page.waitForTimeout(200);
   await page.focus(tid('notes-input')); await page.setViewportSize({ width: 390, height: KB }); await page.waitForTimeout(900);
   const note = await inView(tid('notes-input')), save = await inView(tid('save-shift'));
   assert.ok(note.ok, 'the note stays visible above the keyboard: ' + JSON.stringify(note));

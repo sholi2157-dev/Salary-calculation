@@ -90,7 +90,7 @@ const seed = {
     assert.match(await page.textContent(tid('editor-total')),/99\.91/);
     await page.click(tid('hours-input-d2'));await page.click(tid('entry-done'));
     assert.ok(await page.isDisabled(tid('save-shift')), 'opening a rounded display does not change imported hours');
-    await page.click(tid('editor-more'));await page.fill(tid('notes-input'),'הערה בלבד');
+    await page.click(tid('editor-note'));await page.fill(tid('notes-input'),'הערה בלבד');
     assert.match(await page.textContent(tid('editor-total')),/99\.91/);
     await page.click(tid('save-shift'));const row=(await stored(page)).entries[0];assert.equal(row.hours,1.234567);assert.equal(row.totalEarnings,99.91);
     await ctx.close();
@@ -157,7 +157,7 @@ const seed = {
     rows = (await stored(page)).entries; assert.equal(rows.find(e => e.id === added.id).totalEarnings, 350);
     // Edit only the note: the stored amount of an old row stays exactly as it was.
     await page.click(tid('tab-history')); await page.click(tid('shift-b')); await page.click(tid('detail-edit'));
-    await page.click(tid('editor-more')); await page.fill(tid('notes-input'), 'הערה'); await page.click(tid('save-shift'));
+    await page.click(tid('editor-note')); await page.fill(tid('notes-input'), 'הערה'); await page.click(tid('save-shift'));
     const b = (await stored(page)).entries.find(e => e.id === 'b'); assert.equal(b.totalEarnings, 300); assert.equal(b.notes, 'הערה'); assert.equal(b.hours, 2.5);
     await ctx.close();
   }
@@ -340,7 +340,7 @@ const seed = {
     }
     const scope = await page.evaluate(() => KisSummary.recapNew(KisPlan.dateOf(Date.now())).month);
     assert.ok(await page.isVisible(tid('home-recap-' + scope)), 'the new recap is on Home');
-    await page.click(tid('tab-settings')); await page.click(tid('settings-open-הסיכומים שלי'));
+    await page.click(tid('tab-settings')); await page.click(tid('settings-open-חשבון')); await page.click(tid('recaps-button'));
     assert.ok(await page.isVisible(tid('recap-' + scope)), 'and in the archive');
     await page.keyboard.press('Escape'); await page.click(tid('tab-home'));
     assert.equal(await page.locator(tid('home-month-summary')).count(), 0);

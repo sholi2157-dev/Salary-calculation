@@ -129,7 +129,8 @@ function bindSelection(el, app, sel, redraw) {
   const b = s => bar.querySelector(`[data-s=${s}]`), ids = sel.map(e => e.id), clear = () => { state.selection.clear(); redraw(); };
   b('cancel').onclick = clear;
   b('all').onclick = () => { const rows = [...el.querySelectorAll('.shift[data-id]')].map(x => x.dataset.id); if (sel.length === rows.length) state.selection.clear(); else state.selection = new Set(rows); redraw(); };
-  b('share').onclick = () => { U().shareOrCopy(root.KisShare.summary(sel, root.KisShare.workerName(sel, state.query)), 'שיתוף משמרות'); clear(); };
+  // A report for a worker the user pays is shared as is; anything the user is owed may carry their payment details.
+  b('share').onclick = () => { const w = root.KisShare.workerName(sel, state.query), t = root.KisShare.summary(sel, w); (w ? U().shareOrCopy : U().owedShare)(t, 'שיתוף משמרות'); clear(); };
   b('copy').onclick = async () => { const text = root.KisShare.copy(sel, root.KisShare.workerName(sel, state.query)); if (await U().copy(text)) U().toast('הועתק ✓ · מוכן להדבקה בוואטסאפ'); else U().showText(text); clear(); };
   // M-37: the same message with undo as a single change; undo gives each shift back its own previous mark.
   const paid = value => () => {

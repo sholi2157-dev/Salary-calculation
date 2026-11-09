@@ -13,10 +13,10 @@ test('a worker saved as hours × rate is still paid that', () => {
   const old = { ...job, groupWorkersJson: JSON.stringify([{ name: 'יוסי', hours: 5.5, isPaid: false, workerRate: 60 }]) };
   assert.equal(Pay.teamPay(old), 330);
 });
-test('the team report names the fixed sum and the user share', () => {
+test('the team report gives each fixed sum without a label, and the user share', () => {
   const one = { ...job, totalEarnings: 700, groupWorkersJson: JSON.stringify([{ name: 'דני', hours: 0, isPaid: false, amount: 300 }]) };
   const r = S.employer(one, 'שולי');
-  assert.match(r, /דני: סכום קבוע \| ₪300\.00/); assert.match(r, /שולי: ₪700\.00/); assert.match(r, /סכום הצוות: ₪1,000\.00/);
+  assert.match(r, /דני: ₪300\.00/); assert.doesNotMatch(r, /סכום קבוע/); assert.match(r, /^היי, סיכמתי פה את העבודה ב-/); assert.match(r, /שולי: ₪700\.00/); assert.match(r, /סכום הצוות: ₪1,000\.00/);
   const w = S.worker(one, Pay.workers(one)[0]);
   assert.match(w, /₪300\.00/); assert.doesNotMatch(w, /₪700/);
 });
