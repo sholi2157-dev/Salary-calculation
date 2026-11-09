@@ -102,7 +102,8 @@ object KisHistoryLogic {
 
     /** "השבוע · פרשת וירא", "שבוע פרשת נח", "שבוע פסח"; another year adds the Hebrew year. Outside the table: "שבוע של …" (owner feedback 2.3). */
     fun weekLabel(start: Long): String {
-        val p = com.example.data.HebrewDate.portion(start)
+        // A civil-only choice names the week by its first day (owner feedback 2.3.1).
+        val p = if (com.example.data.HebrewDate.mode == com.example.data.HebrewDate.GREG) null else com.example.data.HebrewDate.portion(start)
         val now = start == weekStart(System.currentTimeMillis())
         if (p == null) return if (now) "השבוע" else "שבוע של ${KisShare.shortDate(start)}"
         if (now) return "השבוע · $p"

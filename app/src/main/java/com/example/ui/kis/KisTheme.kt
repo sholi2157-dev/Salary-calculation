@@ -145,6 +145,8 @@ private val KisMaterialType = Typography().let { base ->
 
 enum class ThemeChoice(val key: String, val label: String) { SYSTEM("system", "אוטומטי"), LIGHT("light", "בהיר"), DARK("dark", "כהה") }
 
+private val DATE_MODES = setOf(com.example.data.HebrewDate.GREG, com.example.data.HebrewDate.HEB, com.example.data.HebrewDate.BOTH)
+
 @Stable
 class KisSettings internal constructor(private val context: Context?) {
     private val prefs = context?.getSharedPreferences("kis_ui", Context.MODE_PRIVATE)
@@ -183,14 +185,27 @@ class KisSettings internal constructor(private val context: Context?) {
     /** Where the user gets paid (device only, like the name): added to a shared report only when chosen each time. */
     var payZelle by mutableStateOf(prefs?.getString("payZelle", "") ?: "")
         private set
-    fun updatePayZelle(value: String) { payZelle = value.take(80); prefs?.edit()?.putString("payZelle", payZelle.trim())?.apply() }
+    fun updatePayZelle(value: String) { payZelle = value.take(80); prefs?.edit()?.putString("payZelle", payZelle.trim())?.apply(); applyTextChoices() }
     var payBit by mutableStateOf(prefs?.getString("payBit", "") ?: "")
         private set
-    fun updatePayBit(value: String) { payBit = value.take(40); prefs?.edit()?.putString("payBit", payBit.trim())?.apply() }
+    fun updatePayBit(value: String) { payBit = value.take(40); prefs?.edit()?.putString("payBit", payBit.trim())?.apply(); applyTextChoices() }
     var payBank by mutableStateOf(prefs?.getString("payBank", "") ?: "")
         private set
-    fun updatePayBank(value: String) { payBank = value.take(160); prefs?.edit()?.putString("payBank", payBank.trim())?.apply() }
+    fun updatePayBank(value: String) { payBank = value.take(160); prefs?.edit()?.putString("payBank", payBank.trim())?.apply(); applyTextChoices() }
     fun paymentLines() = com.example.data.WorkShareText.paymentLines(payZelle, payBit, payBank)
+    /** The kinds filled in ("zelle", "bit", "bank"): a report to a worker asks for the same (owner feedback 2.3.1). */
+    fun paymentKinds(): List<String> = listOfNotNull("zelle".takeIf { payZelle.isNotBlank() }, "bit".takeIf { payBit.isNotBlank() }, "bank".takeIf { payBank.isNotBlank() })
+    /** Dates shown and shared: GREG (civil only), HEB (Hebrew only) or BOTH (owner feedback 2.3.1). */
+    var dateMode by mutableStateOf(prefs?.getString("dateMode", com.example.data.HebrewDate.BOTH)?.takeIf { it in DATE_MODES } ?: com.example.data.HebrewDate.BOTH)
+        private set
+    fun updateDateMode(value: String) { if (value !in DATE_MODES) return; dateMode = value; prefs?.edit()?.putString("dateMode", value)?.apply(); applyTextChoices() }
+    /** Hands the date choice and the payment kinds to the date labels and the shared texts. */
+    fun applyTextChoices() {
+        com.example.data.HebrewDate.mode = dateMode
+        com.example.data.WorkShareText.dateMode = dateMode
+        com.example.data.WorkShareText.askKinds = paymentKinds()
+    }
+    init { applyTextChoices() }
     var placeOrder by mutableStateOf(runCatching { org.json.JSONArray(prefs?.getString("placeOrder", "[]") ?: "[]").let { a -> List(a.length()) { a.getString(it) } } }.getOrDefault(emptyList()))
         private set
     fun updatePlaceOrder(names: List<String>) { placeOrder = names; prefs?.edit()?.putString("placeOrder", org.json.JSONArray(names).toString())?.apply() }

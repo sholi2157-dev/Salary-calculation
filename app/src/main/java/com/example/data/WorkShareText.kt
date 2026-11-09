@@ -8,7 +8,17 @@ import java.util.Locale
 
 /** Technical copy and recipient-ready sharing. Mirrored in web/v2/share.js; shared exact fixtures. */
 object WorkShareText {
-    fun date(ms: Long): String = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(ms))
+    /** The user's date choice for shared texts (owner feedback 2.3.1): GREG "08/11/2026", HEB "כ״ח חשוון תשפ״ז", BOTH "כ״ח חשוון (8/11)".
+     *  The app sets it from Settings; the default keeps the shared fixtures civil. Spreadsheets always use [civilDate]. */
+    @Volatile var dateMode: String = HebrewDate.GREG
+    /** What the user receives money with (from the profile): a report to a worker asks for the same kinds. Empty: all three. */
+    @Volatile var askKinds: List<String> = emptyList()
+    fun civilDate(ms: Long): String = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(ms))
+    fun date(ms: Long): String = when (dateMode) {
+        HebrewDate.HEB -> HebrewDate.day(ms) + " " + HebrewDate.gematria(HebrewDate.fromMillis(ms).first)
+        HebrewDate.BOTH -> HebrewDate.day(ms) + " (" + HebrewDate.civilShort(ms, false) + ")"
+        else -> civilDate(ms)
+    }
     fun money(v: Double, c: String): String = WorkMoney.format(v, c)
     fun hours(h: Double): String = BigDecimal(h).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
     private fun note(e: WorkEntry) = e.notes.trim()
@@ -95,11 +105,18 @@ object WorkShareText {
                 addAll(details(e))
             } }
             // A report to someone the user pays asks for where to send the money.
-            if (name != null && rows.any { !it.isPaid && WorkPay.pay(it) != null }) add(ASK_PAYMENT)
+            if (name != null && rows.any { !it.isPaid && WorkPay.pay(it) != null }) add(askPayment(askKinds))
             add("תודה!")
         }.joinToString("\n")
     }
     const val ASK_PAYMENT = "אפשר לשלוח לי את ה-Zelle, הביט או פרטי החשבון שלך, ואעביר את התשלום."
+    /** "אפשר לשלוח לי את ה-Zelle שלך…" for the kinds the user filled in ("zelle", "bit", "bank"); none or all three: [ASK_PAYMENT]. */
+    fun askPayment(kinds: List<String>): String {
+        val names = listOf("zelle" to "ה-Zelle", "bit" to "הביט", "bank" to "פרטי החשבון").filter { it.first in kinds }.map { it.second }
+        if (names.isEmpty() || names.size == 3) return ASK_PAYMENT
+        val what = if (names.size == 1) names[0] else names[0] + " או " + names[1]
+        return "אפשר לשלוח לי את $what שלך, ואעביר את התשלום."
+    }
     /** The user's own payment details (Zelle, Bit, bank), when they choose to add them to what they share. */
     fun paymentLines(zelle: String, bit: String, bank: String): List<String> = listOfNotNull(
         zelle.trim().takeIf { it.isNotEmpty() }?.let { "Zelle: $it" },
@@ -136,7 +153,7 @@ object WorkShareText {
         val single = e.copy(groupWorkersJson = org.json.JSONArray().put(w.source).toString())
         val text = if (technical) copy(listOf(single), w.name) else summary(listOf(single), w.name)
         // Nothing to pay yet for a planned shift, so it does not ask where to send money.
-        return if (future) plannedText(text.replace("\n$ASK_PAYMENT", "")) else text
+        return if (future) plannedText(text.replace("\n" + askPayment(askKinds), "")) else text
     }
     fun planned(o: com.example.domain.V2Plan.Occurrence, technical: Boolean = false): String {
         val h = com.example.domain.V2Rules.span(o.start, o.end).minutes / 60.0
@@ -169,7 +186,7 @@ object WorkShareText {
         // Format the stored value with the existing money contract; do not recompute hours × rate.
         fun n(v: Double) = String.format(Locale.US, "%.2f", WorkPay.money(1.0, v))
         return listOf(excelHeaders) + entries.sortedBy { it.date }.map { e -> listOf(
-            textCell(e.category), date(e.date), e.startTime ?: "", e.endTime ?: "", if (e.hours.isFinite() && e.hours >= 0) exactDuration(e.hours) else n(e.hours), pause(e)?.toString() ?: "",
+            textCell(e.category), civilDate(e.date), e.startTime ?: "", e.endTime ?: "", if (e.hours.isFinite() && e.hours >= 0) exactDuration(e.hours) else n(e.hours), pause(e)?.toString() ?: "",
             if (!e.payKnown || WorkPay.isJob(e)) "" else n(e.hourlyRate), if (e.payKnown) n(e.totalEarnings) else "", textCell(e.currency),
             if (e.isPaid) "שולם" else "ממתין", if (WorkPay.isJob(e)) "קבלנות" else if (e.isGroupShift) "משמרת קבוצתית" else "משמרת",
             if (e.bonus > 0) n(e.bonus) else "", textCell(e.notes), if (e.payKnown) "כן" else "חסר"

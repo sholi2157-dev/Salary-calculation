@@ -77,6 +77,18 @@ object HebrewDate {
     fun monthName(y: Int, m: Int): String = if (m == 12 && isLeap(y)) "אדר א׳" else MONTHS[m]
     /** "כ״ח חשוון". */
     fun day(millis: Long): String { val (y, m, d) = fromMillis(millis); return gematria(d) + " " + monthName(y, m) }
+    const val GREG = "GREG"; const val HEB = "HEB"; const val BOTH = "BOTH"
+    /** The user's date choice in Settings (owner feedback 2.3.1); BOTH as in 2.3.0. */
+    @Volatile var mode: String = BOTH
+    /** "8/11", or "8/11/2025" with the year. */
+    fun civilShort(millis: Long, withYear: Boolean): String { val (cy, cm, cd) = civil(millis); return "$cd/$cm" + if (withYear) "/$cy" else "" }
+    private fun otherYear(millis: Long) = civil(millis).first != civil(System.currentTimeMillis()).first
+    /** A date on screen, by [mode]: "8/11", "כ״ח חשוון" or "כ״ח חשוון (8/11)"; another year adds the year(s). */
+    fun show(millis: Long, withYear: Boolean = otherYear(millis)): String = when (mode) {
+        GREG -> civilShort(millis, withYear)
+        HEB -> day(millis) + if (withYear) " " + gematria(fromMillis(millis).first) else ""
+        else -> label(millis, withYear)
+    }
     /** "כ״ח חשוון (8/11)"; another year adds both years: "כ״ח חשוון תשפ״ו (8/11/2025)". */
     fun label(millis: Long, withYear: Boolean = civil(millis).first != civil(System.currentTimeMillis()).first): String {
         val (cy, cm, cd) = civil(millis)

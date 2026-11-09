@@ -949,7 +949,7 @@ fun dayLabel(millis: Long): String {
     val cal = Calendar.getInstance().apply { timeInMillis = millis }
     return when (diff) {
         0L -> "היום"; 1L -> "אתמול"; -1L -> "מחר"
-        else -> "יום ${KisFormat.DAY_SHORT[cal.get(Calendar.DAY_OF_WEEK) - 1]} ${com.example.data.HebrewDate.label(millis)}"
+        else -> "יום ${KisFormat.DAY_SHORT[cal.get(Calendar.DAY_OF_WEEK) - 1]} ${com.example.data.HebrewDate.show(millis)}"
     }
 }
 

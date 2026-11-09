@@ -13,8 +13,8 @@ concurrency:
   group: android-v2-rc-${{ github.ref }}
   cancel-in-progress: true
 env:
-  RC_CODE: '52'
-  RC_NAME: '2.3.0'
+  RC_CODE: '53'
+  RC_NAME: '2.3.1'
   # The previously delivered 2.0 candidate (owner's phone): its exact bytes come from that run's artifact.
   PREV_RUN: '40537072814'
   PREV_SHA: 'c62691480f7cdb81259af5d8179328ec3620c20a1fc367e4916740035d6d8882'
@@ -131,7 +131,7 @@ jobs:
       - name: Candidate for owner review only; never publish a Release
         uses: actions/upload-artifact@v4
         with:
-          name: salary-2.3.0-code52-candidate
+          name: salary-2.3.1-code53-candidate
           path: |
             candidate-b.apk
             release-evidence/

@@ -141,6 +141,11 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                     KisSegmented(ThemeChoice.entries.map { it to it.label }, settings.theme, settings::updateTheme, tagPrefix = "theme")
                 }
                 Row_("רטט במגע", null) { KisSwitch(settings.haptics, settings::updateHaptics, Modifier.testTag("haptics_switch"), label = "רטט במגע") }
+                // Owner feedback 2.3.1: civil, Hebrew or both, in the app, the shared reports and History's weeks.
+                Row_("תאריכים", null) {
+                    KisSegmented(listOf(com.example.data.HebrewDate.GREG to "לועזי", com.example.data.HebrewDate.HEB to "עברי", com.example.data.HebrewDate.BOTH to "שניהם"),
+                        settings.dateMode, settings::updateDateMode, tagPrefix = "date_mode")
+                }
             }
             Group(nav, "התראות") { NotificationSwitches(viewModel) }
             Group(nav, "עזרה וכלים", Modifier.coachTarget(CoachTarget.API)) {

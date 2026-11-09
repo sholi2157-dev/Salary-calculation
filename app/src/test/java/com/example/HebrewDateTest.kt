@@ -5,6 +5,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import com.example.data.WorkShareText
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.util.Calendar
@@ -33,5 +34,19 @@ class HebrewDateTest {
     @Test fun ownerExample() {
         assertEquals("כ״ח חשוון (8/11)", HebrewDate.label(millis("2026-11-08"), withYear = false))
         assertEquals("ט״ו", HebrewDate.gematria(15)); assertEquals("תשפ״ז", HebrewDate.gematria(5787))
+    }
+    /** Settings → תאריכים (owner feedback 2.3.1); mirrored in web-tests/hebrew-date.test.cjs. */
+    @Test fun theDateChoice() {
+        val ms = millis("2026-11-08")
+        try {
+            HebrewDate.mode = HebrewDate.GREG; WorkShareText.dateMode = HebrewDate.GREG
+            assertEquals("8/11", HebrewDate.show(ms, false)); assertEquals("08/11/2026", WorkShareText.date(ms))
+            HebrewDate.mode = HebrewDate.HEB; WorkShareText.dateMode = HebrewDate.HEB
+            assertEquals("כ״ח חשוון", HebrewDate.show(ms, false)); assertEquals("כ״ח חשוון תשפ״ז", HebrewDate.show(ms, true))
+            assertEquals("כ״ח חשוון תשפ״ז", WorkShareText.date(ms))
+            HebrewDate.mode = HebrewDate.BOTH; WorkShareText.dateMode = HebrewDate.BOTH
+            assertEquals("כ״ח חשוון (8/11)", HebrewDate.show(ms, false)); assertEquals("כ״ח חשוון (8/11)", WorkShareText.date(ms))
+            assertEquals("08/11/2026", WorkShareText.civilDate(ms))
+        } finally { HebrewDate.mode = HebrewDate.BOTH; WorkShareText.dateMode = HebrewDate.GREG }
     }
 }

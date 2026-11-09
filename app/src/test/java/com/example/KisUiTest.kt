@@ -41,6 +41,12 @@ class KisUiTest {
     private val dao get() = db.workDao()
     private fun model() = WorkViewModel(app, WorkRepository(dao))
 
+    /** Settings hand the date choice to process-wide objects; other test classes expect the civil defaults. */
+    @org.junit.After fun resetTextChoices() {
+        com.example.data.HebrewDate.mode = com.example.data.HebrewDate.BOTH
+        com.example.data.WorkShareText.dateMode = com.example.data.HebrewDate.GREG
+        com.example.data.WorkShareText.askKinds = emptyList()
+    }
     /** The account database is a process-wide singleton; every test starts from empty tables. */
     @org.junit.Before fun clean() {
         org.robolectric.shadows.ShadowLog.stream = System.out
