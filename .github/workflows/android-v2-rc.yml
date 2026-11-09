@@ -13,7 +13,7 @@ concurrency:
   group: android-v2-rc-${{ github.ref }}
   cancel-in-progress: true
 env:
-  RC_CODE: '53'
+  RC_CODE: '54'
   RC_NAME: '2.3.1'
   # The previously delivered 2.0 candidate (owner's phone): its exact bytes come from that run's artifact.
   PREV_RUN: '40537072814'
