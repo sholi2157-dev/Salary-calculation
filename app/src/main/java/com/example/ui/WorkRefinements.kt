@@ -12,11 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
@@ -80,10 +75,8 @@ object SalaryFeedback {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("תקלה", "הצעה", "הערה").forEach { kind -> KisChip(kind, selected = type == kind, onClick = { type = kind }, tag = "feedback_type_$kind") }
         }
-        // Enter stays a new line. The settings page scrolls, and a hardware Enter otherwise never reaches this field.
-        KisTextField(message, { onMessage(it); failed = false }, "מה קרה, או מה ההצעה?", Modifier.fillMaxWidth().testTag("feedback_message").onPreviewKeyEvent { event ->
-            if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) { onMessage(message + "\n"); true } else false
-        }, singleLine = false, minLines = 3, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default))
+        KisTextField(message, { onMessage(it); failed = false }, "מה קרה, או מה ההצעה?", Modifier.fillMaxWidth().testTag("feedback_message"), singleLine = false, minLines = 3,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default))
         if (FeedbackReport.enabled) {
             if (image == null) KisButton("צירוף צילום מסך", {
                 pick.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))

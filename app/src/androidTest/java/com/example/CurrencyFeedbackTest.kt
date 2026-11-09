@@ -10,6 +10,7 @@ import org.junit.Rule
 import org.junit.Test
 
 /** Live timer currency, cancel without saving, currency-only edit, multi-line feedback and default workplace. */
+@OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
 class CurrencyFeedbackTest {
     @get:Rule(order = 0) val noSignIn = SkipSignIn()
     @get:Rule(order = 1) val ui = createAndroidComposeRule<MainActivity>()
@@ -91,7 +92,9 @@ class CurrencyFeedbackTest {
         ui.onNodeWithTag("settings_section_משוב ותקלות").performScrollTo().performClick()
         ui.onNodeWithTag("feedback_message").performScrollTo().performClick().performTextInput("first line")
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        automation.executeShellCommand("input keyevent KEYCODE_ENTER").use { d -> android.os.ParcelFileDescriptor.AutoCloseInputStream(d).use { it.readBytes() } }
+        // Enter goes to the focused field itself. A shell "input keyevent" from the test process raced the keyboard
+        // window on the scrolling settings page and never reached the field, though a person's Enter does.
+        ui.onNodeWithTag("feedback_message").performKeyInput { pressKey(androidx.compose.ui.input.key.Key.Enter) }
         ui.waitForIdle()
         ui.onNodeWithTag("settings_root").assertExists()
         ui.onNodeWithTag("feedback_message").performTextInput("second line")
