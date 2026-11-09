@@ -27,12 +27,13 @@ const hm = m => Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0');
 /** A duration on screen, always h:mm ("2:30 שעות", M-36); rates and shared texts keep their decimals. */
 const duration = h => hm(Math.round((Number(h) || 0) * 60));
 const startOfDay = ms => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
-const shortDate = ms => { const d = new Date(ms); return d.getDate() + '.' + (d.getMonth() + 1); };
+// Dates are Hebrew with the civil date beside them (owner feedback 2.3): "כ״ח חשוון (8/11)"; another year adds both years.
+const shortDate = ms => root.KisHebrew.label(ms);
 function dayLabel(ms) {
   const diff = Math.round((startOfDay(Date.now()) - startOfDay(ms)) / 86400000), d = new Date(ms);
-  return diff === 0 ? 'היום' : diff === 1 ? 'אתמול' : diff === -1 ? 'מחר' : `יום ${DAY_SHORT[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}`;
+  return diff === 0 ? 'היום' : diff === 1 ? 'אתמול' : diff === -1 ? 'מחר' : `יום ${DAY_SHORT[d.getDay()]} ${root.KisHebrew.label(ms)}`;
 }
-function dayLabelLong(ms) { const d = new Date(ms); return dayLabel(ms) + (d.getFullYear() !== new Date().getFullYear() ? '.' + d.getFullYear() : ''); }
+function dayLabelLong(ms) { return dayLabel(ms); }
 const monthKey = ms => { const d = new Date(ms); return d.getFullYear() * 12 + d.getMonth(); };
 const monthName = k => MONTHS[k % 12] + ' ' + Math.floor(k / 12);
 const isDark = () => document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);

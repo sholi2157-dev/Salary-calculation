@@ -1,5 +1,5 @@
 // M-38 (web, D-9/D-12): on the real pages (Home, History, Settings, a shift's details) the text uses one neutral voice:
-// no "נגיעה", "דו״ח", singular commands or plural address; unpaid is "לא שולם"; shift dates read "יום ד׳ 4.11" (or
+// no "נגיעה", "דו״ח", singular commands or plural address; unpaid is "לא שולם"; shift dates read "יום ד׳ כ״ח חשוון (8/11)" (or
 // היום/אתמול/מחר). Saves screenshots to SCREENSHOT_DIR (default /tmp/m38-shots). Synthetic data only.
 const assert = require('node:assert/strict'), http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -34,7 +34,7 @@ const BANNED = /נגיעה|דו״ח|(^|[^א-ת])(הזן|הוסף|בחר|נסה|�
   await clean('Home');
   const dates = await page.locator('.shift .top b, .shift .top strong').allInnerTexts();
   assert.ok(dates.length > 0, 'shift cards with dates on Home');
-  for (const d of dates.filter(Boolean)) assert.match(d, /^(היום|אתמול|מחר|יום [אבגדהוש]׳ \d{1,2}\.\d{1,2}(\.\d{4})?)$/, 'date ' + d);
+  for (const d of dates.filter(Boolean)) assert.match(d, /^(היום|אתמול|מחר|יום [אבגדהוש]׳ [א-ת״׳]+ [א-ת״׳ ]+ \(\d{1,2}\/\d{1,2}(\/\d{4})?\))$/, 'date ' + d);
   await page.screenshot({ path: path.join(SHOTS, 'm38-home.png'), fullPage: true });
   await page.locator('.shift[data-id]').first().click();
   await page.waitForSelector('[data-testid=shift-detail]');
@@ -47,6 +47,6 @@ const BANNED = /נגיעה|דו״ח|(^|[^א-ת])(הזן|הוסף|בחר|נסה|�
   await clean('Settings');
   assert.deepEqual(errors, []);
   await ctx.close();
-  console.log(`m38-wording: Home, details, History and Settings in one neutral voice with "יום ד׳ 4.11" dates: PASS (screenshots in ${SHOTS})`);
+  console.log(`m38-wording: Home, details, History and Settings in one neutral voice with "יום ד׳ כ״ח חשוון (8/11)" dates: PASS (screenshots in ${SHOTS})`);
  } finally { await browser.close(); server.close(); }
 })().catch(e => { console.error(e); process.exit(1); });

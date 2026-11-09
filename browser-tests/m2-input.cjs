@@ -45,13 +45,14 @@ const server = http.createServer((q, r) => { let p = decodeURIComponent(new URL(
   assert.match(await page.textContent(tid('save-hint')), /שלילי|תעריף/);
   // M-06: these optional values previously passed because null >= 0 in JavaScript.
   await page.fill(tid('rate-input'), '60,5');
-  await page.click('[data-a=more]');
+  await page.click('[data-a=plus]'); await page.click('[data-plus=bonus]');
   for (const value of ['abc', 'Infinity', '1e309', '-5', '1,2,3']) {
     await page.fill('[data-f=bonus]', value);
     assert.equal(await page.locator(tid('save-shift')).isDisabled(), true, value);
     assert.equal(await page.locator(tid('editor-total')).count(), 0, value);
   }
   await page.fill('[data-f=bonus]', '');
+  await page.click('[data-a=plus]'); await page.click('[data-plus=break]');
   for (const [value, minutes] of [['601', 600], ['15', 15], ['1.5', 0], ['abc', 0], ['', 0]]) {
     await page.fill('[data-f=break]', value);
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('kis_web_draft_v1')).breakMin), minutes);
@@ -72,7 +73,7 @@ const server = http.createServer((q, r) => { let p = decodeURIComponent(new URL(
     assert.equal(JSON.parse(entry.groupWorkersJson)[0].bonus || 0, target === 'ME' ? 0 : 30);
     await page.reload(); await page.waitForSelector(tid('home-hero'));
     await page.evaluate(id => window.KisEditor.open(window.Kis, { entry: window.Kis.store.data.entries.find(e => e.id === id) }), entry.id);
-    if (!await page.locator('[data-f=notes]').count()) await page.click('[data-a=more]');
+    if (!await page.locator('[data-f=notes]').count()) await page.click('[data-a=note]');
     await page.fill('[data-f=notes]', 'הערה סינתטית'); await page.click(tid('save-shift'));
     await page.waitForSelector(tid('edit-page'), { state: 'detached' });
     const edited = await page.evaluate(id => window.Kis.store.data.entries.find(e => e.id === id), entry.id);

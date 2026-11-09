@@ -20,8 +20,8 @@ for (const f of files) test(`${f}: one neutral voice and one date format`, () =>
   const src = screenText(f);
   for (const [re, why] of NOT) { const m = src.match(re); assert.equal(m, null, `${why}: …${m && src.slice(Math.max(0, m.index - 30), m.index + 30)}…`); }
 });
-test('date format: "יום ד׳ 4.11", the year added only for another year', () => {
+test('date format (owner feedback 2.3): "יום ד׳ כ״ח חשוון (8/11)", Hebrew first, the civil date beside it', () => {
   const ui = fs.readFileSync(path.join(web, 'kis', 'ui.js'), 'utf8');
-  assert.match(ui, /`יום \$\{DAY_SHORT\[d\.getDay\(\)\]\} \$\{d\.getDate\(\)\}\.\$\{d\.getMonth\(\) \+ 1\}`/);
-  assert.match(ui, /d\.getFullYear\(\) !== new Date\(\)\.getFullYear\(\) \? '\.' \+ d\.getFullYear\(\)/);
+  assert.match(ui, /`יום \$\{DAY_SHORT\[d\.getDay\(\)\]\} \$\{root\.KisHebrew\.label\(ms\)\}`/);
+  assert.match(ui, /const shortDate = ms => root\.KisHebrew\.label\(ms\);/);
 });

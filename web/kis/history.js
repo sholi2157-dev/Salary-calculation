@@ -39,7 +39,15 @@ function apply(entries, f, q) {
   if (f.sort === 'ADDED') return rows.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   return rows.sort((a, b) => f.sort === 'OLDEST' ? a.date - b.date || (a.createdAt || 0) - (b.createdAt || 0) : b.date - a.date || (b.createdAt || 0) - (a.createdAt || 0));
 }
-function weekLabel(start) { return start === root.KisHome.weekStart(Date.now()) ? 'השבוע' : 'שבוע של ' + U().shortDate(start) + (new Date(start).getFullYear() !== new Date().getFullYear() ? '.' + new Date(start).getFullYear() : ''); }
+/** "השבוע · פרשת וירא", "שבוע פרשת נח", "שבוע פסח"; another year adds the Hebrew year. Outside the table: "שבוע של …" (owner feedback 2.3). */
+function weekLabel(start) {
+  const H = root.KisHebrew, p = H.portion(start), now = start === root.KisHome.weekStart(Date.now());
+  if (!p) return now ? 'השבוע' : 'שבוע של ' + U().shortDate(start);
+  if (now) return 'השבוע · ' + p;
+  const sat = new Date(start); sat.setDate(sat.getDate() + 6);
+  // Another civil year adds the Hebrew year, as dates do.
+  return 'שבוע ' + p + (sat.getFullYear() !== new Date().getFullYear() ? ' ' + H.gematria(H.fromMillis(sat.getTime())[0]) : '');
+}
 
 function render(el, app, opts = {}) {
   const { store } = app, { esc, moneyHtml, shiftCard, ICON, upcoming } = U();
