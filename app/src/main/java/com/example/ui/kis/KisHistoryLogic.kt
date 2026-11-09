@@ -100,8 +100,16 @@ object KisHistoryLogic {
         add(Calendar.DAY_OF_MONTH, -(get(Calendar.DAY_OF_WEEK) - Calendar.SUNDAY))
     }.timeInMillis
 
-    fun weekLabel(start: Long): String =
-        if (start == weekStart(System.currentTimeMillis())) "השבוע" else "שבוע של ${KisShare.shortDate(start)}"
+    /** "השבוע · פרשת וירא", "שבוע פרשת נח", "שבוע פסח"; another year adds the Hebrew year. Outside the table: "שבוע של …" (owner feedback 2.3). */
+    fun weekLabel(start: Long): String {
+        val p = com.example.data.HebrewDate.portion(start)
+        val now = start == weekStart(System.currentTimeMillis())
+        if (p == null) return if (now) "השבוע" else "שבוע של ${KisShare.shortDate(start)}"
+        if (now) return "השבוע · $p"
+        val sat = Calendar.getInstance().apply { timeInMillis = start; add(Calendar.DAY_OF_MONTH, 6) }
+        val other = sat.get(Calendar.YEAR) != Calendar.getInstance().get(Calendar.YEAR)
+        return "שבוע $p" + if (other) " " + com.example.data.HebrewDate.gematria(com.example.data.HebrewDate.fromMillis(sat.timeInMillis).first) else ""
+    }
 
     /** Groups consecutive rows by week, keeping the given order. */
     fun byWeek(rows: List<WorkEntry>): List<Pair<Long, List<WorkEntry>>> {

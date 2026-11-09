@@ -12,10 +12,8 @@ import java.util.Calendar
 
 /** The Android share sheet and clipboard. All texts come from WorkShareText (docs/v2-sharing.md). */
 object KisShare {
-    fun shortDate(millis: Long): String {
-        val c = Calendar.getInstance().apply { timeInMillis = millis }
-        return "${c.get(Calendar.DAY_OF_MONTH)}.${c.get(Calendar.MONTH) + 1}"
-    }
+    /** Dates are Hebrew with the civil date beside them (owner feedback 2.3): "כ״ח חשוון (8/11)"; another year adds both years. */
+    fun shortDate(millis: Long): String = com.example.data.HebrewDate.label(millis)
 
     /** The native Android share sheet (WhatsApp and every other installed target). False when no app can receive text (the caller then offers copying instead). */
     fun share(context: Context, text: String, title: String = "שיתוף"): Boolean {

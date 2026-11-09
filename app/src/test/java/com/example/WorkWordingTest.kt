@@ -11,7 +11,7 @@ import java.util.Calendar
 
 /**
  * M-38 (D-9, D-12): one neutral voice on screen ("מוסיפים", "בוחרים"), not singular commands or plural address; "דוח"
- * without gershayim; "לא שולם", not "ממתין", for unpaid; one date format ("יום ד׳ 4.11"). Shared texts and recaps
+ * without gershayim; "לא שולם", not "ממתין", for unpaid; one date format ("יום ד׳ כ״ח חשוון (8/11)"). Shared texts and recaps
  * (KisShare, WorkShareText, V2Summary, V2Share, WorkMoney, imports) follow the shared fixtures and are not checked here.
  * Named Work* so CI runs it.
  */
@@ -39,9 +39,13 @@ class WorkWordingTest {
 
     @Test fun oneDateFormat() {
         val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, -10) }
-        assertTrue(Regex("^יום [אבגדהוש]׳ \\d{1,2}\\.\\d{1,2}$").matches(dayLabel(cal.timeInMillis)))
+        // Owner feedback 2.3: Hebrew date first, the civil date beside it ("יום ד׳ כ״ח חשוון (8/11)").
+        val d = "${cal.get(Calendar.DAY_OF_MONTH)}/${cal.get(Calendar.MONTH) + 1}"
+        val same = cal.get(Calendar.YEAR) == Calendar.getInstance().get(Calendar.YEAR)
+        assertTrue(dayLabel(cal.timeInMillis), Regex("^יום [אבגדהוש]׳ [א-ת״׳]+ [א-ת״׳ ]+ \\(\\d{1,2}/\\d{1,2}(/\\d{4})?\\)$").matches(dayLabel(cal.timeInMillis)))
+        assertTrue(dayLabel(cal.timeInMillis).endsWith(if (same) "($d)" else "($d/${cal.get(Calendar.YEAR)})"))
         val lastYear = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }
-        assertTrue(dayLabelLong(lastYear.timeInMillis).endsWith("." + lastYear.get(Calendar.YEAR)))
+        assertTrue(dayLabelLong(lastYear.timeInMillis).endsWith("/" + lastYear.get(Calendar.YEAR) + ")"))
         assertEquals("היום", dayLabel(System.currentTimeMillis()))
     }
 }

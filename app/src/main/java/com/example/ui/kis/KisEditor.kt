@@ -948,14 +948,12 @@ fun dayLabel(millis: Long): String {
     val cal = Calendar.getInstance().apply { timeInMillis = millis }
     return when (diff) {
         0L -> "היום"; 1L -> "אתמול"; -1L -> "מחר"
-        else -> "יום ${KisFormat.DAY_SHORT[cal.get(Calendar.DAY_OF_WEEK) - 1]} ${cal.get(Calendar.DAY_OF_MONTH)}.${cal.get(Calendar.MONTH) + 1}"
+        else -> "יום ${KisFormat.DAY_SHORT[cal.get(Calendar.DAY_OF_WEEK) - 1]} ${com.example.data.HebrewDate.label(millis)}"
     }
 }
 
-fun dayLabelLong(millis: Long): String {
-    val cal = Calendar.getInstance().apply { timeInMillis = millis }
-    return "${dayLabel(millis)}${if (cal.get(Calendar.YEAR) != Calendar.getInstance().get(Calendar.YEAR)) "." + cal.get(Calendar.YEAR) else ""}"
-}
+/** The Hebrew label already carries the year when it is another one. */
+fun dayLabelLong(millis: Long): String = dayLabel(millis)
 
 /** "17:00–22:30" for clock entries, "5.5 שעות" otherwise. */
 fun timeLabel(e: WorkEntry): String = when {
