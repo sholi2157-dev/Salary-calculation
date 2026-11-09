@@ -38,7 +38,10 @@ fun UpdateSheet(release: WorkUpdates.Release, onDismiss: () -> Unit, onLater: ()
     val c = Kis.colors
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var phase by remember { mutableStateOf(UpdatePhase.OFFER) }
+    // Kept when Android recreates the screen (e.g. on return from its "allow from this source" page); a download that
+    // was cut off by that comes back as the offer, never as a progress bar that does not move.
+    var phase by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(UpdatePhase.OFFER) }
+    LaunchedEffect(Unit) { if (phase == UpdatePhase.DOWNLOADING || phase == UpdatePhase.VERIFYING) phase = UpdatePhase.OFFER }
     var progress by remember { mutableFloatStateOf(0f) }
     var job by remember { mutableStateOf<Job?>(null) }
     fun canInstall() = Build.VERSION.SDK_INT < 26 || context.packageManager.canRequestPackageInstalls()

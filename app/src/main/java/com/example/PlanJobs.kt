@@ -309,7 +309,10 @@ object PlanJobs {
         // Plans live in the phone's own data. Since 2.1 everyone signs in, and the first account on the phone keeps that
         // same data, so only another account (with a database of its own) stays idle. Before 2.2.3 any signed-in
         // account stopped the job, so the monthly summary, plan ends and a missing rate never reached the phone.
+        // Woken without the app open, the sign-in state is not loaded yet: load it, or "nobody signed in" would be assumed.
+        runCatching { com.example.api.AuthManager.init(context.applicationContext) }
         if (BuildConfig.ACCOUNTS_ENABLED && !ownsPhoneData(context, runCatching { com.example.api.AuthManager.currentUser.value?.uid }.getOrNull())) return 0
+        runCatching { com.example.ui.kis.KisSettings.applyStored(context) }
         val dao = com.example.data.WorkAccountScope(null).database(context).workDao()
         val settings = PlanSettings(context)
         catchUp(dao, settings, now)

@@ -220,7 +220,6 @@ class WorkViewModel(
     val runCountAnimationTrigger = androidx.compose.runtime.mutableStateOf(0)
 
     val currentUserSession: StateFlow<com.example.api.AuthManager.UserSession?> = com.example.api.AuthManager.currentUser
-    private var cloudListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var syncListener: com.google.firebase.firestore.ListenerRegistration? = null
     val cloudStatus = kotlinx.coroutines.flow.MutableStateFlow("סנכרון הענן עדיין אינו פעיל")
     private val syncState by lazy {
@@ -269,7 +268,9 @@ class WorkViewModel(
         if (erasing) return
         val uid = owner.cloudUid ?: return
         if (currentUserSession.value?.uid != uid) return
-        if (syncMutex.isLocked) return
+        // A change made while a sync runs is not dropped: one more round follows it (as on the website).
+        if (syncMutex.isLocked) { syncAgain = true; return }
+        syncAgain = false
         syncMutex.withLock {
             try {
                 syncStatus.value = SyncStatus.SYNCING
@@ -279,13 +280,16 @@ class WorkViewModel(
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (e: Exception) {
                 android.util.Log.w("WorkViewModel", "Sync failed: ${e.javaClass.simpleName}")
-                syncStatus.value = if (online()) SyncStatus.ERROR else SyncStatus.OFFLINE
-                cloudStatus.value = "ממתין לחיבור. השינויים נשמרו במכשיר"
+                val connected = online()
+                syncStatus.value = if (connected) SyncStatus.ERROR else SyncStatus.OFFLINE
+                cloudStatus.value = if (connected) "הסנכרון לא הצליח. ננסה שוב בקרוב" else "ממתין לחיבור. השינויים נשמרו במכשיר"
                 // Try again soon; the outbox keeps every change meanwhile.
                 syncRetry?.cancel(); syncRetry = viewModelScope.launch { kotlinx.coroutines.delay(30_000); performSync() }
             }
         }
+        if (syncAgain) performSync()
     }
+    @Volatile private var syncAgain = false
     private fun online(): Boolean = runCatching {
         val cm = getApplication<Application>().getSystemService(android.net.ConnectivityManager::class.java)
         cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
@@ -352,6 +356,11 @@ class WorkViewModel(
      * as deletions) and the app's own session signs out. The Google account stays on the phone.
      */
     fun eraseDevice(context: Context, onDone: (EraseResult) -> Unit) {
+        // The sign-out below is refused while a shift runs, which would leave an emptied phone still signed in.
+        if (ShiftStateManager.hasActiveShift(context)) {
+            com.example.ui.kis.KisNotices.post("יש משמרת שרצה עכשיו. צריך לסיים אותה לפני המחיקה")
+            return
+        }
         viewModelScope.launch {
             val db = owner.database(getApplication())
             val synced = owner.cloudUid != null && com.example.BuildConfig.VERSIONED_SYNC_ENABLED && currentUserSession.value?.uid == owner.cloudUid
@@ -444,32 +453,11 @@ class WorkViewModel(
             viewModelScope.launch { while (true) { kotlinx.coroutines.delay(5 * 60_000); performSync() } }
         }
 
-        // Subscribe to real-time Firestore snapshots for user
-        viewModelScope.launch {
-            currentUserSession.collect { session ->
-                cloudListener?.remove()
-                cloudListener = null
-                val uid = if (com.example.BuildConfig.CLOUD_SYNC_ENABLED && session?.uid == owner.uid) owner.uid else null
-                if (!uid.isNullOrBlank()) {
-                    cloudListener = com.example.api.FirestoreSyncManager.listenToUserShifts(
-                        userId = uid,
-                        onShiftsChanged = { remoteList ->
-                            if (remoteList.isNotEmpty()) {
-                                viewModelScope.launch {
-                                    if (getActiveUserId() == uid) repository.syncRemoteEntries(remoteList)
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-        }
+        // (The pre-2.1 whole-list cloud copy, CLOUD_SYNC_ENABLED, was off in every build and is removed; the versioned sync above replaces it.)
     }
 
     override fun onCleared() {
         syncListener?.remove()
-        cloudListener?.remove()
-        cloudListener = null
         super.onCleared()
     }
 

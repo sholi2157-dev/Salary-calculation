@@ -205,7 +205,9 @@ class KisSettings internal constructor(private val context: Context?) {
         com.example.data.WorkShareText.dateMode = dateMode
         com.example.data.WorkShareText.askKinds = paymentKinds()
     }
-    init { applyTextChoices() }
+    // Only a real settings object sets the shared text choices; the context-free stand-in (Inert) must never reset the
+    // person's date choice to the default when it is first touched.
+    init { if (context != null) applyTextChoices() }
     var placeOrder by mutableStateOf(runCatching { org.json.JSONArray(prefs?.getString("placeOrder", "[]") ?: "[]").let { a -> List(a.length()) { a.getString(it) } } }.getOrDefault(emptyList()))
         private set
     fun updatePlaceOrder(names: List<String>) { placeOrder = names; prefs?.edit()?.putString("placeOrder", org.json.JSONArray(names).toString())?.apply() }
@@ -250,6 +252,8 @@ class KisSettings internal constructor(private val context: Context?) {
     companion object {
         /** For previews/tests without a Context. */
         val Inert = KisSettings(null)
+        /** Background work (notifications) uses the person's date and payment choices, not the defaults. */
+        fun applyStored(context: Context) { KisSettings(context.applicationContext) }
     }
 }
 

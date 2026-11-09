@@ -115,7 +115,9 @@ object AuthManager {
      */
     suspend fun signInWithGoogle(activity: android.app.Activity): String? {
         if (!com.example.BuildConfig.GOOGLE_SIGN_IN_ENABLED) return "ההתחברות עם Google עוד לא זמינה בגרסה הזו"
-        accountBlockReason()?.let { return it }
+        // A running timer does not block this sign-in by itself: the phone's own timer belongs to the first account on
+        // the phone, so signing in to that account keeps it. Only another account is refused, after the sign-in (below).
+        accountBlockReason(checkTimer = false)?.let { return it }
         val auth = getFirebaseAuthSafely() ?: return "לא ניתן להתחבר כעת"
         val id = activity.resources.getIdentifier("default_web_client_id", "string", activity.packageName)
         if (id == 0) return "לא ניתן להתחבר כעת"
@@ -128,8 +130,14 @@ object AuthManager {
             val token = com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.createFrom(credential.data).idToken
             kotlinx.coroutines.suspendCancellableCoroutine<String?> { done ->
                 auth.signInWithCredential(GoogleAuthProvider.getCredential(token, null)).addOnCompleteListener { task ->
-                    if (task.isSuccessful) updateUserFromFirebase(auth.currentUser)
-                    if (done.isActive) done.resumeWith(Result.success(if (task.isSuccessful) null else "ההתחברות לא הושלמה. בדוק את החיבור לאינטרנט ונסה שוב."))
+                    val refused = task.isSuccessful && timerBelongsElsewhere(activity, auth.currentUser?.uid)
+                    if (refused) runCatching { auth.signOut() }
+                    updateUserFromFirebase(auth.currentUser)
+                    if (done.isActive) done.resumeWith(Result.success(when {
+                        refused -> "יש משמרת שרצה עכשיו בטלפון, והיא לא שייכת לחשבון הזה. אפשר לסיים אותה (\"להמשיך בינתיים\") או להתחבר לחשבון שהתחיל אותה."
+                        task.isSuccessful -> null
+                        else -> "ההתחברות לא הושלמה. בדוק את החיבור לאינטרנט ונסה שוב."
+                    }))
                 }
             }
         } catch (e: kotlinx.coroutines.CancellationException) { throw e }
@@ -199,9 +207,19 @@ object AuthManager {
         onComplete()
     }
 
-    fun accountBlockReason(): String? = when {
+    /**
+     * True when a timer is running on the phone and [uid] would not see it: signing in to that account would leave the
+     * shift running out of sight. The phone's own timer belongs to the first account on the phone (WorkAccountBinding).
+     */
+    fun timerBelongsElsewhere(context: Context, uid: String?): Boolean {
+        if (uid == null || !com.example.ShiftStateManager.hasActiveShift(context)) return false
+        val owner = com.example.data.WorkAccountBinding.scopeFor(context, uid)
+        return !com.example.ShiftStateManager.sameTimer(owner, com.example.ShiftStateManager.activeOwner(context))
+    }
+
+    fun accountBlockReason(checkTimer: Boolean = true): String? = when {
         !com.example.BuildConfig.ACCOUNTS_ENABLED -> "ההתחברות עדיין בהכנה. הנתונים נשמרים במכשיר; סנכרון הענן טרם הופעל."
-        appContext?.let { com.example.ShiftStateManager.hasActiveShift(it) } == true ->
+        checkTimer && appContext?.let { com.example.ShiftStateManager.hasActiveShift(it) } == true ->
             "יש לסיים את המשמרת הפעילה לפני החלפת חשבון"
         getFirebaseAuthSafely() == null -> "קובץ החיבור ל־Firebase חסר או אינו מתאים לאפליקציה"
         else -> null

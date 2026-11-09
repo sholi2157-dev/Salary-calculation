@@ -41,10 +41,11 @@ object AiIntro {
 /**
  * The sign-in screen. The first time it comes with the 2.1 intro: a few animated words about the AI connection
  * ([updated] says whether this phone had the app before), then a short "just ask" screen, and only then the Google
- * sign-in. What it is, the permissions and why it is safe live in Settings and behind the bell. [onLater] only exists while there is no internet.
+ * sign-in. What it is, the permissions and why it is safe live in Settings and behind the bell. [onLater] only exists while there is no
+ * internet, or while a shift is [running] on the phone (it can always be finished first; the screen never locks it in).
  */
 @Composable
-fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () -> Unit, updated: Boolean = true) {
+fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () -> Unit, updated: Boolean = true, running: Boolean = false) {
     val c = Kis.colors
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -99,7 +100,9 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
                     KisButton(if (busy) "מתחבר…" else "המשך עם Google", {
                         if (!busy) scope.launch { busy = true; error = null; error = onSignIn(); busy = false }
                     }, Modifier.fillMaxWidth(), enabled = !offline && !busy, height = 56.dp, tag = "signin_google")
-                    if (offline) KisButton("להמשיך בינתיים", onLater, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "signin_later")
+                    if (running && !offline) Text("יש משמרת שרצה עכשיו בטלפון. אפשר להמשיך בינתיים ולסיים אותה, ולהתחבר אחר כך.", style = KisType.caption, color = c.muted,
+                        modifier = Modifier.testTag("signin_running"))
+                    if (offline || running) KisButton("להמשיך בינתיים", onLater, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "signin_later")
                 }
             }
         }

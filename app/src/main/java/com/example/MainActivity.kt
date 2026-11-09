@@ -270,9 +270,12 @@ fun MainAppContent(
     val gateOn = BuildConfig.GOOGLE_SIGN_IN_ENABLED && !remember { com.example.data.WorkAccountBinding.signInSkipped(context) }
     var signInLater by rememberSaveable { mutableStateOf(false) }
     var offline by remember { mutableStateOf(false) }
+    // A running shift (e.g. started from the home-screen shortcut before signing in) can always be reached and finished.
+    var running by remember { mutableStateOf(ShiftStateManager.hasActiveShift(context)) }
     val signingIn = gateOn && session == null && !signInLater
     LaunchedEffect(signingIn) {
         while (signingIn) {
+            running = ShiftStateManager.hasActiveShift(context)
             offline = runCatching {
                 val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
                 cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) != true
@@ -283,7 +286,7 @@ fun MainAppContent(
     val googleSignIn: suspend () -> String? = { com.example.api.AuthManager.signInWithGoogle(activity) }
     val onSignInRequest: () -> Unit = if (BuildConfig.GOOGLE_SIGN_IN_ENABLED) ({ signInLater = false }) else ({ showAccountDialog = true })
     if (signingIn) {
-        com.example.ui.kis.SignInGate(onSignIn = googleSignIn, offline = offline, onLater = { signInLater = true }, updated = !onboardingStore.launchPending)
+        com.example.ui.kis.SignInGate(onSignIn = googleSignIn, offline = offline, onLater = { signInLater = true }, updated = !onboardingStore.launchPending, running = running)
         return
     }
     Box(modifier) {

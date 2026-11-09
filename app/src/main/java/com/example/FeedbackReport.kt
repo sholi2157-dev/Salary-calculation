@@ -66,6 +66,8 @@ object DiagnosticLog {
 object FeedbackReport {
     const val URL = "https://script.google.com/macros/s/AKfycbwDfq5iA_2NSGYj57js0uwAuoSjErBWN-mB7jkjse4HKS476TPyqEIKAqitrVD47PmR/exec"
     const val TOKEN = "salary-feedback-v1"
+    /** Sending outlives the screen it started on (closing Settings must not cut a report off half way). */
+    val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Main.immediate)
     private const val MAX_IMAGE_SIDE = 1600
 
     val enabled get() = URL.isNotEmpty()

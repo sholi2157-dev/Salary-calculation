@@ -59,11 +59,14 @@ object SalaryFeedback {
                              state: () -> Map<String, Any> = { emptyMap() }, onSent: () -> Unit = {}) {
     val context = LocalContext.current
     val c = Kis.colors
-    val scope = rememberCoroutineScope()
     var type by rememberSaveable { mutableStateOf("תקלה") }
     var sending by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
     var fallback by remember { mutableStateOf(false) }
+    // Leaving the screen never cancels a report on its way (it would be unknown whether it arrived); only the answer
+    // is then said as a message instead of on the form.
+    val shown = remember { java.util.concurrent.atomic.AtomicBoolean(true) }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { shown.set(false) } }
     val pick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) onImage(uri.toString())
     }
@@ -88,19 +91,23 @@ object SalaryFeedback {
             Text("יישלחו התיאור, הגרסה, פרטי המכשיר ויומן פעולות קצר. סכומים, מקומות עבודה, שמות ומפתחות לא נשלחים.", style = KisType.caption, color = c.muted)
             KisButton(if (sending) "שולח…" else "שליחה", {
                 sending = true; failed = false
-                scope.launch {
-                    val (name, code) = FeedbackReport.version(context)
-                    val report = FeedbackReport.build(type, message, name, code, FeedbackReport.device(context), runCatching { state() }.getOrDefault(emptyMap()),
-                        DiagnosticLog.snapshot(), System.currentTimeMillis())
-                    image?.let { u -> withContext(Dispatchers.IO) { FeedbackReport.screenshot(context, Uri.parse(u)) } }?.let { report.put("screenshot", it) }
+                val app = context.applicationContext
+                val (name, code) = FeedbackReport.version(app)
+                val report = FeedbackReport.build(type, message, name, code, FeedbackReport.device(app), runCatching { state() }.getOrDefault(emptyMap()),
+                    DiagnosticLog.snapshot(), System.currentTimeMillis())
+                FeedbackReport.scope.launch {
+                    val shot = image?.let { u -> withContext(Dispatchers.IO) { FeedbackReport.screenshot(app, Uri.parse(u)) } }
+                    shot?.let { report.put("screenshot", it) }
                     val ok = FeedbackReport.send(report)
                     sending = false
                     DiagnosticLog.event(if (ok) "feedback_sent" else "feedback_failed")
                     if (ok) {
                         onMessage(""); onImage(null)
-                        com.example.ui.kis.KisNotices.post("המשוב נשלח. תודה!")
-                        onSent()
-                    } else failed = true
+                        // A picture the phone no longer lets the app read (e.g. after the app was closed) is said, not dropped silently.
+                        com.example.ui.kis.KisNotices.post(if (image != null && shot == null) "המשוב נשלח, בלי צילום המסך (לא הייתה גישה לתמונה). תודה!" else "המשוב נשלח. תודה!")
+                        if (shown.get()) onSent()
+                    } else if (shown.get()) failed = true
+                    else com.example.ui.kis.KisNotices.post("המשוב לא נשלח. הטקסט נשמר, ואפשר לנסות שוב מההגדרות")
                 }
             }, Modifier.fillMaxWidth(), enabled = message.isNotBlank() && !sending, height = 48.dp, tag = "feedback_send")
             if (failed) {

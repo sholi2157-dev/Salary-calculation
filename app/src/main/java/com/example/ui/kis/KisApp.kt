@@ -143,6 +143,10 @@ fun KisApp(
     val appContext = androidx.compose.ui.platform.LocalContext.current
     var update by remember { mutableStateOf(com.example.ui.WorkUpdateNotice.cached(appContext)) }
     var updateSheet by remember { mutableStateOf<com.example.ui.WorkUpdates.Release?>(null) }
+    // The open update sheet survives Android recreating the app (the release itself comes back from the device's cache).
+    var updateSheetOpen by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(updateSheet) { if (updateSheet != null) updateSheetOpen = true }
+    LaunchedEffect(Unit) { if (updateSheetOpen && updateSheet == null) updateSheet = com.example.ui.WorkUpdateNotice.cached(appContext).also { if (it == null) updateSheetOpen = false } }
     var resumes by remember { mutableIntStateOf(0) }
     LaunchedEffect(resumes, bellOpen) {
         update = com.example.ui.WorkUpdateNotice.refresh(appContext)
@@ -228,8 +232,12 @@ fun KisApp(
         }
     }
     // An edit whose shift was deleted meanwhile closes instead of leaving an invisible editor behind.
+    // Once the edited shift has been seen, its absence means it was deleted, even when it was the last one (an empty list).
+    var editedSeen by remember(editorBaseId) { mutableStateOf(false) }
     LaunchedEffect(editorBaseId, entries) {
-        if (editorBaseId != null && entries.isNotEmpty() && entries.none { it.id == editorBaseId }) { editorJson = null; editorBaseId = null }
+        val id = editorBaseId ?: return@LaunchedEffect
+        if (entries.any { it.id == id }) editedSeen = true
+        else if (entries.isNotEmpty() || editedSeen) { editorJson = null; editorBaseId = null }
     }
     LaunchedEffect(Unit) { KisNotices.flow.collect { message = it } }
     LaunchedEffect(message?.id) { if (message != null) { delay(if (message?.kind == KisMessage.Kind.ERROR) 8000 else if (message?.action != null) 6000 else 2600); message = null } }
@@ -370,7 +378,7 @@ fun KisApp(
         onStory = { bellOpen = false; storyScope = it }, onAi = { bellOpen = false; unread = viewModel.planSettings.unread; aiExplain = true })
     if (aiExplain) AssistantsSheet(viewModel, explain = true) { aiExplain = false }
     if (recapsOpen) RecapArchiveSheet(entries, onStory = { recapsOpen = false; storyScope = it }, onDismiss = { recapsOpen = false })
-    updateSheet?.let { r -> UpdateSheet(r, onDismiss = { updateSheet = null }) }
+    updateSheet?.let { r -> UpdateSheet(r, onDismiss = { updateSheet = null; updateSheetOpen = false }) }
     hoursFor?.let { key -> plans.firstOrNull { it.key == key } }?.let { o ->
         PlanHoursSheet(o, onDismiss = { hoursFor = null }) { start, end, fromNowOn ->
             hoursFor = null
