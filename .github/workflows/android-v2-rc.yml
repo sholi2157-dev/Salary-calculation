@@ -131,7 +131,7 @@ jobs:
       - name: Candidate for owner review only; never publish a Release
         uses: actions/upload-artifact@v4
         with:
-          name: salary-2.3.1-code53-candidate
+          name: salary-${{ env.RC_NAME }}-code${{ env.RC_CODE }}-candidate
           path: |
             candidate-b.apk
             release-evidence/
