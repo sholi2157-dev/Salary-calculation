@@ -33,7 +33,10 @@ const server = http.createServer((q, r) => {
   const state = () => page.evaluate(() => ({ all: document.querySelector('[data-testid=notify-all]').getAttribute('aria-checked'),
     monthly: document.querySelector('[data-testid=notify-monthly]').getAttribute('aria-checked'), rate: document.querySelector('[data-testid=notify-rate]').getAttribute('aria-checked'),
     stored: [Kis.store.local.notifyMonthly === true, Kis.store.local.notifyRate === true] }));
-  assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'false', stored: [false, false] }, 'off by default on the web, as before');
+  // The monthly summary is on unless switched off, as in the app (state-machine audit); the other reminders are off.
+  assert.deepEqual(await state(), { all: 'false', monthly: 'true', rate: 'false', stored: [false, false] }, 'monthly on by default, the rest off');
+  await page.click('[data-testid=notify-monthly]');
+  assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'false', stored: [false, false] }, 'monthly switched off');
   await page.click('[data-testid=notify-rate]');
   assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'true', stored: [false, true] }, 'one kind alone; the main switch stays off');
   await page.click('[data-testid=notify-all]');
