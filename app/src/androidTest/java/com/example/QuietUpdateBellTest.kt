@@ -34,7 +34,9 @@ class QuietUpdateBellTest {
                     ui.onNodeWithTag("launch_last").performTextReplacement("פעמון")
                     Espresso.closeSoftKeyboard()
                     ui.onNodeWithTag("launch_done").performClick()
-                    ui.onNodeWithTag("onboarding_skip").performClick()
+                    // F12: only a new installation gets the tour after the launch; an update goes straight on.
+                    ui.waitForIdle()
+                    if (ui.onAllNodesWithTag("onboarding_skip").fetchSemanticsNodes().isNotEmpty()) ui.onNodeWithTag("onboarding_skip").performClick()
                 }
                 ui.waitUntil(10000) { ui.onAllNodesWithTag("home_bell_dot", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
                 ui.onNodeWithText("מאוחר יותר").assertDoesNotExist()

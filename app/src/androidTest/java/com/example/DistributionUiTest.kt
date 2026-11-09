@@ -22,7 +22,7 @@ class DistributionUiTest {
     }
     @Test fun portraitScreensDraftsHistoryAndSettings() {
         ui.waitForIdle()
-        // First open after the update: the 2.0 launch, then the name, then the short tour from Home.
+        // First open after the update: the 2.0 launch, then the name (no tour: it opens only for a new installation or account).
         ui.waitUntil(5_000) { ui.onAllNodesWithTag("launch_line_2").fetchSemanticsNodes().isNotEmpty() }
         // The lines wait on real time, then rise on the test clock: let both pass before the device screenshot.
         Thread.sleep(1_000)
@@ -35,8 +35,9 @@ class DistributionUiTest {
         Espresso.closeSoftKeyboard()
         snap("v2-launch-name")
         ui.onNodeWithTag("launch_done").performClick()
-        ui.onNodeWithTag("onboarding_progress").assertTextEquals("1 מתוך 9")
-        ui.onNodeWithTag("onboarding_skip").performClick()
+        // F12 (2.3.1): an updated installation never gets the tour by itself; only "הצגת ההדרכה מחדש" (below) shows it.
+        ui.waitForIdle()
+        ui.onNodeWithTag("onboarding_card").assertDoesNotExist()
         ui.onNodeWithTag("launch_root").assertDoesNotExist()
         // FB23-F11: this update shows "מה חדש" once. Dismiss it, or Back closes that sheet
         // instead of the editor's leave confirmation.
