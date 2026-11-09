@@ -90,7 +90,10 @@ class WorkOnboardingTest {
         assertFalse(store.claimAccount("old", 10_000, 50_000_000))
     }
     @Test fun withoutGoogleSignInTheTourFollowsTheInstallation() {
-        // Debug and test builds have no Google sign-in: a new installation keeps opening the tour by itself.
-        assertFalse(tourFollowsAccount(context))
+        // A build with Google sign-in (release) follows the account; one without it (debug) the installation.
+        assertEquals(BuildConfig.GOOGLE_SIGN_IN_ENABLED && BuildConfig.ACCOUNTS_ENABLED, tourFollowsAccount(context))
+        // Sign-in skipped (automated checks): back to the installation in every build.
+        com.example.data.WorkAccountBinding.skipSignIn(context, true)
+        try { assertFalse(tourFollowsAccount(context)) } finally { com.example.data.WorkAccountBinding.skipSignIn(context, false) }
     }
 }
