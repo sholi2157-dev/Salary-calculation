@@ -1025,10 +1025,16 @@ class KisUiTest {
         ui.onNodeWithTag("feedback_message").assertDoesNotExist()
         open("משוב ותקלות")
         ui.onNodeWithTag("feedback_message").assertTextContains("draft")
-        // Summaries: the control inside the card opens the list, no empty page in between.
-        open("הסיכומים שלי")
-        ui.onNodeWithTag("recaps_row").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        // Summaries: one tap on the card itself opens the list; the card has nothing to unfold.
+        ui.onNodeWithTag("settings_section_הסיכומים שלי").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        ui.onNodeWithTag("settings_page_הסיכומים שלי").assertDoesNotExist()
         assertTrue(recaps)
+        // The personal-key help says step by step how to get one, and its address is a link that opens the site.
+        open("עזרה וכלים")
+        ui.onNodeWithContentDescription("מה זה מפתח אישי").performScrollTo().performClick()
+        ui.onNodeWithTag("ai_help_steps").assertTextContains("aistudio.google.com/apikey", substring = true)
+        ui.onNodeWithTag("ai_help_steps").assertTextContains("Create API key", substring = true)
+        shot("settings-ai-help")
     }
 
     /**

@@ -141,11 +141,8 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                 }
                 Row_("רטט במגע", null) { KisSwitch(settings.haptics, settings::updateHaptics, Modifier.testTag("haptics_switch"), label = "רטט במגע") }
             }
-            Group(nav, "הסיכומים שלי") {
-                Row_("כל הסיכומים", null, tag = "recaps_row", onClick = onRecaps) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted, modifier = Modifier.size(18.dp))
-                }
-            }
+            // One thing to do here, so the card itself opens the summaries: one tap, an arrow instead of the chevron.
+            Group(nav, "הסיכומים שלי", go = { focusManager.clearFocus(force = true); section = null; onRecaps() }) {}
             Group(nav, "התראות") { NotificationSwitches(viewModel) }
             Group(nav, "עזרה וכלים", Modifier.coachTarget(CoachTarget.API)) {
                 Row_("רישום במילים (AI)", if (hasKey) "פעיל" else null, tag = "ai_key_row", onClick = { aiSheet = true }) {
@@ -209,11 +206,27 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     if (aiHelp) KisSheet(onDismiss = { aiHelp = false }, tag = "ai_help") {
         Text("מה זה מפתח אישי?", style = KisType.title, color = c.ink)
         Text("עם מפתח אפשר לתאר עבודה במילים (\"אתמול במסעדה מ-5 עד 11\") ולקבל משמרות מוכנות לבדיקה לפני שמירה.", style = KisType.body, color = c.ink)
-        Text("איך משיגים: נכנסים ל-aistudio.google.com עם חשבון גוגל ← Get API key ← Create API key ← מעתיקים ומדביקים כאן. המפתח של הפרויקט שלך, והשימוש נספר במכסה שלו.", style = KisType.body, color = c.ink)
-        Text("המפתח נשמר מוצפן במכשיר הזה בלבד, לא מוצג במסכים, לא נכלל בגיבוי ולא נשלח לנו. אפשר להסיר אותו בכל רגע.", style = KisType.caption, color = c.muted)
+        Text("איך משיגים מפתח (בחינם, בערך שתי דקות):", style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
+        // The address is a link: one tap opens Google's key page in the browser.
+        Text(androidx.compose.ui.text.buildAnnotatedString {
+            append("1. פותחים את ")
+            withLink(androidx.compose.ui.text.LinkAnnotation.Url(AI_KEY_URL, androidx.compose.ui.text.TextLinkStyles(
+                androidx.compose.ui.text.SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)))) {
+                append("aistudio.google.com/apikey")
+            }
+            append(" ונכנסים עם חשבון Google.\n")
+            append("2. בכניסה הראשונה מאשרים את התנאים.\n")
+            append("3. לוחצים על Create API key. אם מתבקשים לבחור פרויקט, בוחרים את מה שמוצע.\n")
+            append("4. מעתיקים את המפתח: שורה ארוכה שמתחילה ב-AIza.\n")
+            append("5. חוזרים לכאן, לוחצים על \"רישום במילים (AI)\", מדביקים ושומרים.")
+        }, style = KisType.body, color = c.ink, modifier = Modifier.testTag("ai_help_steps"))
+        Text("המפתח שייך לחשבון Google שלך, והשימוש נספר במכסה שלו. הוא נשמר מוצפן במכשיר הזה בלבד, לא מוצג במסכים, לא נכלל בגיבוי ולא נשלח לנו. אפשר להסיר אותו בכל רגע.", style = KisType.caption, color = c.muted)
         KisButton("הבנתי", { aiHelp = false }, Modifier.fillMaxWidth(), height = 48.dp)
     }
 }
+
+/** Google AI Studio's page for creating a Gemini API key. */
+private const val AI_KEY_URL = "https://aistudio.google.com/apikey"
 
 private class SettingsNav(val open: String?, val onToggle: (String) -> Unit)
 
@@ -223,21 +236,22 @@ private class SettingsNav(val open: String?, val onToggle: (String) -> Unit)
  */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun Group(nav: SettingsNav, title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+private fun Group(nav: SettingsNav, title: String, modifier: Modifier = Modifier, go: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
     val c = Kis.colors
-    val open = nav.open == title
+    val open = go == null && nav.open == title
     val bring = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
     // An opened card (a tap, or the bell's "התראות") scrolls into view once its content is there.
     LaunchedEffect(open) { if (open) { kotlinx.coroutines.delay(60); bring.bringIntoView() } }
     Column(Modifier.padding(bottom = 8.dp).fillMaxWidth().then(modifier).clip(RoundedCornerShape(if (open) 24.dp else 16.dp)).background(c.surface)
         .bringIntoViewRequester(bring)) {
-        Row(Modifier.fillMaxWidth().kisClick { nav.onToggle(title) }
-            .semantics { heading(); stateDescription = if (open) "פתוח" else "סגור" }
+        Row(Modifier.fillMaxWidth().kisClick { if (go != null) go() else nav.onToggle(title) }
+            .semantics { heading(); if (go == null) stateDescription = if (open) "פתוח" else "סגור" }
             .testTag("settings_section_$title").heightIn(min = 60.dp).padding(start = 16.dp, end = 10.dp),
             verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = KisType.title, color = c.ink, maxLines = 1)
             Spacer(Modifier.weight(1f))
-            Icon(Icons.Outlined.ExpandMore, null, tint = c.muted, modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = if (open) 180f else 0f })
+            if (go != null) Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted, modifier = Modifier.size(20.dp))
+            else Icon(Icons.Outlined.ExpandMore, null, tint = c.muted, modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = if (open) 180f else 0f })
         }
         if (open) Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 4.dp).testTag("settings_page_$title")) {
             KisDivider()
@@ -354,7 +368,15 @@ private fun AiKeySheet(ownerUid: String?, onDismiss: () -> Unit) {
     var hasKey by remember { mutableStateOf(runCatching { PersonalAiKey.read(context, ownerUid).isNotBlank() }.getOrDefault(false)) }
     KisSheet(onDismiss = onDismiss, tag = "ai_key_sheet") {
         Text("מפתח Gemini אישי", style = KisType.title, color = c.ink)
-        Text(if (hasKey) "מפתח כבר שמור. אפשר להחליף או להסיר אותו." else "מדביקים כאן מפתח מ-aistudio.google.com. הוא נשמר מוצפן במכשיר הזה בלבד.", style = KisType.body, color = c.muted)
+        if (hasKey) Text("מפתח כבר שמור. אפשר להחליף או להסיר אותו.", style = KisType.body, color = c.muted)
+        else Text(androidx.compose.ui.text.buildAnnotatedString {
+            append("מדביקים כאן מפתח מ-")
+            withLink(androidx.compose.ui.text.LinkAnnotation.Url(AI_KEY_URL, androidx.compose.ui.text.TextLinkStyles(
+                androidx.compose.ui.text.SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)))) {
+                append("aistudio.google.com/apikey")
+            }
+            append(". הוא נשמר מוצפן במכשיר הזה בלבד.")
+        }, style = KisType.body, color = c.muted)
         KisTextField(draft, { draft = it; status = null }, if (hasKey) "מפתח חדש" else "מפתח אישי", Modifier.fillMaxWidth().testTag("ai_key_input"),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), visualTransformation = PasswordVisualTransformation())
         status?.let { Text(it, style = KisType.caption, color = c.muted) }
