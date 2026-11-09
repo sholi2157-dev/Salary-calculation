@@ -62,6 +62,14 @@ class V2ShareTest {
         }
     }
 
+    // The contract is written in the Gregorian date form; another test (or background work that loads the stored
+    // choice) may have left the shared choice elsewhere in this JVM.
+    @org.junit.Before fun gregorianDates() {
+        com.example.data.WorkShareText.dateMode = com.example.data.HebrewDate.GREG
+        com.example.data.HebrewDate.mode = com.example.data.HebrewDate.GREG
+        com.example.data.WorkShareText.askKinds = emptyList()
+    }
+
     @Test fun everySharedTextMatchesTheContract() {
         val cases = doc.getJSONArray("cases").objects()
         assertTrue(cases.size >= 13)
