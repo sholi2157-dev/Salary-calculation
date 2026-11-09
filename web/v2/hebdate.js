@@ -61,6 +61,19 @@ function portion(weekStartMs, israel = inIsrael()) {
   const i = Math.round((sat - FIRST) / 604800000), s = WEEKS[israel ? 'israel' : 'diaspora'];
   return i >= 0 && i < s.length ? NAMES[ALPHA.indexOf(s[i])] : null;
 }
-const api = { fromMillis, gematria, monthName, day, label, portion, isLeap };
+/** The user's date choice in Settings (owner feedback 2.3.1): GREG civil only, HEB Hebrew only, BOTH as in 2.3.0. Same as HebrewDate.kt. */
+const MODES = ['GREG', 'HEB', 'BOTH'];
+let mode = 'BOTH';
+const setMode = m => { mode = MODES.includes(m) ? m : 'BOTH'; };
+const getMode = () => mode;
+/** "8/11", or "8/11/2025" with the year. */
+function civilShort(ms, withYear) { const dt = new Date(ms); return dt.getDate() + '/' + (dt.getMonth() + 1) + (withYear ? '/' + dt.getFullYear() : ''); }
+/** A date on screen, by the choice: "8/11", "כ״ח חשוון" or "כ״ח חשוון (8/11)"; another year adds the year(s). */
+function show(ms, withYear = new Date(ms).getFullYear() !== new Date().getFullYear()) {
+  if (mode === 'GREG') return civilShort(ms, withYear);
+  if (mode === 'HEB') return day(ms) + (withYear ? ' ' + gematria(fromMillis(ms)[0]) : '');
+  return label(ms, withYear);
+}
+const api = { fromMillis, gematria, monthName, day, label, portion, isLeap, civilShort, show, setMode, getMode, MODES };
 if (typeof module !== 'undefined') module.exports = api; else root.KisHebrew = api;
 })(globalThis);

@@ -46,6 +46,7 @@ function render(el, app) {
     <div class="divider"></div>${rowHtml('רישום אוטומטי של משמרות קבועות', null, `<button class="switch" role="switch" aria-checked="${store.local.autoConfirm !== false}" data-a="auto" aria-label="רישום אוטומטי" data-testid="auto-confirm"></button>`, 'כשהזמן נגמר היא נרשמת לבד. תמיד אפשר לבטל')}
     ${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip act" data-a="series" data-testid="series-button">ניהול</button>', 'נוצרות במסך ההוספה')}`)}
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
+    <div class="divider"></div>${rowHtml('תאריכים', null, `<div class="seg">${[['GREG', 'לועזי'], ['HEB', 'עברי'], ['BOTH', 'שניהם']].map(([v, l]) => `<button aria-pressed="${(store.local.dateMode || 'BOTH') === v}" data-date-mode="${v}" data-testid="date-mode-${v.toLowerCase()}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
   ${group('התראות', rowHtml('כל ההתראות', null, `<button class="switch" role="switch" aria-checked="${NOTIFY_KINDS.every(([k]) => store.local[k] === true)}" aria-label="כל ההתראות" data-a="notify" data-testid="notify-all"></button>`, 'כולן יחד')
     + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${store.local[k] === true}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''))}
@@ -81,7 +82,7 @@ function render(el, app) {
   // Saved as typed, without redrawing the page (no lost taps or focus).
   q('[data-f=name]').addEventListener('input', e => store.setLocal('name', e.target.value.trim().slice(0, 40), true));
   q('[data-f=last]').addEventListener('input', e => store.setLocal('lastName', e.target.value.trim().slice(0, 40), true));
-  el.querySelectorAll('[data-pay]').forEach(i => i.addEventListener('input', () => store.setLocal(i.dataset.pay, i.value.trim().slice(0, +i.maxLength), true)));
+  el.querySelectorAll('[data-pay]').forEach(i => i.addEventListener('input', () => { store.setLocal(i.dataset.pay, i.value.trim().slice(0, +i.maxLength), true); app.applyTextChoices(); }));
   // One switch for every reminder.
   // The main switch turns every kind on or off together; each kind keeps its own switch, and the
   // main one shows on only when every kind is on. The same stored keys as before (notifyMonthly, notifyRate).
@@ -101,6 +102,8 @@ function render(el, app) {
   el.querySelectorAll('[data-cur]').forEach(b => b.onclick = () => store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, mainCurrency: b.dataset.cur }); }));
   q('[data-a=series]').onclick = () => root.KisPlans.seriesSheet(app);
   el.querySelectorAll('[data-theme]').forEach(b => b.onclick = () => { store.setLocal('theme', b.dataset.theme); app.applyTheme(); });
+  // Owner feedback 2.3.1: civil, Hebrew or both, in the app, the shared reports and History's weeks.
+  el.querySelectorAll('[data-date-mode]').forEach(b => b.onclick = () => { store.setLocal('dateMode', b.dataset.dateMode, true); app.applyTextChoices(); app.refresh(); });
   q('[data-a=haptics]').onclick = () => store.setLocal('haptics', store.local.haptics === false);
   q('[data-a=download]').onclick = () => download('salary-backup.json', backupText(store), 'application/json');
   q('[data-a=copy-backup]').onclick = async () => { if (await U().copy(backupText(store))) U().toast('הגיבוי הועתק ✓'); else U().showText(backupText(store), 'גיבוי'); };

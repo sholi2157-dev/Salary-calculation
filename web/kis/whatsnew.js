@@ -7,13 +7,20 @@
 (function (root) {
 'use strict';
 /** This site's release (bump at publish, with the Android versionName). */
-const VERSION = '2.3.0';
+const VERSION = '2.3.1';
 // 2.3.0: placeholder draft; the final wording may be replaced at publish time. 3–5 short lines, features only.
 const NOTES = {
   '2.3.0': [
     'מהיום מקבלים את הכסף - מהר יותר: Zelle, ביט או חשבון בנק שמורים בפרופיל, ומצטרפים לכל דוח בלחיצה.',
     'כל משמרת עם תאריך עברי ולועזי.',
     'הגדרות האבטחה והפרטיות השתפרו, וכל הסיכומים שלך מחכים בפרופיל האישי.',
+  ],
+  // 2.3.1: draft for the owner's approval.
+  '2.3.1': [
+    'מצב בהיר חדש, רך לעיניים ובלי סנוור.',
+    'לועזי, עברי או שניהם: בוחרים איך התאריכים מופיעים, באפליקציה ובכל דוח.',
+    'יש לך כמה דרכים לקבל כסף? בוחרים בדיוק מה מצטרף לדוח.',
+    'דוח לעובד מבקש ממנו רק את הפרטים שנוחים לך לשלם בהם: Zelle, ביט או בנק.',
   ],
 };
 const KEY = 'whatsNewSeen';

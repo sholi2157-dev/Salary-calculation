@@ -10,6 +10,9 @@ const app = {
   occurrences: () => root.KisPlans.occurrences(store),
   go(page, opts = {}) { root.KisSettings.event('page', page); if (page === 'settings') root.KisSettings.open(opts.section); this.page = page; this.pageOpts = opts; render(); window.scrollTo({ top: 0 }); },
   refresh() { render(); },
+  /** Settings → תאריכים and the payment kinds in the profile, handed to date labels and shared texts (owner feedback 2.3.1). */
+  applyTextChoices() { const l = store.local, mode = root.KisHebrew.MODES.includes(l.dateMode) ? l.dateMode : 'BOTH';
+    root.KisHebrew.setMode(mode); root.KisShare.setTextChoices(mode, [['payZelle', 'zelle'], ['payBit', 'bit'], ['payBank', 'bank']].filter(([k]) => String(l[k] || '').trim()).map(([, v]) => v)); },
   applyTheme() { const t = store.local.theme || 'system'; if (t === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
     document.querySelector('meta[name=theme-color]')?.setAttribute('content', U().isDark() ? '#121212' : '#D9DCE2'); },
   openNew() { if (!store.data.categories.length) return root.KisSettings.placeSheet(app, null, () => root.KisEditor.open(app)); root.KisEditor.open(app); },
@@ -175,7 +178,7 @@ function stopLive() {
 // ---- start ----
 function start() {
   document.body.insertAdjacentHTML('afterbegin', '<div class="kis-glow" aria-hidden="true"></div>');
-  store.load(); app.applyTheme();
+  store.load(); app.applyTheme(); app.applyTextChoices();
   // A browser that had this site before (its 2.0 launch is done) sees this release's highlights once (FB23-F11).
   app.whatsNew = store.broken ? null : root.KisWhatsNew.pending(store, (store.local.launched || 0) >= root.KisLaunch.LAUNCH_VERSION);
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { app.applyTheme(); render(); });

@@ -28,10 +28,10 @@ const hm = m => Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0');
 const duration = h => hm(Math.round((Number(h) || 0) * 60));
 const startOfDay = ms => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
 // Dates are Hebrew with the civil date beside them (owner feedback 2.3): "כ״ח חשוון (8/11)"; another year adds both years.
-const shortDate = ms => root.KisHebrew.label(ms);
+const shortDate = ms => root.KisHebrew.show(ms);
 function dayLabel(ms) {
   const diff = Math.round((startOfDay(Date.now()) - startOfDay(ms)) / 86400000), d = new Date(ms);
-  return diff === 0 ? 'היום' : diff === 1 ? 'אתמול' : diff === -1 ? 'מחר' : `יום ${DAY_SHORT[d.getDay()]} ${root.KisHebrew.label(ms)}`;
+  return diff === 0 ? 'היום' : diff === 1 ? 'אתמול' : diff === -1 ? 'מחר' : `יום ${DAY_SHORT[d.getDay()]} ${root.KisHebrew.show(ms)}`;
 }
 function dayLabelLong(ms) { return dayLabel(ms); }
 const monthKey = ms => { const d = new Date(ms); return d.getFullYear() * 12 + d.getMonth(); };
@@ -208,9 +208,16 @@ function owedShare(text, title = 'שיתוף') {
   const l = root.Kis?.store?.local || {}, lines = root.KisShare ? root.KisShare.paymentLines(l.payZelle, l.payBit, l.payBank) : [];
   if (!lines.length) return shareOrCopy(text, title);
   sheet('pay-prompt', (el, close) => {
-    el.innerHTML = `<h2>לצרף את פרטי התשלום שלך?</h2><p class="caption" style="white-space:pre-line">${esc(lines.join('\n'))}</p>
-      <button class="btn primary" data-testid="pay-with">כן, לצרף</button><button class="btn ghost" data-testid="pay-without">בלי</button>`;
-    el.querySelector('[data-testid=pay-with]').onclick = () => { close(); shareOrCopy(root.KisShare.withPayment(text, lines), title); };
+    // More than one way to get paid: the user picks which to add, one or several (owner feedback 2.3.1).
+    const many = lines.length > 1, picked = new Set(lines.keys());
+    el.innerHTML = `<h2>${many ? 'אילו פרטי תשלום לצרף?' : 'לצרף את פרטי התשלום שלך?'}</h2>${many
+      ? `<div style="display:grid;gap:8px;margin-bottom:12px">${lines.map((l, i) => `<button class="chip" aria-pressed="true" data-pick="${i}" data-testid="pay-pick-${i}" style="justify-content:flex-start;text-align:start">✓ ${esc(l)}</button>`).join('')}</div>`
+      : `<p class="caption" style="white-space:pre-line">${esc(lines[0])}</p>`}
+      <button class="btn primary" data-testid="pay-with">${many ? 'לצרף' : 'כן, לצרף'}</button><button class="btn ghost" data-testid="pay-without">בלי</button>`;
+    const go = el.querySelector('[data-testid=pay-with]');
+    el.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { const i = +b.dataset.pick;
+      if (picked.has(i)) picked.delete(i); else picked.add(i); b.setAttribute('aria-pressed', String(picked.has(i))); b.textContent = (picked.has(i) ? '✓ ' : '') + lines[i]; go.disabled = !picked.size; });
+    go.onclick = () => { const chosen = lines.filter((_, i) => picked.has(i)); if (!chosen.length) return; close(); shareOrCopy(root.KisShare.withPayment(text, chosen), title); };
     el.querySelector('[data-testid=pay-without]').onclick = () => { close(); shareOrCopy(text, title); };
   });
 }

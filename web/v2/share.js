@@ -6,7 +6,18 @@ const Pay = node ? require('./pay.js') : root.KisPay;
 const Rules = node ? require('./rules.js') : root.KisRules;
 const Plan = node ? require('./plan.js') : root.KisPlan;
 const pad = n => String(n).padStart(2, '0');
-function date(ms) { const d = new Date(ms); return pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear(); }
+const Heb = () => node ? require('./hebdate.js') : root.KisHebrew;
+// The user's date choice for shared texts (owner feedback 2.3.1); the default keeps the shared fixtures civil. Spreadsheets always use civilDate.
+let dateMode = 'GREG';
+// What the user gets paid with (from the profile): a report to a worker asks for the same kinds. Empty: all three.
+let askKinds = [];
+const setTextChoices = (mode, kinds) => { dateMode = ['GREG','HEB','BOTH'].includes(mode) ? mode : 'GREG'; askKinds = Array.isArray(kinds) ? kinds.slice() : []; };
+function civilDate(ms) { const d = new Date(ms); return pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear(); }
+function date(ms) {
+  if (dateMode === 'HEB') { const H = Heb(); return H.day(ms) + ' ' + H.gematria(H.fromMillis(ms)[0]); }
+  if (dateMode === 'BOTH') { const H = Heb(); return H.day(ms) + ' (' + H.civilShort(ms, false) + ')'; }
+  return civilDate(ms);
+}
 const money = (v,c) => Pay.format(v,c), hours = Pay.hours;
 const note = e => String(e.notes ?? '').trim();
 const amount = e => Pay.pay(e) == null ? 'ממתין להשלמה' : money(Pay.pay(e),e.currency);
@@ -92,10 +103,13 @@ function summary(entries,name=null) {
  if (n===1) out.push(...details(rows[0]));
  else { out.push('פירוט המשמרות:');for(const e of ordered(rows)) out.push(date(e.date)+' | '+hours(e.hours)+' שעות | '+amount(e)+' | '+(e.isPaid?'שולם':'ממתין'),...details(e)); }
  // A report to someone the user pays asks for where to send the money.
- if (name&&rows.some(e=>!e.isPaid&&Pay.pay(e)!=null)) out.push(ASK_PAYMENT);
+ if (name&&rows.some(e=>!e.isPaid&&Pay.pay(e)!=null)) out.push(askPayment(askKinds));
  out.push('תודה!');return out.join('\n');
 }
 const ASK_PAYMENT='אפשר לשלוח לי את ה-Zelle, הביט או פרטי החשבון שלך, ואעביר את התשלום.';
+/** "אפשר לשלוח לי את ה-Zelle שלך…" for the kinds filled in ('zelle','bit','bank'); none or all three: ASK_PAYMENT. */
+function askPayment(kinds){ const names=[['zelle','ה-Zelle'],['bit','הביט'],['bank','פרטי החשבון']].filter(([k])=>(kinds||[]).includes(k)).map(([,n])=>n);
+ if(!names.length||names.length===3)return ASK_PAYMENT; return 'אפשר לשלוח לי את '+(names.length===1?names[0]:names[0]+' או '+names[1])+' שלך, ואעביר את התשלום.'; }
 /** The user's own payment details (Zelle, Bit, bank), when they choose to add them to what they share. */
 const paymentLines=(zelle,bit,bank)=>[[zelle,'Zelle: '],[bit,'ביט: '],[bank,'חשבון בנק: ']].map(([v,l])=>String(v??'').trim()?l+String(v).trim():null).filter(Boolean);
 /** [text] with the payment details before its closing "תודה!" (or at its end). */
@@ -120,7 +134,7 @@ function worker(e,w,technical=false,future=false) {
  const single={...e,groupWorkersJson:JSON.stringify([w.source??w])};
  const text=technical?copy([single],w.name):summary([single],w.name);
  // Nothing to pay yet for a planned shift, so it does not ask where to send money.
- return future?plannedText(text.replace('\n'+ASK_PAYMENT,'')):text;
+ return future?plannedText(text.replace('\n'+askPayment(askKinds),'')):text;
 }
 function planned(o,technical=false) {
  const h=Rules.span(o.start,o.end).minutes/60;
@@ -150,13 +164,13 @@ const validTime=t=>typeof t==='string'&&/^(?:[01]?\d|2[0-3]):[0-5]\d$/.test(t.tr
 function table(entries){return [excelHeaders,...ordered(entries).map(e=>{
  const known=Pay.payKnown(e), job=Pay.isJob(e);
  const pause=!job&&e.isTimeRange&&validTime(e.startTime)&&validTime(e.endTime)?Math.max(0,Math.round(Rules.span(e.startTime,e.endTime).minutes-e.hours*60)):null;
- return [textCell(e.category),date(e.date),textCell(e.startTime),textCell(e.endTime),typeof e.hours==='number'&&e.hours>=0&&Number.isFinite(e.hours)?exactDuration(e.hours):numberCell(e.hours),pause==null?'':textCell(pause),
+ return [textCell(e.category),civilDate(e.date),textCell(e.startTime),textCell(e.endTime),typeof e.hours==='number'&&e.hours>=0&&Number.isFinite(e.hours)?exactDuration(e.hours):numberCell(e.hours),pause==null?'':textCell(pause),
   !known||job?'':numberCell(e.hourlyRate),known?numberCell(e.totalEarnings):'',textCell(e.currency),e.isPaid?'שולם':'ממתין',
   job?'קבלנות':e.isGroupShift?'משמרת קבוצתית':'משמרת',Pay.bonus(e)>0?numberCell(Pay.bonus(e)):'',textCell(e.notes??''),known?'כן':'חסר'];
  })];}
 const quote=(value,d)=>{const s=String(value??'');return s.includes(d)||/[\n\r"]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;};
 const excel=entries=>table(entries).map(row=>row.map(s=>quote(s,'\t')).join('\t')).join('\n');
 const csv=entries=>'\ufeff'+table(entries).map(row=>row.map(s=>quote(s,',')).join(',')).join('\r\n');
-const api={date,money,hours,personal,job,employer,worker,planned,summary,copy,entry,workerName,excel,csv,exactDuration,ASK_PAYMENT,paymentLines,withPayment};
+const api={date,civilDate,askPayment,setTextChoices,money,hours,personal,job,employer,worker,planned,summary,copy,entry,workerName,excel,csv,exactDuration,ASK_PAYMENT,paymentLines,withPayment};
 if(node)module.exports=api;else root.KisShare=api;
 })(globalThis);

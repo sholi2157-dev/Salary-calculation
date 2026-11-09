@@ -22,6 +22,6 @@ for (const f of files) test(`${f}: one neutral voice and one date format`, () =>
 });
 test('date format (owner feedback 2.3): "יום ד׳ כ״ח חשוון (8/11)", Hebrew first, the civil date beside it', () => {
   const ui = fs.readFileSync(path.join(web, 'kis', 'ui.js'), 'utf8');
-  assert.match(ui, /`יום \$\{DAY_SHORT\[d\.getDay\(\)\]\} \$\{root\.KisHebrew\.label\(ms\)\}`/);
-  assert.match(ui, /const shortDate = ms => root\.KisHebrew\.label\(ms\);/);
+  assert.match(ui, /`יום \$\{DAY_SHORT\[d\.getDay\(\)\]\} \$\{root\.KisHebrew\.show\(ms\)\}`/);
+  assert.match(ui, /const shortDate = ms => root\.KisHebrew\.show\(ms\);/);
 });

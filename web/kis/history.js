@@ -41,7 +41,7 @@ function apply(entries, f, q) {
 }
 /** "השבוע · פרשת וירא", "שבוע פרשת נח", "שבוע פסח"; another year adds the Hebrew year. Outside the table: "שבוע של …" (owner feedback 2.3). */
 function weekLabel(start) {
-  const H = root.KisHebrew, p = H.portion(start), now = start === root.KisHome.weekStart(Date.now());
+  const H = root.KisHebrew, p = H.getMode() === 'GREG' ? null : H.portion(start), now = start === root.KisHome.weekStart(Date.now());
   if (!p) return now ? 'השבוע' : 'שבוע של ' + U().shortDate(start);
   if (now) return 'השבוע · ' + p;
   const sat = new Date(start); sat.setDate(sat.getDate() + 6);
