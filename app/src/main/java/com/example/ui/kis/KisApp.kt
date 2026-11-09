@@ -341,7 +341,7 @@ fun KisApp(
                         .pointerInput(Unit) { detectTapGestures { } } // the app behind is not touchable while editing
                         .systemBarsPadding().padding(horizontal = 10.dp, vertical = 10.dp)) {
                         val frame = RoundedCornerShape(24.dp)
-                        Box(Modifier.fillMaxSize().clip(frame).border(2.dp, if (c.dark) Color.White.copy(alpha = 0.85f) else Color.White, frame).testTag("edit_frame")) { page() }
+                        Box(Modifier.fillMaxSize().clip(frame).border(2.dp, if (c.dark) Color.White.copy(alpha = 0.85f) else c.surface, frame).testTag("edit_frame")) { page() }
                     }
                 }
             }
@@ -391,7 +391,7 @@ internal fun PillNav(page: Int, onPage: (Int) -> Unit, onSettings: () -> Unit, o
     val c = Kis.colors
     val shape = RoundedCornerShape(99.dp)
     Row(Modifier.shadow(if (c.dark) 18.dp else 14.dp, shape, ambientColor = Color.Black.copy(alpha = if (c.dark) 1f else 0.3f), spotColor = Color.Black.copy(alpha = if (c.dark) 1f else 0.3f))
-        .clip(shape).background(c.nav).border(1.dp, if (c.dark) c.line else Color.White, shape)
+        .clip(shape).background(c.nav).border(1.dp, if (c.dark) c.line else c.surface, shape)
         .padding(6.dp).testTag("bottom_navigation"), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         @Composable fun item(label: String, on: Boolean, tag: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
             Box(modifier.heightIn(min = 48.dp).clip(shape).background(if (on) c.navOn else Color.Transparent).kisClick(role = Role.Tab, onClick = onClick)

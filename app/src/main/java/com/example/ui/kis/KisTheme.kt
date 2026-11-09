@@ -52,24 +52,26 @@ data class KisColors(
     /** Text/icon colour on an ink (primary action) surface. */
     val onInk get() = bg
     /** Filled primary actions: ink in dark; in light a softer slate, so a filled block does not shout on white (FB23-F2). */
-    val inkFill get() = if (dark) ink else Color(0xFF39445C)
+    val inkFill get() = if (dark) ink else Color(0xFF232A3A)
     /** A switch that is on is ink, not the money green; its thumb is the page colour. */
     val controlOn get() = inkFill
-    val controlKnob get() = if (dark) bg else Color.White
+    val controlKnob get() = if (dark) bg else surface
 }
 
 // FB23-F2 (2.3.0): light chrome is calmer still: the chosen tab is a soft brand tint (not a navy pill), filled
 // actions and switches use a slate a step lighter than the text ink, and sunk wells are paler. Text ink is unchanged.
 // Light (2.0.8): ink is a deep navy, not black, and the page a softer grey-blue, so text keeps its contrast (about 15:1 on
 // white) without the hard black-on-white look; chosen days, tabs and currencies are white with an ink edge, not black tiles.
+// 2.3.0 (owner's choice "אפור עשן", same as web): no pure-white glare. A mid-grey page with off-white cards, deeper ink and
+// muted so text keeps its contrast, paid/pending/danger a step darker so every text pair still passes 4.5:1.
 val KisLight = KisColors(
     dark = false,
-    bg = Color(0xFFF1F3F8), surface = Color.White, sunk = Color(0xFFEAEDF3), ink = Color(0xFF1B2335), muted = Color(0xFF5A6478), line = Color(0xFFD2D8E3),
-    pending = Color(0xFF9A5201), pendingSoft = Color(0xFFFFEBC7), paid = Color(0xFF007453), danger = Color(0xFFBD2F28),
-    // Light floating surfaces are frosted glass (translucent white, hairline edge, soft shadow), not black slabs.
-    edit = Color(0xFF1B2335), editInk = Color.White, nav = Color(0xE6FFFFFF), navInk = Color(0xFF465066), navOn = Color(0xFFE6E5FB), navOnInk = Color(0xFF2F2A8A),
-    bar = Color(0xF2FFFFFF), onBar = Color(0xFF1B2335),
-    lineStrong = Color(0xFF778093), accent = Color(0xFF5145E8), accentInk = Color.White, barAction = Color(0xFF5145E8),
+    bg = Color(0xFFD9DCE2), surface = Color(0xFFEDEFF2), sunk = Color(0xFFCDD1D8), ink = Color(0xFF141925), muted = Color(0xFF4C5466), line = Color(0xFFC3C8D1),
+    pending = Color(0xFF8A4900), pendingSoft = Color(0xFFF3DFB6), paid = Color(0xFF00664A), danger = Color(0xFFB02A24),
+    // Light floating surfaces are frosted glass (translucent off-white, hairline edge, soft shadow), not black slabs.
+    edit = Color(0xFF141925), editInk = Color.White, nav = Color(0xF0EDEFF2), navInk = Color(0xFF3F475A), navOn = Color(0xFFD7D4F7), navOnInk = Color(0xFF2A2480),
+    bar = Color(0xF7EDEFF2), onBar = Color(0xFF141925),
+    lineStrong = Color(0xFF6C7384), accent = Color(0xFF4A3ED6), accentInk = Color.White, barAction = Color(0xFF4A3ED6),
     onDanger = Color.White, onPaid = Color.White,
 )
 
