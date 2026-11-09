@@ -226,7 +226,7 @@ fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifi
         .semantics { this.selected = selected }
         .padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (leading != null) Icon(leading, null, tint = fg, modifier = Modifier.size(18.dp))
-        Text(text, style = KisType.label, color = fg, maxLines = 1)
+        Text(text, style = KisType.label, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
 }
 

@@ -362,8 +362,9 @@ fun KisEditorPage(
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (d.mode == EntryMode.JOB) JobNote(d.notes, history) { d = d.copy(notes = it) }
             DayStrip(d.day) { d = d.copy(day = it) }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                KisChip(dayLabelLong(d.day).takeIf { !isWithinWeek(d.day) } ?: "תאריך אחר", leading = Icons.Outlined.CalendarMonth, tag = "editor_other_date", onClick = {
+            // The Hebrew date label is long: the chip takes what is left, and the currency toggle always stays on screen.
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                KisChip(dayLabelLong(d.day).takeIf { !isWithinWeek(d.day) } ?: "תאריך אחר", modifier = Modifier.weight(1f, fill = false), leading = Icons.Outlined.CalendarMonth, tag = "editor_other_date", onClick = {
                     val cal = Calendar.getInstance().apply { timeInMillis = d.day }
                     DatePickerDialog(context, { _, y, m, day -> d = d.copy(day = Calendar.getInstance().apply { clear(); set(y, m, day) }.timeInMillis) },
                         cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
