@@ -66,7 +66,6 @@ class V2ShareTest {
     // choice) may have left the shared choice elsewhere in this JVM.
     @org.junit.Before fun gregorianDates() {
         com.example.data.WorkShareText.dateMode = com.example.data.HebrewDate.GREG
-        com.example.data.HebrewDate.mode = com.example.data.HebrewDate.GREG
         com.example.data.WorkShareText.askKinds = emptyList()
     }
 
