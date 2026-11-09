@@ -24,7 +24,10 @@ object AuthManager {
         val uid: String,
         val displayName: String?,
         val email: String?,
-        val photoUrl: String? = null
+        val photoUrl: String? = null,
+        /** When the Google account first reached the app, and its latest sign-in (ms). Equal on its very first sign-in. */
+        val createdAt: Long? = null,
+        val lastSignInAt: Long? = null
     )
 
     private val _currentUser = MutableStateFlow<UserSession?>(null)
@@ -82,7 +85,9 @@ object AuthManager {
                 uid = firebaseUser.uid,
                 displayName = firebaseUser.displayName ?: firebaseUser.email ?: "משתמש Google",
                 email = firebaseUser.email,
-                photoUrl = firebaseUser.photoUrl?.toString()
+                photoUrl = firebaseUser.photoUrl?.toString(),
+                createdAt = firebaseUser.metadata?.creationTimestamp,
+                lastSignInAt = firebaseUser.metadata?.lastSignInTimestamp
             )
         } else {
             _currentUser.value = null

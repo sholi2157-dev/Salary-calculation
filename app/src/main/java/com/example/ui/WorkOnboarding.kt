@@ -72,7 +72,20 @@ class WorkOnboardingStore(private val context: Context) {
         }
         return completedVersion < ONBOARDING_VERSION
     }
-    fun complete() { check(prefs.edit().putInt("completedOnboardingVersion", maxOf(completedVersion, ONBOARDING_VERSION)).commit()) }
+    fun complete() { check(prefs.edit().putInt("completedOnboardingVersion", maxOf(completedVersion, ONBOARDING_VERSION)).remove("tourPendingUid").commit()) }
+    /**
+     * F12 (2.3.1): with Google sign-in the tour belongs to the account, not the phone. It opens once, on a new account's
+     * first successful connect, and never again except from "הצגת ההדרכה מחדש". The first time an account is seen here
+     * decides it: a brand-new account gets the tour (kept pending until it is finished or skipped, so closing the app
+     * mid-way brings it back once); an account that already existed (an update, another phone, the site) never does.
+     */
+    fun claimAccount(uid: String, createdAt: Long?, lastSignInAt: Long?): Boolean {
+        val seen = prefs.getStringSet("tourAccounts", emptySet()).orEmpty()
+        if (uid in seen) return prefs.getString("tourPendingUid", null) == uid
+        val fresh = isNewAccount(createdAt, lastSignInAt)
+        check(prefs.edit().putStringSet("tourAccounts", seen + uid).apply { if (fresh) putString("tourPendingUid", uid) }.commit())
+        return fresh
+    }
     /** The 2.0 launch screen is shown once to everyone, new or updated (see KisLaunch). */
     val launchPending get() = prefs.getInt("launchedVersion", 0) < LAUNCH_VERSION
     fun launched() { check(prefs.edit().putInt("launchedVersion", LAUNCH_VERSION).commit()) }
@@ -82,19 +95,28 @@ const val LAUNCH_VERSION = 2
 
 const val ONBOARDING_VERSION = 1
 
+/** A Google account on its very first sign-in to the app: Firebase stamps both times at once (same rule on the site). */
+const val NEW_ACCOUNT_WINDOW_MS = 120_000L
+fun isNewAccount(createdAt: Long?, lastSignInAt: Long?): Boolean =
+    createdAt != null && lastSignInAt != null && createdAt > 0 && kotlin.math.abs(lastSignInAt - createdAt) <= NEW_ACCOUNT_WINDOW_MS
+
+/** With Google sign-in on, the tour follows the account (claimAccount); without it (or when sign-in is skipped), the installation. */
+fun tourFollowsAccount(context: Context): Boolean = com.example.BuildConfig.GOOGLE_SIGN_IN_ENABLED && com.example.BuildConfig.ACCOUNTS_ENABLED &&
+    !com.example.data.WorkAccountBinding.signInSkipped(context)
+
 enum class CoachScreen { HOME, FORM, AI, HISTORY, SHARE, CATEGORIES, API }
 enum class CoachTarget { SHIFT, FIELDS, AI, HISTORY, SHARE, CATEGORIES, API }
 data class CoachStep(val screen: CoachScreen, val target: CoachTarget?, val title: String, val body: String)
 val workOnboardingSteps = listOf(
-    CoachStep(CoachScreen.HOME, null, "ברוכים הבאים לחישוב שכר", "רושמים משמרות, רואים את ההכנסה ומשתפים בקלות. נכיר את המקומות החשובים."),
-    CoachStep(CoachScreen.HOME, CoachTarget.SHIFT, "כאן מתחילים", "הכפתור + למטה מוסיף משמרת שכבר עבדת. ״אני מתחיל עכשיו״ מפעיל טיימר בזמן העבודה."),
-    CoachStep(CoachScreen.FORM, CoachTarget.FIELDS, "השעות כבר מוצעות", "הסיום מעוגל לחצי השעה האחרונה, וההתחלה לפי ההרגל שלך. גוררים בסרגל או מקלידים — והסכום מחושב מיד."),
-    CoachStep(CoachScreen.AI, CoachTarget.AI, "אפשר גם במילים", "כותבים או מכתיבים, לוחצים ״פענוח״, בודקים את התוצאה ורק אז שומרים."),
-    CoachStep(CoachScreen.HISTORY, CoachTarget.HISTORY, "כל המשמרות במקום אחד", "לפי חודש ושבוע, עם חיפוש וסינון. לחיצה ארוכה בוחרת כמה משמרות: שיתוף, סימון תשלום או השלמת תעריף."),
-    CoachStep(CoachScreen.SHARE, CoachTarget.SHARE, "שולחים סיכום מסודר", "נגיעה במשמרת פותחת את הפרטים, ומשם משתפים לוואטסאפ או מעתיקים. בהדרכה לא נשלח דבר."),
-    CoachStep(CoachScreen.CATEGORIES, CoachTarget.CATEGORIES, "עובד בכמה מקומות?", "בהגדרות מוסיפים מקום עבודה לכל עבודה, עם תעריף, מטבע וצבע משלו."),
-    CoachStep(CoachScreen.API, CoachTarget.API, "רוצה להשתמש ב־AI?", "מוסיפים מפתח Gemini אישי. שאר האפליקציה עובדת גם בלי AI."),
-    CoachStep(CoachScreen.HOME, null, "זה הכול. אפשר להתחיל.", "מוסיפים משמרת — והחישובים עלינו. ההדרכה תמיד זמינה שוב בהגדרות.")
+    CoachStep(CoachScreen.HOME, null, "ברוכים הבאים לחישוב שכר", "כאן רושמים משמרות, רואים כמה הרווחת ושולחים דוח מסודר למעסיק. דקה אחת, ומכירים את העיקר."),
+    CoachStep(CoachScreen.HOME, CoachTarget.SHIFT, "רישום משמרת", "עבדת היום? לוחצים על + למטה ורושמים. מתחילים לעבוד עכשיו? ״אני מתחיל עכשיו״ מפעיל שעון, ובסוף עוצרים אותו."),
+    CoachStep(CoachScreen.FORM, CoachTarget.FIELDS, "השעות והסכום", "השעות כבר ממולאות לפי ההרגל שלך. משנים בסרגל או בהקלדה, והסכום מתעדכן מיד. בכפתור + מוסיפים בונוס, החזר הוצאות או הפסקה."),
+    CoachStep(CoachScreen.AI, CoachTarget.AI, "או פשוט כותבים", "למשל ״אתמול מ־9 עד 5 במסעדה״. לוחצים ״פענוח״, בודקים ושומרים. צריך לזה מפתח AI אישי, מוסיפים אותו בהגדרות."),
+    CoachStep(CoachScreen.HISTORY, CoachTarget.HISTORY, "כל המשמרות", "מסודרות לפי חודש ושבוע, עם חיפוש וסינון. לחיצה ארוכה בוחרת כמה משמרות יחד: לשתף, לסמן ששולם או להשלים תעריף."),
+    CoachStep(CoachScreen.SHARE, CoachTarget.SHARE, "דוח למעסיק", "נגיעה במשמרת פותחת את הפרטים. ״שיתוף״ שולח סיכום מסודר בוואטסאפ, ו״העתקה״ מעתיקה אותו. שם גם מסמנים ששולם."),
+    CoachStep(CoachScreen.CATEGORIES, CoachTarget.CATEGORIES, "כמה מקומות עבודה", "לכל מקום תעריף, מטבע וצבע משלו. מקום חדש מוסיפים ישר בטופס המשמרת, ומשמרות קבועות מגדירים כאן."),
+    CoachStep(CoachScreen.API, CoachTarget.API, "עזרה וכלים", "כאן מפעילים רישום במילים (AI), וכאן אפשר לראות את ההדרכה הזו שוב."),
+    CoachStep(CoachScreen.HOME, null, "זהו, אפשר להתחיל", "רושמים את המשמרת הראשונה, והחשבון עלינו.")
 )
 
 @Stable
@@ -113,7 +135,8 @@ fun rememberOnboardingController(): OnboardingController {
     val context = LocalContext.current
     val store = remember { WorkOnboardingStore(context) }
     // initialize() is also called in Activity before Room; tests may host this independently.
-    val auto = remember { store.initialize() }
+    // With Google sign-in the tour waits for a new account's first connect instead (MainAppContent, claimAccount).
+    val auto = remember { store.initialize() && !tourFollowsAccount(context) }
     // Save the controller's current value directly. An asynchronous mirror can retain
     // the replay step when Android saves Activity state immediately after Skip.
     return rememberSaveable(saver = Saver(

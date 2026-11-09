@@ -289,6 +289,12 @@ fun MainAppContent(
         com.example.ui.kis.SignInGate(onSignIn = googleSignIn, offline = offline, onLater = { signInLater = true }, updated = !onboardingStore.launchPending, running = running)
         return
     }
+    // F12: a new Google account's first successful connect opens the tour once (after the launch, if it is showing).
+    val tourByAccount = remember { com.example.ui.tourFollowsAccount(context) }
+    LaunchedEffect(session?.uid) {
+        val s = session ?: return@LaunchedEffect
+        if (tourByAccount && onboardingStore.claimAccount(s.uid, s.createdAt, s.lastSignInAt) && !onboarding.active) onboarding.replay()
+    }
     Box(modifier) {
         com.example.ui.kis.KisApp(
             viewModel = viewModel,
@@ -299,7 +305,8 @@ fun MainAppContent(
             onSignIn = onSignInRequest,
             modifier = Modifier.fillMaxSize().then(if (launching) Modifier.clearAndSetSemantics { } else Modifier)
         )
-        if (launching) com.example.ui.kis.KisLaunch(onDone = { onboardingStore.launched(); launching = false; onboarding.replay() })
+        // The launch no longer replays the tour: it opens once (a new installation, or a new account's first connect).
+        if (launching) com.example.ui.kis.KisLaunch(onDone = { onboardingStore.launched(); launching = false })
     }
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()

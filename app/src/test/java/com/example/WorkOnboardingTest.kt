@@ -62,4 +62,35 @@ class WorkOnboardingTest {
         assertEquals(4567, context.getSharedPreferences("active_shift_prefs", 0).getLong("start", 0))
         assertTrue(context.getSharedPreferences("personal_ai_setup", 0).getBoolean("offered_local_device", false))
     }
+    /** F12: with Google sign-in, the tour opens once for a brand-new account and never for one that already existed. */
+    @Test fun newAccountGetsTheTourOnceUntilFinished() {
+        val store = fresh(); store.initialize()
+        assertTrue(isNewAccount(5_000, 5_000))
+        assertTrue(isNewAccount(5_000, 5_000 + NEW_ACCOUNT_WINDOW_MS))
+        assertFalse(isNewAccount(5_000, 5_001 + NEW_ACCOUNT_WINDOW_MS))
+        assertFalse(isNewAccount(null, 5_000)); assertFalse(isNewAccount(5_000, null))
+        // A new account: the tour, and again after reopening while it was never finished.
+        assertTrue(store.claimAccount("new", 10_000, 10_400))
+        assertTrue(WorkOnboardingStore(context).claimAccount("new", 10_000, 10_400))
+        val controller = OnboardingController(store, 0)
+        controller.finish()
+        assertFalse(WorkOnboardingStore(context).claimAccount("new", 10_000, 10_400))
+        // Skipping counts the same; a later sign-in of that account never brings it back.
+        assertFalse(WorkOnboardingStore(context).claimAccount("new", 10_000, 999_999_999))
+    }
+    @Test fun existingAccountNeverGetsTheTour() {
+        val store = fresh(); store.initialize()
+        // An account made long ago (an update, another phone, the site), seen here for the first time.
+        assertFalse(store.claimAccount("old", 10_000, 50_000_000))
+        assertFalse(store.claimAccount("old", 10_000, 50_000_000))
+        // A second, brand-new account on the same phone still gets its own tour once.
+        assertTrue(store.claimAccount("second", 60_000_000, 60_000_000))
+        store.complete()
+        assertFalse(store.claimAccount("second", 60_000_000, 60_000_000))
+        assertFalse(store.claimAccount("old", 10_000, 50_000_000))
+    }
+    @Test fun withoutGoogleSignInTheTourFollowsTheInstallation() {
+        // Debug and test builds have no Google sign-in: a new installation keeps opening the tour by itself.
+        assertFalse(tourFollowsAccount(context))
+    }
 }
