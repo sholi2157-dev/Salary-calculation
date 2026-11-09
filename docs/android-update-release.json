@@ -1,12 +1,12 @@
 {
-  "runId": 40537072814,
-  "sourceSha": "155b7731eea6ba2d2d24fcb5521be784557eb899",
-  "artifactName": "salary-2.2.1-code46-candidate",
-  "tag": "android-v2.2.1-code46",
-  "fileName": "Salary2.2.1.apk",
-  "versionCode": 46,
-  "versionName": "2.2.1",
-  "sha256": "c62691480f7cdb81259af5d8179328ec3620c20a1fc367e4916740035d6d8882",
+  "runId": 42565477923,
+  "sourceSha": "d9b8847c81befd4ec675140fcfb33432e6b8b4d6",
+  "artifactName": "salary-2.3.0-code52-candidate",
+  "tag": "android-v2.3.0-code52",
+  "fileName": "Salary2.3.0.apk",
+  "versionCode": 52,
+  "versionName": "2.3.0",
+  "sha256": "04829ea85cbed119b2fe79649a30d55842ed6f44df6538343563c11a426a178d",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "בסיכום של כמה משמרות התאריכים מופיעים פעם אחת, בפירוט בלבד. כל המשמרות וההגדרות נשמרים."
+  "releaseNotes": "מהיום מקבלים את הכסף מהר יותר: Zelle, ביט או חשבון בנק שמורים בפרופיל, ומצטרפים לכל דוח בלחיצה. כל משמרת עם תאריך עברי ולועזי. הגדרות האבטחה והפרטיות השתפרו. כל המשמרות וההגדרות נשמרים."
 }
