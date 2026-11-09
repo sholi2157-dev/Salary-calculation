@@ -15,7 +15,7 @@ const server = http.createServer((q, r) => {
   r.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store' }); fs.createReadStream(f).pipe(r);
 });
 const EXPECT = {
-  light: { bg: 'rgb(241, 243, 248)', primary: 'rgb(27, 35, 53)', onPrimary: 'rgb(241, 243, 248)', add: 'rgb(81, 69, 232)', addInk: 'rgb(255, 255, 255)', danger: 'rgb(189, 47, 40)', onDanger: 'rgb(255, 255, 255)' },
+  light: { bg: 'rgb(217, 220, 226)', primary: 'rgb(35, 42, 58)', onPrimary: 'rgb(237, 239, 242)', add: 'rgb(74, 62, 214)', addInk: 'rgb(255, 255, 255)', danger: 'rgb(176, 42, 36)', onDanger: 'rgb(255, 255, 255)' },
   dark: { bg: 'rgb(15, 18, 22)', primary: 'rgb(237, 240, 246)', onPrimary: 'rgb(15, 18, 22)', add: 'rgb(147, 152, 255)', addInk: 'rgb(21, 21, 58)', danger: 'rgb(255, 145, 131)', onDanger: 'rgb(43, 14, 11)' },
 };
 (async () => {
@@ -49,7 +49,7 @@ const EXPECT = {
    });
    const want = EXPECT[scheme];
    for (const k of Object.keys(want)) if (k !== 'add' && k !== 'addInk' || got.add) assert.equal(got[k], want[k], `${scheme} ${k}`);
-   assert.equal(got.switchOn, got.ink, `${scheme}: a switch that is on is ink`);
+   assert.equal(got.switchOn, got.primary, `${scheme}: a switch that is on is the ink fill (FB23-F2)`);
    assert.notEqual(got.bg, 'rgb(18, 18, 18)');
    await page.click('[data-testid=tab-settings]');
    await page.waitForTimeout(300);
