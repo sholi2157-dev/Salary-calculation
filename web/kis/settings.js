@@ -11,10 +11,15 @@ let section = null;
 const CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 let subs = {};
 // FB23-F10: category explanations are not shown; the accordion subtitle stays on the phone header.
-const group = (title, body, sub = subs[title]) => {
+// A card with one thing to do ([go]: its action) opens that thing on the first tap, with an arrow instead of the chevron.
+const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg>';
+const group = (title, body, sub = subs[title], go = null) => {
   const on = section === title, id = 'set-body-' + title.replace(/\s+/g, '-');
+  const head = go
+    ? `<button class="set-row set-head set-go" data-a="${go}" data-testid="settings-open-${title}"><span class="grow"><b>${title}</b>${sub ? `<small>${U().esc(sub)}</small>` : ''}</span>${ARROW}</button>`
+    : `<button class="set-row set-head" data-section="${title}" aria-expanded="${on}" aria-controls="${id}" data-testid="settings-open-${title}"><span class="grow"><b>${title}</b>${sub ? `<small>${U().esc(sub)}</small>` : ''}</span>${CHEVRON}</button>`;
   return `<section class="set-group${on ? ' on' : ''}" data-group="${title}">
-    <div class="set-head-row"><button class="set-row set-head" data-section="${title}" aria-expanded="${on}" aria-controls="${id}" data-testid="settings-open-${title}"><span class="grow"><b>${title}</b>${sub ? `<small>${U().esc(sub)}</small>` : ''}</span>${CHEVRON}</button></div>
+    <div class="set-head-row">${head}</div>
     <div class="title-row set-title"><h2 class="section-title" style="margin:0;font:1.375rem/1.75rem var(--display)" data-testid="settings-${title}">${title}</h2></div>
     <div class="card set-body" id="${id}">${body}</div></section>`;
 };
@@ -42,7 +47,7 @@ function render(el, app) {
     ${rowHtml('משמרות קבועות', store.plans.series.length ? `${store.plans.series.length} פעילות` : null, '<button class="chip act" data-a="series" data-testid="series-button">ניהול</button>', 'נוצרות במסך ההוספה')}`)}
   ${group('מראה ותחושה', `${rowHtml('ערכת צבעים', null, `<div class="seg">${[['system', 'אוטומטי'], ['light', 'בהיר'], ['dark', 'כהה']].map(([v, l]) => `<button aria-pressed="${theme === v}" data-theme="${v}" data-testid="theme-${v}">${l}</button>`).join('')}</div>`)}
     <div class="divider"></div>${rowHtml('רטט במגע', null, `<button class="switch" role="switch" aria-checked="${store.local.haptics !== false}" aria-label="רטט במגע" data-a="haptics"></button>`)}`)}
-  ${group('הסיכומים שלי', rowHtml('כל הסיכומים', null, '<button class="chip act" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל סיכום שכבר נפתח'))}
+  ${group('הסיכומים שלי', rowHtml('כל הסיכומים', null, '<button class="chip act" data-a="recaps" data-testid="recaps-button">פתיחה</button>', 'כל סיכום שכבר נפתח'), undefined, 'recaps')}
   ${group('התראות', rowHtml('כל ההתראות', null, `<button class="switch" role="switch" aria-checked="${NOTIFY_KINDS.every(([k]) => store.local[k] === true)}" aria-label="כל ההתראות" data-a="notify" data-testid="notify-all"></button>`, 'כולן יחד')
     + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${store.local[k] === true}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''))}
   ${group('גיבוי ונתונים', `<div class="row backup-row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
@@ -85,7 +90,7 @@ function render(el, app) {
   q('[data-a=android-download]').onclick = () => root.KisDownload.open();
   q('[data-a=tour]').onclick = () => root.KisLaunch.tour(app);
   q('[data-a=places]').onclick = () => placesSheet(app);
-  q('[data-a=recaps]').onclick = () => root.KisSummaryUi.archive(app);
+  el.querySelectorAll('[data-a=recaps]').forEach(b => b.onclick = () => root.KisSummaryUi.archive(app));
   el.querySelectorAll('[data-cur]').forEach(b => b.onclick = () => store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, mainCurrency: b.dataset.cur }); }));
   q('[data-a=series]').onclick = () => root.KisPlans.seriesSheet(app);
   el.querySelectorAll('[data-theme]').forEach(b => b.onclick = () => { store.setLocal('theme', b.dataset.theme); app.applyTheme(); });

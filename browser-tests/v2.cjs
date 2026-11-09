@@ -340,7 +340,7 @@ const seed = {
     }
     const scope = await page.evaluate(() => KisSummary.recapNew(KisPlan.dateOf(Date.now())).month);
     assert.ok(await page.isVisible(tid('home-recap-' + scope)), 'the new recap is on Home');
-    await page.click(tid('tab-settings')); await page.click(tid('settings-open-הסיכומים שלי')); await page.click(tid('recaps-button'));
+    await page.click(tid('tab-settings')); await page.click(tid('settings-open-הסיכומים שלי'));
     assert.ok(await page.isVisible(tid('recap-' + scope)), 'and in the archive');
     await page.keyboard.press('Escape'); await page.click(tid('tab-home'));
     assert.equal(await page.locator(tid('home-month-summary')).count(), 0);
