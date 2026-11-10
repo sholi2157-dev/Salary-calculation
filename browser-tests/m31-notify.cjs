@@ -67,6 +67,12 @@ const server = http.createServer((q, r) => {
   assert.equal(await page.evaluate(() => JSON.stringify(Kis.store.data)), before, 'shifts and places are never touched');
   // The switches are labelled for screen readers.
   for (const t of ['notify-all', 'notify-monthly', 'notify-rate']) assert.ok(await page.getAttribute(`[data-testid=${t}]`, 'aria-label'));
+  // An absent monthly preference must also count towards all-on, not only the default partial state.
+  await page.evaluate(() => { Kis.store.setLocal('notifyMonthly', undefined, true); Kis.store.setLocal('notifyRate', true, true); Kis.go('settings', { section: 'התראות' }); });
+  assert.equal(await subtitle(), 'פועלות');
+  assert.equal((await state()).monthly, 'true');
+  await page.click('[data-testid=notify-rate]');
+  assert.equal(await subtitle(), 'חלקן פועלות');
   // Actual DOM renders at phone widths; desktop Chromium emulates the viewport, not a physical keyboard.
   const out = process.env.SCREENSHOT_DIR || 'browser-evidence'; fs.mkdirSync(out, { recursive: true });
   await page.evaluate(() => Kis.go('settings'));
