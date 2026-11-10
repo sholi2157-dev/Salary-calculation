@@ -1,3 +1,8 @@
+## Start here (2026-11)
+- Load the skills `salary-calculation-playbook` (project facts, pay rules, decisions, release gates) and `product-development-standards` (the owner's general standards) when they are available.
+- The newest owner decision wins over older notes in this file and in docs/. Known stale lines below: "Heebo" (fonts are Rubik + Secular One; Heebo was rejected), "finish Android first / website paused" (releases are joint web+Android), and old version numbers (see GitHub Releases for the current public version).
+- Reply to the owner in short Hebrew. Never publish, deploy to production, or merge to `main` without his explicit yes.
+
 # Salary-calculation — agent rules
 
 ## Language
