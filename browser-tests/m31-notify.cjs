@@ -15,7 +15,7 @@ const server = http.createServer((q, r) => {
  await new Promise(r => server.listen(0, '127.0.0.1', r));
  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
  try {
-  const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 }, locale: 'he-IL' });
+  const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 360, height: 800 }, locale: 'he-IL' });
   await ctx.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
   await ctx.addInitScript(data => {
    if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', 'yes');
@@ -30,6 +30,10 @@ const server = http.createServer((q, r) => {
   const before = await page.evaluate(() => JSON.stringify(Kis.store.data));
   const open = () => page.evaluate(() => Kis.go('settings', { section: 'התראות' }));
   await open(); await page.waitForSelector('[data-testid=notify-rate]');
+  const subtitle = () => page.locator('[data-testid="settings-open-התראות"] small').textContent();
+  assert.equal(await subtitle(), 'חלקן פועלות', 'default monthly is on: partial');
+  assert.deepEqual(await page.locator('.set-group').evaluateAll(nodes => nodes.map(n => n.dataset.group)),
+    ['משוב ותקלות', 'עבודה', 'מראה ותחושה', 'התראות', 'גיבוי ונתונים', 'עזרה', 'חשבון'], 'feedback first');
   const state = () => page.evaluate(() => ({ all: document.querySelector('[data-testid=notify-all]').getAttribute('aria-checked'),
     monthly: document.querySelector('[data-testid=notify-monthly]').getAttribute('aria-checked'), rate: document.querySelector('[data-testid=notify-rate]').getAttribute('aria-checked'),
     stored: [Kis.store.local.notifyMonthly === true, Kis.store.local.notifyRate === true] }));
@@ -37,18 +41,23 @@ const server = http.createServer((q, r) => {
   assert.deepEqual(await state(), { all: 'false', monthly: 'true', rate: 'false', stored: [false, false] }, 'monthly on by default, the rest off');
   await page.click('[data-testid=notify-monthly]');
   assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'false', stored: [false, false] }, 'monthly switched off');
+  assert.equal(await subtitle(), 'כבויות');
   await page.click('[data-testid=notify-rate]');
   assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'true', stored: [false, true] }, 'one kind alone; the main switch stays off');
+  assert.equal(await subtitle(), 'חלקן פועלות');
   await page.click('[data-testid=notify-all]');
   assert.deepEqual(await state(), { all: 'true', monthly: 'true', rate: 'true', stored: [true, true] }, 'main on from partial enables every kind');
+  assert.equal(await subtitle(), 'פועלות');
   await page.click('[data-testid=notify-all]');
   assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'false', stored: [false, false] }, 'main off turns every kind off');
+  assert.equal(await subtitle(), 'כבויות');
   await page.click('[data-testid=notify-all]');
   assert.deepEqual(await state(), { all: 'true', monthly: 'true', rate: 'true', stored: [true, true] }, 'main on turns every kind on');
   await page.click('[data-testid=notify-monthly]');
   assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'true', stored: [false, true] });
   await page.reload(); await page.waitForSelector('[data-testid=home-hero]'); await open(); await page.waitForSelector('[data-testid=notify-rate]');
   assert.deepEqual(await state(), { all: 'false', monthly: 'false', rate: 'true', stored: [false, true] }, 'kept after reload');
+  assert.equal(await subtitle(), 'חלקן פועלות');
   // The reminders follow each kind: with only "תעריף חסר" on, no monthly recap reminder is produced.
   const kinds = await page.evaluate(() => { Kis.store.setLocal('lastRate', 0, true); Kis.store.setLocal('lastMonthly', null, true); return KisSettings.dueReminders(Kis).map(n => n.kind); });
   assert.ok(!kinds.includes('monthly'), 'monthly is off: ' + kinds);
@@ -58,6 +67,20 @@ const server = http.createServer((q, r) => {
   assert.equal(await page.evaluate(() => JSON.stringify(Kis.store.data)), before, 'shifts and places are never touched');
   // The switches are labelled for screen readers.
   for (const t of ['notify-all', 'notify-monthly', 'notify-rate']) assert.ok(await page.getAttribute(`[data-testid=${t}]`, 'aria-label'));
+  // Actual DOM renders at phone widths; desktop Chromium emulates the viewport, not a physical keyboard.
+  const out = process.env.SCREENSHOT_DIR || 'browser-evidence'; fs.mkdirSync(out, { recursive: true });
+  await page.evaluate(() => Kis.go('settings'));
+  await page.waitForSelector('#toast', { state: 'hidden', timeout: 10000 });
+  await page.getByTestId('tab-settings').waitFor({ state: 'visible' });
+  await page.evaluate(() => document.fonts.ready);
+  for (const theme of ['light', 'dark']) {
+    await page.evaluate(theme => { Kis.store.setLocal('theme', theme); Kis.applyTheme(); }, theme);
+    for (const width of [320, 360, 390, 412]) {
+      await page.setViewportSize({ width, height: 800 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${theme} ${width}: no overflow`);
+      if (width === 360) await page.screenshot({ path: path.join(out, `settings-truth-${theme}-360.png`), animations: 'disabled' });
+    }
+  }
   assert.deepEqual(errors, []);
   console.log('m31-notify: main switch, per-kind switches, persistence and reminders per kind passed');
  } finally { await browser.close(); server.close(); }

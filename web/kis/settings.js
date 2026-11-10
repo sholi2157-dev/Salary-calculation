@@ -38,9 +38,10 @@ function render(el, app) {
   // The short line under each card's name on a phone.
   subs = Object.fromEntries([['עבודה', def ? `מקום ברירת מחדל: ${def}` : 'מקומות, מטבע ומשמרות קבועות'],
     ['מראה ותחושה', ({ system: 'אוטומטי', light: 'בהיר', dark: 'כהה' })[theme] || 'אוטומטי'],
-    ['התראות', NOTIFY_KINDS.every(([k]) => store.local[k] === true) ? 'פועלות' : 'כבויות'], ['גיבוי ונתונים', 'גיבוי, ייבוא ואקסל'],
+    ['התראות', notifySubtitle(store)], ['גיבוי ונתונים', 'גיבוי, ייבוא ואקסל'],
     ['עזרה', 'האפליקציה לאנדרואיד וההדרכה'], ['משוב ותקלות', 'דיווח על תקלה או הצעה'], ['חשבון', acct ? (acct.email || 'מחובר') : 'השם שלך · לא מחובר']]);  el.innerHTML = `<h1 class="page-title">הגדרות</h1>
   <div class="set-groups">
+  ${group('משוב ותקלות', '<div class="feedback-inline" data-testid="feedback-inline" style="display:grid;gap:10px;padding:10px 0"></div>')}
   ${group('עבודה', `${rowHtml('מקום ברירת מחדל', null, `<button class="chip act" data-a="places" data-testid="places-button">${esc(def || 'הוספה')}</button>`, 'נבחר לבד במשמרת חדשה')}
     <div class="divider"></div>${rowHtml('מטבע ברירת מחדל', null, `<div class="seg">${['₪', '$'].map(c => `<button aria-pressed="${prefs.mainCurrency === c}" data-cur="${c}">${c}</button>`).join('')}</div>`, 'כל משמרת שומרת את המטבע שלה')}
     <div class="divider"></div>${rowHtml('רישום אוטומטי של משמרות קבועות', null, `<button class="switch" role="switch" aria-checked="${store.local.autoConfirm !== false}" data-a="auto" aria-label="רישום אוטומטי" data-testid="auto-confirm"></button>`, 'כשהזמן נגמר היא נרשמת לבד. תמיד אפשר לבטל')}
@@ -53,7 +54,6 @@ function render(el, app) {
   ${group('גיבוי ונתונים', `<div class="row backup-row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
     <div class="row backup-row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv" data-testid="csv-export">טבלה לאקסל (CSV)</button><button class="btn small outline grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`)}
   ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip act" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip act" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
-  ${group('משוב ותקלות', '<div class="feedback-inline" data-testid="feedback-inline" style="display:grid;gap:10px;padding:10px 0"></div>')}
   ${group('חשבון', `<div class="row" style="padding:10px 0 4px"><input class="input grow" style="min-width:0" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input grow" style="min-width:0" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>
     <div style="display:grid;gap:8px;padding:6px 0" data-testid="pay-fields"><b class="label">פרטים לקבלת תשלום (לא חובה)</b>
@@ -87,6 +87,7 @@ function render(el, app) {
   // The main switch turns every kind on or off together; each kind keeps its own switch, and the
   // main one shows on only when every kind is on. The same stored keys as before (notifyMonthly, notifyRate).
   const notifySync = () => {
+    q('[data-testid="settings-open-התראות"] small').textContent = notifySubtitle(store);
     q('[data-a=notify]').setAttribute('aria-checked', NOTIFY_KINDS.every(([k]) => notifyOn(store, k)));
     el.querySelectorAll('[data-notify]').forEach(b => b.setAttribute('aria-checked', notifyOn(store, b.dataset.notify)));
   };
@@ -324,6 +325,8 @@ function eraseForm(el, store, { title, body, okLabel, okTestid }, onOk, close) {
 const RUNNING = 'יש משמרת שרצה עכשיו. צריך לסיים אותה לפני המחיקה';
 /** The monthly summary is on unless switched off (as in the app); the other reminders are off unless switched on. */
 const notifyOn = (store, key) => key === 'notifyMonthly' ? store.local[key] !== false : store.local[key] === true;
+const notifySubtitle = store => NOTIFY_KINDS.every(([k]) => notifyOn(store, k)) ? 'פועלות'
+  : NOTIFY_KINDS.some(([k]) => notifyOn(store, k)) ? 'חלקן פועלות' : 'כבויות';
 
 /** "מחיקה מהמכשיר הזה": the account copy stays; when signed in, the app signs out so sync does not bring it straight back. */
 function eraseSheet(app) {
