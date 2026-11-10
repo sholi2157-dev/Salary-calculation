@@ -1,6 +1,6 @@
 ## Start here (2026-11)
 - Load the skills `salary-calculation-playbook` (project facts, pay rules, decisions, release gates) and `product-development-standards` (the owner's general standards) when they are available.
-- The newest owner decision wins over older notes in this file and in docs/. Known stale lines below: "Heebo" (fonts are Rubik + Secular One; Heebo was rejected), "finish Android first / website paused" (releases are joint web+Android), and old version numbers (see GitHub Releases for the current public version).
+- The newest owner decision wins over older notes in this file and in docs/. Current public Android: 2.3.1 / code 54. Work targets `release/2.4-web` and `release/2.4-android`; releases are joint Web + Android. Fonts: Rubik text and Secular One display; ₪/$ use Rubik.
 - Reply to the owner in short Hebrew. Never publish, deploy to production, or merge to `main` without his explicit yes.
 
 # Salary-calculation Web maintenance
@@ -9,10 +9,10 @@ Current owner request supersedes historical scope notes in older documents.
 Read `docs/current-state.md`, `docs/web-rc13-parity.md` and
 `docs/preservation-and-sync.md` before editing.
 
-- Active Web branch for 2.3.0: `release/2.3-web` (Android: `release/2.3-android`);
+- Active Web branch for 2.4: `release/2.4-web` (Android: `release/2.4-android`);
   see `docs/current-state.md`. Keep the existing `codex/preserve-app-sync`/draft
   PR #1 and production branch intact.
-- Current Android (`release/2.3-android`, public 2.2.1) is authoritative for
+- Current Android (`release/2.4-android`, public 2.3.1 / code 54) is authoritative for
   product behavior/design. Do not modify Android implementation, package,
   signing, versions or distribution as part of Web work.
 - The exact previous web state is backed up remotely at
@@ -23,7 +23,7 @@ Read `docs/current-state.md`, `docs/web-rc13-parity.md` and
   adopt guest records into an account, or discard records/unknown worker metadata.
   Use synthetic fixtures for tests, including the realistic 22 shifts/8 categories.
   Category deletion reassigns historical labels to the configured default.
-- Hebrew RTL, Heebo, compact fields, separate search clear/close, long-touch
+- Hebrew RTL, Rubik text + Secular One display, compact fields, separate search clear/close, long-touch
   selection, currency-separated totals, sharing, local operation, timer and
   onboarding follow current Android. Keep browser platform exceptions isolated.
 - No provider key in client code/configuration/storage/backups. Web AI stays

@@ -4,8 +4,10 @@ name: Account sync and deletion on the Firebase emulator (synthetic accounts, no
 # accounts only; nothing reaches a real Firebase project. Runs on the 2.3 web release branch and on demand.
 on:
   workflow_dispatch:
+  pull_request:
+    branches: ['release/2.4-web']
   push:
-    branches: ['release/2.3-web']
+    branches: ['release/2.3-web', 'release/2.4-web']
     paths: ['web/sync/**', 'web/kis/store.js', 'web/kis/account.js', 'integration-tests/**', 'firestore.rules', 'firebase.test.json', '.github/workflows/sync-emulator.yml']
 
 permissions:

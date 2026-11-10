@@ -1,34 +1,35 @@
-# Current state — 2026-11-05 (release 2.3.0 integration)
+# Current state — 2026-11-10 (2.4 preparation)
 
-This section supersedes the historical release and branch notes below. The current owner request
-covers Android and Web together; it does not authorize deployment or public distribution.
+This section supersedes historical release, branch and sequencing notes below.
+This task changes CI and documentation only; it does not publish or deploy anything.
 
-- **Public baseline: 2.2.1.** Android `android-v2.2.1-code46` (versionCode 46) and the matching
-  website at https://salary-calculation-eta.vercel.app/ remain the release baseline recorded in
-  the unified plan. Web production source is `da7a7c3`. No new live-site or physical-device
-  verification is claimed here.
-- **2.2.3 (code 48) is internal and unpublished.** Its improvements are included in the 2.3
-  work; it must not be released separately. **Target: 2.3.0, code 49, tentative.** The plan,
-  compatibility rules and decisions are on `audit/2.3-unified-plan` (`PLAN.md`,
-  `COMPATIBILITY.md`, `DECISIONS.md`).
-- **Active integration branches:** `release/2.3-web` (Web/server) and `release/2.3-android`.
-  Changes use isolated task branches and PRs to the corresponding release branch. `main` and
-  `codex/download-and-management-20261020` remain untouched. No deploy, production promotion,
-  signed candidate or public release is authorized by this integration task.
-- **Money and preservation:** the shared D-5 decimal contract computes new pay once, half up
-  to whole cents, from exact seconds when applicable. Loading, exporting, importing and editing
-  metadata must never recalculate historical amounts. CSV/Excel is a table, not a backup
-  (D-13); JSON retains the full saved financial and worker metadata. Duplicate imports use
-  occurrence counts so genuine repeated shifts survive. Optional accounts remain optional.
-- **Merge gates:** inspect the actual CI logs and the diff against the plan before each squash
-  merge. Use `cmp` on the release branches for all `v2-*.json`, `money-contract.json`,
-  `group-reconcile.json`, and `integration-tests/fixtures-erase-tombstones.json` against its Android
-  copy `app/src/test/resources/erase-tombstones-web.json`. Verify the release head CI after each
-  merge. Unit tests do not establish live Android/account sync or native-device parity.
-- **Still required before public delivery:** consolidated release verification, a signed
-  2.3.0 candidate using the existing permanent identity, the direct 2.2.1 → 2.3.0 retained-data
-  upgrade gate, owner phone review, a safe Web preview and explicit publication approval.
-  Keep the current Vercel project/origin, all stored data and provider credentials intact.
+- **Public Android:** 2.3.1, versionCode **54**, release `android-v2.3.1-code54`,
+  published source `3eca22899d928f8d08f6fa0935396af8b15c859e`.
+  Public APK SHA-256: `b6380d60a0bffb9e94157902307c380646a66e48f9c6f0f6d3c900a1ab3404f4`.
+  Verified against the GitHub Release and its `release.json` on 2026-11-10.
+- **Live Web:** https://salary-calculation-eta.vercel.app/ serves
+  `fe7e983b11b5be991540f66c8579f3ef5ebadca1`, verified from `/build-info.json`
+  on 2026-11-10. This metadata check is not a new browser or phone acceptance test.
+- **2.4 bases already created:** `release/2.4-web` from `release/2.3-web` at `cfcc738`
+  (contains live `fe7e983`); `release/2.4-android` from `release/2.3-android` at `64185a7`
+  (PR #85 squash, published app tree plus #88 pointer files). Do not repeat that merge.
+  Work uses isolated task branches and PRs into the matching 2.4 branch, never `main`.
+  The task manager merges the task-00 PRs; workers do not merge them.
+- **Next Android versionCode must exceed 54** and every later delivered candidate.
+  No app version is changed by this task. The signed-candidate configuration retains the
+  current candidate identity and must be assigned a higher code before a future RC run.
+  Its previous-public-build gate now targets the exact public 2.3.1 / 54 bytes.
+- **Parity gate:** all **9** shared fixtures, including `hebrew-dates.json`, must be
+  byte-identical. Run `node scripts/check-fixtures.cjs` on either platform; defaults
+  compare against the corresponding `origin/release/2.4-*` peer. Missing refs/files fail.
+- **Preservation:** no saved amount recalculation, storage reset, schema or app behavior
+  change. Optional accounts stay optional; currencies stay separate. Synthetic tests only.
+- **Release boundaries:** keep `main`, `codex/download-and-management-20261020`, Vercel
+  settings, permanent signing identity and the update channel untouched. New branch
+  triggers are added only to test/check workflows. Production publication requires the
+  owner's explicit final approval. Before a future release: consolidated regression,
+  real signed 2.3.1 → candidate retained-data update, fresh install, safe Web preview and
+  owner phone review. Unit tests alone do not establish live sync or device compatibility.
 
 Earlier evidence and task scopes follow as history.
 
