@@ -1,6 +1,6 @@
 ## Start here (2026-11)
 - Load the skills `salary-calculation-playbook` (project facts, pay rules, decisions, release gates) and `product-development-standards` (the owner's general standards) when they are available.
-- The newest owner decision wins over older notes in this file and in docs/. Known stale lines below: "Heebo" (fonts are Rubik + Secular One; Heebo was rejected), "finish Android first / website paused" (releases are joint web+Android), and old version numbers (see GitHub Releases for the current public version).
+- The newest owner decision wins over older notes in this file and in docs/. Current public Android: 2.3.1 / code 54. Work targets `release/2.4-web` and `release/2.4-android`; releases are joint Web + Android. Fonts: Rubik text and Secular One display; ₪/$ use Rubik.
 - Reply to the owner in short Hebrew. Never publish, deploy to production, or merge to `main` without his explicit yes.
 
 # Salary-calculation — agent rules
@@ -18,19 +18,12 @@ Before changing anything in this repository:
 Current user instructions always override older historical notes.
 
 ## Active priority
-Until the user explicitly says otherwise, finish the Android app first.
-
-Active Android branch:
-`codex/android-local-distribution`
-
-Paused website/sync branch:
-`codex/preserve-app-sync` / PR #1
-
-While Android finalization is active:
-- Android only.
-- Do not modify the website, Vercel, Firebase, accounts, authentication or cloud sync.
-- Do not mix commits from the website/sync branch into the Android release track.
-- Do not merge branches or publish a public release unless the user explicitly authorizes that step.
+Web and Android progress together on separate release bases:
+- Web: `release/2.4-web`.
+- Android: `release/2.4-android`.
+- One task branch and PR per affected platform; never mix platform commits.
+- Keep the historical `codex/preserve-app-sync` / PR #1 and production intact.
+- No merge or public release without the authorization required by the current task.
 
 ## Android release identity — never break
 Permanent distribution package:
@@ -122,11 +115,7 @@ For owner testing, deliver only a verified signed APK from the permanent distrib
 For friend/public distribution, use the repository's stable GitHub Release/update path rather than a temporary Codex workspace artifact. Preserve the same package/signing identity so future APKs install as updates. The Android installer remains user-controlled; no silent installation.
 
 ## Current sequencing
-The intended sequence is:
-1. Complete the final Android UI/UX + targeted code-quality task.
-2. Deliver a new signed RC over RC8 and let the owner test it physically.
-3. Resolve only any issues found in that physical review.
-4. Promote the explicitly approved build to stable 1.5 using the existing permanent identity and release/update mechanism.
-5. Create the launch/demo video.
-6. Distribute the app link together with the video.
-7. Only then resume website work on its separate branch.
+Prepare and verify both platforms together. Before any future public release, verify
+an update from public 2.3.1 / code 54 with retained data, deliver a signed candidate
+for the owner's phone review, verify a safe Web preview, and obtain explicit final
+publication approval. The next delivered Android versionCode must exceed 54.
