@@ -1,7 +1,9 @@
 name: Web Android parity
 on:
   push:
-    branches: ['codex/web-android-rc13-parity', 'codex/web-audit-20261011']
+    branches: ['release/2.4-web', 'codex/web-android-rc13-parity', 'codex/web-audit-20261011']
+  pull_request:
+    branches: ['release/2.4-web']
   workflow_dispatch:
 permissions:
   contents: read
