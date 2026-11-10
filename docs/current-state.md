@@ -44,6 +44,23 @@ This task changes CI and documentation only; it does not publish or deploy anyth
   real signed 2.3.1 → candidate retained-data update, fresh install, safe Web preview and
   owner phone review. Unit tests alone do not establish live sync or device compatibility.
 
+## Task 04 — worker gate reliability (2026-11-10)
+
+- Local baseline: `updates.cjs` passed 27/30 runs; three timed out at B/C.
+  Diagnostic failure: old controller/active worker `activated`, replacement
+  `installed`/waiting. The old helper sent `GET_BUILD_INFO` every 50ms and
+  repeated update jobs while waiting for automatic activation.
+- The helper now observes `controllerchange`/`statechange`, asks each activated
+  controller for its build identity once, and requests at most one update job.
+  Chromium waits for the outgoing worker to become idle before activation:
+  repeated messages were interfering with the lifecycle being tested.
+  The same 30s lifecycle deadline and 500ms response deadline remain; timeout
+  diagnostics now name the expected version and worker states.
+- No worker/app behavior, cache version, data, fixture or deployment changes.
+  The legacy migration, A/B/C, no-reload, failed-install, offline and 22/8 exact
+  storage assertions remain. Final loop and CI evidence are recorded in the PR
+  and task-04 manager report; no production or phone acceptance is claimed.
+
 Earlier evidence and task scopes follow as history.
 
 # Website automatic updates and Android 2.0.5 published — 2026-10-21

@@ -37,26 +37,48 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   while(Date.now()<deadline){if(await page.evaluate(predicate,arg))return;await page.waitForTimeout(50);}
   throw Error('Worker condition timed out');
  }
- // Ask the browser for an update job when its navigation soft-check is coalesced
- // with another registration. No UI action/reload is requested or simulated.
- async function ready(page,version){await waitCheck(page,async expected=>{
-  const worker=navigator.serviceWorker.controller;
-  if(worker?.state==='activated'){
-   const matches=await new Promise(resolve=>{
-    const c=new MessageChannel(),timer=setTimeout(()=>{c.port1.close();resolve(false);},500);
-    c.port1.onmessage=e=>{clearTimeout(timer);c.port1.close();resolve(e.data.buildId.startsWith(expected));};
-    worker.postMessage({type:'GET_BUILD_INFO'},[c.port2]);
-   });
-   if(matches)return true;
-  }
-  if(Date.now()>(window.nextWorkerProbe||0)){
-   window.nextWorkerProbe=Date.now()+1000;
-   const r=await navigator.serviceWorker.getRegistration();
-   if(r&&!r.installing&&!r.waiting)try{await r.update();}catch{}
-  }
-  return false;
+ // A worker that called skipWaiting still waits for the old worker to become
+ // idle. Repeated GET_BUILD_INFO messages to the old controller can keep it busy
+ // and strand the new worker in "installed". Observe lifecycle events instead;
+ // query each activated controller once, without driving it during the wait.
+ async function ready(page,version){await page.evaluate(async expected=>{
+  let registration;
+  await new Promise((resolve,reject)=>{
+   const observed=new Set(),listeners=new Set();let finished=false;
+   const finish=error=>{
+    if(finished)return;finished=true;clearTimeout(deadline);
+    navigator.serviceWorker.removeEventListener('controllerchange',inspect);
+    for(const worker of listeners)worker.removeEventListener('statechange',inspect);
+    error?reject(error):resolve();
+   };
+   const deadline=setTimeout(()=>finish(Error('Worker condition timed out: '+JSON.stringify({
+    expected,controller:navigator.serviceWorker.controller?.state,
+    active:registration?.active?.state,waiting:registration?.waiting?.state,
+    installing:registration?.installing?.state
+   }))),30000);
+   async function inspect(){
+    const worker=navigator.serviceWorker.controller;
+    if(finished||!worker||observed.has(worker))return;
+    if(!listeners.has(worker)){listeners.add(worker);worker.addEventListener('statechange',inspect);}
+    if(worker.state!=='activated')return;
+    observed.add(worker);
+    try{
+     const buildId=await new Promise((resolve,reject)=>{
+      const c=new MessageChannel(),timer=setTimeout(()=>{c.port1.close();reject(Error('Worker build-info response timed out'));},500);
+      c.port1.onmessage=e=>{clearTimeout(timer);c.port1.close();resolve(e.data.buildId);};
+      worker.postMessage({type:'GET_BUILD_INFO'},[c.port2]);
+     });
+     if(buildId.startsWith(expected))finish();
+    }catch(error){finish(error);}
+   }
+   navigator.serviceWorker.addEventListener('controllerchange',inspect);
+   // At most one explicit update job when navigation's soft check was coalesced.
+   // Register listeners first, so activation during update() cannot be missed.
+   navigator.serviceWorker.ready.then(r=>{registration=r;return inspect();}).then(()=>{
+    if(!finished&&!registration.installing&&!registration.waiting)registration.update().catch(()=>{});
+   },finish);
+  });
  },version);}
-
 
  try{
  const context=await browser.newContext({viewport:{width:390,height:844},locale:'he-IL'});
