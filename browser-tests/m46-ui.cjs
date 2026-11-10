@@ -1,6 +1,6 @@
 // M-46 (web, smaller items from the 2.3 design audit), on the real page:
 //  R-28 Home's pending flag is a full-width row.  R-30 Settings rows explain themselves in a visible line (no info dot per
-//  row), feedback is no longer the first category, import is not the one primary button in backup.  R-31 a place's
+//  row), feedback is the first category, import is not the one primary button in backup.  R-31 a place's
 //  handle is a button and the arrow keys move the place.  R-34 an empty History cannot copy a report of 0 shifts.
 //  R-35 History and Home have the same width on a computer.  R-36 on a computer the message stays inside the content
 //  column (not over the side bar) and its action is the bar's ink, not the brand colour.
@@ -44,7 +44,7 @@ const server = http.createServer((q, r) => {
   await page.screenshot({ path: path.join(SHOTS, 'm46-home-phone.png'), fullPage: true });
   await page.click('[data-testid=tab-settings]');
   const order = await page.locator('.set-head b').allInnerTexts();
-  assert.notEqual(order[0], 'משוב ותקלות', 'feedback is not the first category');
+  assert.equal(order[0], 'משוב ותקלות', 'feedback is the first category');
   assert.equal(order[order.length - 1], 'חשבון');
   await page.click('[data-testid="settings-open-עבודה"]');
   assert.equal(await page.locator('.set-group.on .row .info-dot').count(), 0, 'no info dot on a row');

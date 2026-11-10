@@ -1,15 +1,14 @@
 // M-46 (web): smaller items from the 2.3 design audit, checked in the source (the page-level checks are in
-// browser-tests/m46-ui.cjs): settings rows without info dots, feedback not first, import not primary, a keyboard way to
+// browser-tests/m46-ui.cjs): settings rows without info dots, feedback first, import not primary, a keyboard way to
 // move a place, no auto-record switch without a series, no copy of an empty report, break chips that wrap, one page width
 // on a computer, and the message's action in the bar's ink.
 const { test } = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const read = f => fs.readFileSync(path.join(__dirname, '..', 'web', 'kis', f), 'utf8');
 const settings = read('settings.js'), css = read('kis.css');
-test('settings: rows explain themselves without an info dot; feedback is not first; import is not primary', () => {
+test('settings: rows explain themselves without an info dot; feedback is first; import is not primary', () => {
   const row = settings.slice(settings.indexOf('const rowHtml'), settings.indexOf('\n', settings.indexOf('const rowHtml')));
   assert.doesNotMatch(row, /infoDot/);
-  assert.ok(settings.indexOf("['עבודה'") < settings.indexOf("['משוב ותקלות'"), 'categories start with work');
-  assert.ok(settings.indexOf("group('משוב ותקלות'") > settings.indexOf("group('עזרה'"));
+  assert.ok(settings.indexOf("group('משוב ותקלות'") < settings.indexOf("group('עבודה'"));
   assert.match(settings, /class="btn small outline grow" data-a="import"/);
 });
 test('places: the handle is a button and arrow keys move a place', () => {

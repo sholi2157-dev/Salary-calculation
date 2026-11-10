@@ -1,3 +1,16 @@
+# 2.4 task 02 — Settings truth (2026-11-10, review branch)
+
+Web work: `codex/2.4-02-settings-truth-web`, targeting `release/2.4-web`.
+Feedback is first; the notification card uses the same effective defaults as its switches
+and shows all-on / all-off / partial truthfully, including immediately after a toggle.
+The browser regression covers defaults, all three states, reload, order, and 320/360/390/412 widths;
+360px light/dark renders are uploaded by Web 2.0 CI. The paired Android task protects the default
+category and uses the same status wording for its available notification kinds.
+Local build, 324 unit tests, mobile/parity, M-31 and M-46 browser checks passed; all 9 fixtures
+match the Android release base. CI logs and exact final heads are recorded in the task-02 report.
+The existing build digest changes the worker shell cache when these assets change.
+No production deploy or merge; manager owns the merge. Physical phone review remains required.
+
 # Current state — 2026-11-10 (2.4 preparation)
 
 This section supersedes historical release, branch and sequencing notes below.
