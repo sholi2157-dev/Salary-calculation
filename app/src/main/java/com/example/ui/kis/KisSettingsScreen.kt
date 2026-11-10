@@ -63,7 +63,7 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     val context = LocalContext.current
     val prefs by viewModel.localPreferences.collectAsStateWithLifecycle()
     val defaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
-    val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.firstOrNull()?.name ?: ""
+    val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.minByOrNull { it.id }?.name ?: ""
     var pickingDefault by rememberSaveable { mutableStateOf(false) }
     var adding by rememberSaveable { mutableStateOf(false) }
     var addingDefault by rememberSaveable { mutableStateOf(false) }
@@ -79,6 +79,11 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     val hasKey = remember(aiSheet) { runCatching { PersonalAiKey.read(context, viewModel.owner.uid).isNotBlank() }.getOrDefault(false) }
     // Weekly plans and their reminders (device-only settings, see PlanSettings).
     val plan = viewModel.planSettings
+    val serviceNotification by viewModel.serviceNotificationEnabled.collectAsStateWithLifecycle()
+    var notificationSubtitle by remember { mutableStateOf<String?>(null) }
+    val notificationKinds = listOfNotNull(serviceNotification, plan.notifyMonthly,
+        plan.notifyPlans, plan.notifyRate, plan.notifyUpdates.takeIf { BuildConfig.LOCAL_DISTRIBUTION })
+    val initialNotificationSubtitle = notificationSummary(notificationKinds.all { it }, notificationKinds.any { it })
     val series by viewModel.series.collectAsStateWithLifecycle()
     val plans by viewModel.occurrences.collectAsStateWithLifecycle()
     var seriesSheet by rememberSaveable { mutableStateOf(false) }
@@ -147,7 +152,9 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
                         settings.dateMode, settings::updateDateMode, tagPrefix = "date_mode")
                 }
             }
-            Group(nav, "התראות") { NotificationSwitches(viewModel) }
+            Group(nav, "התראות", subtitle = notificationSubtitle ?: initialNotificationSubtitle) {
+                NotificationSwitches(viewModel, onStateChange = { notificationSubtitle = it })
+            }
             Group(nav, "עזרה וכלים", Modifier.coachTarget(CoachTarget.API)) {
                 Row_("רישום במילים (AI)", if (hasKey) "פעיל" else null, tag = "ai_key_row", onClick = { aiSheet = true }) {
                     Text("?", style = KisType.label, color = c.muted, modifier = Modifier.size(KisMinTouch).clip(CircleShape).kisClick { aiHelp = true }.semantics { contentDescription = "מה זה מפתח אישי" }
@@ -245,7 +252,7 @@ private class SettingsNav(val open: String?, val onToggle: (String) -> Unit)
  */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun Group(nav: SettingsNav, title: String, modifier: Modifier = Modifier, go: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+private fun Group(nav: SettingsNav, title: String, modifier: Modifier = Modifier, go: (() -> Unit)? = null, subtitle: String? = null, content: @Composable ColumnScope.() -> Unit) {
     val c = Kis.colors
     val open = go == null && nav.open == title
     val bring = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
@@ -257,8 +264,10 @@ private fun Group(nav: SettingsNav, title: String, modifier: Modifier = Modifier
             .semantics { heading(); if (go == null) stateDescription = if (open) "פתוח" else "סגור" }
             .testTag("settings_section_$title").heightIn(min = 60.dp).padding(start = 16.dp, end = 10.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = KisType.title, color = c.ink, maxLines = 1)
-            Spacer(Modifier.weight(1f))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = KisType.title, color = c.ink, maxLines = 1)
+                if (subtitle != null) Text(subtitle, style = KisType.caption, color = c.muted, modifier = Modifier.testTag("settings_subtitle_$title"))
+            }
             if (go != null) Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = c.muted, modifier = Modifier.size(20.dp))
             else Icon(Icons.Outlined.ExpandMore, null, tint = c.muted, modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = if (open) 180f else 0f })
         }
@@ -291,6 +300,8 @@ private fun Row_(title: String, hint: String?, modifier: Modifier = Modifier, ta
 private fun WorkplaceEditor(cat: WorkCategory, categories: List<WorkCategory>, viewModel: WorkViewModel, onDismiss: () -> Unit) {
     val c = Kis.colors
     val settings = Kis.settings
+    val prefs by viewModel.localPreferences.collectAsStateWithLifecycle()
+    val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.minByOrNull { it.id }?.name
     var name by rememberSaveable { mutableStateOf(cat.name) }
     var rate by rememberSaveable { mutableStateOf(KisFormat.hours(cat.defaultRate)) }
     var currency by rememberSaveable { mutableStateOf(viewModel.categoryCurrency(cat.name)) }
@@ -333,7 +344,7 @@ private fun WorkplaceEditor(cat: WorkCategory, categories: List<WorkCategory>, v
                 onDismiss()
             }
         }, Modifier.fillMaxWidth(), enabled = name.isNotBlank() && !taken && rateValue != null, haptic = null, tag = "edit_category_save")
-        if (categories.size > 1) KisButton("מחיקת המקום", { confirmDelete = true }, Modifier.fillMaxWidth(), KisButtonKind.DANGER, height = 48.dp, tag = "delete_category_${cat.name}")
+        if (categories.size > 1 && cat.name != defaultCategory) KisButton("מחיקת המקום", { confirmDelete = true }, Modifier.fillMaxWidth(), KisButtonKind.DANGER, height = 48.dp, tag = "delete_category_${cat.name}")
     }
     if (confirmDelete) KisConfirmSheet(
         title = "למחוק את \"${cat.name}\"?",
