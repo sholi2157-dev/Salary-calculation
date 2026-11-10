@@ -955,6 +955,32 @@ class KisUiTest {
         assertEquals("כהן", settings.lastName)
     }
 
+    @Test @Config(qualifiers = "w360dp-h800dp-mdpi") fun settingsTruthLight360() = settingsTruth(false)
+    @Test @Config(qualifiers = "w360dp-h800dp-mdpi") fun settingsTruthDark360() = settingsTruth(true)
+
+    private fun settingsTruth(dark: Boolean) {
+        val vm = model()
+        assertTrue(vm.planSettings.notifyMonthly) // Effective defaults, without saved switches.
+        assertFalse(vm.planSettings.notifyRate)
+        host(dark) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
+        val titles = listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון")
+        val tops = titles.map { ui.onNodeWithTag("settings_section_$it").fetchSemanticsNode().boundsInRoot.top }
+        assertEquals(tops.sorted(), tops)
+        fun subtitle(text: String) { ui.onNodeWithTag("settings_subtitle_התראות", useUnmergedTree = true).assertTextEquals(text) }
+        subtitle("חלקן פועלות")
+        shot("settings-truth-${if (dark) "dark" else "light"}-360")
+        ui.onNodeWithTag("settings_section_התראות").performScrollTo().performClick()
+        val master = ui.onNodeWithTag("notify_all_switch")
+        master.assertIsOff().performScrollTo().performClick()
+        master.assertIsOn(); subtitle("פועלות")
+        master.performScrollTo().performClick()
+        master.assertIsOff(); subtitle("כבויות")
+        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
+        master.assertIsOff(); subtitle("חלקן פועלות")
+        ui.onNodeWithTag("settings_section_התראות").performScrollTo().performClick()
+        subtitle("חלקן פועלות") // Closing the card keeps the changed state.
+    }
+
     @Test fun settingsSectionsAndThemeChoice() {
         val vm = model()
         lateinit var settings: KisSettings
@@ -1150,9 +1176,13 @@ class KisUiTest {
         ui.onNodeWithTag("default_category_add").assertExists()
         ui.onNodeWithTag("category_row_מסעדה").performClick()
         ui.onNodeWithTag("edit_category_sheet").assertExists()
+        ui.onNodeWithTag("delete_category_מסעדה").assertDoesNotExist()
         runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-places-edit.png") }
         ui.onNodeWithTag("category_row_מסעדה").performClick()
         ui.onNodeWithTag("edit_category_sheet").assertDoesNotExist()
+        ui.onNodeWithTag("category_row_שיעורים").performScrollTo().performClick()
+        ui.onNodeWithTag("delete_category_שיעורים").assertExists()
+        ui.onNodeWithTag("category_row_שיעורים").performScrollTo().performClick()
         runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-places-reorder.png") }
         ui.onNodeWithTag("place_drag_הובלות", useUnmergedTree = true).performTouchInput {
             down(center)

@@ -1,3 +1,19 @@
+# 2.4 task 02 — Settings truth (2026-11-10, review branch)
+
+Android work: `codex/2.4-02-settings-truth-android`, targeting `release/2.4-android` (PR #92).
+Default category deletion is blocked in the editor and transaction; a direct rejected request uses
+the same Hebrew message as Web. A stale category name cannot bypass the ID-based protection.
+With a missing/invalid default preference, Settings and the transaction use the first stored place
+(lowest ID), independently of display reordering. Other deletion still only moves history/series
+labels and leaves saved money, currencies, worker metadata and exceptions intact.
+The notification header now uses the Web wording for all-on / all-off / partial, using Android's
+existing defaults and available kinds (native-only kinds intentionally remain native-only).
+Regression coverage includes DAO, view-model message, switches/header/order, and 360px light/dark
+Roborazzi renders. CI runs Debug/Release logic, Debug UI renders and unsigned release builds;
+the task-02 report records actual results and exact heads after logs are inspected.
+All 9 fixtures match the Web release base. No schema, signing, version or channel change.
+No merge or publication; manager owns the merge. Physical phone review remains required.
+
 # Current state — 2026-11-10 (2.4 preparation)
 
 This section supersedes historical release, branch and sequencing notes below.

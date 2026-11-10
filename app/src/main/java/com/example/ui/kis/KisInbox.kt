@@ -116,9 +116,15 @@ fun NotificationsSheet(viewModel: WorkViewModel, onMonth: (Int) -> Unit, onSetti
     }
 }
 
+internal fun notificationSummary(all: Boolean, any: Boolean): String = when {
+    all -> "פועלות"
+    any -> "חלקן פועלות"
+    else -> "כבויות"
+}
+
 /** The notification switches in Settings; the master is on only when every visible child is on. */
 @Composable
-fun NotificationSwitches(viewModel: WorkViewModel) {
+fun NotificationSwitches(viewModel: WorkViewModel, onStateChange: (String) -> Unit = {}) {
     val c = Kis.colors
     val context = LocalContext.current
     val plan = viewModel.planSettings
@@ -140,6 +146,10 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
             "plans" -> { plan.notifyPlans = on; notifyPlans = on }
             else -> { plan.notifyUpdates = on; notifyUpdates = on }
         }
+        // Publish during the tap too, so folding the card immediately cannot leave its old subtitle behind.
+        val enabled = listOfNotNull(serviceOn ?: serviceNotification, notifyMonthly, notifyPlans, notifyRate,
+            notifyUpdates.takeIf { com.example.BuildConfig.LOCAL_DISTRIBUTION })
+        onStateChange(notificationSummary(enabled.all { it }, enabled.any { it }))
         // The next wake-up follows the switches (the monthly summary is one of them).
         com.example.PlanJobs.scheduleNextAsync(context)
     }
@@ -163,6 +173,7 @@ fun NotificationSwitches(viewModel: WorkViewModel) {
     // The main switch turns all of them on or off together; each kind keeps its own switch below it (restored in 2.2.3).
     val any = service || notifyMonthly || notifyPlans || notifyRate || (notifyUpdates && com.example.BuildConfig.LOCAL_DISTRIBUTION)
     val all = service && notifyMonthly && notifyPlans && notifyRate && (!com.example.BuildConfig.LOCAL_DISTRIBUTION || notifyUpdates)
+    LaunchedEffect(all, any) { onStateChange(notificationSummary(all, any)) }
     line("כל ההתראות", "notify_all_switch", all, strong = true) { enable("all", it) }
     KisDivider()
     line("משמרת פעילה", "service_notification_switch", service) { enable("service", it) }

@@ -119,7 +119,7 @@ fun KisApp(
     val liveCurrency by viewModel.activeShiftCurrency.collectAsStateWithLifecycle()
     val live = liveStart?.let { LiveShift(it, liveCategory, liveRate, liveCurrency) }
     val plans by viewModel.occurrences.collectAsStateWithLifecycle()
-    val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.firstOrNull()?.name ?: ""
+    val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.minByOrNull { it.id }?.name ?: ""
 
     // Home, history and settings are one swipeable pager (RTL swipe = next tab).
     val pager = rememberPagerState(pageCount = { 3 })
