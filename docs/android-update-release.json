@@ -1,12 +1,12 @@
 {
-  "runId": 42565477923,
-  "sourceSha": "d9b8847c81befd4ec675140fcfb33432e6b8b4d6",
-  "artifactName": "salary-2.3.0-code52-candidate",
-  "tag": "android-v2.3.0-code52",
-  "fileName": "Salary2.3.0.apk",
-  "versionCode": 52,
-  "versionName": "2.3.0",
-  "sha256": "04829ea85cbed119b2fe79649a30d55842ed6f44df6538343563c11a426a178d",
+  "runId": 42682055883,
+  "sourceSha": "e53a2d2b9984c04d57e1373129e51840fa8757c3",
+  "artifactName": "salary-2.3.1-code54-candidate",
+  "tag": "android-v2.3.1-code54",
+  "fileName": "Salary2.3.1.apk",
+  "versionCode": 54,
+  "versionName": "2.3.1",
+  "sha256": "b6380d60a0bffb9e94157902307c380646a66e48f9c6f0f6d3c900a1ab3404f4",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "מהיום מקבלים את הכסף מהר יותר: Zelle, ביט או חשבון בנק שמורים בפרופיל, ומצטרפים לכל דוח בלחיצה. כל משמרת עם תאריך עברי ולועזי. הגדרות האבטחה והפרטיות השתפרו. כל המשמרות וההגדרות נשמרים."
+  "releaseNotes": "מצב בהיר חדש וברור יותר. בוחרים איך התאריכים מופיעים: לועזי, עברי או שניהם. בוחרים אילו פרטי תשלום מצטרפים לדוח. כל המשמרות וההגדרות נשמרים."
 }
