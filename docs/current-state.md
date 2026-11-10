@@ -31,6 +31,18 @@ This task changes CI and documentation only; it does not publish or deploy anyth
   real signed 2.3.1 → candidate retained-data update, fresh install, safe Web preview and
   owner phone review. Unit tests alone do not establish live sync or device compatibility.
 
+## Task 04 — CI selection audit (2026-11-10)
+
+- Audited every local `*Test.kt` against the Debug/Release filters in `android-v2.yml`
+  and `android-v2-rc.yml`. Only `HebrewDateTest` was missing; both now select it.
+  `WorkOnboardingTest` and `WorkWhatsNewTest` were already included by `Work*Test`.
+- The result summarizer now requires a nonempty report for every local test class
+  (the five existing Debug-only screen classes remain Debug-only), and prints each
+  class count. Synthetic complete/missing/zero-test report checks passed locally.
+- No app, signing, version, fixture, publishing trigger or distribution change.
+  Real Debug/Release execution is delegated to the PR's existing unsigned CI gate;
+  local Android execution is unavailable here (no JDK/Gradle/Android SDK).
+
 Earlier evidence and task scopes follow as history.
 
 # FB-08 owner decisions — 2026-11-04
