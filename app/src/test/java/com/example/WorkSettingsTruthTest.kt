@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.*
+import com.example.domain.V2Plan
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
