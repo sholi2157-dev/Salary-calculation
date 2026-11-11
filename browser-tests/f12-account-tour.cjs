@@ -64,6 +64,7 @@ const tid = t => `[data-testid="${t}"]`;
     await page.click(tid('tab-settings')); await page.click(tid('settings-open-עזרה'));
     await page.click(tid('replay-tour')); await page.waitForSelector(tid('tour-progress'));
     assert.match(await page.textContent(tid('tour-progress')), /^1 מתוך 7/);
+    assert.equal(await page.locator(tid('home-hero')).count(), 1, 'a replay starts on Home, not over Settings');
     await page.click(tid('tour-skip'));
     await ctx.close();
   }
