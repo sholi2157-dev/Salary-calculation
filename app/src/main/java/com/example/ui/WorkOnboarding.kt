@@ -127,9 +127,9 @@ enum class CoachScreen { HOME, FORM, AI, HISTORY, SHARE, CATEGORIES, API }
 enum class CoachTarget { SHIFT, FIELDS, AI, HISTORY, SHARE, CATEGORIES, API }
 data class CoachStep(val screen: CoachScreen, val target: CoachTarget?, val title: String, val body: String)
 val workOnboardingSteps = listOf(
-    CoachStep(CoachScreen.HOME, null, "ברוכים הבאים לחישוב שכר", "כאן רושמים משמרות, רואים כמה הרווחת ושולחים דוח מסודר למעסיק. דקה אחת, ומכירים את העיקר."),
-    CoachStep(CoachScreen.HOME, CoachTarget.SHIFT, "רישום משמרת", "עבדת היום? לוחצים על + למטה ורושמים. מתחילים לעבוד עכשיו? ״אני מתחיל עכשיו״ מפעיל שעון, ובסוף עוצרים אותו."),
-    CoachStep(CoachScreen.FORM, CoachTarget.FIELDS, "השעות והסכום", "השעות כבר ממולאות לפי ההרגל שלך. משנים בסרגל או בהקלדה, והסכום מתעדכן מיד. בכפתור + מוסיפים בונוס, החזר הוצאות או הפסקה."),
+    CoachStep(CoachScreen.HOME, null, "ברוכים הבאים לחישוב שכר", "כאן רושמים משמרות, רואים כמה מגיע ושולחים דוח מסודר למעסיק. דקה אחת, ומכירים את העיקר."),
+    CoachStep(CoachScreen.HOME, CoachTarget.SHIFT, "רישום משמרת", "לוחצים על + למטה ורושמים. מתחילים לעבוד עכשיו? ״אני מתחיל עכשיו״ מפעיל שעון, ובסוף עוצרים אותו."),
+    CoachStep(CoachScreen.FORM, CoachTarget.FIELDS, "השעות והסכום", "משנים בסרגל או בהקלדה, והסכום מתעדכן מיד. ב־+ מוסיפים בונוס, החזר או הפסקה, וב״קבוצה״ משמרת של כמה עובדים."),
     CoachStep(CoachScreen.AI, CoachTarget.AI, "או פשוט כותבים", "למשל ״אתמול מ־9 עד 5 במסעדה״. לוחצים ״פענוח״, בודקים ושומרים. צריך לזה מפתח AI אישי, מוסיפים אותו בהגדרות."),
     CoachStep(CoachScreen.HISTORY, CoachTarget.HISTORY, "כל המשמרות", "מסודרות לפי חודש ושבוע, עם חיפוש וסינון. לחיצה ארוכה בוחרת כמה משמרות יחד: לשתף, לסמן ששולם או להשלים תעריף."),
     CoachStep(CoachScreen.SHARE, CoachTarget.SHARE, "דוח למעסיק", "נגיעה במשמרת פותחת את הפרטים. ״שיתוף״ שולח סיכום מסודר בוואטסאפ, ו״העתקה״ מעתיקה אותו. שם גם מסמנים ששולם."),
