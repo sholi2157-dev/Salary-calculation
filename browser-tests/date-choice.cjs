@@ -21,7 +21,7 @@ const server = http.createServer((q, r) => {
   await ctx.addInitScript(data => {
    if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', 'yes');
    for (const [key, value] of Object.entries(data)) localStorage.setItem(key, JSON.stringify(value));
-   localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.3.1', dateMode: 'GREG', payZelle: 'dana@example.com', payBit: '050-0000000' }));
+   localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.0', dateMode: 'GREG', payZelle: 'dana@example.com', payBit: '050-0000000' }));
    localStorage.setItem('kis_ai_invited_v1', '1'); localStorage.setItem('kis_signin_skip_v1', '1');
    Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
   }, rich);

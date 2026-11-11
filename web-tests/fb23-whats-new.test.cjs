@@ -28,3 +28,16 @@ test('the script is in the page and in the offline shell', () => {
   assert.match(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), /web\/kis\/whatsnew\.js/);
   assert.match(fs.readFileSync(path.join(root, 'sw.js'), 'utf8'), /\/web\/kis\/whatsnew\.js/);
 });
+test('2.4.0: this site is 2.4.0 with exactly the three agreed highlights, the same lines as Android', () => {
+  assert.equal(W.VERSION, '2.4.0');
+  const lines = W.NOTES['2.4.0'];
+  assert.deepEqual(lines, [
+    'משמרות שלא שולמו יותר מ-30 יום מופיעות עכשיו במסך הבית, לכל מקום עבודה, ובלחיצה רואים בדיוק אילו.',
+    'לחיצה ארוכה על האייקון במסך הבית פותחת ישר את "הוספת משמרת".',
+    'בהגדרות, כרטיס ההתראות מראה בדיוק מה פועל: הכול, חלק או כלום.',
+  ]);
+  for (const line of lines) assert.doesNotMatch(line, /תקלה|באג|תיקון/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'web', 'kis', 'account.js'), 'utf8'), /גרסה 2\.4\.0/);
+  const kt = path.join(__dirname, '..', 'app', 'src', 'main', 'java', 'com', 'example', 'ui', 'kis', 'KisWhatsNew.kt');
+  if (fs.existsSync(kt)) { const src = fs.readFileSync(kt, 'utf8'); for (const line of lines) assert.ok(src.includes(line.replace(/"/g, '\\"')), 'Android has: ' + line); }
+});
