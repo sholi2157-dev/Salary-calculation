@@ -50,12 +50,20 @@ This task changes CI and documentation only; it does not publish or deploy anyth
   Diagnostic failure: old controller/active worker `activated`, replacement
   `installed`/waiting. The old helper sent `GET_BUILD_INFO` every 50ms and
   repeated update jobs while waiting for automatic activation.
-- The helper now observes `controllerchange`/`statechange`, asks each activated
-  controller for its build identity once, and requests at most one update job.
-  Chromium waits for the outgoing worker to become idle before activation:
-  repeated messages were interfering with the lifecycle being tested.
-  The same 30s lifecycle deadline and 500ms response deadline remain; timeout
-  diagnostics now name the expected version and worker states.
+- First fix: the helper observes `controllerchange`/`statechange` instead of
+  polling, and requests at most one update job. That reached 29/30; the
+  remaining failure had the same states.
+- Root cause (instrumented runs, Chromium source): for a skipWaiting swap
+  Chromium stops the outgoing worker as soon as possible. A `GET_BUILD_INFO`
+  message arriving during that stop restarts the old worker and clears the
+  "terminate asap" request; with DevTools attached (Playwright) the restarted
+  worker is never idle-stopped, so the replacement stays waiting. The traced
+  failure showed the old worker's boot id change exactly at the harness message.
+- The helper now messages a controller only when it is the registration's
+  active worker and nothing is installing or waiting, once per worker. The
+  same 30s lifecycle deadline remains (the per-message 500ms timer was removed;
+  it raced the same restart). Result: 30/30 serial, 120/120 with 8 parallel
+  copies (the previous helper failed 4/150 under that load).
 - No worker/app behavior, cache version, data, fixture or deployment changes.
   The legacy migration, A/B/C, no-reload, failed-install, offline and 22/8 exact
   storage assertions remain. Final loop and CI evidence are recorded in the PR
