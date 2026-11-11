@@ -34,6 +34,8 @@ function render(el, app) {
   const totalH = byCat.reduce((s, [, h]) => s + h, 0);
   const weekTotals = sortedTotals(week);
   const pending = root.KisPay.pending(done).filter(e => e.kind !== 'job').length;
+  // 2.4 idea C: money owed for more than 30 days, per workplace and currency (display only; tap → History filtered to them).
+  const aging = root.KisPay.unpaidAging(done, now);
   const name = (store.local.name || '').trim();
   const plans = app.occurrences();
   const wFrom = root.KisPlan.dateOf(weekStart(now)), wTo = root.KisRules.civilFromDays(root.KisRules.daysFromCivil(wFrom) + 6);
@@ -69,6 +71,7 @@ function render(el, app) {
   </section>
   <div class="home-side">${tiles(today, done)}
     ${pending ? `<div><button class="pending-flag" data-act="pending" data-testid="pending-flag">${pending === 1 ? 'משמרת אחת מחכה לתעריף' : pending + ' משמרות מחכות לתעריף'} <span class="ic" aria-hidden="true">${U().ICON.next}</span></button></div>` : ''}
+    ${aging.length ? `<div class="aging" data-testid="aging-lines">${aging.map((g, i) => `<button class="pending-flag aging-flag" data-aging="${i}" data-testid="aging-${esc(g.category)}-${esc(g.currency)}"><span class="aging-text"><b><i style="background:${accent(placeOf(g.category, store))}" aria-hidden="true"></i>${esc(g.category)}</b><small data-aging-line>${root.KisPay.agingLine(g, moneyHtml)}</small></span> <span class="ic" aria-hidden="true">${U().ICON.next}</span></button>`).join('')}</div>` : ''}
     ${review ? `<div><button class="pending-flag" data-act="plan-review" data-testid="plan-review-flag">${review === 1 ? 'משמרת קבועה אחת מחכה לאישור' : review + ' משמרות קבועות מחכות לאישור'} <span class="ic" aria-hidden="true">${U().ICON.next}</span></button></div>` : ''}
     <section class="now-row" data-testid="now-row">${t ? liveCard(t) : '<button class="now" data-act="start" data-testid="live-start"><span class="dot"></span>אני מתחיל עכשיו</button>'}</section>
   ${fresh.map(scope => `<button class="story-entry home-recap" data-recap="${scope}" data-testid="home-recap-${scope}"><span><b>${esc(scope.length === 4 ? `השנה ${scope} שלך בכיס` : `${U().MONTHS[Number(scope.slice(5)) - 1]} שלך בכיס`)}</b><small>${scope.length === 4 ? 'הסיכום השנתי מוכן' : 'הסיכום החודשי מוכן'}</small></span>${U().logo(34)}</button>`).join('')}</div></div>
@@ -89,6 +92,8 @@ function render(el, app) {
   el.querySelector('[data-act=start]')?.addEventListener('click', () => app.startLive());
   el.querySelectorAll('[data-recap]').forEach(b => b.addEventListener('click', () => root.KisSummaryUi.story(app, b.dataset.recap)));
   el.querySelector('[data-act=pending]')?.addEventListener('click', () => app.completePending());
+  el.querySelectorAll('[data-aging]').forEach(b => b.addEventListener('click', () => { const g = aging[Number(b.dataset.aging)];
+    app.go('history', { filter: { period: 'RANGE', from: U().startOfDay(g.from), to: U().startOfDay(g.to), pay: 'UNPAID', category: g.category, currency: g.currency } }); }));
   el.querySelector('[data-act=all-planned]')?.addEventListener('click', () => app.go('history', { planned: true }));
   el.querySelector('[data-act=history]')?.addEventListener('click', () => app.go('history'));
   el.querySelectorAll('.shift[data-id]').forEach(b => b.addEventListener('click', () => app.openDetail(b.dataset.id)));

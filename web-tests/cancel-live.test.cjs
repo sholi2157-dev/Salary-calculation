@@ -26,7 +26,7 @@ function setup() {
     KisPlans: { awaitingReview: () => [], occurrences: () => [], isAwaiting: () => false, bind() {} },
     KisPlan: { dateOf: () => '2026-11-01' },
     KisRules: { daysFromCivil: () => 0, civilFromDays: () => '2026-11-07' },
-    KisPay: { totals: () => ({}), pending: () => [] },
+    KisPay: { totals: () => ({}), pending: () => [], unpaidAging: () => [], agingLine: () => '' },
     KisSettings: { unread: () => false }, KisSummaryUi: { fresh: () => [] },
     KisHistory: { state: { selection: new Set() } },
   });
