@@ -1,3 +1,11 @@
+# 2.4.0 release preparation (2026-11-11)
+
+- **Prepared, not published:** version **2.4.0**, Android versionCode **55** (highest tag and RC artifact so far: 54). Public Android is still 2.3.1 / 54.
+- 2.4 tasks 01-05 and 07 are merged into the 2.4 release branches.
+- What's-new "2.4.0" has three identical lines on Web and Android: unpaid shifts over 30 days on Home per workplace; long-press the icon opens "הוספת משמרת"; the notifications card shows all / some / none.
+- Web: `web/kis/whatsnew.js` VERSION and the intro label in `web/kis/account.js` are 2.4.0; nothing has been deployed.
+- The manager builds the signed RC and publishes only after the owner's explicit final approval.
+
 # 2.4 task 02 — Settings truth (2026-11-10, review branch)
 
 Web work: `codex/2.4-02-settings-truth-web`, targeting `release/2.4-web`.

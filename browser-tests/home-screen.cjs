@@ -25,7 +25,7 @@ const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebK
   await ctx.addInitScript(([data]) => {
    if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', 'yes');
    for (const [key, value] of Object.entries(data)) localStorage.setItem(key, JSON.stringify(value));
-   localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.3.1', notifyPending: false, notifyMonthly: false }));
+   localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.0', notifyPending: false, notifyMonthly: false }));
    localStorage.setItem('kis_ai_invited_v1', '1'); localStorage.setItem('kis_signin_skip_v1', '1');
   }, [rich]);
   const page = await ctx.newPage(); page.on('pageerror', e => errors.push(e.message));

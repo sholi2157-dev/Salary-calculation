@@ -7,7 +7,7 @@
 (function (root) {
 'use strict';
 /** This site's release (bump at publish, with the Android versionName). */
-const VERSION = '2.3.1';
+const VERSION = '2.4.0';
 // 2.3.0: placeholder draft; the final wording may be replaced at publish time. 3–5 short lines, features only.
 const NOTES = {
   '2.3.0': [
@@ -21,6 +21,12 @@ const NOTES = {
     'כל משמרת עם תאריך עברי ולועזי.',
     'הגדרות האבטחה והפרטיות השתפרו, וכל הסיכומים שלך מחכים בפרופיל האישי.',
     'מצב בהיר חדש וברור יותר.',
+  ],
+  // 2.4.0: three user-facing highlights (identical on Android, KisWhatsNew.kt).
+  '2.4.0': [
+    'משמרות שלא שולמו יותר מ-30 יום מופיעות עכשיו במסך הבית, לכל מקום עבודה, ובלחיצה רואים בדיוק אילו.',
+    'לחיצה ארוכה על האייקון במסך הבית פותחת ישר את "הוספת משמרת".',
+    'בהגדרות, כרטיס ההתראות מראה בדיוק מה פועל: הכול, חלק או כלום.',
   ],
 };
 const KEY = 'whatsNewSeen';
