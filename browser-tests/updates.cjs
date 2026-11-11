@@ -37,17 +37,21 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   while(Date.now()<deadline){if(await page.evaluate(predicate,arg))return;await page.waitForTimeout(50);}
   throw Error('Worker condition timed out');
  }
- // A worker that called skipWaiting still waits for the old worker to become
- // idle. Repeated GET_BUILD_INFO messages to the old controller can keep it busy
- // and strand the new worker in "installed". Observe lifecycle events instead;
- // query each activated controller once, without driving it during the wait.
+ // Never dispatch an event to an outgoing controller while another worker is
+ // installing or waiting. Chromium stops the old worker as soon as possible for
+ // a skipWaiting swap; a message arriving then restarts it, which clears that
+ // request, and with DevTools attached (Playwright) the restarted worker is
+ // never idle-stopped, so the new worker stays "installed". Wait on lifecycle
+ // events instead and query only a settled controller, once per worker.
  async function ready(page,version){await page.evaluate(async expected=>{
   let registration;
   await new Promise((resolve,reject)=>{
-   const observed=new Set(),listeners=new Set();let finished=false;
+   const observed=new Set(),listeners=new Set();let finished=false,updateRequested=false;
+   const watch=worker=>{if(worker&&!listeners.has(worker)){listeners.add(worker);worker.addEventListener('statechange',inspect);}};
    const finish=error=>{
     if(finished)return;finished=true;clearTimeout(deadline);
     navigator.serviceWorker.removeEventListener('controllerchange',inspect);
+    registration?.removeEventListener('updatefound',inspect);
     for(const worker of listeners)worker.removeEventListener('statechange',inspect);
     error?reject(error):resolve();
    };
@@ -57,26 +61,25 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     installing:registration?.installing?.state
    }))),30000);
    async function inspect(){
+    if(finished||!registration)return;
     const worker=navigator.serviceWorker.controller;
-    if(finished||!worker||observed.has(worker))return;
-    if(!listeners.has(worker)){listeners.add(worker);worker.addEventListener('statechange',inspect);}
-    if(worker.state!=='activated')return;
+    [worker,registration.installing,registration.waiting,registration.active].forEach(watch);
+    if(registration.installing||registration.waiting)return; // A swap is pending.
+    if(!worker||worker!==registration.active||worker.state!=='activated'||observed.has(worker))return;
     observed.add(worker);
-    try{
-     const buildId=await new Promise((resolve,reject)=>{
-      const c=new MessageChannel(),timer=setTimeout(()=>{c.port1.close();reject(Error('Worker build-info response timed out'));},500);
-      c.port1.onmessage=e=>{clearTimeout(timer);c.port1.close();resolve(e.data.buildId);};
-      worker.postMessage({type:'GET_BUILD_INFO'},[c.port2]);
-     });
-     if(buildId.startsWith(expected))finish();
-    }catch(error){finish(error);}
+    const buildId=await new Promise(resolve=>{
+     const c=new MessageChannel();
+     c.port1.onmessage=e=>{c.port1.close();resolve(e.data.buildId);};
+     worker.postMessage({type:'GET_BUILD_INFO'},[c.port2]);
+    });
+    if(buildId.startsWith(expected))return finish();
+    // At most one explicit update job when navigation's soft check was coalesced.
+    if(!updateRequested){updateRequested=true;registration.update().catch(()=>{});}
    }
    navigator.serviceWorker.addEventListener('controllerchange',inspect);
-   // At most one explicit update job when navigation's soft check was coalesced.
-   // Register listeners first, so activation during update() cannot be missed.
-   navigator.serviceWorker.ready.then(r=>{registration=r;return inspect();}).then(()=>{
-    if(!finished&&!registration.installing&&!registration.waiting)registration.update().catch(()=>{});
-   },finish);
+   navigator.serviceWorker.ready.then(r=>{
+    registration=r;registration.addEventListener('updatefound',inspect);return inspect();
+   }).catch(finish);
   });
  },version);}
 
