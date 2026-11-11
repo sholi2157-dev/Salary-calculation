@@ -28,6 +28,12 @@ const NOTIFY_KINDS = [
   ['notifyMonthly', 'הסיכום החודשי', 'מה-30 לכל חודש, כשיש משמרות בחודש.', 'notify-monthly'],
   ['notifyRate', 'תעריף חסר', 'לכל היותר פעם בשבוע.', 'notify-rate'],
 ];
+// iPhone/iPad in a Safari tab only: once, how to put the site on the home screen (other browsers offer it themselves).
+function homeHint(store) {
+  const nav = root.navigator || {}, ios = /iPhone|iPad|iPod/.test(nav.userAgent || '') || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
+  const standalone = nav.standalone === true || !!root.matchMedia?.('(display-mode: standalone)').matches;
+  return ios && !standalone && store.local.homeHintDone !== true;
+}
 // A row explains itself in one short visible line.
 const rowHtml = (title, hint, control, info) => `<div class="row" style="align-items:center;min-height:58px;padding:8px 0"><div class="grow"><div class="title-row"><span style="font-weight:500">${title}</span></div>${hint || info ? `<div class="caption">${[hint, info].filter(Boolean).join(' · ')}</div>` : ''}</div>${control}</div>`;
 
@@ -53,7 +59,7 @@ function render(el, app) {
     + NOTIFY_KINDS.map(([k, title, info, testid]) => `<div class="divider"></div>${rowHtml(title, null, `<button class="switch" role="switch" aria-checked="${notifyOn(store, k)}" aria-label="${title}" data-notify="${k}" data-testid="${testid}"></button>`, info)}`).join(''))}
   ${group('גיבוי ונתונים', `<div class="row backup-row" style="flex-wrap:wrap;padding:10px 0 6px"><button class="btn small ghost grow" data-a="download" data-testid="backup-download">הורדת גיבוי</button><button class="btn small ghost grow" data-a="copy-backup">העתקה</button><button class="btn small ghost grow" data-a="share-backup">שיתוף</button></div>
     <div class="row backup-row" style="padding-bottom:6px"><button class="btn small ghost grow" data-a="csv" data-testid="csv-export">טבלה לאקסל (CSV)</button><button class="btn small outline grow" data-a="import" data-testid="import-button">ייבוא נתונים</button></div>`)}
-  ${group('עזרה', `${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip act" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip act" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
+  ${group('עזרה', `${homeHint(store) ? `${rowHtml('הוספה למסך הבית', 'בספארי: שיתוף ← ״הוספה למסך הבית״', '<button class="chip act" data-a="home-hint-ok" data-testid="home-hint-ok">הבנתי</button>')}<div class="divider"></div>` : ''}${rowHtml('האפליקציה לאנדרואיד', null, '<button class="chip act" data-a="android-download">הורדה והסבר</button>')}<div class="divider"></div>${rowHtml('הצגת ההדרכה מחדש', null, '<button class="chip act" data-a="tour" data-testid="replay-tour">הצגה</button>')}`)}
   ${group('חשבון', `<div class="row" style="padding:10px 0 4px"><input class="input grow" style="min-width:0" data-f="name" value="${esc(store.local.name || '')}" placeholder="שם פרטי" aria-label="שם פרטי" maxlength="40" data-testid="profile-name">
     <input class="input grow" style="min-width:0" data-f="last" value="${esc(store.local.lastName || '')}" placeholder="שם משפחה" aria-label="שם משפחה" maxlength="40" data-testid="profile-last-name"></div>
     <div style="display:grid;gap:8px;padding:6px 0" data-testid="pay-fields"><b class="label">פרטים לקבלת תשלום (לא חובה)</b>
@@ -98,6 +104,7 @@ function render(el, app) {
   q('[data-a=erase-account]')?.addEventListener('click', () => eraseAccountSheet(app));
   q('[data-a=android-download]').onclick = () => root.KisDownload.open();
   q('[data-a=tour]').onclick = () => root.KisLaunch.tour(app);
+  const hintOk = q('[data-a=home-hint-ok]'); if (hintOk) hintOk.onclick = () => store.setLocal('homeHintDone', true);
   q('[data-a=places]').onclick = () => placesSheet(app);
   el.querySelectorAll('[data-a=recaps]').forEach(b => b.onclick = () => root.KisSummaryUi.archive(app));
   el.querySelectorAll('[data-cur]').forEach(b => b.onclick = () => store.update(d => { d.webPreferences = root.WorkCategories.preferences({ ...d.webPreferences, mainCurrency: b.dataset.cur }); }));

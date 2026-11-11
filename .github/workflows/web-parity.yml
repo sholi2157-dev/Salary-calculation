@@ -33,6 +33,7 @@ jobs:
           node browser-tests/updates.cjs
           node browser-tests/rc15.cjs
           node browser-tests/audit.cjs
+          node browser-tests/home-screen.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

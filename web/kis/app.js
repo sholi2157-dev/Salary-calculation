@@ -181,6 +181,10 @@ function stopLive() {
 // ---- start ----
 function start() {
   document.body.insertAdjacentHTML('afterbegin', '<div class="kis-glow" aria-hidden="true"></div>');
+  // Home-screen shortcuts (web/manifest.webmanifest) open "/?action=…". It is read once and removed from the address,
+  // so a reload or the next plain launch never repeats it.
+  const action = shortcutAction(location.search);
+  if (action) history.replaceState(history.state, '', location.pathname + location.hash);
   store.load(); app.applyTheme(); app.applyTextChoices();
   // A browser that had this site before (its 2.0 launch is done) sees this release's highlights once (FB23-F11).
   app.whatsNew = store.broken ? null : root.KisWhatsNew.pending(store, root.KisLaunch.launched(app) >= root.KisLaunch.LAUNCH_VERSION);
@@ -214,10 +218,15 @@ function start() {
   const monthly = notes.find(n => n.kind === 'monthly');
   if (monthly) U().toast(monthly.title, 'לצפייה', () => root.KisSummaryUi.story(app, monthly.scope));
   else if (notes[0]) U().toast(notes[0].title, 'להשלמה', () => app.completePending());
+  // "התחלת משמרת" opens the start sheet (the default place is chosen; one tap starts). A shift already running stays on Home.
+  if (action === 'start-shift' && !store.broken) { if (!store.timer()) startLive(); return; }
   // A new shift typed before a reload or an update comes back as it was.
   const draft = root.KisEditor.pendingDraft(app.storage);
   if (draft && !draft.id) { root.KisEditor.open(app, { restore: draft }); U().toast('הטיוטה שוחזרה'); }
+  else if (action === 'add-shift' && !store.broken) app.openNew();
 }
+const SHORTCUTS = ['start-shift', 'add-shift'];
+function shortcutAction(search) { const a = new URLSearchParams(search).get('action'); return SHORTCUTS.includes(a) ? a : null; }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })(globalThis);
