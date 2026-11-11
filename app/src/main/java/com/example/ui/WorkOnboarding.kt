@@ -78,11 +78,13 @@ class WorkOnboardingStore(private val context: Context) {
      * first successful connect, and never again except from "הצגת ההדרכה מחדש". The first time an account is seen here
      * decides it: a brand-new account gets the tour (kept pending until it is finished or skipped, so closing the app
      * mid-way brings it back once); an account that already existed (an update, another phone, the site) never does.
+     * [isNewUser] is Firebase's own answer from this phone's sign-in, when known: an account created on another device a
+     * moment ago passes the time window but is not new here (2.4 task 03).
      */
-    fun claimAccount(uid: String, createdAt: Long?, lastSignInAt: Long?): Boolean {
+    fun claimAccount(uid: String, createdAt: Long?, lastSignInAt: Long?, isNewUser: Boolean? = null): Boolean {
         val seen = prefs.getStringSet("tourAccounts", emptySet()).orEmpty()
         if (uid in seen) return prefs.getString("tourPendingUid", null) == uid
-        val fresh = isNewAccount(createdAt, lastSignInAt)
+        val fresh = isNewAccount(createdAt, lastSignInAt) && isNewUser != false
         check(prefs.edit().putStringSet("tourAccounts", seen + uid).apply { if (fresh) putString("tourPendingUid", uid) }.commit())
         return fresh
     }
@@ -103,6 +105,23 @@ fun isNewAccount(createdAt: Long?, lastSignInAt: Long?): Boolean =
 /** With Google sign-in on, the tour follows the account (claimAccount); without it (or when sign-in is skipped), the installation. */
 fun tourFollowsAccount(context: Context): Boolean = com.example.BuildConfig.GOOGLE_SIGN_IN_ENABLED && com.example.BuildConfig.ACCOUNTS_ENABLED &&
     !com.example.data.WorkAccountBinding.signInSkipped(context)
+
+/** What covers the app on open. Never two at once (F12 matrix, 2.4 task 03). */
+enum class StartOverlay { NONE, LAUNCH, TOUR, NOTIFICATIONS, WHATS_NEW }
+
+/**
+ * One at a time, in this order: the launch, the tour, the notification question, then what's new. Nothing after the
+ * launch opens before a just-signed-in account is decided ([accountDecided]), so the tour never lands on top of another
+ * sheet. [notificationsDue] holds what's new back until the question was answered; [notificationsReady] is its short delay.
+ */
+fun startOverlay(launching: Boolean, touring: Boolean, accountDecided: Boolean, notificationsDue: Boolean, notificationsReady: Boolean, whatsNew: Boolean): StartOverlay = when {
+    launching -> StartOverlay.LAUNCH
+    touring -> StartOverlay.TOUR
+    !accountDecided -> StartOverlay.NONE
+    notificationsDue -> if (notificationsReady) StartOverlay.NOTIFICATIONS else StartOverlay.NONE
+    whatsNew -> StartOverlay.WHATS_NEW
+    else -> StartOverlay.NONE
+}
 
 enum class CoachScreen { HOME, FORM, AI, HISTORY, SHARE, CATEGORIES, API }
 enum class CoachTarget { SHIFT, FIELDS, AI, HISTORY, SHARE, CATEGORIES, API }

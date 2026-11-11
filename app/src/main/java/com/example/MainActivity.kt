@@ -41,6 +41,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.geometry.Size
@@ -290,10 +291,16 @@ fun MainAppContent(
         return
     }
     // F12: a new Google account's first successful connect opens the tour once (after the launch, if it is showing).
+    // A sign-in still on its way is awaited first: its result tells an account made on another device a moment ago.
     val tourByAccount = remember { com.example.ui.tourFollowsAccount(context) }
+    var accountDecided by remember { mutableStateOf(!(tourByAccount && session != null)) }
     LaunchedEffect(session?.uid) {
         val s = session ?: return@LaunchedEffect
-        if (tourByAccount && onboardingStore.claimAccount(s.uid, s.createdAt, s.lastSignInAt) && !onboarding.active) onboarding.replay()
+        if (tourByAccount) {
+            kotlinx.coroutines.withTimeoutOrNull(10_000) { com.example.api.AuthManager.signInInFlight.first { !it } }
+            if (onboardingStore.claimAccount(s.uid, s.createdAt, s.lastSignInAt, com.example.api.AuthManager.newUserFromSignIn(s.uid)) && !onboarding.active) onboarding.replay()
+        }
+        accountDecided = true
     }
     Box(modifier) {
         com.example.ui.kis.KisApp(
@@ -310,28 +317,28 @@ fun MainAppContent(
     }
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
-    if (!launching) com.example.ui.WorkOnboarding(onboarding, viewModel, categories.distinctBy { it.name.trim() }, entries)
     // Once, after the launch and the tour (Android 13+ needs the user's permission for any notification).
     val plan = remember { PlanSettings(context) }
-    var askNotifications by remember { mutableStateOf(false) }
-    LaunchedEffect(launching, onboarding.active) {
-        if (!launching && !onboarding.active && android.os.Build.VERSION.SDK_INT >= 33 && !plan.permissionAsked &&
-            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            kotlinx.coroutines.delay(700)
-            askNotifications = true
-        }
-    }
-    val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
-        PlanJobs.scheduleNextAsync(context)
-    }
-    if (askNotifications) com.example.ui.kis.NotificationsPrompt(
-        onAllow = { plan.permissionAsked = true; askNotifications = false; permission.launch(android.Manifest.permission.POST_NOTIFICATIONS) },
-        onLater = { plan.permissionAsked = true; askNotifications = false })
+    var notificationsDue by remember { mutableStateOf(android.os.Build.VERSION.SDK_INT >= 33 && !plan.permissionAsked &&
+        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) }
+    var notificationsReady by remember { mutableStateOf(false) }
     // FB23-F11: once after an update, the main highlights of this version (not after a fresh install).
     var whatsNew by remember { mutableStateOf<com.example.ui.kis.WhatsNew.Note?>(null) }
     LaunchedEffect(Unit) { whatsNew = com.example.ui.kis.WhatsNew.pending(context) }
+    val overlay = com.example.ui.startOverlay(launching, onboarding.active, accountDecided, notificationsDue, notificationsReady, whatsNew != null)
+    LaunchedEffect(launching, onboarding.active, accountDecided, notificationsDue) {
+        notificationsReady = false
+        if (!launching && !onboarding.active && accountDecided && notificationsDue) { kotlinx.coroutines.delay(700); notificationsReady = true }
+    }
+    if (overlay == com.example.ui.StartOverlay.TOUR) com.example.ui.WorkOnboarding(onboarding, viewModel, categories.distinctBy { it.name.trim() }, entries)
+    val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
+        PlanJobs.scheduleNextAsync(context)
+    }
+    if (overlay == com.example.ui.StartOverlay.NOTIFICATIONS) com.example.ui.kis.NotificationsPrompt(
+        onAllow = { plan.permissionAsked = true; notificationsDue = false; permission.launch(android.Manifest.permission.POST_NOTIFICATIONS) },
+        onLater = { plan.permissionAsked = true; notificationsDue = false })
     whatsNew?.let { note ->
-        if (!launching && !onboarding.active && !askNotifications) com.example.ui.kis.WhatsNewSheet(note) {
+        if (overlay == com.example.ui.StartOverlay.WHATS_NEW) com.example.ui.kis.WhatsNewSheet(note) {
             com.example.ui.kis.WhatsNew.seen(context); whatsNew = null
         }
     }
