@@ -1,12 +1,12 @@
 {
-  "runId": 42682055883,
-  "sourceSha": "e53a2d2b9984c04d57e1373129e51840fa8757c3",
-  "artifactName": "salary-2.3.1-code54-candidate",
-  "tag": "android-v2.3.1-code54",
-  "fileName": "Salary2.3.1.apk",
-  "versionCode": 54,
-  "versionName": "2.3.1",
-  "sha256": "b6380d60a0bffb9e94157902307c380646a66e48f9c6f0f6d3c900a1ab3404f4",
+  "runId": 43056418751,
+  "sourceSha": "62cbf28e52add7464309167167b57d85d5de7e52",
+  "artifactName": "salary-2.4.0-code55-candidate",
+  "tag": "android-v2.4.0-code55",
+  "fileName": "Salary2.4.0.apk",
+  "versionCode": 55,
+  "versionName": "2.4.0",
+  "sha256": "29b139d408c3ef6fb9f72ca1ff4c94895a0204901f29363e86f2fc6acfab23cb",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "מצב בהיר חדש וברור יותר. בוחרים איך התאריכים מופיעים: לועזי, עברי או שניהם. בוחרים אילו פרטי תשלום מצטרפים לדוח. כל המשמרות וההגדרות נשמרים."
+  "releaseNotes": "משמרות שלא שולמו יותר מ-30 יום מופיעות עכשיו במסך הבית, לכל מקום עבודה, ובלחיצה רואים בדיוק אילו. לחיצה ארוכה על האייקון במסך הבית פותחת ישר את \"הוספת משמרת\". בהגדרות, כרטיס ההתראות מראה בדיוק מה פועל: הכול, חלק או כלום. כל המשמרות, הסכומים וההגדרות נשמרים."
 }
