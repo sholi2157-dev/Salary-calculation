@@ -1221,4 +1221,38 @@ class KisUiTest {
         ui.onNodeWithTag("team_frame").assertDoesNotExist()
         ui.onNodeWithTag("save_shift_button").assertIsEnabled()
     }
+
+    // ---- 2.4 task 07 (idea C): "not paid for over 30 days" rows on Home (logic and fixture: WorkUnpaidAgingTest) ----
+    @Test fun agingRowsOnHomeAndATapOpensHistoryFilteredToThem() = agingFlow(false)
+    @Test fun agingRowsOnHomeDark() = agingFlow(true)
+
+    private fun agingFlow(dark: Boolean) {
+        val f = AgingFixture()
+        runBlocking { f.entries(f.shiftToToday()).forEach { dao.insertEntry(it) } }
+        val stored = rows(); val vm = model(); val state = HistoryUi()
+        var page by mutableStateOf(0)
+        host(dark) {
+            if (page == 0) KisHome(stored, f.categories, null, 80.dp, {}, {}, {}, {}, {}, {}, {}, {}, onAging = { g ->
+                state.showFilter = HistoryFilter(period = Period.RANGE, from = EntryDraft.startOfDay(g.from), to = EntryDraft.startOfDay(g.to),
+                    pay = PayFilter.UNPAID, category = g.category, currency = g.currency); page = 1 })
+            else KisHistory(state, true, stored, f.categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {})
+        }
+        ui.onNodeWithTag("aging_lines").performScrollTo()
+        val lines = ui.onAllNodesWithTag("aging_line", useUnmergedTree = true).fetchSemanticsNodes()
+            .map { it.config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") }
+        assertEquals(f.expected().map { it.getString("line") }, lines)
+        f.expected().forEach { ui.onNodeWithTag("aging_${it.getString("category")}_${it.getString("currency")}").assertExists() }
+        ui.onNodeWithTag("aging_מסעדה_₪").performScrollTo()
+        shot("aging-home-360-${if (dark) "dark" else "light"}")
+        if (dark) return
+        ui.onNodeWithTag("aging_מסעדה_₪").performClick()
+        ui.waitForIdle()
+        ui.onNodeWithTag("history_total").assertTextContains("₪775.50", substring = true)
+        for (id in 1..3) ui.onNodeWithTag("history_scroll_container").performScrollToNode(hasTestTag("work_entry_card_$id"))
+        ui.onAllNodesWithTag("work_entry_card_4").assertCountEquals(0)
+        ui.onAllNodesWithTag("work_entry_card_5").assertCountEquals(0)
+        ui.onNodeWithTag("history_scroll_container").performScrollToIndex(0)
+        shot("aging-history-360-light")
+        assertEquals("display only: nothing stored changed", stored, rows())
+    }
 }

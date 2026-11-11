@@ -288,7 +288,13 @@ fun KisApp(
                     plans = plans, planActions = planActions,
                     onAllPlans = { history.selection = emptySet(); history.searching = false; history.planned = true; go(1) },
                     unread = unread || update != null, onBell = { bellOpen = true },
-                    onRecap = { storyScope = it })
+                    onRecap = { storyScope = it },
+                    onAging = { g ->
+                        history.selection = emptySet(); history.searching = false; history.query = ""; history.planned = false
+                        history.showFilter = HistoryFilter(period = Period.RANGE, from = EntryDraft.startOfDay(g.from), to = EntryDraft.startOfDay(g.to),
+                            pay = PayFilter.UNPAID, category = g.category, currency = g.currency)
+                        go(1)
+                    })
                 1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) },
                     plans = plans, planActions = planActions)
                 else -> Box(Modifier.onFocusChanged { settingsHasFocus = it.hasFocus }) {

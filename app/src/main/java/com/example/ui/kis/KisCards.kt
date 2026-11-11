@@ -78,6 +78,33 @@ fun subtitle(e: WorkEntry): String {
     return parts.joinToString(" · ")
 }
 
+/**
+ * 2.4 idea C: one row per workplace and currency with money not paid for more than 30 days (display only, same as web):
+ * the place on top, "N משמרות לא שולמו מעל 30 יום · ₪X" under it. A tap opens History filtered to exactly those shifts.
+ */
+@Composable
+fun AgingFlags(rows: List<WorkPay.Aging>, categories: List<WorkCategory>, onClick: (WorkPay.Aging) -> Unit, modifier: Modifier = Modifier) {
+    if (rows.isEmpty()) return
+    val c = Kis.colors
+    Column(modifier.fillMaxWidth().testTag("aging_lines"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        rows.forEach { g ->
+            Row(Modifier.fillMaxWidth().heightIn(min = KisMinTouch).clip(RoundedCornerShape(16.dp)).background(c.pendingSoft).kisClick { onClick(g) }
+                .testTag("aging_${g.category}_${g.currency}").padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(Modifier.size(9.dp).clip(RoundedCornerShape(3.dp)).background(workplaceOf(g.category, categories).accent(c.dark)))
+                        Text(g.category, style = KisType.label, color = c.pending, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Text(WorkPay.agingLine(g, KisFormat::money), style = KisType.caption.copy(fontSize = 14.sp), color = c.pending, fontWeight = FontWeight.Medium,
+                        modifier = Modifier.testTag("aging_line"))
+                }
+                Text("←", style = KisType.label, color = c.pending, fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}
+
 /** "N משמרות מחכות לתעריף ←" */
 @Composable
 fun PendingFlag(count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
