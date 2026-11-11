@@ -13,8 +13,8 @@ concurrency:
   group: android-v2-rc-${{ github.ref }}
   cancel-in-progress: true
 env:
-  RC_CODE: '54'
-  RC_NAME: '2.3.1'
+  RC_CODE: '55'
+  RC_NAME: '2.4.0'
   # Exact previous public APK, independent of expiring candidate artifacts.
   PREV_URL: 'https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.3.1-code54/Salary2.3.1.apk'
   PREV_SHA: 'b6380d60a0bffb9e94157902307c380646a66e48f9c6f0f6d3c900a1ab3404f4'
