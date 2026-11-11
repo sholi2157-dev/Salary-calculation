@@ -52,6 +52,18 @@ function init(theApp) {
   window.addEventListener('online', () => { if (!account.user) connect(); else schedule(0); });
 }
 
+/**
+ * F12: Firebase's word from this browser's own sign-in (popup, or the redirect it falls back to): true = the account was
+ * created just now, false = it already existed, null = unknown (a session restored on open). Nothing is stored or synced.
+ */
+let pendingSignIn = null;
+function newUserOf(result, uid) { const info = result?.additionalUserInfo; return result?.user?.uid === uid && typeof info?.isNewUser === 'boolean' ? info.isNewUser : null; }
+function signInOutcome(uid) {
+  const waiting = pendingSignIn;
+  if (!waiting) return Promise.resolve(null);
+  return Promise.race([waiting.then(r => newUserOf(r, uid), () => null), new Promise(r => setTimeout(() => r(null), 10000))]);
+}
+
 async function connect() {
   let fb;
   // Google cannot be reached: keep working here; the sign-in screen comes when it can.
@@ -59,6 +71,7 @@ async function connect() {
   catch (e) { account.status = 'offline'; if (e?.message === 'config') root.KisLaunch.deviceTour(app); return; }
   if (account.listening) return;
   account.listening = true;
+  if (typeof fb.auth().getRedirectResult === 'function') pendingSignIn = fb.auth().getRedirectResult().catch(() => null);
   fb.auth().onAuthStateChanged(user => user ? signedIn(fb, user) : signedOut());
 }
 
@@ -68,12 +81,14 @@ function signedIn(fb, user) {
   s.current = user.uid; s.email = user.email || ''; s.name = user.displayName || '';
   writeState(localStorage, s);
   // The page holds another account's data: start again on this account's own copy.
-  if (before !== user.uid && storageFor(localStorage) !== app.storage) { location.reload(); return; }
+  // F12: a sign-in still on its way is awaited first: its result tells an account made on another device a moment ago.
+  // Decided before any reload below (the reload would lose that result); the decision is kept in this browser only.
+  const claimed = localStorage.getItem('kis_signin_skip_v1') === '1' ? Promise.resolve(false)
+    : signInOutcome(user.uid).then(isNew => root.KisLaunch.claimAccount(localStorage, user.uid, Date.parse(user.metadata?.creationTime), Date.parse(user.metadata?.lastSignInTime), isNew));
+  if (before !== user.uid && storageFor(localStorage) !== app.storage) { claimed.finally(() => location.reload()); return; }
   account.user = user; account.status = 'syncing'; hideGate();
   // F12: a new account's first successful connect opens the tour once (after the launch, if it is still showing).
-  if (localStorage.getItem('kis_signin_skip_v1') !== '1' &&
-      root.KisLaunch.claimAccount(localStorage, user.uid, Date.parse(user.metadata?.creationTime), Date.parse(user.metadata?.lastSignInTime))) root.KisLaunch.want(app);
-  else root.KisLaunch.maybeTour(app);
+  claimed.then(fresh => { if (account.user?.uid !== user.uid) return; if (fresh) root.KisLaunch.want(app); else root.KisLaunch.maybeTour(app); });
   if (!app.store.local.name && user.displayName) app.store.setLocal('name', user.displayName.split(' ')[0].slice(0, 40), true);
   // 2.1: once per browser, the bell invites to connect a personal AI assistant.
   if (localStorage.getItem('kis_ai_invited_v1') !== '1') {
@@ -176,7 +191,7 @@ async function signIn() {
   try {
     const fb = await loadFirebase(), provider = new fb.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    try { await fb.auth().signInWithPopup(provider); }
+    try { pendingSignIn = fb.auth().signInWithPopup(provider); await pendingSignIn; }
     catch (e) {
       if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') return fb.auth().signInWithRedirect(provider);
       if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;

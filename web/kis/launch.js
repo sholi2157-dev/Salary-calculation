@@ -5,7 +5,7 @@ const U = () => root.KisUi;
 const LAUNCH_VERSION = 2;
 
 const STEPS = [
-  { title: 'ברוכים הבאים לחישוב שכר', body: 'כאן רושמים משמרות, רואים כמה הרווחת ושולחים דוח מסודר למעסיק. דקה אחת, ומכירים את העיקר.' },
+  { page: 'home', title: 'ברוכים הבאים לחישוב שכר', body: 'כאן רושמים משמרות, רואים כמה הרווחת ושולחים דוח מסודר למעסיק. דקה אחת, ומכירים את העיקר.' },
   { target: '[data-testid=add-shift]', title: 'רישום משמרת', body: 'עבדת היום? לוחצים על + ורושמים. בטופס, בכפתור + מוסיפים בונוס, החזר הוצאות או הפסקה, והסכום מתעדכן מיד.' },
   { target: '[data-testid=live-start]', title: 'שעון משמרת', body: 'מתחילים לעבוד עכשיו? "אני מתחיל עכשיו" מפעיל שעון, ובסוף עוצרים אותו והמשמרת נרשמת.' },
   { target: '[data-testid=home-bell]', title: 'התראות', body: 'כאן מחכים הסיכום החודשי ותזכורות. את ההתראות עצמן מפעילים בהגדרות.' },
@@ -25,11 +25,13 @@ const TOUR_ACCOUNTS = 'kis_tour_accounts_v1', TOUR_PENDING = 'kis_tour_pending_v
 function isNewAccount(created, last) {
   return Number.isFinite(created) && Number.isFinite(last) && created > 0 && Math.abs(last - created) <= NEW_ACCOUNT_WINDOW_MS;
 }
-function claimAccount(storage, uid, created, last) {
+/** isNewUser: Firebase's own answer from this browser's sign-in, when known. An account made on another device a moment
+ * ago passes the time window but is not new here (2.4 task 03). */
+function claimAccount(storage, uid, created, last, isNewUser = null) {
   let seen = [];
   try { seen = JSON.parse(storage.getItem(TOUR_ACCOUNTS) || '[]'); if (!Array.isArray(seen)) seen = []; } catch { seen = []; }
   if (seen.includes(uid)) return storage.getItem(TOUR_PENDING) === uid;
-  const fresh = isNewAccount(created, last);
+  const fresh = isNewAccount(created, last) && isNewUser !== false;
   storage.setItem(TOUR_ACCOUNTS, JSON.stringify([...seen, uid]));
   if (fresh) storage.setItem(TOUR_PENDING, uid);
   return fresh;
