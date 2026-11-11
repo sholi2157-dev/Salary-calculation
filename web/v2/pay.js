@@ -109,6 +109,35 @@ function totals(entries) {
  return out;
 }
 
+/** Local calendar day number of a millis instant (DST-safe; Android: LocalDate.toEpochDay in the device zone). */
+const localDay = ms => { const d = new Date(ms); return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); };
+const AGING_DAYS = 30;
+/**
+ * 2.4 idea C, display only: per workplace and currency, the shifts still marked "לא שולם" whose day is more than 30 days
+ * before today. `amount` is the plain sum of the saved amounts (null when none is known; unknown is never 0), `unknown`
+ * counts the shifts without a known amount. Oldest debt first. Nothing is stored or recalculated. Same as Android WorkPay.unpaidAging.
+ */
+function unpaidAging(entries, now) {
+ const today = localDay(now), groups = new Map();
+ for (const e of entries) {
+  if (e.isPaid || today - localDay(e.date) <= AGING_DAYS) continue;
+  const key = e.category + '\u0000' + e.currency;
+  const g = groups.get(key) || { category: e.category, currency: e.currency, count: 0, amount: null, unknown: 0, from: e.date, to: e.date, ids: [] };
+  g.count++; g.ids.push(e.id);
+  if (payKnownOf(e)) g.amount = (g.amount ?? 0) + e.totalEarnings; else g.unknown++;
+  g.from = Math.min(g.from, e.date); g.to = Math.max(g.to, e.date);
+  groups.set(key, g);
+ }
+ const cmp = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+ return [...groups.values()].sort((a, b) => localDay(a.from) - localDay(b.from) || cmp(a.category, b.category) || cmp(a.currency, b.currency));
+}
+/** "3 משמרות לא שולמו מעל 30 יום · ₪1,200" (+ "· 1 בלי תעריף"; all unknown: "· הסכום עוד לא ידוע"). Same as Android. */
+function agingLine(g, moneyText) {
+ const head = g.count === 1 ? 'משמרת אחת לא שולמה מעל 30 יום' : g.count + ' משמרות לא שולמו מעל 30 יום';
+ if (g.amount == null) return head + ' · הסכום עוד לא ידוע';
+ return head + ' · ' + moneyText(g.amount, g.currency) + (g.unknown ? ' · ' + g.unknown + ' בלי תעריף' : '');
+}
+
 /**
  * Group shift workers from groupWorkersJson: [{name, hours, isPaid, bonus, workerRate, employerRate, source}].
  * Unknown keys stay in `source`. Any malformed element makes the whole list empty (as on Android).
@@ -223,7 +252,7 @@ function report(entries, workerName = null) {
   rows.map(r => r.category + ': ' + (r.payKnown ? format(r.totalEarnings, r.currency) : 'תעריף חסר') + ' — ' + (r.isPaid ? 'שולם' : 'ממתין')).join('\n');
 }
 
-const api = { KIND_SHIFT, KIND_JOB, isJob, payKnown: payKnownOf, bonus: bonusOf, pay, known, pending, money, missingLabel, totals,
+const api = { KIND_SHIFT, KIND_JOB, isJob, payKnown: payKnownOf, bonus: bonusOf, pay, known, pending, money, missingLabel, totals, unpaidAging, agingLine,
  workers, workerRate, employerRate, workerPay, employerPay, group, encodeWorkers, isTeamJob, teamPay, employerDue, passThrough: passThroughOf,
  format, summary, report, moneyWorkerRate, moneyEmployerRate, fixed2, hours, javaParseDouble };
 if (typeof module !== 'undefined') module.exports = api; else root.KisPay = api;

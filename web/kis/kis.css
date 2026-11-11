@@ -451,7 +451,7 @@ button { cursor: pointer; }
   .home-top { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; align-items: start; }
   .home-top .hero-card { margin-top: 18px; }
   .home-side { display: grid; gap: 12px; margin-top: 18px; }
-  .home-side .tiles, .home-side .now-row, .home-side .pending-flag { margin-top: 0; }
+  .home-side .tiles, .home-side .now-row, .home-side .pending-flag, .home-side .aging { margin-top: 0; }
   .home-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0 24px; align-items: start; }
   .set-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; align-items: start; }
   .set-groups .set-group:first-child { grid-column: 1 / -1; }
@@ -548,6 +548,13 @@ html { overflow-x: clip; }
    R-36: the message sits above the navigation, inside the content column on a computer (not across the side bar), and
    its action is the bar's own ink, underlined, not the brand colour. */
 .pending-flag { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; text-align: start; border-radius: 16px; }
+/* 2.4 idea C: "not paid for over 30 days", one row per workplace and currency, under the pending flags. */
+.aging { display: grid; gap: 8px; margin-top: 12px; }
+.aging .pending-flag { margin-top: 0; font-weight: 500; }
+.aging-text { min-width: 0; display: grid; gap: 2px; line-height: 1.35; }
+.aging-text b { font-weight: 700; }
+.aging-text i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-inline-end: 6px; vertical-align: 1px; }
+.aging-text small { font-size: .875rem; font-weight: 500; }
 .chips.wrap { flex-wrap: wrap; overflow: visible; }
 .backup-row .btn { white-space: nowrap; }
 button.grip { border: 0; background: none; padding: 0; min-width: 44px; min-height: 44px; display: grid; place-items: center; color: var(--muted); }
