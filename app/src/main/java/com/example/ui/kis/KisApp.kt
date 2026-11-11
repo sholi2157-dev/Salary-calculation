@@ -89,7 +89,7 @@ data class KisMessage(val text: String, val action: String? = null, val onAction
 
 /** Requests the shell can receive from outside (system shortcuts, notifications). */
 /** What a shortcut or a notification asks the app to open. HISTORY opens the summary of [KisApp]'s requestedMonth (else last month). */
-enum class ShellRequest { IMPORT, HISTORY_SEARCH, HISTORY, RATES, UPDATE, HOME }
+enum class ShellRequest { IMPORT, HISTORY_SEARCH, HISTORY, RATES, UPDATE, HOME, NEW_SHIFT }
 
 @Composable
 fun KisApp(
@@ -220,6 +220,8 @@ fun KisApp(
                 onRequestHandled()
             }
             ShellRequest.HOME -> { pager.scrollToPage(0); onRequestHandled() }
+            // An open editor (e.g. a typed shift) is kept as it is; otherwise a new shift with the default place.
+            ShellRequest.NEW_SHIFT -> { pager.scrollToPage(0); if (editorJson == null) openNew(); onRequestHandled() }
             ShellRequest.RATES -> {
                 pager.scrollToPage(1); history.planned = false
                 // After a cold start from the notification the shifts are still loading: wait for them briefly.

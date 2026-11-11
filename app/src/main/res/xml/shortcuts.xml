@@ -12,6 +12,17 @@
     </shortcut>
 
     <shortcut
+        android:shortcutId="add_shift"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_add_shift">
+        <intent
+            android:action="com.example.ACTION_ADD_SHIFT"
+            android:targetPackage="com.example"
+            android:targetClass="com.example.MainActivity" />
+    </shortcut>
+
+    <shortcut
         android:shortcutId="import_excel"
         android:enabled="true"
         android:icon="@mipmap/ic_launcher"
