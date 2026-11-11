@@ -33,7 +33,8 @@ class OnboardingExperienceTest {
     @Test fun completeRealTourAt360() = tour(360)
     @Test @Config(qualifiers = "w390dp-h844dp-xhdpi") fun completeRealTourAt390() = tour(390)
     @Test fun readableControlsAtIncreasedFontSize() = tour(360, 1.3f)
-    private fun tour(width: Int, fontScale: Float = 1f) {
+    @Test fun completeRealTourAt360Dark() = tour(360, dark = true)
+    private fun tour(width: Int, fontScale: Float = 1f, dark: Boolean = false) {
         val app = ApplicationProvider.getApplicationContext<Application>()
         // Classify before Room opens, exactly as the Activity does.
         val store = WorkOnboardingStore(app); store.initialize()
@@ -44,7 +45,7 @@ class OnboardingExperienceTest {
         ui.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl, LocalDensity provides Density(density.density, fontScale)) {
-                KisTheme { WorkOnboarding(controller, vm, listOf(WorkCategory(name = "עצמאי", defaultRate = 40.0)), emptyList()) }
+                KisTheme(darkOverride = dark) { WorkOnboarding(controller, vm, listOf(WorkCategory(name = "עצמאי", defaultRate = 40.0)), emptyList()) }
             }
         }
         for ((index, step) in workOnboardingSteps.withIndex()) {
@@ -66,7 +67,7 @@ class OnboardingExperienceTest {
                 assertEquals(index, controller.index)
             }
             ui.onNodeWithTag("onboarding_next").assertIsDisplayed().assertIsEnabled()
-            ui.onNodeWithTag("onboarding_root").captureRoboImage(filePath = if (fontScale == 1f) "/tmp/onboarding-$width-$index.png" else "/tmp/onboarding-font-$width-$index.png")
+            ui.onNodeWithTag("onboarding_root").captureRoboImage(filePath = if (dark) "/tmp/onboarding-dark-$width-$index.png" else if (fontScale == 1f) "/tmp/onboarding-$width-$index.png" else "/tmp/onboarding-font-$width-$index.png")
             if (index == 3) {
                 ui.onNodeWithTag("onboarding_back").performClick()
                 assertEquals(2, controller.index)
