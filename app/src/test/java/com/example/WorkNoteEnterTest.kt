@@ -34,7 +34,14 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [28], qualifiers = "w360dp-h800dp-xhdpi")
 class WorkNoteEnterTest {
-    @get:Rule val ui = createComposeRule()
+    val ui = createComposeRule()
+    // ui-test-manifest is debug-only: register the host activity so this also runs in Release (as WorkLiveCancelTest).
+    @get:Rule val rules: org.junit.rules.RuleChain = org.junit.rules.RuleChain.outerRule(object : org.junit.rules.ExternalResource() {
+        override fun before() {
+            org.robolectric.Shadows.shadowOf(app.packageManager)
+                .addActivityIfNotPresent(android.content.ComponentName(app, androidx.activity.ComponentActivity::class.java))
+        }
+    }).around(ui)
     private val app get() = ApplicationProvider.getApplicationContext<Application>()
     private val db by lazy { WorkAccountScope(null).database(app) }
     private val dao get() = db.workDao()
@@ -72,7 +79,7 @@ class WorkNoteEnterTest {
         ui.onNodeWithTag("notes_input").assertExists()
         ui.onNodeWithTag("notes_input").performTextInput("שורה שנייה")
         ui.onNodeWithTag("notes_input").assertTextContains("שורה ראשונה\nשורה שנייה", substring = true)
-        ui.onNodeWithTag("save_shift_button").performScrollTo().assertIsEnabled().performClick()
+        ui.onNodeWithTag("save_shift_button").assertIsEnabled().performClick()
         waitFor(5_000) { runBlocking { dao.getEntriesList() }.single().notes == "שורה ראשונה\nשורה שנייה" }
         val kept = runBlocking { dao.getEntriesList() }.single()
         // Only the note changed: the stored amount, hours, rate and date are exactly as saved before.
