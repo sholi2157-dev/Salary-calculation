@@ -1152,7 +1152,11 @@ class WorkViewModel(
     fun deleteCategory(category: WorkCategory) {
         viewModelScope.launch {
             val target = localDao.categoryFallback(category)?.name
-            if (!localDao.removeCategorySafely(category)) com.example.ui.kis.KisNotices.post("יש להשאיר לפחות קטגוריה אחת")
+            if (!localDao.removeCategorySafely(category)) {
+                com.example.ui.kis.KisNotices.post(if (localDao.defaultCategory()?.id == category.id)
+                    "לפני מחיקת מקום ברירת המחדל יש לבחור מקום אחר כברירת מחדל" else "יש להשאיר לפחות קטגוריה אחת")
+                return@launch
+            }
             else if (target != null) shiftState.renameCategory(category.name, target)
             performAutoBackup()
         }

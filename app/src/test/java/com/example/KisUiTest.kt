@@ -955,6 +955,32 @@ class KisUiTest {
         assertEquals("כהן", settings.lastName)
     }
 
+    @Test @Config(qualifiers = "w360dp-h800dp-mdpi") fun settingsTruthLight360() = settingsTruth(false)
+    @Test @Config(qualifiers = "w360dp-h800dp-mdpi") fun settingsTruthDark360() = settingsTruth(true)
+
+    private fun settingsTruth(dark: Boolean) {
+        val vm = model()
+        assertTrue(vm.planSettings.notifyMonthly) // Effective defaults, without saved switches.
+        assertFalse(vm.planSettings.notifyRate)
+        host(dark) { KisSettingsPage(vm, categories, onClose = {}, onReplayTour = {}) }
+        val titles = listOf("משוב ותקלות", "עבודה", "מראה ותחושה", "התראות", "עזרה וכלים", "גיבוי ונתונים", "חשבון")
+        val tops = titles.map { ui.onNodeWithTag("settings_section_$it").fetchSemanticsNode().boundsInRoot.top }
+        assertEquals(tops.sorted(), tops)
+        fun subtitle(text: String) { ui.onNodeWithTag("settings_subtitle_התראות", useUnmergedTree = true).assertTextEquals(text) }
+        subtitle("חלקן פועלות")
+        shot("settings-truth-${if (dark) "dark" else "light"}-360")
+        ui.onNodeWithTag("settings_section_התראות").performScrollTo().performClick()
+        val master = ui.onNodeWithTag("notify_all_switch")
+        master.assertIsOff().performScrollTo().performClick()
+        master.assertIsOn(); subtitle("פועלות")
+        master.performScrollTo().performClick()
+        master.assertIsOff(); subtitle("כבויות")
+        ui.onNodeWithTag("notify_monthly_switch").performScrollTo().performClick()
+        master.assertIsOff(); subtitle("חלקן פועלות")
+        ui.onNodeWithTag("settings_section_התראות").performScrollTo().performClick()
+        subtitle("חלקן פועלות") // Closing the card keeps the changed state.
+    }
+
     @Test fun settingsSectionsAndThemeChoice() {
         val vm = model()
         lateinit var settings: KisSettings
@@ -1150,9 +1176,13 @@ class KisUiTest {
         ui.onNodeWithTag("default_category_add").assertExists()
         ui.onNodeWithTag("category_row_מסעדה").performClick()
         ui.onNodeWithTag("edit_category_sheet").assertExists()
+        ui.onNodeWithTag("delete_category_מסעדה").assertDoesNotExist()
         runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-places-edit.png") }
         ui.onNodeWithTag("category_row_מסעדה").performClick()
         ui.onNodeWithTag("edit_category_sheet").assertDoesNotExist()
+        ui.onNodeWithTag("category_row_שיעורים").performScrollTo().performClick()
+        ui.onNodeWithTag("delete_category_שיעורים").assertExists()
+        ui.onNodeWithTag("category_row_שיעורים").performScrollTo().performClick()
         runCatching { com.github.takahirom.roborazzi.captureScreenRoboImage("/tmp/kis-team-places-reorder.png") }
         ui.onNodeWithTag("place_drag_הובלות", useUnmergedTree = true).performTouchInput {
             down(center)
@@ -1190,5 +1220,39 @@ class KisUiTest {
         ui.onNodeWithTag("editor_team").performClick()
         ui.onNodeWithTag("team_frame").assertDoesNotExist()
         ui.onNodeWithTag("save_shift_button").assertIsEnabled()
+    }
+
+    // ---- 2.4 task 07 (idea C): "not paid for over 30 days" rows on Home (logic and fixture: WorkUnpaidAgingTest) ----
+    @Test fun agingRowsOnHomeAndATapOpensHistoryFilteredToThem() = agingFlow(false)
+    @Test fun agingRowsOnHomeDark() = agingFlow(true)
+
+    private fun agingFlow(dark: Boolean) {
+        val f = AgingFixture()
+        runBlocking { f.entries(f.shiftToToday()).forEach { dao.insertEntry(it) } }
+        val stored = rows(); val vm = model(); val state = HistoryUi()
+        var page by mutableStateOf(0)
+        host(dark) {
+            if (page == 0) KisHome(stored, f.categories, null, 80.dp, {}, {}, {}, {}, {}, {}, {}, {}, onAging = { g ->
+                state.showFilter = HistoryFilter(period = Period.RANGE, from = EntryDraft.startOfDay(g.from), to = EntryDraft.startOfDay(g.to),
+                    pay = PayFilter.UNPAID, category = g.category, currency = g.currency); page = 1 })
+            else KisHistory(state, true, stored, f.categories, vm, 80.dp, onOpen = {}, onDeleted = {}, onMessage = {})
+        }
+        ui.onNodeWithTag("aging_lines").performScrollTo()
+        val lines = ui.onAllNodesWithTag("aging_line", useUnmergedTree = true).fetchSemanticsNodes()
+            .map { it.config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") }
+        assertEquals(f.expected().map { it.getString("line") }, lines)
+        f.expected().forEach { ui.onNodeWithTag("aging_${it.getString("category")}_${it.getString("currency")}").assertExists() }
+        ui.onNodeWithTag("aging_מסעדה_₪").performScrollTo()
+        shot("aging-home-360-${if (dark) "dark" else "light"}")
+        if (dark) return
+        ui.onNodeWithTag("aging_מסעדה_₪").performClick()
+        ui.waitForIdle()
+        ui.onNodeWithTag("history_total").assertTextContains("₪775.50", substring = true)
+        for (id in 1..3) ui.onNodeWithTag("history_scroll_container").performScrollToNode(hasTestTag("work_entry_card_$id"))
+        ui.onAllNodesWithTag("work_entry_card_4").assertCountEquals(0)
+        ui.onAllNodesWithTag("work_entry_card_5").assertCountEquals(0)
+        ui.onNodeWithTag("history_scroll_container").performScrollToIndex(0)
+        shot("aging-history-360-light")
+        assertEquals("display only: nothing stored changed", stored, rows())
     }
 }

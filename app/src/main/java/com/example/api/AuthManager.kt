@@ -33,6 +33,22 @@ object AuthManager {
     private val _currentUser = MutableStateFlow<UserSession?>(null)
     val currentUser: StateFlow<UserSession?> = _currentUser.asStateFlow()
 
+    /**
+     * F12: true while a sign-in on this phone is reaching Firebase. Its result says whether Firebase created the account
+     * just now (isNewUser), which the creation-time window alone cannot tell for an account made on another device a
+     * moment earlier. Nothing here is synced or stored: it only lives in this process.
+     */
+    private val _signInInFlight = MutableStateFlow(false)
+    val signInInFlight: StateFlow<Boolean> = _signInInFlight.asStateFlow()
+    @Volatile private var lastSignIn: Pair<String, Boolean>? = null
+    /** Firebase's word from this process's own sign-in of [uid]: true = created now, false = already existed, null = unknown. */
+    fun newUserFromSignIn(uid: String): Boolean? = lastSignIn?.takeIf { it.first == uid }?.second
+    private fun recordSignIn(result: com.google.firebase.auth.AuthResult?) {
+        val uid = result?.user?.uid ?: return
+        val isNew = result.additionalUserInfo?.isNewUser ?: return
+        lastSignIn = uid to isNew
+    }
+
     private var authListener: FirebaseAuth.AuthStateListener? = null
     private var isInitialized = false
     private var appContext: Context? = null
@@ -134,7 +150,13 @@ object AuthManager {
                 credential.type != com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) return "לא התקבל חשבון Google"
             val token = com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.createFrom(credential.data).idToken
             kotlinx.coroutines.suspendCancellableCoroutine<String?> { done ->
-                auth.signInWithCredential(GoogleAuthProvider.getCredential(token, null)).addOnCompleteListener { task ->
+                // Cleared by the listener only: the sign-in screen (and this coroutine) goes away as soon as the session
+                // appears, while the result is still on its way.
+                _signInInFlight.value = true
+                runCatching { auth.signInWithCredential(GoogleAuthProvider.getCredential(token, null)) }
+                    .onFailure { _signInInFlight.value = false }.getOrThrow().addOnCompleteListener { task ->
+                    if (task.isSuccessful) recordSignIn(task.result)
+                    _signInInFlight.value = false
                     val refused = task.isSuccessful && timerBelongsElsewhere(activity, auth.currentUser?.uid)
                     if (refused) runCatching { auth.signOut() }
                     updateUserFromFirebase(auth.currentUser)
@@ -168,6 +190,7 @@ object AuthManager {
                     auth.signInWithCredential(credential)
                         .addOnCompleteListener { authTask ->
                             if (authTask.isSuccessful) {
+                                recordSignIn(authTask.result)
                                 updateUserFromFirebase(auth.currentUser)
                                 onComplete(true, null)
                             } else {

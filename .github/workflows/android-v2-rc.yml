@@ -13,13 +13,13 @@ concurrency:
   group: android-v2-rc-${{ github.ref }}
   cancel-in-progress: true
 env:
-  RC_CODE: '54'
-  RC_NAME: '2.3.1'
-  # The previously delivered 2.0 candidate (owner's phone): its exact bytes come from that run's artifact.
-  PREV_RUN: '40537072814'
-  PREV_SHA: 'c62691480f7cdb81259af5d8179328ec3620c20a1fc367e4916740035d6d8882'
-  PREV_CODE: '46'
-  PREV_NAME: '2.2.1'
+  RC_CODE: '55'
+  RC_NAME: '2.4.0'
+  # Exact previous public APK, independent of expiring candidate artifacts.
+  PREV_URL: 'https://github.com/sholi2157-dev/Salary-calculation/releases/download/android-v2.3.1-code54/Salary2.3.1.apk'
+  PREV_SHA: 'b6380d60a0bffb9e94157902307c380646a66e48f9c6f0f6d3c900a1ab3404f4'
+  PREV_CODE: '54'
+  PREV_NAME: '2.3.1'
 jobs:
   candidate:
     if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[v2-rc]') }}
@@ -43,22 +43,20 @@ jobs:
         run: >-
           gradle :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
           --tests 'com.example.NotificationJobs*Test' --tests 'com.example.GeminiCurrency*Test'
-          --tests 'com.example.ExampleUnitTest' --tests 'com.example.KisNoticesTest' --tests 'com.example.KisTimeRangeTest'
+          --tests 'com.example.HebrewDateTest' --tests 'com.example.ExampleUnitTest' --tests 'com.example.KisNoticesTest' --tests 'com.example.KisTimeRangeTest'
           --tests 'com.example.ExampleRobolectricTest' --tests 'com.example.GreetingScreenshotTest'
           --tests 'com.example.KisUiTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.OnboardingExperienceTest'
           :app:testReleaseUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
           --tests 'com.example.NotificationJobs*Test' --tests 'com.example.GeminiCurrency*Test'
-          --tests 'com.example.ExampleUnitTest' --tests 'com.example.KisNoticesTest' --tests 'com.example.KisTimeRangeTest'
+          --tests 'com.example.HebrewDateTest' --tests 'com.example.ExampleUnitTest' --tests 'com.example.KisNoticesTest' --tests 'com.example.KisTimeRangeTest'
           -Proborazzi.test.record=true --console=plain
       - name: Count actual Android test results
         run: python3 scripts/summarize-android-tests.py
-      - name: Previously delivered 2.0 candidate (exact bytes from its own run)
-        uses: actions/download-artifact@v4
-        with:
-          name: salary-2.2.1-code46-candidate
-          path: prev-rc
-          run-id: ${{ env.PREV_RUN }}
-          github-token: ${{ github.token }}
+      - name: Previous public 2.3.1 code 54 (exact release bytes)
+        run: |
+          mkdir -p prev-rc
+          curl --fail --location "$PREV_URL" -o prev-rc/candidate-b.apk
+          echo "$PREV_SHA  prev-rc/candidate-b.apk" | sha256sum --check
       - name: Load permanent signing material
         env:
           KEY_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -72,7 +70,7 @@ jobs:
           test -n "$KEY_BASE64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$CERT_SHA256"
           umask 077
           printf '%s' "$KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/salary-distribution.p12"
-      - name: Build signed candidate and verify identity against the delivered RC16
+      - name: Build signed candidate and verify identity against the previous public build
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/salary-distribution.p12
           STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
@@ -87,7 +85,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Direct public 2.2.1 → candidate with rich 2.x data (the path every existing user takes)
+      - name: Direct public 2.3.1 → candidate with rich 2.x data (the path every existing user takes)
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -96,7 +94,7 @@ jobs:
           avd-name: salary-rich-upgrade
           disable-animations: true
           script: bash scripts/verify-rich-upgrade.sh
-      - name: Real RC16 → delivered 2.0 → 2.0.6 updates without clearing data, then 2.0 screens and crash log
+      - name: Real RC16 → public 2.3.1 → candidate updates without clearing data, then 2.0 screens and crash log
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35

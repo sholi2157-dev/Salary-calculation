@@ -67,6 +67,38 @@ object WorkPay {
     fun totals(entries: List<WorkEntry>): Map<String, Double> = known(entries).groupBy { it.currency }
         .mapValues { (_, rows) -> rows.sumOf { it.totalEarnings } }
 
+    // ---- 2.4 idea C: money not paid for more than 30 days (display only; same as web KisPay.unpaidAging) ----
+
+    /** Shifts still marked "לא שולם" of one workplace in one currency, older than 30 days. [amount] is null when none is known. */
+    data class Aging(val category: String, val currency: String, val count: Int, val amount: Double?, val unknown: Int, val from: Long, val to: Long, val ids: List<Int>)
+
+    const val AGING_DAYS = 30
+
+    /**
+     * Per workplace and currency, the shifts not marked paid whose day is more than 30 calendar days before today. The amount is
+     * the plain sum of the saved amounts; unknown amounts are counted, never summed as 0; ₪ and $ apart. Oldest debt first.
+     * Nothing is stored or recalculated.
+     */
+    fun unpaidAging(entries: List<WorkEntry>, now: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): List<Aging> {
+        fun day(ms: Long) = java.time.Instant.ofEpochMilli(ms).atZone(zone).toLocalDate().toEpochDay()
+        val today = day(now)
+        return entries.filter { !it.isPaid && today - day(it.date) > AGING_DAYS }
+            .groupBy { it.category to it.currency }
+            .map { (k, rows) ->
+                val known = rows.filter { it.payKnown }
+                Aging(k.first, k.second, rows.size, if (known.isEmpty()) null else known.fold(0.0) { s, e -> s + e.totalEarnings },
+                    rows.size - known.size, rows.minOf { it.date }, rows.maxOf { it.date }, rows.map { it.id })
+            }
+            .sortedWith(compareBy<Aging>({ day(it.from) }, { it.category }, { it.currency }))
+    }
+
+    /** "3 משמרות לא שולמו מעל 30 יום · ₪1,200" (+ "· 1 בלי תעריף"; all unknown: "· הסכום עוד לא ידוע"). Same as web. */
+    fun agingLine(g: Aging, money: (Double, String) -> String): String {
+        val head = if (g.count == 1) "משמרת אחת לא שולמה מעל 30 יום" else "${g.count} משמרות לא שולמו מעל 30 יום"
+        val amount = g.amount ?: return "$head · הסכום עוד לא ידוע"
+        return "$head · ${money(amount, g.currency)}" + if (g.unknown > 0) " · ${g.unknown} בלי תעריף" else ""
+    }
+
     // ---- Group shift workers (stored in groupWorkersJson; unknown keys are kept as they are) ----
 
     /** [amount] is a fixed sum for this worker; it is used only on a job team (קבלנות), where it replaces hours × rate. */

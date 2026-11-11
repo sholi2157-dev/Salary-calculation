@@ -62,6 +62,24 @@ class WorkAuditRegressionTest {
         assertEquals(aiRows, dao.getEntriesList())
     }
 
+    @Test fun viewModelRejectsDefaultDeletionWithTheWebMessage() = runBlocking {
+        val owner = WorkAccountScope("settings-${UUID.randomUUID()}")
+        val vm = ViewModelProvider(models, WorkViewModelFactory(app, owner))
+            .get(owner.storageKey, WorkViewModel::class.java)
+        val dao = owner.database(app).workDao()
+        val id = dao.insertCategory(WorkCategory(name = "synthetic-default")).toInt()
+        val category = dao.getCategoriesList().first { it.id == id }
+        dao.setLocalPreference(WorkLocalPreference("defaultCategory", category.name))
+        dao.insertEntry(row(category.name))
+        val before = dao.exportSnapshot()
+        val message = async(start = CoroutineStart.UNDISPATCHED) {
+            com.example.ui.kis.KisNotices.flow.first { it.text == "לפני מחיקת מקום ברירת המחדל יש לבחור מקום אחר כברירת מחדל" }
+        }
+        vm.deleteCategory(category)
+        assertEquals("לפני מחיקת מקום ברירת המחדל יש לבחור מקום אחר כברירת מחדל", withTimeout(5000) { message.await() }.text)
+        assertEquals(before, dao.exportSnapshot())
+    }
+
     @Test fun stalePaymentCardCannotOverwriteNewerFinancialAndGroupEdits() = runBlocking {
         val dao = database().workDao()
         val id = dao.insertEntry(row()).toInt()
@@ -89,6 +107,8 @@ class WorkAuditRegressionTest {
         assertEquals(2, dao.getCategoriesList().size)
         val work = dao.getCategoriesList().first { it.id == workId }
         assertEquals(44.0, work.defaultRate, 0.0)
+        assertFalse(dao.removeCategorySafely(work))
+        dao.setLocalPreference(WorkLocalPreference("defaultCategory", "עצמאי"))
         assertTrue(dao.removeCategorySafely(work))
         assertEquals(imported.copy(category = "עצמאי"), dao.getEntriesList().single())
     }

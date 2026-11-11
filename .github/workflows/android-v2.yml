@@ -1,8 +1,10 @@
 name: Android 2.0 development (no signing, no publishing)
-# Runs only on the 2.0 work branch. Never signs, never publishes, never touches release channels.
+# Runs on development/release branches and 2.4 PRs. Never signs, never publishes, never touches release channels.
 on:
+  pull_request:
+    branches: ['release/2.4-android']
   push:
-    branches: ['claude/v2-android', 'codex/sharing-android-20261021', 'codex/2.3-fb23-android']
+    branches: ['release/2.4-android', 'claude/v2-android', 'codex/sharing-android-20261021', 'codex/2.3-fb23-android']
     paths: ['app/**', 'gradle/**', 'build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'scripts/**', '.github/workflows/android-v2.yml']
   workflow_dispatch:
     inputs:
@@ -22,6 +24,13 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Shared expected results are byte-identical to the Web branch
+        run: git fetch --no-tags origin +refs/heads/release/2.4-web:refs/remotes/origin/release/2.4-web && node scripts/check-fixtures.cjs
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -45,12 +54,12 @@ jobs:
           gradle :app:compileDebugKotlin
           :app:testDebugUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
           --tests 'com.example.NotificationJobs*Test' --tests 'com.example.GeminiCurrency*Test'
-          --tests 'com.example.ExampleUnitTest' --tests 'com.example.KisNoticesTest' --tests 'com.example.KisTimeRangeTest'
+          --tests 'com.example.HebrewDateTest' --tests 'com.example.ExampleUnitTest' --tests 'com.example.KisNoticesTest' --tests 'com.example.KisTimeRangeTest'
           --tests 'com.example.ExampleRobolectricTest' --tests 'com.example.GreetingScreenshotTest'
           --tests 'com.example.KisUiTest' --tests 'com.example.AiShiftExperienceTest' --tests 'com.example.OnboardingExperienceTest'
           :app:testReleaseUnitTest --tests 'com.example.Work*Test' --tests 'com.example.V2*Test'
           --tests 'com.example.NotificationJobs*Test' --tests 'com.example.GeminiCurrency*Test'
-          --tests 'com.example.ExampleUnitTest' --tests 'com.example.KisNoticesTest' --tests 'com.example.KisTimeRangeTest'
+          --tests 'com.example.HebrewDateTest' --tests 'com.example.ExampleUnitTest' --tests 'com.example.KisNoticesTest' --tests 'com.example.KisTimeRangeTest'
           :app:assembleRelease :app:assembleReleaseAndroidTest -PdistributionInstrumentation=true
           -Proborazzi.test.record=true --continue --console=plain
       - name: Count actual Android test results

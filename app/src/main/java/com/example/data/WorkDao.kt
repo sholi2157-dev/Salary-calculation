@@ -21,23 +21,27 @@ interface WorkDao {
     @Transaction
     suspend fun removeCategorySafely(category: WorkCategory): Boolean {
         val categories = getCategoriesList()
-        if (categories.none { it.id == category.id } || categories.size <= 1) return false
+        val current = categories.firstOrNull { it.id == category.id } ?: return false
+        if (categories.size <= 1 || defaultCategory()?.id == current.id) return false
         val chosen = getLocalPreferences().firstOrNull { it.name == "defaultCategory" }?.value
-        val fallback = categoryFallback(category) ?: return false
-        updateCategoryForEntries(category.name, fallback.name)
-        updateCategoryForSeries(category.name, fallback.name)
-        if (chosen == category.name || chosen == null) setLocalPreference(WorkLocalPreference("defaultCategory", fallback.name))
-        removeLocalPreference("categoryCurrency:${category.name}")
-        deleteCategoryById(category.id)
+        val fallback = categoryFallback(current) ?: return false
+        updateCategoryForEntries(current.name, fallback.name)
+        updateCategoryForSeries(current.name, fallback.name)
+        if (chosen == null) setLocalPreference(WorkLocalPreference("defaultCategory", fallback.name))
+        removeLocalPreference("categoryCurrency:${current.name}")
+        deleteCategoryById(current.id)
         return true
     }
 
-    /** Where a removed place's shifts go: the default place, or else the first other one. */
-    suspend fun categoryFallback(category: WorkCategory): WorkCategory? {
+    /** The same effective default as Settings: the saved valid choice, otherwise the first place. */
+    suspend fun defaultCategory(): WorkCategory? {
         val categories = getCategoriesList()
         val chosen = getLocalPreferences().firstOrNull { it.name == "defaultCategory" }?.value
-        return categories.firstOrNull { it.name == chosen && it.id != category.id } ?: categories.firstOrNull { it.id != category.id }
+        return categories.firstOrNull { it.name == chosen } ?: categories.minByOrNull { it.id }
     }
+
+    /** A non-default place's history always moves to the effective default. */
+    suspend fun categoryFallback(category: WorkCategory): WorkCategory? = defaultCategory()?.takeIf { it.id != category.id }
 
     /** One shift changed by a retroactive rate change (FB-08): what it held before and what the change wrote. */
     data class RetroChange(val id: Int, val hourlyRate: Double, val totalEarnings: Double, val wroteRate: Double, val wroteTotal: Double, val payKnown: Boolean)

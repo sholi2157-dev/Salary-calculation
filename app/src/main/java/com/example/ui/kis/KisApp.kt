@@ -89,7 +89,7 @@ data class KisMessage(val text: String, val action: String? = null, val onAction
 
 /** Requests the shell can receive from outside (system shortcuts, notifications). */
 /** What a shortcut or a notification asks the app to open. HISTORY opens the summary of [KisApp]'s requestedMonth (else last month). */
-enum class ShellRequest { IMPORT, HISTORY_SEARCH, HISTORY, RATES, UPDATE, HOME }
+enum class ShellRequest { IMPORT, HISTORY_SEARCH, HISTORY, RATES, UPDATE, HOME, NEW_SHIFT }
 
 @Composable
 fun KisApp(
@@ -119,7 +119,7 @@ fun KisApp(
     val liveCurrency by viewModel.activeShiftCurrency.collectAsStateWithLifecycle()
     val live = liveStart?.let { LiveShift(it, liveCategory, liveRate, liveCurrency) }
     val plans by viewModel.occurrences.collectAsStateWithLifecycle()
-    val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.firstOrNull()?.name ?: ""
+    val defaultCategory = prefs["defaultCategory"]?.takeIf { n -> categories.any { it.name == n } } ?: categories.minByOrNull { it.id }?.name ?: ""
 
     // Home, history and settings are one swipeable pager (RTL swipe = next tab).
     val pager = rememberPagerState(pageCount = { 3 })
@@ -220,6 +220,8 @@ fun KisApp(
                 onRequestHandled()
             }
             ShellRequest.HOME -> { pager.scrollToPage(0); onRequestHandled() }
+            // An open editor (e.g. a typed shift) is kept as it is; otherwise a new shift with the default place.
+            ShellRequest.NEW_SHIFT -> { pager.scrollToPage(0); if (editorJson == null) openNew(); onRequestHandled() }
             ShellRequest.RATES -> {
                 pager.scrollToPage(1); history.planned = false
                 // After a cold start from the notification the shifts are still loading: wait for them briefly.
@@ -286,7 +288,13 @@ fun KisApp(
                     plans = plans, planActions = planActions,
                     onAllPlans = { history.selection = emptySet(); history.searching = false; history.planned = true; go(1) },
                     unread = unread || update != null, onBell = { bellOpen = true },
-                    onRecap = { storyScope = it })
+                    onRecap = { storyScope = it },
+                    onAging = { g ->
+                        history.selection = emptySet(); history.searching = false; history.query = ""; history.planned = false
+                        history.showFilter = HistoryFilter(period = Period.RANGE, from = EntryDraft.startOfDay(g.from), to = EntryDraft.startOfDay(g.to),
+                            pay = PayFilter.UNPAID, category = g.category, currency = g.currency)
+                        go(1)
+                    })
                 1 -> KisHistory(history, pager.currentPage == 1, entries, categories, viewModel, navHeight, onOpen = { detailId = it.id }, onDeleted = onDeleted, onMessage = { say(it) },
                     plans = plans, planActions = planActions)
                 else -> Box(Modifier.onFocusChanged { settingsHasFocus = it.hasFocus }) {

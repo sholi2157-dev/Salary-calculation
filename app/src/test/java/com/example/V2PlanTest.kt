@@ -156,7 +156,8 @@ class V2PlanTest {
             assertEquals(0, dao.importBackup(back).added); assertEquals(1, dao.getSeries().size); assertEquals(1, dao.getExceptions().size)
             // Deleting the workplace moves its plan to the remaining one; nothing is deleted.
             dao.insertCategory(com.example.data.WorkCategory(name = "אחר", defaultRate = 40.0))
-            dao.removeCategorySafely(dao.getCategoryByName("מסעדה")!!)
+            dao.setLocalPreference(com.example.data.WorkLocalPreference("defaultCategory", "אחר")) // The effective default cannot be deleted (2.4 task 02).
+            assertTrue(dao.removeCategorySafely(dao.getCategoryByName("מסעדה")!!))
             assertEquals("אחר", dao.getSeries().single().category)
         } finally { database.close() }
     }
