@@ -44,6 +44,31 @@ This task changes CI and documentation only; it does not publish or deploy anyth
   real signed 2.3.1 → candidate retained-data update, fresh install, safe Web preview and
   owner phone review. Unit tests alone do not establish live sync or device compatibility.
 
+## Task 04 — worker gate reliability (2026-11-10)
+
+- Local baseline: `updates.cjs` passed 27/30 runs; three timed out at B/C.
+  Diagnostic failure: old controller/active worker `activated`, replacement
+  `installed`/waiting. The old helper sent `GET_BUILD_INFO` every 50ms and
+  repeated update jobs while waiting for automatic activation.
+- First fix: the helper observes `controllerchange`/`statechange` instead of
+  polling, and requests at most one update job. That reached 29/30; the
+  remaining failure had the same states.
+- Root cause (instrumented runs, Chromium source): for a skipWaiting swap
+  Chromium stops the outgoing worker as soon as possible. A `GET_BUILD_INFO`
+  message arriving during that stop restarts the old worker and clears the
+  "terminate asap" request; with DevTools attached (Playwright) the restarted
+  worker is never idle-stopped, so the replacement stays waiting. The traced
+  failure showed the old worker's boot id change exactly at the harness message.
+- The helper now messages a controller only when it is the registration's
+  active worker and nothing is installing or waiting, once per worker. The
+  same 30s lifecycle deadline remains (the per-message 500ms timer was removed;
+  it raced the same restart). Result: 30/30 serial, 120/120 with 8 parallel
+  copies (the previous helper failed 4/150 under that load).
+- No worker/app behavior, cache version, data, fixture or deployment changes.
+  The legacy migration, A/B/C, no-reload, failed-install, offline and 22/8 exact
+  storage assertions remain. Final loop and CI evidence are recorded in the PR
+  and task-04 manager report; no production or phone acceptance is claimed.
+
 Earlier evidence and task scopes follow as history.
 
 # Website automatic updates and Android 2.0.5 published — 2026-10-21

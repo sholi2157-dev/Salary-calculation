@@ -37,26 +37,51 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   while(Date.now()<deadline){if(await page.evaluate(predicate,arg))return;await page.waitForTimeout(50);}
   throw Error('Worker condition timed out');
  }
- // Ask the browser for an update job when its navigation soft-check is coalesced
- // with another registration. No UI action/reload is requested or simulated.
- async function ready(page,version){await waitCheck(page,async expected=>{
-  const worker=navigator.serviceWorker.controller;
-  if(worker?.state==='activated'){
-   const matches=await new Promise(resolve=>{
-    const c=new MessageChannel(),timer=setTimeout(()=>{c.port1.close();resolve(false);},500);
-    c.port1.onmessage=e=>{clearTimeout(timer);c.port1.close();resolve(e.data.buildId.startsWith(expected));};
-    worker.postMessage({type:'GET_BUILD_INFO'},[c.port2]);
-   });
-   if(matches)return true;
-  }
-  if(Date.now()>(window.nextWorkerProbe||0)){
-   window.nextWorkerProbe=Date.now()+1000;
-   const r=await navigator.serviceWorker.getRegistration();
-   if(r&&!r.installing&&!r.waiting)try{await r.update();}catch{}
-  }
-  return false;
+ // Never dispatch an event to an outgoing controller while another worker is
+ // installing or waiting. Chromium stops the old worker as soon as possible for
+ // a skipWaiting swap; a message arriving then restarts it, which clears that
+ // request, and with DevTools attached (Playwright) the restarted worker is
+ // never idle-stopped, so the new worker stays "installed". Wait on lifecycle
+ // events instead and query only a settled controller, once per worker.
+ async function ready(page,version){await page.evaluate(async expected=>{
+  let registration;
+  await new Promise((resolve,reject)=>{
+   const observed=new Set(),listeners=new Set();let finished=false,updateRequested=false;
+   const watch=worker=>{if(worker&&!listeners.has(worker)){listeners.add(worker);worker.addEventListener('statechange',inspect);}};
+   const finish=error=>{
+    if(finished)return;finished=true;clearTimeout(deadline);
+    navigator.serviceWorker.removeEventListener('controllerchange',inspect);
+    registration?.removeEventListener('updatefound',inspect);
+    for(const worker of listeners)worker.removeEventListener('statechange',inspect);
+    error?reject(error):resolve();
+   };
+   const deadline=setTimeout(()=>finish(Error('Worker condition timed out: '+JSON.stringify({
+    expected,controller:navigator.serviceWorker.controller?.state,
+    active:registration?.active?.state,waiting:registration?.waiting?.state,
+    installing:registration?.installing?.state
+   }))),30000);
+   async function inspect(){
+    if(finished||!registration)return;
+    const worker=navigator.serviceWorker.controller;
+    [worker,registration.installing,registration.waiting,registration.active].forEach(watch);
+    if(registration.installing||registration.waiting)return; // A swap is pending.
+    if(!worker||worker!==registration.active||worker.state!=='activated'||observed.has(worker))return;
+    observed.add(worker);
+    const buildId=await new Promise(resolve=>{
+     const c=new MessageChannel();
+     c.port1.onmessage=e=>{c.port1.close();resolve(e.data.buildId);};
+     worker.postMessage({type:'GET_BUILD_INFO'},[c.port2]);
+    });
+    if(buildId.startsWith(expected))return finish();
+    // At most one explicit update job when navigation's soft check was coalesced.
+    if(!updateRequested){updateRequested=true;registration.update().catch(()=>{});}
+   }
+   navigator.serviceWorker.addEventListener('controllerchange',inspect);
+   navigator.serviceWorker.ready.then(r=>{
+    registration=r;registration.addEventListener('updatefound',inspect);return inspect();
+   }).catch(finish);
+  });
  },version);}
-
 
  try{
  const context=await browser.newContext({viewport:{width:390,height:844},locale:'he-IL'});
