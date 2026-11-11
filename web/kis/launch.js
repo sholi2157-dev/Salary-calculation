@@ -25,11 +25,13 @@ const TOUR_ACCOUNTS = 'kis_tour_accounts_v1', TOUR_PENDING = 'kis_tour_pending_v
 function isNewAccount(created, last) {
   return Number.isFinite(created) && Number.isFinite(last) && created > 0 && Math.abs(last - created) <= NEW_ACCOUNT_WINDOW_MS;
 }
-function claimAccount(storage, uid, created, last) {
+/** isNewUser: Firebase's own answer from this browser's sign-in, when known. An account made on another device a moment
+ * ago passes the time window but is not new here (2.4 task 03). */
+function claimAccount(storage, uid, created, last, isNewUser = null) {
   let seen = [];
   try { seen = JSON.parse(storage.getItem(TOUR_ACCOUNTS) || '[]'); if (!Array.isArray(seen)) seen = []; } catch { seen = []; }
   if (seen.includes(uid)) return storage.getItem(TOUR_PENDING) === uid;
-  const fresh = isNewAccount(created, last);
+  const fresh = isNewAccount(created, last) && isNewUser !== false;
   storage.setItem(TOUR_ACCOUNTS, JSON.stringify([...seen, uid]));
   if (fresh) storage.setItem(TOUR_PENDING, uid);
   return fresh;
