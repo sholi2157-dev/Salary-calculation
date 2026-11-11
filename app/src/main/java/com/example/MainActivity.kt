@@ -258,6 +258,8 @@ fun MainAppContent(
     val intentAction by activity.intentActionFlow.collectAsStateWithLifecycle()
     val request = when (intentAction) {
         "com.example.ACTION_IMPORT_EXCEL" -> com.example.ui.kis.ShellRequest.IMPORT
+        // Home-screen shortcut, the same as the website's "הוספת משמרת" (2.4 task 05).
+        "com.example.ACTION_ADD_SHIFT" -> com.example.ui.kis.ShellRequest.NEW_SHIFT
         "com.example.ACTION_OPEN_HISTORY_SEARCH" -> com.example.ui.kis.ShellRequest.HISTORY_SEARCH
         PlanJobs.ACTION_MONTH -> com.example.ui.kis.ShellRequest.HISTORY
         PlanJobs.ACTION_RATES -> com.example.ui.kis.ShellRequest.RATES
