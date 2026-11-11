@@ -73,6 +73,8 @@ fun KisHome(
     onBell: () -> Unit = {},
     /** A recap that is new (from the 30th for 4 more days); afterwards it is in Settings. */
     onRecap: (String) -> Unit = {},
+    /** 2.4 idea C: a "not paid for over 30 days" row was tapped. */
+    onAging: (WorkPay.Aging) -> Unit = {},
 ) {
     val c = Kis.colors
     // A clock that moves on by itself, so "today" and "this week" roll over without new data.
@@ -91,6 +93,8 @@ fun KisHome(
             Hero(week, today, done, hoursByCat, categories, onPending,
                 plannedThisWeek = remember(plans, now) { val from = com.example.domain.V2Plan.dateOf(KisHistoryLogic.weekStart(now)); val to = isoDayPlus(KisHistoryLogic.weekStart(now), 6)
                     plans.count { it.status == com.example.domain.V2Plan.Status.PLANNED && it.date in from..to } })
+            // 2.4 idea C: money owed for more than 30 days, per workplace and currency (display only).
+            AgingFlags(remember(done, now) { WorkPay.unpaidAging(done, now) }, categories, onAging, Modifier.padding(top = 12.dp))
             NowRow(live, onStartLive, onStopLive, onCancelLive, onLiveCurrency)
             val day = remember(now) { com.example.domain.V2Summary.today() }
             remember(entries, day) { freshRecaps(entries, day) }.forEach { scope ->

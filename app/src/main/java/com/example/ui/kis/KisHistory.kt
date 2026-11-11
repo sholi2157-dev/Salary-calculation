@@ -81,6 +81,8 @@ class HistoryUi {
     var planned by mutableStateOf(false)
     /** A month to show next (HistoryFilter.monthKey), e.g. from the monthly summary notification. */
     var showMonth by mutableStateOf<Int?>(null)
+    /** A whole filter to show next, e.g. from Home's "not paid for over 30 days" row (search and selection are cleared). */
+    var showFilter by mutableStateOf<HistoryFilter?>(null)
 }
 
 @Composable
@@ -119,6 +121,7 @@ fun KisHistory(
     // Changing month, filter or search drops shifts that are no longer shown from the selection, so actions
     // (delete, paid, share) only ever touch what is on screen.
     LaunchedEffect(filter, ui.query) { if (ui.selecting) ui.selection = ui.selection.filter { id -> rows.any { it.id == id } }.toSet() }
+    LaunchedEffect(ui.showFilter) { ui.showFilter?.let { filter = it; ui.showFilter = null } }
     LaunchedEffect(ui.showMonth) { ui.showMonth?.let { filter = filter.copy(period = Period.MONTH, month = it); ui.showMonth = null } }
     val listState = rememberLazyListState()
     LaunchedEffect(filter.sort, filter.month, filter.period) { listState.scrollToItem(0) }
