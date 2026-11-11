@@ -1,3 +1,11 @@
+# 2.4.0 release preparation (2026-11-11)
+
+- **Prepared, not published:** version **2.4.0**, Android versionCode **55** (highest tag and RC artifact so far: 54). Public Android is still 2.3.1 / 54.
+- 2.4 tasks 01-05 and 07 are merged into the 2.4 release branches.
+- What's-new "2.4.0" has three identical lines on Web and Android: unpaid shifts over 30 days on Home per workplace; long-press the icon opens "הוספת משמרת"; the notifications card shows all / some / none.
+- Android: `.github/workflows/android-v2-rc.yml` now builds `RC_NAME` 2.4.0 / `RC_CODE` 55 against the unchanged previous-public 2.3.1 / 54 gate (URL and SHA-256 unchanged); nothing has been built, signed or published yet.
+- The manager builds the signed RC and publishes only after the owner's explicit final approval.
+
 # 2.4 task 02 — Settings truth (2026-11-10, review branch)
 
 Android work: `codex/2.4-02-settings-truth-android`, targeting `release/2.4-android` (PR #92).
