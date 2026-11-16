@@ -134,15 +134,36 @@ const changed = () => document.dispatchEvent(new CustomEvent('kis-account'));
 // ---- the sign-in screen, the first time after the 2.1 intro ----
 const INTRO = 'kis_ai_intro_v1';
 let introStep = null;
+let gateBackground = null, gateObserver = null, gateOpener = null, gateToast = null, toastPosition = null;
+function isolateGate() {
+  gateBackground = new Map();
+  const block = () => {
+    for (const node of document.body.children) {
+      if (node === gate || gateBackground.has(node)) continue;
+      gateBackground.set(node, { inert: node.getAttribute('inert'), aria: node.getAttribute('aria-hidden') });
+      node.setAttribute('inert', ''); node.setAttribute('aria-hidden', 'true');
+    }
+  };
+  block(); gateObserver = new MutationObserver(block); gateObserver.observe(document.body, { childList: true });
+}
+function gateContent(html) {
+  gate.innerHTML = html;
+  // Storage errors and their export action belong to the active dialog, too. Preserve the same toast across redraws.
+  if (gateToast) gate.append(gateToast);
+}
 function showGate() {
   // Automated checks of the public site run without an account (the tour then follows the browser).
   if (localStorage.getItem('kis_signin_skip_v1') === '1') return root.KisLaunch.deviceTour(app);
   if (gate) return draw();
+  gateOpener = document.activeElement;
+  gateToast = document.getElementById('toast');
+  toastPosition = gateToast && { parent: gateToast.parentNode, next: gateToast.nextSibling };
   gate = document.createElement('div');
   gate.className = 'launch signin'; gate.dataset.testid = 'signin'; gate.setAttribute('role', 'dialog'); gate.setAttribute('aria-modal', 'true'); gate.setAttribute('aria-labelledby', 'signin-title');
   document.body.append(gate);
   if (introStep == null) introStep = localStorage.getItem(INTRO) === '1' ? 2 : 0;
   draw();
+  isolateGate();
 }
 /** What it is, how to connect, the permissions and why it is safe: in the intro and behind the bell's invitation. */
 function explainCards(withHow = true) {
@@ -156,7 +177,7 @@ function draw() {
   const offline = account.status === 'offline';
   if (introStep < 2) {
     const updated = (app?.store ? root.KisLaunch.launched(app) : 0) >= 2;
-    gate.innerHTML = introStep === 0
+    gateContent(introStep === 0
       ? `<div class="launch-in"><div class="grow"></div>
         <p class="intro-label" style="--d:.1s" data-testid="intro-line-1">חישוב שכר</p><p class="intro-label muted" style="--d:.3s">${updated ? 'גרסה 2.4.0' : 'ברוכים הבאים'}</p>
         <h1 class="intro-head" id="signin-title" style="--d:.6s" data-testid="intro-line-3">כעת סוכן ה-AI שלך מכיר אותך ואת העבודה שלך.</h1>
@@ -168,12 +189,12 @@ function draw() {
       : `<div class="launch-in"><div class="grow"></div><h1 class="launch-words" id="signin-title"><span style="--d:.1s">פשוט מבקשים.</span></h1>
         <div class="intro-chat"><p class="mine" style="--d:.55s">כמה הרווחתי החודש?</p><p style="--d:1s">2,140 ₪ על 15 משמרות.</p><p class="mine" style="--d:1.5s">תרשום מחר 9 עד 5.</p><p style="--d:1.95s">רשמתי ✓</p></div>
         <p class="caption intro-sub" style="--d:2.45s">מתחברים פעם אחת, וזהו.</p>
-        <div class="grow"></div><button class="btn primary" data-a="next" data-testid="intro-next-2">הבא</button></div>`;
+        <div class="grow"></div><button class="btn primary" data-a="next" data-testid="intro-next-2">הבא</button></div>`);
     gate.querySelector('[data-a=next]').onclick = () => { const next = introStep + 1; if (next === 2) (app.browserStorage || localStorage).setItem(INTRO, '1'); introStep = next; draw(); };
     gate.querySelector('[data-a=next]').focus({ preventScroll: true });
     return;
   }
-  gate.innerHTML = `<div class="launch-in"><div class="grow"></div>${U().logo(56)}
+  gateContent(`<div class="launch-in"><div class="grow"></div>${U().logo(56)}
     <h1 class="launch-ask" id="signin-title">מחברים את חשבון Google</h1>
     <p style="margin:0">פעם אחת, וכך האתר, האפליקציה והעוזר שלך רואים את אותן משמרות.</p>
     <p class="caption" style="margin:0">מה שכבר רשום כאן נשאר ועובר לחשבון.</p>
@@ -181,12 +202,25 @@ function draw() {
     ${offline ? '<p class="caption" role="status" style="margin:0" data-testid="signin-offline">אין חיבור לאינטרנט. אפשר להמשיך לעבוד כאן, וכשהחיבור יחזור נבקש להתחבר.</p>' : ''}
     <p class="caption" role="alert" style="margin:0;color:var(--danger)" data-testid="signin-error">${U().esc(account.error || '')}</p>
     <button class="btn primary" data-a="google" data-testid="signin-google"${offline ? ' disabled' : ''}>${GOOGLE}המשך עם Google</button>
-    ${offline ? '<button class="btn ghost" data-a="later" data-testid="signin-later">להמשיך בינתיים</button>' : ''}</div>`;
+    ${offline ? '<button class="btn ghost" data-a="later" data-testid="signin-later">להמשיך בינתיים</button>' : ''}</div>`);
   gate.querySelector('[data-a=google]').onclick = signIn;
   gate.querySelector('[data-a=later]')?.addEventListener('click', hideGate);
-  gate.querySelector('[data-a=google]').focus({ preventScroll: true });
+  gate.querySelector(offline ? '[data-a=later]' : '[data-a=google]').focus({ preventScroll: true });
 }
-function hideGate() { gate?.remove(); gate = null; }
+function hideGate() {
+  if (!gate) return;
+  gateObserver?.disconnect(); gateObserver = null;
+  if (gateToast && toastPosition) toastPosition.parent.insertBefore(gateToast, toastPosition.next?.isConnected ? toastPosition.next : null);
+  gate.remove(); gate = null;
+  for (const [node, before] of gateBackground || []) {
+    for (const [name, value] of [['inert', before.inert], ['aria-hidden', before.aria]]) {
+      if (value == null) node.removeAttribute(name); else node.setAttribute(name, value);
+    }
+  }
+  gateBackground = null; gateToast = null; toastPosition = null;
+  if (gateOpener?.isConnected) gateOpener.focus({ preventScroll: true });
+  gateOpener = null;
+}
 
 async function signIn() {
   account.error = null;
