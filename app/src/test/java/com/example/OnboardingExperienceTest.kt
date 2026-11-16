@@ -66,7 +66,7 @@ class OnboardingExperienceTest {
                 ui.onNodeWithTag("onboarding_root").performTouchInput { click(androidx.compose.ui.geometry.Offset((target.left.value + target.right.value) / 2 * app.resources.displayMetrics.density, (target.top.value + target.bottom.value) / 2 * app.resources.displayMetrics.density)) }
                 assertEquals(index, controller.index)
             }
-            ui.onNodeWithTag("onboarding_next").assertIsDisplayed().assertIsEnabled()
+            ui.onNodeWithTag("onboarding_next").assertIsDisplayed().assertIsEnabled().assertIsFocused()
             ui.onNodeWithTag("onboarding_root").captureRoboImage(filePath = if (dark) "/tmp/onboarding-dark-$width-$index.png" else if (fontScale == 1f) "/tmp/onboarding-$width-$index.png" else "/tmp/onboarding-font-$width-$index.png")
             if (index == 3) {
                 ui.onNodeWithTag("onboarding_back").performClick()

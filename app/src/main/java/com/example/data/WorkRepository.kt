@@ -1,6 +1,5 @@
 package com.example.data
 
-import android.util.Log
 import com.example.api.FirestoreSyncManager
 import kotlinx.coroutines.flow.Flow
 
@@ -65,13 +64,7 @@ class WorkRepository(private val workDao: WorkDao) {
     }
 
     suspend fun syncRemoteEntries(remoteEntries: List<WorkEntry>) {
-        try {
-            for (entry in remoteEntries) {
-                workDao.insertEntry(entry)
-            }
-        } catch (t: Throwable) {
-            Log.w("WorkRepository", "Error syncing remote entries into Room: ${t.localizedMessage}")
-        }
+        workDao.insertEntriesAtomically(remoteEntries)
     }
 
     suspend fun insertCategory(category: WorkCategory) = workDao.insertCategory(category)

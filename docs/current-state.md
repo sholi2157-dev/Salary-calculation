@@ -1,3 +1,22 @@
+# Android review fixes — 2026-11-16 (review branch)
+
+Work: `codex/2.5-review-fixes-android`, targeting `release/2.4-android` from
+`62cbf28`. Scope and per-item evidence: [android-review-fixes-20261116.md](android-review-fixes-20261116.md).
+Persistence failures are surfaced without discarding drafts/records; first-launch focus,
+intro outlines/version and the requested 48dp targets are under review. A known zero
+rate was already handled correctly and has explicit regression coverage.
+
+Public Android is **2.4.0 / code 55**, confirmed read-only from the existing
+[GitHub Release](https://github.com/sholi2157-dev/Salary-calculation/releases/tag/android-v2.4.0-code55)
+published on 2026-11-11. Earlier public-version/preparation notes below are historical.
+This task changes no distribution identity, version, signing, schema or wire format,
+and delivers no signed RC. No merge, deployment, tag or publication is authorized.
+New error copy and the existing undecided intro wording remain for owner review.
+Local validation passed: 336 Debug tests across 61 classes, Debug assembly, 9/9 shared
+fixtures and diff whitespace checks. Light/dark Roborazzi intro/editor/tutorial renders
+were inspected. PR CI and physical-phone/TalkBack limits are recorded with the review;
+no signed update compatibility is claimed.
+
 # 2.4.0 release preparation (2026-11-11)
 
 - **Prepared, not published:** version **2.4.0**, Android versionCode **55** (highest tag and RC artifact so far: 54). Public Android is still 2.3.1 / 54.
