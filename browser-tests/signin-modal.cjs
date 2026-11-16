@@ -15,8 +15,8 @@ const tid = t => `[data-testid="${t}"]`;
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--no-sandbox'] });
   try {
-    for (const fresh of [false, true]) {
-      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', reducedMotion: 'reduce' });
+    for (const width of [360, 390]) for (const theme of ['light', 'dark']) for (const fresh of [false, true]) {
+      const ctx = await browser.newContext({ viewport: { width, height: 844 }, colorScheme: theme, serviceWorkers: 'block', reducedMotion: 'reduce' });
       await ctx.route('**/*', r => new URL(r.request().url()).hostname === '127.0.0.1' ? r.continue() : r.abort());
       await ctx.addInitScript(fresh => {
         localStorage.setItem('kis_web_v1', JSON.stringify({ launched: fresh ? 0 : 2, tourDone: true, whatsNewSeen: '2.4.0' }));
@@ -34,6 +34,24 @@ const tid = t => `[data-testid="${t}"]`;
         testSignedOut();
       });
       await page.waitForSelector(tid('signin'));
+      if (!fresh) {
+        await page.evaluate(() => { KisWhatsNew.VERSION = '9.8.7'; testSignedOut(); });
+        assert.equal(await page.textContent('[data-testid=signin] .intro-label.muted'), 'גרסה 9.8.7', 'version comes from the existing release constant');
+        await page.evaluate(() => { KisWhatsNew.VERSION = '2.4.0'; testSignedOut(); });
+      }
+      const boundaries = await page.$$eval('.intro-chat .mine, .intro-ais b', nodes => {
+        const rgb = c => c.match(/[\d.]+/g).slice(0, 3).map(Number);
+        const lum = c => rgb(c).map(x => { x /= 255; return x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4; }).reduce((s, x, i) => s + x * [.2126, .7152, .0722][i], 0);
+        return nodes.map(n => { const c = getComputedStyle(n), border = lum(c.borderTopColor), bg = lum(getComputedStyle(document.querySelector('[data-testid=signin]')).backgroundColor);
+          return { width: parseFloat(c.borderTopWidth), contrast: (Math.max(border, bg) + .05) / (Math.min(border, bg) + .05) }; });
+      });
+      assert.equal(boundaries.length, 6);
+      assert.ok(boundaries.every(b => b.width >= 1 && b.contrast >= 1.5), JSON.stringify(boundaries));
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      if (process.env.SCREENSHOT_DIR && !fresh) {
+        fs.mkdirSync(process.env.SCREENSHOT_DIR, { recursive: true });
+        await page.screenshot({ path: path.join(process.env.SCREENSHOT_DIR, `welcome-${width}-${theme}.png`) });
+      }
       for (const next of ['intro-next', 'intro-next-2', null]) {
         assert.equal(await page.evaluate(() => [...document.body.children].filter(n => n !== document.querySelector('[data-testid=signin]')).every(n => n.inert && n.getAttribute('aria-hidden') === 'true')), true);
         for (const key of ['Tab', 'Shift+Tab']) for (let i = 0; i < 10; i++) {
@@ -63,6 +81,6 @@ const tid = t => `[data-testid="${t}"]`;
       assert.equal(await page.evaluate(() => Kis.page), 'settings', 'navigation works again');
       assert.deepEqual(errors, []); await ctx.close();
     }
-    console.log('signin-modal: fresh/returning visitors, inert/aria fallback, Tab/Shift+Tab, dynamic siblings and exact restoration passed');
+    console.log('signin-modal: 360/390 light/dark, version source, bubble/chip boundary contrast >=1.5, fresh/returning modal isolation and exact restoration passed');
   } finally { await browser.close(); server.close(); }
 })().catch(e => { console.error(e); process.exit(1); });

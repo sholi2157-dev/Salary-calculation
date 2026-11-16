@@ -309,12 +309,12 @@ button { cursor: pointer; }
 .intro-done { margin: 14px 0 0; font: 1.625rem/2rem var(--display); }
 .intro-ais { margin-top: 14px; display: grid; gap: 8px; }
 .intro-ais div { display: flex; flex-wrap: wrap; gap: 8px; }
-.intro-ais b { padding: 8px 14px; border-radius: 99px; background: var(--surface); font-size: 0.9375rem; }
+.intro-ais b { padding: 8px 14px; border: 1px solid var(--line-strong); border-radius: 99px; background: var(--surface); font-size: 0.9375rem; }
 .intro-chat.small p { font-size: 1.125rem; line-height: 1.5625rem; }
 .intro-chat { display: grid; gap: 10px; margin-top: 14px; }
 .intro-chat p { margin: 0; justify-self: start; max-width: 85%; padding: 12px 18px; border-radius: 24px; font-size: 1.375rem; line-height: 1.875rem; font-weight: 600;
   background: var(--ink); color: var(--bg); opacity: 0; transform: translateY(18px); animation: launch-rise .45s ease-out var(--d) forwards; }
-.intro-chat p.mine { justify-self: end; background: var(--surface); color: var(--ink); }
+.intro-chat p.mine { justify-self: end; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); }
 .intro-card { opacity: 0; transform: translateY(16px); animation: launch-rise .45s ease-out var(--d) forwards; }
 .sheet .intro-card { background: var(--sunk); }
 @media (prefers-reduced-motion: reduce) { .intro-sub, .intro-card, .intro-chat p, .intro-label, .intro-head, .intro-done, .intro-ais { animation: none; opacity: 1; transform: none; } }
