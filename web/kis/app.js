@@ -102,7 +102,12 @@ function detail(e) {
         { label: w.isPaid ? 'סימון כלא שולם' : 'סימון כשולם', onClick: () => markWorkerPaid(i), testid: 'worker-paid' }], 'worker-sheet'); });
     q('[data-a=del]').onclick = () => { const gone = store.deleteEntries([e.id]); close(); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); };
     q('[data-a=paid]').onclick = () => { store.setPaid([e.id], !e.isPaid); close(); };
-    q('[data-a=rate]')?.addEventListener('click', () => { close(); root.KisHistory.state.selection = new Set([e.id]); root.KisHistory.bulkRate(app, render); });
+    q('[data-a=rate]')?.addEventListener('click', () => {
+      close();
+      // A known zero is a real saved amount. Bulk completion deliberately skips known pay; edit this shift explicitly.
+      if (pay != null) return root.KisEditor.open(app, { entry: e, onSaved: id => app.openDetail(id) });
+      root.KisHistory.state.selection = new Set([e.id]); root.KisHistory.bulkRate(app, render);
+    });
     q('[data-a=employer]')?.addEventListener('click', shareEmployer);
     el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => U().shareOrCopy(root.KisShare.worker(e, group[+b.dataset.w], false, U().upcoming(e)), 'שיתוף לעובד'));
     q('[data-a=employer-copy]')?.addEventListener('click', copyEmployer);
