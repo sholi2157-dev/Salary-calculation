@@ -42,6 +42,10 @@ const tid = t => `[data-testid="${t}"]`;
     assert.equal(await page.locator(tid('detail-paid')).count(), 1, 'failed save leaves detail open for retry');
     assert.equal(await page.evaluate(() => Kis.store.data.entries[0].isPaid), false);
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.work_complete_backup).entries[0].isPaid), false);
+    if (process.env.SCREENSHOT_DIR) {
+      fs.mkdirSync(process.env.SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({ path: path.join(process.env.SCREENSHOT_DIR, 'storage-full-paid-390.png') });
+    }
     const [download] = await Promise.all([page.waitForEvent('download'), page.click(tid('toast-action'))]);
     const backup = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
     assert.equal(backup.entries.length, 4000, 'export works even at full quota');
@@ -69,6 +73,7 @@ const tid = t => `[data-testid="${t}"]`;
     await edit.click(tid('save-shift'));
     assert.equal(await edit.locator(tid('notes-input')).inputValue(), 'עריכה סינתטית שנשארת');
     assert.match(await edit.textContent('#toast'), /מומלץ להוריד גיבוי/);
+    if (process.env.SCREENSHOT_DIR) await edit.screenshot({ path: path.join(process.env.SCREENSHOT_DIR, 'storage-full-editor-390.png') });
     assert.deepEqual(errors, []);
     await small.close();
     console.log('storage-full: startup/checkpoints, paid retry, export and retained editor input passed (4000 synthetic rows)');
