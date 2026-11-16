@@ -46,6 +46,28 @@ test('a failure writing the journal itself changes nothing', () => {
   assert.deepEqual(clone(st), before);
 });
 
+test('all storage writes report quota errors, preserve state and allow retry without removing snapshots', () => {
+  const raw = memory(rich), errors = [], st = S.withSaveErrors(raw, e => errors.push(e));
+  const store = S.createStore(st); store.load();
+  for (const key of ['work_pre_rc13_snapshot_v1', 'work_pre_v2_snapshot_v1', 'work_pre_v23_snapshot_v1']) {
+    raw.failOn(key);
+    assert.throws(() => store.setPaid(['r02'], true), /מומלץ להוריד גיבוי/);
+    assert.equal(store.data.entries.find(e => e.id === 'r02').isPaid, false);
+    assert.equal(st.getItem('work_complete_backup'), JSON.stringify(rich.work_complete_backup));
+    assert.equal(errors.at(-1).storageFailure, true);
+    assert.doesNotThrow(() => store.load(), 'reading/export remains available');
+  }
+  store.setPaid(['r02'], true);
+  const before = clone(raw);
+  raw.failOn('kis_web_v1');
+  assert.throws(() => store.setLocal('theme', 'dark'), /אין מספיק מקום/);
+  assert.equal(store.local.theme, undefined, 'failed preference never appears saved in memory');
+  assert.deepEqual(clone(raw), before, 'old snapshots remain byte-identical');
+  raw.failOn('kis_editor_draft_v1');
+  assert.throws(() => st.setItem('kis_editor_draft_v1', '{}'), /מומלץ להוריד גיבוי/);
+  assert.equal(errors.length, 5, 'snapshots, preferences and direct draft writes share the error boundary');
+});
+
 test('an interrupted save is undone on the next load when not every key was written', () => {
   const st = memory(rich);
   S.createStore(st).load();

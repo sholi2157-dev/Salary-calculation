@@ -37,7 +37,7 @@ test('2.4.0: this site is 2.4.0 with exactly the three agreed highlights, the sa
     'בהגדרות, כרטיס ההתראות מראה בדיוק מה פועל: הכול, חלק או כלום.',
   ]);
   for (const line of lines) assert.doesNotMatch(line, /תקלה|באג|תיקון/);
-  assert.match(fs.readFileSync(path.join(__dirname, '..', 'web', 'kis', 'account.js'), 'utf8'), /גרסה 2\.4\.0/);
+  // The welcome label follows this VERSION; its rendered value and future-version changes are covered by signin-modal.
   const kt = path.join(__dirname, '..', 'app', 'src', 'main', 'java', 'com', 'example', 'ui', 'kis', 'KisWhatsNew.kt');
   if (fs.existsSync(kt)) { const src = fs.readFileSync(kt, 'utf8'); for (const line of lines) assert.ok(src.includes(line.replace(/"/g, '\\"')), 'Android has: ' + line); }
 });

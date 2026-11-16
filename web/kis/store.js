@@ -35,7 +35,15 @@ function commitKeys(storage, writes) {
   }
   storage.removeItem(JOURNAL);
 }
-const failure = e => Error('השמירה נכשלה ולא בוצע שום שינוי' + (/quota/i.test(String(e?.name) + String(e?.message)) ? ' (אין מספיק מקום באחסון של הדפדפן)' : ''));
+const failure = e => e?.storageFailure ? e : Object.assign(Error('השמירה נכשלה ולא בוצע שום שינוי' + (/quota/i.test(String(e?.name) + String(e?.message)) ? ' (אין מספיק מקום באחסון של הדפדפן)' : '') + '. מומלץ להוריד גיבוי.'), { storageFailure: true });
+/** One boundary for ALL browser writes, including drafts and device preferences. Reads remain available at full quota.
+ * Rethrow after reporting so the caller cannot close an editor, clear a selection or announce success on a failed save.
+ */
+function withSaveErrors(storage, report) {
+  const write = (method, args) => { try { return storage[method](...args); } catch (e) { const error = failure(e); report(error); throw error; } };
+  return { getItem: k => storage.getItem(k), setItem: (k, v) => write('setItem', [k, v]), removeItem: k => write('removeItem', [k]),
+    key: i => storage.key(i), get length() { return storage.length; } };
+}
 /** A commit that did not finish: finish it if every key already has its new value, otherwise put the old values back. */
 function recoverJournal(storage) {
   const raw = storage.getItem(JOURNAL); if (!raw) return null;
@@ -94,7 +102,9 @@ function createStore(storage, { now = () => Date.now() } = {}) {
     try { local = JSON.parse(storage.getItem(LOCAL) || '{}'); } catch { local = {}; }
     return data;
   }
-  /** One-time copies taken before the first write, so an older site (or a person) can always get back to them. */
+  /** Isolated migration-snapshot policy: preserve every old copy. A failed checkpoint refuses the write; callers can
+   * still read/export and retry. Any future owner-approved retention policy belongs here, never in quota recovery.
+   */
   function snapshots() {
     root.WorkRuntime.checkpoint(storage);
     const keys = ['work_complete_backup', 'user_work_shifts', 'work_transfer_meta', 'work_default_currency'];
@@ -135,7 +145,7 @@ function createStore(storage, { now = () => Date.now() } = {}) {
   }
   function update(fn) { transact(n => fn(n.data)); return data; }
   function updatePlans(fn) { transact(n => fn(n.plans)); }
-  function setLocal(key, value, quiet = false) { local = { ...local, [key]: value }; storage.setItem(LOCAL, JSON.stringify(local)); if (!quiet) emit(); }
+  function setLocal(key, value, quiet = false) { const next = { ...local, [key]: value }; storage.setItem(LOCAL, JSON.stringify(next)); local = next; if (!quiet) emit(); }
 
   /**
    * Recovery while the stored data cannot be read (audit CW-15) or the plans file is damaged (D04): the unreadable text
@@ -224,6 +234,6 @@ function createStore(storage, { now = () => Date.now() } = {}) {
   };
 }
 
-const api = { createStore, commitKeys, recoverJournal, uniqueIds, JOURNAL };
+const api = { createStore, commitKeys, recoverJournal, uniqueIds, withSaveErrors, JOURNAL };
 if (typeof module !== 'undefined') module.exports = api; else root.KisStoreFactory = api;
 })(globalThis);

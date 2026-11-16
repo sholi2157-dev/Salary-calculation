@@ -76,28 +76,29 @@ async function connect() {
 }
 
 function signedIn(fb, user) {
-  const s = readState(localStorage), before = s.current;
+  const browser = app.browserStorage || localStorage;
+  const s = readState(browser), before = s.current;
   if (!s.bound) s.bound = user.uid;
   s.current = user.uid; s.email = user.email || ''; s.name = user.displayName || '';
-  writeState(localStorage, s);
+  writeState(browser, s);
   // The page holds another account's data: start again on this account's own copy.
   // F12: a sign-in still on its way is awaited first: its result tells an account made on another device a moment ago.
   // Decided before any reload below (the reload would lose that result); the decision is kept in this browser only.
   const claimed = localStorage.getItem('kis_signin_skip_v1') === '1' ? Promise.resolve(false)
-    : signInOutcome(user.uid).then(isNew => root.KisLaunch.claimAccount(localStorage, user.uid, Date.parse(user.metadata?.creationTime), Date.parse(user.metadata?.lastSignInTime), isNew));
-  if (before !== user.uid && storageFor(localStorage) !== app.storage) { claimed.finally(() => location.reload()); return; }
+    : signInOutcome(user.uid).then(isNew => root.KisLaunch.claimAccount(browser, user.uid, Date.parse(user.metadata?.creationTime), Date.parse(user.metadata?.lastSignInTime), isNew));
+  if (before !== user.uid && storageFor(browser) !== app.storage) { claimed.finally(() => location.reload()); return; }
   account.user = user; account.status = 'syncing'; hideGate();
   // F12: a new account's first successful connect opens the tour once (after the launch, if it is still showing).
   claimed.then(fresh => { if (account.user?.uid !== user.uid) return; if (fresh) root.KisLaunch.want(app); else root.KisLaunch.maybeTour(app); });
   if (!app.store.local.name && user.displayName) app.store.setLocal('name', user.displayName.split(' ')[0].slice(0, 40), true);
   // 2.1: once per browser, the bell invites to connect a personal AI assistant.
   if (localStorage.getItem('kis_ai_invited_v1') !== '1') {
-    localStorage.setItem('kis_ai_invited_v1', '1');
+    browser.setItem('kis_ai_invited_v1', '1');
     app.store.addRecent({ kind: 'ai', title: 'מחברים את ה-AI שלך', text: 'כמה דקות, ואפשר לשאול את ChatGPT או Claude על המשמרות. לחיצה להסבר', time: Date.now(), month: null });
     app.refresh?.();
   }
   const transport = root.WorkSyncFirestore.firestoreTransport(fb);
-  account.sync = root.WorkSync.createSync({ store: app.store, storage: app.storage, uid: user.uid, deviceId: deviceId(localStorage), transport,
+  account.sync = root.WorkSync.createSync({ store: app.store, storage: app.storage, uid: user.uid, deviceId: deviceId(browser), transport,
     currentUid: () => fb.auth().currentUser?.uid || null });
   unsubscribe?.(); unsubscribe = app.store.subscribe(() => schedule(1500));
   stopListen?.(); stopListen = transport.listen(user.uid, Date.now(), () => schedule(300));
@@ -109,7 +110,8 @@ function signedOut() {
   if (account.erasing) return; // eraseDevice wipes this device and starts the page again itself
   account.user = null; account.sync = null; stopListen?.(); stopListen = null; unsubscribe?.(); unsubscribe = null;
   const s = readState(localStorage);
-  if (s.current) { s.current = null; writeState(localStorage, s); if (app.storage !== localStorage) { location.reload(); return; } }
+  const browser = app.browserStorage || localStorage;
+  if (s.current) { s.current = null; writeState(browser, s); if (app.storage !== browser) { location.reload(); return; } }
   showGate();
 }
 
@@ -132,15 +134,36 @@ const changed = () => document.dispatchEvent(new CustomEvent('kis-account'));
 // ---- the sign-in screen, the first time after the 2.1 intro ----
 const INTRO = 'kis_ai_intro_v1';
 let introStep = null;
+let gateBackground = null, gateObserver = null, gateOpener = null, gateToast = null, toastPosition = null;
+function isolateGate() {
+  gateBackground = new Map();
+  const block = () => {
+    for (const node of document.body.children) {
+      if (node === gate || gateBackground.has(node)) continue;
+      gateBackground.set(node, { inert: node.getAttribute('inert'), aria: node.getAttribute('aria-hidden') });
+      node.setAttribute('inert', ''); node.setAttribute('aria-hidden', 'true');
+    }
+  };
+  block(); gateObserver = new MutationObserver(block); gateObserver.observe(document.body, { childList: true });
+}
+function gateContent(html) {
+  gate.innerHTML = html;
+  // Storage errors and their export action belong to the active dialog, too. Preserve the same toast across redraws.
+  if (gateToast) gate.append(gateToast);
+}
 function showGate() {
   // Automated checks of the public site run without an account (the tour then follows the browser).
   if (localStorage.getItem('kis_signin_skip_v1') === '1') return root.KisLaunch.deviceTour(app);
   if (gate) return draw();
+  gateOpener = document.activeElement;
+  gateToast = document.getElementById('toast');
+  toastPosition = gateToast && { parent: gateToast.parentNode, next: gateToast.nextSibling };
   gate = document.createElement('div');
   gate.className = 'launch signin'; gate.dataset.testid = 'signin'; gate.setAttribute('role', 'dialog'); gate.setAttribute('aria-modal', 'true'); gate.setAttribute('aria-labelledby', 'signin-title');
   document.body.append(gate);
   if (introStep == null) introStep = localStorage.getItem(INTRO) === '1' ? 2 : 0;
   draw();
+  isolateGate();
 }
 /** What it is, how to connect, the permissions and why it is safe: in the intro and behind the bell's invitation. */
 function explainCards(withHow = true) {
@@ -154,9 +177,9 @@ function draw() {
   const offline = account.status === 'offline';
   if (introStep < 2) {
     const updated = (app?.store ? root.KisLaunch.launched(app) : 0) >= 2;
-    gate.innerHTML = introStep === 0
+    gateContent(introStep === 0
       ? `<div class="launch-in"><div class="grow"></div>
-        <p class="intro-label" style="--d:.1s" data-testid="intro-line-1">חישוב שכר</p><p class="intro-label muted" style="--d:.3s">${updated ? 'גרסה 2.4.0' : 'ברוכים הבאים'}</p>
+        <p class="intro-label" style="--d:.1s" data-testid="intro-line-1">חישוב שכר</p><p class="intro-label muted" style="--d:.3s">${updated ? 'גרסה ' + U().esc(root.KisWhatsNew.VERSION) : 'ברוכים הבאים'}</p>
         <h1 class="intro-head" id="signin-title" style="--d:.6s" data-testid="intro-line-3">כעת סוכן ה-AI שלך מכיר אותך ואת העבודה שלך.</h1>
         <p class="intro-label" style="--d:1.1s">מבקשים מהסוכן:</p>
         <div class="intro-chat small"><p class="mine" style="--d:1.4s">כמה הרווחתי החודש?</p><p class="mine" style="--d:1.8s">עבדתי אתמול בכינוס השלוחים 15 שעות, ושניאור נגר ביקש ממני לרשום בהערה סידור כסאות. תוסיף לי בבקשה.</p></div>
@@ -166,12 +189,12 @@ function draw() {
       : `<div class="launch-in"><div class="grow"></div><h1 class="launch-words" id="signin-title"><span style="--d:.1s">פשוט מבקשים.</span></h1>
         <div class="intro-chat"><p class="mine" style="--d:.55s">כמה הרווחתי החודש?</p><p style="--d:1s">2,140 ₪ על 15 משמרות.</p><p class="mine" style="--d:1.5s">תרשום מחר 9 עד 5.</p><p style="--d:1.95s">רשמתי ✓</p></div>
         <p class="caption intro-sub" style="--d:2.45s">מתחברים פעם אחת, וזהו.</p>
-        <div class="grow"></div><button class="btn primary" data-a="next" data-testid="intro-next-2">הבא</button></div>`;
-    gate.querySelector('[data-a=next]').onclick = () => { introStep++; if (introStep === 2) localStorage.setItem(INTRO, '1'); draw(); };
+        <div class="grow"></div><button class="btn primary" data-a="next" data-testid="intro-next-2">הבא</button></div>`);
+    gate.querySelector('[data-a=next]').onclick = () => { const next = introStep + 1; if (next === 2) (app.browserStorage || localStorage).setItem(INTRO, '1'); introStep = next; draw(); };
     gate.querySelector('[data-a=next]').focus({ preventScroll: true });
     return;
   }
-  gate.innerHTML = `<div class="launch-in"><div class="grow"></div>${U().logo(56)}
+  gateContent(`<div class="launch-in"><div class="grow"></div>${U().logo(56)}
     <h1 class="launch-ask" id="signin-title">מחברים את חשבון Google</h1>
     <p style="margin:0">פעם אחת, וכך האתר, האפליקציה והעוזר שלך רואים את אותן משמרות.</p>
     <p class="caption" style="margin:0">מה שכבר רשום כאן נשאר ועובר לחשבון.</p>
@@ -179,12 +202,25 @@ function draw() {
     ${offline ? '<p class="caption" role="status" style="margin:0" data-testid="signin-offline">אין חיבור לאינטרנט. אפשר להמשיך לעבוד כאן, וכשהחיבור יחזור נבקש להתחבר.</p>' : ''}
     <p class="caption" role="alert" style="margin:0;color:var(--danger)" data-testid="signin-error">${U().esc(account.error || '')}</p>
     <button class="btn primary" data-a="google" data-testid="signin-google"${offline ? ' disabled' : ''}>${GOOGLE}המשך עם Google</button>
-    ${offline ? '<button class="btn ghost" data-a="later" data-testid="signin-later">להמשיך בינתיים</button>' : ''}</div>`;
+    ${offline ? '<button class="btn ghost" data-a="later" data-testid="signin-later">להמשיך בינתיים</button>' : ''}</div>`);
   gate.querySelector('[data-a=google]').onclick = signIn;
   gate.querySelector('[data-a=later]')?.addEventListener('click', hideGate);
-  gate.querySelector('[data-a=google]').focus({ preventScroll: true });
+  gate.querySelector(offline ? '[data-a=later]' : '[data-a=google]').focus({ preventScroll: true });
 }
-function hideGate() { gate?.remove(); gate = null; }
+function hideGate() {
+  if (!gate) return;
+  gateObserver?.disconnect(); gateObserver = null;
+  if (gateToast && toastPosition) toastPosition.parent.insertBefore(gateToast, toastPosition.next?.isConnected ? toastPosition.next : null);
+  gate.remove(); gate = null;
+  for (const [node, before] of gateBackground || []) {
+    for (const [name, value] of [['inert', before.inert], ['aria-hidden', before.aria]]) {
+      if (value == null) node.removeAttribute(name); else node.setAttribute(name, value);
+    }
+  }
+  gateBackground = null; gateToast = null; toastPosition = null;
+  if (gateOpener?.isConnected) gateOpener.focus({ preventScroll: true });
+  gateOpener = null;
+}
 
 async function signIn() {
   account.error = null;

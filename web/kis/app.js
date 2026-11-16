@@ -3,10 +3,17 @@
 'use strict';
 const U = () => root.KisUi;
 // The signed-in account's own copy (web/kis/account.js); the browser's existing data for the first account.
-const storage = root.KisAccount.storageFor(localStorage);
+const browserStorage = root.KisStoreFactory.withSaveErrors(localStorage, error =>
+  U().toast(error.message, 'הורדת גיבוי', () => root.KisSettings.downloadBackup(store), 'error'));
+const storage = root.KisAccount.storageFor(browserStorage);
 const store = root.KisStoreFactory.createStore(storage);
+// Failed writes have already been reported. End the current DOM action without an uncaught error; other errors retain
+// their normal diagnostics. Explicit catches (editor, import, sync) still receive the same error and keep their input.
+root.addEventListener?.('error', e => { if (e.error?.storageFailure) e.preventDefault(); });
+root.addEventListener?.('unhandledrejection', e => { if (e.reason?.storageFailure) e.preventDefault(); });
+function backgroundSave(fn) { try { return fn(); } catch (e) { if (!e.storageFailure) throw e; } }
 const app = {
-  store, storage, page: 'home', editorOpen: false, closeEditor: null,
+  store, storage, browserStorage, page: 'home', editorOpen: false, closeEditor: null,
   occurrences: () => root.KisPlans.occurrences(store),
   go(page, opts = {}) { root.KisSettings.event('page', page); if (page === 'settings') root.KisSettings.open(opts.section); this.page = page; this.pageOpts = opts; render(); window.scrollTo({ top: 0 }); },
   refresh() { render(); },
@@ -93,9 +100,14 @@ function detail(e) {
         { label: `שיתוף ל${w.name}`, onClick: () => U().shareOrCopy(root.KisShare.worker(e, w, false, U().upcoming(e)), 'שיתוף לעובד'), testid: 'worker-share' },
         { label: 'העתקה', onClick: async () => { const t = root.KisShare.worker(e, w, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); }, testid: 'worker-copy' },
         { label: w.isPaid ? 'סימון כלא שולם' : 'סימון כשולם', onClick: () => markWorkerPaid(i), testid: 'worker-paid' }], 'worker-sheet'); });
-    q('[data-a=del]').onclick = () => { close(); const gone = store.deleteEntries([e.id]); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); };
+    q('[data-a=del]').onclick = () => { const gone = store.deleteEntries([e.id]); close(); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); };
     q('[data-a=paid]').onclick = () => { store.setPaid([e.id], !e.isPaid); close(); };
-    q('[data-a=rate]')?.addEventListener('click', () => { close(); root.KisHistory.state.selection = new Set([e.id]); root.KisHistory.bulkRate(app, render); });
+    q('[data-a=rate]')?.addEventListener('click', () => {
+      close();
+      // A known zero is a real saved amount. Bulk completion deliberately skips known pay; edit this shift explicitly.
+      if (pay != null) return root.KisEditor.open(app, { entry: e, onSaved: id => app.openDetail(id) });
+      root.KisHistory.state.selection = new Set([e.id]); root.KisHistory.bulkRate(app, render);
+    });
     q('[data-a=employer]')?.addEventListener('click', shareEmployer);
     el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => U().shareOrCopy(root.KisShare.worker(e, group[+b.dataset.w], false, U().upcoming(e)), 'שיתוף לעובד'));
     q('[data-a=employer-copy]')?.addEventListener('click', copyEmployer);
@@ -187,7 +199,7 @@ function start() {
   if (action) history.replaceState(history.state, '', location.pathname + location.hash);
   store.load(); app.applyTheme(); app.applyTextChoices();
   // A browser that had this site before (its 2.0 launch is done) sees this release's highlights once (FB23-F11).
-  app.whatsNew = store.broken ? null : root.KisWhatsNew.pending(store, root.KisLaunch.launched(app) >= root.KisLaunch.LAUNCH_VERSION);
+  app.whatsNew = store.broken ? null : backgroundSave(() => root.KisWhatsNew.pending(store, root.KisLaunch.launched(app) >= root.KisLaunch.LAUNCH_VERSION));
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { app.applyTheme(); render(); });
   document.querySelectorAll('.nav [data-page]').forEach(b => b.onclick = () => { root.KisHistory.state.selection.clear(); app.go(b.dataset.page); });
   document.querySelector('.nav [data-a=add]').onclick = () => app.openNew();
@@ -198,7 +210,7 @@ function start() {
   window.addEventListener('storage', e => { const k = e.key && e.key.replace(/^acct:[^:]+:/, ''); if (!k || ['work_complete_backup', 'work_series_v1', 'kis_web_v1'].includes(k) || k.startsWith('work_active_shift_v1')) { store.load(); render(); } });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!U().closeTopSheet() && app.editorOpen) app.editorBack?.(); } });
   // Ended weekly plans are recorded on open and on every return to the tab, with an undo.
-  const catchUp = () => { const ids = root.KisPlans.catchUp(store);
+  const catchUp = () => { const ids = backgroundSave(() => root.KisPlans.catchUp(store)) || [];
     if (ids.length) U().toast(ids.length === 1 ? 'משמרת קבועה הסתיימה ונרשמה' : `${ids.length} משמרות קבועות הסתיימו ונרשמו`, 'ביטול', () => {
       const rows = store.data.entries.filter(e => ids.includes(e.id) && e.autoConfirmed);
       store.update(d => { d.entries = d.entries.filter(e => !rows.some(r => r.id === e.id)); });
