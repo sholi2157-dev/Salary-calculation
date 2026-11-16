@@ -76,28 +76,29 @@ async function connect() {
 }
 
 function signedIn(fb, user) {
-  const s = readState(localStorage), before = s.current;
+  const browser = app.browserStorage || localStorage;
+  const s = readState(browser), before = s.current;
   if (!s.bound) s.bound = user.uid;
   s.current = user.uid; s.email = user.email || ''; s.name = user.displayName || '';
-  writeState(localStorage, s);
+  writeState(browser, s);
   // The page holds another account's data: start again on this account's own copy.
   // F12: a sign-in still on its way is awaited first: its result tells an account made on another device a moment ago.
   // Decided before any reload below (the reload would lose that result); the decision is kept in this browser only.
   const claimed = localStorage.getItem('kis_signin_skip_v1') === '1' ? Promise.resolve(false)
-    : signInOutcome(user.uid).then(isNew => root.KisLaunch.claimAccount(localStorage, user.uid, Date.parse(user.metadata?.creationTime), Date.parse(user.metadata?.lastSignInTime), isNew));
-  if (before !== user.uid && storageFor(localStorage) !== app.storage) { claimed.finally(() => location.reload()); return; }
+    : signInOutcome(user.uid).then(isNew => root.KisLaunch.claimAccount(browser, user.uid, Date.parse(user.metadata?.creationTime), Date.parse(user.metadata?.lastSignInTime), isNew));
+  if (before !== user.uid && storageFor(browser) !== app.storage) { claimed.finally(() => location.reload()); return; }
   account.user = user; account.status = 'syncing'; hideGate();
   // F12: a new account's first successful connect opens the tour once (after the launch, if it is still showing).
   claimed.then(fresh => { if (account.user?.uid !== user.uid) return; if (fresh) root.KisLaunch.want(app); else root.KisLaunch.maybeTour(app); });
   if (!app.store.local.name && user.displayName) app.store.setLocal('name', user.displayName.split(' ')[0].slice(0, 40), true);
   // 2.1: once per browser, the bell invites to connect a personal AI assistant.
   if (localStorage.getItem('kis_ai_invited_v1') !== '1') {
-    localStorage.setItem('kis_ai_invited_v1', '1');
+    browser.setItem('kis_ai_invited_v1', '1');
     app.store.addRecent({ kind: 'ai', title: 'מחברים את ה-AI שלך', text: 'כמה דקות, ואפשר לשאול את ChatGPT או Claude על המשמרות. לחיצה להסבר', time: Date.now(), month: null });
     app.refresh?.();
   }
   const transport = root.WorkSyncFirestore.firestoreTransport(fb);
-  account.sync = root.WorkSync.createSync({ store: app.store, storage: app.storage, uid: user.uid, deviceId: deviceId(localStorage), transport,
+  account.sync = root.WorkSync.createSync({ store: app.store, storage: app.storage, uid: user.uid, deviceId: deviceId(browser), transport,
     currentUid: () => fb.auth().currentUser?.uid || null });
   unsubscribe?.(); unsubscribe = app.store.subscribe(() => schedule(1500));
   stopListen?.(); stopListen = transport.listen(user.uid, Date.now(), () => schedule(300));
@@ -109,7 +110,8 @@ function signedOut() {
   if (account.erasing) return; // eraseDevice wipes this device and starts the page again itself
   account.user = null; account.sync = null; stopListen?.(); stopListen = null; unsubscribe?.(); unsubscribe = null;
   const s = readState(localStorage);
-  if (s.current) { s.current = null; writeState(localStorage, s); if (app.storage !== localStorage) { location.reload(); return; } }
+  const browser = app.browserStorage || localStorage;
+  if (s.current) { s.current = null; writeState(browser, s); if (app.storage !== browser) { location.reload(); return; } }
   showGate();
 }
 
@@ -167,7 +169,7 @@ function draw() {
         <div class="intro-chat"><p class="mine" style="--d:.55s">כמה הרווחתי החודש?</p><p style="--d:1s">2,140 ₪ על 15 משמרות.</p><p class="mine" style="--d:1.5s">תרשום מחר 9 עד 5.</p><p style="--d:1.95s">רשמתי ✓</p></div>
         <p class="caption intro-sub" style="--d:2.45s">מתחברים פעם אחת, וזהו.</p>
         <div class="grow"></div><button class="btn primary" data-a="next" data-testid="intro-next-2">הבא</button></div>`;
-    gate.querySelector('[data-a=next]').onclick = () => { introStep++; if (introStep === 2) localStorage.setItem(INTRO, '1'); draw(); };
+    gate.querySelector('[data-a=next]').onclick = () => { const next = introStep + 1; if (next === 2) (app.browserStorage || localStorage).setItem(INTRO, '1'); introStep = next; draw(); };
     gate.querySelector('[data-a=next]').focus({ preventScroll: true });
     return;
   }

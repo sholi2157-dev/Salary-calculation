@@ -185,7 +185,7 @@ button { cursor: pointer; }
 .nav .add { width: 48px; padding: 0; background: var(--accent); color: var(--accent-ink); font-size: 1.75rem; line-height: 1; }
 
 /* Messages */
-.toast { position: fixed; inset-inline: 16px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 76px); z-index: 40; display: flex; justify-content: center; pointer-events: none; background: transparent; border: 0; padding: 0; box-shadow: none; }
+.toast { position: fixed; inset-inline: 16px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 76px); z-index: 90; display: flex; justify-content: center; pointer-events: none; background: transparent; border: 0; padding: 0; box-shadow: none; }
 .toast div { pointer-events: auto; display: flex; align-items: center; gap: 10px; background: var(--bar); color: var(--on-bar); border-radius: 99px; padding: 6px 6px 6px 18px;
   padding-inline-start: 18px; min-height: 48px; box-shadow: none; border: 1px solid var(--line); max-width: 520px; font-weight: 600; font-size: 0.875rem; }
 .toast button { border: 0; background: transparent; color: var(--on-bar); text-decoration: underline; text-underline-offset: 3px; font-weight: 700; padding: 10px 12px; border-radius: 99px; min-height: 44px; }
