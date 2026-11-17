@@ -42,17 +42,19 @@ object WorkAccountPreferences {
 object WorkAccountBinding {
     private const val PREFS = "work_account_binding"
     /** Only the app's own device checks set this (the website has the same switch for its automated checks). */
-    fun signInSkipped(context: Context): Boolean = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("skip_signin", false)
-    fun skipSignIn(context: Context, skip: Boolean) { context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("skip_signin", skip).commit() }
-    fun bound(context: Context): String? = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("bound", null)
+    fun signInSkipped(context: Context): Boolean = WorkStorage.preferences(context, PREFS).getBoolean("skip_signin", false)
+    fun skipSignIn(context: Context, skip: Boolean) { WorkStorage.preferences(context, PREFS).edit().putBoolean("skip_signin", skip).commit() }
+    fun bound(context: Context): String? = WorkStorage.preferences(context, PREFS).getString("bound", null)
 
     fun scopeFor(context: Context, uid: String?): WorkAccountScope {
         if (uid == null) return WorkAccountScope(null)
-        val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val prefs = WorkStorage.preferences(context, PREFS)
         val bound = prefs.getString("bound", null) ?: run {
             // A test build may already hold this account's own database (before 2.1): it keeps using it.
             if (context.getDatabasePath(WorkAccountStorage.databaseName(uid)).exists()) return WorkAccountScope(uid)
-            check(prefs.edit().putString("bound", uid).commit()); uid
+            // Fail before opening another database: a temporary failure must never change data ownership.
+            if (!prefs.edit().putString("bound", uid).commit()) throw java.io.IOException("Account binding was not persisted")
+            uid
         }
         return if (bound == uid) WorkAccountScope(null, uid) else WorkAccountScope(uid)
     }

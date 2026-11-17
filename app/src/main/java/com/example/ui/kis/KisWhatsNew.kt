@@ -55,7 +55,7 @@ object WhatsNew {
         return if (fromUpdate) notes[key(versionName)]?.takeIf { it.isNotEmpty() } else null
     }
 
-    private fun prefs(context: Context) = context.getSharedPreferences("kis_whats_new", Context.MODE_PRIVATE)
+    private fun prefs(context: Context) = com.example.data.WorkStorage.preferences(context, "kis_whats_new")
 
     /** This version's highlights for the sheet. */
     data class Note(val version: String, val lines: List<String>)

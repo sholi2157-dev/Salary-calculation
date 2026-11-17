@@ -500,7 +500,7 @@ private fun TopPill(text: String, ink: Color, icon: androidx.compose.ui.graphics
     val c = Kis.colors
     // [on]: a switch that is on (the group button) is filled with the page's one colour (the chosen place's, as on the ruler).
     val fg = if (on != null) onInk else ink
-    Row(Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(99.dp)).background(on ?: if (c.dark) ink.copy(alpha = 0.18f) else c.surface)
+    Row(Modifier.heightIn(min = KisMinTouch).clip(RoundedCornerShape(99.dp)).background(on ?: if (c.dark) ink.copy(alpha = 0.18f) else c.surface)
         .then(if (c.dark || on != null) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(99.dp))).kisClick(onClick = onClick)
         .then(if (on != null) Modifier.semantics { selected = true } else Modifier).testTag(tag).padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -580,7 +580,7 @@ private fun DigitClock(value: String, label: String, style: androidx.compose.ui.
                 if (i == 2) Text(":", color = color, style = style, maxLines = 1)
                 val ch = value.getOrNull(if (i < 2) i else i + 1)?.toString() ?: "-"
                 val on = edit != null && !edit.all && edit.at == i
-                Box(Modifier.clip(RoundedCornerShape(8.dp)).background(if (on) marker.copy(alpha = if (c.dark) 0.30f else 0.20f) else Color.Transparent)
+                Box(Modifier.sizeIn(minWidth = KisMinTouch, minHeight = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (on) marker.copy(alpha = if (c.dark) 0.30f else 0.20f) else Color.Transparent)
                     .drawBehind { if (on) drawRect(marker, topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.12f, size.height - 3.dp.toPx()),
                         size = androidx.compose.ui.geometry.Size(size.width * 0.76f, 3.dp.toPx())) }
                     .kisClick(haptic = KisSettings.Haptic.TICK) { onDigit(i) }
@@ -606,36 +606,42 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
         // Sized from the width in dp, so a large system font cannot push the digits out of the box.
         val digits = ((maxWidth.value * 0.125f).coerceIn(38f, 60f) / LocalDensity.current.fontScale).sp
         val style = KisType.hero.copy(fontSize = digits, lineHeight = digits * 1.05f, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum")
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            @Composable fun cell(label: String, value: String, t: KeyTarget, empty: Boolean, edit: DigitEdit?, tag: String) {
-                val shape = RoundedCornerShape(12.dp)
-                // The time being typed is a lifted card with the place's colour on its edge; the ruler's choice is a soft tint.
-                val lifted = edit != null
-                val chosen = !typing && active == t
-                Column(Modifier.weight(1f).clip(shape)
-                    .background(when { lifted -> if (c.dark) ink.copy(alpha = 0.10f) else c.surface; chosen -> if (c.dark) ink.copy(alpha = 0.16f) else c.surface.copy(alpha = 0.7f); else -> Color.Transparent })
-                    .then(if (lifted) Modifier.border(1.5.dp, accent, shape) else Modifier)
-                    .kisClick { onOpen(t, null) }.semantics { selected = lifted }.testTag(tag).padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(label, color = ink.copy(alpha = if (c.dark) 0.85f else 0.7f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
-                    DigitClock(value, label, style, ink.copy(alpha = if (empty && edit == null) 0.45f else 1f), ink, accent, edit, tag) { i -> onOpen(t, if (empty) null else i) }
-                    if (onNudge != null && !empty) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf(-15, 15).forEach { n ->
-                            Box(Modifier.weight(1f).heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
-                                .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(8.dp)))
-                                .kisClick(haptic = KisSettings.Haptic.TICK) { onNudge(t, n) }
-                                .semantics { contentDescription = "$label ${if (n > 0) "$n דקות קדימה" else "${-n} דקות אחורה"}" }
-                                .testTag("nudge_${t.name.lowercase()}_$n"), contentAlignment = Alignment.Center) {
-                                // One line, left-to-right ("−15", never "15−"), even with a large system font.
-                                Text(if (n > 0) "+$n" else "−${-n}", color = ink, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
-                                    style = androidx.compose.ui.text.TextStyle(fontFamily = Rubik, fontSize = 14.sp, textDirection = TextDirection.Ltr))
-                            }
+        // Four independent 48dp digit targets need one full row on a portrait phone.
+        // Keep the side-by-side layout only where both time fields fit without overlapping targets.
+        val sideBySide = maxWidth >= 500.dp
+        @Composable fun cell(label: String, value: String, t: KeyTarget, empty: Boolean, edit: DigitEdit?, tag: String, modifier: Modifier) {
+            val shape = RoundedCornerShape(12.dp)
+            // The time being typed is a lifted card with the place's colour on its edge; the ruler's choice is a soft tint.
+            val lifted = edit != null
+            val chosen = !typing && active == t
+            Column(modifier.clip(shape)
+                .background(when { lifted -> if (c.dark) ink.copy(alpha = 0.10f) else c.surface; chosen -> if (c.dark) ink.copy(alpha = 0.16f) else c.surface.copy(alpha = 0.7f); else -> Color.Transparent })
+                .then(if (lifted) Modifier.border(1.5.dp, accent, shape) else Modifier)
+                .kisClick { onOpen(t, null) }.semantics { selected = lifted }.testTag(tag).padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(label, color = ink.copy(alpha = if (c.dark) 0.85f else 0.7f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+                DigitClock(value, label, style, ink.copy(alpha = if (empty && edit == null) 0.45f else 1f), ink, accent, edit, tag) { i -> onOpen(t, if (empty) null else i) }
+                if (onNudge != null && !empty) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(-15, 15).forEach { n ->
+                        Box(Modifier.weight(1f).heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+                            .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(8.dp)))
+                            .kisClick(haptic = KisSettings.Haptic.TICK) { onNudge(t, n) }
+                            .semantics { contentDescription = "$label ${if (n > 0) "$n דקות קדימה" else "${-n} דקות אחורה"}" }
+                            .testTag("nudge_${t.name.lowercase()}_$n"), contentAlignment = Alignment.Center) {
+                            // One line, left-to-right ("−15", never "15−"), even with a large system font.
+                            Text(if (n > 0) "+$n" else "−${-n}", color = ink, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
+                                style = androidx.compose.ui.text.TextStyle(fontFamily = Rubik, fontSize = 14.sp, textDirection = TextDirection.Ltr))
                         }
                     }
                 }
             }
-            cell("התחלה", start, KeyTarget.START, startEmpty, startEdit, "clock_start")
+        }
+        if (sideBySide) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            cell("התחלה", start, KeyTarget.START, startEmpty, startEdit, "clock_start", Modifier.weight(1f))
             Text("←", color = ink.copy(alpha = 0.5f), fontSize = 20.sp, modifier = Modifier.padding(top = digits.value.dp * 0.6f))
-            cell("סיום", end, KeyTarget.END, false, endEdit, "clock_end")
+            cell("סיום", end, KeyTarget.END, false, endEdit, "clock_end", Modifier.weight(1f))
+        } else Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            cell("התחלה", start, KeyTarget.START, startEmpty, startEdit, "clock_start", Modifier.fillMaxWidth())
+            cell("סיום", end, KeyTarget.END, false, endEdit, "clock_end", Modifier.fillMaxWidth())
         }
     }
 }
@@ -788,7 +794,7 @@ private fun GroupBlock(d: EntryDraft, directory: List<WorkerDirectory>, onForget
                     Text(w.name, style = KisType.body, color = c.ink, modifier = Modifier.weight(1f), maxLines = 1)
                     SmallNumberField(DurationInput.display(w.hours), "שעות:דקות", Modifier.width(90.dp).testTag("worker_hours_$i"), duration = true) { v -> onDraft(d.copy(workers = d.workers.toMutableList().also { it[i] = w.copy(hours = DurationInput.edit(v)) })) }
                     SmallNumberField(w.bonus, "בונוס", Modifier.width(76.dp).testTag("worker_bonus_$i")) { v -> onDraft(d.copy(workers = d.workers.toMutableList().also { it[i] = w.copy(bonus = v) })) }
-                    Icon(Icons.Outlined.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+                    Icon(Icons.Outlined.Close, "הסרת ${w.name}", tint = c.muted, modifier = Modifier.size(KisMinTouch).clip(RoundedCornerShape(8.dp))
                         .kisClick { onDraft(d.copy(workers = d.workers.filterIndexed { j, _ -> j != i })) }.padding(9.dp))
                 }
             }

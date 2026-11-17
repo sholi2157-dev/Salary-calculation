@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
@@ -72,7 +74,7 @@ class KisUiTest {
             }
         }
     }
-    private fun shot(name: String) = ui.onRoot().captureRoboImage(filePath = "/tmp/kis-$name.png")
+    private fun shot(name: String) = ui.onAllNodes(isRoot()).onLast().captureRoboImage(filePath = "/tmp/kis-$name.png")
     private fun rows() = runBlocking { dao.getEntriesList() }
     /** Robolectric's paused main looper must run the view-model continuations (Room resumes on Main) while we wait. */
     private fun waitFor(timeoutMs: Long, condition: () -> Boolean) = ui.waitUntil(timeoutMs) {
@@ -93,7 +95,8 @@ class KisUiTest {
         ui.onNodeWithTag("day_3").assertExists()
         ui.onNodeWithTag("mode_hours").performClick()
         // The phone's keyboard types into the page; there is no keypad of the app's own.
-        ui.onNodeWithTag("hours_display").performClick()
+        // The label selects the whole duration; the enlarged digits remain independent touch targets.
+        ui.onNodeWithText("שעות ודקות", useUnmergedTree = true).performClick()
         ui.onNodeWithTag("keypad").assertDoesNotExist()
         type("0140")
         ui.onNodeWithTag("editor_meta").assertTextContains("1:40 שעות", substring = true)
@@ -602,9 +605,9 @@ class KisUiTest {
         }
     }
 
-    /** M-34: the touch target minimum is one constant (44dp now, the same as web; 44 vs 48 is the owner's open decision). */
+    /** The November review requires 48dp for Android controls. */
     @Test fun touchTargetMinimumIsOneConstant() {
-        assertEquals(44f, KisMinTouch.value, 0f)
+        assertEquals(48f, KisMinTouch.value, 0f)
     }
 
     /** With a rate the live bar counts money to the agora; the clock moves below it. Without one, the bar keeps the clock. */
@@ -1255,4 +1258,131 @@ class KisUiTest {
         shot("aging-history-360-light")
         assertEquals("display only: nothing stored changed", stored, rows())
     }
+    @Test fun reviewIntroLight360() = reviewIntro(false)
+    @Test fun reviewIntroDark360() = reviewIntro(true)
+
+    private fun reviewIntro(dark: Boolean) {
+        host(dark) { SignInGate(onSignIn = { null }, offline = false, onLater = {}) }
+        ui.mainClock.advanceTimeBy(4_000)
+        val initiallyFocused = ui.onNodeWithTag("intro_next").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Focused]
+        shot("review-intro-${if (dark) "dark" else "light"}")
+        ui.onNodeWithTag("intro_assistants").performScrollTo().assertIsDisplayed()
+        shot("review-intro-chips-${if (dark) "dark" else "light"}")
+        ui.onNodeWithTag("intro_next").performClick()
+        ui.mainClock.advanceTimeBy(4_000)
+        shot("review-chat-${if (dark) "dark" else "light"}")
+        assertTrue("focus starts inside the intro", initiallyFocused)
+        ui.onNodeWithTag("intro_next_2").assertIsFocused()
+    }
+
+    @Test fun introVersionComesFromInstalledBuild() {
+        host { SignInGate(onSignIn = { null }, offline = false, onLater = {}, updated = true) }
+        ui.onNodeWithTag("intro_version").assertTextEquals("גרסה ${BuildConfig.VERSION_NAME}")
+    }
+
+    @Test fun reviewIntroEdgesHaveActualHighContrastPixelsInBothThemes() {
+        var dark by mutableStateOf(false)
+        ui.setContent { KisTheme(darkOverride = dark) { SignInGate(onSignIn = { null }, offline = false, onLater = {}) } }
+        for (isDark in listOf(false, true)) {
+            ui.runOnIdle { dark = isDark }
+            ui.mainClock.advanceTimeBy(4_000)
+            ui.onNodeWithTag("intro_assistants").performScrollTo()
+            val edge = if (isDark) KisDark.lineStrong else KisLight.lineStrong
+            for (tag in listOf("intro_chip_ChatGPT", "intro_bubble_1800")) {
+                val path = "/tmp/kis-review-edge-$isDark-$tag.png"
+                ui.onNodeWithTag(tag).captureRoboImage(filePath = path)
+                val image = android.graphics.BitmapFactory.decodeFile(path)
+                assertTrue("visible outline on $tag", (0..3).any { x -> image.getPixel(x, image.height / 2) == edge.toArgb() })
+            }
+        }
+    }
+
+    @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
+    @Test fun launchIsANativeModalAndKeyboardFocusStaysInside() {
+        var backgroundClicks = 0
+        host {
+            androidx.compose.foundation.layout.Box {
+                KisButton("synthetic background", { backgroundClicks++ }, tag = "review_background")
+                KisLaunch(onDone = {})
+            }
+        }
+        ui.onNode(isDialog()).assertExists()
+        ui.onNodeWithTag("launch_next").assertIsFocused()
+        repeat(6) {
+            ui.onNode(isDialog()).performKeyInput { pressKey(androidx.compose.ui.input.key.Key.Tab) }
+            ui.onNodeWithTag("review_background").assertIsNotFocused()
+        }
+        assertEquals(0, backgroundClicks)
+        ui.onNodeWithTag("launch_next").performClick()
+        ui.onNodeWithTag("launch_first").assertIsFocused()
+        ui.onNodeWithTag("review_background").assertIsNotFocused()
+    }
+
+    @Test fun reviewControlsReach48dpAndStillRespond() {
+        var checked by mutableStateOf(false)
+        var currency by mutableStateOf("₪")
+        var theme by mutableStateOf(ThemeChoice.SYSTEM)
+        host {
+            androidx.compose.foundation.layout.Column {
+                KisSwitch(checked, { checked = it }, Modifier.testTag("review_switch"), "synthetic switch")
+                KisSegmented(ThemeChoice.entries.map { it to it.label }, theme, { theme = it }, tagPrefix = "review_theme")
+                CurrencyToggle(currency, { currency = it }, "review_currency")
+                KisChip("לא יודע", onClick = {}, tag = "review_unknown")
+            }
+        }
+        listOf("review_switch", "review_theme_SYSTEM", "review_theme_LIGHT", "review_theme_DARK",
+            "review_currency_₪", "review_currency_$", "review_unknown").forEach { tag ->
+            ui.onNodeWithTag(tag).assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+        }
+        ui.onNodeWithTag("review_switch").performClick()
+        ui.onNodeWithTag("review_currency_$").performClick()
+        ui.onNodeWithTag("review_theme_DARK").performClick()
+        assertTrue(checked)
+        assertEquals("$", currency)
+        assertEquals(ThemeChoice.DARK, theme)
+    }
+
+    @Test fun reviewClockDigitTargetsAre48dpWithoutOverlap() {
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00"),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        shot("review-clock-48dp")
+        listOf("start", "end").forEach { time ->
+            var right = 0.dp
+            for (i in 0..3) {
+                val node = ui.onNodeWithTag("clock_${time}_d$i", useUnmergedTree = true)
+                node.assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+                val bounds = node.getUnclippedBoundsInRoot()
+                assertTrue("digits cannot overlap", bounds.left >= right)
+                right = bounds.right
+            }
+            listOf(-15, 15).forEach { n -> ui.onNodeWithTag("nudge_${time}_$n").assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp) }
+        }
+        ui.onNodeWithTag("clock_start_d3", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("clock_start_d3", useUnmergedTree = true).assertIsSelected()
+    }
+
+    @Test fun knownZeroRateIsShownAndIsNotOfferedAsMissing() {
+        val entry = WorkEntry(id = 700, category = categories.first().name, date = day, isTimeRange = false,
+            hours = 2.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = true)
+        host { ShiftDetailContent(entry, categories, {}, {}, {}, {}, {}, {}, {}) }
+        ui.onNodeWithText("₪0 לשעה").assertExists()
+        ui.onNodeWithTag("detail_fill_rate").assertDoesNotExist()
+        ui.onNodeWithTag("detail_amount", useUnmergedTree = true).assertTextContains("₪0", substring = true)
+    }
+
+    @Test fun storageFailureIsVisibleBeforeTheAppShellExists() {
+        ui.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                KisTheme { SignInGate(onSignIn = { null }, offline = false, onLater = {}) }
+            }
+        }
+        ui.runOnIdle { WorkStorage.failed() }
+        try {
+            ui.onNodeWithText(WorkStorage.SAVE_FAILED).assertIsDisplayed()
+            assertEquals(LayoutDirection.Rtl, ui.onNodeWithText(WorkStorage.SAVE_FAILED).fetchSemanticsNode().layoutInfo.layoutDirection)
+            ui.onNodeWithText("אישור").performClick()
+            ui.onNodeWithText(WorkStorage.SAVE_FAILED).assertDoesNotExist()
+        } finally { WorkStorage.dismissFailure() }
+    }
+
 }

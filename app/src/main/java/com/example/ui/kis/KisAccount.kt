@@ -1,5 +1,9 @@
 package com.example.ui.kis
 
+import androidx.compose.foundation.border
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -33,7 +37,7 @@ import kotlinx.coroutines.launch
 
 /** 2.1: the AI intro before the sign-in is shown once per installation. */
 object AiIntro {
-    private fun prefs(context: android.content.Context) = context.getSharedPreferences("ai_intro", android.content.Context.MODE_PRIVATE)
+    private fun prefs(context: android.content.Context) = com.example.data.WorkStorage.preferences(context, "ai_intro")
     fun seen(context: android.content.Context) = prefs(context).getBoolean("seen", false)
     fun markSeen(context: android.content.Context) { prefs(context).edit().putBoolean("seen", true).apply() }
 }
@@ -52,6 +56,8 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var step by rememberSaveable { mutableIntStateOf(if (AiIntro.seen(context)) 2 else 0) }
+    val initialFocus = remember { FocusRequester() }
+    LaunchedEffect(step, offline) { initialFocus.requestFocus() }
     androidx.activity.compose.BackHandler(enabled = step in 1..2) { step-- }
     LaunchedEffect(step) { if (step == 2) AiIntro.markSeen(context) }
     Box(Modifier.fillMaxSize().background(c.bg).testTag("signin")) {
@@ -64,7 +70,7 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
                         Column(Modifier.verticalScroll(rememberScrollState()).heightIn(min = maxHeight).fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
                             IntroRise("חישוב שכר", 100, "intro_line_1", label = true)
-                            IntroRise(if (updated) "גרסה 2.3.1" else "ברוכים הבאים", 300, "intro_version", label = true, muted = true)
+                            IntroRise(if (updated) "גרסה ${com.example.BuildConfig.VERSION_NAME}" else "ברוכים הבאים", 300, "intro_version", label = true, muted = true)
                             IntroRise("כעת סוכן ה-AI שלך מכיר אותך ואת העבודה שלך.", 600, "intro_line_2", size = 36)
                             IntroRise("מבקשים מהסוכן:", 1100, "intro_line_3", label = true)
                             IntroBubble("כמה הרווחתי החודש?", 1400, mine = true, small = true)
@@ -73,7 +79,7 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
                             IntroAssistants(2700)
                         }
                     }
-                    KisButton("הבא", { step = 1 }, Modifier.fillMaxWidth(), height = 56.dp, tag = "intro_next")
+                    KisButton("הבא", { step = 1 }, Modifier.fillMaxWidth().focusProperties { canFocus = true }.focusRequester(initialFocus), height = 56.dp, tag = "intro_next")
                 }
                 1 -> {
                     Spacer(Modifier.weight(1f))
@@ -85,7 +91,7 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
                     IntroBubble("רשמתי ✓", 1950, mine = false)
                     IntroRise("מתחברים פעם אחת, וזהו.", 2450, "intro_how_sub", small = true)
                     Spacer(Modifier.weight(1f))
-                    KisButton("הבא", { step = 2 }, Modifier.fillMaxWidth(), height = 56.dp, tag = "intro_next_2")
+                    KisButton("הבא", { step = 2 }, Modifier.fillMaxWidth().focusProperties { canFocus = true }.focusRequester(initialFocus), height = 56.dp, tag = "intro_next_2")
                 }
                 else -> {
                     Spacer(Modifier.weight(1f))
@@ -99,10 +105,10 @@ fun SignInGate(onSignIn: suspend () -> String?, offline: Boolean, onLater: () ->
                     error?.takeIf { it.isNotEmpty() }?.let { Text(it, style = KisType.caption, color = c.danger, modifier = Modifier.testTag("signin_error")) }
                     KisButton(if (busy) "מתחבר…" else "המשך עם Google", {
                         if (!busy) scope.launch { busy = true; error = null; error = onSignIn(); busy = false }
-                    }, Modifier.fillMaxWidth(), enabled = !offline && !busy, height = 56.dp, tag = "signin_google")
+                    }, Modifier.fillMaxWidth().then(if (!offline) Modifier.focusProperties { canFocus = true }.focusRequester(initialFocus) else Modifier), enabled = !offline && !busy, height = 56.dp, tag = "signin_google")
                     if (running && !offline) Text("יש משמרת שרצה עכשיו בטלפון. אפשר להמשיך בינתיים ולסיים אותה, ולהתחבר אחר כך.", style = KisType.caption, color = c.muted,
                         modifier = Modifier.testTag("signin_running"))
-                    if (offline || running) KisButton("להמשיך בינתיים", onLater, Modifier.fillMaxWidth(), KisButtonKind.GHOST, height = 48.dp, tag = "signin_later")
+                    if (offline || running) KisButton("להמשיך בינתיים", onLater, Modifier.fillMaxWidth().then(if (offline) Modifier.focusProperties { canFocus = true }.focusRequester(initialFocus) else Modifier), KisButtonKind.GHOST, height = 48.dp, tag = "signin_later")
                 }
             }
         }
@@ -137,7 +143,7 @@ private fun IntroAssistants(delayMs: Long) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("ChatGPT", "Claude", "Grok", "Muse").forEach {
                 Text(it, style = KisType.label, color = c.ink,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surface).padding(horizontal = 14.dp, vertical = 8.dp))
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surface).border(1.dp, c.lineStrong, RoundedCornerShape(50)).testTag("intro_chip_$it").padding(horizontal = 14.dp, vertical = 8.dp))
             }
         }
     }
@@ -153,7 +159,7 @@ private fun IntroBubble(text: String, delayMs: Long, mine: Boolean, small: Boole
         Text(text, style = KisType.body.copy(fontSize = if (small) 18.sp else 22.sp, lineHeight = if (small) 25.sp else 30.sp, fontWeight = FontWeight.SemiBold),
             color = if (mine) c.ink else c.onInk,
             modifier = Modifier.graphicsLayer { alpha = shown.value; translationY = (1f - shown.value) * 18.dp.toPx() }
-                .clip(RoundedCornerShape(24.dp)).background(if (mine) c.surface else c.ink).padding(horizontal = 18.dp, vertical = 12.dp))
+                .clip(RoundedCornerShape(24.dp)).background(if (mine) c.surface else c.ink).border(1.dp, c.lineStrong, RoundedCornerShape(24.dp)).testTag("intro_bubble_$delayMs").padding(horizontal = 18.dp, vertical = 12.dp))
     }
 }
 
