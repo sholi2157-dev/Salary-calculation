@@ -14,7 +14,10 @@ and delivers no signed RC. No merge, deployment, tag or publication is authorize
 New error copy and the existing undecided intro wording remain for owner review.
 Local validation passed: 336 Debug tests across 61 classes, Debug assembly, 9/9 shared
 fixtures and diff whitespace checks. Light/dark Roborazzi intro/editor/tutorial renders
-were inspected. PR CI and physical-phone/TalkBack limits are recorded with the review;
+were inspected. A final startup-RTL check and deterministic notification-test clock
+also passed (7 targeted Debug + 6 Release). Initial CI exposed only the old 23:59
+wall-clock test assumption; the review records its correction. Final PR CI and
+physical-phone/TalkBack limits are recorded with the review;
 no signed update compatibility is claimed.
 
 # 2.4.0 release preparation (2026-11-11)

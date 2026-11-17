@@ -1371,10 +1371,15 @@ class KisUiTest {
     }
 
     @Test fun storageFailureIsVisibleBeforeTheAppShellExists() {
-        host { SignInGate(onSignIn = { null }, offline = false, onLater = {}) }
+        ui.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                KisTheme { SignInGate(onSignIn = { null }, offline = false, onLater = {}) }
+            }
+        }
         ui.runOnIdle { WorkStorage.failed() }
         try {
             ui.onNodeWithText(WorkStorage.SAVE_FAILED).assertIsDisplayed()
+            assertEquals(LayoutDirection.Rtl, ui.onNodeWithText(WorkStorage.SAVE_FAILED).fetchSemanticsNode().layoutInfo.layoutDirection)
             ui.onNodeWithText("אישור").performClick()
             ui.onNodeWithText(WorkStorage.SAVE_FAILED).assertDoesNotExist()
         } finally { WorkStorage.dismissFailure() }

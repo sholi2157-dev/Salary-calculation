@@ -92,7 +92,7 @@ Final local validation (JDK 21 / Gradle 9.3.1):
 - Final local reports: `app/build/reports/tests/testDebugUnitTest/`.
 - Validation-only Debug APK: `app/build/outputs/apk/debug/app-debug.apk`, package
   `com.aistudio.worktracker.qztvdw`, version 1.4 / code 5 (existing Debug configuration).
-  SHA-256 `46fa05429c1280f63655f99b8bfeaeaf615204141521ae13d75f60b49539d657`.
+  SHA-256 `21674e14727b04687b73cecb0f81a6098223e89e984d1668f1aa327b141e9027`.
   This is not the distribution identity and is not delivered for installation.
 - PR CI/watch/log results and exact review commit are recorded in the PR and the
   requested English handoff report (`/workspace/fable-review/cx/report-android.md`).
@@ -118,3 +118,13 @@ Source anchors for the six-item review (line numbers on the review branch):
    `app/src/main/java/com/example/ui/kis/KisEditor.kt:583` and `:611`;
    `app/src/test/java/com/example/WorkPaletteTest.kt:32`,
    `app/src/test/java/com/example/WorkComponentsTest.kt:45`.
+
+CI follow-up (initial source `292c9e6`): Debug coverage passed; Release ran 270
+cases and failed only `NotificationJobsTest.quietHoursHoldTheNotesBack` at exactly
+23:59 UTC. That existing test used the host clock with a quiet interval ending
+exclusively at 23:59. It now uses a fixed synthetic noon and explicitly asserts
+that the end is excluded. Notification behavior is unchanged. The startup error
+host also explicitly provides RTL before the main shell exists, with an assertion
+from an LTR test host. After these follow-ups: 7 targeted Debug cases, 6 Release
+notification cases and refreshed Debug assembly passed. The 336-test consolidated
+local run above was on `292c9e6`; the PR reruns full CI on the follow-up commit.

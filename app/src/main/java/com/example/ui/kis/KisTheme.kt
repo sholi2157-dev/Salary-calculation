@@ -22,11 +22,13 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.LayoutDirection
 import com.example.R
 import com.example.data.WorkCategory
 
@@ -316,14 +318,17 @@ fun KisTheme(settings: KisSettings = rememberKisSettings(), darkOverride: Boolea
             // Also visible during launch/sign-in, before the main screen can collect ordinary notices.
             val failure by com.example.data.WorkStorage.failure.collectAsState()
             failure?.takeIf { ownsFailureHost }?.let { message ->
-                androidx.compose.material3.AlertDialog(
-                    onDismissRequest = com.example.data.WorkStorage::dismissFailure,
-                    text = { androidx.compose.material3.Text(message) },
-                    confirmButton = {
-                        androidx.compose.material3.TextButton(onClick = com.example.data.WorkStorage::dismissFailure) {
-                            androidx.compose.material3.Text("אישור")
-                        }
-                    })
+                // Startup can fail before MainActivity's Hebrew content provider is composed.
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = com.example.data.WorkStorage::dismissFailure,
+                        text = { androidx.compose.material3.Text(message) },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(onClick = com.example.data.WorkStorage::dismissFailure) {
+                                androidx.compose.material3.Text("אישור")
+                            }
+                        })
+                }
             }
         }
     }
