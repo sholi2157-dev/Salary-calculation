@@ -40,14 +40,23 @@ test('money follows Java %.2f / %,.2f (HALF_UP on the shortest decimal)',()=>{
  assert.equal(Pay.fixed2(-0),'-0.00');assert.equal(Pay.format(1284.5,'₪'),'₪1,284.50');assert.equal(Pay.format(1e7+0.005,'$'),'$10,000,000.01');assert.equal(Pay.format(123456.785,'₪'),'₪123,456.79');
 });
 
-test('copy and share differ, mixed workplaces stay technical, paid amounts are not requested twice',()=>{
+test('copy is the shared text without greeting and thanks; nothing repeats per shift (owner 2026-11-24)',()=>{
  const base=entry(doc.cases[0].entries[0]);
- assert.equal(S.copy([base]).split('\n')[0],'עבודה: מסעדה');
+ assert.equal(S.copy([base]).split('\n')[0],'מסעדה');
  assert.match(S.personal(base),/^היי, סיכמתי פה/);
  assert.doesNotMatch(S.copy([base]),/היי|תודה/);
- assert.equal(S.summary([base,{...base,category:'אחר'}]),S.copy([base,{...base,category:'אחר'}]));
- assert.match(S.personal({...base,isPaid:true}),/₪320.00 שולם במלואו/);
- assert.doesNotMatch(S.personal({...base,isPaid:true}),/לתשלום/);
+ assert.equal(S.summary([base,{...base,category:'אחר'}]).split('\n').slice(1,-1).join('\n'),S.copy([base,{...base,category:'אחר'}]));
+ assert.match(S.personal({...base,isPaid:true}),/סכום: ₪320.00 · שולם/);
+ assert.doesNotMatch(S.personal({...base,isPaid:true}),/לא שולם/);
+ // 21 unpaid shifts at one rate: rate and "לא שולם" appear once, the year once, each line only date, hours, amount.
+ const many=Array.from({length:21},(_,i)=>({...base,date:base.date+i*864e5}));
+ const t=S.summary(many);
+ assert.equal(t.match(/לא שולם/g).length,1); assert.equal(t.match(/לשעה/g).length,1); assert.equal(t.match(/2026/g).length,1);
+ assert.doesNotMatch(t,/ממתין|תעריף לשעה/);
+ for(const line of t.split('\n').filter(l=>/^\d\d\/\d\d ·/.test(l)))assert.match(line,/^\d\d\/\d\d · 8 שעות · ₪320\.00$/);
+ // Mixed: totals say what was paid and what was not, and only then each line says it.
+ const mixed=S.summary([base,{...base,date:base.date+864e5,isPaid:true}]);
+ assert.match(mixed,/סכום: ₪640\.00 · שולם ₪320\.00 · לא שולם ₪320\.00/); assert.match(mixed,/· שולם$/m); assert.match(mixed,/· לא שולם$/m);
  assert.equal(S.workerName([{...base,groupWorkersJson:JSON.stringify([{name:'דני',hours:2}])}],' דני '),'דני');
 });
 test('both modern spreadsheet formats can be read back without turning unknown pay into zero pay',()=>{
