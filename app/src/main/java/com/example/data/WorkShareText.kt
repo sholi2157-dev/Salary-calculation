@@ -42,6 +42,8 @@ object WorkShareText {
         if (date(a) == date(b)) return date(a)
         return (if (sameYear(rows)) shortDate(a) else date(a)) + "–" + date(b)
     }
+    /** " (01/10–30/10/2026)" after a heading; a range that has its own brackets (both calendars) follows a comma instead. */
+    private fun rangeNote(rows: List<WorkEntry>): String = range(rows).let { if (it.contains('(')) ", $it" else " ($it)" }
     private fun rateText(e: WorkEntry) = if (WorkPay.pay(e) == null) "תעריף לא ידוע" else money(e.hourlyRate, e.currency) + " לשעה"
     /** The hourly rate when every shift with a known hourly rate has the same one (and currency); otherwise null. */
     private fun commonRate(rows: List<WorkEntry>): String? {
@@ -104,7 +106,7 @@ object WorkShareText {
     }
     /** "מסעדה · 21 משמרות (01/10–30/10/2026)": the heading of a workplace in a copy or in a report of several workplaces. */
     private fun placeTitle(place: String, es: List<WorkEntry>, future: Boolean) =
-        place + (if (future) " · מתוכנן" else "") + if (es.size > 1) " · ${es.size} משמרות (${range(es)})" else ""
+        place + (if (future) " · מתוכנן" else "") + if (es.size > 1) " · ${es.size} משמרות" + rangeNote(es) else ""
     fun workerName(entries: List<WorkEntry>, query: String): String? = query.trim().takeIf { it.isNotEmpty() }?.let { q ->
         entries.flatMap { WorkPay.workers(it).map { w -> w.name } }.distinct().firstOrNull { it.equals(q, ignoreCase = true) }
     }
@@ -127,7 +129,7 @@ object WorkShareText {
         if (places.size == 1 && share) {
             val (place, es) = places[0]; val n = es.size; val mine = if (name != null) "שלך" else "שלי"
             val what = if (n == 1) (if (WorkPay.isJob(es[0])) "העבודה" else "המשמרת") + (if (future) " המתוכננת " else " ") + mine else "$n המשמרות $mine"
-            out += "$hi, סיכמתי פה את $what ב$place" + (if (n > 1) " (${range(es)})" else "") + ":"
+            out += "$hi, סיכמתי פה את $what ב$place" + (if (n > 1) rangeNote(es) else "") + ":"
             out += body(es, future)
         } else {
             if (share) out += "$hi, סיכמתי פה את המשמרות ${if (name != null) "שלך" else "שלי"}:"
