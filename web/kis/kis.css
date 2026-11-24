@@ -571,3 +571,28 @@ button.grip { border: 0; background: none; padding: 0; min-width: 44px; min-heig
 .detail-actions:not(.gd-actions) { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .detail-actions .btn { background: var(--sunk); color: var(--ink); }
 .detail-actions .btn.danger-text { color: var(--danger); }
+
+/* Folding phones and tablets (Galaxy Z Fold): every width from a 280px cover screen to an unfolded or desktop window.
+   A list never grows past its column (a long date or a chip used to push the cards past the left edge at 280–344px);
+   a narrow cover screen tightens spacing instead of breaking or hiding words. */
+.list { grid-template-columns: minmax(0, 1fr); }
+.list > * { min-width: 0; }
+.editor-top { grid-template-columns: minmax(0, 1fr); }
+.editor-top > *, .time-box { min-width: 0; }
+@media (max-width: 359px) {
+  .kis-page { padding-inline: 12px; }
+  .shift { gap: 10px; padding: 10px 12px; }
+  .shift .top .label { white-space: normal; }
+  .hello > .logo { display: none; }
+  .title-row:has(.history-tool) { gap: 4px; }
+  .history-tool { width: 40px; height: 40px; }
+  .editor-top { padding-inline: 12px; }
+  .top-row h1 { white-space: nowrap; font-size: .9375rem; }
+  .editor .team-pill svg { display: none; }
+  .top-row .pill { padding-inline: 12px; }
+  .set-body .row { flex-wrap: wrap; row-gap: 6px; }
+  .set-body .row > .grow { min-width: 9em; }
+  .time-box { padding: 8px 10px; }
+  .time-box b { font-size: clamp(1.875rem, 11vw, 2.75rem); line-height: 1.1; }
+}
+@media (max-width: 339px) { .page-title { font-size: 1.625rem; line-height: 2rem; } }
