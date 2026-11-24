@@ -4,7 +4,8 @@
 //    the rows that are meant to scroll sideways (places, days, chips). History's cards used to be pushed 11–60px past the
 //    left edge at 280–344px, and the editor's clocks 59px.
 //  - Page titles and the navigation's words stay on one line ("היסטוריה" never breaks).
-//  - On an unfolded or wide screen the content stays one readable column (≤ 560px, centred) below the computer layout.
+//  - On an unfolded phone or a tablet (600–1023px) the page uses the whole width (no empty bands at the sides) and History
+//    shows two cards per row.
 const assert = require('node:assert/strict'), http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const ROOT = path.resolve('public');
@@ -56,9 +57,13 @@ const SCROLLERS = '.places, .days, .chips, .selection-bar .acts';
       await page.click('[data-testid="tab-history"]'); await page.waitForSelector('.list .shift');
       await check('history', '.kis-page');
       assert.deepEqual(await oneLine('.page-title'), [], `${width}px: History's title on one line`);
-      if (width < 1024) {
+      if (width >= 600 && width < 1024) {
         const column = await page.evaluate(() => document.querySelector('.kis-page').getBoundingClientRect().width);
-        assert.ok(column <= 560.5, `${width}px: one readable column (${column}px)`);
+        assert.ok(column >= width - 1, `${width}px: the page uses the whole width (${column}px)`);
+      }
+      if (width >= 600) {
+        const lefts = await page.evaluate(() => [...new Set([...document.querySelectorAll('[data-testid="history-list"] > .shift')].map(c => Math.round(c.getBoundingClientRect().left)))]);
+        assert.equal(lefts.length, 2, `${width}px: History's cards in two columns (${lefts})`);
       }
       await page.click('.list .shift'); await page.waitForSelector('.sheet[aria-modal=true]'); await page.waitForTimeout(250);
       await check('shift details', '.sheet[aria-modal=true]');
@@ -73,6 +78,6 @@ const SCROLLERS = '.places, .days, .chips, .selection-bar .acts';
       await context.close();
     }
     assert.deepEqual(errors, []);
-    console.log('fold-widths: 280/320/344/412/690/884/1280 — nothing past the edge, one-line titles and navigation, one column when unfolded: PASS');
+    console.log('fold-widths: 280/320/344/412/690/884/1280 — nothing past the edge, one-line titles and navigation, the whole width and two columns when unfolded: PASS');
   } finally { await browser.close(); server.close(); }
 })().catch(e => { console.error(e); process.exit(1); });
