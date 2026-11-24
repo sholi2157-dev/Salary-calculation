@@ -85,7 +85,8 @@ function render(el, app, opts = {}) {
   <div class="title-row"><h1 class="page-title">היסטוריה</h1>${state.planned ? '' : `
     <button class="icon-btn history-tool" aria-label="חיפוש" data-a="search" data-testid="history-search">${ICON.search}</button>
     `}<button class="chip${n ? ' on' : ''}" data-a="filters" data-testid="history-filters">${ICON.filter}<span class="chip-label">סינון ומיון</span>${n ? `<span aria-hidden="true">· ${n}</span><span class="sr-only">, ${n} פעילים</span>` : ''}</button>${state.planned ? '' : `
-    <button class="icon-btn history-tool" aria-label="העתקה ל-Excel" data-a="copy" data-testid="history-copy" ${rows.length ? '' : 'disabled'}>${ICON.copy}</button>`}</div>
+    <button class="icon-btn history-tool" aria-label="העתקה ל-Excel" data-a="copy" data-testid="history-copy" ${rows.length ? '' : 'disabled'}>${ICON.copy}</button>
+    <button class="icon-btn history-tool" aria-label="שיתוף המשמרות המוצגות" data-a="share-shown" data-testid="history-share" ${rows.length ? '' : 'disabled'}>${ICON.share}</button>`}</div>
   ${state.planned ? '' : `
     ${state.searching ? `<div class="row" style="align-items:center;margin-bottom:8px"><input class="input grow" type="search" placeholder="חיפוש: מקום, הערה, עובד, סכום" value="${esc(state.query)}" data-f="q" aria-label="חיפוש" data-testid="history-search-input">
       <button class="icon-btn" aria-label="ניקוי" data-a="clear" data-testid="history-search-clear">${ICON.close}</button><button class="chip" data-a="close-search" data-testid="history-search-close">סגירה</button></div>`
@@ -94,8 +95,7 @@ function render(el, app, opts = {}) {
       ${n ? '<button class="chip" data-a="reset" data-testid="history-reset">הצגת הכול</button>' : ''}</div>
     ${f.period === 'MONTH' ? `<div class="row" style="align-items:center"><h2 class="grow" style="font:1.375rem/1.75rem var(--display);margin:0" data-testid="history-month" aria-live="polite">${esc(U().monthName(f.month))}</h2>
       <button class="icon-btn" aria-label="חודש קודם" data-a="prev">${ICON.prev}</button><button class="icon-btn" aria-label="חודש הבא" data-a="next">${ICON.next}</button></div>` : ''}
-    ${rows.length ? `<section class="card" style="margin-top:10px;position:relative" data-testid="history-total" aria-label="סיכום המשמרות המוצגות">
-      <button class="icon-btn" style="position:absolute;top:6px;inset-inline-end:6px" aria-label="שיתוף המשמרות המוצגות" data-a="share-shown" data-testid="history-share">${ICON.share}</button><div class="caption" style="padding-inline-end:44px">${rows.length} משמרות · ${U().duration(rows.reduce((s, e) => s + e.hours, 0))} שעות${(h => h > 0 ? ` · מתוכן ${U().duration(h)} עוד לא עברו` : '')(rows.filter(e => U().upcoming(e)).reduce((s, e) => s + e.hours, 0))}</div>
+    ${rows.length ? `<section class="card" style="margin-top:10px" data-testid="history-total" aria-label="סיכום המשמרות המוצגות"><div class="caption">${rows.length} משמרות · ${U().duration(rows.reduce((s, e) => s + e.hours, 0))} שעות${(h => h > 0 ? ` · מתוכן ${U().duration(h)} עוד לא עברו` : '')(rows.filter(e => U().upcoming(e)).reduce((s, e) => s + e.hours, 0))}</div>
       <div style="display:flex;gap:14px">${totals.length ? totals.map(([c, v]) => `<b class="amount">${moneyHtml(v, c)}</b>`).join('') : '<b class="amount">—</b>'}</div>
       ${pending ? `<button class="pending-flag" data-a="pending" data-testid="history-pending">${pending === 1 ? 'משמרת אחת מחכה לתעריף' : pending + ' משמרות מחכות לתעריף'} <span class="ic" aria-hidden="true">${U().ICON.next}</span></button>` : ''}</section>` : ''}`}
   <div class="list" style="margin-top:8px;${sel.length ? 'padding-bottom:150px' : ''}" data-testid="history-list">${list}</div>
