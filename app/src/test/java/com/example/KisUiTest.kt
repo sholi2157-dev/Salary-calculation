@@ -352,7 +352,12 @@ class KisUiTest {
         val clip = (androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
             .getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip!!.getItemAt(0).text.toString()
         assertTrue(clip.startsWith("עבודה\tתאריך"))
-        ui.onNodeWithTag("history_share").assertIsDisplayed()
+        // Owner 2026-11-24: every fixed button on the title's line, the title in one piece.
+        val titleBox = ui.onNodeWithTag("history_title").getUnclippedBoundsInRoot()
+        listOf("history_search_button", "history_filters", "copy_menu_btn", "history_share").forEach { tag ->
+            val b = ui.onNodeWithTag(tag).assertIsDisplayed().getUnclippedBoundsInRoot()
+            assertTrue("$tag on the title line", b.top < titleBox.bottom && b.bottom > titleBox.top)
+        }
     }
 
     @Test fun longPressForgetsASavedWorkerButNotHistory() {

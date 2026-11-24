@@ -147,16 +147,29 @@ fun KisHistory(
             item(key = "head") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("היסטוריה", style = KisType.page, color = c.ink, modifier = Modifier.weight(1f))
+                        // The title never breaks ("היסטורי" + "ה"): when the tools leave it too little room (a folding phone's
+                        // cover screen, large text), the filter button keeps its icon and count and drops its words.
+                        // (Same rule as the folding-phone change; owner 2026-11-24: every fixed button on this one line.)
+                        val screen = androidx.compose.ui.platform.LocalConfiguration.current
+                        // If that is still not enough (a 280dp cover screen), the title steps down to 22sp at the least.
+                        var compactTools by remember(screen.screenWidthDp, screen.fontScale) { mutableStateOf(false) }
+                        var titleSize by remember(screen.screenWidthDp, screen.fontScale) { mutableStateOf(KisType.page.fontSize.value) }
+                        Text("היסטוריה", style = KisType.page.copy(fontSize = titleSize.sp), color = c.ink, maxLines = 1, softWrap = false,
+                            modifier = Modifier.weight(1f).testTag("history_title"),
+                            onTextLayout = { if (it.hasVisualOverflow) { if (!compactTools) compactTools = true else if (titleSize > 22f) titleSize -= 2f } })
                         run {
                             if (!showPlans) ToolIcon(Icons.Outlined.Search, "חיפוש", "history_search_button") { ui.searching = true }
                             // One button for everything that decides what is shown: dates, order, payment, place, currency.
-                            KisChip(if (filter.activeCount == 0) "סינון ומיון" else "סינון ומיון · ${filter.activeCount}", selected = filter.activeCount > 0,
-                                leading = Icons.Outlined.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = KisMinTouch)
+                            KisChip(when { compactTools && filter.activeCount == 0 -> ""; compactTools -> "${filter.activeCount}"
+                                    filter.activeCount == 0 -> "סינון ומיון"; else -> "סינון ומיון · ${filter.activeCount}" }, selected = filter.activeCount > 0,
+                                leading = Icons.Outlined.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = KisMinTouch,
+                                modifier = if (compactTools) Modifier.semantics { contentDescription = "סינון ומיון" } else Modifier)
                             // Owner request 2026-11-24: copying is a spreadsheet table only, straight away (no menu, no text summary).
                             if (!showPlans) ToolIcon(Icons.Outlined.ContentCopy, "העתקה ל-Excel", "copy_menu_btn") {
                                 if (rows.isEmpty()) onMessage("אין שורות להעתקה") else { copyExcelToClipboard(context, rows); onMessage("הועתק ל-Excel ✓") }
                             }
+                            // Owner request 2026-11-24: share exactly the shifts the filter or search shows.
+                            if (!showPlans && rows.isNotEmpty()) ToolIcon(Icons.Outlined.Share, "שיתוף המשמרות המוצגות", "history_share") { shareRows(rows) }
                         }
                     }
                     if (!showPlans) {
@@ -174,7 +187,7 @@ fun KisHistory(
                         if (rows.isNotEmpty()) Totals(rows, onPending = {
                             ui.selection = rows.filter { !it.payKnown && !WorkPay.isJob(it) }.map { it.id }.toSet()
                             if (ui.selection.isNotEmpty()) bulkOpen = true
-                        }, onShare = { shareRows(rows) })
+                        })
                     }
                 }
             }
@@ -307,7 +320,7 @@ private fun MonthSwitcher(month: Int, onMonth: (Int) -> Unit) {
 }
 
 @Composable
-private fun Totals(rows: List<WorkEntry>, onPending: () -> Unit, onShare: () -> Unit) {
+private fun Totals(rows: List<WorkEntry>, onPending: () -> Unit) {
     val c = Kis.colors
     val totals = WorkPay.totals(rows)
     val pending = WorkPay.pending(rows).count { !WorkPay.isJob(it) }
@@ -318,9 +331,6 @@ private fun Totals(rows: List<WorkEntry>, onPending: () -> Unit, onShare: () -> 
                 if (totals.isEmpty()) Text("—", style = KisType.amount, color = c.ink)
                 else Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) { totals.forEach { (cur, v) -> MoneyText(v, cur, KisType.amount) } }
             }
-            // Owner request 2026-11-24: share exactly the shifts the filter or search shows.
-            Icon(Icons.Outlined.Share, "שיתוף המשמרות המוצגות", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(RoundedCornerShape(12.dp))
-                .kisClick(onClick = onShare).testTag("history_share").padding(12.dp))
         }
         if (pending > 0) PendingFlag(pending, onPending, Modifier.padding(top = 8.dp))
     }
