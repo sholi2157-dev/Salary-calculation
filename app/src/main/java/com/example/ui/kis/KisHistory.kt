@@ -146,9 +146,12 @@ fun KisHistory(
                         // The title never breaks ("היסטורי" + "ה"): when the tools leave it too little room (a folding phone's
                         // cover screen, large text), the filter button keeps its icon and count and drops its words.
                         val screen = androidx.compose.ui.platform.LocalConfiguration.current
+                        // If that is still not enough (a 280dp cover screen), the title steps down to 22sp at the least.
                         var compactTools by remember(screen.screenWidthDp, screen.fontScale) { mutableStateOf(false) }
-                        Text("היסטוריה", style = KisType.page, color = c.ink, maxLines = 1, softWrap = false, modifier = Modifier.weight(1f).testTag("history_title"),
-                            onTextLayout = { if (it.hasVisualOverflow) compactTools = true })
+                        var titleSize by remember(screen.screenWidthDp, screen.fontScale) { mutableStateOf(KisType.page.fontSize.value) }
+                        Text("היסטוריה", style = KisType.page.copy(fontSize = titleSize.sp), color = c.ink, maxLines = 1, softWrap = false,
+                            modifier = Modifier.weight(1f).testTag("history_title"),
+                            onTextLayout = { if (it.hasVisualOverflow) { if (!compactTools) compactTools = true else if (titleSize > 22f) titleSize -= 2f } })
                         run {
                             if (!showPlans) ToolIcon(Icons.Outlined.Search, "חיפוש", "history_search_button") { ui.searching = true }
                             // One button for everything that decides what is shown: dates, order, payment, place, currency.

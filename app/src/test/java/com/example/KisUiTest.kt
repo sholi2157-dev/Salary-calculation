@@ -13,6 +13,9 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
+import androidx.compose.ui.semantics.getOrNull
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.*
 import com.example.ui.WorkViewModel
@@ -1255,4 +1258,109 @@ class KisUiTest {
         shot("aging-history-360-light")
         assertEquals("display only: nothing stored changed", stored, rows())
     }
+
+    // ---- Folding phones (Galaxy Z Fold): a 280–344dp cover screen and a ~690–880dp unfolded screen. Folded, nothing is
+    // cut or pushed past the edge ("היסטוריה" stays one word on one line); unfolded, the app is one centred column of at
+    // most 560dp, as on the web. Screenshots: /tmp/kis-fold-*.png.
+    private fun foldSeed() {
+        runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+            val dayMs = 86_400_000L
+            val today = EntryDraft.startOfDay(System.currentTimeMillis())
+            listOf("מסעדה בשכונה" to 45.0, "שמירה בלילות" to 52.5).forEachIndexed { i, (name, rate) -> dao.insertCategory(WorkCategory(id = i + 1, name = name, defaultRate = rate)) }
+            repeat(8) { i ->
+                val place = if (i % 2 == 0) "מסעדה בשכונה" else "שמירה בלילות"
+                val rate = if (i % 2 == 0) 45.0 else 52.5
+                val hours = 3.0 + i % 4
+                dao.insertEntry(WorkEntry(category = place, date = today - (i * 2 + 1) * dayMs + 12 * 3_600_000L, isTimeRange = false,
+                    hours = hours, hourlyRate = rate, totalEarnings = hours * rate, isPaid = i > 5))
+            }
+        }
+    }
+
+    private fun foldShow(dark: Boolean) {
+        foldSeed()
+        val vm = WorkViewModel(app, WorkRepository(dao))
+        ui.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                KisTheme(darkOverride = dark) { KisFrame { KisApp(vm) } }
+            }
+        }
+        ui.waitUntil(10_000) {
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            ui.onAllNodesWithTag("home_hero").fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    private fun foldShot(name: String) = ui.onRoot().captureRoboImage(filePath = "/tmp/kis-fold-$name.png")
+    private val foldRootWidth get() = ui.onRoot().getBoundsInRoot().right
+
+    /** Every node with [tag] (or any node, unmerged) lies inside the screen's width. */
+    private fun foldInside(what: String, nodes: SemanticsNodeInteractionCollection) {
+        val w = foldRootWidth
+        nodes.fetchSemanticsNodes().forEach { n ->
+            val b = n.boundsInRoot
+            val left = with(ui.density) { b.left.toDp() }; val right = with(ui.density) { b.right.toDp() }
+            assertTrue("$what: ${n.config} at $left..$right outside 0..$w", left >= (-1).dp && right <= w + 1.dp)
+        }
+    }
+
+    private fun foldCover(dark: Boolean, name: String) {
+        foldShow(dark)
+        foldInside("navigation", ui.onAllNodesWithTag("bottom_navigation"))
+        foldInside("navigation item", ui.onAllNodes(hasAnyAncestor(hasTestTag("bottom_navigation")), useUnmergedTree = true))
+        foldShot("$name-home")
+        ui.onNodeWithTag("tab_1").performClick()
+        ui.waitForIdle()
+        // One line: the title's height is one line of the page style (36sp), not two.
+        val title = ui.onNodeWithTag("history_title").getBoundsInRoot()
+        assertTrue("History's title is one line (${title.height})", title.height < 50.dp)
+        val layout = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        ui.onNodeWithTag("history_title").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(layout)
+        assertFalse("History's title is whole, not cut", layout.single().hasVisualOverflow)
+        foldInside("history title and tools", ui.onAllNodes(hasTestTag("history_title") or hasTestTag("history_filters") or hasTestTag("copy_menu_btn")))
+        foldInside("history cards", ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")))
+        foldShot("$name-history")
+        ui.onNodeWithTag("add_entry_button").performClick()
+        ui.waitForIdle()
+        foldInside("editor top", ui.onAllNodes(hasTestTag("editor_close") or hasTestTag("editor_team")))
+        foldShot("$name-editor")
+    }
+
+    @Test @Config(qualifiers = "w280dp-h653dp-xhdpi") fun coverScreen280KeepsEveryWordWhole() = foldCover(false, "280-light")
+    @Test @Config(qualifiers = "w344dp-h882dp-xhdpi") fun coverScreen344KeepsEveryWordWholeDark() = foldCover(true, "344-dark")
+
+    private fun foldOpen(dark: Boolean, name: String) {
+        foldShow(dark)
+        val frame = ui.onNodeWithTag("kis_frame").getBoundsInRoot()
+        assertEquals(560f, frame.width.value, 1f)
+        // Centred: the same space on both sides.
+        assertEquals((foldRootWidth - frame.right).value, frame.left.value, 1f)
+        foldInside("navigation", ui.onAllNodesWithTag("bottom_navigation"))
+        foldShot("$name-home")
+        ui.onNodeWithTag("tab_1").performClick()
+        ui.waitForIdle()
+        ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")).fetchSemanticsNodes().forEach { n ->
+            assertTrue("a card stays inside the column", with(ui.density) { n.boundsInRoot.width.toDp() } <= 560.dp)
+        }
+        foldShot("$name-history")
+        ui.onNodeWithTag("add_entry_button").performClick()
+        ui.waitForIdle()
+        foldShot("$name-editor")
+    }
+
+    @Test @Config(qualifiers = "w690dp-h829dp-xhdpi") fun unfolded690IsOneCentredColumn() = foldOpen(false, "690-light")
+    @Test @Config(qualifiers = "w884dp-h1104dp-xhdpi") fun unfolded884IsOneCentredColumnDark() = foldOpen(true, "884-dark")
+
+    /** A normal phone is unchanged: the column is the whole screen. */
+    @Test @Config(qualifiers = "w360dp-h800dp-xhdpi") fun phone360UsesTheWholeWidth() {
+        foldShow(false)
+        assertEquals(foldRootWidth.value, ui.onNodeWithTag("kis_frame").getBoundsInRoot().width.value, 1f)
+        ui.onNodeWithTag("tab_1").performClick()
+        ui.waitForIdle()
+        assertTrue(ui.onNodeWithTag("history_title").getBoundsInRoot().height < 50.dp)
+        foldShot("360-light-history")
+    }
+
+    private fun hasTestTagStartingWith(prefix: String) =
+        SemanticsMatcher("testTag starts with $prefix") { n -> n.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.TestTag)?.startsWith(prefix) == true }
 }
