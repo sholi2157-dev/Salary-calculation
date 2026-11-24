@@ -1260,8 +1260,8 @@ class KisUiTest {
     }
 
     // ---- Folding phones (Galaxy Z Fold): a 280–344dp cover screen and a ~690–880dp unfolded screen. Folded, nothing is
-    // cut or pushed past the edge ("היסטוריה" stays one word on one line); unfolded, the app is one centred column of at
-    // most 560dp, as on the web. Screenshots: /tmp/kis-fold-*.png.
+    // cut or pushed past the edge ("היסטוריה" stays one word on one line); unfolded, the app uses the whole width, with
+    // Home and History in two columns. Screenshots: /tmp/kis-fold-*.png.
     private fun foldSeed() {
         runBlocking(kotlinx.coroutines.Dispatchers.IO) {
             val dayMs = 86_400_000L
@@ -1331,25 +1331,35 @@ class KisUiTest {
 
     private fun foldOpen(dark: Boolean, name: String) {
         foldShow(dark)
-        val frame = ui.onNodeWithTag("kis_frame").getBoundsInRoot()
-        assertEquals(560f, frame.width.value, 1f)
-        // Centred: the same space on both sides.
-        assertEquals((foldRootWidth - frame.right).value, frame.left.value, 1f)
+        // The whole width, no empty bands at the sides.
+        assertEquals(foldRootWidth.value, ui.onNodeWithTag("kis_frame").getBoundsInRoot().width.value, 1f)
         foldInside("navigation", ui.onAllNodesWithTag("bottom_navigation"))
+        // Home: two columns side by side, each about half the screen.
+        val summary = ui.onNodeWithTag("home_column_summary").getBoundsInRoot()
+        val lists = ui.onNodeWithTag("home_column_lists").getBoundsInRoot()
+        assertTrue("Home's columns sit side by side ($summary, $lists)", summary.right <= lists.left + 1.dp || lists.right <= summary.left + 1.dp)
+        assertTrue("each Home column is about half the width", summary.width > foldRootWidth * 0.4f && lists.width > foldRootWidth * 0.4f)
         foldShot("$name-home")
+        ui.onNodeWithTag("settings_button").performClick()
+        ui.waitForIdle()
+        foldShot("$name-settings")
         ui.onNodeWithTag("tab_1").performClick()
         ui.waitForIdle()
-        ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")).fetchSemanticsNodes().forEach { n ->
-            assertTrue("a card stays inside the column", with(ui.density) { n.boundsInRoot.width.toDp() } <= 560.dp)
-        }
+        // History: two cards per row.
+        val rootPx = with(ui.density) { foldRootWidth.toPx() }
+        val cards = ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")).fetchSemanticsNodes().map { it.boundsInRoot }.filter { it.width > rootPx * 0.3f }
+        assertTrue("History shows cards", cards.size >= 2)
+        assertTrue("History's cards are about half the width", cards.all { it.width < rootPx * 0.55f })
+        assertEquals("History's cards are in two columns", 2, cards.map { Math.round(it.left / 20f) }.distinct().size)
+        foldInside("history cards", ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")))
         foldShot("$name-history")
         ui.onNodeWithTag("add_entry_button").performClick()
         ui.waitForIdle()
         foldShot("$name-editor")
     }
 
-    @Test @Config(qualifiers = "w690dp-h829dp-xhdpi") fun unfolded690IsOneCentredColumn() = foldOpen(false, "690-light")
-    @Test @Config(qualifiers = "w884dp-h1104dp-xhdpi") fun unfolded884IsOneCentredColumnDark() = foldOpen(true, "884-dark")
+    @Test @Config(qualifiers = "w690dp-h829dp-xhdpi") fun unfolded690UsesTheWholeWidth() = foldOpen(false, "690-light")
+    @Test @Config(qualifiers = "w884dp-h1104dp-xhdpi") fun unfolded884UsesTheWholeWidthDark() = foldOpen(true, "884-dark")
 
     /** A normal phone is unchanged: the column is the whole screen. */
     @Test @Config(qualifiers = "w360dp-h800dp-xhdpi") fun phone360UsesTheWholeWidth() {

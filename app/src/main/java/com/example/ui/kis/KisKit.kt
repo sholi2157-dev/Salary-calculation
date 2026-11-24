@@ -92,22 +92,25 @@ import java.util.Locale
  */
 val KisMinTouch: Dp = 44.dp
 
-/**
- * Folding phones and tablets (Galaxy Z Fold unfolded, ~690–880dp): the app is one centred column of at most this width,
- * the same as the web (560px), instead of stretching every card and amount across the screen.
- */
-val KisMaxContent: Dp = 560.dp
-
 /** A folding phone's cover screen (Galaxy Z Fold: 280–344dp) and other very narrow phones: spacing tightens, words stay whole. */
 @Composable
 fun kisNarrow(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 360
 
-/** The app's frame: the page colour edge to edge, the content in one centred column of at most [KisMaxContent]. */
+/**
+ * A wide screen (Galaxy Z Fold unfolded ~690–880dp, a tablet): the app uses the whole width and lays out in two
+ * columns where there are two kinds of content (Home) or many cards (History), instead of one stretched column.
+ */
+@Composable
+fun kisWide(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 600
+
+/** The page's side margin: 16dp on a phone, 24dp on a wide screen. */
+@Composable
+fun kisGutter(): Dp = if (kisWide()) 24.dp else 16.dp
+
+/** The app's frame: the page colour edge to edge, the content across the whole width at every size. */
 @Composable
 fun KisFrame(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Box(modifier.fillMaxSize().background(Kis.colors.bg), contentAlignment = Alignment.TopCenter) {
-        Box(Modifier.widthIn(max = KisMaxContent).fillMaxSize().testTag("kis_frame")) { content() }
-    }
+    Box(modifier.fillMaxSize().background(Kis.colors.bg).testTag("kis_frame")) { content() }
 }
 
 object KisFormat {
@@ -384,7 +387,7 @@ private fun kisFieldColors() = Kis.colors.let { c ->
 @Composable
 fun KisSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier, tag: String? = null, content: @Composable ColumnScope.() -> Unit) {
     val c = Kis.colors
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = c.surface, sheetMaxWidth = KisMaxContent,
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = c.surface,
         contentColor = c.ink, shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp), scrimColor = Color.Black.copy(alpha = 0.45f),
         dragHandle = { Box(Modifier.padding(top = 10.dp, bottom = 4.dp).size(width = 40.dp, height = 4.dp).clip(CircleShape).background(c.line)) }) {
         // Scrolls when the content is taller than the screen (a big team, a large font, the keyboard open), so nothing is

@@ -178,8 +178,7 @@ class MainActivity : ComponentActivity() {
                     LocalLayoutDirection provides LayoutDirection.Rtl,
                     androidx.compose.foundation.LocalOverscrollConfiguration provides null
                 ) {
-                    // One centred column on an unfolded folding phone or a tablet (the launch, sign-in, tour and app alike).
-                    // The former `fillMaxSize().widthIn(max = 680.dp)` never limited anything: a later max cannot undo a fill.
+                    // The whole width at every size; each screen lays itself out for a phone, a cover screen or an unfolded one.
                     com.example.ui.kis.KisFrame {
                         val session by com.example.api.AuthManager.currentUser.collectAsStateWithLifecycle()
                         // All remembered form/selection/AI review state is confined to this owner.

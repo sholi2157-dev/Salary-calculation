@@ -137,8 +137,11 @@ fun KisHistory(
     Box(Modifier.fillMaxSize()) {
         KisGlow(Modifier.fillMaxSize())
         // Below the status bar: the title and its tools must never sit under the system bar (it takes the taps).
+        // A wide screen (an unfolded phone, a tablet): the cards in two columns, not one stretched column.
+        val cols = if (kisWide()) 2 else 1
+        val gutter = kisGutter()
         LazyColumn(state = listState, modifier = Modifier.fillMaxSize().statusBarsPadding().testTag("history_scroll_container"),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = if (ui.selecting) ui.barHeight + 16.dp else bottomInset + 8.dp),
+            contentPadding = PaddingValues(start = gutter, end = gutter, top = 12.dp, bottom = if (ui.selecting) ui.barHeight + 16.dp else bottomInset + 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item(key = "head") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -202,7 +205,7 @@ fun KisHistory(
                         Text("מוסיפים משמרת בתאריך עתידי, או מפעילים \"חוזרת כל שבוע\" במסך ההוספה.", style = KisType.body, color = c.muted, textAlign = TextAlign.Center)
                     }
                 }
-                items(planned, key = { (_, v) -> if (v is WorkEntry) "e${v.id}" else "p" + (v as com.example.domain.V2Plan.Occurrence).key }) { (_, v) ->
+                cardRows(planned, cols, key = { (_, v) -> if (v is WorkEntry) "e${v.id}" else "p" + (v as com.example.domain.V2Plan.Occurrence).key }) { (_, v) ->
                     if (v is WorkEntry) ShiftCard(v, categories, onClick = { onOpen(v) }, tagPrefix = "planned_entry_")
                     else (v as com.example.domain.V2Plan.Occurrence).let { o ->
                         PlannedCard(o, categories, { planActions!!.worked(o) }, { planActions!!.skip(o) }, { planActions!!.hours(o) }, { planActions!!.share(o) })
@@ -214,7 +217,7 @@ fun KisHistory(
                     Text(if (doneEntries.isEmpty()) "משמרת ראשונה מוסיפים בכפתור +" else "אפשר לשנות חודש, חיפוש או סינון", style = KisType.body, color = c.muted, textAlign = TextAlign.Center)
                 }
             } else if (filter.sort == SortOrder.ADDED) {
-                items(rows, key = { it.id }) { e -> HistoryCard(e, categories, ui, onOpen) }
+                cardRows(rows, cols, key = { it.id }) { e -> HistoryCard(e, categories, ui, onOpen) }
             } else {
                 KisHistoryLogic.byWeek(rows).forEach { (week, list) ->
                     item(key = "w$week") {
@@ -223,7 +226,7 @@ fun KisHistory(
                             Text("${KisFormat.duration(list.sumOf { it.hours })} ש׳", style = KisType.label.copy(fontSize = 13.sp), color = c.muted)
                         }
                     }
-                    items(list, key = { it.id }) { e -> HistoryCard(e, categories, ui, onOpen) }
+                    cardRows(list, cols, key = { it.id }) { e -> HistoryCard(e, categories, ui, onOpen) }
                 }
             }
         }
@@ -454,3 +457,14 @@ private fun Section(title: String, hint: String) {
 
 @Composable
 private fun Label(text: String) = Text(text, style = KisType.label, color = Kis.colors.muted)
+
+/** One card per row on a phone; [cols] cards side by side on a wide screen (the last row keeps its empty place). */
+private fun <T> androidx.compose.foundation.lazy.LazyListScope.cardRows(list: List<T>, cols: Int, key: (T) -> Any, card: @Composable (T) -> Unit) {
+    if (cols <= 1) items(list, key = key) { card(it) }
+    else items(list.chunked(cols), key = { r -> "row:" + r.joinToString("|") { key(it).toString() } }) { r ->
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            r.forEach { Box(Modifier.weight(1f)) { card(it) } }
+            repeat(cols - r.size) { Spacer(Modifier.weight(1f)) }
+        }
+    }
+}
