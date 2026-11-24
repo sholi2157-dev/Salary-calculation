@@ -31,7 +31,7 @@ class V2PayTest {
         val report = WorkMoney.report(rows)
         assertTrue(report, report.contains("2 משמרות עוד בלי תעריף"))
         val share = com.example.data.WorkShareText.personal(rows[1])
-        assertTrue(share, share.contains("סכום חסר"))
+        assertTrue(share, share.contains("הסכום עוד לא ידוע"))
         assertFalse(share, share.contains("₪0"))
     }
 

@@ -27,8 +27,6 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -103,6 +101,12 @@ fun KisHistory(
     val settings = Kis.settings
     val context = LocalContext.current
     val owedShare = rememberOwedShare(onMessage)
+    // To a worker (a name searched): a plain report that asks for their details. The user's own shifts: may add the user's payment details.
+    val shareRows: (List<WorkEntry>) -> Unit = { list ->
+        val worker = WorkShareText.workerName(list, ui.query)
+        val text = WorkShareText.summary(list, worker)
+        if (worker != null) KisShare.shareOrCopy(context, text, "שיתוף משמרות", onMessage) else owedShare(text, "שיתוף משמרות")
+    }
     // Done vs planned: shifts on a later day are planned, like weekly plans. They are never in totals, copy or Excel.
     val showPlans = ui.planned
     // The same moving clock as Home: after midnight a planned shift becomes history without new data (audit AND-C03).
@@ -149,16 +153,9 @@ fun KisHistory(
                             // One button for everything that decides what is shown: dates, order, payment, place, currency.
                             KisChip(if (filter.activeCount == 0) "סינון ומיון" else "סינון ומיון · ${filter.activeCount}", selected = filter.activeCount > 0,
                                 leading = Icons.Outlined.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = KisMinTouch)
-                            var copyMenu by remember { mutableStateOf(false) }
-                            if (!showPlans) Box {
-                                ToolIcon(Icons.Outlined.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
-                                DropdownMenu(copyMenu, { copyMenu = false }) {
-                                    DropdownMenuItem(text = { Text("Excel (טבלה)") }, onClick = { copyMenu = false; if (rows.isEmpty()) onMessage("אין שורות להעתקה") else { copyExcelToClipboard(context, rows); onMessage("הטבלה הועתקה ✓ · מוכנה להדבקה באקסל") } })
-                                    DropdownMenuItem(text = { Text("סיכום טכני") }, onClick = {
-                                        copyMenu = false
-                                        KisShare.copy(context, WorkShareText.copy(rows, WorkShareText.workerName(rows, ui.query)), "WhatsApp Report"); onMessage("הסיכום הועתק ✓")
-                                    })
-                                }
+                            // Owner request 2026-11-24: copying is a spreadsheet table only, straight away (no menu, no text summary).
+                            if (!showPlans) ToolIcon(Icons.Outlined.ContentCopy, "העתקה ל-Excel", "copy_menu_btn") {
+                                if (rows.isEmpty()) onMessage("אין שורות להעתקה") else { copyExcelToClipboard(context, rows); onMessage("הועתק ל-Excel ✓") }
                             }
                         }
                     }
@@ -177,7 +174,7 @@ fun KisHistory(
                         if (rows.isNotEmpty()) Totals(rows, onPending = {
                             ui.selection = rows.filter { !it.payKnown && !WorkPay.isJob(it) }.map { it.id }.toSet()
                             if (ui.selection.isNotEmpty()) bulkOpen = true
-                        })
+                        }, onShare = { shareRows(rows) })
                     }
                 }
             }
@@ -219,13 +216,8 @@ fun KisHistory(
         }
         AnimatedVisibility(ui.selecting, modifier = Modifier.align(Alignment.BottomCenter), enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
             SelectionBar(selectedRows, rows, ui,
-                onShare = {
-                    // To a worker (a name searched): a plain report that asks for their details. The user's own shifts: may add the user's payment details.
-                    val worker = WorkShareText.workerName(selectedRows, ui.query)
-                    val text = WorkShareText.summary(selectedRows, worker)
-                    if (worker != null) KisShare.shareOrCopy(context, text, "שיתוף משמרות", onMessage) else owedShare(text, "שיתוף משמרות")
-                    ui.selection = emptySet() },
-                onCopy = { KisShare.copy(context, WorkShareText.copy(selectedRows, WorkShareText.workerName(selectedRows, ui.query))); onMessage("הועתק ✓ · מוכן להדבקה"); ui.selection = emptySet() },
+                onShare = { shareRows(selectedRows); ui.selection = emptySet() },
+                onCopy = { copyExcelToClipboard(context, selectedRows); onMessage("הועתק ל-Excel ✓"); ui.selection = emptySet() },
                 onPaid = { paid ->
                     // M-37: the same message with undo as everywhere; undo puts back each shift's own previous paid mark.
                     val before = selectedRows.groupBy({ it.isPaid }, { it.id })
@@ -315,7 +307,7 @@ private fun MonthSwitcher(month: Int, onMonth: (Int) -> Unit) {
 }
 
 @Composable
-private fun Totals(rows: List<WorkEntry>, onPending: () -> Unit) {
+private fun Totals(rows: List<WorkEntry>, onPending: () -> Unit, onShare: () -> Unit) {
     val c = Kis.colors
     val totals = WorkPay.totals(rows)
     val pending = WorkPay.pending(rows).count { !WorkPay.isJob(it) }
@@ -326,6 +318,9 @@ private fun Totals(rows: List<WorkEntry>, onPending: () -> Unit) {
                 if (totals.isEmpty()) Text("—", style = KisType.amount, color = c.ink)
                 else Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) { totals.forEach { (cur, v) -> MoneyText(v, cur, KisType.amount) } }
             }
+            // Owner request 2026-11-24: share exactly the shifts the filter or search shows.
+            Icon(Icons.Outlined.Share, "שיתוף המשמרות המוצגות", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(RoundedCornerShape(12.dp))
+                .kisClick(onClick = onShare).testTag("history_share").padding(12.dp))
         }
         if (pending > 0) PendingFlag(pending, onPending, Modifier.padding(top = 8.dp))
     }

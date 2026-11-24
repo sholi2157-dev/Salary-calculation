@@ -64,8 +64,6 @@ fun ShiftDetailSheet(entry: WorkEntry, categories: List<WorkCategory>, viewModel
             onPaid = { viewModel.setPaid(listOf(entry.id), it) },
             onEdit = { onEdit(entry) },
             onShare = { owedShare(WorkShareText.entry(entry, future = KisHistoryLogic.upcoming(entry)), "שיתוף משמרת") },
-            // Close the sheet so the confirmation is visible above it.
-            onCopy = { KisShare.copy(context, WorkShareText.entry(entry, technical = true, future = KisHistoryLogic.upcoming(entry))); onDismiss(); onMessage("הועתק ✓ · מוכן להדבקה") },
             onDelete = { confirmDelete = true },
             onCompleteRate = { if (WorkPay.isJob(entry)) onEdit(entry) else completing = true },
             group = { GroupDetail(entry, viewModel, onMessage) })
@@ -91,7 +89,7 @@ fun ShiftDetailSheet(entry: WorkEntry, categories: List<WorkCategory>, viewModel
 
 /** The facts and actions of one shift; used by the detail sheet and by the guided tour. */
 @Composable
-fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid: (Boolean) -> Unit, onEdit: () -> Unit, onShare: () -> Unit, onCopy: () -> Unit,
+fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid: (Boolean) -> Unit, onEdit: () -> Unit, onShare: () -> Unit,
                        onDelete: () -> Unit, onCompleteRate: () -> Unit, group: @Composable () -> Unit) {
     val c = Kis.colors
     val workplace = workplaceOf(entry.category, categories)
@@ -160,7 +158,6 @@ fun ShiftDetailContent(entry: WorkEntry, categories: List<WorkCategory>, onPaid:
             // A group shift has every report (its own part too) under the team's "שיתוף" (design decision B).
             if (!entry.isGroupShift) {
                 KisAction("שיתוף", Icons.Outlined.Share, onShare, Modifier.weight(1f), tag = "share_entry_btn_${entry.id}")
-                KisAction("העתקה", Icons.Outlined.ContentCopy, onCopy, Modifier.weight(1f), tag = "copy_entry_btn_${entry.id}")
             }
             KisAction("מחיקה", Icons.Outlined.DeleteOutline, onDelete, Modifier.weight(1f), danger = true, tag = "delete_entry_btn_${entry.id}")
         }
@@ -182,7 +179,7 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
     var reports by rememberSaveable { mutableStateOf(false) }
     var workerMenu by rememberSaveable { mutableStateOf<Int?>(null) }
     // Design decision B: one block with every total (all from WorkPay, reconciled in whole agorot), one "שיתוף" for the
-    // reports, and one row per worker with its paid state and ⋯ for share, copy and paid.
+    // reports, and one row per worker with its paid state and ⋯ for share and paid.
     Column(Modifier.fillMaxWidth().testTag("group_detail"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (summary != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.sunk).padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             @Composable fun line(k: String, v: Double, tag: String, strong: Boolean = false) = Row(verticalAlignment = Alignment.CenterVertically) {
@@ -226,15 +223,13 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                 .kisClick { onDismiss(); act() }.testTag("${tag}_$i").wrapContentHeight(Alignment.CenterVertically).padding(horizontal = 12.dp))
         }
     }
-    // Two reports, each one row: a tap shares it, the copy icon beside it copies the same report.
+    // Two reports, each one row: a tap shares it (text copy removed by owner request 2026-11-24).
     if (reports) KisSheet(onDismiss = { reports = false }, tag = "group_reports") {
         Text("שיתוף", style = KisType.title, color = c.ink)
         listOf(
-            Triple("דוח למעסיק", { owedShare(WorkShareText.employer(entry, myName, future = future), "סיכום לקבלן") },
-                { KisShare.copy(context, WorkShareText.employer(entry, myName, technical = true, future = future)); onMessage("הדוח הועתק ✓") }),
-            Triple("החלק שלי", { owedShare(WorkShareText.entry(entry, future = future), "שיתוף משמרת") },
-                { KisShare.copy(context, WorkShareText.entry(entry, technical = true, future = future)); onMessage("הועתק ✓") }),
-        ).forEachIndexed { i, (label, share, copy) ->
+            "דוח למעסיק" to { owedShare(WorkShareText.employer(entry, myName, future = future), "סיכום לקבלן") },
+            "החלק שלי" to { owedShare(WorkShareText.entry(entry, future = future), "שיתוף משמרת") },
+        ).forEachIndexed { i, (label, share) ->
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(12.dp)).kisClick { reports = false; share() }
                     .testTag("group_reports_share_$i").padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
@@ -242,15 +237,12 @@ private fun GroupDetail(entry: WorkEntry, viewModel: WorkViewModel, onMessage: (
                     Icon(Icons.Outlined.Share, null, tint = c.muted, modifier = Modifier.size(20.dp))
                     Text(label, style = KisType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
                 }
-                Icon(Icons.Outlined.ContentCopy, "העתקת $label", tint = c.ink, modifier = Modifier.size(KisMinTouch).clip(CircleShape)
-                    .kisClick { reports = false; copy() }.testTag("group_reports_copy_$i").padding(12.dp))
             }
             if (i == 0) KisDivider()
         }
     }
     workerMenu?.let { i -> workers.getOrNull(i)?.let { w -> ActionsSheet(w.name, "group_worker_menu", { workerMenu = null }, listOf(
         "שיתוף ל${w.name}" to { KisShare.shareOrCopy(context, WorkShareText.worker(entry, w, future = future), "שליחה ל${w.name}", onMessage) },
-        "העתקה" to { KisShare.copy(context, WorkShareText.worker(entry, w, technical = true, future = future)); onMessage("הועתק ✓") },
         (if (w.isPaid) "סימון כלא שולם" else "סימון כשולם") to { viewModel.toggleWorkerPaid(entry.id, i) })) } }
 }
 

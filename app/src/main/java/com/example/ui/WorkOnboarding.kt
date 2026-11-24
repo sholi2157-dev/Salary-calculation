@@ -241,7 +241,7 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
                                     CoachScreen.HISTORY -> com.example.ui.kis.KisHistory(remember { com.example.ui.kis.HistoryUi() }, false, entries, categories, viewModel, 0.dp, {}, {}, {})
                                     CoachScreen.SHARE -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
                                         if (entries.isEmpty()) Text("משמרת לדוגמה בלבד · לא נשמרת", color = c.muted, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 12.dp))
-                                        com.example.ui.kis.ShiftDetailContent(sample, categories, onPaid = {}, onEdit = {}, onShare = {}, onCopy = {}, onDelete = {}, onCompleteRate = {}, group = {})
+                                        com.example.ui.kis.ShiftDetailContent(sample, categories, onPaid = {}, onEdit = {}, onShare = {}, onDelete = {}, onCompleteRate = {}, group = {})
                                     }
                                     CoachScreen.CATEGORIES, CoachScreen.API -> com.example.ui.kis.KisSettingsPage(viewModel, categories, onClose = {}, onReplayTour = {})
                                 }
