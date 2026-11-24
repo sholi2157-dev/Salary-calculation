@@ -127,7 +127,8 @@ private fun greeting(): String = when (Calendar.getInstance().get(Calendar.HOUR_
 private fun Hello(unread: Boolean, onBell: () -> Unit) {
     val c = Kis.colors
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        KisLogo()
+        // A folding phone's cover screen gives the app's name the logo's room, so the name stays on one line.
+        if (!kisNarrow()) KisLogo()
         Column(Modifier.weight(1f)) {
             val name = Kis.settings.name.trim()
             Text(if (name.isEmpty()) greeting() else "${greeting()}, $name", style = KisType.caption, color = c.muted, maxLines = 1,

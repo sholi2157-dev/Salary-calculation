@@ -178,13 +178,15 @@ class MainActivity : ComponentActivity() {
                     LocalLayoutDirection provides LayoutDirection.Rtl,
                     androidx.compose.foundation.LocalOverscrollConfiguration provides null
                 ) {
-                    Box(modifier = Modifier.fillMaxSize().background(colors.bg), contentAlignment = Alignment.TopCenter) {
+                    // One centred column on an unfolded folding phone or a tablet (the launch, sign-in, tour and app alike).
+                    // The former `fillMaxSize().widthIn(max = 680.dp)` never limited anything: a later max cannot undo a fill.
+                    com.example.ui.kis.KisFrame {
                         val session by com.example.api.AuthManager.currentUser.collectAsStateWithLifecycle()
                         // All remembered form/selection/AI review state is confined to this owner.
                         androidx.compose.runtime.key(session?.uid) {
                             MainAppContent(
                                 viewModel = modelFor(session?.uid),
-                                modifier = Modifier.fillMaxSize().widthIn(max = 680.dp)
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
                     }

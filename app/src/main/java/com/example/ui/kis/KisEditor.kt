@@ -601,10 +601,10 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
                          onOpen: (KeyTarget, Int?) -> Unit, onNudge: ((KeyTarget, Int) -> Unit)?) {
     val c = Kis.colors
     val typing = startEdit != null || endEdit != null
-    // The digits scale with the width so "00:00" always fits whole (360dp phones included).
+    // The digits scale with the width so "00:00" always fits whole (a 280dp folding-phone cover screen included).
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         // Sized from the width in dp, so a large system font cannot push the digits out of the box.
-        val digits = ((maxWidth.value * 0.125f).coerceIn(38f, 60f) / LocalDensity.current.fontScale).sp
+        val digits = ((maxWidth.value * 0.125f).coerceIn(30f, 60f) / LocalDensity.current.fontScale).sp
         val style = KisType.hero.copy(fontSize = digits, lineHeight = digits * 1.05f, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum")
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             @Composable fun cell(label: String, value: String, t: KeyTarget, empty: Boolean, edit: DigitEdit?, tag: String) {

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -90,6 +91,24 @@ import java.util.Locale
  * button uses it. 44dp, the same minimum as the web (44px). 44 vs 48dp is an open owner decision: change it here only.
  */
 val KisMinTouch: Dp = 44.dp
+
+/**
+ * Folding phones and tablets (Galaxy Z Fold unfolded, ~690–880dp): the app is one centred column of at most this width,
+ * the same as the web (560px), instead of stretching every card and amount across the screen.
+ */
+val KisMaxContent: Dp = 560.dp
+
+/** A folding phone's cover screen (Galaxy Z Fold: 280–344dp) and other very narrow phones: spacing tightens, words stay whole. */
+@Composable
+fun kisNarrow(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 360
+
+/** The app's frame: the page colour edge to edge, the content in one centred column of at most [KisMaxContent]. */
+@Composable
+fun KisFrame(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Box(modifier.fillMaxSize().background(Kis.colors.bg), contentAlignment = Alignment.TopCenter) {
+        Box(Modifier.widthIn(max = KisMaxContent).fillMaxSize().testTag("kis_frame")) { content() }
+    }
+}
 
 object KisFormat {
     /** Keep start–end left-to-right within Hebrew planning rows, as in timeLabel. */
@@ -226,7 +245,7 @@ fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifi
         .semantics { this.selected = selected }
         .padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (leading != null) Icon(leading, null, tint = fg, modifier = Modifier.size(18.dp))
-        Text(text, style = KisType.label, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        if (text.isNotEmpty() || leading == null) Text(text, style = KisType.label, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
 }
 
@@ -365,7 +384,7 @@ private fun kisFieldColors() = Kis.colors.let { c ->
 @Composable
 fun KisSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier, tag: String? = null, content: @Composable ColumnScope.() -> Unit) {
     val c = Kis.colors
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = c.surface,
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = c.surface, sheetMaxWidth = KisMaxContent,
         contentColor = c.ink, shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp), scrimColor = Color.Black.copy(alpha = 0.45f),
         dragHandle = { Box(Modifier.padding(top = 10.dp, bottom = 4.dp).size(width = 40.dp, height = 4.dp).clip(CircleShape).background(c.line)) }) {
         // Scrolls when the content is taller than the screen (a big team, a large font, the keyboard open), so nothing is

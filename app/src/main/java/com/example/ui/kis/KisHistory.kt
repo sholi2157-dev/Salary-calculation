@@ -143,12 +143,19 @@ fun KisHistory(
             item(key = "head") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("היסטוריה", style = KisType.page, color = c.ink, modifier = Modifier.weight(1f))
+                        // The title never breaks ("היסטורי" + "ה"): when the tools leave it too little room (a folding phone's
+                        // cover screen, large text), the filter button keeps its icon and count and drops its words.
+                        val screen = androidx.compose.ui.platform.LocalConfiguration.current
+                        var compactTools by remember(screen.screenWidthDp, screen.fontScale) { mutableStateOf(false) }
+                        Text("היסטוריה", style = KisType.page, color = c.ink, maxLines = 1, softWrap = false, modifier = Modifier.weight(1f).testTag("history_title"),
+                            onTextLayout = { if (it.hasVisualOverflow) compactTools = true })
                         run {
                             if (!showPlans) ToolIcon(Icons.Outlined.Search, "חיפוש", "history_search_button") { ui.searching = true }
                             // One button for everything that decides what is shown: dates, order, payment, place, currency.
-                            KisChip(if (filter.activeCount == 0) "סינון ומיון" else "סינון ומיון · ${filter.activeCount}", selected = filter.activeCount > 0,
-                                leading = Icons.Outlined.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = KisMinTouch)
+                            KisChip(when { compactTools && filter.activeCount == 0 -> ""; compactTools -> "${filter.activeCount}"
+                                    filter.activeCount == 0 -> "סינון ומיון"; else -> "סינון ומיון · ${filter.activeCount}" }, selected = filter.activeCount > 0,
+                                leading = Icons.Outlined.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = KisMinTouch,
+                                modifier = if (compactTools) Modifier.semantics { contentDescription = "סינון ומיון" } else Modifier)
                             var copyMenu by remember { mutableStateOf(false) }
                             if (!showPlans) Box {
                                 ToolIcon(Icons.Outlined.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }

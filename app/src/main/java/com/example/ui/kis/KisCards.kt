@@ -24,7 +24,7 @@ import com.example.data.WorkEntry
 import com.example.data.WorkPay
 
 /** One shift in a list: workplace initial, day, what/when, and the amount (or what is missing). */
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun ShiftCard(entry: WorkEntry, categories: List<WorkCategory>, onClick: () -> Unit, onLongClick: (() -> Unit)? = null,
               selected: Boolean = false, modifier: Modifier = Modifier, tagPrefix: String = "work_entry_card_") {
@@ -44,11 +44,12 @@ fun ShiftCard(entry: WorkEntry, categories: List<WorkCategory>, onClick: () -> U
         val planned = KisHistoryLogic.upcoming(entry)
         Avatar(entry.category, workplace, planned = planned)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(dayLabel(entry.date), style = KisType.label.copy(fontSize = 15.sp), color = c.ink, maxLines = 1)
-                if (planned) Tag("מתוכנן", modifier = Modifier.testTag("planned_tag_${entry.id}"))
-                if (entry.autoConfirmed) Tag("אוטו׳")
-                if (!entry.isPaid && !planned) Tag("לא שולם")
+            // The date and its tags wrap to a second line on a narrow screen instead of the date being cut off.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(dayLabel(entry.date), style = KisType.label.copy(fontSize = 15.sp), color = c.ink, maxLines = 2, modifier = Modifier.align(Alignment.CenterVertically))
+                if (planned) Tag("מתוכנן", modifier = Modifier.align(Alignment.CenterVertically).testTag("planned_tag_${entry.id}"))
+                if (entry.autoConfirmed) Tag("אוטו׳", modifier = Modifier.align(Alignment.CenterVertically))
+                if (!entry.isPaid && !planned) Tag("לא שולם", modifier = Modifier.align(Alignment.CenterVertically))
             }
             Text(subtitle(entry), style = KisType.caption, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
