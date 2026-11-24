@@ -40,6 +40,8 @@ function range(rows) {
  if (date(a) === date(b)) return date(a);
  return (sameYear(rows) ? shortDate(a) : date(a)) + '–' + date(b);
 }
+/** " (01/10–30/10/2026)" after a heading; a range that has its own brackets (both calendars) follows a comma instead. */
+const rangeNote = rows => { const r = range(rows); return r.includes('(') ? ', ' + r : ' (' + r + ')'; };
 const rateText = e => Pay.pay(e) == null ? 'תעריף לא ידוע' : money(e.hourlyRate,e.currency) + ' לשעה';
 /** The hourly rate when every shift with a known hourly rate has the same one (and currency); otherwise null. */
 function commonRate(rows) {
@@ -105,7 +107,7 @@ function byPlace(rows) {
  return [...groups];
 }
 /** "מסעדה · 21 משמרות (01/10–30/10/2026)": the heading of a workplace in a copy or in a report of several workplaces. */
-const placeTitle = (place, es, future) => place + (future ? ' · מתוכנן' : '') + (es.length > 1 ? ' · ' + es.length + ' משמרות (' + range(es) + ')' : '');
+const placeTitle = (place, es, future) => place + (future ? ' · מתוכנן' : '') + (es.length > 1 ? ' · ' + es.length + ' משמרות' + rangeNote(es) : '');
 function workerName(entries, query) {
  const q=String(query??'').trim(); if (!q) return null;
  return [...new Set(entries.flatMap(e=>Pay.workers(e).map(w=>w.name)))].find(n=>n.toLowerCase()===q.toLowerCase()) ?? null;
@@ -125,7 +127,7 @@ function report(entries, name, share, future) {
  if (places.length === 1 && share) {
   const [place, es] = places[0], n = es.length, mine = name ? 'שלך' : 'שלי';
   const what = n === 1 ? (Pay.isJob(es[0]) ? 'העבודה' : 'המשמרת') + (future ? ' המתוכננת ' : ' ') + mine : n + ' המשמרות ' + mine;
-  out.push((name ? 'היי ' + name : 'היי') + ', סיכמתי פה את ' + what + ' ב' + place + (n > 1 ? ' (' + range(es) + ')' : '') + ':', ...body(es, future));
+  out.push((name ? 'היי ' + name : 'היי') + ', סיכמתי פה את ' + what + ' ב' + place + (n > 1 ? rangeNote(es) : '') + ':', ...body(es, future));
  } else {
   if (share) out.push((name ? 'היי ' + name : 'היי') + ', סיכמתי פה את המשמרות ' + (name ? 'שלך' : 'שלי') + ':');
   else if (name) out.push('עובד: ' + name);
