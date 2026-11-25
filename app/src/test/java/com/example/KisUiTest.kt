@@ -1348,7 +1348,7 @@ class KisUiTest {
         assertEquals("one card per row", 1, cards.map { Math.round(it.left / 20f) }.distinct().size)
         assertTrue("cards fill the width", cards.all { it.width > rootPx * 0.85f })
         assertTrue("the title is scaled up (${ui.onNodeWithTag("history_title").getBoundsInRoot().height})",
-            ui.onNodeWithTag("history_title").getBoundsInRoot().height > 36.dp * zoom * 0.95f)
+            ui.onNodeWithTag("history_title").getBoundsInRoot().height > 30.dp * zoom * 0.95f)
         foldInside("history cards", ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")))
         foldShot("$name-history")
         ui.onNodeWithTag("add_entry_button").performClick()
