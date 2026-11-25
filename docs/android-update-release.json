@@ -1,12 +1,12 @@
 {
-  "runId": 43056418751,
-  "sourceSha": "62cbf28e52add7464309167167b57d85d5de7e52",
-  "artifactName": "salary-2.4.0-code55-candidate",
-  "tag": "android-v2.4.0-code55",
-  "fileName": "Salary2.4.0.apk",
-  "versionCode": 55,
-  "versionName": "2.4.0",
-  "sha256": "29b139d408c3ef6fb9f72ca1ff4c94895a0204901f29363e86f2fc6acfab23cb",
+  "runId": 45672101223,
+  "sourceSha": "8305453fc6ee166ba625f6fa25070707a79d39a3",
+  "artifactName": "salary-2.4.1-code56-candidate",
+  "tag": "android-v2.4.1-code56",
+  "fileName": "Salary2.4.1.apk",
+  "versionCode": 56,
+  "versionName": "2.4.1",
+  "sha256": "c9a78e1d3a16d7ffe8b44fdffaefdfb2e4379b3690e35baab7a59a97a7985edf",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "משמרות שלא שולמו יותר מ-30 יום מופיעות עכשיו במסך הבית, לכל מקום עבודה, ובלחיצה רואים בדיוק אילו. לחיצה ארוכה על האייקון במסך הבית פותחת ישר את \"הוספת משמרת\". בהגדרות, כרטיס ההתראות מראה בדיוק מה פועל: הכול, חלק או כלום. כל המשמרות, הסכומים וההגדרות נשמרים."
+  "releaseNotes": "בטלפון מתקפל פתוח הכול נראה כמו בטלפון רגיל, רק גדול יותר. בהיסטוריה יש כפתור שיתוף ששולח בדיוק את המשמרות שמוצגות, ודוחות השיתוף קצרים וברורים יותר. העתקה של משמרות נעשית כטבלה מוכנה ל-Excel. כל המשמרות, הסכומים וההגדרות נשמרים."
 }
