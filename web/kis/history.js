@@ -85,7 +85,7 @@ function render(el, app, opts = {}) {
   <div class="title-row"><h1 class="page-title">היסטוריה</h1>${state.planned ? '' : `
     <button class="icon-btn history-tool" aria-label="חיפוש" data-a="search" data-testid="history-search">${ICON.search}</button>
     `}<button class="chip${n ? ' on' : ''}" data-a="filters" data-testid="history-filters">${ICON.filter}<span class="chip-label">סינון ומיון</span>${n ? `<span aria-hidden="true">· ${n}</span><span class="sr-only">, ${n} פעילים</span>` : ''}</button>${state.planned ? '' : `
-    <button class="icon-btn history-tool" aria-label="העתקת דוח" data-a="copy" data-testid="history-copy" ${rows.length ? '' : 'disabled'}>${ICON.copy}</button>`}</div>
+    <button class="icon-btn history-tool" aria-label="שיתוף המשמרות המוצגות" data-a="share-shown" data-testid="history-share" ${rows.length ? '' : 'disabled'}>${ICON.share}</button>`}</div>
   ${state.planned ? '' : `
     ${state.searching ? `<div class="row" style="align-items:center;margin-bottom:8px"><input class="input grow" type="search" placeholder="חיפוש: מקום, הערה, עובד, סכום" value="${esc(state.query)}" data-f="q" aria-label="חיפוש" data-testid="history-search-input">
       <button class="icon-btn" aria-label="ניקוי" data-a="clear" data-testid="history-search-clear">${ICON.close}</button><button class="chip" data-a="close-search" data-testid="history-search-close">סגירה</button></div>`
@@ -112,7 +112,8 @@ function render(el, app, opts = {}) {
   q('[data-a=reset]')?.addEventListener('click', () => { state.filter = defaults(); redraw(); });
   q('[data-a=prev]')?.addEventListener('click', () => { state.filter = { ...f, month: f.month - 1 }; redraw(); });
   q('[data-a=next]')?.addEventListener('click', () => { state.filter = { ...f, month: f.month + 1 }; redraw(); });
-  q('[data-a=copy]')?.addEventListener('click', () => copySheet(rows, f));
+  // Owner request 2026-11-24: share exactly what the filter or search shows (a worker's name searched: a report for that worker).
+  q('[data-a=share-shown]')?.addEventListener('click', () => shareRows(rows));
   q('[data-a=pending]')?.addEventListener('click', () => { state.selection = new Set(rows.filter(e => !e.payKnown && e.kind !== 'job').map(e => e.id)); redraw(); bulkRate(app, redraw); });
   el.querySelectorAll('.shift[data-id]').forEach(b => {
     let timer = null, long = false;
@@ -140,8 +141,8 @@ function bindSelection(el, app, sel, redraw) {
   b('cancel').onclick = clear;
   b('all').onclick = () => { const rows = [...el.querySelectorAll('.shift[data-id]')].map(x => x.dataset.id); if (sel.length === rows.length) state.selection.clear(); else state.selection = new Set(rows); redraw(); };
   // A report for a worker the user pays is shared as is; anything the user is owed may carry their payment details.
-  b('share').onclick = () => { const w = root.KisShare.workerName(sel, state.query), t = root.KisShare.summary(sel, w); (w ? U().shareOrCopy : U().owedShare)(t, 'שיתוף משמרות'); clear(); };
-  b('copy').onclick = async () => { const text = root.KisShare.copy(sel, root.KisShare.workerName(sel, state.query)); if (await U().copy(text)) U().toast('הועתק ✓ · מוכן להדבקה בוואטסאפ'); else U().showText(text); clear(); };
+  b('share').onclick = () => { shareRows(sel); clear(); };
+  b('copy').onclick = async () => { await copyExcel(sel); clear(); };
   // M-37: the same message with undo as a single change; undo gives each shift back its own previous mark.
   const paid = value => () => {
     const was = Object.fromEntries(store.data.entries.filter(e => ids.includes(e.id)).map(e => [e.id, e.isPaid === true]));
@@ -186,13 +187,17 @@ function bulkRate(app, after) {
   });
 }
 
-function copySheet(rows, f) {
-  U().sheet('copy-sheet', (el, close) => {
-    el.innerHTML = `<h2>העתקת הדוח המוצג</h2><p class="caption">${rows.length} משמרות לפי מה שמוצג עכשיו.</p>
-      <button class="btn ghost" data-a="xl" data-testid="copy-excel">Excel (טבלה)</button><button class="btn ghost" data-a="wa" data-testid="copy-whatsapp">סיכום טכני</button>`;
-    el.querySelector('[data-a=xl]').onclick = async () => { close(); if (!rows.length) return U().toast('אין שורות להעתקה'); const t = root.KisShare.excel(rows); if (await U().copy(t)) U().toast('הטבלה הועתקה ✓ · מוכנה להדבקה באקסל'); else U().showText(t, 'טבלה לאקסל'); };
-    el.querySelector('[data-a=wa]').onclick = async () => { close(); const t = root.KisShare.copy(rows, root.KisShare.workerName(rows, state.query)); if (await U().copy(t)) U().toast('הדוח הועתק ✓'); else U().showText(t); };
-  });
+/** A report for a worker the user pays is shared as is; anything the user is owed may carry their payment details. */
+function shareRows(rows) {
+  if (!rows.length) return;
+  const w = root.KisShare.workerName(rows, state.query), t = root.KisShare.summary(rows, w);
+  (w ? U().shareOrCopy : U().owedShare)(t, 'שיתוף משמרות');
+}
+/** Owner request 2026-11-24: copying is a spreadsheet table only, straight away (no choice sheet, no text summary). */
+async function copyExcel(rows) {
+  if (!rows.length) return U().toast('אין שורות להעתקה');
+  const t = root.KisShare.excel(rows);
+  if (await U().copy(t)) U().toast('הועתק ל-Excel ✓'); else U().showText(t, 'טבלה לאקסל');
 }
 
 function filtersSheet(app, done, after) {

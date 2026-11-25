@@ -74,7 +74,7 @@ const seed = {
     const saved=(await stored(page)).entries.at(-1);assert.equal(saved.hours,100/60);assert.equal(saved.totalEarnings,100);
     await page.click(tid('tab-history'));
     assert.equal(await page.locator(tid('history-planned')).count(),0);
-    const styles=await page.locator('[data-testid=history-search],[data-testid=history-copy],[data-testid=history-filters]').evaluateAll(es=>es.map(e=>{const c=getComputedStyle(e);return [c.backgroundColor,c.borderColor,c.borderRadius,c.height]}));
+    const styles=await page.locator('[data-testid=history-search],[data-testid=history-share],[data-testid=history-filters]').evaluateAll(es=>es.map(e=>{const c=getComputedStyle(e);return [c.backgroundColor,c.borderColor,c.borderRadius,c.height]}));
     assert.deepEqual(styles[0],styles[1]);assert.deepEqual(styles[0],styles[2]);
     await shot(page,'history-tools-dark-360');
     await page.click(tid('history-filters'));await page.click(tid('history-planned'));await shot(page,'planned-filter-dark-360');await page.click(tid('filters-apply'));

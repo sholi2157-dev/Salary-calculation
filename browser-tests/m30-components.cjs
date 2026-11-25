@@ -85,13 +85,14 @@ const server = http.createServer((q, r) => {
    }
    assert.equal(await page.locator('#toast').evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)');
    await page.screenshot({ path: path.join(SHOTS, `m30-settings-${scheme}.png`), fullPage: true });
-   // F3: Edit/Share/Copy have identical surfaces and ink; Delete keeps the danger colour.
+   // F3: Edit/Share have identical surfaces and ink (text copy removed 2026-11-24); Delete keeps the danger colour.
    await page.evaluate(() => Kis.openDetail(Kis.store.data.entries.find(e => !e.isGroupShift).id));
    const actions = await page.locator('[data-testid=shift-detail] .detail-actions button').evaluateAll(buttons => buttons.map(el => ({
      action: el.dataset.a, bg: getComputedStyle(el).backgroundColor, ink: getComputedStyle(el).color
    })));
    const edit = actions.find(x => x.action === 'edit');
-   for (const action of ['share', 'copy']) {
+   assert.equal(actions.find(x => x.action === 'copy'), undefined);
+   for (const action of ['share']) {
      const other = actions.find(x => x.action === action);
      assert.equal(other.bg, edit.bg); assert.equal(other.ink, edit.ink);
    }

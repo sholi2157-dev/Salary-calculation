@@ -79,7 +79,7 @@ function shiftCard(e, store, { selected = false, tag = 'shift' } = {}) {
   const tags = [planned ? '<span class="tag" data-testid="planned-tag">מתוכנן</span>' : '', e.autoConfirmed ? '<span class="tag">אוטו׳</span>' : '', !e.isPaid && !planned ? '<span class="tag">לא שולם</span>' : ''].join('');
   const amount = pay != null ? `<span class="pay${planned ? ' muted' : ''}">${moneyHtml(pay, e.currency)}</span>` : `<span class="tag warn">${e.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</span>`;
   return `<button class="shift${selected ? ' selected' : ''}" data-id="${esc(e.id)}" data-testid="${tag}-${esc(e.id)}" aria-pressed="${selected}">
-    ${avatar(e.category, store, planned)}<span class="meta"><span class="top"><b class="label">${esc(dayLabel(e.date))}</b>${tags}</span><span class="sub">${esc(subtitle(e))}</span></span>${amount}</button>`;
+    ${avatar(e.category, store, planned)}<span class="meta"><span class="top"><b class="label">${esc(dayLabel(e.date))}</b></span><span class="sub">${esc(subtitle(e))}</span></span><span class="end">${amount}${tags ? `<span class="tags">${tags}</span>` : ''}</span></button>`;
 }
 
 // ---- messages ----
@@ -270,7 +270,9 @@ function followKeyboard() {
   const vv = root.visualViewport, doc = root.document?.documentElement;
   if (!doc) return;
   if (vv) {
-    const set = () => { doc.style.setProperty('--vvh', Math.round(vv.height) + 'px'); doc.style.setProperty('--vvt', Math.round(vv.offsetTop) + 'px'); };
+    // An unfolded phone scales the whole page (CSS zoom): a length set on the page is multiplied by it, so divide first.
+    const set = () => { const z = parseFloat(getComputedStyle(doc).zoom) || 1;
+      doc.style.setProperty('--vvh', Math.round(vv.height / z) + 'px'); doc.style.setProperty('--vvt', Math.round(vv.offsetTop / z) + 'px'); };
     vv.addEventListener('resize', set); vv.addEventListener('scroll', set); set();
   }
   root.document.addEventListener('focusin', e => {

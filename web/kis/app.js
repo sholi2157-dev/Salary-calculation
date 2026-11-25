@@ -3,10 +3,17 @@
 'use strict';
 const U = () => root.KisUi;
 // The signed-in account's own copy (web/kis/account.js); the browser's existing data for the first account.
-const storage = root.KisAccount.storageFor(localStorage);
+const browserStorage = root.KisStoreFactory.withSaveErrors(localStorage, error =>
+  U().toast(error.message, 'הורדת גיבוי', () => root.KisSettings.downloadBackup(store), 'error'));
+const storage = root.KisAccount.storageFor(browserStorage);
 const store = root.KisStoreFactory.createStore(storage);
+// Failed writes have already been reported. End the current DOM action without an uncaught error; other errors retain
+// their normal diagnostics. Explicit catches (editor, import, sync) still receive the same error and keep their input.
+root.addEventListener?.('error', e => { if (e.error?.storageFailure) e.preventDefault(); });
+root.addEventListener?.('unhandledrejection', e => { if (e.reason?.storageFailure) e.preventDefault(); });
+function backgroundSave(fn) { try { return fn(); } catch (e) { if (!e.storageFailure) throw e; } }
 const app = {
-  store, storage, page: 'home', editorOpen: false, closeEditor: null,
+  store, storage, browserStorage, page: 'home', editorOpen: false, closeEditor: null,
   occurrences: () => root.KisPlans.occurrences(store),
   go(page, opts = {}) { root.KisSettings.event('page', page); if (page === 'settings') root.KisSettings.open(opts.section); this.page = page; this.pageOpts = opts; render(); window.scrollTo({ top: 0 }); },
   refresh() { render(); },
@@ -50,7 +57,7 @@ function render() {
   document.querySelector('.nav-wrap').hidden = app.page === 'history' && root.KisHistory.state.selection.size > 0;
 }
 
-// ---- details of one shift: edit, share, copy, delete, paid; group reports ----
+// ---- details of one shift: edit, share, delete, paid; group reports (owner 2026-11-24: no text copy, sharing only) ----
 function detail(e) {
   const { esc, moneyHtml } = U(), pay = root.KisPay.pay(e), group = e.isGroupShift ? root.KisPay.workers(e) : [];
   U().sheet('shift-detail', (el, close) => {
@@ -61,7 +68,7 @@ function detail(e) {
       ${e.notes ? `<p style="margin:0">${esc(e.notes)}</p>` : ''}
       ${e.passThrough > 0 ? `<p class="caption" style="margin:0" data-testid="detail-pass-through">החזר הוצאות ${esc(U().money(e.passThrough, e.currency))} · לא שלך${!e.isGroupShift && root.KisPay.employerDue(e) != null ? ` · <b>לקבל מהמעסיק ${esc(U().money(root.KisPay.employerDue(e), e.currency))}</b>` : ''}</p>` : ''}
       ${!pay && e.kind !== 'job' ? '<button class="btn ghost small" data-a="rate">השלמת תעריף</button>' : ''}
-      <div class="detail-actions"><button class="btn ghost small" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small" data-a="share">${e.isGroupShift ? 'החלק שלי' : 'שיתוף'}</button><button class="btn ghost small" data-a="copy">העתקה</button><button class="btn ghost small danger-text" data-a="del">מחיקה</button></div>
+      <div class="detail-actions"><button class="btn ghost small" data-a="edit" data-testid="detail-edit">עריכה</button><button class="btn ghost small" data-a="share">${e.isGroupShift ? 'החלק שלי' : 'שיתוף'}</button><button class="btn ghost small danger-text" data-a="del">מחיקה</button></div>
       <button class="btn small ${e.isPaid ? 'ghost' : 'primary'}" data-a="paid" data-testid="detail-paid">${e.isPaid ? 'שולם ✓ · לחיצה לביטול' : 'סימון כשולם'}</button>
       ${group.length ? `<div class="divider"></div><b class="label">${e.kind === 'job' ? 'הצוות' : 'הקבוצה'}</b>${sum ? `<div class="team-sum" data-testid="group-summary">
           <div class="row"><span class="grow">${e.kind === 'job' ? 'שלי' : 'ההכנסה שלי (כולל עמלה)'}</span><b>${moneyHtml(sum.myNet, e.currency)}</b></div>
@@ -69,37 +76,34 @@ function detail(e) {
           ${e.passThrough > 0 ? `<div class="row"><span class="grow">החזר הוצאות</span><b>${moneyHtml(e.passThrough, e.currency)}</b></div>` : ''}
           <div class="row strong"><span class="grow">לקבל מהמעסיק</span><b data-testid="group-employer-due">${moneyHtml(sum.employerTotal, e.currency)}</b></div></div>`
           : `<p class="caption" style="margin:0">${e.kind === 'job' ? 'הסכומים יופיעו אחרי שיושלם הסכום שלך' : 'חסר תעריף לחלק מהקבוצה'}</p>`}
-        <div class="row"><button class="btn ghost small grow" data-a="employer">דוח למעסיק</button><button class="btn ghost small grow" data-a="employer-copy">העתקת דוח הצוות</button></div>
-        ${group.map((w, i) => `<div style="display:grid;gap:6px"><div class="row" style="align-items:center"><span class="grow">${esc(w.name)}${e.kind === 'job' && w.amount != null ? '' : ' · ' + U().duration(w.hours) + ' ש׳'}${root.KisPay.workerPay(w, e) != null ? ' · ' + esc(U().money(root.KisPay.workerPay(w, e), e.currency)) : ''}</span><button class="chip" data-wp="${i}">${w.isPaid ? 'שולם ✓' : 'לא שולם'}</button></div><div class="row"><button class="btn ghost small grow" data-w="${i}">שיתוף לעובד</button><button class="btn ghost small grow" data-wc="${i}">העתקה</button></div></div>`).join('')}` : ''}`;
+        <button class="btn ghost small" data-a="employer">דוח למעסיק</button>
+        ${group.map((w, i) => `<div style="display:grid;gap:6px"><div class="row" style="align-items:center"><span class="grow">${esc(w.name)}${e.kind === 'job' && w.amount != null ? '' : ' · ' + U().duration(w.hours) + ' ש׳'}${root.KisPay.workerPay(w, e) != null ? ' · ' + esc(U().money(root.KisPay.workerPay(w, e), e.currency)) : ''}</span><button class="chip" data-wp="${i}">${w.isPaid ? 'שולם ✓' : 'לא שולם'}</button></div><div class="row"><button class="btn ghost small grow" data-w="${i}">שיתוף לעובד</button></div></div>`).join('')}` : ''}`;
     const q = s => el.querySelector(s);
     q('[data-a=edit]').onclick = () => { close(); root.KisEditor.open(app, { entry: e, onSaved: id => app.openDetail(id) }); };
     const shareMine = () => U().owedShare(root.KisShare.entry(e, false, U().upcoming(e)), 'שיתוף משמרת');
-    const copyMine = async () => { const t = root.KisShare.entry(e, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); };
     const shareEmployer = () => U().owedShare(root.KisShare.employer(e, (store.local.name || '').trim() || null, false, U().upcoming(e)), 'סיכום לקבלן');
-    const copyEmployer = async () => { const t = root.KisShare.employer(e, store.local.name, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הדוח הועתק ✓'); else U().showText(t); };
     q('[data-a=share]')?.addEventListener('click', shareMine);
-    q('[data-a=copy]')?.addEventListener('click', copyMine);
     // Group B: one "שיתוף" with every report, and one ⋯ per worker.
-    // Two reports, each shared by a tap on its row or copied by the icon beside it (owner feedback 2.3).
+    // Two reports, each shared by a tap on its row (owner feedback 2.3; the copy icons were removed 2026-11-24).
     q('[data-a=reports]')?.addEventListener('click', () => U().sheet('reports-sheet', (sh, close) => {
-      const rows = [['דוח למעסיק', shareEmployer, copyEmployer, 'report-employer'], ['החלק שלי', shareMine, copyMine, 'report-mine']];
-      sh.innerHTML = `<h2>שיתוף</h2><div class="action-list">${rows.map(([l, , , id], i) => `<div class="row" style="align-items:center;gap:4px"><button class="action-item grow" data-rs="${i}" data-testid="${id}"><span aria-hidden="true" style="display:inline-flex;width:20px;height:20px;vertical-align:middle;margin-inline-end:8px">${U().ICON.share}</span>${l}</button>
-        <button class="icon-btn" data-rc="${i}" aria-label="העתקה: ${l}" data-testid="${id}-copy"><span aria-hidden="true" style="display:inline-flex;width:20px;height:20px">${U().ICON.copy}</span></button></div>`).join('')}</div>`;
+      const rows = [['דוח למעסיק', shareEmployer, 'report-employer'], ['החלק שלי', shareMine, 'report-mine']];
+      sh.innerHTML = `<h2>שיתוף</h2><div class="action-list">${rows.map(([l, , id], i) => `<button class="action-item" data-rs="${i}" data-testid="${id}"><span aria-hidden="true" style="display:inline-flex;width:20px;height:20px;vertical-align:middle;margin-inline-end:8px">${U().ICON.share}</span>${l}</button>`).join('')}</div>`;
       sh.querySelectorAll('[data-rs]').forEach(b => b.onclick = () => { close(); rows[+b.dataset.rs][1](); });
-      sh.querySelectorAll('[data-rc]').forEach(b => b.onclick = () => { close(); rows[+b.dataset.rc][2](); });
     }));
     el.querySelectorAll('[data-more]').forEach(b => b.onclick = () => { const i = +b.dataset.more, w = group[i];
       U().actionSheet(w.name, [
         { label: `שיתוף ל${w.name}`, onClick: () => U().shareOrCopy(root.KisShare.worker(e, w, false, U().upcoming(e)), 'שיתוף לעובד'), testid: 'worker-share' },
-        { label: 'העתקה', onClick: async () => { const t = root.KisShare.worker(e, w, true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); }, testid: 'worker-copy' },
         { label: w.isPaid ? 'סימון כלא שולם' : 'סימון כשולם', onClick: () => markWorkerPaid(i), testid: 'worker-paid' }], 'worker-sheet'); });
-    q('[data-a=del]').onclick = () => { close(); const gone = store.deleteEntries([e.id]); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); };
+    q('[data-a=del]').onclick = () => { const gone = store.deleteEntries([e.id]); close(); U().toast('המשמרת נמחקה', 'ביטול', () => store.restoreEntries(gone)); };
     q('[data-a=paid]').onclick = () => { store.setPaid([e.id], !e.isPaid); close(); };
-    q('[data-a=rate]')?.addEventListener('click', () => { close(); root.KisHistory.state.selection = new Set([e.id]); root.KisHistory.bulkRate(app, render); });
+    q('[data-a=rate]')?.addEventListener('click', () => {
+      close();
+      // A known zero is a real saved amount. Bulk completion deliberately skips known pay; edit this shift explicitly.
+      if (pay != null) return root.KisEditor.open(app, { entry: e, onSaved: id => app.openDetail(id) });
+      root.KisHistory.state.selection = new Set([e.id]); root.KisHistory.bulkRate(app, render);
+    });
     q('[data-a=employer]')?.addEventListener('click', shareEmployer);
     el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => U().shareOrCopy(root.KisShare.worker(e, group[+b.dataset.w], false, U().upcoming(e)), 'שיתוף לעובד'));
-    q('[data-a=employer-copy]')?.addEventListener('click', copyEmployer);
-    el.querySelectorAll('[data-wc]').forEach(b => b.onclick = async () => { const t = root.KisShare.worker(e, group[+b.dataset.wc], true, U().upcoming(e)); if (await U().copy(t)) U().toast('הועתק ✓'); else U().showText(t); });
     function markWorkerPaid(i) { store.update(d => { const row = d.entries.find(x => x.id === e.id); if (!row) return;
         const list = JSON.parse(row.groupWorkersJson || '[]'); if (list[i]) list[i].isPaid = !list[i].isPaid; row.groupWorkersJson = JSON.stringify(list); }); close(); }
     el.querySelectorAll('[data-wp]').forEach(b => b.onclick = () => markWorkerPaid(+b.dataset.wp));
@@ -187,7 +191,7 @@ function start() {
   if (action) history.replaceState(history.state, '', location.pathname + location.hash);
   store.load(); app.applyTheme(); app.applyTextChoices();
   // A browser that had this site before (its 2.0 launch is done) sees this release's highlights once (FB23-F11).
-  app.whatsNew = store.broken ? null : root.KisWhatsNew.pending(store, root.KisLaunch.launched(app) >= root.KisLaunch.LAUNCH_VERSION);
+  app.whatsNew = store.broken ? null : backgroundSave(() => root.KisWhatsNew.pending(store, root.KisLaunch.launched(app) >= root.KisLaunch.LAUNCH_VERSION));
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { app.applyTheme(); render(); });
   document.querySelectorAll('.nav [data-page]').forEach(b => b.onclick = () => { root.KisHistory.state.selection.clear(); app.go(b.dataset.page); });
   document.querySelector('.nav [data-a=add]').onclick = () => app.openNew();
@@ -198,7 +202,7 @@ function start() {
   window.addEventListener('storage', e => { const k = e.key && e.key.replace(/^acct:[^:]+:/, ''); if (!k || ['work_complete_backup', 'work_series_v1', 'kis_web_v1'].includes(k) || k.startsWith('work_active_shift_v1')) { store.load(); render(); } });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!U().closeTopSheet() && app.editorOpen) app.editorBack?.(); } });
   // Ended weekly plans are recorded on open and on every return to the tab, with an undo.
-  const catchUp = () => { const ids = root.KisPlans.catchUp(store);
+  const catchUp = () => { const ids = backgroundSave(() => root.KisPlans.catchUp(store)) || [];
     if (ids.length) U().toast(ids.length === 1 ? 'משמרת קבועה הסתיימה ונרשמה' : `${ids.length} משמרות קבועות הסתיימו ונרשמו`, 'ביטול', () => {
       const rows = store.data.entries.filter(e => ids.includes(e.id) && e.autoConfirmed);
       store.update(d => { d.entries = d.entries.filter(e => !rows.some(r => r.id === e.id)); });

@@ -20,50 +20,94 @@ function date(ms) {
 }
 const money = (v,c) => Pay.format(v,c), hours = Pay.hours;
 const note = e => String(e.notes ?? '').trim();
-const amount = e => Pay.pay(e) == null ? 'ממתין להשלמה' : money(Pay.pay(e),e.currency);
+// Owner request 2026-11-24: every shared text says what all shifts have in common once (place, rate, year, paid or not),
+// and each shift line carries only what differs. Copy is the same text without the greeting and the thanks.
 function time(e) {
  if (!e.isTimeRange || !e.startTime || !e.endTime) return '';
  return e.startTime + '–' + e.endTime + (e.endTime <= e.startTime ? ' (למחרת)' : '');
 }
-function details(e, rate = true) {
- const out = [];
- if (time(e)) out.push('שעות: ' + time(e));
- if (!Pay.isJob(e) && e.isTimeRange && e.startTime && e.endTime) {
-  const mins = Math.max(0, Math.round(Rules.span(e.startTime,e.endTime).minutes - e.hours*60));
-  if (mins) out.push('הפסקה: ' + mins + ' דקות');
+const pause = e => Pay.isJob(e) || !time(e) ? 0 : Math.max(0, Math.round(Rules.span(e.startTime,e.endTime).minutes - e.hours*60));
+const yearOf = ms => dateMode === 'HEB' ? Heb().fromMillis(ms)[0] : new Date(ms).getFullYear();
+/** A date without its year, for lines under a heading that already names the year. */
+function shortDate(ms) {
+ if (dateMode === 'HEB') return Heb().day(ms);
+ if (dateMode === 'BOTH') return date(ms);
+ const d = new Date(ms); return pad(d.getDate()) + '/' + pad(d.getMonth()+1);
+}
+const sameYear = rows => new Set(rows.map(e => yearOf(e.date))).size === 1;
+function range(rows) {
+ const a = rows[0].date, b = rows[rows.length-1].date;
+ if (date(a) === date(b)) return date(a);
+ return (sameYear(rows) ? shortDate(a) : date(a)) + '–' + date(b);
+}
+/** " (01/10–30/10/2026)" after a heading; a range that has its own brackets (both calendars) follows a comma instead. */
+const rangeNote = rows => { const r = range(rows); return r.includes('(') ? ', ' + r : ' (' + r + ')'; };
+const rateText = e => Pay.pay(e) == null ? 'תעריף לא ידוע' : money(e.hourlyRate,e.currency) + ' לשעה';
+/** The hourly rate when every shift with a known hourly rate has the same one (and currency); otherwise null. */
+function commonRate(rows) {
+ const r = rows.filter(e => !Pay.isJob(e) && Pay.pay(e) != null); if (!r.length) return null;
+ return r.every(e => e.hourlyRate === r[0].hourlyRate && e.currency === r[0].currency) ? money(r[0].hourlyRate,r[0].currency) : null;
+}
+const hasHours = e => !Pay.isJob(e) || e.hours > 0;
+/** One line per currency: the total and whether it was paid; "שולם"/"לא שולם" once when it is true of all of it. */
+function moneyLines(rows, future) {
+ const out = [], tot = Object.entries(Pay.totals(rows)), known = rows.filter(e => Pay.pay(e) != null);
+ // Several currencies with one state: one line ("₪100.00 ו-$10.00 · לא שולם"); the amounts are never added together.
+ if (tot.length > 1 && (future || known.every(e => e.isPaid) || known.every(e => !e.isPaid)))
+  out.push((future ? 'צפי: ' : 'סכום: ') + tot.map(([c,v]) => money(v,c)).join(' ו-') + (future ? '' : known[0].isPaid ? ' · שולם' : ' · לא שולם'));
+ else for (const [c,total] of Object.entries(Pay.totals(rows))) {
+  if (future) { out.push('צפי: ' + money(total,c)); continue; }
+  const known = rows.filter(e => e.currency === c && Pay.pay(e) != null);
+  const paid = Pay.totals(known.filter(e => e.isPaid))[c] ?? 0, unpaid = Pay.totals(known.filter(e => !e.isPaid))[c] ?? 0;
+  out.push('סכום: ' + money(total,c) + (known.every(e => e.isPaid) ? ' · שולם' : known.every(e => !e.isPaid) ? ' · לא שולם'
+   : ' · שולם ' + money(paid,c) + ' · לא שולם ' + money(unpaid,c)));
  }
- if (rate && !Pay.isJob(e)) out.push('תעריף לשעה: ' + (Pay.pay(e) == null ? 'עדיין לא ידוע' : money(e.hourlyRate,e.currency)));
+ const missing = Pay.pending(rows).length;
+ if (missing) out.push(rows.length === 1 ? 'הסכום עוד לא ידוע.'
+  : missing === 1 ? 'חסר סכום ל' + (Pay.isJob(Pay.pending(rows)[0]) ? 'עבודה אחת' : 'משמרת אחת') + '; היא לא נכללה בסכום.'
+  : 'חסר סכום ל-' + missing + ' משמרות; הן לא נכללו בסכום.');
+ return out;
+}
+/** Bonus, money passed through and the note of one shift on lines of their own. */
+function extras(e) {
+ const out = [];
  if (Pay.bonus(e)>0) out.push('בונוס: ' + money(Pay.bonus(e),e.currency) + ' (כלול בסכום)');
  if (Pay.passThrough(e)>0) out.push('החזר הוצאות: ' + money(Pay.passThrough(e),e.currency) + ' (לא כלול בסכום)');
  if (note(e)) out.push('הערה: ' + note(e));
  return out;
 }
-function amounts(rows) {
- const out=[];
- for (const [c,total] of Object.entries(Pay.totals(rows))) {
-  out.push('סכום: ' + money(total,c));
-  out.push('שולם: ' + money(Pay.totals(rows.filter(e=>e.isPaid))[c] ?? 0,c));
-  out.push('יתרה לתשלום: ' + money(Pay.totals(rows.filter(e=>!e.isPaid))[c] ?? 0,c));
- }
- const missing=Pay.pending(rows).length;
- if (missing) out.push('סכום חסר: ' + missing + ' (לא נכלל בסכומים)');
- return out;
+/** The facts of one shift that are not shared with the others: [date, time, break, hours (× rate), amount, paid, extras]. */
+function shiftLine(e, o) {
+ const p = [o.short ? shortDate(e.date) : date(e.date)];
+ if (time(e)) p.push(time(e)); if (pause(e)) p.push('הפסקה ' + pause(e) + ' דקות');
+ if (o.single) { if (hasHours(e)) p.push(hours(e.hours) + ' שעות'); if (!Pay.isJob(e)) p.push(rateText(e)); return p.join(' · '); }
+ const showRate = !o.rate && !Pay.isJob(e) && Pay.pay(e) != null;
+ if (hasHours(e)) p.push(hours(e.hours) + ' שעות' + (showRate ? ' × ' + money(e.hourlyRate,e.currency) : ''));
+ p.push(Pay.pay(e) == null ? (Pay.isJob(e) ? 'סכום לא ידוע' : 'תעריף לא ידוע') : money(Pay.pay(e),e.currency));
+ if (o.mixed) p.push(e.isPaid ? 'שולם' : 'לא שולם');
+ if (Pay.bonus(e)>0) p.push('כולל בונוס ' + money(Pay.bonus(e),e.currency));
+ if (Pay.passThrough(e)>0) p.push('החזר הוצאות ' + money(Pay.passThrough(e),e.currency) + ' (לא כלול)');
+ if (note(e)) p.push('הערה: ' + note(e));
+ return p.join(' · ');
 }
-// Sharing reads like a message: no redundant zero-payment lines or technical count labels.
-function humanAmounts(rows, worker=false) {
- const out=[];
- for(const [c,total] of Object.entries(Pay.totals(rows))) {
-  const paid=Pay.totals(rows.filter(e=>e.isPaid))[c]??0, unpaid=Pay.totals(rows.filter(e=>!e.isPaid))[c]??0;
-  if(!rows.some(e=>e.currency===c&&!e.isPaid&&Pay.pay(e)!=null)) out.push('השכר בסך '+money(total,c)+' שולם במלואו.');
-  else if(paid===0) out.push((worker?'מגיע לך: ':'השכר לתשלום: ')+money(total,c)+'.');
-  else out.push('השכר הכולל: '+money(total,c)+'. מתוכו שולם '+money(paid,c)+', ונותר לתשלום '+money(unpaid,c)+'.');
- }
- const missing=Pay.pending(rows).length;
- if(missing)out.push(missing===1?'סכום חסר עבור '+(rows.every(Pay.isJob)?'עבודה אחת':'משמרת אחת')+'; היא לא נכללה בסיכום הכספי.':'סכום חסר עבור '+missing+' משמרות; הן לא נכללו בסיכום הכספי.');
+/** The lines of one workplace (rows sorted by date), after its heading. */
+function body(rows, future) {
+ if (rows.length === 1) return [shiftLine(rows[0], { single: true }), ...moneyLines(rows, future), ...extras(rows[0])];
+ const rate = commonRate(rows), out = [];
+ if (rows.some(hasHours)) out.push('סה״כ ' + hours(rows.reduce((n,e)=>n+e.hours,0)) + ' שעות' + (rate ? ', ' + rate + ' לשעה' : '') + '.');
+ out.push(...moneyLines(rows, future), 'פירוט:');
+ const o = { rate, short: sameYear(rows), mixed: !future && rows.some(e => e.isPaid) && rows.some(e => !e.isPaid) };
+ for (const e of rows) out.push(shiftLine(e, o));
  return out;
 }
 const ordered = rows => [...rows].sort((a,b)=>a.date-b.date);
-const dates = rows => [...new Set(ordered(rows).map(e=>date(e.date)))].join(', ');
+function byPlace(rows) {
+ const groups = new Map();
+ for (const e of ordered(rows)) { if (!groups.has(e.category)) groups.set(e.category,[]); groups.get(e.category).push(e); }
+ return [...groups];
+}
+/** "מסעדה · 21 משמרות (01/10–30/10/2026)": the heading of a workplace in a copy or in a report of several workplaces. */
+const placeTitle = (place, es, future) => place + (future ? ' · מתוכנן' : '') + (es.length > 1 ? ' · ' + es.length + ' משמרות' + rangeNote(es) : '');
 function workerName(entries, query) {
  const q=String(query??'').trim(); if (!q) return null;
  return [...new Set(entries.flatMap(e=>Pay.workers(e).map(w=>w.name)))].find(n=>n.toLowerCase()===q.toLowerCase()) ?? null;
@@ -75,37 +119,28 @@ function workerRows(entries,name) {
   return {...e,hours:w.hours,hourlyRate:r??0,totalEarnings:p??0,payKnown:p!=null,isPaid:w.isPaid,bonus:w.bonus,passThrough:0,isTimeRange:false,startTime:null,endTime:null,isGroupShift:false};
  }));
 }
-function copy(entries, name=null) {
- const rows=name?workerRows(entries,name):entries;
+/** The report text: [share] adds the greeting, the request for payment details (to a worker) and the thanks. */
+function report(entries, name, share, future) {
+ const rows = name ? workerRows(entries,name) : entries;
  if (!rows.length) return 'אין משמרות להצגה';
- const groups=new Map();
- for (const e of ordered(rows)) { if (!groups.has(e.category)) groups.set(e.category,[]); groups.get(e.category).push(e); }
- const text=[...groups].map(([place,es])=>{
-  const out=['עבודה: '+place,'כמות משמרות: '+es.length,'כמות שעות: '+hours(es.reduce((n,e)=>n+e.hours,0)),...amounts(es)];
-  // Several shifts: the dates are in the breakdown, so no separate list above it.
-  if (es.length===1) out.push('תאריכים: '+dates(es),...details(es[0]));
-  // The breakdown line already says what the shift earned; no rate line under it.
-  else { out.push('פירוט:'); for (const e of es) out.push(date(e.date)+' | '+hours(e.hours)+' שעות | '+amount(e)+' | '+(e.isPaid?'שולם':'ממתין'),...details(e,false)); }
-  return out.join('\n');
- }).join('\n\n');
- return (name?'עובד: '+name+'\n':'')+text;
-}
-function summary(entries,name=null) {
- const rows=name?workerRows(entries,name):entries;
- if (!rows.length) return 'אין משמרות להצגה';
- if (new Set(rows.map(e=>e.category)).size>1) return copy(entries,name);
- const place=rows[0].category, n=rows.length;
- const intro=name ? 'היי '+name+', סיכמתי פה את '+(n===1?'המשמרת שלך':'המשמרות שלך')+' ב'+place+':'
-  : 'היי, סיכמתי פה את '+(n===1?(Pay.isJob(rows[0])?'העבודה שלי':'המשמרת שלי'):n+' המשמרות שלי')+' ב'+place+':';
- const totalHours=hours(rows.reduce((s,e)=>s+e.hours,0));
- const who=name?'עבדת':'עבדתי';
- const out=[intro, ...(n===1?['בתאריך '+dates(rows)+(rows.some(e=>!Pay.isJob(e)||e.hours>0)?' '+who+' '+totalHours+' שעות.':'.')]:['סה״כ '+who+' '+totalHours+' שעות.']),...humanAmounts(rows,!!name)];
- if (n===1) out.push(...details(rows[0]));
- else { out.push('פירוט המשמרות:');for(const e of ordered(rows)) out.push(date(e.date)+' | '+hours(e.hours)+' שעות | '+amount(e)+' | '+(e.isPaid?'שולם':'ממתין'),...details(e)); }
+ const places = byPlace(rows), out = [];
+ if (places.length === 1 && share) {
+  const [place, es] = places[0], n = es.length, mine = name ? 'שלך' : 'שלי';
+  const what = n === 1 ? (Pay.isJob(es[0]) ? 'העבודה' : 'המשמרת') + (future ? ' המתוכננת ' : ' ') + mine : n + ' המשמרות ' + mine;
+  out.push((name ? 'היי ' + name : 'היי') + ', סיכמתי פה את ' + what + ' ב' + place + (n > 1 ? rangeNote(es) : '') + ':', ...body(es, future));
+ } else {
+  if (share) out.push((name ? 'היי ' + name : 'היי') + ', סיכמתי פה את המשמרות ' + (name ? 'שלך' : 'שלי') + ':');
+  else if (name) out.push('עובד: ' + name);
+  places.forEach(([place, es], i) => { if (i || share) out.push(''); out.push(placeTitle(place, es, future), ...body(es, future)); });
+  if (share && out[1] === '') out.splice(1, 1);
+ }
+ if (!share) return out.join('\n');
  // A report to someone the user pays asks for where to send the money.
- if (name&&rows.some(e=>!e.isPaid&&Pay.pay(e)!=null)) out.push(askPayment(askKinds));
- out.push('תודה!');return out.join('\n');
+ if (name && !future && rows.some(e=>!e.isPaid&&Pay.pay(e)!=null)) out.push(askPayment(askKinds));
+ out.push('תודה!'); return out.join('\n');
 }
+const summary = (entries, name=null, future=false) => report(entries, name, true, future);
+const copy = (entries, name=null, future=false) => report(entries, name, false, future);
 const ASK_PAYMENT='אפשר לשלוח לי את ה-Zelle, הביט או פרטי החשבון שלך, ואעביר את התשלום.';
 /** "אפשר לשלוח לי את ה-Zelle שלך…" for the kinds filled in ('zelle','bit','bank'); none or all three: ASK_PAYMENT. */
 function askPayment(kinds){ const names=[['zelle','ה-Zelle'],['bit','הביט'],['bank','פרטי החשבון']].filter(([k])=>(kinds||[]).includes(k)).map(([,n])=>n);
@@ -116,43 +151,34 @@ const paymentLines=(zelle,bit,bank)=>[[zelle,'Zelle: '],[bit,'ביט: '],[bank,'
 function withPayment(text,lines){ if(!lines.length)return text; const block=['לתשלום:',...lines].join('\n'); return text.endsWith('\nתודה!')?text.slice(0,-'תודה!'.length)+block+'\nתודה!':text+'\n'+block; }
 const personal=e=>summary([e]);
 const job=personal;
+/** The team report of a group shift: what the employer pays in all, once, then each person's hours and amount. */
 function employer(e,ownName=null,technical=false,future=false) {
- const own=Pay.pay(e), ws=Pay.workers(e), pays=ws.map(w=>Pay.employerPay(w,e));
+ const own=Pay.pay(e), ws=Pay.workers(e), pays=ws.map(w=>Pay.employerPay(w,e)), isJob=Pay.isJob(e);
  const total=own==null||pays.some(p=>p==null)?null:Math.round((own+pays.reduce((a,b)=>a+b,0)+Pay.passThrough(e))*100)/100;
- const out=[...(technical?['עבודה: '+e.category,'כמות משמרות: 1','כמות שעות: '+hours(e.hours+ws.reduce((n,w)=>n+w.hours,0))]:['היי, סיכמתי פה את העבודה ב-'+date(e.date)+':']),
-  ...(technical?['תאריכים: '+date(e.date)]:[]),'סכום הצוות: '+(total==null?'ממתין להשלמת תעריף':money(total,e.currency)),'פירוט:'];
- const job=Pay.isJob(e);
- out.push((String(ownName??'').trim()||'החלק שלי')+': '+(job&&e.hours===0?'':hours(e.hours)+' שעות | ')+(own==null?(job?'סכום חסר':'תעריף חסר'):money(own,e.currency)));
+ const out=[technical?e.category+' · '+date(e.date)+(future?' · מתוכנן':''):'היי, סיכמתי פה את העבודה'+(future?' המתוכננת':'')+' ב'+e.category+' ב-'+date(e.date)+':'];
+ out.push((future?'צפי לצוות: ':'סכום הצוות: ')+(total==null?'עוד לא ידוע (חסר תעריף)':money(total,e.currency)+(future?'':e.isPaid?' · שולם':' · לא שולם')),'פירוט:');
+ out.push((String(ownName??'').trim()||'החלק שלי')+': '+(isJob&&e.hours===0?'':hours(e.hours)+' שעות · ')+(own==null?(isJob?'סכום לא ידוע':'תעריף לא ידוע'):money(own,e.currency)));
  // On a job team a fixed sum has no hours to show.
- ws.forEach((w,i)=>out.push(w.name+': '+(job&&w.amount!=null&&w.hours===0?'':hours(w.hours)+' שעות | ')+(pays[i]==null?'תעריף חסר':money(pays[i],e.currency))));
+ ws.forEach((w,i)=>out.push(w.name+': '+(isJob&&w.amount!=null&&w.hours===0?'':hours(w.hours)+' שעות · ')+(pays[i]==null?'תעריף לא ידוע':money(pays[i],e.currency))));
  if(Pay.passThrough(e)>0)out.push('החזר הוצאות: '+money(Pay.passThrough(e),e.currency));
  if(note(e))out.push('הערה: '+note(e));
- if(!technical)out.push('תודה!');return future?plannedText(out.join('\n')):out.join('\n');
+ if(!technical)out.push('תודה!');return out.join('\n');
 }
 function worker(e,w,technical=false,future=false) {
  // Pass one worker only, even if two workers happen to share a name.
  const single={...e,groupWorkersJson:JSON.stringify([w.source??w])};
- const text=technical?copy([single],w.name):summary([single],w.name);
- // Nothing to pay yet for a planned shift, so it does not ask where to send money.
- return future?plannedText(text.replace('\n'+askPayment(askKinds),'')):text;
+ return report([single],w.name,!technical,future);
 }
+/** A weekly-plan day: the same shape as a saved planned shift. */
 function planned(o,technical=false) {
- const h=Rules.span(o.start,o.end).minutes/60;
- const out=[...(technical?['עבודה: '+o.category,'כמות משמרות: 1']:['היי, סיכמתי פה את המשמרת המתוכננת שלי ב'+o.category+':']),
-  'מצב: מתוכנן — עוד לא בוצע','תאריכים: '+date(Plan.startMillis(o.date,'12:00')),
-  'שעות: '+o.start+'–'+o.end+(o.end<=o.start?' (למחרת)':''),'כמות שעות: '+hours(h),
-  'תעריף לשעה: '+(o.rate==null?'עדיין לא ידוע':money(o.rate,o.currency)),
-  'צפי בלבד: '+(o.rate==null?'ממתין להשלמת תעריף':money(Pay.money(h,o.rate),o.currency))];
+ const h=Rules.span(o.start,o.end).minutes/60, at=Plan.startMillis(o.date,'12:00');
+ const out=[technical?o.category+' · מתוכנן':'היי, סיכמתי פה את המשמרת המתוכננת שלי ב'+o.category+':',
+  [date(at),o.start+'–'+o.end+(o.end<=o.start?' (למחרת)':''),hours(h)+' שעות',o.rate==null?'תעריף לא ידוע':money(o.rate,o.currency)+' לשעה'].join(' · '),
+  o.rate==null?'הסכום עוד לא ידוע.':'צפי: '+money(Pay.money(h,o.rate),o.currency)];
  if(!technical)out.push('תודה!');return out.join('\n');
 }
 // Saved future entries are also estimates, even though they are not weekly-plan occurrences.
-function entry(e,technical=false,future=false) {
- if(!future)return technical?copy([e]):personal(e);
- const out=[technical?copy([e]):personal(e)];
- return plannedText(out[0]);
-}
-function plannedText(text) { return 'מתוכנן — עוד לא בוצע\n'+text.replaceAll('יתרה לתשלום:','צפי שטרם בוצע:').replaceAll('שולם:','סומן בתכנון כשולם:').replaceAll('סכום:','צפי:').replaceAll('סכום הצוות:','צפי לצוות:').replaceAll('השכר לתשלום:','צפי השכר:').replaceAll('מגיע לך:','צפי השכר:').replaceAll('נותר לתשלום','צפי שטרם בוצע').replaceAll('השכר הכולל:','צפי השכר הכולל:').replaceAll('השכר בסך','צפי השכר בסך').replaceAll(' שולם במלואו.',' סומן בתכנון כשולם.').replaceAll('מתוכו שולם','סומן בתכנון כשולם');
-}
+const entry=(e,technical=false,future=false)=>report([e],null,!technical,future);
 const excelHeaders=['עבודה','תאריך','שעת התחלה','שעת סיום','שעות עבודה','הפסקה בדקות','תעריף שעתי','סכום','מטבע','סטטוס תשלום','סוג','בונוס','הערה','שכר ידוע'];
 // Prevent spreadsheet formula execution from user-entered text; numeric columns stay numeric.
 const textCell=v=>{const s=String(v??'');return /^[\s\u0000-\u001f\u200e\u200f\u202a-\u202e\u2066-\u2069]*[=+\-@]/.test(s)?"'"+s:s;};
@@ -171,6 +197,6 @@ function table(entries){return [excelHeaders,...ordered(entries).map(e=>{
 const quote=(value,d)=>{const s=String(value??'');return s.includes(d)||/[\n\r"]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;};
 const excel=entries=>table(entries).map(row=>row.map(s=>quote(s,'\t')).join('\t')).join('\n');
 const csv=entries=>'\ufeff'+table(entries).map(row=>row.map(s=>quote(s,',')).join(',')).join('\r\n');
-const api={date,civilDate,askPayment,setTextChoices,money,hours,personal,job,employer,worker,planned,summary,copy,entry,workerName,excel,csv,exactDuration,ASK_PAYMENT,paymentLines,withPayment};
+const api={date,shortDate,civilDate,askPayment,setTextChoices,money,hours,personal,job,employer,worker,planned,summary,copy,entry,workerName,excel,csv,exactDuration,ASK_PAYMENT,paymentLines,withPayment};
 if(node)module.exports=api;else root.KisShare=api;
 })(globalThis);

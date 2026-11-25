@@ -29,11 +29,16 @@ jobs:
         run: |
           node browser-tests/mobile.cjs
           node browser-tests/parity.cjs
+          node browser-tests/storage-full.cjs
+          node browser-tests/signin-modal.cjs
+          node browser-tests/zero-rate.cjs
+          node browser-tests/review-targets.cjs
           node browser-tests/fb08-retro-rate.cjs
           node browser-tests/updates.cjs
           node browser-tests/rc15.cjs
           node browser-tests/audit.cjs
           node browser-tests/home-screen.cjs
+          node browser-tests/fold-widths.cjs
           mkdir -p browser-evidence && SHOTS_DIR=browser-evidence node browser-tests/unpaid-aging.cjs
       - uses: actions/upload-artifact@v4
         if: always()

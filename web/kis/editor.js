@@ -411,7 +411,7 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
           <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
         <div class="seg">${['₪', '$'].map(cur => `<button aria-pressed="${d.currency === cur}" data-cur="${cur}">${cur}</button>`).join('')}</div></div>
       ${d.mode !== 'JOB' ? `<div class="field" data-testid="rate-field"><div class="row" style="align-items:center"><span class="grow">תעריף לשעה (${esc(d.currency)})</span>
-          <button class="chip${d.rateUnknown ? ' warn' : ''}" style="min-height:32px;padding:0 12px" data-a="rate-unknown" data-testid="rate-unknown" aria-pressed="${!!d.rateUnknown}">${d.rateUnknown ? 'תעריף חסר · לחיצה להזנה' : 'לא יודע'}</button></div>
+          <button class="chip${d.rateUnknown ? ' warn' : ''}" style="padding:0 12px" data-a="rate-unknown" data-testid="rate-unknown" aria-pressed="${!!d.rateUnknown}">${d.rateUnknown ? 'תעריף חסר · לחיצה להזנה' : 'לא יודע'}</button></div>
           <input class="input" inputmode="decimal" data-f="rate" value="${esc(d.rate)}" ${d.rateUnknown ? 'disabled' : ''} aria-label="תעריף לשעה" data-testid="rate-input"></div>` : ''}
       ${extrasRow(d, clockMode)}
       ${d.mode === 'GROUP' ? groupBlock(d) : ''}

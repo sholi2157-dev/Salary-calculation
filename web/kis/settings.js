@@ -122,6 +122,7 @@ function render(el, app) {
 }
 
 function download(name, text, type) { const url = URL.createObjectURL(new Blob([text], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+function downloadBackup(store) { download('salary-backup.json', backupText(store), 'application/json'); }
 /** The same backup file as the Android app: version 2 when nothing 2.0 is used, version 3 otherwise. */
 function backupText(store) {
   const d = store.data;
@@ -593,5 +594,5 @@ function feedbackForm(el, app, close, heading = false) {
   }
 }
 
-root.KisSettings = { feedbackSending: () => feedbackSending, open: name => { section = name || null; }, render, recoveryPanel, bindRecovery, recoverySheet, feedbackSheet, feedbackReport, event, placeSheet, placesSheet, backupText, dueReminders, importSheet, notificationsSheet, notes, unread };
+root.KisSettings = { feedbackSending: () => feedbackSending, open: name => { section = name || null; }, render, recoveryPanel, bindRecovery, recoverySheet, feedbackSheet, feedbackReport, event, placeSheet, placesSheet, backupText, downloadBackup, dueReminders, importSheet, notificationsSheet, notes, unread };
 })(globalThis);
