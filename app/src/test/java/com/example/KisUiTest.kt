@@ -1485,6 +1485,22 @@ class KisUiTest {
         ui.onNodeWithTag("clock_start_d3", useUnmergedTree = true).assertIsSelected()
     }
 
+    /**
+     * 2.4.1 RC: on a Pixel 2 sized phone (system bars taken off) the stacked clock cards took the whole page, the
+     * details scroller got no height and "הערה" could never be scrolled into view (the device UI test hung there).
+     */
+    @Test @Config(qualifiers = "w411dp-h659dp-xxhdpi") fun clockLeavesRoomForTheFormOnAPixel2SizedPhone() {
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00"),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        shot("review-clock-411x659")
+        ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(120.dp)
+        ui.onNodeWithTag("editor_note").performScrollTo().assertIsDisplayed().performClick()
+        ui.onNodeWithTag("notes_input").performScrollTo().assertIsDisplayed()
+        listOf("start", "end").forEach { time ->
+            listOf(-15, 15).forEach { n -> ui.onNodeWithTag("nudge_${time}_$n").assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp) }
+        }
+    }
+
     @Test fun knownZeroRateIsShownAndIsNotOfferedAsMissing() {
         val entry = WorkEntry(id = 700, category = categories.first().name, date = day, isTimeRange = false,
             hours = 2.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = true)
