@@ -1,6 +1,6 @@
 /* A build owns a complete shell. Never mix a new HTML file with old JS/CSS. */
 const BUILD='__WEB_BUILD_ID__';
-const CACHE='salary-web--automatic-20261021-'+BUILD;
+const CACHE='salary-web--review-fixes-20261116-'+BUILD;
 const versioned=path=>path.startsWith('/web/')?path+'?v='+BUILD:path;
 // Navigation requests reject redirected responses supplied by a worker.
 function navigationResponse(response){return response?.redirected?new Response(response.body,{status:response.status,statusText:response.statusText,headers:response.headers}):response;}

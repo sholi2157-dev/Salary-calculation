@@ -1,3 +1,26 @@
+# Web review fixes — 2026-11-16 (prepared for review)
+
+Work branch: `codex/2.5-review-fixes-web`, from `release/2.4-web` at `4c56db1`.
+The first two fixes are separate commits: storage errors `f58d388`, sign-in modal `10a4c17`.
+Runtime fixes through `17fd537`: reported storage-write failures with export and retained editor input;
+safe startup when a migration snapshot cannot fit; inert/aria-hidden sign-in background with exact restoration;
+visible welcome borders; explicit rate editing for known zero pay; welcome version from `KisWhatsNew.VERSION`;
+44px phone hit areas and stronger light delete-text contrast. Narrow phone clock cards wrap to preserve four
+separate digit targets. No snapshots are automatically removed; their policy remains isolated in `snapshots()`.
+
+Local validation: build, 340/340 unit tests, 9/9 unchanged shared fixtures, mobile/parity, worker updates,
+storage-full (4,000 synthetic shifts and real Chromium quota), sign-in modal, zero-rate, target/contrast,
+v2, account-tour, editor-keyboard, night-ruler and component checks passed. Target tests cover 320/360/390/412
+in light and dark; welcome tests cover 360/390. The focus/rem accessibility suite passed; its optional axe
+scan was unavailable locally. The v2 recap timing check timed out with local Playwright 1.56.1 and passed
+with CI's Playwright 1.62.1. Screenshots are retained outside Git under the task's `cx/shots-web/` directory;
+the new check workflow also uploads its screenshots as browser evidence. Final PR/CI results belong in
+the task report. The service-worker cache prefix was bumped and the existing build digest still versions every shell.
+
+Android source and all financial/wire formats are unchanged. No merge, deployment, publication or snapshot
+cleanup was performed. Existing welcome wording/address/example names remain pending owner decision.
+New proposed Hebrew sentence: `מומלץ להוריד גיבוי.` (appended to existing storage failure text).
+
 # 2.4.0 release preparation (2026-11-11)
 
 - **Prepared, not published:** version **2.4.0**, Android versionCode **55** (highest tag and RC artifact so far: 54). Public Android is still 2.3.1 / 54.
