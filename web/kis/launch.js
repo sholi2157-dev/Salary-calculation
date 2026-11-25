@@ -105,9 +105,11 @@ function tour(app) {
   function draw() {
     const s = STEPS[i];
     const target = s.target && document.querySelector(s.target);
-    const r = target?.getBoundingClientRect();
+    // An unfolded phone scales the page (CSS zoom): a measured box is in screen pixels, a style is in page pixels.
+    const z = parseFloat(getComputedStyle(document.documentElement).zoom) || 1, b = target?.getBoundingClientRect();
+    const r = b && { top: b.top / z, left: b.left / z, width: b.width / z, height: b.height / z, bottom: b.bottom / z };
     el.innerHTML = `${r ? `<div class="coach-hole" style="top:${r.top - 4}px;left:${r.left - 4}px;width:${r.width + 8}px;height:${r.height + 8}px"></div>` : '<div class="coach-dim"></div>'}
-      <div class="coach-card${r ? '' : ' center'}" role="dialog" aria-modal="true" aria-labelledby="coach-title"${r && r.top < innerHeight / 2 ? ' style="bottom:auto;top:' + (r.bottom + 16) + 'px"' : ''}>
+      <div class="coach-card${r ? '' : ' center'}" role="dialog" aria-modal="true" aria-labelledby="coach-title"${r && r.top < innerHeight / z / 2 ? ' style="bottom:auto;top:' + (r.bottom + 16) + 'px"' : ''}>
         <div class="row" style="align-items:center"><span class="caption grow" data-testid="tour-progress">${i + 1} מתוך ${STEPS.length}</span><button class="plain caption" data-a="skip" data-testid="tour-skip" style="min-height:44px;padding:0 8px">דלג</button></div>
         <h2 id="coach-title">${U().esc(s.title)}</h2><p style="margin:0">${U().esc(s.body)}</p>
         <div class="row"><button class="btn primary grow" data-a="next" data-testid="tour-next">${i === STEPS.length - 1 ? 'יאללה, מתחילים' : 'הבא'}</button>${i ? '<button class="btn ghost" data-a="back" data-testid="tour-back">הקודם</button>' : ''}</div></div>`;

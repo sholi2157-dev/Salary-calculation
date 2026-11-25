@@ -158,6 +158,13 @@ function story(app, scope) {
  * buttons, progress bars and arrows are left out), signed with the app's name at the bottom.
  */
 async function slideImage(storyEl) {
+  // Drawn at the page's own scale: an unfolded phone's zoom is lifted while the picture is taken (fonts and borders are
+  // read in page pixels, boxes would be measured in screen pixels).
+  const doc = document.documentElement, zoomed = (parseFloat(getComputedStyle(doc).zoom) || 1) !== 1, before = doc.style.zoom;
+  if (zoomed) doc.style.zoom = '1';
+  try { return await drawSlide(storyEl); } finally { if (zoomed) doc.style.zoom = before; }
+}
+async function drawSlide(storyEl) {
   await document.fonts?.ready;
   const box = storyEl.getBoundingClientRect(), k = 1080 / box.width, W = 1080, H = Math.round(box.height * k);
   const c = document.createElement('canvas'); c.width = W; c.height = H;

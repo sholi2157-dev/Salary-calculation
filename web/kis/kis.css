@@ -597,25 +597,23 @@ button.grip { border: 0; background: none; padding: 0; min-width: 44px; min-heig
 }
 @media (max-width: 339px) { .page-title { font-size: 1.625rem; line-height: 2rem; } }
 
-/* An unfolded folding phone or a tablet (600–1023px): the page uses the whole width, as the computer layout does, with
-   the phone's bottom navigation. Home has its two columns, History shows two cards per row,
-   and the shift editor spreads across the screen instead of a narrow strip in the middle. */
+/* An unfolded folding phone or a tablet held upright (600–1023px): the same phone layout, scaled up to fill the screen,
+   instead of a stretched page, a narrow strip or a different two-column layout. The page works as a ~520–600px phone
+   (a little wider than the widest iPhone), every size grows with it, and the navigation stays at the bottom. */
 @media (min-width: 600px) and (max-width: 1023px) {
-  .kis-page { max-width: none; padding-inline: 24px; }
-  .home-top { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-  .home-top .hero-card { margin-top: 18px; }
-  .home-side { display: grid; gap: 12px; margin-top: 18px; }
-  .home-side .tiles, .home-side .now-row, .home-side .pending-flag, .home-side .aging { margin-top: 0; }
-  .home-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0 24px; align-items: start; }
-  .editor-in { max-width: none; }
+  :root { --z: 1.1; }
+  html { zoom: var(--z); }
+  .kis-page, .editor-in { max-width: none; }
+  .sheet { max-width: 640px; }
+  /* Under zoom a viewport unit is multiplied too: divide it back so nothing is taller or wider than the screen. */
+  body { min-height: calc(100dvh / var(--z)); }
+  .sheet { max-height: min(calc(92dvh / var(--z)), calc(var(--vvh, 100dvh) * .92)); }
+  .nav { max-width: calc(100vw / var(--z) - 16px); }
 }
-/* From 900px settings show every category open, in two columns as on a computer. */
-@media (min-width: 900px) and (max-width: 1023px) {
-  .set-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-  .set-groups .set-group:first-child { grid-column: 1 / -1; }
-}
-/* History: two cards per row wherever there is room for them (an unfolded phone, a tablet, a computer). */
-@media (min-width: 600px) {
-  [data-testid="history-list"] { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-  [data-testid="history-list"] > .week-head { grid-column: 1 / -1; }
-}
+@media (min-width: 680px) and (max-width: 1023px) { :root { --z: 1.2; } }
+@media (min-width: 760px) and (max-width: 1023px) { :root { --z: 1.32; } }
+@media (min-width: 840px) and (max-width: 1023px) { :root { --z: 1.45; } }
+/* A shift card is the same at every phone width: the date and place on one side, the amount with its tags
+   ("לא שולם", "מתוכנן") under it on the other, so a long Hebrew date never pushes a tag onto a line of its own. */
+.shift .end { display: grid; justify-items: end; gap: 4px; flex-shrink: 0; }
+.shift .end .tags { display: flex; gap: 4px; }
