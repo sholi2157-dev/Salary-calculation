@@ -17,6 +17,14 @@ instrument() {
   if ! timeout 600 adb shell am instrument -w -e class "$cls" "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee "$out"; then
     echo "===== $cls did not finish: last test-runner and crash log lines ====="
     adb logcat -d 2>/dev/null | grep -E "TestRunner|AndroidRuntime|System.err|ComposeTest|IdlingResource" | tail -n 150 || true
+    # Where the app's threads are waiting (main and the instrumentation thread).
+    adb root >/dev/null 2>&1 || true; timeout 20 adb wait-for-device || true
+    local pid; pid=$(adb shell pidof "$pkg" | tr -d '\r' || true)
+    if [ -n "$pid" ]; then
+      adb shell kill -3 "$pid" || true; timeout 8 tail -f /dev/null || true
+      local trace; trace=$(adb shell 'ls -t /data/anr/ 2>/dev/null | head -n 1' | tr -d '\r' || true)
+      [ -n "$trace" ] && adb shell cat "/data/anr/$trace" | grep -A 45 -E '^"(main|Instr: |androidx.test|Test worker)' | head -n 220 || true
+    fi
     return 1
   fi
 }
