@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 /** A timer never obtains its owner from whichever Firebase user happens to be current. */
 class WorkShiftState internal constructor(private val context: Context, val owner: WorkAccountScope) {
-    private val prefs = context.getSharedPreferences(owner.timerName, Context.MODE_PRIVATE)
+    private val prefs = com.example.data.WorkStorage.preferences(context, owner.timerName)
     val activeShiftStartTime = MutableStateFlow(prefs.getLong("start_time", -1L).takeIf { it != -1L })
     val activeShiftCategory = MutableStateFlow(prefs.getString("category", "עצמאי") ?: "עצמאי")
     val activeShiftRate = MutableStateFlow(prefs.getString("rate_double", null)?.toDoubleOrNull()
@@ -62,7 +62,7 @@ object ShiftStateManager {
     /** The same timer (and database), whichever Google account it syncs with. */
     fun sameTimer(a: WorkAccountScope, b: WorkAccountScope): Boolean = a.timerName == b.timerName
 
-    private fun routing(context: Context) = context.getSharedPreferences("shift_service_owner", Context.MODE_PRIVATE)
+    private fun routing(context: Context) = com.example.data.WorkStorage.preferences(context, "shift_service_owner")
     internal fun setOwner(context: Context, owner: WorkAccountScope): Boolean =
         routing(context).edit().putString("uid", owner.uid).commit()
     fun activeOwner(context: Context): WorkAccountScope = WorkAccountScope(routing(context).getString("uid", null))

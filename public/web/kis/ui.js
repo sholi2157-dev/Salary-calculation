@@ -1,0 +1,290 @@
+/* Shared screen helpers for the 2.0 web app: formatting (same as KisFormat), colours, sheets, messages, sharing. */
+(function (root) {
+'use strict';
+const DAY_SHORT = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+// The 8 fixed workplace colours (KisTheme.Workplaces): vivid end, dark end, ink on it, dark-mode accent and its ink.
+// M-28 (Kis 2): same order and names, so each saved colour index stays valid; each colour moves inside its own hue so
+// close pairs (indigo/purple, rose/burgundy) stay apart for colour-blind people and indigo is no longer the brand colour.
+const PLACES = [
+  ['אינדיגו', '#393ECA', '#150A6B', '#FFFFFF', '#7D9BFF', '#0E142A'], ['ירוק', '#117D15', '#013E03', '#FFFFFF', '#44E994', '#021C0D'],
+  ['ורד', '#C50E70', '#690039', '#FFFFFF', '#FA74A5', '#260C16'], ['חרדל', '#F5B82E', '#D18F1F', '#1A1200', '#FFC732', '#1E1400'],
+  ['סגול', '#9F4AE4', '#5B2187', '#FFFFFF', '#C874C8', '#200E21'], ['תכלת', '#0777A9', '#003D59', '#FFFFFF', '#8BC7FE', '#031729'],
+  ['טורקיז', '#065E63', '#012527', '#FFFFFF', '#18AFA4', '#001B19'], ['בורדו', '#8B032A', '#33000A', '#FFFFFF', '#F05963', '#270C0D'],
+].map(([name, from, to, on, accentDark, accentDarkInk]) => ({ name, from, to, on, accentDark, accentDarkInk }));
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/** "1,234" for whole amounts, "1,234.50" otherwise. */
+function number(v) {
+  const cents = Math.round(v * 100);
+  return cents % 100 === 0 ? (cents / 100).toLocaleString('en-US') : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+const money = (v, cur) => cur + number(v);
+/** Money as HTML with the symbol in Rubik and the digits isolated left-to-right. */
+const moneyHtml = (v, cur, cls = '') => `<span class="money ${cls}"><span class="cur">${esc(cur)}</span>${number(v)}</span>`;
+function hours(h) { const r = Math.round(h * 100) / 100; return Number.isInteger(r) ? String(r) : String(r); }
+const hm = m => Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0');
+/** A duration on screen, always h:mm ("2:30 שעות", M-36); rates and shared texts keep their decimals. */
+const duration = h => hm(Math.round((Number(h) || 0) * 60));
+const startOfDay = ms => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
+// Dates are Hebrew with the civil date beside them (owner feedback 2.3): "כ״ח חשוון (8/11)"; another year adds both years.
+const shortDate = ms => root.KisHebrew.show(ms);
+function dayLabel(ms) {
+  const diff = Math.round((startOfDay(Date.now()) - startOfDay(ms)) / 86400000), d = new Date(ms);
+  return diff === 0 ? 'היום' : diff === 1 ? 'אתמול' : diff === -1 ? 'מחר' : `יום ${DAY_SHORT[d.getDay()]} ${root.KisHebrew.show(ms)}`;
+}
+function dayLabelLong(ms) { return dayLabel(ms); }
+const monthKey = ms => { const d = new Date(ms); return d.getFullYear() * 12 + d.getMonth(); };
+const monthName = k => MONTHS[k % 12] + ' ' + Math.floor(k / 12);
+const isDark = () => document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+
+function placeOf(name, store) {
+  const pick = store.local['color:' + name];
+  if (Number.isInteger(pick) && PLACES[pick]) return PLACES[pick];
+  const i = store.data.categories.findIndex(c => c.name === name);
+  if (i >= 0) return PLACES[i % PLACES.length];
+  let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) | 0; return PLACES[Math.abs(h) % PLACES.length];
+}
+/** The places in the order the user gave them (settings → places → עריכה; this browser only); new ones come last. */
+function orderedPlaces(store) {
+  const order = Array.isArray(store.local.placeOrder) ? store.local.placeOrder : [], at = new Map(order.map((n, i) => [n, i]));
+  return store.data.categories.map((c, i) => [c, i]).sort((a, b) => (at.get(a[0].name) ?? 1e9) - (at.get(b[0].name) ?? 1e9) || a[1] - b[1]).map(x => x[0]);
+}
+const accent = p => isDark() ? p.accentDark : p.from;
+const accentInk = p => isDark() ? p.accentDarkInk : p.on;
+function avatar(name, store, planned = false, size = 44) {
+  const p = placeOf(name, store);
+  return `<span class="avatar${planned ? ' planned' : ''}" style="--av:${accent(p)};background:linear-gradient(90deg,${p.from},${p.to});color:${p.on};width:${size}px;height:${size}px">${esc((name || '?').trim().charAt(0))}</span>`;
+}
+// A job paid by the job has no hours to show unless some were typed.
+const timeLabel = e => e.isTimeRange && e.startTime && e.endTime ? `⁦${e.startTime}–${e.endTime}⁩` : e.kind === 'job' && !(e.hours > 0) ? 'קבלנות' : `${duration(e.hours)} שעות`;
+function subtitle(e) {
+  const parts = [];
+  if (e.kind === 'job') { parts.push('קבלנות: ' + (e.notes.trim() || e.category)); if (e.hours > 0) parts.push(duration(e.hours) + ' ש׳'); }
+  else {
+    parts.push(timeLabel(e));
+    if (e.isTimeRange && e.startTime && e.endTime) { if (e.endTime <= e.startTime) parts.push('למחרת'); parts.push(duration(e.hours) + ' ש׳'); }
+    parts.push(e.category);
+  }
+  if (e.bonus > 0) parts.push('בונוס ' + money(e.bonus, e.currency));
+  if (e.passThrough > 0) parts.push('החזר ' + money(e.passThrough, e.currency));
+  if (e.isGroupShift) { const n = root.KisPay.workers(e).length; if (n) parts.push((n + 1) + ' אנשים'); }
+  return parts.join(' · ');
+}
+const upcoming = (e, now = Date.now()) => startOfDay(e.date) > startOfDay(now);
+
+/** One shift card (the same on Home and History). */
+function shiftCard(e, store, { selected = false, tag = 'shift' } = {}) {
+  const planned = upcoming(e), pay = root.KisPay.pay(e);
+  const tags = [planned ? '<span class="tag" data-testid="planned-tag">מתוכנן</span>' : '', e.autoConfirmed ? '<span class="tag">אוטו׳</span>' : '', !e.isPaid && !planned ? '<span class="tag">לא שולם</span>' : ''].join('');
+  const amount = pay != null ? `<span class="pay${planned ? ' muted' : ''}">${moneyHtml(pay, e.currency)}</span>` : `<span class="tag warn">${e.kind === 'job' ? 'סכום חסר' : 'תעריף חסר'}</span>`;
+  return `<button class="shift${selected ? ' selected' : ''}" data-id="${esc(e.id)}" data-testid="${tag}-${esc(e.id)}" aria-pressed="${selected}">
+    ${avatar(e.category, store, planned)}<span class="meta"><span class="top"><b class="label">${esc(dayLabel(e.date))}</b></span><span class="sub">${esc(subtitle(e))}</span></span><span class="end">${amount}${tags ? `<span class="tags">${tags}</span>` : ''}</span></button>`;
+}
+
+// ---- messages ----
+/*
+ * One message at a time, at the bottom above the navigation (design decision "משוב והודעות" B). A sign says what kind it
+ * is: ✓ done, ↺ can be undone, ! went wrong (announced at once to a screen reader), nothing for plain information.
+ * The kind is given, or read from the wording. A message with an action stays longer; an error stays until it is read.
+ */
+let toastTimer = null;
+const FAILED = /נכשל|לא הושלם|לא בוצע|לא תקין|לא הצליח|אין חיבור|אין שעה כזאת|אפשר עד/;
+function toast(text, action, onAction, kind) {
+  const host = document.getElementById('toast');
+  kind ||= FAILED.test(text) ? 'error' : /✓/.test(text) ? 'ok' : action ? 'undo' : 'info';
+  const shown = kind === 'ok' ? String(text).replace(/\s*✓\s*/g, ' ').trim() : text;
+  const sign = { ok: ICON.check, undo: ICON.undo, error: ICON.alert }[kind]; // M-30: SVG icons, not font glyphs
+  host.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  host.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite');
+  host.innerHTML = `<div class="t-${kind}" data-kind="${kind}">${sign ? `<span class="t-sign" aria-hidden="true">${sign}</span>` : ''}<span class="t-text">${esc(shown)}</span>${action ? `<button type="button" data-testid="toast-action">${esc(action)}</button>` : ''}</div>`;
+  host.hidden = false;
+  if (action) host.querySelector('button').onclick = () => { host.hidden = true; onAction?.(); };
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { host.hidden = true; }, kind === 'error' ? 8000 : action ? 6000 : 2600);
+}
+
+/** A short list of actions for one thing (a worker, the reports of a shift), in a sheet: focus, Escape and the scrim as usual. */
+function actionSheet(title, items, testid = 'action-sheet') {
+  sheet(testid, (el, close) => {
+    el.innerHTML = `<h2>${esc(title)}</h2><div class="action-list">${items.map((it, i) => `<button class="action-item${it.danger ? ' danger' : ''}" data-i="${i}" data-testid="${esc(it.testid || '')}">${esc(it.label)}</button>`).join('')}</div>`;
+    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { close(); items[+b.dataset.i].onClick(); });
+  });
+}
+
+// ---- sheets ----
+const sheets = [];
+/** A bottom sheet. render(el) fills it; Escape and the scrim close it. Returns close(). */
+function sheet(testid, render, { onClose } = {}) {
+  const scrim = document.createElement('div');
+  scrim.className = 'scrim';
+  scrim.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" data-testid="${testid}"></div>`;
+  const el = scrim.firstChild;
+  const opener = document.activeElement;
+  const close = () => { if (!scrim.isConnected) return; scrim.remove(); sheets.splice(sheets.indexOf(close), 1); onClose?.(); if (opener?.isConnected) opener.focus({ preventScroll: true }); };
+  scrim.addEventListener('click', e => { if (e.target === scrim) close(); });
+  document.body.append(scrim); sheets.push(close);
+  render(el, close);
+  const h = el.querySelector('h2'); if (h) { h.id ||= 'sheet-title-' + sheets.length; el.setAttribute('aria-labelledby', h.id); }
+  el.querySelector('button, input, select, textarea')?.focus({ preventScroll: true });
+  return close;
+}
+/*
+ * Focus stays inside the top dialog (audit M-33): every sheet, the editor, the summary story, the launch, the tour and
+ * the sign-in are role="dialog" aria-modal="true". Tab and Shift+Tab wrap inside the top one, and focus that lands
+ * behind it (a click on the page under a sheet's scrim edge, an old element re-focused) returns to it. The toast stays
+ * reachable so its undo can be pressed.
+ */
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+function topDialog() {
+  const all = [...document.querySelectorAll('[aria-modal="true"]')].filter(d => !d.hidden && d.getClientRects().length);
+  return all[all.length - 1] || null;
+}
+const focusablesIn = d => [...d.querySelectorAll(FOCUSABLE)].filter(x => x.getClientRects().length && !x.closest('[hidden], [inert]'));
+const outsideOk = t => !!t?.closest?.('#toast');
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Tab' || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+  const d = topDialog(); if (!d) return;
+  const items = focusablesIn(d), active = document.activeElement;
+  if (outsideOk(active)) return;
+  if (!items.length) { e.preventDefault(); return; }
+  const first = items[0], last = items[items.length - 1];
+  if (!d.contains(active)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+  else if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+});
+document.addEventListener('focusin', e => {
+  const d = topDialog();
+  if (!d || d.contains(e.target) || outsideOk(e.target)) return;
+  (focusablesIn(d)[0] || d).focus({ preventScroll: true });
+});
+
+/*
+ * A page redraw (render() replaces the page's HTML) keeps the keyboard focus on the same control (audit M-33): before,
+ * the control is described by a stable attribute; after, the same control in the new HTML is focused again.
+ */
+const FOCUS_KEYS = ['data-testid', 'id', 'data-a', 'data-act', 'data-id', 'data-page', 'data-recap', 'data-f', 'aria-label'];
+function focusMark(container) {
+  const a = document.activeElement;
+  if (!a || a === document.body || !container.contains(a)) return null;
+  for (const k of FOCUS_KEYS) {
+    const v = a.getAttribute(k); if (!v) continue;
+    const sel = `[${k}="${CSS.escape(v)}"]`, same = [...container.querySelectorAll(sel)];
+    return { sel, i: Math.max(0, same.indexOf(a)), start: a.selectionStart ?? null, end: a.selectionEnd ?? null };
+  }
+  return null;
+}
+function focusRestore(container, mark) {
+  if (!mark) return;
+  const a = document.activeElement;
+  if (a && a !== document.body && a.isConnected) return; // something else already took the focus on purpose
+  const el = container.querySelectorAll(mark.sel)[mark.i] || container.querySelector(mark.sel);
+  if (!el) { container.focus?.({ preventScroll: true }); return; }
+  el.focus({ preventScroll: true });
+  if (mark.start != null) try { el.setSelectionRange(mark.start, mark.end); } catch {}
+}
+
+const closeTopSheet = () => { const c = sheets[sheets.length - 1]; if (c) { c(); return true; } return false; };
+const anySheet = () => sheets.length > 0;
+
+function confirmSheet(title, text, okLabel, onOk, danger = true) {
+  sheet('confirm-sheet', (el, close) => {
+    el.innerHTML = `<h2>${esc(title)}</h2><p class="caption">${esc(text)}</p><div class="row"><button class="btn ghost grow" data-a="no">ביטול</button><button class="btn ${danger ? 'danger' : 'primary'} grow" data-a="ok" data-testid="confirm-ok">${esc(okLabel)}</button></div>`;
+    el.querySelector('[data-a=no]').onclick = close;
+    el.querySelector('[data-a=ok]').onclick = () => { close(); onOk(); };
+  });
+}
+
+// ---- sharing (docs/v2-sharing.md): share sheet, else clipboard, else selectable text ----
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
+}
+async function shareOrCopy(text, title = 'שיתוף') {
+  if (navigator.share) { try { await navigator.share({ text }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
+  if (await copy(text)) { toast('הועתק ✓ · מוכן להדבקה'); return; }
+  showText(text, title);
+}
+/** Sharing what someone owes the user: when payment details are saved, ask each time whether to add them (owner feedback 2.3). */
+function owedShare(text, title = 'שיתוף') {
+  const l = root.Kis?.store?.local || {}, lines = root.KisShare ? root.KisShare.paymentLines(l.payZelle, l.payBit, l.payBank) : [];
+  if (!lines.length) return shareOrCopy(text, title);
+  sheet('pay-prompt', (el, close) => {
+    // More than one way to get paid: the user picks which to add, one or several (owner feedback 2.3.1).
+    const many = lines.length > 1, picked = new Set(lines.keys());
+    el.innerHTML = `<h2>${many ? 'אילו פרטי תשלום לצרף?' : 'לצרף את פרטי התשלום שלך?'}</h2>${many
+      ? `<div style="display:grid;gap:8px;margin-bottom:12px">${lines.map((l, i) => `<button class="chip" aria-pressed="true" data-pick="${i}" data-testid="pay-pick-${i}" style="justify-content:flex-start;text-align:start">✓ ${esc(l)}</button>`).join('')}</div>`
+      : `<p class="caption" style="white-space:pre-line">${esc(lines[0])}</p>`}
+      <button class="btn primary" data-testid="pay-with">${many ? 'לצרף' : 'כן, לצרף'}</button><button class="btn ghost" data-testid="pay-without">בלי</button>`;
+    const go = el.querySelector('[data-testid=pay-with]');
+    el.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { const i = +b.dataset.pick;
+      if (picked.has(i)) picked.delete(i); else picked.add(i); b.setAttribute('aria-pressed', String(picked.has(i))); b.textContent = (picked.has(i) ? '✓ ' : '') + lines[i]; go.disabled = !picked.size; });
+    go.onclick = () => { const chosen = lines.filter((_, i) => picked.has(i)); if (!chosen.length) return; close(); shareOrCopy(root.KisShare.withPayment(text, chosen), title); };
+    el.querySelector('[data-testid=pay-without]').onclick = () => { close(); shareOrCopy(text, title); };
+  });
+}
+function showText(text, title = 'טקסט לשיתוף') {
+  sheet('share-text-sheet', (el, close) => {
+    el.innerHTML = `<h2>${esc(title)}</h2><p class="caption">אפשר לסמן ולהעתיק את הטקסט.</p><textarea class="input" rows="8" readonly>${esc(text)}</textarea><button class="btn primary">סגירה</button>`;
+    el.querySelector('button').onclick = close; el.querySelector('textarea').select();
+  });
+}
+const haptic = (kind = 'tap') => { try { if (root.Kis?.store?.local.haptics !== false) navigator.vibrate?.({ tap: 8, success: [12, 60, 22], warn: [35, 50, 35], tick: 4 }[kind] || 8); } catch {} };
+const ICON = {
+  people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14a6.5 6.5 0 0 1 3.5 6"/></svg>',
+  grip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+  person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>',
+  undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v6"/><path d="M12 17h.01"/></svg>',
+  next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 6-6 6 6 6"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>',
+};
+/** ⓘ: the explanation of a title, opened only when asked for. Screens say what things are; how-to lives here. */
+const infoDot = (title, text, testid = '') => `<button type="button" class="icon-btn info-dot" data-info-title="${esc(title)}" data-info="${esc(text)}" aria-label="הסבר: ${esc(title)}"${testid ? ` data-testid="${testid}"` : ''}>${ICON.info}</button>`;
+document.addEventListener('click', e => {
+  const b = e.target.closest?.('[data-info]');
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  sheet('info-sheet', (el, close) => {
+    el.innerHTML = `<h2>${esc(b.dataset.infoTitle)}</h2><p style="margin:0">${esc(b.dataset.info)}</p><button class="btn primary">הבנתי</button>`;
+    el.querySelector('button').onclick = close;
+  });
+}, true);
+const logo = (size = 38) => `<span class="logo" style="width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 64 64" width="${size}" height="${size}"><g stroke-width="7" stroke-linecap="round"><path d="M19 44V30" stroke="#7C8CFF"/><path d="M32 44V20" stroke="#FFC54D"/><path d="M45 44V25" stroke="#34C79A"/><path d="M19 44h26" stroke="#EDF0F5"/></g></svg></span>`;
+
+/*
+ * The on-screen keyboard (editor and sheets, design decision "גלילה ומקלדת"). --vvh/--vvt follow the part of the page the
+ * keyboard leaves visible, so the editor, its save bar and the sheets end above the keyboard in every browser (Chrome
+ * resizes the page itself; Safari only shrinks the visual viewport). A field that gets focus is scrolled to the middle
+ * of what is left, once the keyboard has opened. The hidden typing field and the invisible date pickers are left alone.
+ */
+function followKeyboard() {
+  const vv = root.visualViewport, doc = root.document?.documentElement;
+  if (!doc) return;
+  if (vv) {
+    // An unfolded phone scales the whole page (CSS zoom): a length set on the page is multiplied by it, so divide first.
+    const set = () => { const z = parseFloat(getComputedStyle(doc).zoom) || 1;
+      doc.style.setProperty('--vvh', Math.round(vv.height / z) + 'px'); doc.style.setProperty('--vvt', Math.round(vv.offsetTop / z) + 'px'); };
+    vv.addEventListener('resize', set); vv.addEventListener('scroll', set); set();
+  }
+  root.document.addEventListener('focusin', e => {
+    const t = e.target;
+    if (!t?.matches?.('input, textarea, select') || t.classList.contains('key-sink') || getComputedStyle(t).opacity === '0' || !t.closest('.editor, .sheet')) return;
+    const calm = root.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    setTimeout(() => { if (root.document.activeElement === t) t.scrollIntoView({ block: 'center', behavior: calm ? 'auto' : 'smooth' }); }, 280);
+  });
+}
+if (root.document) followKeyboard();
+
+root.KisUi = { focusMark, focusRestore, topDialog, actionSheet, orderedPlaces, DAY_SHORT, MONTHS, PLACES, esc, number, money, moneyHtml, hours, hm, duration, startOfDay, shortDate, dayLabel, dayLabelLong, monthKey, monthName,
+  isDark, placeOf, accent, accentInk, avatar, timeLabel, subtitle, upcoming, shiftCard, toast, sheet, closeTopSheet, anySheet, confirmSheet, copy, shareOrCopy, owedShare,
+  showText, haptic, ICON, logo, infoDot };
+})(globalThis);

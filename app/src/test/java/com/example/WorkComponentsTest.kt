@@ -37,8 +37,8 @@ class WorkComponentsTest {
         assertNotEquals(KisDark.ink, KisDark.selectedBg)
     }
 
-    @Test fun threeButtonHeightsNoneBelowTheTouchTarget() {
-        assertEquals(listOf(56.dp, 48.dp, 44.dp), listOf(KisButtonHeight.large, KisButtonHeight.medium, KisButtonHeight.small))
+    @Test fun buttonHeightsNoneBelowTheTouchTarget() {
+        assertEquals(listOf(56.dp, 48.dp, 48.dp), listOf(KisButtonHeight.large, KisButtonHeight.medium, KisButtonHeight.small))
         assertEquals(listOf(8.dp, 12.dp, 16.dp, 24.dp, 99.dp), listOf(KisRadius.tag, KisRadius.small, KisRadius.medium, KisRadius.large, KisRadius.pill))
     }
 

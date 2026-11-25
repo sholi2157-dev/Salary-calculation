@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -21,11 +22,13 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.LayoutDirection
 import com.example.R
 import com.example.data.WorkCategory
 
@@ -149,21 +152,23 @@ private val DATE_MODES = setOf(com.example.data.HebrewDate.GREG, com.example.dat
 
 @Stable
 class KisSettings internal constructor(private val context: Context?) {
-    private val prefs = context?.getSharedPreferences("kis_ui", Context.MODE_PRIVATE)
+    private val prefs = context?.let { com.example.data.WorkStorage.preferences(it, "kis_ui") }
     var theme by mutableStateOf(ThemeChoice.entries.firstOrNull { it.key == prefs?.getString("theme", null) } ?: ThemeChoice.SYSTEM)
         private set
     var haptics by mutableStateOf(prefs?.getBoolean("haptics", true) ?: true)
         private set
-    fun updateTheme(choice: ThemeChoice) { theme = choice; prefs?.edit()?.putString("theme", choice.key)?.apply() }
-    fun updateHaptics(on: Boolean) { haptics = on; prefs?.edit()?.putBoolean("haptics", on)?.apply() }
+    private fun save(change: android.content.SharedPreferences.Editor.() -> Unit): Boolean =
+        prefs?.edit()?.apply(change)?.commit() ?: true
+    fun updateTheme(choice: ThemeChoice) { if (save { putString("theme", choice.key) }) theme = choice }
+    fun updateHaptics(on: Boolean) { if (save { putBoolean("haptics", on) }) haptics = on }
     /** Profile: the user's own name, shown only inside the app (greeting, own line in a group report). Device-only. */
     var name by mutableStateOf(prefs?.getString("name", "") ?: "")
         private set
-    fun updateName(value: String) { name = value.take(40); prefs?.edit()?.putString("name", name.trim())?.apply() }
+    fun updateName(value: String) { if (save { putString("name", value.take(40).trim()) }) { name = value.take(40) } }
     /** Kept with the profile only; greetings and messages use the first name. */
     var lastName by mutableStateOf(prefs?.getString("lastName", "") ?: "")
         private set
-    fun updateLastName(value: String) { lastName = value.take(40); prefs?.edit()?.putString("lastName", lastName.trim())?.apply() }
+    fun updateLastName(value: String) { if (save { putString("lastName", value.take(40).trim()) }) { lastName = value.take(40) } }
 
     /** Optional per-workplace colour picked by the user; otherwise colours follow category order. */
     fun workplaceIndex(category: String, categories: List<WorkCategory>): Int {
@@ -173,11 +178,11 @@ class KisSettings internal constructor(private val context: Context?) {
     }
     var colorVersion by mutableStateOf(0)
         private set
-    fun setWorkplaceColor(category: String, index: Int) { prefs?.edit()?.putInt("color:$category", index)?.apply(); colorVersion++ }
+    fun setWorkplaceColor(category: String, index: Int) { if (save { putInt("color:$category", index) }) colorVersion++ }
     fun renameWorkplaceColor(old: String, new: String) {
         val p = prefs ?: return
         val i = p.getInt("color:$old", -1)
-        if (i >= 0) p.edit().remove("color:$old").putInt("color:$new", i).apply()
+        if (i >= 0 && !p.edit().remove("color:$old").putInt("color:$new", i).commit()) return
         if (old in placeOrder) updatePlaceOrder(placeOrder.map { if (it == old) new else it })
         colorVersion++
     }
@@ -185,20 +190,20 @@ class KisSettings internal constructor(private val context: Context?) {
     /** Where the user gets paid (device only, like the name): added to a shared report only when chosen each time. */
     var payZelle by mutableStateOf(prefs?.getString("payZelle", "") ?: "")
         private set
-    fun updatePayZelle(value: String) { payZelle = value.take(80); prefs?.edit()?.putString("payZelle", payZelle.trim())?.apply(); applyTextChoices() }
+    fun updatePayZelle(value: String) { if (save { putString("payZelle", value.take(80).trim()) }) { payZelle = value.take(80); applyTextChoices() } }
     var payBit by mutableStateOf(prefs?.getString("payBit", "") ?: "")
         private set
-    fun updatePayBit(value: String) { payBit = value.take(40); prefs?.edit()?.putString("payBit", payBit.trim())?.apply(); applyTextChoices() }
+    fun updatePayBit(value: String) { if (save { putString("payBit", value.take(40).trim()) }) { payBit = value.take(40); applyTextChoices() } }
     var payBank by mutableStateOf(prefs?.getString("payBank", "") ?: "")
         private set
-    fun updatePayBank(value: String) { payBank = value.take(160); prefs?.edit()?.putString("payBank", payBank.trim())?.apply(); applyTextChoices() }
+    fun updatePayBank(value: String) { if (save { putString("payBank", value.take(160).trim()) }) { payBank = value.take(160); applyTextChoices() } }
     fun paymentLines() = com.example.data.WorkShareText.paymentLines(payZelle, payBit, payBank)
     /** The kinds filled in ("zelle", "bit", "bank"): a report to a worker asks for the same (owner feedback 2.3.1). */
     fun paymentKinds(): List<String> = listOfNotNull("zelle".takeIf { payZelle.isNotBlank() }, "bit".takeIf { payBit.isNotBlank() }, "bank".takeIf { payBank.isNotBlank() })
     /** Dates shown and shared: GREG (civil only), HEB (Hebrew only) or BOTH (owner feedback 2.3.1). */
     var dateMode by mutableStateOf(prefs?.getString("dateMode", com.example.data.HebrewDate.BOTH)?.takeIf { it in DATE_MODES } ?: com.example.data.HebrewDate.BOTH)
         private set
-    fun updateDateMode(value: String) { if (value !in DATE_MODES) return; dateMode = value; prefs?.edit()?.putString("dateMode", value)?.apply(); applyTextChoices() }
+    fun updateDateMode(value: String) { if (value !in DATE_MODES) return; if (save { putString("dateMode", value) }) { dateMode = value; applyTextChoices() } }
     /** Hands the date choice and the payment kinds to the date labels and the shared texts. */
     fun applyTextChoices() {
         com.example.data.HebrewDate.mode = dateMode
@@ -210,7 +215,7 @@ class KisSettings internal constructor(private val context: Context?) {
     init { if (context != null) applyTextChoices() }
     var placeOrder by mutableStateOf(runCatching { org.json.JSONArray(prefs?.getString("placeOrder", "[]") ?: "[]").let { a -> List(a.length()) { a.getString(it) } } }.getOrDefault(emptyList()))
         private set
-    fun updatePlaceOrder(names: List<String>) { placeOrder = names; prefs?.edit()?.putString("placeOrder", org.json.JSONArray(names).toString())?.apply() }
+    fun updatePlaceOrder(names: List<String>) { if (save { putString("placeOrder", org.json.JSONArray(names).toString()) }) placeOrder = names }
     fun <T> ordered(places: List<T>, name: (T) -> String): List<T> = orderPlaces(places, placeOrder, name)
 
     // Haptics. The patterns follow the design system table; the switch turns all of them off.
@@ -259,6 +264,7 @@ class KisSettings internal constructor(private val context: Context?) {
 
 val LocalKis = staticCompositionLocalOf { KisLight }
 val LocalKisSettings = staticCompositionLocalOf { KisSettings.Inert }
+private val LocalStorageFailureHost = staticCompositionLocalOf { false }
 
 object Kis {
     val colors: KisColors @Composable get() = LocalKis.current
@@ -305,8 +311,26 @@ fun KisTheme(settings: KisSettings = rememberKisSettings(), darkOverride: Boolea
         surfaceContainerLowest = Color.White, surfaceContainerLow = c.surface, surfaceContainer = c.surface, surfaceContainerHigh = c.surface, surfaceContainerHighest = c.sunk,
         surfaceBright = c.surface, surfaceDim = c.sunk, scrim = Color.Black,
     )
-    CompositionLocalProvider(LocalKis provides c, LocalKisSettings provides settings) {
-        MaterialTheme(colorScheme = scheme, typography = KisMaterialType, content = content)
+    val ownsFailureHost = !LocalStorageFailureHost.current
+    CompositionLocalProvider(LocalKis provides c, LocalKisSettings provides settings, LocalStorageFailureHost provides true) {
+        MaterialTheme(colorScheme = scheme, typography = KisMaterialType) {
+            content()
+            // Also visible during launch/sign-in, before the main screen can collect ordinary notices.
+            val failure by com.example.data.WorkStorage.failure.collectAsState()
+            failure?.takeIf { ownsFailureHost }?.let { message ->
+                // Startup can fail before MainActivity's Hebrew content provider is composed.
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = com.example.data.WorkStorage::dismissFailure,
+                        text = { androidx.compose.material3.Text(message) },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(onClick = com.example.data.WorkStorage::dismissFailure) {
+                                androidx.compose.material3.Text("אישור")
+                            }
+                        })
+                }
+            }
+        }
     }
 }
 

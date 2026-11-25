@@ -22,6 +22,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
+import com.example.data.WorkStorage
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -44,33 +47,38 @@ import com.example.ShiftForegroundService
 class WorkViewModel(
     application: Application,
     private val repository: WorkRepository,
-    val owner: com.example.data.WorkAccountScope = com.example.data.WorkAccountScope(null)
+    val owner: com.example.data.WorkAccountScope = com.example.data.WorkAccountScope(null),
+    private val settings: DataStore<Preferences> = com.example.data.WorkAccountPreferences.get(application, owner)
 ) : AndroidViewModel(application) {
+    // A Room migration/read can fail before the first UI emission as well as during a user action.
+    // Keep sibling collectors alive and leave the original database available for backup/retry.
+    private val storageScope = CoroutineScope(viewModelScope.coroutineContext + CoroutineExceptionHandler { _, error ->
+        if (WorkStorage.isStorageFailure(error)) WorkStorage.failed() else throw error
+    })
     private val localDao = owner.database(application).workDao()
     val localPreferences = localDao.observeLocalPreferences().map { rows -> rows.associate { it.name to it.value } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
-    fun addDefaultCategory(name: String, rate: Double) { viewModelScope.launch {
+        .stateIn(storageScope, SharingStarted.Eagerly, emptyMap())
+    fun addDefaultCategory(name: String, rate: Double) { storageScope.launch {
         if (name.isBlank() || !rate.isFinite() || rate < 0 || repository.getCategoryByName(name) != null) return@launch
         repository.insertCategory(com.example.data.WorkCategory(name = name, defaultRate = rate))
         localDao.setLocalPreference(com.example.data.WorkLocalPreference("categoryCurrency:$name", defaultCurrency.value))
         localDao.setLocalPreference(com.example.data.WorkLocalPreference("defaultCategory", name))
     } }
-    fun setDefaultCategory(name: String) { viewModelScope.launch {
+    fun setDefaultCategory(name: String) { storageScope.launch {
         if (repository.getCategoryByName(name) != null) localDao.setLocalPreference(com.example.data.WorkLocalPreference("defaultCategory", name))
     } }
     fun categoryCurrency(name: String): String = localPreferences.value["categoryCurrency:$name"] ?: defaultCurrency.value
     /** [retro]: "שינוי רטרואקטיבי" (FB-08), the place's unpaid shifts at the previous rate or without a rate take the new one; offered with undo. */
-    fun editCategory(category: WorkCategory, name: String, rate: Double, currency: String, retro: Boolean = false) { viewModelScope.launch {
+    fun editCategory(category: WorkCategory, name: String, rate: Double, currency: String, retro: Boolean = false) { storageScope.launch {
         try {
             val changed = localDao.editCategorySafely(category, name, rate, currency, retro)
             shiftState.renameCategory(category.name, name.trim()); performAutoBackup()
             if (changed.isNotEmpty()) com.example.ui.kis.KisNotices.post(
                 if (changed.size == 1) "התעריף עודכן למשמרת אחת שלא שולמה ✓" else "התעריף עודכן ל-${changed.size} משמרות שלא שולמו ✓", "ביטול") {
-                viewModelScope.launch { localDao.restoreRetroRate(changed); performAutoBackup() } }
+                storageScope.launch { localDao.restoreRetroRate(changed); performAutoBackup() } }
         }
         catch (_: IllegalArgumentException) { com.example.ui.kis.KisNotices.post("שם כפול או ערכים לא תקינים") }
     } }
-    private val settings = com.example.data.WorkAccountPreferences.get(application, owner)
     private val shiftState = ShiftStateManager.forAccount(application, owner)
 
     companion object {
@@ -85,7 +93,7 @@ class WorkViewModel(
             local["default_currency"] ?: preferences[DEFAULT_CURRENCY_KEY] ?: "₪"
         }
         .stateIn(
-            scope = viewModelScope,
+            scope = storageScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = "₪"
         )
@@ -95,7 +103,7 @@ class WorkViewModel(
             preferences[SERVICE_NOTIFICATION_ENABLED_KEY] ?: true // Default ON
         }
         .stateIn(
-            scope = viewModelScope,
+            scope = storageScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = true
         )
@@ -116,7 +124,7 @@ class WorkViewModel(
             // Consume before suspension: a delayed undo must not erase a newer save's undo state.
             lastAddedEntryIds = emptyList()
             lastAddedEntryId = null
-            viewModelScope.launch {
+            storageScope.launch {
                 try {
                     repository.deleteEntriesById(ids, uid)
                     performAutoBackup()
@@ -133,15 +141,16 @@ class WorkViewModel(
     }
 
     fun setDefaultCurrency(currency: String) {
-        viewModelScope.launch {
+        storageScope.launch {
             require(currency in listOf("₪", "$"))
+            // Room is authoritative (including backups and older 2.3 clients). Keep DataStore as a read-only
+            // legacy fallback rather than making one preference change a non-atomic write to two stores.
             localDao.setLocalPreference(com.example.data.WorkLocalPreference("default_currency", currency))
-            settings.edit { preferences -> preferences[DEFAULT_CURRENCY_KEY] = currency }
         }
     }
 
     fun updateServiceNotificationEnabled(enabled: Boolean) {
-        viewModelScope.launch {
+        storageScope.launch {
             settings.edit { preferences ->
                 preferences[SERVICE_NOTIFICATION_ENABLED_KEY] = enabled
             }
@@ -173,22 +182,18 @@ class WorkViewModel(
      */
     fun restoreShiftNotification() {
         if (activeShiftStartTime.value == null || !ShiftStateManager.sameTimer(ShiftStateManager.activeOwner(getApplication()), owner)) return
-        viewModelScope.launch {
+        storageScope.launch {
             val enabled = runCatching { settings.data.first()[SERVICE_NOTIFICATION_ENABLED_KEY] }.getOrNull() ?: true
             if (enabled && activeShiftStartTime.value != null) startShiftService()
         }
     }
 
     fun updateDefaultCurrency(currency: String) {
-        viewModelScope.launch {
-            require(currency in listOf("₪", "$"))
-            localDao.setLocalPreference(com.example.data.WorkLocalPreference("default_currency", currency))
-            settings.edit { preferences -> preferences[DEFAULT_CURRENCY_KEY] = currency }
-        }
+        setDefaultCurrency(currency)
     }
 
     fun performAutoBackup() {
-        viewModelScope.launch {
+        storageScope.launch {
             try {
                 val json = repository.exportSnapshot()
                 if (json.isEmpty()) return@launch
@@ -211,9 +216,8 @@ class WorkViewModel(
                         ?.sortedByDescending { it.lastModified() }?.drop(20)?.forEach { it.delete() }
                 }
                 android.util.Log.d("WorkViewModel", "Auto-backup saved successfully to: ${backupFile.absolutePath}")
-            } catch (e: Exception) {
-                android.util.Log.e("WorkViewModel", "Auto-backup failed: ${e.localizedMessage}")
-            }
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) { WorkStorage.failed(WorkStorage.BACKUP_FAILED) }
         }
     }
 
@@ -223,7 +227,7 @@ class WorkViewModel(
     private var syncListener: com.google.firebase.firestore.ListenerRegistration? = null
     val cloudStatus = kotlinx.coroutines.flow.MutableStateFlow("סנכרון הענן עדיין אינו פעיל")
     private val syncState by lazy {
-        val prefs = application.getSharedPreferences("work_sync_state", Context.MODE_PRIVATE)
+        val prefs = WorkStorage.preferences(application, "work_sync_state")
         val key = owner.modelKey
         object : com.example.data.WorkSyncState {
             override var cursor: Long?
@@ -243,7 +247,7 @@ class WorkViewModel(
         val uid = owner.cloudUid ?: return@lazy null
         val auth = com.example.api.AuthManager.getFirebaseAuthSafely() ?: return@lazy null
         val transport = syncTransport ?: return@lazy null
-        val prefs = application.getSharedPreferences("sync_device_identity", Context.MODE_PRIVATE)
+        val prefs = WorkStorage.preferences(application, "sync_device_identity")
         val deviceId = prefs.getString("id", null) ?: java.util.UUID.randomUUID().toString().also {
             check(prefs.edit().putString("id", it).commit())
         }
@@ -255,13 +259,13 @@ class WorkViewModel(
     val syncStatus = kotlinx.coroutines.flow.MutableStateFlow(SyncStatus.OFF)
     val lastSyncAt = kotlinx.coroutines.flow.MutableStateFlow<Long?>(null)
     val syncConflicts: StateFlow<Int> = owner.database(application).syncDao().observeConflicts()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+        .stateIn(storageScope, SharingStarted.WhileSubscribed(5000), 0)
     private val syncMutex = kotlinx.coroutines.sync.Mutex()
     private var syncRetry: kotlinx.coroutines.Job? = null
 
     fun syncNow() {
         if (!com.example.BuildConfig.VERSIONED_SYNC_ENABLED || owner.cloudUid == null) return
-        viewModelScope.launch { performSync() }
+        storageScope.launch { performSync() }
     }
 
     private suspend fun performSync() {
@@ -284,7 +288,7 @@ class WorkViewModel(
                 syncStatus.value = if (connected) SyncStatus.ERROR else SyncStatus.OFFLINE
                 cloudStatus.value = if (connected) "הסנכרון לא הצליח. ננסה שוב בקרוב" else "ממתין לחיבור. השינויים נשמרו במכשיר"
                 // Try again soon; the outbox keeps every change meanwhile.
-                syncRetry?.cancel(); syncRetry = viewModelScope.launch { kotlinx.coroutines.delay(30_000); performSync() }
+                syncRetry?.cancel(); syncRetry = storageScope.launch { kotlinx.coroutines.delay(30_000); performSync() }
             }
         }
         if (syncAgain) performSync()
@@ -303,8 +307,8 @@ class WorkViewModel(
     suspend fun syncConflictList(): List<com.example.data.WorkSyncConflict> = versionedSync?.conflicts() ?: emptyList()
     fun resolveSyncConflict(syncId: String, keepLocal: Boolean, done: () -> Unit = {}) {
         if (currentUserSession.value?.uid != owner.cloudUid) return
-        viewModelScope.launch {
-            runCatching { versionedSync?.resolve(syncId, keepLocal) }
+        storageScope.launch {
+            versionedSync?.resolve(syncId, keepLocal)
             done(); performSync()
         }
     }
@@ -325,7 +329,7 @@ class WorkViewModel(
     suspend fun undoAssistant(action: com.example.api.AssistantAction): Boolean {
         val uid = owner.cloudUid ?: return false
         val done = runCatching { checkNotNull(syncTransport).undo(uid, action) }.getOrDefault(false)
-        if (done) viewModelScope.launch { performSync() }
+        if (done) storageScope.launch { performSync() }
         return done
     }
 
@@ -336,7 +340,7 @@ class WorkViewModel(
 
     /** The read cursor of every account that ever synced this database (keys "<storageKey>|<uid>|…"). */
     private fun forgetSyncMemory() {
-        val prefs = getApplication<Application>().getSharedPreferences("work_sync_state", Context.MODE_PRIVATE)
+        val prefs = WorkStorage.preferences(getApplication(), "work_sync_state")
         prefs.edit().apply { prefs.all.keys.filter { it.startsWith(owner.storageKey + "|") }.forEach { remove(it) } }.commit()
         lastSyncAt.value = null
     }
@@ -361,7 +365,7 @@ class WorkViewModel(
             com.example.ui.kis.KisNotices.post("יש משמרת שרצה עכשיו. צריך לסיים אותה לפני המחיקה")
             return
         }
-        viewModelScope.launch {
+        storageScope.launch {
             val db = owner.database(getApplication())
             val synced = owner.cloudUid != null && com.example.BuildConfig.VERSIONED_SYNC_ENABLED && currentUserSession.value?.uid == owner.cloudUid
             if (synced) {
@@ -389,7 +393,7 @@ class WorkViewModel(
      * account is read again and holds nothing. Offline nothing is changed.
      */
     fun eraseAccount(onDone: (EraseResult) -> Unit) {
-        viewModelScope.launch {
+        storageScope.launch {
             val db = owner.database(getApplication())
             val engine = versionedSync
             if (engine == null || currentUserSession.value?.uid != owner.cloudUid) { onDone(EraseResult.Offline); return@launch }
@@ -438,19 +442,19 @@ class WorkViewModel(
         if (com.example.BuildConfig.VERSIONED_SYNC_ENABLED && owner.cloudUid != null) {
             lastSyncAt.value = syncState.lastSync
             // A change here is sent a moment after it is made (also from imports and the timer service).
-            viewModelScope.launch { syncAfterLocalChanges() }
+            storageScope.launch { syncAfterLocalChanges() }
             // A change from another device, the website or an assistant arrives by itself while the app is open.
-            viewModelScope.launch {
+            storageScope.launch {
                 currentUserSession.collect { session ->
                     syncListener?.remove(); syncListener = null
                     if (session?.uid == owner.cloudUid) {
                         performSync()
-                        syncListener = syncTransport?.listen(session.uid, syncState.lastSync ?: System.currentTimeMillis()) { viewModelScope.launch { performSync() } }
+                        syncListener = syncTransport?.listen(session.uid, syncState.lastSync ?: System.currentTimeMillis()) { storageScope.launch { performSync() } }
                     } else syncStatus.value = SyncStatus.OFF
                 }
             }
             // A slow safety net for a missed live update.
-            viewModelScope.launch { while (true) { kotlinx.coroutines.delay(5 * 60_000); performSync() } }
+            storageScope.launch { while (true) { kotlinx.coroutines.delay(5 * 60_000); performSync() } }
         }
 
         // (The pre-2.1 whole-list cloud copy, CLOUD_SYNC_ENABLED, was off in every build and is removed; the versioned sync above replaces it.)
@@ -464,21 +468,21 @@ class WorkViewModel(
     // Observe Room DB entities
     val entries: StateFlow<List<WorkEntry>> = repository.allEntries
         .stateIn(
-            scope = viewModelScope,
+            scope = storageScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
     val categories: StateFlow<List<WorkCategory>> = repository.allCategories
         .stateIn(
-            scope = viewModelScope,
+            scope = storageScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
     val workersDirectory: StateFlow<List<WorkerDirectory>> = repository.allWorkers
         .stateIn(
-            scope = viewModelScope,
+            scope = storageScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
@@ -529,7 +533,7 @@ class WorkViewModel(
     val activeShiftCategory: StateFlow<String> = shiftState.activeShiftCategory
     val activeShiftRate: StateFlow<Double> = shiftState.activeShiftRate
     val activeShiftCurrency: StateFlow<String> = shiftState.activeShiftCurrency
-    fun startDefaultActiveShift() { viewModelScope.launch {
+    fun startDefaultActiveShift() { storageScope.launch {
         val all = repository.getCategoriesList()
         val selected = localDao.getLocalPreferences().firstOrNull { it.name == "defaultCategory" }?.value
         val category = all.firstOrNull { it.name == selected } ?: all.firstOrNull() ?: return@launch
@@ -537,7 +541,7 @@ class WorkViewModel(
     } }
 
     fun startActiveShiftWithSavedRate(category: String) {
-        viewModelScope.launch {
+        storageScope.launch {
             val rate = repository.getCategoryByName(category)?.defaultRate ?: DEFAULT_RATE
             startActiveShift(category, rate)
         }
@@ -553,7 +557,7 @@ class WorkViewModel(
         
         // Start Foreground Service only if enabled. Read the stored choice itself: the StateFlow is only
         // collected by the settings page and would still hold its default (on) right after a cold start.
-        viewModelScope.launch {
+        storageScope.launch {
         val enabled = runCatching { settings.data.first()[SERVICE_NOTIFICATION_ENABLED_KEY] }.getOrNull() ?: true
         if (enabled) startShiftService()
         }
@@ -587,7 +591,7 @@ class WorkViewModel(
         val category = activeShiftCategory.value
         val currency = shiftState.activeShiftCurrency.value
         val elapsed = com.example.data.WorkPay.elapsedSeconds(start, System.currentTimeMillis())
-        viewModelScope.launch {
+        storageScope.launch {
             try {
                 val entry = if (save) WorkEntry(category = category, date = start, isTimeRange = false,
                     hours = elapsed / 3600.0, hourlyRate = rate,
@@ -603,15 +607,17 @@ class WorkViewModel(
                     Intent(getApplication(), ShiftForegroundService::class.java))
                 else if (!save) com.example.ui.kis.KisNotices.post("המשמרת הפעילה השתנתה, לא בוטלה")
                 performAutoBackup()
-            } catch (_: Exception) {
-                com.example.ui.kis.KisNotices.post("המשמרת לא נשמרה. הטיימר נשאר פעיל; אפשר לנסות שוב")
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) {
+                if (WorkStorage.isStorageFailure(e)) WorkStorage.failed()
+                else com.example.ui.kis.KisNotices.post("המשמרת לא נשמרה. הטיימר נשאר פעיל; אפשר לנסות שוב")
             }
         }
     }
 
     fun reviewLegacyData(context: Context) {
         if (owner.uid == null) return
-        viewModelScope.launch {
+        storageScope.launch {
             val target = owner.database(context)
             if (target.workDao().receipt("legacy-guest-v1") != null) {
                 com.example.ui.kis.KisNotices.post("הנתונים המקומיים כבר הועתקו לחשבון זה")
@@ -627,7 +633,7 @@ class WorkViewModel(
                 .setNegativeButton("ביטול", null)
                 .setPositiveButton("אישור העתקה") { _, _ ->
                     if (com.example.api.AuthManager.currentUser.value?.uid != owner.cloudUid) return@setPositiveButton
-                    viewModelScope.launch {
+                    storageScope.launch {
                         try {
                             val added = com.example.data.WorkLegacyAdoption.confirm(target, reviewed)
                             com.example.ui.kis.KisNotices.post("הועתקו $added משמרות")
@@ -658,7 +664,7 @@ class WorkViewModel(
     val stats: StateFlow<StatsSummary> = entries.map { entryList ->
         calculateStats(entryList)
     }.stateIn(
-        scope = viewModelScope,
+        scope = storageScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = StatsSummary()
     )
@@ -687,7 +693,7 @@ class WorkViewModel(
         groupWorkersJson: String = "",
         currency: String = defaultCurrency.value
     ) {
-        viewModelScope.launch {
+        storageScope.launch {
             if (!hours.isFinite() || hours <= 0 || !rate.isFinite() || rate < 0 || currency !in listOf("₪", "$")) return@launch
             val finalHours = hours
             val entry = WorkEntry(
@@ -718,7 +724,7 @@ class WorkViewModel(
 
     fun addShifts(shifts: List<com.example.api.GeminiParser.ParsedShift>, onComplete: (Boolean) -> Unit = {}) {
         if (shifts.isEmpty()) { onComplete(false); return }
-        viewModelScope.launch {
+        storageScope.launch {
             try {
                 val uid = getActiveUserId()
                 val proposed = shifts.map { shift ->
@@ -758,8 +764,9 @@ class WorkViewModel(
                 performAutoBackup()
                 runCountAnimationTrigger.value = runCountAnimationTrigger.value + 1
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (_: Exception) {
-                com.example.ui.kis.KisNotices.post("השמירה לא הושלמה. התיאור נשמר; אפשר לתקן ולנסות שוב")
+            catch (e: Exception) {
+                if (WorkStorage.isStorageFailure(e)) WorkStorage.failed()
+                else com.example.ui.kis.KisNotices.post("השמירה לא הושלמה. התיאור נשמר; אפשר לתקן ולנסות שוב")
                 onComplete(false)
                 return@launch
             }
@@ -788,7 +795,7 @@ class WorkViewModel(
         groupWorkersJson: String = "",
         currency: String = "₪"
     ) {
-        viewModelScope.launch {
+        storageScope.launch {
             if (!hours.isFinite() || hours <= 0.0 || !rate.isFinite() || rate < 0.0 ||
                 (employerRate != null && (!employerRate.isFinite() || employerRate < 0.0)) ||
                 (workerRate != null && (!workerRate.isFinite() || workerRate < 0.0))) return@launch
@@ -844,10 +851,13 @@ class WorkViewModel(
             else -> draft.copy(totalEarnings = com.example.data.WorkPay.money(draft.hours, draft.hourlyRate, draft.bonus))
         }.copy(id = 0)
         if (!valid(entry)) { onFailed(); return }
-        viewModelScope.launch {
+        storageScope.launch {
             try {
-                val id = repository.insertEntry(entry, getActiveUserId()).toInt()
-                rememberWorkers(entry)
+                val id = owner.database(getApplication()).withTransaction {
+                    val inserted = repository.insertEntry(entry, getActiveUserId()).toInt()
+                    rememberWorkers(entry)
+                    inserted
+                }
                 lastAddedEntryIds = listOf(id)
                 lastAddedEntryId = id
                 performAutoBackup()
@@ -855,7 +865,7 @@ class WorkViewModel(
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (e: Exception) {
                 android.util.Log.e("WorkViewModel", "Saving a new entry failed", e)
-                com.example.ui.kis.KisNotices.post("המשמרת לא נשמרה. הפרטים נשארו בטופס; אפשר לנסות שוב")
+                WorkStorage.failed()
                 onFailed()
             }
         }
@@ -863,7 +873,7 @@ class WorkViewModel(
 
     /** Applies an edit; the saved amount is kept unless hours, rate, bonus or kind changed (WorkEntryEdits). */
     fun saveEditedEntry(id: Int, proposed: WorkEntry, onSaved: () -> Unit = {}, onFailed: () -> Unit = {}) {
-        viewModelScope.launch {
+        storageScope.launch {
             try {
                 val original = repository.getEntryById(id) ?: run { android.util.Log.w("WorkViewModel", "Edit target $id is gone"); onFailed(); return@launch }
                 val applied = com.example.data.WorkEntryEdits.apply(original, proposed)
@@ -871,14 +881,16 @@ class WorkViewModel(
                 val updated = if (applied.kind == WorkEntry.KIND_JOB && applied.payKnown && applied.totalEarnings != original.totalEarnings)
                     applied.copy(totalEarnings = Math.round(applied.totalEarnings * 100.0) / 100.0) else applied
                 if (!valid(updated)) { android.util.Log.w("WorkViewModel", "Edit rejected as invalid: $updated"); onFailed(); return@launch }
-                repository.updateEntry(updated, getActiveUserId())
-                rememberWorkers(updated)
+                owner.database(getApplication()).withTransaction {
+                    repository.updateEntry(updated, getActiveUserId())
+                    rememberWorkers(updated)
+                }
                 performAutoBackup()
                 onSaved()
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (e: Exception) {
                 android.util.Log.e("WorkViewModel", "Saving an edit failed", e)
-                com.example.ui.kis.KisNotices.post("השינוי לא נשמר. אפשר לנסות שוב")
+                WorkStorage.failed()
                 onFailed()
             }
         }
@@ -886,13 +898,13 @@ class WorkViewModel(
 
     fun setPaid(ids: Collection<Int>, paid: Boolean) {
         if (ids.isEmpty()) return
-        viewModelScope.launch { localDao.setPaymentStatusFor(ids.toList(), paid); performAutoBackup() }
+        storageScope.launch { localDao.setPaymentStatusFor(ids.toList(), paid); performAutoBackup() }
     }
 
     /** Fills the rate only where it is missing; returns the number of shifts completed. */
     fun completeMissingRates(ids: Collection<Int>, rate: Double, onDone: (Int) -> Unit = {}) {
         if (!rate.isFinite() || rate < 0) return
-        viewModelScope.launch {
+        storageScope.launch {
             val n = localDao.completeMissingRates(ids.toList(), rate)
             performAutoBackup()
             onDone(n)
@@ -902,10 +914,12 @@ class WorkViewModel(
     /** Deletes and returns the exact rows, so the UI can offer undo. */
     fun deleteEntries(entries: List<WorkEntry>, onDone: (List<WorkEntry>) -> Unit = {}) {
         if (entries.isEmpty()) return
-        viewModelScope.launch {
+        storageScope.launch {
             val uid = getActiveUserId()
-            entries.forEach { repository.deleteEntry(it, uid) }
-            skipPlanDays(entries, true)
+            owner.database(getApplication()).withTransaction {
+                entries.forEach { repository.deleteEntry(it, uid) }
+                skipPlanDays(entries, true)
+            }
             performAutoBackup()
             onDone(entries)
         }
@@ -914,10 +928,12 @@ class WorkViewModel(
     /** Undo of a delete: the same rows come back with their ids, amounts and dates. */
     fun restoreEntries(entries: List<WorkEntry>) {
         if (entries.isEmpty()) return
-        viewModelScope.launch {
+        storageScope.launch {
             val uid = getActiveUserId()
-            entries.forEach { repository.insertEntry(it, uid) }
-            skipPlanDays(entries, false)
+            owner.database(getApplication()).withTransaction {
+                entries.forEach { repository.insertEntry(it, uid) }
+                skipPlanDays(entries, false)
+            }
             performAutoBackup()
         }
     }
@@ -925,20 +941,20 @@ class WorkViewModel(
     /** A deleted shift that came from a weekly plan keeps that day skipped, so it is not recorded again by itself. */
     private suspend fun skipPlanDays(rows: List<WorkEntry>, skipped: Boolean) {
         val keys = rows.mapNotNull { it.seriesKey }
-        if (keys.isNotEmpty()) runCatching { localDao.markPlanDays(keys, skipped) }
+        if (keys.isNotEmpty()) localDao.markPlanDays(keys, skipped)
     }
 
     /** Group workers' payment marks and bonuses live in the group JSON; nothing else changes. */
     /** Forgets a saved worker name (suggestion list only). History keeps every worker it recorded. */
-    fun forgetWorker(name: String) { viewModelScope.launch { repository.forgetWorker(name) } }
+    fun forgetWorker(name: String) { storageScope.launch { repository.forgetWorker(name) } }
 
     // ---------------- Weekly plans (2.0 stage C) ----------------
 
     val planSettings = com.example.PlanSettings(application)
     val series: StateFlow<List<com.example.data.ShiftSeries>> = localDao.observeSeries()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(storageScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val seriesExceptions: StateFlow<List<com.example.data.SeriesException>> = localDao.observeExceptions()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(storageScope, SharingStarted.WhileSubscribed(5000), emptyList())
     private val planClock = kotlinx.coroutines.flow.MutableStateFlow(System.currentTimeMillis())
 
     /** Occurrences from REVIEW_BACK_DAYS back (days still waiting for review) to four weeks ahead. Never stored, never summed. */
@@ -949,15 +965,15 @@ class WorkViewModel(
             com.example.domain.V2Plan.occurrences(s, x, e.mapNotNull { it.seriesKey }.toSet(),
                 com.example.domain.V2Rules.civilFromDays(days - com.example.PlanJobs.REVIEW_BACK_DAYS), com.example.domain.V2Rules.civilFromDays(days + 28), now)
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(storageScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun tickPlans() { planClock.value = System.currentTimeMillis() }
 
     /** On open/resume: records finished plans (if enabled) and reports the new rows so the screen can offer undo. */
     fun catchUpPlans(onRecorded: (List<Int>) -> Unit = {}) {
         tickPlans()
-        viewModelScope.launch {
-            val ids = runCatching { com.example.PlanJobs.catchUp(localDao, planSettings) }.getOrDefault(emptyList()).map { it.toInt() }
+        storageScope.launch {
+            val ids = com.example.PlanJobs.catchUp(localDao, planSettings).map { it.toInt() }
             if (ids.isNotEmpty()) { lastAddedEntryIds = ids; lastAddedEntryId = ids.last(); toldAbout(ids); performAutoBackup(); onRecorded(ids) }
         }
     }
@@ -967,16 +983,16 @@ class WorkViewModel(
 
     init {
         // Any change to the plans moves the next wake-up (a plan's end, or the monthly summary).
-        viewModelScope.launch {
+        storageScope.launch {
             kotlinx.coroutines.flow.combine(localDao.observeSeries(), localDao.observeExceptions()) { _, _ -> }.collect {
                 runCatching { com.example.PlanJobs.scheduleNext(getApplication()) }
             }
         }
     }
 
-    fun undoAutoConfirm(ids: List<Int>) { viewModelScope.launch { localDao.undoAutoConfirm(ids); performAutoBackup() } }
+    fun undoAutoConfirm(ids: List<Int>) { storageScope.launch { localDao.undoAutoConfirm(ids); performAutoBackup() } }
     /** Undo of a manual "עבדתי": that day waits again (held, so it is not recorded by itself right away). */
-    fun undoWorked(id: Int) { viewModelScope.launch { localDao.undoAutoConfirm(listOf(id), onlyAuto = false); performAutoBackup() } }
+    fun undoWorked(id: Int) { storageScope.launch { localDao.undoAutoConfirm(listOf(id), onlyAuto = false); performAutoBackup() } }
 
     /** Clashes over the whole new range, against saved shifts and every other plan (not only the weeks on screen). */
     fun planPreview(days: Set<Int>, from: String, until: String, start: String, end: String): com.example.domain.V2Plan.Preview =
@@ -993,19 +1009,23 @@ class WorkViewModel(
     fun createSeries(category: String, days: Set<Int>, from: String, until: String, start: String, end: String, rate: Double?, currency: String,
                      onFailed: () -> Unit = {}, onDone: (created: Int, recorded: List<Int>) -> Unit) {
         val s = com.example.data.ShiftSeries(java.util.UUID.randomUUID().toString(), category, com.example.domain.V2Plan.mask(days), start, end, rate, currency, from, until)
-        viewModelScope.launch {
+        storageScope.launch {
             try {
                 // Fresh from the database: what is saved now decides which days are created.
                 val preview = planPreview(days, from, until, start, end, localDao.getEntriesList(), localDao.getSeries(), localDao.getExceptions())
-                localDao.saveSeries(s, preview.clashes)
-                val ids = com.example.PlanJobs.catchUp(localDao, planSettings).map { it.toInt() }
+                val ids = owner.database(getApplication()).withTransaction {
+                    localDao.saveSeries(s, preview.clashes)
+                    com.example.PlanJobs.catchUp(localDao, planSettings).map { it.toInt() }
+                }
                 if (ids.isNotEmpty()) { lastAddedEntryIds = ids; lastAddedEntryId = ids.last(); toldAbout(ids) }
                 performAutoBackup()
                 tickPlans()
                 onDone(preview.created.size, ids)
-            } catch (e: Exception) {
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) {
                 android.util.Log.e("WorkViewModel", "Saving a plan failed", e)
-                com.example.ui.kis.KisNotices.post("המשמרת הקבועה לא נשמרה. אפשר לנסות שוב")
+                if (WorkStorage.isStorageFailure(e)) WorkStorage.failed()
+                else com.example.ui.kis.KisNotices.post("המשמרת הקבועה לא נשמרה. אפשר לנסות שוב")
                 onFailed()
             }
         }
@@ -1013,7 +1033,7 @@ class WorkViewModel(
 
     /** "עבדתי": records one occurrence now, exactly as planned (never twice). */
     fun confirmOccurrence(o: com.example.domain.V2Plan.Occurrence, onDone: (Int?) -> Unit = {}) {
-        viewModelScope.launch {
+        storageScope.launch {
             val id = localDao.confirmOccurrences(listOf(com.example.domain.V2Plan.toEntry(o, auto = false))).firstOrNull()?.toInt()
             if (id != null) { lastAddedEntryIds = listOf(id); lastAddedEntryId = id; performAutoBackup() }
             onDone(id)
@@ -1025,15 +1045,15 @@ class WorkViewModel(
 
     /** "לא עבדתי": that day is skipped (and can be restored). */
     fun cancelOccurrence(o: com.example.domain.V2Plan.Occurrence) {
-        viewModelScope.launch { localDao.upsertException(exceptionFor(o).copy(cancelled = true)); performAutoBackup() }
+        storageScope.launch { localDao.upsertException(exceptionFor(o).copy(cancelled = true)); performAutoBackup() }
     }
     fun restoreOccurrence(o: com.example.domain.V2Plan.Occurrence) {
-        viewModelScope.launch { localDao.upsertException(exceptionFor(o).copy(cancelled = false)); performAutoBackup() }
+        storageScope.launch { localDao.upsertException(exceptionFor(o).copy(cancelled = false)); performAutoBackup() }
     }
 
     /** New hours for just this day, or from this day on (the plan is split there). */
     fun editOccurrence(o: com.example.domain.V2Plan.Occurrence, start: String, end: String, fromNowOn: Boolean) {
-        viewModelScope.launch {
+        storageScope.launch {
             if (!fromNowOn) localDao.upsertException(exceptionFor(o).copy(startTime = start, endTime = end))
             else {
                 val s = localDao.getSeries().firstOrNull { it.id == o.seriesId } ?: return@launch
@@ -1046,7 +1066,7 @@ class WorkViewModel(
 
     /** A new rate from today on; days that already ended keep the rate they were planned with, recorded shifts never change. */
     fun applySeriesRate(seriesId: String, rate: Double?) {
-        viewModelScope.launch {
+        storageScope.launch {
             val s = localDao.getSeries().firstOrNull { it.id == seriesId } ?: return@launch
             val today = com.example.domain.V2Plan.dateOf(System.currentTimeMillis())
             val exceptions = localDao.getExceptions()
@@ -1062,7 +1082,7 @@ class WorkViewModel(
 
     /** Ends a plan after today (recorded shifts stay). */
     fun endSeries(seriesId: String) {
-        viewModelScope.launch {
+        storageScope.launch {
             val s = localDao.getSeries().firstOrNull { it.id == seriesId } ?: return@launch
             val until = com.example.domain.V2Plan.endUntil(s, System.currentTimeMillis())
             if (until == null) localDao.deleteSeries(s.id) else localDao.upsertSeries(s.copy(untilDate = until))
@@ -1072,7 +1092,7 @@ class WorkViewModel(
 
     /** Toggles one worker's paid mark on the row as stored now, so quick taps on two workers never undo each other. */
     fun toggleWorkerPaid(entryId: Int, index: Int) {
-        viewModelScope.launch {
+        storageScope.launch {
             val current = repository.getEntryById(entryId) ?: return@launch
             val workers = com.example.data.WorkPay.workers(current)
             if (index !in workers.indices) return@launch
@@ -1083,7 +1103,7 @@ class WorkViewModel(
     }
 
     fun updateGroupWorkers(entry: WorkEntry, workers: List<com.example.data.WorkPay.Worker>) {
-        viewModelScope.launch {
+        storageScope.launch {
             val current = repository.getEntryById(entry.id) ?: return@launch
             repository.updateEntry(current.copy(groupWorkersJson = com.example.data.WorkPay.encodeWorkers(workers)), getActiveUserId())
             performAutoBackup()
@@ -1091,7 +1111,7 @@ class WorkViewModel(
     }
 
     fun deleteEntry(entry: WorkEntry) {
-        viewModelScope.launch {
+        storageScope.launch {
             val uid = getActiveUserId()
             repository.deleteEntry(entry, uid)
             skipPlanDays(listOf(entry), true)
@@ -1099,7 +1119,7 @@ class WorkViewModel(
     }
 
     fun restoreEntry(entry: WorkEntry) {
-        viewModelScope.launch {
+        storageScope.launch {
             val uid = getActiveUserId()
             repository.insertEntry(entry, uid)
             skipPlanDays(listOf(entry), false)
@@ -1108,7 +1128,7 @@ class WorkViewModel(
     }
 
     fun updateEntryDirect(entry: WorkEntry) {
-        viewModelScope.launch {
+        storageScope.launch {
             val uid = getActiveUserId()
             repository.updateEntry(entry, uid)
             performAutoBackup()
@@ -1116,7 +1136,7 @@ class WorkViewModel(
     }
 
     fun togglePaymentStatus(entry: WorkEntry) {
-        viewModelScope.launch {
+        storageScope.launch {
             val uid = getActiveUserId()
             repository.togglePaymentStatus(entry, uid)
         }
@@ -1125,7 +1145,7 @@ class WorkViewModel(
     // Category Operations
     fun addCategory(name: String, defaultRate: Double = 40.0) {
         if (name.isBlank()) return
-        viewModelScope.launch {
+        storageScope.launch {
             // Check for duplicates
             val currentList = categories.value
             val exists = currentList.any { it.name.trim().lowercase() == name.trim().lowercase() }
@@ -1140,7 +1160,7 @@ class WorkViewModel(
     fun addWorkplace(name: String, defaultRate: Double, currency: String, makeDefault: Boolean = false) {
         val clean = name.trim()
         if (clean.isBlank() || !defaultRate.isFinite() || defaultRate < 0 || currency !in listOf("₪", "$")) return
-        viewModelScope.launch {
+        storageScope.launch {
             if (categories.value.any { it.name.trim().equals(clean, ignoreCase = true) } || repository.getCategoryByName(clean) != null) return@launch
             repository.insertCategory(WorkCategory(name = clean, defaultRate = defaultRate))
             localDao.setLocalPreference(com.example.data.WorkLocalPreference("categoryCurrency:$clean", currency))
@@ -1150,7 +1170,7 @@ class WorkViewModel(
     }
 
     fun deleteCategory(category: WorkCategory) {
-        viewModelScope.launch {
+        storageScope.launch {
             val target = localDao.categoryFallback(category)?.name
             if (!localDao.removeCategorySafely(category)) {
                 com.example.ui.kis.KisNotices.post(if (localDao.defaultCategory()?.id == category.id)
@@ -1163,7 +1183,7 @@ class WorkViewModel(
     }
 
     fun updateCategoryRate(category: WorkCategory, newRate: Double) {
-        viewModelScope.launch {
+        storageScope.launch {
             localDao.updateCategory(category.copy(defaultRate = newRate))
         }
     }
@@ -1205,14 +1225,14 @@ class WorkViewModel(
     }
 
     // Atomic DB snapshots also include local category preferences. Never export uncollected UI state.
-    fun copyExportToClipboard(context: Context) { viewModelScope.launch {
+    fun copyExportToClipboard(context: Context) { storageScope.launch {
         try {
             val json = repository.exportSnapshot()
             (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Work Tracker Data", json))
             com.example.ui.kis.KisNotices.post("הגיבוי הועתק")
         } catch (_: Exception) { com.example.ui.kis.KisNotices.post("הגיבוי נכשל") }
     } }
-    fun saveBackup(context: Context, uri: android.net.Uri) { viewModelScope.launch {
+    fun saveBackup(context: Context, uri: android.net.Uri) { storageScope.launch {
         try {
             val json = repository.exportSnapshot()
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -1221,7 +1241,7 @@ class WorkViewModel(
             com.example.ui.kis.KisNotices.post("הגיבוי נשמר")
         } catch (_: Exception) { com.example.ui.kis.KisNotices.post("הגיבוי לא נשמר") }
     } }
-    fun shareExportData(context: Context) { viewModelScope.launch {
+    fun shareExportData(context: Context) { storageScope.launch {
         try {
             val json = repository.exportSnapshot()
             val file = File(context.cacheDir, "work-backup-${System.currentTimeMillis()}.json")
@@ -1290,7 +1310,7 @@ class WorkViewModel(
             .setMessage(summary)
             .setNegativeButton("ביטול", null)
             .setPositiveButton("שמירת הנתונים") { _, _ ->
-                viewModelScope.launch {
+                storageScope.launch {
                     try {
                         val result = repository.importBackup(backup)
                         performAutoBackup()

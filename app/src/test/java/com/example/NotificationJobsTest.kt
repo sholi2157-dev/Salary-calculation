@@ -153,12 +153,15 @@ class NotificationJobsTest {
     }
 
     @Test fun quietHoursHoldTheNotesBack() = runBlocking {
+        // 23:59 is the interval's exclusive end; the host clock can legitimately be outside it.
+        val now = at(2026, 11, 16, 12)
         val s = PlanSettings(app).apply { quiet = true; quietFrom = "00:00"; quietTo = "23:59" }
-        assertNotNull(PlanJobs.quietEnd(s, System.currentTimeMillis()))
+        assertNotNull(PlanJobs.quietEnd(s, now))
+        assertNull(PlanJobs.quietEnd(s, at(2026, 11, 16, 23, 59)))
         Shadows.shadowOf(app).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS)
-        dao.insertEntry(WorkEntry(isTimeRange = false, category = "מסעדה", date = System.currentTimeMillis() - 3_600_000L, hours = 1.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = false))
+        dao.insertEntry(WorkEntry(isTimeRange = false, category = "מסעדה", date = now - 3_600_000L, hours = 1.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = false))
         s.notifyRate = true
-        assertEquals(0, PlanJobs.run(app))
+        assertEquals(0, PlanJobs.run(app, now))
         assertTrue(Shadows.shadowOf(app.getSystemService(NotificationManager::class.java)).allNotifications.isEmpty())
     }
 }

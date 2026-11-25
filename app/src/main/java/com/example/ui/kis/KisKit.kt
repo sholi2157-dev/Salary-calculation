@@ -21,11 +21,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
@@ -87,9 +89,52 @@ import java.util.Locale
 
 /**
  * The minimum size of anything a person taps (audit M-34), in one place: every button, chip, row action and icon
- * button uses it. 44dp, the same minimum as the web (44px). 44 vs 48dp is an open owner decision: change it here only.
+ * button uses it. The November review explicitly requires the Android minimum of 48dp.
  */
-val KisMinTouch: Dp = 44.dp
+val KisMinTouch: Dp = 48.dp
+
+/** A folding phone's cover screen (Galaxy Z Fold: 280–344dp) and other very narrow phones: spacing tightens, words stay whole. */
+@Composable
+fun kisNarrow(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 360
+
+/**
+ * How much an unfolded folding phone or an upright tablet (600dp and wider) scales the phone layout, the same steps as
+ * the web: the app keeps its phone design and fills the screen with it, instead of stretching or splitting it.
+ */
+fun kisZoom(screenWidthDp: Int): Float = when {
+    screenWidthDp >= 1024 -> 1f
+    screenWidthDp >= 840 -> 1.45f
+    screenWidthDp >= 760 -> 1.32f
+    screenWidthDp >= 680 -> 1.2f
+    screenWidthDp >= 600 -> 1.1f
+    else -> 1f
+}
+
+/**
+ * The app's frame: the page colour edge to edge. On a phone nothing changes; on an unfolded screen everything inside
+ * is drawn [kisZoom] times larger (density and the screen's size in dp follow), so it is the phone layout, enlarged.
+ */
+@Composable
+fun KisFrame(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val config = androidx.compose.ui.platform.LocalConfiguration.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val zoom = kisZoom(config.screenWidthDp)
+    Box(modifier.fillMaxSize().background(Kis.colors.bg).testTag("kis_frame")) {
+        if (zoom == 1f) content()
+        else {
+            val scaled = remember(config, zoom) {
+                android.content.res.Configuration(config).apply {
+                    screenWidthDp = (config.screenWidthDp / zoom).toInt(); screenHeightDp = (config.screenHeightDp / zoom).toInt()
+                    smallestScreenWidthDp = (config.smallestScreenWidthDp / zoom).toInt()
+                }
+            }
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density * zoom, density.fontScale),
+                androidx.compose.ui.platform.LocalConfiguration provides scaled,
+            ) { content() }
+        }
+    }
+}
 
 object KisFormat {
     /** Keep start–end left-to-right within Hebrew planning rows, as in timeLabel. */
@@ -156,7 +201,7 @@ fun Modifier.kisClick(enabled: Boolean = true, role: Role? = Role.Button, haptic
  * colours instead of opacity; a filled delete button with its own text colour.
  */
 object KisRadius { val tag = 8.dp; val small = 12.dp; val medium = 16.dp; val large = 24.dp; val pill = 99.dp }
-object KisButtonHeight { val large = 56.dp; val medium = 48.dp; val small = 44.dp }
+object KisButtonHeight { val large = 56.dp; val medium = 48.dp; val small = 48.dp }
 val KisColors.selectedBg get() = if (dark) Color(0xFF424853) else surface
 val KisColors.selectedInk get() = ink
 val KisColors.selectedEdge get() = ink
@@ -183,7 +228,7 @@ fun KisButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
         else -> Color.Transparent to c.ink
     }
     val shape = RoundedCornerShape(if (height < KisButtonHeight.large) KisRadius.small else KisRadius.medium)
-    Row(modifier.heightIn(min = height).clip(shape).background(bg)
+    Row(modifier.heightIn(min = maxOf(height, KisMinTouch)).clip(shape).background(bg)
         .then(if (kind == KisButtonKind.OUTLINE) Modifier.border(1.5.dp, c.lineStrong, shape) else Modifier)
         .kisClick(enabled = enabled, haptic = haptic, onClick = onClick)
         .then(if (tag != null) Modifier.testTag(tag) else Modifier)
@@ -215,7 +260,7 @@ fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifi
     val shape = RoundedCornerShape(12.dp)
     val bg = when { warn -> c.pendingSoft; selected -> c.selectedBg; else -> c.surface }
     val fg = if (warn) c.pending else if (selected) c.selectedInk else c.ink
-    Row(modifier.heightIn(min = minHeight).clip(shape).background(bg)
+    Row(modifier.sizeIn(minWidth = KisMinTouch, minHeight = maxOf(minHeight, KisMinTouch)).clip(shape).background(bg)
         .then(when {
             warn -> Modifier
             dashed -> Modifier.dashedBorder(c.line, 12.dp)
@@ -226,7 +271,7 @@ fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifi
         .semantics { this.selected = selected }
         .padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (leading != null) Icon(leading, null, tint = fg, modifier = Modifier.size(18.dp))
-        Text(text, style = KisType.label, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        if (text.isNotEmpty() || leading == null) Text(text, style = KisType.label, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
 }
 
@@ -241,7 +286,7 @@ fun KisSwitch(checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier 
     val c = Kis.colors
     val settings = Kis.settings
     Switch(checked = checked, onCheckedChange = { settings.haptic(KisSettings.Haptic.TAP); onChange(it) },
-        modifier = modifier.then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier),
+        modifier = modifier.sizeIn(minWidth = KisMinTouch, minHeight = KisMinTouch).then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier),
         // M-28: on is ink (not the money green); off has a strong edge (a pale thumb on a pale track disappears on a card).
         colors = SwitchDefaults.colors(checkedThumbColor = c.controlKnob, checkedTrackColor = c.controlOn, checkedBorderColor = c.controlOn,
             uncheckedThumbColor = c.lineStrong, uncheckedTrackColor = c.sunk, uncheckedBorderColor = c.lineStrong))
@@ -254,7 +299,7 @@ fun <T> KisSegmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) 
     Row(modifier.clip(RoundedCornerShape(12.dp)).background(c.sunk).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         options.forEach { (value, label) ->
             val on = value == selected
-            Box(Modifier.heightIn(min = KisMinTouch).clip(RoundedCornerShape(KisRadius.tag)).kisSelected(on, c, RoundedCornerShape(KisRadius.tag))
+            Box(Modifier.sizeIn(minWidth = KisMinTouch, minHeight = KisMinTouch).clip(RoundedCornerShape(KisRadius.tag)).kisSelected(on, c, RoundedCornerShape(KisRadius.tag))
                 .kisClick(role = Role.RadioButton) { onSelect(value) }.semantics { this.selected = on }
                 .then(if (tagPrefix != null) Modifier.testTag("${tagPrefix}_$value") else Modifier)
                 .padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {

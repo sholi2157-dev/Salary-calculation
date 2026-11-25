@@ -31,7 +31,7 @@ class V2PayTest {
         val report = WorkMoney.report(rows)
         assertTrue(report, report.contains("2 משמרות עוד בלי תעריף"))
         val share = com.example.data.WorkShareText.personal(rows[1])
-        assertTrue(share, share.contains("סכום חסר"))
+        assertTrue(share, share.contains("הסכום עוד לא ידוע"))
         assertFalse(share, share.contains("₪0"))
     }
 
@@ -129,6 +129,11 @@ class V2PayTest {
             assertFalse(dao.getEntryById(job)!!.payKnown)
             // Running it again changes nothing: completed rows are no longer missing.
             assertEquals(0, dao.completeMissingRates(listOf(known, missing, missingBonus, job), 99.0))
+            val zero = WorkEntry(category = "synthetic zero", date = 1000L, isTimeRange = false,
+                hours = 2.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = true)
+            val zeroId = dao.insertEntry(zero).toInt()
+            assertEquals(0, dao.completeMissingRates(listOf(zeroId), 99.0))
+            assertEquals(zero.copy(id = zeroId), dao.getEntryById(zeroId))
             assertEquals(280.0, dao.getEntryById(missing)!!.totalEarnings, 0.0)
         } finally { db.close() }
     }

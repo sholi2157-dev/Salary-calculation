@@ -24,6 +24,9 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -54,7 +57,7 @@ import kotlinx.coroutines.delay
 
 /** Device-local, deliberately separate from payroll backups and account/category preferences. */
 class WorkOnboardingStore(private val context: Context) {
-    private val prefs = context.getSharedPreferences("work_onboarding", Context.MODE_PRIVATE)
+    private val prefs = com.example.data.WorkStorage.preferences(context, "work_onboarding")
     val completedVersion get() = prefs.getInt("completedOnboardingVersion", 0)
     fun initialize(): Boolean {
         if (!prefs.contains("installationClassified")) {
@@ -67,12 +70,12 @@ class WorkOnboardingStore(private val context: Context) {
                 context.filesDir.resolve("datastore").listFiles()?.isNotEmpty() == true ||
                 context.getSharedPreferences("personal_ai_setup", 0).all.isNotEmpty() ||
                 context.getSharedPreferences("active_shift_prefs", 0).all.isNotEmpty()
-            check(prefs.edit().putBoolean("installationClassified", true)
-                .putInt("completedOnboardingVersion", if (established) ONBOARDING_VERSION else 0).commit())
+            if (!prefs.edit().putBoolean("installationClassified", true)
+                .putInt("completedOnboardingVersion", if (established) ONBOARDING_VERSION else 0).commit()) return false
         }
         return completedVersion < ONBOARDING_VERSION
     }
-    fun complete() { check(prefs.edit().putInt("completedOnboardingVersion", maxOf(completedVersion, ONBOARDING_VERSION)).remove("tourPendingUid").commit()) }
+    fun complete(): Boolean = prefs.edit().putInt("completedOnboardingVersion", maxOf(completedVersion, ONBOARDING_VERSION)).remove("tourPendingUid").commit()
     /**
      * F12 (2.3.1): with Google sign-in the tour belongs to the account, not the phone. It opens once, on a new account's
      * first successful connect, and never again except from "הצגת ההדרכה מחדש". The first time an account is seen here
@@ -85,12 +88,12 @@ class WorkOnboardingStore(private val context: Context) {
         val seen = prefs.getStringSet("tourAccounts", emptySet()).orEmpty()
         if (uid in seen) return prefs.getString("tourPendingUid", null) == uid
         val fresh = isNewAccount(createdAt, lastSignInAt) && isNewUser != false
-        check(prefs.edit().putStringSet("tourAccounts", seen + uid).apply { if (fresh) putString("tourPendingUid", uid) }.commit())
+        if (!prefs.edit().putStringSet("tourAccounts", seen + uid).apply { if (fresh) putString("tourPendingUid", uid) }.commit()) return false
         return fresh
     }
     /** The 2.0 launch screen is shown once to everyone, new or updated (see KisLaunch). */
     val launchPending get() = prefs.getInt("launchedVersion", 0) < LAUNCH_VERSION
-    fun launched() { check(prefs.edit().putInt("launchedVersion", LAUNCH_VERSION).commit()) }
+    fun launched(): Boolean = prefs.edit().putInt("launchedVersion", LAUNCH_VERSION).commit()
 }
 
 const val LAUNCH_VERSION = 2
@@ -146,7 +149,7 @@ class OnboardingController(private val store: WorkOnboardingStore, initialStep: 
     fun replay() { index = 0 }
     fun back() { if (index > 0) index-- }
     fun next() { if (index == workOnboardingSteps.lastIndex) finish() else if (active) index++ }
-    fun finish() { store.complete(); index = -1 }
+    fun finish() { if (store.complete()) index = -1 }
 }
 
 @Composable
@@ -241,7 +244,7 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
                                     CoachScreen.HISTORY -> com.example.ui.kis.KisHistory(remember { com.example.ui.kis.HistoryUi() }, false, entries, categories, viewModel, 0.dp, {}, {}, {})
                                     CoachScreen.SHARE -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
                                         if (entries.isEmpty()) Text("משמרת לדוגמה בלבד · לא נשמרת", color = c.muted, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 12.dp))
-                                        com.example.ui.kis.ShiftDetailContent(sample, categories, onPaid = {}, onEdit = {}, onShare = {}, onCopy = {}, onDelete = {}, onCompleteRate = {}, group = {})
+                                        com.example.ui.kis.ShiftDetailContent(sample, categories, onPaid = {}, onEdit = {}, onShare = {}, onDelete = {}, onCompleteRate = {}, group = {})
                                     }
                                     CoachScreen.CATEGORIES, CoachScreen.API -> com.example.ui.kis.KisSettingsPage(viewModel, categories, onClose = {}, onReplayTour = {})
                                 }
@@ -252,7 +255,8 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
                         }
                     }
                     val rect = step.target?.let { targets.bounds[it] }?.translate(-rootOrigin)
-                    CoachOverlay(controller, rect, Modifier.fillMaxSize(), onCardHeight = { cardHeight = with(density) { it.toDp() } })
+                    CoachOverlay(controller, rect, Modifier.fillMaxSize(), cardHeight = cardHeight,
+                        onCardHeight = { cardHeight = with(density) { it.toDp() } })
                 }
             }
             }
@@ -262,7 +266,8 @@ fun WorkOnboarding(controller: OnboardingController, viewModel: WorkViewModel, c
 }
 
 @Composable
-internal fun CoachOverlay(controller: OnboardingController, target: Rect?, modifier: Modifier = Modifier, onCardHeight: (Int) -> Unit = {}) {
+internal fun CoachOverlay(controller: OnboardingController, target: Rect?, modifier: Modifier = Modifier,
+                          cardHeight: Dp = 260.dp, onCardHeight: (Int) -> Unit = {}) {
     val step = controller.step ?: return
     // Do not point at an absent/off-screen target during scroll or initial layout.
     val valid = target?.takeIf { it.width > 1f && it.height > 1f }
@@ -286,8 +291,20 @@ internal fun CoachOverlay(controller: OnboardingController, target: Rect?, modif
         Box(Modifier.fillMaxSize().pointerInput(Unit) { awaitEachGesture { do { val e = awaitPointerEvent(); e.changes.forEach { it.consume() } } while (e.changes.any { it.pressed }) } })
         val centered = step.target == null
         val ready = centered || valid != null
+        val initialFocus = remember { FocusRequester() }
+        LaunchedEffect(controller.index, ready) { if (ready) initialFocus.requestFocus() }
+        val density = LocalDensity.current
+        val targetTop = valid?.let { with(density) { it.top.toDp() } }
+        val targetBottom = valid?.let { with(density) { it.bottom.toDp() } }
+        val defaultBottom = maxHeight - 88.dp
+        // Larger clock targets can reach the default card position. Use the available room below them;
+        // keep the established placement when the target and the card already fit without overlap.
+        val bottomInset = if (!centered && targetTop != null && targetBottom != null &&
+            targetBottom > defaultBottom - cardHeight && targetTop < defaultBottom &&
+            maxHeight - targetBottom >= cardHeight + 28.dp)
+            (maxHeight - targetBottom - cardHeight - 12.dp).coerceIn(16.dp, 88.dp) else 88.dp
         val cardModifier = Modifier.align(if (centered) Alignment.Center else Alignment.BottomCenter)
-            .padding(horizontal = 16.dp).padding(bottom = if (centered) 0.dp else 88.dp)
+            .padding(horizontal = 16.dp).padding(bottom = if (centered) 0.dp else bottomInset)
             .widthIn(max = 480.dp).fillMaxWidth()
             .heightIn(max = if (centered) maxHeight - 32.dp else minOf(260.dp, maxHeight - 112.dp))
             .onSizeChanged { onCardHeight(it.height) }.testTag("onboarding_card")
@@ -303,7 +320,8 @@ internal fun CoachOverlay(controller: OnboardingController, target: Rect?, modif
                     Text(step.body, color = com.example.ui.kis.Kis.colors.ink, style = com.example.ui.kis.KisType.body)
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    com.example.ui.kis.KisButton(if (controller.index == workOnboardingSteps.lastIndex) "יאללה, מתחילים" else "הבא", controller::next, Modifier.weight(1f),
+                    com.example.ui.kis.KisButton(if (controller.index == workOnboardingSteps.lastIndex) "יאללה, מתחילים" else "הבא", controller::next,
+                        Modifier.weight(1f).focusProperties { canFocus = ready }.focusRequester(initialFocus),
                         enabled = ready, height = 50.dp, tag = "onboarding_next")
                     if (controller.index > 0) TextButton(onClick = controller::back, modifier = Modifier.heightIn(min = 48.dp).testTag("onboarding_back")) { Text("הקודם", color = com.example.ui.kis.Kis.colors.ink) }
                 }

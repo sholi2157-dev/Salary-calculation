@@ -1,0 +1,259 @@
+(function (root) {
+'use strict';
+/*
+ * The single place that answers "how much did this shift pay?" — port of the Android
+ * data/WorkPay.kt plus WorkMoney.kt (format / summary / report).
+ *
+ * Entries are the shared web/Android JSON entry objects:
+ *  {category, date(ms), isTimeRange, startTime, endTime, hours, hourlyRate, totalEarnings, isPaid, notes,
+ *   currency, isGroupShift, employerRate, workerRate, groupWorkersJson,
+ *   kind ('shift'|'job', default 'shift'), payKnown (default true), bonus (default 0),
+ *   seriesKey (default null), autoConfirmed (default false), passThrough (default 0: money the employer pays through
+ *   the user for someone else, owed by the employer but never part of totalEarnings)}
+ * Missing 2.0 fields read as their defaults, so pre-2.0 entries behave exactly as before.
+ *
+ * Since 2.0 a shift may have no known rate yet (or a job no known amount). Then totalEarnings
+ * is only a 0 placeholder: it is never shown as pay and never summed.
+ */
+
+// ---- Java / Android org.json semantics ----
+
+/** java.lang.Double.valueOf(String) for decimal literals (trims ASCII control/space like Java). */
+function javaParseDouble(text) {
+ const s = String(text).replace(/^[\x00-\x20]+|[\x00-\x20]+$/g, '');
+ const m = /^([+-]?)(NaN|Infinity|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)[fFdD]?$/.exec(s);
+ if (!m) return null;
+ if (m[2] === 'NaN') return NaN;
+ const v = Number(m[2]);
+ return m[1] === '-' ? -v : v;
+}
+/** Android org.json JSON.toDouble: numbers as they are, numeric strings parsed, anything else null. */
+function jsonDouble(v) {
+ if (typeof v === 'number') return v;
+ if (typeof v === 'string') return javaParseDouble(v);
+ return null;
+}
+const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+const isNull = (o, k) => !has(o, k) || o[k] === null;
+function optString(o, k, fallback = '') {
+ if (!has(o, k) || o[k] === undefined) return fallback;
+ const v = o[k];
+ if (v === null) return 'null'; // Android: String.valueOf(JSONObject.NULL)
+ return typeof v === 'string' ? v : typeof v === 'object' ? JSON.stringify(v) : String(v);
+}
+function optDouble(o, k, fallback) { const v = has(o, k) ? jsonDouble(o[k]) : null; return v === null ? fallback : v; }
+function optBoolean(o, k, fallback) {
+ const v = has(o, k) ? o[k] : undefined;
+ if (typeof v === 'boolean') return v;
+ if (typeof v === 'string') { const l = v.toLowerCase(); if (l === 'true') return true; if (l === 'false') return false; }
+ return fallback;
+}
+function getDouble(o, k) { const v = has(o, k) ? jsonDouble(o[k]) : null; if (v === null) throw Error('JSONObject["' + k + '"] is not a number'); return v; }
+
+// ---- Number text ----
+
+/**
+ * Java String.format(Locale.US, "%.2f" / "%,.2f"): HALF_UP applied to the shortest decimal
+ * representation (Double.toString), so 2.675 → "2.68" (unlike JS toFixed, which gives "2.67").
+ */
+function fixed2(amount, grouping = false) {
+ if (Number.isNaN(amount)) return 'NaN';
+ if (!Number.isFinite(amount)) return amount < 0 ? '-Infinity' : 'Infinity';
+ const negative = amount < 0 || Object.is(amount, -0);
+ const m = /^(\d+)(?:\.(\d+))?(?:e([+-]\d+))?$/.exec(String(Math.abs(amount)));
+ const frac = m[2] || '';
+ let digits = BigInt(m[1] + frac);
+ const exp = Number(m[3] || 0) - frac.length + 2; // value * 100 = digits * 10^exp
+ if (exp >= 0) digits *= 10n ** BigInt(exp);
+ else {
+  const div = 10n ** BigInt(-exp), rem = digits % div;
+  digits /= div;
+  if (rem * 2n >= div) digits += 1n;
+ }
+ const text = digits.toString().padStart(3, '0');
+ let whole = text.slice(0, -2);
+ if (grouping) whole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+ return (negative ? '-' : '') + whole + '.' + text.slice(-2);
+}
+
+/** BigDecimal(h).setScale(2, HALF_UP).stripTrailingZeros().toPlainString(): 8 → "8", 7.5 → "7.5", 7.1+0.2 → "7.3", 2.97 → "2.97". */
+function hours(h) {
+ // toFixed rounds the exact binary value half away from zero, which is exactly BigDecimal(double) + HALF_UP.
+ let s = Math.abs(h) < 1e21 ? h.toFixed(2) : BigInt(Math.round(h)).toString();
+ if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '');
+ return s === '-0' ? '0' : s;
+}
+
+// ---- WorkPay ----
+
+const KIND_SHIFT = 'shift', KIND_JOB = 'job';
+const payKnownOf = e => e.payKnown !== false;
+const bonusOf = e => Number(e.bonus ?? 0);
+const isJob = e => (e.kind ?? KIND_SHIFT) === KIND_JOB;
+
+/** Real pay, or null while the rate/amount is missing. */
+const pay = e => payKnownOf(e) ? e.totalEarnings : null;
+const known = entries => entries.filter(payKnownOf);
+const pending = entries => entries.filter(e => !payKnownOf(e));
+
+/** Every NEW saved amount and its preview, and every derived team amount (2.3.0 money contract, see KisRules.money). */
+const money = (h, rate, bonus = 0) => (root.KisRules || require('./rules.js')).money(h, rate, bonus);
+
+/** "תעריף חסר" for a shift, "סכום חסר" for a job. */
+const missingLabel = e => isJob(e) ? 'סכום חסר' : 'תעריף חסר';
+
+/** Per-currency totals of known pay only (insertion ordered object). A currency appears only if it has known pay. */
+function totals(entries) {
+ const out = {};
+ for (const e of known(entries)) out[e.currency] = (out[e.currency] ?? 0) + e.totalEarnings;
+ return out;
+}
+
+/** Local calendar day number of a millis instant (DST-safe; Android: LocalDate.toEpochDay in the device zone). */
+const localDay = ms => { const d = new Date(ms); return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); };
+const AGING_DAYS = 30;
+/**
+ * 2.4 idea C, display only: per workplace and currency, the shifts still marked "לא שולם" whose day is more than 30 days
+ * before today. `amount` is the plain sum of the saved amounts (null when none is known; unknown is never 0), `unknown`
+ * counts the shifts without a known amount. Oldest debt first. Nothing is stored or recalculated. Same as Android WorkPay.unpaidAging.
+ */
+function unpaidAging(entries, now) {
+ const today = localDay(now), groups = new Map();
+ for (const e of entries) {
+  if (e.isPaid || today - localDay(e.date) <= AGING_DAYS) continue;
+  const key = e.category + '\u0000' + e.currency;
+  const g = groups.get(key) || { category: e.category, currency: e.currency, count: 0, amount: null, unknown: 0, from: e.date, to: e.date, ids: [] };
+  g.count++; g.ids.push(e.id);
+  if (payKnownOf(e)) g.amount = (g.amount ?? 0) + e.totalEarnings; else g.unknown++;
+  g.from = Math.min(g.from, e.date); g.to = Math.max(g.to, e.date);
+  groups.set(key, g);
+ }
+ const cmp = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+ return [...groups.values()].sort((a, b) => localDay(a.from) - localDay(b.from) || cmp(a.category, b.category) || cmp(a.currency, b.currency));
+}
+/** "3 משמרות לא שולמו מעל 30 יום · ₪1,200" (+ "· 1 בלי תעריף"; all unknown: "· הסכום עוד לא ידוע"). Same as Android. */
+function agingLine(g, moneyText) {
+ const head = g.count === 1 ? 'משמרת אחת לא שולמה מעל 30 יום' : g.count + ' משמרות לא שולמו מעל 30 יום';
+ if (g.amount == null) return head + ' · הסכום עוד לא ידוע';
+ return head + ' · ' + moneyText(g.amount, g.currency) + (g.unknown ? ' · ' + g.unknown + ' בלי תעריף' : '');
+}
+
+/**
+ * Group shift workers from groupWorkersJson: [{name, hours, isPaid, bonus, workerRate, employerRate, source}].
+ * Unknown keys stay in `source`. Any malformed element makes the whole list empty (as on Android).
+ */
+function workers(e) {
+ const json = e.groupWorkersJson ?? '';
+ if (!String(json).trim()) return [];
+ try {
+  const array = JSON.parse(json);
+  if (!Array.isArray(array)) return [];
+  return array.map(o => {
+   if (!o || typeof o !== 'object' || Array.isArray(o)) throw Error('not an object');
+   const h = optDouble(o, 'hours', 0), b = optDouble(o, 'bonus', 0);
+   return {
+    name: optString(o, 'name', ''), hours: Number.isFinite(h) ? h : 0, isPaid: optBoolean(o, 'isPaid', false),
+    bonus: Number.isFinite(b) && b > 0 ? b : 0,
+    workerRate: isNull(o, 'workerRate') ? null : getDouble(o, 'workerRate'),
+    employerRate: isNull(o, 'employerRate') ? null : getDouble(o, 'employerRate'),
+    source: o,
+    // A fixed sum for this worker; used only on a job team (קבלנות), where it replaces hours × rate.
+    amount: isNull(o, 'amount') ? null : (v => Number.isFinite(v) ? v : null)(optDouble(o, 'amount', NaN)),
+   };
+  });
+ } catch { return []; }
+}
+
+/**
+ * A job with a team. Its totalEarnings is the user's own pay, so every total and summary counts only the
+ * user's income; the employer owes that plus the team's pay (plus any money passed through).
+ */
+const isTeamJob = e => isJob(e) && !!e.isGroupShift;
+/** A worker without their own rate follows the shift rate, so it is unknown while that is. A job has no hourly rate to follow. */
+const workerRate = (w, e) => isJob(e) ? w.workerRate ?? e.workerRate ?? null : w.workerRate ?? e.workerRate ?? (payKnownOf(e) ? e.hourlyRate : null);
+const employerRate = (w, e) => w.employerRate ?? e.employerRate ?? (payKnownOf(e) ? e.hourlyRate : null);
+/** What the worker should receive: a fixed sum on a job team, otherwise their hours at the worker rate plus their own bonus. */
+function workerPay(w, e) {
+ if (isJob(e) && w.amount != null) return money(1, w.amount, w.bonus);
+ const r = workerRate(w, e); return Number.isFinite(r) ? money(w.hours, r, w.bonus) : null;
+}
+/** What the employer pays for this worker. A worker's bonus is passed through, not profit. On a job the client pays one price, so it is the worker's pay. */
+// M-06: a stored rate that is not a finite number (JSON 1e400 parses to Infinity) is unknown pay, never an exception in money().
+function employerPay(w, e) { if (isJob(e)) return workerPay(w, e); const r = employerRate(w, e); return Number.isFinite(r) ? money(w.hours, r, w.bonus) : null; }
+/** The team's pay on a job, or null while any worker's pay is missing. */
+function teamPay(e) {
+ let sum = 0;
+ for (const w of workers(e)) { const p = workerPay(w, e); if (p == null) return null; sum += cents(p); }
+ return sum / 100;
+}
+
+const passThroughOf = e => Number(e.passThrough ?? 0) || 0;
+/** Whole agorot/cents of an amount, so sums of rounded amounts add up exactly. */
+const cents = v => Math.round(v * 100);
+/**
+ * {employerTotal, profit, myNet}, or null while any part is unknown: a partial group total would be misleading.
+ * Derived when shown, never stored (only the user's own totalEarnings is saved, and it is used as saved). Since 2.3.0
+ * (CAL-03) every part reconciles exactly in whole agorot: profit = Σ employer pay − Σ worker pay (each rounded once),
+ * employerTotal = own + Σ employer pay + money passed through, myNet = own + profit.
+ */
+function group(e) {
+ const own = pay(e);
+ if (own == null) return null;
+ // A job: the user's pay and each worker's pay are separate; the employer owes all of them.
+ if (isJob(e)) { const team = teamPay(e); return team == null ? null : { employerTotal: (cents(own) + cents(team) + cents(passThroughOf(e))) / 100, profit: 0, myNet: own }; }
+ let employer = 0, team = 0;
+ for (const w of workers(e)) {
+  const ep = employerPay(w, e); if (ep == null) return null;
+  const wp = workerPay(w, e); if (wp == null) return null;
+  employer += cents(ep); team += cents(wp);
+ }
+ return { employerTotal: (cents(own) + employer + cents(passThroughOf(e))) / 100, profit: (employer - team) / 100, myNet: (cents(own) + employer - team) / 100 };
+}
+/** What the employer owes for this entry (team and money passed through included), or null while any part is unknown. */
+function employerDue(e) { if (e.isGroupShift) { const g = group(e); return g ? g.employerTotal : null; } const own = pay(e); return own == null ? null : (cents(own) + cents(passThroughOf(e))) / 100; }
+
+/** Back to groupWorkersJson; keys of `source` keep their place, bonus is written only when > 0. On a job team exactly one of amount / workerRate is written. */
+function encodeWorkers(list, job = false) {
+ return JSON.stringify(list.map(w => {
+  const o = JSON.parse(JSON.stringify(w.source ?? {}));
+  o.name = w.name; o.hours = w.hours; o.isPaid = w.isPaid;
+  if (w.bonus > 0) o.bonus = w.bonus; else delete o.bonus;
+  if (job) { if (w.amount != null) { o.amount = w.amount; delete o.workerRate; } else { delete o.amount; o.workerRate = w.workerRate ?? null; } }
+  return o;
+ }));
+}
+
+// ---- WorkMoney ----
+
+function format(value, currency) { return currency + fixed2(value, true); }
+function summary(entries) { return Object.entries(totals(entries)).map(([c, v]) => format(v, c)).join('\n') || '0.00'; }
+/** Legacy WorkMoney rate readers (worker JSON object + entry), kept for parity with Android callers. */
+function moneyWorkerRate(worker, entry) { return !isNull(worker, 'workerRate') ? getDouble(worker, 'workerRate') : entry.workerRate ?? entry.hourlyRate; }
+function moneyEmployerRate(worker, entry) { return !isNull(worker, 'employerRate') ? getDouble(worker, 'employerRate') : entry.employerRate ?? entry.hourlyRate; }
+function pendingLine(rows) {
+ const n = pending(rows).length;
+ return n === 0 ? '' : '\n' + (n === 1 ? 'משמרת אחת עוד בלי תעריף (לא נספרה)' : n + ' משמרות עוד בלי תעריף (לא נספרו)');
+}
+const sumHours = rows => rows.reduce((s, r) => s + r.hours, 0);
+
+/** WhatsApp summary: per category (or for one worker), hours and one amount per currency. Unknown pay is never "0.00". */
+function report(entries, workerName = null) {
+ if (workerName == null) {
+  const groups = new Map();
+  for (const e of entries) { if (!groups.has(e.category)) groups.set(e.category, []); groups.get(e.category).push(e); }
+  return [...groups].map(([name, rows]) =>
+   name + ' | ' + hours(sumHours(rows)) + ' שעות' + (Object.keys(totals(rows)).length === 0 ? '' : '\n' + summary(rows)) + pendingLine(rows)).join('\n\n');
+ }
+ const rows = entries.flatMap(entry => workers(entry).filter(w => w.name === workerName).map(w => {
+  const p = workerPay(w, entry);
+  return { ...entry, hours: w.hours, totalEarnings: p ?? 0, isPaid: w.isPaid, payKnown: p != null };
+ }));
+ return workerName + ' | ' + hours(sumHours(rows)) + ' שעות\n' + (Object.keys(totals(rows)).length === 0 ? '' : summary(rows) + '\n') +
+  rows.map(r => r.category + ': ' + (r.payKnown ? format(r.totalEarnings, r.currency) : 'תעריף חסר') + ' — ' + (r.isPaid ? 'שולם' : 'ממתין')).join('\n');
+}
+
+const api = { KIND_SHIFT, KIND_JOB, isJob, payKnown: payKnownOf, bonus: bonusOf, pay, known, pending, money, missingLabel, totals, unpaidAging, agingLine,
+ workers, workerRate, employerRate, workerPay, employerPay, group, encodeWorkers, isTeamJob, teamPay, employerDue, passThrough: passThroughOf,
+ format, summary, report, moneyWorkerRate, moneyEmployerRate, fixed2, hours, javaParseDouble };
+if (typeof module !== 'undefined') module.exports = api; else root.KisPay = api;
+})(globalThis);

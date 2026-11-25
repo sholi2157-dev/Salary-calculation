@@ -406,13 +406,16 @@ fun KisApp(
 internal fun PillNav(page: Int, onPage: (Int) -> Unit, onSettings: () -> Unit, onAdd: () -> Unit) {
     val c = Kis.colors
     val shape = RoundedCornerShape(99.dp)
+    // A cover screen (280–344dp) keeps every word whole: the items' side padding shrinks with the screen, as on the web
+    // (clamp(8px, 3vw, 16px)), instead of cutting "היסטוריה".
+    val side = (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp * 0.03f).coerceIn(8f, 16f).dp
     Row(Modifier.shadow(if (c.dark) 18.dp else 14.dp, shape, ambientColor = Color.Black.copy(alpha = if (c.dark) 1f else 0.3f), spotColor = Color.Black.copy(alpha = if (c.dark) 1f else 0.3f))
         .clip(shape).background(c.nav).border(1.dp, if (c.dark) c.line else c.surface, shape)
         .padding(6.dp).testTag("bottom_navigation"), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         @Composable fun item(label: String, on: Boolean, tag: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
             Box(modifier.heightIn(min = 48.dp).clip(shape).background(if (on) c.navOn else Color.Transparent).kisClick(role = Role.Tab, onClick = onClick)
-                .semantics { selected = on }.testTag(tag).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                Text(label, style = KisType.label, color = if (on) c.navOnInk else c.navInk, maxLines = 1)
+                .semantics { selected = on }.testTag(tag).padding(horizontal = side), contentAlignment = Alignment.Center) {
+                Text(label, style = KisType.label, color = if (on) c.navOnInk else c.navInk, maxLines = 1, softWrap = false)
             }
         }
         item("בית", page == 0, "tab_0") { onPage(0) }
