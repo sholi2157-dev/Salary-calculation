@@ -1,0 +1,22 @@
+{
+  "id": "/",
+  "name": "כיס",
+  "short_name": "כיס",
+  "description": "שכר עבודות אישי - מעקב משמרות ושעות עבודה",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#D9DCE2",
+  "background_color": "#D9DCE2",
+  "icons": [
+    { "src": "/web/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/web/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/web/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "התחלת משמרת", "short_name": "התחלת משמרת", "url": "/?action=start-shift", "icons": [{ "src": "/web/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "הוספת משמרת", "short_name": "הוספת משמרת", "url": "/?action=add-shift", "icons": [{ "src": "/web/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}

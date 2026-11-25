@@ -45,4 +45,22 @@ class WorkWhatsNewTest {
         assertNull(WhatsNew.decide(null, 55, updated = false, versionName = "2.4.0"))
         assertNull(WhatsNew.decide(55, 55, updated = true, versionName = "2.4.0"))
     }
+
+    @Test fun release241HasItsFourHighlightsAndOnlyThoseShowAfterTheUpdate() {
+        val lines = WhatsNew.NOTES.getValue("2.4.1")
+        assertEquals(
+            listOf(
+                "בטלפון מתקפל, כשפותחים אותו, הכול נראה כמו בטלפון רגיל, רק גדול ונוח יותר.",
+                "בהיסטוריה יש כפתור שיתוף ששולח בדיוק את המשמרות שמוצגות לפי הסינון או החיפוש.",
+                "דוחות לשיתוף קצרים וברורים יותר: מה שמשותף לכל המשמרות כתוב פעם אחת למעלה.",
+                "העתקה של משמרות נעשית עכשיו כטבלה מוכנה להדבקה ב-Excel.",
+            ),
+            lines,
+        )
+        assertTrue(lines.none { it.contains("תקלה") || it.contains("באג") || it.contains("תיקון") })
+        // Updated from 2.4.0 (code 55) to 2.4.1 (code 56): shown once; a fresh install shows nothing.
+        assertEquals(lines, WhatsNew.decide(55, 56, updated = true, versionName = "2.4.1"))
+        assertNull(WhatsNew.decide(null, 56, updated = false, versionName = "2.4.1"))
+        assertNull(WhatsNew.decide(56, 56, updated = true, versionName = "2.4.1"))
+    }
 }

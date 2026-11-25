@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Direct update from the PUBLIC 2.3.1 (code 54, exact release bytes) to the candidate with rich 2.x data (audit QA-02).
+# Direct update from the previous PUBLIC build (PREV_NAME/PREV_CODE, exact release bytes) to the candidate with rich 2.x data (audit QA-02).
 # This is the path every existing user takes: no intermediate version is installed. Synthetic data only; the runner
 # must provide a fresh disposable emulator. Never uninstall/reset as a workaround.
 set -euo pipefail
@@ -30,12 +30,12 @@ rich_stage() {
   ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' "$log"
 }
 rich_stage seed
-# 2.3.1 itself opens the seeded data (and its running timer) before the update.
+# The previous public build itself opens the seeded data (and its running timer) before the update.
 adb shell am start -W -n "$pkg/com.example.MainActivity" | tee release-evidence/rich/start-231.txt
 grep -F "Status: ok" release-evidence/rich/start-231.txt
 sleep 3
 adb exec-out screencap -p > release-evidence/rich/home-231.png || true
-# The snapshot is taken after 2.3.1 itself opened the data, so anything it does on its own is part of "before".
+# The snapshot is taken after the previous public build itself opened the data, so anything it does on its own is part of "before".
 rich_stage snapshot
 adb shell dumpsys package "$pkg" | grep -E "versionCode|versionName" | tee release-evidence/rich/version-before.txt
 adb install -r candidate-b.apk | tee release-evidence/rich/install-candidate.txt
@@ -48,4 +48,4 @@ adb exec-out screencap -p > release-evidence/rich/home-candidate.png || true
 for f in rich-before.json rich-after.json; do adb pull "/sdcard/Android/data/$pkg/files/$f" "release-evidence/rich/$f"; done
 adb logcat -d -b crash > release-evidence/rich/crash-log.txt
 ! grep -E "FATAL EXCEPTION|AndroidRuntime|Process: $pkg" release-evidence/rich/crash-log.txt
-echo 'Rich 2.3.1 → candidate update: user data, preferences and the running timer preserved.'
+echo 'Rich previous-public → candidate update: user data, preferences and the running timer preserved.'
