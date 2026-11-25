@@ -11,6 +11,15 @@ collect_ui_evidence() {
   done
 }
 trap collect_ui_evidence EXIT
+# A device UI test that stops answering fails after 10 minutes with its log, instead of using up the whole job.
+instrument() {
+  local cls="$1" out="$2"
+  if ! timeout 600 adb shell am instrument -w -e class "$cls" "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee "$out"; then
+    echo "===== $cls did not finish: last test-runner and crash log lines ====="
+    adb logcat -d 2>/dev/null | grep -E "TestRunner|AndroidRuntime|System.err|ComposeTest|IdlingResource" | tail -n 150 || true
+    return 1
+  fi
+}
 adb shell wm size 720x1600
 adb shell wm density 320
 adb install candidate-a.apk
@@ -46,26 +55,26 @@ cmp release-evidence/updater-before.json release-evidence/verify-before.json
 adb shell am start -W -n "$pkg/com.example.MainActivity" | tee release-evidence/offline-start-after-update.txt
 grep -F "Status: ok" release-evidence/offline-start-after-update.txt
 adb shell am force-stop "$pkg"
-adb shell am instrument -w -e class com.example.DistributionUiTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/ui.txt
+instrument com.example.DistributionUiTest release-evidence/ui.txt
 grep -F 'OK (1 test)' release-evidence/ui.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/ui.txt
 adb shell am force-stop "$pkg"
-adb shell am instrument -w -e class com.example.CurrencyFeedbackTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/currency-feedback.txt
+instrument com.example.CurrencyFeedbackTest release-evidence/currency-feedback.txt
 grep -F 'OK (1 test)' release-evidence/currency-feedback.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/currency-feedback.txt
 adb shell am force-stop "$pkg"
-adb shell am instrument -w -e class com.example.ReportKeyboardTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/keyboard-ui.txt
+instrument com.example.ReportKeyboardTest release-evidence/keyboard-ui.txt
 grep -F 'OK (1 test)' release-evidence/keyboard-ui.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/keyboard-ui.txt
 adb shell am force-stop "$pkg"
 # Stage C: a synthetic weekly plan is recorded once even with concurrent recorders, then removed again.
-adb shell am instrument -w -e class com.example.PlanAutoRecordTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/plan-auto-record.txt
+instrument com.example.PlanAutoRecordTest release-evidence/plan-auto-record.txt
 grep -F 'OK (1 test)' release-evidence/plan-auto-record.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/plan-auto-record.txt
 adb pull "/sdcard/Android/data/$pkg/files/v2-plan-home.png" release-evidence/v2-plan-home.png || true
 adb shell am force-stop "$pkg"
 # 2.0.4: the monthly summary, a finished plan shift (with its "לא עבדתי" button) and a new version reach the notification shade.
-adb shell am instrument -w -e class com.example.NotificationsDeviceTest "$pkg.test/androidx.test.runner.AndroidJUnitRunner" | tee release-evidence/notifications.txt
+instrument com.example.NotificationsDeviceTest release-evidence/notifications.txt
 grep -F 'OK (1 test)' release-evidence/notifications.txt
 ! grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' release-evidence/notifications.txt
 for name in v2-notify-monthly v2-notify-plan v2-notify-update; do
