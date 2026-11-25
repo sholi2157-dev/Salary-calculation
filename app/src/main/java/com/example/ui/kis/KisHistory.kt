@@ -164,10 +164,6 @@ fun KisHistory(
                                     filter.activeCount == 0 -> "סינון ומיון"; else -> "סינון ומיון · ${filter.activeCount}" }, selected = filter.activeCount > 0,
                                 leading = Icons.Outlined.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = KisMinTouch,
                                 modifier = if (compactTools) Modifier.semantics { contentDescription = "סינון ומיון" } else Modifier)
-                            // Owner request 2026-11-24: copying is a spreadsheet table only, straight away (no menu, no text summary).
-                            if (!showPlans) ToolIcon(Icons.Outlined.ContentCopy, "העתקה ל-Excel", "copy_menu_btn") {
-                                if (rows.isEmpty()) onMessage("אין שורות להעתקה") else { copyExcelToClipboard(context, rows); onMessage("הועתק ל-Excel ✓") }
-                            }
                             // Owner request 2026-11-24: share exactly the shifts the filter or search shows.
                             if (!showPlans && rows.isNotEmpty()) ToolIcon(Icons.Outlined.Share, "שיתוף המשמרות המוצגות", "history_share") { shareRows(rows) }
                         }
