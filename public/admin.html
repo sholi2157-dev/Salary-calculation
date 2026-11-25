@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#EDF0F5">
+  <title>ניהול</title>
+  <meta name="apple-mobile-web-app-title" content="ניהול">
+  <link rel="stylesheet" href="web/kis/kis.css">
+  <link rel="stylesheet" href="web/admin/admin.css">
+  <link rel="icon" href="web/admin/icons/admin.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="web/admin/icons/admin-180.png">
+  <link rel="manifest" href="web/admin/admin.webmanifest">
+</head>
+<body>
+<div class="kis-glow"></div>
+<main class="kis-page" id="admin">
+  <div class="title-row">
+    <h1 class="page-title">ניהול</h1>
+    <button class="link" id="refresh" hidden>רענון</button>
+  </div>
+  <p class="caption" id="stamp">טוען…</p>
+  <section id="gate" class="card gate" hidden>
+    <p class="label" id="gate-text">הדף הזה פרטי. צריך להתחבר עם חשבון Google של בעל האתר.</p>
+    <button class="btn primary" id="signin">התחברות עם Google</button>
+    <button class="link" id="signout" hidden>להתחבר עם חשבון אחר</button>
+  </section>
+  <div id="board" hidden>
+    <div class="switcher">
+      <div class="tabs" role="group" aria-label="מה להציג" id="tabs">
+        <button data-tab="app" aria-pressed="true">אפליקציה</button><button data-tab="site">אתר</button>
+      </div>
+      <div class="seg" role="group" aria-label="תקופה" id="range">
+        <button data-days="7">7 ימים</button><button data-days="14">14 יום</button><button data-days="30" aria-pressed="true">30 יום</button>
+      </div>
+    </div>
+    <div id="pane-app"></div>
+    <div id="pane-site" hidden></div>
+  </div>
+</main>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="web/admin/admin.js"></script>
+</body>
+</html>

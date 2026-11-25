@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
@@ -13,6 +15,9 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
+import androidx.compose.ui.semantics.getOrNull
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.*
 import com.example.ui.WorkViewModel
@@ -72,7 +77,7 @@ class KisUiTest {
             }
         }
     }
-    private fun shot(name: String) = ui.onRoot().captureRoboImage(filePath = "/tmp/kis-$name.png")
+    private fun shot(name: String) = ui.onAllNodes(isRoot()).onLast().captureRoboImage(filePath = "/tmp/kis-$name.png")
     private fun rows() = runBlocking { dao.getEntriesList() }
     /** Robolectric's paused main looper must run the view-model continuations (Room resumes on Main) while we wait. */
     private fun waitFor(timeoutMs: Long, condition: () -> Boolean) = ui.waitUntil(timeoutMs) {
@@ -93,7 +98,8 @@ class KisUiTest {
         ui.onNodeWithTag("day_3").assertExists()
         ui.onNodeWithTag("mode_hours").performClick()
         // The phone's keyboard types into the page; there is no keypad of the app's own.
-        ui.onNodeWithTag("hours_display").performClick()
+        // The label selects the whole duration; the enlarged digits remain independent touch targets.
+        ui.onNodeWithText("שעות ודקות", useUnmergedTree = true).performClick()
         ui.onNodeWithTag("keypad").assertDoesNotExist()
         type("0140")
         ui.onNodeWithTag("editor_meta").assertTextContains("1:40 שעות", substring = true)
@@ -346,8 +352,14 @@ class KisUiTest {
         ui.onNodeWithTag("sort_ADDED").performClick()
         ui.onNodeWithTag("filters_apply").performClick()
         ui.onNodeWithTag("history_scope").assertTextContains("לפי סדר ההוספה", substring = true)
-        ui.onNodeWithTag("copy_menu_btn").performClick()
-        ui.onNodeWithText("Excel (טבלה)").assertExists()
+        // Copying lives only in the long-press selection, as an Excel table (owner 2026-11-25).
+        ui.onNodeWithTag("copy_menu_btn").assertDoesNotExist()
+        // Owner 2026-11-24: every fixed button on the title's line, the title in one piece.
+        val titleBox = ui.onNodeWithTag("history_title").getUnclippedBoundsInRoot()
+        listOf("history_search_button", "history_filters", "history_share").forEach { tag ->
+            val b = ui.onNodeWithTag(tag).assertIsDisplayed().getUnclippedBoundsInRoot()
+            assertTrue("$tag on the title line", b.top < titleBox.bottom && b.bottom > titleBox.top)
+        }
     }
 
     @Test fun longPressForgetsASavedWorkerButNotHistory() {
@@ -435,17 +447,18 @@ class KisUiTest {
     private fun detailActions(dark: Boolean) {
         val entry = WorkEntry(id = 71, category = "מסעדה", date = day, isTimeRange = true, startTime = "22:00", endTime = "06:00", hours = 7.5, hourlyRate = 45.75,
             totalEarnings = 343.12, bonus = 0.0, currency = "$", notes = "לילה עם הפסקה")
-        var paid = 0; var edited = 0; var shared = 0; var copied = 0; var deleted = 0
+        var paid = 0; var edited = 0; var shared = 0; var deleted = 0
         host(dark) {
-            ShiftDetailContent(entry, categories, onPaid = { paid++ }, onEdit = { edited++ }, onShare = { shared++ }, onCopy = { copied++ }, onDelete = { deleted++ }, onCompleteRate = {}, group = {})
+            ShiftDetailContent(entry, categories, onPaid = { paid++ }, onEdit = { edited++ }, onShare = { shared++ }, onDelete = { deleted++ }, onCompleteRate = {}, group = {})
         }
         ui.onNodeWithTag("detail_amount", useUnmergedTree = true).assertTextEquals("$343.12")
         ui.onNodeWithTag("detail_hours", useUnmergedTree = true).assertTextContains("למחרת", substring = true)
-        val tags = listOf("edit_entry_btn_71", "share_entry_btn_71", "copy_entry_btn_71", "delete_entry_btn_71")
+        val tags = listOf("edit_entry_btn_71", "share_entry_btn_71", "delete_entry_btn_71")
         val bounds = tags.map { ui.onNodeWithTag(it).assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp).getUnclippedBoundsInRoot() }
         bounds.zipWithNext().forEach { (a, b) -> assertTrue("one compact row, RTL", a.top == b.top && a.left >= b.right) }
         tags.forEach { ui.onNodeWithTag(it).performClick() }
-        assertEquals(listOf(1, 1, 1, 1), listOf(edited, shared, copied, deleted))
+        assertEquals(listOf(1, 1, 1), listOf(edited, shared, deleted))
+        ui.onNodeWithTag("copy_entry_btn_71").assertDoesNotExist()
         ui.onNodeWithTag("toggle_payment_71").performClick()
         assertEquals(1, paid)
         shot(if (dark) "detail-dark" else "detail")
@@ -602,9 +615,9 @@ class KisUiTest {
         }
     }
 
-    /** M-34: the touch target minimum is one constant (44dp now, the same as web; 44 vs 48 is the owner's open decision). */
+    /** The November review requires 48dp for Android controls. */
     @Test fun touchTargetMinimumIsOneConstant() {
-        assertEquals(44f, KisMinTouch.value, 0f)
+        assertEquals(48f, KisMinTouch.value, 0f)
     }
 
     /** With a rate the live bar counts money to the agora; the clock moves below it. Without one, the bar keeps the clock. */
@@ -1254,5 +1267,272 @@ class KisUiTest {
         ui.onNodeWithTag("history_scroll_container").performScrollToIndex(0)
         shot("aging-history-360-light")
         assertEquals("display only: nothing stored changed", stored, rows())
+    }
+
+    // ---- Folding phones (Galaxy Z Fold): a 280–344dp cover screen and a ~690–880dp unfolded screen. Folded, nothing is
+    // cut or pushed past the edge ("היסטוריה" stays one word on one line); unfolded, the app is the phone layout scaled up
+    // to fill the screen (as on the web). Screenshots: /tmp/kis-fold-*.png.
+    private fun foldSeed() {
+        runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+            val dayMs = 86_400_000L
+            val today = EntryDraft.startOfDay(System.currentTimeMillis())
+            listOf("מסעדה בשכונה" to 45.0, "שמירה בלילות" to 52.5).forEachIndexed { i, (name, rate) -> dao.insertCategory(WorkCategory(id = i + 1, name = name, defaultRate = rate)) }
+            repeat(8) { i ->
+                val place = if (i % 2 == 0) "מסעדה בשכונה" else "שמירה בלילות"
+                val rate = if (i % 2 == 0) 45.0 else 52.5
+                val hours = 3.0 + i % 4
+                dao.insertEntry(WorkEntry(category = place, date = today - (i * 2 + 1) * dayMs + 12 * 3_600_000L, isTimeRange = false,
+                    hours = hours, hourlyRate = rate, totalEarnings = hours * rate, isPaid = i > 5))
+            }
+        }
+    }
+
+    private fun foldShow(dark: Boolean) {
+        foldSeed()
+        val vm = WorkViewModel(app, WorkRepository(dao))
+        ui.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                KisTheme(darkOverride = dark) { KisFrame { KisApp(vm) } }
+            }
+        }
+        ui.waitUntil(10_000) {
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            ui.onAllNodesWithTag("home_hero").fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    private fun foldShot(name: String) = ui.onRoot().captureRoboImage(filePath = "/tmp/kis-fold-$name.png")
+    private val foldRootWidth get() = ui.onRoot().getBoundsInRoot().right
+
+    /** Every node with [tag] (or any node, unmerged) lies inside the screen's width. */
+    private fun foldInside(what: String, nodes: SemanticsNodeInteractionCollection) {
+        val w = foldRootWidth
+        nodes.fetchSemanticsNodes().forEach { n ->
+            val b = n.boundsInRoot
+            val left = with(ui.density) { b.left.toDp() }; val right = with(ui.density) { b.right.toDp() }
+            assertTrue("$what: ${n.config} at $left..$right outside 0..$w", left >= (-1).dp && right <= w + 1.dp)
+        }
+    }
+
+    private fun foldCover(dark: Boolean, name: String) {
+        foldShow(dark)
+        foldInside("navigation", ui.onAllNodesWithTag("bottom_navigation"))
+        foldInside("navigation item", ui.onAllNodes(hasAnyAncestor(hasTestTag("bottom_navigation")), useUnmergedTree = true))
+        foldShot("$name-home")
+        ui.onNodeWithTag("tab_1").performClick()
+        ui.waitForIdle()
+        // One line: the title's height is one line of the page style (36sp), not two.
+        val title = ui.onNodeWithTag("history_title").getBoundsInRoot()
+        assertTrue("History's title is one line (${title.height})", title.height < 50.dp)
+        val layout = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        ui.onNodeWithTag("history_title").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(layout)
+        assertFalse("History's title is whole, not cut", layout.single().hasVisualOverflow)
+        foldInside("history title and tools", ui.onAllNodes(hasTestTag("history_title") or hasTestTag("history_filters") or hasTestTag("copy_menu_btn")))
+        foldInside("history cards", ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")))
+        foldShot("$name-history")
+        ui.onNodeWithTag("add_entry_button").performClick()
+        ui.waitForIdle()
+        foldInside("editor top", ui.onAllNodes(hasTestTag("editor_close") or hasTestTag("editor_team")))
+        foldShot("$name-editor")
+    }
+
+    @Test @Config(qualifiers = "w280dp-h653dp-xhdpi") fun coverScreen280KeepsEveryWordWhole() = foldCover(false, "280-light")
+    @Test @Config(qualifiers = "w344dp-h882dp-xhdpi") fun coverScreen344KeepsEveryWordWholeDark() = foldCover(true, "344-dark")
+
+    private fun foldOpen(dark: Boolean, name: String, zoom: Float) {
+        foldShow(dark)
+        assertEquals(zoom, kisZoom(foldRootWidth.value.toInt()), 0.001f)
+        // The whole width, no empty bands at the sides.
+        assertEquals(foldRootWidth.value, ui.onNodeWithTag("kis_frame").getBoundsInRoot().width.value, 1f)
+        foldInside("navigation", ui.onAllNodesWithTag("bottom_navigation"))
+        foldShot("$name-home")
+        ui.onNodeWithTag("settings_button").performClick()
+        ui.waitForIdle()
+        foldShot("$name-settings")
+        ui.onNodeWithTag("tab_1").performClick()
+        ui.waitForIdle()
+        // The phone's History, larger: one card per row across the screen, the title scaled with everything else.
+        val rootPx = with(ui.density) { foldRootWidth.toPx() }
+        val cards = ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")).fetchSemanticsNodes().map { it.boundsInRoot }.filter { it.width > rootPx * 0.3f }
+        assertTrue("History shows cards", cards.isNotEmpty())
+        assertEquals("one card per row", 1, cards.map { Math.round(it.left / 20f) }.distinct().size)
+        assertTrue("cards fill the width", cards.all { it.width > rootPx * 0.85f })
+        assertTrue("the title is scaled up (${ui.onNodeWithTag("history_title").getBoundsInRoot().height})",
+            ui.onNodeWithTag("history_title").getBoundsInRoot().height > 30.dp * zoom * 0.95f)
+        foldInside("history cards", ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")))
+        foldShot("$name-history")
+        ui.onNodeWithTag("add_entry_button").performClick()
+        ui.waitForIdle()
+        foldShot("$name-editor")
+    }
+
+    @Test @Config(qualifiers = "w690dp-h829dp-xhdpi") fun unfolded690IsThePhoneLayoutScaled() = foldOpen(false, "690-light", 1.2f)
+    @Test @Config(qualifiers = "w884dp-h1104dp-xhdpi") fun unfolded884IsThePhoneLayoutScaledDark() = foldOpen(true, "884-dark", 1.45f)
+
+    /** A normal phone is unchanged: the column is the whole screen. */
+    @Test @Config(qualifiers = "w360dp-h800dp-xhdpi") fun phone360UsesTheWholeWidth() {
+        foldShow(false)
+        assertEquals(foldRootWidth.value, ui.onNodeWithTag("kis_frame").getBoundsInRoot().width.value, 1f)
+        ui.onNodeWithTag("tab_1").performClick()
+        ui.waitForIdle()
+        assertTrue(ui.onNodeWithTag("history_title").getBoundsInRoot().height < 50.dp)
+        foldShot("360-light-history")
+    }
+
+    private fun hasTestTagStartingWith(prefix: String) =
+        SemanticsMatcher("testTag starts with $prefix") { n -> n.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.TestTag)?.startsWith(prefix) == true }
+
+    @Test fun reviewIntroLight360() = reviewIntro(false)
+    @Test fun reviewIntroDark360() = reviewIntro(true)
+
+    private fun reviewIntro(dark: Boolean) {
+        host(dark) { SignInGate(onSignIn = { null }, offline = false, onLater = {}) }
+        ui.mainClock.advanceTimeBy(4_000)
+        val initiallyFocused = ui.onNodeWithTag("intro_next").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Focused]
+        shot("review-intro-${if (dark) "dark" else "light"}")
+        ui.onNodeWithTag("intro_assistants").performScrollTo().assertIsDisplayed()
+        shot("review-intro-chips-${if (dark) "dark" else "light"}")
+        ui.onNodeWithTag("intro_next").performClick()
+        ui.mainClock.advanceTimeBy(4_000)
+        shot("review-chat-${if (dark) "dark" else "light"}")
+        assertTrue("focus starts inside the intro", initiallyFocused)
+        ui.onNodeWithTag("intro_next_2").assertIsFocused()
+    }
+
+    @Test fun introVersionComesFromInstalledBuild() {
+        host { SignInGate(onSignIn = { null }, offline = false, onLater = {}, updated = true) }
+        ui.onNodeWithTag("intro_version").assertTextEquals("גרסה ${BuildConfig.VERSION_NAME}")
+    }
+
+    @Test fun reviewIntroEdgesHaveActualHighContrastPixelsInBothThemes() {
+        var dark by mutableStateOf(false)
+        ui.setContent { KisTheme(darkOverride = dark) { SignInGate(onSignIn = { null }, offline = false, onLater = {}) } }
+        for (isDark in listOf(false, true)) {
+            ui.runOnIdle { dark = isDark }
+            ui.mainClock.advanceTimeBy(4_000)
+            ui.onNodeWithTag("intro_assistants").performScrollTo()
+            val edge = if (isDark) KisDark.lineStrong else KisLight.lineStrong
+            for (tag in listOf("intro_chip_ChatGPT", "intro_bubble_1800")) {
+                val path = "/tmp/kis-review-edge-$isDark-$tag.png"
+                ui.onNodeWithTag(tag).captureRoboImage(filePath = path)
+                val image = android.graphics.BitmapFactory.decodeFile(path)
+                assertTrue("visible outline on $tag", (0..3).any { x -> image.getPixel(x, image.height / 2) == edge.toArgb() })
+            }
+        }
+    }
+
+    @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
+    @Test fun launchIsANativeModalAndKeyboardFocusStaysInside() {
+        var backgroundClicks = 0
+        host {
+            androidx.compose.foundation.layout.Box {
+                KisButton("synthetic background", { backgroundClicks++ }, tag = "review_background")
+                KisLaunch(onDone = {})
+            }
+        }
+        ui.onNode(isDialog()).assertExists()
+        ui.onNodeWithTag("launch_next").assertIsFocused()
+        repeat(6) {
+            ui.onNode(isDialog()).performKeyInput { pressKey(androidx.compose.ui.input.key.Key.Tab) }
+            ui.onNodeWithTag("review_background").assertIsNotFocused()
+        }
+        assertEquals(0, backgroundClicks)
+        ui.onNodeWithTag("launch_next").performClick()
+        ui.onNodeWithTag("launch_first").assertIsFocused()
+        ui.onNodeWithTag("review_background").assertIsNotFocused()
+    }
+
+    @Test fun reviewControlsReach48dpAndStillRespond() {
+        var checked by mutableStateOf(false)
+        var currency by mutableStateOf("₪")
+        var theme by mutableStateOf(ThemeChoice.SYSTEM)
+        host {
+            androidx.compose.foundation.layout.Column {
+                KisSwitch(checked, { checked = it }, Modifier.testTag("review_switch"), "synthetic switch")
+                KisSegmented(ThemeChoice.entries.map { it to it.label }, theme, { theme = it }, tagPrefix = "review_theme")
+                CurrencyToggle(currency, { currency = it }, "review_currency")
+                KisChip("לא יודע", onClick = {}, tag = "review_unknown")
+            }
+        }
+        listOf("review_switch", "review_theme_SYSTEM", "review_theme_LIGHT", "review_theme_DARK",
+            "review_currency_₪", "review_currency_$", "review_unknown").forEach { tag ->
+            ui.onNodeWithTag(tag).assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+        }
+        ui.onNodeWithTag("review_switch").performClick()
+        ui.onNodeWithTag("review_currency_$").performClick()
+        ui.onNodeWithTag("review_theme_DARK").performClick()
+        assertTrue(checked)
+        assertEquals("$", currency)
+        assertEquals(ThemeChoice.DARK, theme)
+    }
+
+    @Test fun reviewClockDigitTargetsAre48dpWithoutOverlap() {
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00"),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        shot("review-clock-48dp")
+        listOf("start", "end").forEach { time ->
+            var right = 0.dp
+            for (i in 0..3) {
+                val node = ui.onNodeWithTag("clock_${time}_d$i", useUnmergedTree = true)
+                node.assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+                val bounds = node.getUnclippedBoundsInRoot()
+                assertTrue("digits cannot overlap", bounds.left >= right)
+                right = bounds.right
+            }
+            listOf(-15, 15).forEach { n -> ui.onNodeWithTag("nudge_${time}_$n").assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp) }
+        }
+        ui.onNodeWithTag("clock_start_d3", useUnmergedTree = true).performClick()
+        ui.onNodeWithTag("clock_start_d3", useUnmergedTree = true).assertIsSelected()
+    }
+
+    /**
+     * 2.4.1 RC: on a Pixel 2 sized phone (system bars taken off) the stacked clock cards took the whole page, the
+     * details scroller got no height and "הערה" could never be scrolled into view (the device UI test hung there).
+     */
+    @Test @Config(qualifiers = "w411dp-h659dp-xxhdpi") fun clockLeavesRoomForTheFormOnAPixel2SizedPhone() {
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00"),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        shot("review-clock-411x659")
+        ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(100.dp)
+        ui.onNodeWithTag("editor_note").performScrollTo().assertIsDisplayed().performClick()
+        ui.onNodeWithTag("notes_input").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
+    }
+
+    /** A 360dp phone (Galaxy S23 width) keeps each time on one row: 48dp digits and both nudges side by side. */
+    @Test @Config(qualifiers = "w360dp-h708dp-xxhdpi") fun clockTimesAreOneRowEachOnA360dpPhone() {
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00"),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        shot("review-clock-360x708")
+        listOf("start", "end").forEach { time ->
+            val digits = ui.onNodeWithTag("clock_${time}_d0", useUnmergedTree = true).assertWidthIsAtLeast(48.dp).getUnclippedBoundsInRoot()
+            val minus = ui.onNodeWithTag("nudge_${time}_-15").assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp).getUnclippedBoundsInRoot()
+            assertTrue("the nudges sit beside the digits, not under them", minus.top < digits.bottom)
+        }
+        ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(100.dp)
+    }
+
+    @Test fun knownZeroRateIsShownAndIsNotOfferedAsMissing() {
+        val entry = WorkEntry(id = 700, category = categories.first().name, date = day, isTimeRange = false,
+            hours = 2.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = true)
+        host { ShiftDetailContent(entry, categories, onPaid = {}, onEdit = {}, onShare = {}, onDelete = {}, onCompleteRate = {}, group = {}) }
+        ui.onNodeWithText("₪0 לשעה").assertExists()
+        ui.onNodeWithTag("detail_fill_rate").assertDoesNotExist()
+        ui.onNodeWithTag("detail_amount", useUnmergedTree = true).assertTextContains("₪0", substring = true)
+    }
+
+    @Test fun storageFailureIsVisibleBeforeTheAppShellExists() {
+        ui.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                KisTheme { SignInGate(onSignIn = { null }, offline = false, onLater = {}) }
+            }
+        }
+        ui.runOnIdle { WorkStorage.failed() }
+        try {
+            ui.onNodeWithText(WorkStorage.SAVE_FAILED).assertIsDisplayed()
+            assertEquals(LayoutDirection.Rtl, ui.onNodeWithText(WorkStorage.SAVE_FAILED).fetchSemanticsNode().layoutInfo.layoutDirection)
+            ui.onNodeWithText("אישור").performClick()
+            ui.onNodeWithText(WorkStorage.SAVE_FAILED).assertDoesNotExist()
+        } finally { WorkStorage.dismissFailure() }
     }
 }

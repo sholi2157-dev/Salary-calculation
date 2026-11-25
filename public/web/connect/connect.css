@@ -1,0 +1,13 @@
+/* /connect: letting an AI assistant in. The app's own tokens (kis.css). */
+.connect { display: grid; gap: 14px; padding-top: 28px; max-width: 480px; }
+.connect .err { color: var(--danger); min-height: 0; margin: 0; }
+.connect .err:empty { display: none; }
+.connect p { margin: 0; }
+.connect .ai-mark { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 18px; background: var(--ink); color: var(--on-ink); font: 700 20px/1 var(--display); }
+.connect .perms { display: grid; gap: 0; padding: 4px 16px; }
+.connect .perm { display: flex; align-items: center; gap: 12px; min-height: 64px; border-bottom: 1px solid var(--line); }
+.connect .perm:last-child { border-bottom: 0; }
+.connect .perm .switch[disabled] { opacity: .6; }
+.connect .safe { background: var(--sunk); border-radius: 16px; padding: 12px 14px; display: grid; gap: 6px; font-size: 14px; line-height: 20px; }
+.connect .code { font: 14px/20px ui-monospace, Menlo, monospace; background: var(--sunk); border-radius: 12px; padding: 10px 12px; overflow-wrap: anywhere; text-align: left; }
+.connect .link { justify-self: center; background: none; border: 0; color: var(--muted); text-decoration: underline; min-height: 44px; }

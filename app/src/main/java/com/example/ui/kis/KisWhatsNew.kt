@@ -41,6 +41,13 @@ object WhatsNew {
             "לחיצה ארוכה על האייקון במסך הבית פותחת ישר את \"הוספת משמרת\".",
             "בהגדרות, כרטיס ההתראות מראה בדיוק מה פועל: הכול, חלק או כלום.",
         ),
+        // 2.4.1: draft highlights, the owner approves the wording at publish (identical on the website, web/kis/whatsnew.js).
+        "2.4.1" to listOf(
+            "בטלפון מתקפל, כשפותחים אותו, הכול נראה כמו בטלפון רגיל, רק גדול ונוח יותר.",
+            "בהיסטוריה יש כפתור שיתוף ששולח בדיוק את המשמרות שמוצגות לפי הסינון או החיפוש.",
+            "דוחות לשיתוף קצרים וברורים יותר: מה שמשותף לכל המשמרות כתוב פעם אחת למעלה.",
+            "העתקה של משמרות נעשית עכשיו כטבלה מוכנה להדבקה ב-Excel.",
+        ),
     )
 
     /** "2.3.0-rc2" → "2.3.0". */
@@ -55,7 +62,7 @@ object WhatsNew {
         return if (fromUpdate) notes[key(versionName)]?.takeIf { it.isNotEmpty() } else null
     }
 
-    private fun prefs(context: Context) = context.getSharedPreferences("kis_whats_new", Context.MODE_PRIVATE)
+    private fun prefs(context: Context) = com.example.data.WorkStorage.preferences(context, "kis_whats_new")
 
     /** This version's highlights for the sheet. */
     data class Note(val version: String, val lines: List<String>)

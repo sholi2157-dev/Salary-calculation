@@ -121,12 +121,16 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 class MainActivity : ComponentActivity() {
-    private fun modelFor(uid: String?): WorkViewModel {
+    private fun modelFor(uid: String?): WorkViewModel? = try {
         val owner = if (BuildConfig.ACCOUNTS_ENABLED) com.example.data.WorkAccountBinding.scopeFor(this, uid) else com.example.data.WorkAccountScope(uid)
-        return androidx.lifecycle.ViewModelProvider(this, WorkViewModelFactory(application, owner))
+        androidx.lifecycle.ViewModelProvider(this, WorkViewModelFactory(application, owner))
             .get(owner.modelKey, WorkViewModel::class.java)
+    } catch (e: Exception) {
+        if (!com.example.data.WorkStorage.isStorageFailure(e)) throw e
+        com.example.data.WorkStorage.failed()
+        null
     }
-    private val viewModel: WorkViewModel
+    private val viewModel: WorkViewModel?
         get() = modelFor(com.example.api.AuthManager.currentUser.value?.uid)
 
     val intentActionFlow = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
@@ -178,14 +182,18 @@ class MainActivity : ComponentActivity() {
                     LocalLayoutDirection provides LayoutDirection.Rtl,
                     androidx.compose.foundation.LocalOverscrollConfiguration provides null
                 ) {
-                    Box(modifier = Modifier.fillMaxSize().background(colors.bg), contentAlignment = Alignment.TopCenter) {
+                    // The whole width at every size; each screen lays itself out for a phone, a cover screen or an unfolded one.
+                    com.example.ui.kis.KisFrame {
                         val session by com.example.api.AuthManager.currentUser.collectAsStateWithLifecycle()
                         // All remembered form/selection/AI review state is confined to this owner.
                         androidx.compose.runtime.key(session?.uid) {
-                            MainAppContent(
-                                viewModel = modelFor(session?.uid),
-                                modifier = Modifier.fillMaxSize().widthIn(max = 680.dp)
-                            )
+                            var attempt by remember { mutableIntStateOf(0) }
+                            val model = remember(attempt) { modelFor(session?.uid) }
+                            if (model != null) MainAppContent(
+                                viewModel = model, modifier = Modifier.fillMaxSize())
+                            else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                com.example.ui.kis.KisButton("לנסות שוב", { attempt++ }, Modifier.padding(24.dp), tag = "storage_startup_retry")
+                            }
                         }
                     }
                 }
@@ -195,7 +203,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        viewModel.performAutoBackup()
+        viewModel?.performAutoBackup()
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
@@ -209,7 +217,7 @@ class MainActivity : ComponentActivity() {
         intentActionFlow.value = intent?.action
         if (intent?.action == "com.example.ACTION_START_SHIFT") {
             // Starts the timer with the default workplace and its saved rate.
-            viewModel.startDefaultActiveShift()
+            viewModel?.startDefaultActiveShift()
             intentActionFlow.value = null
         }
     }
@@ -315,7 +323,7 @@ fun MainAppContent(
             modifier = Modifier.fillMaxSize().then(if (launching) Modifier.clearAndSetSemantics { } else Modifier)
         )
         // The launch no longer replays the tour: it opens once (a new installation, or a new account's first connect).
-        if (launching) com.example.ui.kis.KisLaunch(onDone = { onboardingStore.launched(); launching = false })
+        if (launching) com.example.ui.kis.KisLaunch(onDone = { if (onboardingStore.launched()) launching = false })
     }
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()

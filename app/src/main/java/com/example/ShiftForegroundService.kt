@@ -150,7 +150,9 @@ class ShiftForegroundService : Service() {
                 // Safely dismiss notification & stop service
                 stopForeground(true)
                 stopSelf()
-              } catch (_: Exception) {
+              } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+              catch (_: Exception) {
+                com.example.data.WorkStorage.failed()
                 finishing = false
                 startTimer() // Keep the persisted timer available for retry; never clear on failure.
               }

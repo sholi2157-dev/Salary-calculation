@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
  */
 class PlanSettings(context: Context) {
     private val app = context.applicationContext
-    private val prefs = context.applicationContext.getSharedPreferences("kis_plan", Context.MODE_PRIVATE)
+    private val prefs = com.example.data.WorkStorage.preferences(context, "kis_plan")
     var autoConfirm: Boolean
         get() = prefs.getBoolean("autoConfirm", true)
         set(v) { prefs.edit().putBoolean("autoConfirm", v).apply() }
