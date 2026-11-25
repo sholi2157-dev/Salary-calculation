@@ -1488,7 +1488,7 @@ class KisUiTest {
     @Test fun knownZeroRateIsShownAndIsNotOfferedAsMissing() {
         val entry = WorkEntry(id = 700, category = categories.first().name, date = day, isTimeRange = false,
             hours = 2.0, hourlyRate = 0.0, totalEarnings = 0.0, payKnown = true)
-        host { ShiftDetailContent(entry, categories, {}, {}, {}, {}, {}, {}, {}) }
+        host { ShiftDetailContent(entry, categories, onPaid = {}, onEdit = {}, onShare = {}, onDelete = {}, onCompleteRate = {}, group = {}) }
         ui.onNodeWithText("₪0 לשעה").assertExists()
         ui.onNodeWithTag("detail_fill_rate").assertDoesNotExist()
         ui.onNodeWithTag("detail_amount", useUnmergedTree = true).assertTextContains("₪0", substring = true)
