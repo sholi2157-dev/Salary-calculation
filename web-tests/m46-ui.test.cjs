@@ -18,7 +18,7 @@ test('places: the handle is a button and arrow keys move a place', () => {
 test('empty states: auto-record lives on the Work card, not in the series sheet (FB23-F4); no copy of 0 shifts', () => {
   assert.doesNotMatch(read('plans.js'), /data-testid="auto-confirm"/);
   assert.match(settings, /rowHtml\('רישום אוטומטי של משמרות קבועות'[^\n]*data-testid="auto-confirm"/);
-  assert.match(read('history.js'), /data-testid="history-copy" \$\{rows\.length \? '' : 'disabled'\}/);
+  assert.match(read('history.js'), /data-testid="history-share" \$\{rows\.length \? '' : 'disabled'\}/);
 });
 test('editor breaks wrap; one page width on a computer; message action is not the brand colour', () => {
   assert.match(read('editor.js'), /<b class="label">הפסקה<\/b><div class="chips wrap">/);

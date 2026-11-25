@@ -73,7 +73,7 @@ const server = http.createServer((q, r) => {
   await page.click('[data-testid=history-search]');
   await page.fill('input[type=search]', 'zzzz-nothing');
   await page.waitForTimeout(400);
-  assert.equal(await page.locator('[data-testid=history-copy]').isDisabled(), true, 'copy is disabled for 0 shifts');
+  assert.equal(await page.locator('[data-testid=history-share]').isDisabled(), true, 'share is disabled for 0 shifts');
   assert.deepEqual(errors, []);
   await ctx.close();
   // ---- a computer ----

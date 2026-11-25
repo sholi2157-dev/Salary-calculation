@@ -17,14 +17,21 @@ try{for(const supported of [false,true]){
  const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(process.env.PUBLIC_SITE_URL || `http://127.0.0.1:${server.address().port}`);await page.waitForSelector('[data-testid=home-hero]');
  const before=await page.evaluate(()=>localStorage.getItem('work_complete_backup'));
  await page.evaluate(()=>Kis.openDetail('a'));
- await page.click('[data-testid=detail-reports]');await page.click('[data-testid=report-mine-copy]');assert.match(await page.evaluate(()=>copied.at(-1)),/^עבודה: מסעדה/);assert.doesNotMatch(await page.evaluate(()=>copied.at(-1)),/היי/);
+ await page.click('[data-testid=detail-reports]');assert.equal(await page.locator('[data-testid=report-mine-copy]').count(),0,'no text copy (owner 2026-11-24)');await page.evaluate(()=>KisUi.closeTopSheet());
  await page.click('[data-testid=detail-reports]');await page.click('[data-testid=report-mine]');assert.match(await page.evaluate(()=>shared.at(-1).text),/^היי, סיכמתי פה/);
  assert.doesNotMatch(await page.evaluate(()=>shared.at(-1).text),/דני|יוסי/);
  await page.click('[data-testid=detail-reports]');await page.click('[data-testid=report-employer]');const employer=await page.evaluate(()=>shared.at(-1).text);assert.match(employer,/₪780.00/);assert.doesNotMatch(employer,/175.00|172.00|עמלה/);
  await page.click('[data-testid=worker-more-0]');await page.click('[data-testid=worker-share]');const worker=await page.evaluate(()=>shared.at(-1).text);assert.match(worker,/היי דני/);assert.match(worker,/₪175.00/);assert.doesNotMatch(worker,/יוסי|780.00|300.00/);
  await page.screenshot({path:path.join(out,`sharing-group-${supported}.png`)});
- await page.evaluate(()=>KisUi.closeTopSheet());await page.click('[data-testid=tab-history]');await page.click('[data-testid=history-search]');await page.fill('[data-testid=history-search-input]','דני');
- await page.click('[data-testid=history-copy]');await page.click('[data-testid=copy-whatsapp]');const searched=await page.evaluate(()=>copied.at(-1));assert.match(searched,/עובד: דני/);assert.match(searched,/₪175.00/);assert.doesNotMatch(searched,/₪200.00|יוסי/);
+ await page.evaluate(()=>KisUi.closeTopSheet());await page.click('[data-testid=tab-history]');
+ // Owner 2026-11-24: the title and every fixed button (search, filter, copy, share) on one line.
+ const row=await page.evaluate(()=>['.page-title','[data-testid=history-search]','[data-testid=history-filters]','[data-testid=history-share]'].map(q=>document.querySelector(q).getBoundingClientRect()));
+ assert.ok(row.every(r=>r.top<row[0].bottom&&r.bottom>row[0].top&&r.left>=0),'History buttons share the title line');await page.click('[data-testid=history-search]');await page.fill('[data-testid=history-search-input]','דני');
+ // Owner 2026-11-25: copying lives only in the long-press selection, as an Excel table.
+ assert.equal(await page.locator('[data-testid=history-copy]').count(),0);
+ // The summary card shares exactly what the search shows: a worker's name gives that worker's report.
+ await page.click('[data-testid=history-share]');const searched=await page.evaluate(()=>shared.at(-1).text);assert.match(searched,/^היי דני/);assert.match(searched,/₪175.00/);assert.doesNotMatch(searched,/₪200.00|יוסי/);
+ await page.locator('[data-testid=shift-a]').dispatchEvent('contextmenu');await page.click('[data-s=copy]');assert.match(await page.evaluate(()=>copied.at(-1)),/^עבודה\tתאריך/);
  await page.locator('[data-testid=shift-a]').dispatchEvent('contextmenu');await page.click('[data-s=share]');assert.match(await page.evaluate(()=>shared.at(-1).text),/^היי דני/);assert.equal(await page.locator('[data-testid=selection-bar]').count(),0);
  await page.evaluate(()=>KisSummaryUi.story(Kis,String(new Date().getFullYear())));
  // Any slide goes out as a picture of itself, with no text and no list of shifts.

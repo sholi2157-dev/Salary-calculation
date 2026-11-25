@@ -527,8 +527,23 @@ input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webki
 html { overflow-x: clip; }
 .nav { max-width: calc(100vw - 16px); }
 .nav button { min-width: 0; padding-inline: clamp(8px, 3vw, 16px); }
-.title-row:has(.history-tool) { flex-wrap: wrap; }
 .title-row:has(.history-tool) .page-title { flex: 1 0 auto; }
+/* Owner 2026-11-24: History's fixed buttons (search, filter, copy, share) stay on the title's line at every phone width.
+   Below a wide screen the filter button shows its icon and count only; its words stay for screen readers. */
+.title-row:has(.history-tool) { flex-wrap: nowrap; }
+@media (max-width: 479px) {
+  .title-row:has(.history-tool) { gap: 4px; }
+  .history-tool { width: 40px; height: 40px; }
+  [data-testid="history-filters"] { padding-inline: 10px; min-height: 40px; }
+  [data-testid="history-filters"] .chip-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+/* A narrow cover screen: the filter button is a square icon (it still looks selected while a filter is on), a smaller title. */
+@media (max-width: 359px) {
+  [data-testid="history-filters"] { width: 40px; padding: 0; justify-content: center; }
+  [data-testid="history-filters"] > span[aria-hidden] { display: none; }
+  .title-row:has(.history-tool) .page-title { font-size: 1.5rem; }
+}
+@media (max-width: 309px) { .history-tool, [data-testid="history-filters"] { width: 36px; height: 36px; min-height: 36px; } .title-row:has(.history-tool) { gap: 3px; } }
 .shift .top { flex-wrap: wrap; row-gap: 2px; }
 .shift .top .label { white-space: nowrap; }
 /* A computer: the side bar carries the app's logo and name, so Home's header and the Settings footer don't repeat them
