@@ -87,12 +87,9 @@ fun KisHome(
     val hoursByCat = remember(week) { week.groupBy { it.category }.mapValues { (_, l) -> l.sumOf { it.hours } }.toList().sortedByDescending { it.second } }
     Box(Modifier.fillMaxSize()) {
         KisGlow(Modifier.fillMaxSize())
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = kisGutter())
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 16.dp)
             .padding(top = 12.dp, bottom = bottomInset).testTag("dashboard_scroll_container")) {
             Hello(unread, onBell)
-            // A wide screen (an unfolded phone, a tablet) uses its width: this week and "now" on one side, what comes next
-            // and the latest shifts on the other. A phone keeps one column.
-            val summary: @Composable () -> Unit = {
             Hero(week, today, done, hoursByCat, categories, onPending,
                 plannedThisWeek = remember(plans, now) { val from = com.example.domain.V2Plan.dateOf(KisHistoryLogic.weekStart(now)); val to = isoDayPlus(KisHistoryLogic.weekStart(now), 6)
                     plans.count { it.status == com.example.domain.V2Plan.Status.PLANNED && it.date in from..to } })
@@ -104,8 +101,6 @@ fun KisHome(
                 RecapEntry(if (scope.length == 4) "השנה $scope שלך בכיס" else "${KisFormat.MONTHS[(monthKeyOf(scope) ?: 0) % 12]} שלך בכיס",
                     if (scope.length == 4) "הסיכום השנתי מוכן" else "הסיכום החודשי מוכן", "home_recap_$scope", Modifier.padding(top = 12.dp), soft = true) { onRecap(scope) }
             }
-            }
-            val lists: @Composable () -> Unit = {
             val upcoming = remember(entries, now) { entries.filter { KisHistoryLogic.upcoming(it, now) } }
             NextUp(plans, upcoming, categories, planActions, onOpen, onAllPlans)
             // A shift already in "הבא בתור" is not shown again under "אחרונות" (audit M-46 / R-28); the next one fills its place.
@@ -120,11 +115,6 @@ fun KisHome(
                 Wallet(month, categories, onOpen)
             }
             if (entries.isEmpty()) EmptyHome()
-            }
-            if (kisWide()) Row(horizontalArrangement = Arrangement.spacedBy(kisGutter())) {
-                Column(Modifier.weight(1f).testTag("home_column_summary")) { summary() }
-                Column(Modifier.weight(1f).testTag("home_column_lists")) { lists() }
-            } else { summary(); lists() }
         }
     }
 }

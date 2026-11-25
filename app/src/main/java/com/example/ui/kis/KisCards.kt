@@ -44,18 +44,21 @@ fun ShiftCard(entry: WorkEntry, categories: List<WorkCategory>, onClick: () -> U
         val planned = KisHistoryLogic.upcoming(entry)
         Avatar(entry.category, workplace, planned = planned)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            // The date and its tags wrap to a second line on a narrow screen instead of the date being cut off.
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(dayLabel(entry.date), style = KisType.label.copy(fontSize = 15.sp), color = c.ink, maxLines = 2, modifier = Modifier.align(Alignment.CenterVertically))
-                if (planned) Tag("מתוכנן", modifier = Modifier.align(Alignment.CenterVertically).testTag("planned_tag_${entry.id}"))
-                if (entry.autoConfirmed) Tag("אוטו׳", modifier = Modifier.align(Alignment.CenterVertically))
-                if (!entry.isPaid && !planned) Tag("לא שולם", modifier = Modifier.align(Alignment.CenterVertically))
-            }
+            Text(dayLabel(entry.date), style = KisType.label.copy(fontSize = 15.sp), color = c.ink, maxLines = 2)
             Text(subtitle(entry), style = KisType.caption, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (pay != null) MoneyText(pay, entry.currency, KisType.amount.copy(fontSize = 19.sp), modifier = Modifier.testTag("entry_amount_${entry.id}"),
-            color = if (planned) c.muted else androidx.compose.ui.graphics.Color.Unspecified)
-        else Tag(WorkPay.missingLabel(entry), warn = true, modifier = Modifier.testTag("entry_amount_${entry.id}"))
+        // The amount with its tags under it ("לא שולם", "מתוכנן"): the same card on every phone, a long Hebrew date
+        // never pushes a tag onto a line of its own (as on the web).
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (pay != null) MoneyText(pay, entry.currency, KisType.amount.copy(fontSize = 19.sp), modifier = Modifier.testTag("entry_amount_${entry.id}"),
+                color = if (planned) c.muted else androidx.compose.ui.graphics.Color.Unspecified)
+            else Tag(WorkPay.missingLabel(entry), warn = true, modifier = Modifier.testTag("entry_amount_${entry.id}"))
+            if (planned || entry.autoConfirmed || !entry.isPaid) Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (planned) Tag("מתוכנן", modifier = Modifier.testTag("planned_tag_${entry.id}"))
+                if (entry.autoConfirmed) Tag("אוטו׳")
+                if (!entry.isPaid && !planned) Tag("לא שולם")
+            }
+        }
     }
 }
 

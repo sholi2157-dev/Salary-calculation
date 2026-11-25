@@ -97,20 +97,42 @@ val KisMinTouch: Dp = 44.dp
 fun kisNarrow(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 360
 
 /**
- * A wide screen (Galaxy Z Fold unfolded ~690–880dp, a tablet): the app uses the whole width and lays out in two
- * columns where there are two kinds of content (Home) or many cards (History), instead of one stretched column.
+ * How much an unfolded folding phone or an upright tablet (600dp and wider) scales the phone layout, the same steps as
+ * the web: the app keeps its phone design and fills the screen with it, instead of stretching or splitting it.
+ */
+fun kisZoom(screenWidthDp: Int): Float = when {
+    screenWidthDp >= 1024 -> 1f
+    screenWidthDp >= 840 -> 1.45f
+    screenWidthDp >= 760 -> 1.32f
+    screenWidthDp >= 680 -> 1.2f
+    screenWidthDp >= 600 -> 1.1f
+    else -> 1f
+}
+
+/**
+ * The app's frame: the page colour edge to edge. On a phone nothing changes; on an unfolded screen everything inside
+ * is drawn [kisZoom] times larger (density and the screen's size in dp follow), so it is the phone layout, enlarged.
  */
 @Composable
-fun kisWide(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 600
-
-/** The page's side margin: 16dp on a phone, 24dp on a wide screen. */
-@Composable
-fun kisGutter(): Dp = if (kisWide()) 24.dp else 16.dp
-
-/** The app's frame: the page colour edge to edge, the content across the whole width at every size. */
-@Composable
 fun KisFrame(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Box(modifier.fillMaxSize().background(Kis.colors.bg).testTag("kis_frame")) { content() }
+    val config = androidx.compose.ui.platform.LocalConfiguration.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val zoom = kisZoom(config.screenWidthDp)
+    Box(modifier.fillMaxSize().background(Kis.colors.bg).testTag("kis_frame")) {
+        if (zoom == 1f) content()
+        else {
+            val scaled = remember(config, zoom) {
+                android.content.res.Configuration(config).apply {
+                    screenWidthDp = (config.screenWidthDp / zoom).toInt(); screenHeightDp = (config.screenHeightDp / zoom).toInt()
+                    smallestScreenWidthDp = (config.smallestScreenWidthDp / zoom).toInt()
+                }
+            }
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density * zoom, density.fontScale),
+                androidx.compose.ui.platform.LocalConfiguration provides scaled,
+            ) { content() }
+        }
+    }
 }
 
 object KisFormat {

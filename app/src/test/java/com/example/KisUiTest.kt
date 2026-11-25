@@ -1260,8 +1260,8 @@ class KisUiTest {
     }
 
     // ---- Folding phones (Galaxy Z Fold): a 280–344dp cover screen and a ~690–880dp unfolded screen. Folded, nothing is
-    // cut or pushed past the edge ("היסטוריה" stays one word on one line); unfolded, the app uses the whole width, with
-    // Home and History in two columns. Screenshots: /tmp/kis-fold-*.png.
+    // cut or pushed past the edge ("היסטוריה" stays one word on one line); unfolded, the app is the phone layout scaled up
+    // to fill the screen (as on the web). Screenshots: /tmp/kis-fold-*.png.
     private fun foldSeed() {
         runBlocking(kotlinx.coroutines.Dispatchers.IO) {
             val dayMs = 86_400_000L
@@ -1329,28 +1329,26 @@ class KisUiTest {
     @Test @Config(qualifiers = "w280dp-h653dp-xhdpi") fun coverScreen280KeepsEveryWordWhole() = foldCover(false, "280-light")
     @Test @Config(qualifiers = "w344dp-h882dp-xhdpi") fun coverScreen344KeepsEveryWordWholeDark() = foldCover(true, "344-dark")
 
-    private fun foldOpen(dark: Boolean, name: String) {
+    private fun foldOpen(dark: Boolean, name: String, zoom: Float) {
         foldShow(dark)
+        assertEquals(zoom, kisZoom(foldRootWidth.value.toInt()), 0.001f)
         // The whole width, no empty bands at the sides.
         assertEquals(foldRootWidth.value, ui.onNodeWithTag("kis_frame").getBoundsInRoot().width.value, 1f)
         foldInside("navigation", ui.onAllNodesWithTag("bottom_navigation"))
-        // Home: two columns side by side, each about half the screen.
-        val summary = ui.onNodeWithTag("home_column_summary").getBoundsInRoot()
-        val lists = ui.onNodeWithTag("home_column_lists").getBoundsInRoot()
-        assertTrue("Home's columns sit side by side ($summary, $lists)", summary.right <= lists.left + 1.dp || lists.right <= summary.left + 1.dp)
-        assertTrue("each Home column is about half the width", summary.width > foldRootWidth * 0.4f && lists.width > foldRootWidth * 0.4f)
         foldShot("$name-home")
         ui.onNodeWithTag("settings_button").performClick()
         ui.waitForIdle()
         foldShot("$name-settings")
         ui.onNodeWithTag("tab_1").performClick()
         ui.waitForIdle()
-        // History: two cards per row.
+        // The phone's History, larger: one card per row across the screen, the title scaled with everything else.
         val rootPx = with(ui.density) { foldRootWidth.toPx() }
         val cards = ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")).fetchSemanticsNodes().map { it.boundsInRoot }.filter { it.width > rootPx * 0.3f }
-        assertTrue("History shows cards", cards.size >= 2)
-        assertTrue("History's cards are about half the width", cards.all { it.width < rootPx * 0.55f })
-        assertEquals("History's cards are in two columns", 2, cards.map { Math.round(it.left / 20f) }.distinct().size)
+        assertTrue("History shows cards", cards.isNotEmpty())
+        assertEquals("one card per row", 1, cards.map { Math.round(it.left / 20f) }.distinct().size)
+        assertTrue("cards fill the width", cards.all { it.width > rootPx * 0.85f })
+        assertTrue("the title is scaled up (${ui.onNodeWithTag("history_title").getBoundsInRoot().height})",
+            ui.onNodeWithTag("history_title").getBoundsInRoot().height > 36.dp * zoom * 0.95f)
         foldInside("history cards", ui.onAllNodes(hasTestTagStartingWith("work_entry_card_")))
         foldShot("$name-history")
         ui.onNodeWithTag("add_entry_button").performClick()
@@ -1358,8 +1356,8 @@ class KisUiTest {
         foldShot("$name-editor")
     }
 
-    @Test @Config(qualifiers = "w690dp-h829dp-xhdpi") fun unfolded690UsesTheWholeWidth() = foldOpen(false, "690-light")
-    @Test @Config(qualifiers = "w884dp-h1104dp-xhdpi") fun unfolded884UsesTheWholeWidthDark() = foldOpen(true, "884-dark")
+    @Test @Config(qualifiers = "w690dp-h829dp-xhdpi") fun unfolded690IsThePhoneLayoutScaled() = foldOpen(false, "690-light", 1.2f)
+    @Test @Config(qualifiers = "w884dp-h1104dp-xhdpi") fun unfolded884IsThePhoneLayoutScaledDark() = foldOpen(true, "884-dark", 1.45f)
 
     /** A normal phone is unchanged: the column is the whole screen. */
     @Test @Config(qualifiers = "w360dp-h800dp-xhdpi") fun phone360UsesTheWholeWidth() {

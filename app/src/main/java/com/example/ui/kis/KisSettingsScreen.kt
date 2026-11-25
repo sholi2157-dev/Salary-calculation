@@ -101,14 +101,14 @@ fun KisSettingsPage(viewModel: WorkViewModel, categories: List<WorkCategory>, on
     Box(Modifier.fillMaxSize().background(c.bg)) {
     KisGlow(Modifier.fillMaxSize())
     Column(Modifier.fillMaxSize().testTag("settings_root")) {
-        Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = kisGutter()).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
+        Text("הגדרות", style = KisType.page, color = c.ink, modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
         // With the keyboard open the floating navigation is covered anyway: pad for the keyboard only, not both.
         val imeOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
         // The scroll area ends above the floating navigation, so no row can sit (and be tapped) under it.
         // One scroll area for every card: rebuilding it on each change left the device never settling after the
         // feedback field had been used.
         val scroll = rememberScrollState()
-        Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(scroll).padding(horizontal = kisGutter()).padding(bottom = 8.dp).imePadding()) {
+        Column(Modifier.weight(1f).padding(bottom = if (imeOpen) 0.dp else bottomInset).verticalScroll(scroll).padding(horizontal = 16.dp).padding(bottom = 8.dp).imePadding()) {
             Spacer(Modifier.height(14.dp))
             // First, so a problem can be reported without scrolling past everything else. Opening the card shows the
             // form itself (no extra row to tap); inside a bottom sheet its multi-line field never let the device settle after Enter.
