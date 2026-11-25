@@ -1493,12 +1493,23 @@ class KisUiTest {
         host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00"),
             null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
         shot("review-clock-411x659")
-        ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(120.dp)
+        ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(100.dp)
         ui.onNodeWithTag("editor_note").performScrollTo().assertIsDisplayed().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
+    }
+
+    /** A 360dp phone (Galaxy S23 width) keeps each time on one row: 48dp digits and both nudges side by side. */
+    @Test @Config(qualifiers = "w360dp-h708dp-xxhdpi") fun clockTimesAreOneRowEachOnA360dpPhone() {
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00"),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        shot("review-clock-360x708")
         listOf("start", "end").forEach { time ->
-            listOf(-15, 15).forEach { n -> ui.onNodeWithTag("nudge_${time}_$n").assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp) }
+            val digits = ui.onNodeWithTag("clock_${time}_d0", useUnmergedTree = true).assertWidthIsAtLeast(48.dp).getUnclippedBoundsInRoot()
+            val minus = ui.onNodeWithTag("nudge_${time}_-15").assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp).getUnclippedBoundsInRoot()
+            assertTrue("the nudges sit beside the digits, not under them", minus.top < digits.bottom)
         }
+        ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(100.dp)
     }
 
     @Test fun knownZeroRateIsShownAndIsNotOfferedAsMissing() {

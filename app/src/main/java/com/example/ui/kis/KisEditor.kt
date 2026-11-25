@@ -293,9 +293,14 @@ fun KisEditorPage(
     KisGlow(Modifier.fillMaxSize(), if (c.dark) null else accent)
     if (!aiMode) KeySink(target, focusAsk, pad, onFocus = { sinkFocused = it }, onKey = ::key,
         onNext = { open(KeyTarget.END) }, onDone = ::done)
-    Column(Modifier.fillMaxSize().imePadding().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
+    BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
+    // A short screen (a Pixel 2, a phone with a large display size): the clock, ruler and places are capped so the
+    // form below keeps at least a usable strip and the save bar, and they scroll on their own instead (2.4.1 RC).
+    // While a value is typed the top keeps its full height: the clock must stay in view above the keyboard.
+    val topMax = if (pad || typingText) androidx.compose.ui.unit.Dp.Infinity else maxOf(maxHeight - 200.dp, 260.dp)
+    Column(Modifier.fillMaxSize().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
         // ---------------- top ----------------
-        Column(Modifier.fillMaxWidth()
+        Column(Modifier.fillMaxWidth().heightIn(max = topMax).verticalScroll(rememberScrollState()).testTag("editor_top")
             .statusBarsPadding().padding(horizontal = 16.dp).padding(top = 10.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TopPill(if (d.editing) "סגירה" else "ביטול", onTop, tag = "editor_close") { close() }
@@ -456,6 +461,7 @@ fun KisEditorPage(
             check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatPreview?.created?.isNotEmpty() == true), ::save, refused)
     }
     }
+    }
 
     if (confirmLeave) KisConfirmSheet(
         title = if (d.editing) "לצאת בלי לשמור את השינויים?" else "לצאת בלי לשמור את המשמרת?",
@@ -611,10 +617,11 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
         val sideBySide = maxWidth >= 500.dp
         // A portrait phone stacks the two times as one compact row each (label and digits, then −15/+15 beside them),
         // so the clock does not take the height of two full cards and the form below keeps its room (2.4.1).
-        // Only a narrow screen (a folding phone's cover) puts the nudges under the digits.
-        val nudgesBeside = !sideBySide && maxWidth >= 340.dp
+        // 360dp (a Galaxy S23) fits: 4 × 48dp digits and two 48dp nudges in one row. Only a narrower screen (a folding
+        // phone's cover) puts the nudges under the digits.
+        val nudgesBeside = !sideBySide && maxWidth >= 320.dp
         @Composable fun nudges(label: String, t: KeyTarget, modifier: Modifier, fill: Boolean) {
-            Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(modifier, horizontalArrangement = Arrangement.spacedBy(if (fill) 6.dp else 4.dp)) {
                 listOf(-15, 15).forEach { n ->
                     Box((if (fill) Modifier.weight(1f) else Modifier.width(KisMinTouch)).heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
                         .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(8.dp)))
@@ -636,13 +643,13 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
             val box = modifier.clip(shape)
                 .background(when { lifted -> if (c.dark) ink.copy(alpha = 0.10f) else c.surface; chosen -> if (c.dark) ink.copy(alpha = 0.16f) else c.surface.copy(alpha = 0.7f); else -> Color.Transparent })
                 .then(if (lifted) Modifier.border(1.5.dp, accent, shape) else Modifier)
-                .kisClick { onOpen(t, null) }.semantics { selected = lifted }.testTag(tag).padding(horizontal = 8.dp, vertical = 6.dp)
+                .kisClick { onOpen(t, null) }.semantics { selected = lifted }.testTag(tag).padding(horizontal = if (nudgesBeside) 6.dp else 8.dp, vertical = 6.dp)
             val showNudges = onNudge != null && !empty
             @Composable fun time() = Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(label, color = ink.copy(alpha = if (c.dark) 0.85f else 0.7f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
                 DigitClock(value, label, style, ink.copy(alpha = if (empty && edit == null) 0.45f else 1f), ink, accent, edit, tag) { i -> onOpen(t, if (empty) null else i) }
             }
-            if (nudgesBeside) Row(box, verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (nudgesBeside) Row(box, verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 time()
                 Spacer(Modifier.weight(1f))
                 if (showNudges) nudges(label, t, Modifier, fill = false)
