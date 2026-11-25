@@ -20,7 +20,7 @@ const tid = t => `[data-testid="${t}"]`;
     await ctx.addInitScript(() => {
       const row = { category: 'בדיקה', date: Date.now(), createdAt: Date.now(), isTimeRange: false, hours: 2, hourlyRate: 0, totalEarnings: 0, currency: '₪', isPaid: false, notes: '', isGroupShift: false, groupWorkersJson: '', startTime: null, endTime: null };
       localStorage.setItem('work_complete_backup', JSON.stringify({ entries: [{ ...row, id: 'known-zero', payKnown: true }, { ...row, id: 'missing', payKnown: false }], categories: [{ name: 'בדיקה', defaultRate: 0 }], workers: [] }));
-      localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.1' })); localStorage.setItem('kis_signin_skip_v1', '1');
+      localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.2' })); localStorage.setItem('kis_signin_skip_v1', '1');
     });
     const page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.goto(`http://127.0.0.1:${server.address().port}`);

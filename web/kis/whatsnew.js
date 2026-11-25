@@ -7,7 +7,7 @@
 (function (root) {
 'use strict';
 /** This site's release (bump at publish, with the Android versionName). */
-const VERSION = '2.4.1';
+const VERSION = '2.4.2';
 // 2.3.0: placeholder draft; the final wording may be replaced at publish time. 3–5 short lines, features only.
 const NOTES = {
   '2.3.0': [
@@ -34,6 +34,10 @@ const NOTES = {
     'בהיסטוריה יש כפתור שיתוף ששולח בדיוק את המשמרות שמוצגות לפי הסינון או החיפוש.',
     'דוחות לשיתוף קצרים וברורים יותר: מה שמשותף לכל המשמרות כתוב פעם אחת למעלה.',
     'העתקה של משמרות נעשית עכשיו כטבלה מוכנה להדבקה ב-Excel.',
+  ],
+  // 2.4.2: draft line, the owner approves the wording at publish (identical on Android, KisWhatsNew.kt).
+  '2.4.2': [
+    'במשמרת חדשה, שעת ההתחלה ושעת הסיום שוב מופיעות אחת ליד השנייה, כמו קודם.',
   ],
 };
 const KEY = 'whatsNewSeen';

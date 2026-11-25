@@ -39,8 +39,7 @@ test('2.4.0: exactly the three agreed highlights, the same lines as Android', ()
   const kt = path.join(__dirname, '..', 'app', 'src', 'main', 'java', 'com', 'example', 'ui', 'kis', 'KisWhatsNew.kt');
   if (fs.existsSync(kt)) { const src = fs.readFileSync(kt, 'utf8'); for (const line of lines) assert.ok(src.includes(line.replace(/"/g, '\\"')), 'Android has: ' + line); }
 });
-test('2.4.1: this site is 2.4.1 with its four highlights, the same lines as Android, ', () => {
-  assert.equal(W.VERSION, '2.4.1');
+test('2.4.1: four highlights, the same lines as Android, ', () => {
   const lines = W.NOTES['2.4.1'];
   assert.deepEqual(lines, [
     'בטלפון מתקפל, כשפותחים אותו, הכול נראה כמו בטלפון רגיל, רק גדול ונוח יותר.',
@@ -52,4 +51,11 @@ test('2.4.1: this site is 2.4.1 with its four highlights, the same lines as Andr
   // The welcome label follows VERSION (rendered check in browser-tests/signin-modal).
   const kt = path.join(__dirname, '..', 'app', 'src', 'main', 'java', 'com', 'example', 'ui', 'kis', 'KisWhatsNew.kt');
   if (fs.existsSync(kt)) { const src = fs.readFileSync(kt, 'utf8'); for (const line of lines) assert.ok(src.includes(line.replace(/"/g, '\\"')), 'Android has: ' + line); }
+});
+test('2.4.2: this site is 2.4.2 with its one highlight, the same line as Android', () => {
+  assert.equal(W.VERSION, '2.4.2');
+  assert.deepEqual(W.NOTES['2.4.2'], ['במשמרת חדשה, שעת ההתחלה ושעת הסיום שוב מופיעות אחת ליד השנייה, כמו קודם.']);
+  for (const line of W.NOTES['2.4.2']) assert.doesNotMatch(line, /תקלה|באג|תיקון/);
+  const kt = path.join(__dirname, '..', 'app', 'src', 'main', 'java', 'com', 'example', 'ui', 'kis', 'KisWhatsNew.kt');
+  if (fs.existsSync(kt)) { const src = fs.readFileSync(kt, 'utf8'); for (const line of W.NOTES['2.4.2']) assert.ok(src.includes(line), 'Android has: ' + line); }
 });

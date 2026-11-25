@@ -230,18 +230,18 @@ button { cursor: pointer; }
 .places button { min-height: 44px; border-radius: 99px; border: 1.5px solid color-mix(in srgb, var(--ink) 25%, transparent); background: color-mix(in srgb, var(--surface) 60%, transparent);
   padding: 0 14px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; }
 .places button[aria-pressed="true"] { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
-.clock-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
-/* Four separate 44px digits cannot fit twice across a phone. Wrap the time cards instead of overlapping hit areas. */
-.clock-row > .time-box { flex-basis: 210px; }
+/* Start and end side by side, as in 2.4.0 (owner 2026-11-25: the wrapped cards of 2.4.1 looked bad). */
+.clock-row { display: flex; align-items: stretch; gap: 10px; }
 .time-box { flex: 1; border: 1.5px solid transparent; border-radius: 16px; background: color-mix(in srgb, var(--tile) 60%, transparent); padding: 10px 14px; text-align: start; display: grid; gap: 2px; cursor: pointer; }
 /* The time being typed: a lifted card with the place's colour on its edge. */
 .time-box.on { background: var(--tile); border-color: var(--acc); }
-.time-box b { font: 2.75rem/3rem var(--display); direction: ltr; text-align: end; display: flex; width: max-content; max-width: 100%; justify-self: end; justify-content: flex-end; align-items: center; border-radius: 12px; }
+.time-box b { font: 2.75rem/3rem var(--display); direction: ltr; text-align: end; display: flex; justify-content: flex-end; align-items: center; border-radius: 12px; }
 .time-box b i { font-style: normal; }
 .time-box b.blank { color: var(--muted); }
 /* All selected (typing starts over), or one digit marked with the place's colour (the next key replaces it). */
 .time-box b.all { background: color-mix(in srgb, var(--acc) 20%, transparent); }
-.time-box b button { border: 0; background: none; font: inherit; color: inherit; padding: 0 1px; min-width: 44px; min-height: 48px; border-radius: 8px; cursor: pointer; }
+/* Each digit is 48px tall to tap; its width stays the digit's own so both times fit one row. A tap on the time selects all of it. */
+.time-box b button { border: 0; background: none; font: inherit; color: inherit; padding: 0 1px; min-width: .62em; min-height: 48px; border-radius: 8px; cursor: pointer; }
 .time-box b button[aria-pressed="true"] { background: color-mix(in srgb, var(--acc) 20%, transparent); box-shadow: inset 0 -3px 0 var(--acc); }
 @media (hover: hover) { .time-box b button:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); } }
 .time-box .nudges button { min-height: 44px; font-size: 0.875rem; }
