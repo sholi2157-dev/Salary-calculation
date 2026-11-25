@@ -349,8 +349,14 @@ class KisUiTest {
         ui.onNodeWithTag("sort_ADDED").performClick()
         ui.onNodeWithTag("filters_apply").performClick()
         ui.onNodeWithTag("history_scope").assertTextContains("לפי סדר ההוספה", substring = true)
-        ui.onNodeWithTag("copy_menu_btn").performClick()
-        ui.onNodeWithText("Excel (טבלה)").assertExists()
+        // Copying lives only in the long-press selection, as an Excel table (owner 2026-11-25).
+        ui.onNodeWithTag("copy_menu_btn").assertDoesNotExist()
+        // Owner 2026-11-24: every fixed button on the title's line, the title in one piece.
+        val titleBox = ui.onNodeWithTag("history_title").getUnclippedBoundsInRoot()
+        listOf("history_search_button", "history_filters", "history_share").forEach { tag ->
+            val b = ui.onNodeWithTag(tag).assertIsDisplayed().getUnclippedBoundsInRoot()
+            assertTrue("$tag on the title line", b.top < titleBox.bottom && b.bottom > titleBox.top)
+        }
     }
 
     @Test fun longPressForgetsASavedWorkerButNotHistory() {
@@ -438,17 +444,18 @@ class KisUiTest {
     private fun detailActions(dark: Boolean) {
         val entry = WorkEntry(id = 71, category = "מסעדה", date = day, isTimeRange = true, startTime = "22:00", endTime = "06:00", hours = 7.5, hourlyRate = 45.75,
             totalEarnings = 343.12, bonus = 0.0, currency = "$", notes = "לילה עם הפסקה")
-        var paid = 0; var edited = 0; var shared = 0; var copied = 0; var deleted = 0
+        var paid = 0; var edited = 0; var shared = 0; var deleted = 0
         host(dark) {
-            ShiftDetailContent(entry, categories, onPaid = { paid++ }, onEdit = { edited++ }, onShare = { shared++ }, onCopy = { copied++ }, onDelete = { deleted++ }, onCompleteRate = {}, group = {})
+            ShiftDetailContent(entry, categories, onPaid = { paid++ }, onEdit = { edited++ }, onShare = { shared++ }, onDelete = { deleted++ }, onCompleteRate = {}, group = {})
         }
         ui.onNodeWithTag("detail_amount", useUnmergedTree = true).assertTextEquals("$343.12")
         ui.onNodeWithTag("detail_hours", useUnmergedTree = true).assertTextContains("למחרת", substring = true)
-        val tags = listOf("edit_entry_btn_71", "share_entry_btn_71", "copy_entry_btn_71", "delete_entry_btn_71")
+        val tags = listOf("edit_entry_btn_71", "share_entry_btn_71", "delete_entry_btn_71")
         val bounds = tags.map { ui.onNodeWithTag(it).assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp).getUnclippedBoundsInRoot() }
         bounds.zipWithNext().forEach { (a, b) -> assertTrue("one compact row, RTL", a.top == b.top && a.left >= b.right) }
         tags.forEach { ui.onNodeWithTag(it).performClick() }
-        assertEquals(listOf(1, 1, 1, 1), listOf(edited, shared, copied, deleted))
+        assertEquals(listOf(1, 1, 1), listOf(edited, shared, deleted))
+        ui.onNodeWithTag("copy_entry_btn_71").assertDoesNotExist()
         ui.onNodeWithTag("toggle_payment_71").performClick()
         assertEquals(1, paid)
         shot(if (dark) "detail-dark" else "detail")

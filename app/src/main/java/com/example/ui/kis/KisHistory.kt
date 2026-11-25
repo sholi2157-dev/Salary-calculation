@@ -27,8 +27,6 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -103,6 +101,12 @@ fun KisHistory(
     val settings = Kis.settings
     val context = LocalContext.current
     val owedShare = rememberOwedShare(onMessage)
+    // To a worker (a name searched): a plain report that asks for their details. The user's own shifts: may add the user's payment details.
+    val shareRows: (List<WorkEntry>) -> Unit = { list ->
+        val worker = WorkShareText.workerName(list, ui.query)
+        val text = WorkShareText.summary(list, worker)
+        if (worker != null) KisShare.shareOrCopy(context, text, "שיתוף משמרות", onMessage) else owedShare(text, "שיתוף משמרות")
+    }
     // Done vs planned: shifts on a later day are planned, like weekly plans. They are never in totals, copy or Excel.
     val showPlans = ui.planned
     // The same moving clock as Home: after midnight a planned shift becomes history without new data (audit AND-C03).
@@ -145,6 +149,7 @@ fun KisHistory(
                     Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         // The title never breaks ("היסטורי" + "ה"): when the tools leave it too little room (a folding phone's
                         // cover screen, large text), the filter button keeps its icon and count and drops its words.
+                        // (Same rule as the folding-phone change; owner 2026-11-24: every fixed button on this one line.)
                         val screen = androidx.compose.ui.platform.LocalConfiguration.current
                         // If that is still not enough (a 280dp cover screen), the title steps down to 22sp at the least.
                         var compactTools by remember(screen.screenWidthDp, screen.fontScale) { mutableStateOf(false) }
@@ -159,17 +164,8 @@ fun KisHistory(
                                     filter.activeCount == 0 -> "סינון ומיון"; else -> "סינון ומיון · ${filter.activeCount}" }, selected = filter.activeCount > 0,
                                 leading = Icons.Outlined.FilterList, onClick = { showFilters = true }, tag = "history_filters", minHeight = KisMinTouch,
                                 modifier = if (compactTools) Modifier.semantics { contentDescription = "סינון ומיון" } else Modifier)
-                            var copyMenu by remember { mutableStateOf(false) }
-                            if (!showPlans) Box {
-                                ToolIcon(Icons.Outlined.ContentCopy, "העתקת דוח", "copy_menu_btn") { copyMenu = true }
-                                DropdownMenu(copyMenu, { copyMenu = false }) {
-                                    DropdownMenuItem(text = { Text("Excel (טבלה)") }, onClick = { copyMenu = false; if (rows.isEmpty()) onMessage("אין שורות להעתקה") else { copyExcelToClipboard(context, rows); onMessage("הטבלה הועתקה ✓ · מוכנה להדבקה באקסל") } })
-                                    DropdownMenuItem(text = { Text("סיכום טכני") }, onClick = {
-                                        copyMenu = false
-                                        KisShare.copy(context, WorkShareText.copy(rows, WorkShareText.workerName(rows, ui.query)), "WhatsApp Report"); onMessage("הסיכום הועתק ✓")
-                                    })
-                                }
-                            }
+                            // Owner request 2026-11-24: share exactly the shifts the filter or search shows.
+                            if (!showPlans && rows.isNotEmpty()) ToolIcon(Icons.Outlined.Share, "שיתוף המשמרות המוצגות", "history_share") { shareRows(rows) }
                         }
                     }
                     if (!showPlans) {
@@ -229,13 +225,8 @@ fun KisHistory(
         }
         AnimatedVisibility(ui.selecting, modifier = Modifier.align(Alignment.BottomCenter), enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
             SelectionBar(selectedRows, rows, ui,
-                onShare = {
-                    // To a worker (a name searched): a plain report that asks for their details. The user's own shifts: may add the user's payment details.
-                    val worker = WorkShareText.workerName(selectedRows, ui.query)
-                    val text = WorkShareText.summary(selectedRows, worker)
-                    if (worker != null) KisShare.shareOrCopy(context, text, "שיתוף משמרות", onMessage) else owedShare(text, "שיתוף משמרות")
-                    ui.selection = emptySet() },
-                onCopy = { KisShare.copy(context, WorkShareText.copy(selectedRows, WorkShareText.workerName(selectedRows, ui.query))); onMessage("הועתק ✓ · מוכן להדבקה"); ui.selection = emptySet() },
+                onShare = { shareRows(selectedRows); ui.selection = emptySet() },
+                onCopy = { copyExcelToClipboard(context, selectedRows); onMessage("הועתק ל-Excel ✓"); ui.selection = emptySet() },
                 onPaid = { paid ->
                     // M-37: the same message with undo as everywhere; undo puts back each shift's own previous paid mark.
                     val before = selectedRows.groupBy({ it.isPaid }, { it.id })
