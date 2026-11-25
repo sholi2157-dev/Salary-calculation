@@ -20,7 +20,7 @@ const tid = t => `[data-testid="${t}"]`;
       await ctx.route('**/*', r => new URL(r.request().url()).hostname === '127.0.0.1' ? r.continue() : r.abort());
       await ctx.addInitScript(data => {
         for (const [k, v] of Object.entries(data)) localStorage.setItem(k, JSON.stringify(v));
-        localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.0' })); localStorage.setItem('kis_signin_skip_v1', '1');
+        localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.1' })); localStorage.setItem('kis_signin_skip_v1', '1');
       }, rich);
       const page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
       const shot = async name => {

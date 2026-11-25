@@ -19,7 +19,7 @@ const tid = t => `[data-testid="${t}"]`;
       const ctx = await browser.newContext({ viewport: { width, height: 844 }, colorScheme: theme, serviceWorkers: 'block', reducedMotion: 'reduce' });
       await ctx.route('**/*', r => new URL(r.request().url()).hostname === '127.0.0.1' ? r.continue() : r.abort());
       await ctx.addInitScript(fresh => {
-        localStorage.setItem('kis_web_v1', JSON.stringify({ launched: fresh ? 0 : 2, tourDone: true, whatsNewSeen: '2.4.0' }));
+        localStorage.setItem('kis_web_v1', JSON.stringify({ launched: fresh ? 0 : 2, tourDone: true, whatsNewSeen: '2.4.1' }));
         // Hold the auth callback so the test can record the opener and pre-existing attribute values.
         window.firebase = { apps: [1], auth: () => ({ onAuthStateChanged: fn => { window.testSignedOut = () => fn(null); } }) };
       }, fresh);
@@ -37,7 +37,7 @@ const tid = t => `[data-testid="${t}"]`;
       if (!fresh) {
         await page.evaluate(() => { KisWhatsNew.VERSION = '9.8.7'; testSignedOut(); });
         assert.equal(await page.textContent('[data-testid=signin] .intro-label.muted'), 'גרסה 9.8.7', 'version comes from the existing release constant');
-        await page.evaluate(() => { KisWhatsNew.VERSION = '2.4.0'; testSignedOut(); });
+        await page.evaluate(() => { KisWhatsNew.VERSION = '2.4.1'; testSignedOut(); });
       }
       const boundaries = await page.$$eval('.intro-chat .mine, .intro-ais b', nodes => {
         const rgb = c => c.match(/[\d.]+/g).slice(0, 3).map(Number);

@@ -7,7 +7,7 @@
 (function (root) {
 'use strict';
 /** This site's release (bump at publish, with the Android versionName). */
-const VERSION = '2.4.0';
+const VERSION = '2.4.1';
 // 2.3.0: placeholder draft; the final wording may be replaced at publish time. 3–5 short lines, features only.
 const NOTES = {
   '2.3.0': [
@@ -27,6 +27,13 @@ const NOTES = {
     'משמרות שלא שולמו יותר מ-30 יום מופיעות עכשיו במסך הבית, לכל מקום עבודה, ובלחיצה רואים בדיוק אילו.',
     'לחיצה ארוכה על האייקון במסך הבית פותחת ישר את "הוספת משמרת".',
     'בהגדרות, כרטיס ההתראות מראה בדיוק מה פועל: הכול, חלק או כלום.',
+  ],
+  // 2.4.1: draft highlights, the owner approves the wording at publish (identical on Android, KisWhatsNew.kt).
+  '2.4.1': [
+    'בטלפון מתקפל, כשפותחים אותו, הכול נראה כמו בטלפון רגיל, רק גדול ונוח יותר.',
+    'בהיסטוריה יש כפתור שיתוף ששולח בדיוק את המשמרות שמוצגות לפי הסינון או החיפוש.',
+    'דוחות לשיתוף קצרים וברורים יותר: מה שמשותף לכל המשמרות כתוב פעם אחת למעלה.',
+    'העתקה של משמרות נעשית עכשיו כטבלה מוכנה להדבקה ב-Excel.',
   ],
 };
 const KEY = 'whatsNewSeen';
