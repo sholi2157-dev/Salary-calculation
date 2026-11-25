@@ -13,7 +13,8 @@ diagnose() {
   adb logcat -d 2>/dev/null | grep -E "RichUpgradeTest|TestRunner|AndroidRuntime|SQLite|System.err" | tail -n 120 || true
 }
 trap 'rc=$?; [ $rc -ne 0 ] && diagnose; exit $rc' EXIT
-echo "b6380d60a0bffb9e94157902307c380646a66e48f9c6f0f6d3c900a1ab3404f4  candidate-prev.apk" | sha256sum -c -
+: "${PREV_SHA:?PREV_SHA (the previous public APK digest) comes from the RC workflow}"
+echo "$PREV_SHA  candidate-prev.apk" | sha256sum -c -
 adb shell wm size 720x1600
 adb shell wm density 320
 adb install candidate-prev.apk | tee release-evidence/rich/install-231.txt
