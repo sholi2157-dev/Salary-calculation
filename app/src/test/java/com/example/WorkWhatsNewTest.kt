@@ -63,4 +63,12 @@ class WorkWhatsNewTest {
         assertNull(WhatsNew.decide(null, 56, updated = false, versionName = "2.4.1"))
         assertNull(WhatsNew.decide(56, 56, updated = true, versionName = "2.4.1"))
     }
+
+    @Test fun release242HasItsOneHighlightAndShowsOnceAfterTheUpdate() {
+        val lines = WhatsNew.NOTES.getValue("2.4.2")
+        assertEquals(listOf("במשמרת חדשה, שעת ההתחלה ושעת הסיום שוב מופיעות אחת ליד השנייה, כמו קודם."), lines)
+        assertEquals(lines, WhatsNew.decide(56, 57, updated = true, versionName = "2.4.2"))
+        assertNull(WhatsNew.decide(null, 57, updated = false, versionName = "2.4.2"))
+        assertNull(WhatsNew.decide(57, 57, updated = true, versionName = "2.4.2"))
+    }
 }

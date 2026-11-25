@@ -48,6 +48,10 @@ object WhatsNew {
             "דוחות לשיתוף קצרים וברורים יותר: מה שמשותף לכל המשמרות כתוב פעם אחת למעלה.",
             "העתקה של משמרות נעשית עכשיו כטבלה מוכנה להדבקה ב-Excel.",
         ),
+        // 2.4.2: draft line, the owner approves the wording at publish (identical on the website, web/kis/whatsnew.js).
+        "2.4.2" to listOf(
+            "במשמרת חדשה, שעת ההתחלה ושעת הסיום שוב מופיעות אחת ליד השנייה, כמו קודם.",
+        ),
     )
 
     /** "2.3.0-rc2" → "2.3.0". */

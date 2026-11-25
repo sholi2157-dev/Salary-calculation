@@ -297,7 +297,7 @@ fun KisEditorPage(
     // A short screen (a Pixel 2, a phone with a large display size): the clock, ruler and places are capped so the
     // form below keeps at least a usable strip and the save bar, and they scroll on their own instead (2.4.1 RC).
     // While a value is typed the top keeps its full height: the clock must stay in view above the keyboard.
-    val topMax = if (pad || typingText) androidx.compose.ui.unit.Dp.Infinity else maxOf(maxHeight - 200.dp, 260.dp)
+    val topMax = if (pad || typingText) androidx.compose.ui.unit.Dp.Infinity else maxOf(maxHeight - 160.dp, 260.dp)
     Column(Modifier.fillMaxSize().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
         // ---------------- top ----------------
         Column(Modifier.fillMaxWidth().heightIn(max = topMax).verticalScroll(rememberScrollState()).testTag("editor_top")
@@ -586,7 +586,9 @@ private fun DigitClock(value: String, label: String, style: androidx.compose.ui.
                 if (i == 2) Text(":", color = color, style = style, maxLines = 1)
                 val ch = value.getOrNull(if (i < 2) i else i + 1)?.toString() ?: "-"
                 val on = edit != null && !edit.all && edit.at == i
-                Box(Modifier.sizeIn(minWidth = KisMinTouch, minHeight = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (on) marker.copy(alpha = if (c.dark) 0.30f else 0.20f) else Color.Transparent)
+                // 48dp tall to tap; the width stays the digit's own, so start and end sit side by side as in 2.4.0
+                // (owner 2026-11-25: the stacked 48dp-wide layout of 2.4.1 looked bad). A tap on the time selects all of it.
+                Box(Modifier.heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (on) marker.copy(alpha = if (c.dark) 0.30f else 0.20f) else Color.Transparent)
                     .drawBehind { if (on) drawRect(marker, topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.12f, size.height - 3.dp.toPx()),
                         size = androidx.compose.ui.geometry.Size(size.width * 0.76f, 3.dp.toPx())) }
                     .kisClick(haptic = KisSettings.Haptic.TICK) { onDigit(i) }
@@ -612,59 +614,36 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
         // Sized from the width in dp, so a large system font cannot push the digits out of the box.
         val digits = ((maxWidth.value * 0.125f).coerceIn(30f, 60f) / LocalDensity.current.fontScale).sp
         val style = KisType.hero.copy(fontSize = digits, lineHeight = digits * 1.05f, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum")
-        // Four independent 48dp digit targets need one full row on a portrait phone.
-        // Keep the side-by-side layout only where both time fields fit without overlapping targets.
-        val sideBySide = maxWidth >= 500.dp
-        // A portrait phone stacks the two times as one compact row each (label and digits, then −15/+15 beside them),
-        // so the clock does not take the height of two full cards and the form below keeps its room (2.4.1).
-        // 360dp (a Galaxy S23) fits: 4 × 48dp digits and two 48dp nudges in one row. Only a narrower screen (a folding
-        // phone's cover) puts the nudges under the digits.
-        val nudgesBeside = !sideBySide && maxWidth >= 320.dp
-        @Composable fun nudges(label: String, t: KeyTarget, modifier: Modifier, fill: Boolean) {
-            Row(modifier, horizontalArrangement = Arrangement.spacedBy(if (fill) 6.dp else 4.dp)) {
-                listOf(-15, 15).forEach { n ->
-                    Box((if (fill) Modifier.weight(1f) else Modifier.width(KisMinTouch)).heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
-                        .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(8.dp)))
-                        .kisClick(haptic = KisSettings.Haptic.TICK) { onNudge?.invoke(t, n) }
-                        .semantics { contentDescription = "$label ${if (n > 0) "$n דקות קדימה" else "${-n} דקות אחורה"}" }
-                        .testTag("nudge_${t.name.lowercase()}_$n"), contentAlignment = Alignment.Center) {
-                        // One line, left-to-right ("−15", never "15−"), even with a large system font.
-                        Text(if (n > 0) "+$n" else "−${-n}", color = ink, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
-                            style = androidx.compose.ui.text.TextStyle(fontFamily = Rubik, fontSize = 14.sp, textDirection = TextDirection.Ltr))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            @Composable fun cell(label: String, value: String, t: KeyTarget, empty: Boolean, edit: DigitEdit?, tag: String) {
+                val shape = RoundedCornerShape(12.dp)
+                // The time being typed is a lifted card with the place's colour on its edge; the ruler's choice is a soft tint.
+                val lifted = edit != null
+                val chosen = !typing && active == t
+                Column(Modifier.weight(1f).clip(shape)
+                    .background(when { lifted -> if (c.dark) ink.copy(alpha = 0.10f) else c.surface; chosen -> if (c.dark) ink.copy(alpha = 0.16f) else c.surface.copy(alpha = 0.7f); else -> Color.Transparent })
+                    .then(if (lifted) Modifier.border(1.5.dp, accent, shape) else Modifier)
+                    .kisClick { onOpen(t, null) }.semantics { selected = lifted }.testTag(tag).padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(label, color = ink.copy(alpha = if (c.dark) 0.85f else 0.7f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
+                    DigitClock(value, label, style, ink.copy(alpha = if (empty && edit == null) 0.45f else 1f), ink, accent, edit, tag) { i -> onOpen(t, if (empty) null else i) }
+                    if (onNudge != null && !empty) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(-15, 15).forEach { n ->
+                            Box(Modifier.weight(1f).heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
+                                .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(8.dp)))
+                                .kisClick(haptic = KisSettings.Haptic.TICK) { onNudge(t, n) }
+                                .semantics { contentDescription = "$label ${if (n > 0) "$n דקות קדימה" else "${-n} דקות אחורה"}" }
+                                .testTag("nudge_${t.name.lowercase()}_$n"), contentAlignment = Alignment.Center) {
+                                // One line, left-to-right ("−15", never "15−"), even with a large system font.
+                                Text(if (n > 0) "+$n" else "−${-n}", color = ink, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
+                                    style = androidx.compose.ui.text.TextStyle(fontFamily = Rubik, fontSize = 14.sp, textDirection = TextDirection.Ltr))
+                            }
+                        }
                     }
                 }
             }
-        }
-        @Composable fun cell(label: String, value: String, t: KeyTarget, empty: Boolean, edit: DigitEdit?, tag: String, modifier: Modifier) {
-            val shape = RoundedCornerShape(12.dp)
-            // The time being typed is a lifted card with the place's colour on its edge; the ruler's choice is a soft tint.
-            val lifted = edit != null
-            val chosen = !typing && active == t
-            val box = modifier.clip(shape)
-                .background(when { lifted -> if (c.dark) ink.copy(alpha = 0.10f) else c.surface; chosen -> if (c.dark) ink.copy(alpha = 0.16f) else c.surface.copy(alpha = 0.7f); else -> Color.Transparent })
-                .then(if (lifted) Modifier.border(1.5.dp, accent, shape) else Modifier)
-                .kisClick { onOpen(t, null) }.semantics { selected = lifted }.testTag(tag).padding(horizontal = if (nudgesBeside) 6.dp else 8.dp, vertical = 6.dp)
-            val showNudges = onNudge != null && !empty
-            @Composable fun time() = Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(label, color = ink.copy(alpha = if (c.dark) 0.85f else 0.7f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
-                DigitClock(value, label, style, ink.copy(alpha = if (empty && edit == null) 0.45f else 1f), ink, accent, edit, tag) { i -> onOpen(t, if (empty) null else i) }
-            }
-            if (nudgesBeside) Row(box, verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                time()
-                Spacer(Modifier.weight(1f))
-                if (showNudges) nudges(label, t, Modifier, fill = false)
-            } else Column(box, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                time()
-                if (showNudges) nudges(label, t, Modifier.fillMaxWidth(), fill = true)
-            }
-        }
-        if (sideBySide) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            cell("התחלה", start, KeyTarget.START, startEmpty, startEdit, "clock_start", Modifier.weight(1f))
+            cell("התחלה", start, KeyTarget.START, startEmpty, startEdit, "clock_start")
             Text("←", color = ink.copy(alpha = 0.5f), fontSize = 20.sp, modifier = Modifier.padding(top = digits.value.dp * 0.6f))
-            cell("סיום", end, KeyTarget.END, false, endEdit, "clock_end", Modifier.weight(1f))
-        } else Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            cell("התחלה", start, KeyTarget.START, startEmpty, startEdit, "clock_start", Modifier.fillMaxWidth())
-            cell("סיום", end, KeyTarget.END, false, endEdit, "clock_end", Modifier.fillMaxWidth())
+            cell("סיום", end, KeyTarget.END, false, endEdit, "clock_end")
         }
     }
 }
