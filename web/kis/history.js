@@ -85,7 +85,6 @@ function render(el, app, opts = {}) {
   <div class="title-row"><h1 class="page-title">היסטוריה</h1>${state.planned ? '' : `
     <button class="icon-btn history-tool" aria-label="חיפוש" data-a="search" data-testid="history-search">${ICON.search}</button>
     `}<button class="chip${n ? ' on' : ''}" data-a="filters" data-testid="history-filters">${ICON.filter}<span class="chip-label">סינון ומיון</span>${n ? `<span aria-hidden="true">· ${n}</span><span class="sr-only">, ${n} פעילים</span>` : ''}</button>${state.planned ? '' : `
-    <button class="icon-btn history-tool" aria-label="העתקה ל-Excel" data-a="copy" data-testid="history-copy" ${rows.length ? '' : 'disabled'}>${ICON.copy}</button>
     <button class="icon-btn history-tool" aria-label="שיתוף המשמרות המוצגות" data-a="share-shown" data-testid="history-share" ${rows.length ? '' : 'disabled'}>${ICON.share}</button>`}</div>
   ${state.planned ? '' : `
     ${state.searching ? `<div class="row" style="align-items:center;margin-bottom:8px"><input class="input grow" type="search" placeholder="חיפוש: מקום, הערה, עובד, סכום" value="${esc(state.query)}" data-f="q" aria-label="חיפוש" data-testid="history-search-input">
@@ -113,7 +112,6 @@ function render(el, app, opts = {}) {
   q('[data-a=reset]')?.addEventListener('click', () => { state.filter = defaults(); redraw(); });
   q('[data-a=prev]')?.addEventListener('click', () => { state.filter = { ...f, month: f.month - 1 }; redraw(); });
   q('[data-a=next]')?.addEventListener('click', () => { state.filter = { ...f, month: f.month + 1 }; redraw(); });
-  q('[data-a=copy]')?.addEventListener('click', () => copyExcel(rows));
   // Owner request 2026-11-24: share exactly what the filter or search shows (a worker's name searched: a report for that worker).
   q('[data-a=share-shown]')?.addEventListener('click', () => shareRows(rows));
   q('[data-a=pending]')?.addEventListener('click', () => { state.selection = new Set(rows.filter(e => !e.payKnown && e.kind !== 'job').map(e => e.id)); redraw(); bulkRate(app, redraw); });

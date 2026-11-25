@@ -25,11 +25,13 @@ try{for(const supported of [false,true]){
  await page.screenshot({path:path.join(out,`sharing-group-${supported}.png`)});
  await page.evaluate(()=>KisUi.closeTopSheet());await page.click('[data-testid=tab-history]');
  // Owner 2026-11-24: the title and every fixed button (search, filter, copy, share) on one line.
- const row=await page.evaluate(()=>['.page-title','[data-testid=history-search]','[data-testid=history-filters]','[data-testid=history-copy]','[data-testid=history-share]'].map(q=>document.querySelector(q).getBoundingClientRect()));
+ const row=await page.evaluate(()=>['.page-title','[data-testid=history-search]','[data-testid=history-filters]','[data-testid=history-share]'].map(q=>document.querySelector(q).getBoundingClientRect()));
  assert.ok(row.every(r=>r.top<row[0].bottom&&r.bottom>row[0].top&&r.left>=0),'History buttons share the title line');await page.click('[data-testid=history-search]');await page.fill('[data-testid=history-search-input]','דני');
- await page.click('[data-testid=history-copy]');assert.match(await page.evaluate(()=>copied.at(-1)),/^עבודה\tתאריך/);assert.equal(await page.locator('[data-testid=copy-whatsapp]').count(),0);
+ // Owner 2026-11-25: copying lives only in the long-press selection, as an Excel table.
+ assert.equal(await page.locator('[data-testid=history-copy]').count(),0);
  // The summary card shares exactly what the search shows: a worker's name gives that worker's report.
  await page.click('[data-testid=history-share]');const searched=await page.evaluate(()=>shared.at(-1).text);assert.match(searched,/^היי דני/);assert.match(searched,/₪175.00/);assert.doesNotMatch(searched,/₪200.00|יוסי/);
+ await page.locator('[data-testid=shift-a]').dispatchEvent('contextmenu');await page.click('[data-s=copy]');assert.match(await page.evaluate(()=>copied.at(-1)),/^עבודה\tתאריך/);
  await page.locator('[data-testid=shift-a]').dispatchEvent('contextmenu');await page.click('[data-s=share]');assert.match(await page.evaluate(()=>shared.at(-1).text),/^היי דני/);assert.equal(await page.locator('[data-testid=selection-bar]').count(),0);
  await page.evaluate(()=>KisSummaryUi.story(Kis,String(new Date().getFullYear())));
  // Any slide goes out as a picture of itself, with no text and no list of shifts.
