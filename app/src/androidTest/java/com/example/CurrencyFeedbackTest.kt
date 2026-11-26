@@ -88,6 +88,8 @@ class CurrencyFeedbackTest {
         ui.waitForIdle()
         ui.onNodeWithTag("category_add_confirm").performClick()
         ui.waitUntil(10_000) { runBlocking { dao.getLocalPreferences() }.any { it.name == "defaultCategory" && it.value == "RC15 new default" } }
+        // The label follows the saved preference a frame later on a slow emulator: wait for it, then assert.
+        ui.waitUntil(10_000) { runCatching { ui.onNodeWithTag("default_category_picker").assertTextContains("RC15 new default", substring = true) }.isSuccess }
         ui.onNodeWithTag("default_category_picker").assertTextContains("RC15 new default", substring = true)
         assertEquals("₪", runBlocking { dao.getLocalPreferences() }.first { it.name == "categoryCurrency:RC15 new default" }.value)
         assertEquals(before, runBlocking { dao.getEntriesList() })
