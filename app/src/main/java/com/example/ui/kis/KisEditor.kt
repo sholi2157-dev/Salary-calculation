@@ -788,7 +788,7 @@ private fun PayBreakdown(d: EntryDraft, check: EntryDraft.Check) {
     val pass = d.passThroughValue()
     val total = check.total
     @Composable fun line(label: String, value: String, strong: Boolean = false, tag: String? = null) =
-        Row(Modifier.fillMaxWidth().then(if (tag != null) Modifier.testTag(tag) else Modifier), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}.then(if (tag != null) Modifier.testTag(tag) else Modifier), verticalAlignment = Alignment.CenterVertically) {
             Text(label, Modifier.weight(1f), color = if (strong) c.ink else c.muted, style = if (strong) KisType.label else KisType.caption.copy(fontSize = 13.sp))
             Text(value, color = c.ink, style = (if (strong) KisType.label else KisType.caption.copy(fontSize = 13.sp)).copy(textDirection = TextDirection.Ltr), maxLines = 1)
         }

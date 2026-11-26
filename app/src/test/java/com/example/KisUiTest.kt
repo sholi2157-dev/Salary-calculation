@@ -185,7 +185,7 @@ class KisUiTest {
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("טיוטה שנשמרת במעבר")
         // "group" is the "קבוצה" button at the top (on, then off again back to the user's own shift).
         for (mode in listOf("hours", "group", "clock")) {
-            ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performScrollTo().performClick()
+            (if (mode == "group") ui.onNodeWithTag("editor_team") else ui.onNodeWithTag("mode_$mode").performScrollTo()).performClick()
             ui.onNodeWithTag("notes_input").performScrollTo().assertTextContains("טיוטה שנשמרת במעבר")
             ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
             if (mode == "group") ui.onNodeWithTag("group_block").performScrollTo().assertIsDisplayed()
@@ -1541,10 +1541,10 @@ class KisUiTest {
         host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "13:00", rate = "50", bonus = "30", passThrough = "20"),
             null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
         ui.onNodeWithTag("pay_breakdown").performScrollTo().assertIsDisplayed()
-        ui.onNodeWithTag("breakdown_bonus", useUnmergedTree = true).assertTextContains("₪30", substring = true)
-        ui.onNodeWithTag("breakdown_income", useUnmergedTree = true).assertTextContains("₪230", substring = true)
-        ui.onNodeWithTag("breakdown_pass", useUnmergedTree = true).assertTextContains("₪20", substring = true)
-        ui.onNodeWithTag("breakdown_due", useUnmergedTree = true).assertTextContains("₪250", substring = true)
+        ui.onNodeWithTag("breakdown_bonus").assertTextContains("₪30", substring = true)
+        ui.onNodeWithTag("breakdown_income").assertTextContains("₪230", substring = true)
+        ui.onNodeWithTag("breakdown_pass").assertTextContains("₪20", substring = true)
+        ui.onNodeWithTag("breakdown_due").assertTextContains("₪250", substring = true)
         ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪230")
         shot("review-pay-breakdown")
     }
