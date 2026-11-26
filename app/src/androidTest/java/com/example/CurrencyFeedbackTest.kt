@@ -75,12 +75,17 @@ class CurrencyFeedbackTest {
         // The picker closes with an animation: reopen it only once it is gone, then wait for it to open.
         ui.waitUntil(5000) { ui.onAllNodesWithTag("default_category_sheet").fetchSemanticsNodes().isEmpty() }
         // Scrolled into view first, like the first time: closing the sheet can leave it under the floating tab bar.
-        ui.onNodeWithTag("default_category_picker").performScrollTo().assertTextContains("USD category", substring = true).performClick()
+        // The picker's label follows the saved choice a frame or two later on a slow emulator: wait for it, then open.
+        ui.waitUntil(10_000) { runCatching { ui.onNodeWithTag("default_category_picker").assertTextContains("USD category", substring = true) }.isSuccess }
+        ui.onNodeWithTag("default_category_picker").performScrollTo().performClick()
         ui.waitUntil(5000) { ui.onAllNodesWithTag("default_category_add").fetchSemanticsNodes().isNotEmpty() }
         ui.onNodeWithTag("default_category_add").performClick()
         ui.onNodeWithTag("category_input").performTextInput("RC15 new default")
+        // With the keyboard up the sheet is still moving: close it first so the tap lands on the confirm button.
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        ui.waitForIdle()
         ui.onNodeWithTag("category_add_confirm").performClick()
-        ui.waitUntil(5000) { runBlocking { dao.getLocalPreferences() }.any { it.name == "defaultCategory" && it.value == "RC15 new default" } }
+        ui.waitUntil(10_000) { runBlocking { dao.getLocalPreferences() }.any { it.name == "defaultCategory" && it.value == "RC15 new default" } }
         ui.onNodeWithTag("default_category_picker").assertTextContains("RC15 new default", substring = true)
         assertEquals("₪", runBlocking { dao.getLocalPreferences() }.first { it.name == "categoryCurrency:RC15 new default" }.value)
         assertEquals(before, runBlocking { dao.getEntriesList() })
