@@ -1531,14 +1531,15 @@ class KisUiTest {
         val tops = listOf("editor_other_date", "editor_rate", "editor_plus").map { ui.onNodeWithTag(it).performScrollTo().getUnclippedBoundsInRoot().top.value }
         tops.forEach { assertEquals("date, rate and + share one row", tops.first(), it, 0.5f) }
         ui.onNodeWithTag("editor_note").assertDoesNotExist()
+        ui.onNodeWithTag("editor_scroll").performScrollToNode(hasTestTag("clock_card"))
+        val clockBefore = ui.onNodeWithTag("clock_card").getUnclippedBoundsInRoot().top
         ui.onNodeWithTag("editor_plus").performClick()
         listOf("plus_bonus", "plus_pass", "plus_break", "plus_note").forEach { ui.onNodeWithTag(it).assertExists() }
         ui.onNodeWithTag("plus_note").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().assertIsDisplayed()
         // One scroller: once the note is in view the clock has scrolled up with the rest of the page.
         val clock = ui.onNodeWithTag("clock_card").getUnclippedBoundsInRoot()
-        val page = ui.onNodeWithTag("editor_scroll").getUnclippedBoundsInRoot()
-        assertTrue("the clock scrolls with the form", clock.top < page.top)
+        assertTrue("the clock scrolls with the form", clock.top < clockBefore)
         ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
         shot("review-one-row-360x708")
     }

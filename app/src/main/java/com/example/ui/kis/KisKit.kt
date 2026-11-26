@@ -255,7 +255,7 @@ fun KisAction(label: String, icon: ImageVector, onClick: () -> Unit, modifier: M
 
 @Composable
 fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifier: Modifier = Modifier, dashed: Boolean = false, warn: Boolean = false,
-            leading: ImageVector? = null, tag: String? = null, minHeight: Dp = KisMinTouch, onLongClick: (() -> Unit)? = null) {
+            leading: ImageVector? = null, tag: String? = null, minHeight: Dp = KisMinTouch, onLongClick: (() -> Unit)? = null, padX: Dp = 14.dp) {
     val c = Kis.colors
     val shape = RoundedCornerShape(12.dp)
     val bg = when { warn -> c.pendingSoft; selected -> c.selectedBg; else -> c.surface }
@@ -269,7 +269,7 @@ fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifi
         })
         .kisClick(onLongClick = onLongClick, onClick = onClick).then(if (tag != null) Modifier.testTag(tag) else Modifier)
         .semantics { this.selected = selected }
-        .padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        .padding(horizontal = padX), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (leading != null) Icon(leading, null, tint = fg, modifier = Modifier.size(18.dp))
         if (text.isNotEmpty() || leading == null) Text(text, style = KisType.label, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
