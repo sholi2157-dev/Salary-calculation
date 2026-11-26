@@ -64,9 +64,9 @@ class WorkWhatsNewTest {
         assertNull(WhatsNew.decide(56, 56, updated = true, versionName = "2.4.1"))
     }
 
-    @Test fun release242HasItsOneHighlightAndShowsOnceAfterTheUpdate() {
+    @Test fun release242HasItsHighlightsAndShowsOnceAfterTheUpdate() {
         val lines = WhatsNew.NOTES.getValue("2.4.2")
-        assertEquals(listOf("במשמרת חדשה, שעת ההתחלה ושעת הסיום שוב מופיעות אחת ליד השנייה, כמו קודם."), lines)
+        assertEquals(listOf("מסך הוספת משמרת מסודר יותר: ההתחלה והסיום בכרטיס אחד, עם משך המשמרת ביניהן.", "תאריך, תעריף ו-+ בשורה אחת. בונוס, החזר הוצאות, הפסקה והערה מוסיפים מה-+.", "כשיש בונוס או החזר הוצאות, רואים בדיוק מה ההכנסה שלך ומה לקבל מהמעסיק.", "כל המסך נגלל יחד, גם כשהמקלדת פתוחה."), lines)
         assertEquals(lines, WhatsNew.decide(56, 57, updated = true, versionName = "2.4.2"))
         assertNull(WhatsNew.decide(null, 57, updated = false, versionName = "2.4.2"))
         assertNull(WhatsNew.decide(57, 57, updated = true, versionName = "2.4.2"))
