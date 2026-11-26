@@ -259,28 +259,32 @@ button { cursor: pointer; }
 .nudges span { font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
 .nudges button { flex: 1; min-height: 44px; border: 1px solid var(--tile-edge); border-radius: 12px; background: var(--tile); font-weight: 600; direction: ltr; }
 /* Design option 1 (owner 2026-11-26): one clock card, the length between the times, a split −15|+15, the ruler inside. */
-.clock-card { background: color-mix(in srgb, var(--tile) 55%, transparent); border-radius: 16px; padding: 8px; display: grid; gap: 2px; }
+.clock-card { display: grid; gap: 2px; }
 .clock-card .clock-row { gap: 4px; }
 .clock-card .time-box { background: transparent; padding: 8px 10px; min-width: 0; }
 .clock-card .time-box b { font-size: clamp(1.625rem, 9vw, 2.75rem); }
 .clock-card .time-box.on { background: var(--tile); }
-.clock-mid { display: grid; justify-items: center; align-content: start; gap: 2px; padding-top: 34px; color: var(--muted); font-size: 0.75rem; font-weight: 600; flex: none; }
+.clock-mid { display: grid; justify-items: center; align-content: start; gap: 2px; padding-top: 40px; color: var(--muted); font-size: 0.75rem; font-weight: 600; flex: none; }
 .clock-mid i { font-style: normal; font-size: 1.125rem; line-height: 1; }
 .clock-card .nudges { gap: 0; border: 1px solid var(--tile-edge); border-radius: 12px; overflow: hidden; background: var(--tile); }
 .clock-card .nudges button { border: 0; border-radius: 0; background: transparent; }
 .clock-card .nudges button + button { border-inline-start: 1px solid var(--tile-edge); }
 .clock-card .ruler { margin-block: 0 -6px; }
 /* Owner 2026-11-26: date (a calendar button), rate and "+" on one row with the currency. */
-.extras-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.extras-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .extras-row .grow { flex: 1; }
-.cal-chip { position: relative; min-width: 44px; padding: 0 10px; justify-content: center; gap: 6px; }
+.cal-chip { position: relative; min-width: 44px; padding: 0 8px; justify-content: center; gap: 6px; }
 .cal-chip svg { flex: none; }
 .cal-chip input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
 .rate-chip { gap: 2px; padding: 0 8px; cursor: text; }
 .extras-row .seg button { padding: 0 8px; }
-.rate-chip input { width: 4.2ch; border: 0; background: transparent; font: inherit; color: inherit; text-align: center; padding: 0; min-height: 40px; outline: none; }
+.rate-chip input { width: 4.2ch; min-width: 2.8ch; border: 0; background: transparent; font: inherit; color: inherit; text-align: center; padding: 0; min-height: 40px; outline: none; }
 .rate-chip:focus-within { border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc); }
-.plus-chip { min-width: 48px; justify-content: center; font-size: 1.25rem; }
+.plus-chip { min-width: 44px; padding: 0; justify-content: center; font-size: 1.25rem; }
+.icon-chip, .cur-chip { min-width: 44px; justify-content: center; padding: 0; }
+.icon-chip[aria-pressed="true"] { background: var(--selected-bg); color: var(--selected-ink); border: 2px solid var(--selected-edge); }
+.cur-chip { font-family: Rubik, var(--font, sans-serif); font-size: 1rem; }
+.repeat-ico { width: 40px; height: 40px; border-radius: 12px; background: var(--sunk); display: grid; place-items: center; flex: none; }
 .plus-menu { display: grid; gap: 6px; }
 .pay-breakdown { background: color-mix(in srgb, var(--surface) 70%, transparent); border-radius: 12px; padding: 8px 12px; display: grid; gap: 3px; font-size: 0.8125rem; color: var(--muted); }
 .pay-breakdown .bd-line { display: flex; justify-content: space-between; gap: 8px; }
@@ -643,7 +647,6 @@ button.grip { border: 0; background: none; padding: 0; min-width: 44px; min-heig
   .set-body .row > .grow { min-width: 9em; }
   .time-box { padding: 8px 10px; }
   .time-box b { font-size: clamp(1.875rem, 11vw, 2.75rem); line-height: 1.1; }
-  .clock-card { padding: 6px; }
   .clock-card .time-box { padding: 6px 8px; }
 }
 @media (max-width: 339px) { .page-title { font-size: 1.625rem; line-height: 2rem; } }

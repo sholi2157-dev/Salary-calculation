@@ -64,8 +64,9 @@ const seed = {
     assert.equal(await durationValue(page),'1:50');
     await page.click(tid('hours-input-d2'));await page.keyboard.type('4');
     assert.equal(await durationValue(page),'1:40');
-    await page.click(tid('hours-input-d2'));await page.click('[data-q="4"]');await page.click(tid('entry-done'));
-    assert.equal(await durationValue(page),'4:00', 'quick hours replace the value being typed');
+    assert.equal(await page.locator('[data-q]').count(), 0, 'no ready-made hours (owner 2026-11-26)');
+    await setDuration(page,'4:00');
+    assert.equal(await durationValue(page),'4:00');
     await setDuration(page,'1:40');
     assert.equal(await page.getByText('לחיצה על ספרה משנה רק אותה',{exact:true}).count(),0);
 
@@ -194,6 +195,7 @@ const seed = {
     await page.click(tid('add-shift')); await page.click('.time-box[data-t=START] > .caption');
     await page.keyboard.type('0600'); await page.keyboard.press('Enter'); await page.keyboard.type('0630'); await page.keyboard.press('Enter');
     await page.locator('[data-day]').nth(1).click(); // today is index 3; two days ago is index 1
+    await page.click(tid('editor-repeat')); assert.ok(await page.isVisible(tid('repeat-explain')));
     await page.click(tid('repeat-switch'));
     for (let i = 0; i < 7; i++) { const b = page.locator(tid('repeat-day-' + i)); if ((await b.getAttribute('aria-pressed')) !== 'true') await b.click(); }
     assert.match(await page.textContent(tid('repeat-preview')), /ייכנסו ללוח/);

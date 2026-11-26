@@ -62,7 +62,7 @@ const shoot = (p, name, width) => [360, 390, 1440].includes(width) ? p.screensho
    await p.fill(`${tid('place-sheet')} ${tid('place-name')}`, 'בדיקה'); await p.fill(`${tid('place-sheet')} ${tid('place-rate')}`, '25.5');
    await p.click(`${tid('place-sheet')} [data-c="$"]`); await p.click(`${tid('place-sheet')} ${tid('place-save')}`);
    await p.waitForSelector(tid('save-shift')); await bounds(p, `${width} editor`); await shoot(p, 'form', width);
-   assert.equal(await p.getAttribute('.editor-in [data-cur="$"]', 'aria-pressed'), 'true');
+   assert.equal(await p.getAttribute('.editor-in [data-testid=editor-currency]', 'data-currency'), '$');
    await p.click(tid('editor-close')); if (await p.isVisible(tid('confirm-ok'))) await p.click(tid('confirm-ok'));
    await p.waitForSelector(tid('save-shift'), { state: 'detached' });
    assert.equal(JSON.parse(await work(p)).entries.length, 0, 'closing the editor saved a shift');
