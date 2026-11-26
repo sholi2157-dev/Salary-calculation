@@ -56,7 +56,9 @@ class CurrencyFeedbackTest {
         ui.onNodeWithTag("work_entry_card_${original.id}").performClick()
         ui.onNodeWithTag("edit_entry_btn_${original.id}").performClick()
         val target = if (original.currency == "₪") "$" else "₪"
-        ui.onNodeWithTag("editor_currency_$target").performScrollTo().performClick()
+        // One square switches the currency (₪ ↔ $), so a single tap moves to the other one.
+        ui.onNodeWithTag("editor_currency").performScrollTo().assertTextContains(original.currency).performClick()
+        ui.onNodeWithTag("editor_currency").assertTextContains(target)
         ui.onNodeWithTag("save_shift_button").performClick()
         ui.waitUntil(5000) { runBlocking { dao.getEntryById(original.id)?.currency == target } }
         assertEquals(original.copy(currency = target), runBlocking { dao.getEntryById(original.id) })

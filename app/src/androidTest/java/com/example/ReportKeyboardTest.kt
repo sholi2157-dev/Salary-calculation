@@ -74,7 +74,12 @@ class ReportKeyboardTest {
                 saveVisible()
             }
         }
-        ui.onNodeWithTag("quick_hours_4").performScrollTo().performClick()
+        // No ready-made hours any more: the length is typed on the clock digits.
+        ui.onNodeWithTag("hours_display").performScrollTo().performClick()
+        awaitIme(true)
+        ui.onNode(isFocused()).performTextInput("0400")
+        ui.onNodeWithTag("entry_done").performClick()
+        awaitIme(false)
         // "קבוצה" at the top: the same tab, now with the people who worked.
         ui.onNodeWithTag("editor_team").performClick()
         focus("worker_name_input")

@@ -642,11 +642,18 @@ class KisUiTest {
             KisEditorPage(vm, EntryDraft(category = "מסעדה", rate = "50", currency = "₪", start = "09:00", end = "17:00", day = day), null, categories, emptyList(), emptyList(),
                 onClose = { closed = true }, onSaved = { _, _ -> }, onDeleted = {})
         }
+        // "חוזרת כל שבוע" is a square on the date/rate row; it opens a sheet that explains it and holds the switch and days.
+        ui.onNodeWithTag("editor_repeat").performScrollTo().performClick()
+        ui.onNodeWithTag("repeat_explain").assertExists()
         ui.onNodeWithTag("repeat_switch").performScrollTo().performClick()
         val weekday = weekdayOf(day)
         ui.onNodeWithTag("repeat_day_$weekday").performScrollTo().assertIsSelected()
         // Today plus eight weeks: nine days, nothing overlaps.
         ui.onNodeWithTag("repeat_preview").performScrollTo().assertTextEquals("9 משמרות ייכנסו ללוח")
+        shot("editor-repeat-sheet")
+        ui.onNodeWithTag("repeat_done").performScrollTo().performClick()
+        ui.onNodeWithTag("repeat_sheet").assertDoesNotExist()
+        ui.onNodeWithTag("editor_repeat").assertIsSelected()
         ui.onNodeWithTag("save_shift_button").assertTextContains("יצירת הסדרה", substring = true)
         shot("editor-repeat")
         ui.onNodeWithTag("save_shift_button").performClick()

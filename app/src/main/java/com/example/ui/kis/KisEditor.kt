@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.Icon
@@ -121,6 +122,7 @@ fun KisEditorPage(
     var aiMode by rememberSaveable { mutableStateOf(startInAi && !initial.editing) }
     // "חוזרת כל שבוע" (stage C): a new clock shift can become a weekly plan.
     var repeat by rememberSaveable { mutableStateOf(false) }
+    var repeatSheet by rememberSaveable { mutableStateOf(false) }
     var repeatDays by rememberSaveable { mutableStateOf(weekdayOf(initial.day).toString()) }
     var repeatUntil by rememberSaveable { mutableStateOf(isoDayPlus(initial.day, 56)) }
     val repeatSet = repeatDays.split(",").mapNotNull { it.toIntOrNull() }.toSet()
@@ -349,14 +351,12 @@ fun KisEditorPage(
                         d.mode == EntryMode.HOURS || d.groupByHours -> HoursDisplay(shown(KeyTarget.HOURS), edit(KeyTarget.HOURS), onTop, accent,
                             onOpen = { at -> open(KeyTarget.HOURS, at) }, onQuick = { h -> d = d.copy(hours = h.toString()); if (pad && target == KeyTarget.HOURS) { buf = fieldDigits(target); fresh = true; digitsDirty = false } },
                             onUseClock = null)
-                        else -> Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(if (c.dark) onTop.copy(alpha = 0.06f) else topBg.copy(alpha = 0.55f))
-                            .testTag("clock_card").padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            // Design option 1 (owner 2026-11-26): start and end in one card with the length between them,
-                            // one split −15|+15 under each time, and the ruler in the same card.
+                        else -> Column(Modifier.fillMaxWidth().testTag("clock_card"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            // Design option 1 (owner 2026-11-26): start and end side by side, one split −15|+15 under each
+                            // time, then the ruler. No frame or lighter panel around them (owner, same day): one background.
                             Box(Modifier.coachTarget(CoachTarget.FIELDS)) {
                                 ClockDisplay(shown(KeyTarget.START), shown(KeyTarget.END), d.start == null && !(pad && target == KeyTarget.START && buf.any { it != '·' }),
                                     target, edit(KeyTarget.START), edit(KeyTarget.END), onTop, accent, onOpen = ::open,
-                                    length = check.minutes?.takeIf { it > 0 }?.let { KisFormat.hm(it) },
                                     // The ±15 buttons fold away with the ruler while typing (so it fits a 360dp phone above the keyboard).
                                     onNudge = if (pad) null else { t, n -> timeOf(t)?.let { setTime(t, nudge(it, n)) } })
                             }
@@ -375,7 +375,10 @@ fun KisEditorPage(
             DayStrip(d.day) { d = d.copy(day = it) }
             // Owner 2026-11-26: date, rate and "+" share one row. Another date is a small calendar button (the chosen
             // date shows on it only when it is outside the week above); the currency stays at the row's end.
-            Row(Modifier.fillMaxWidth().bringIntoViewRequester(extrasInView).testTag("editor_extras"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Owner 2026-11-26 (later): "חוזרת כל שבוע" is a square with a repeat icon on the same row, the currency one square that
+            // switches ₪/$, and the rate is never cut (the row wraps on a very narrow screen instead).
+            val canRepeat = !d.editing && d.mode == EntryMode.CLOCK && d.start != null
+            Box(Modifier.fillMaxWidth().bringIntoViewRequester(extrasInView).testTag("editor_extras")) { FlowRowCompat {
                 val otherDay = !isWithinWeek(d.day)
                 KisChip(if (otherDay) Calendar.getInstance().apply { timeInMillis = d.day }.let { "${it.get(Calendar.DAY_OF_MONTH)}.${it.get(Calendar.MONTH) + 1}" } else "", leading = Icons.Outlined.CalendarMonth, tag = "editor_other_date",
                     modifier = Modifier.semantics { contentDescription = if (otherDay) "תאריך: ${dayLabelLong(d.day)}" else "תאריך אחר" }, onClick = {
@@ -384,14 +387,17 @@ fun KisEditorPage(
                         cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
                 })
                 if (d.mode != EntryMode.JOB) {
-                    if (d.rateUnknown) KisChip("תעריף חסר", warn = true, tag = "editor_rate_known", modifier = Modifier.weight(1f, fill = false), onClick = { d = d.copy(rateUnknown = false); open(KeyTarget.RATE) })
-                    else KisChip("${d.currency}${shown(KeyTarget.RATE).ifEmpty { "?" }} לשעה", selected = pad && target == KeyTarget.RATE, tag = "editor_rate", modifier = Modifier.weight(1f, fill = false), onClick = { open(KeyTarget.RATE) })
+                    if (d.rateUnknown) KisChip("תעריף חסר", warn = true, tag = "editor_rate_known", onClick = { d = d.copy(rateUnknown = false); open(KeyTarget.RATE) })
+                    else KisChip("${d.currency}${shown(KeyTarget.RATE).ifEmpty { "?" }} לשעה", selected = pad && target == KeyTarget.RATE, tag = "editor_rate", onClick = { open(KeyTarget.RATE) })
                 }
                 KisChip("+", selected = plusOpen, tag = "editor_plus", modifier = Modifier.semantics { contentDescription = "הוספה: בונוס, החזר הוצאות, הפסקה או הערה" },
                     onClick = { if (pad) done(); plusOpen = !plusOpen })
-                Spacer(Modifier.weight(1f))
-                CurrencyToggle(d.currency, { d = d.copy(currency = it) }, "editor_currency")
-            }
+                if (canRepeat) KisChip("", selected = repeat, leading = Icons.Outlined.Repeat, tag = "editor_repeat",
+                    modifier = Modifier.semantics { contentDescription = if (repeat) "חוזרת כל שבוע: פועל" else "חוזרת כל שבוע" }, onClick = { if (pad) done(); repeatSheet = true })
+                val other = if (d.currency == "₪") "$" else "₪"
+                KisChip(d.currency, tag = "editor_currency", modifier = Modifier.semantics { contentDescription = "מטבע: ${if (d.currency == "₪") "שקל" else "דולר"}. לחיצה מחליפה ל${if (other == "₪") "שקל" else "דולר"}" },
+                    onClick = { d = d.copy(currency = other) })
+            } }
             // "לא יודע" belongs to the rate: it shows while the rate is typed, not as a button of its own.
             if (d.mode != EntryMode.JOB && pad && target == KeyTarget.RATE) KisChip("לא יודע את התעריף", tag = "editor_rate_unknown", onClick = { buf = ""; done(); d = d.copy(rateUnknown = true) })
             // "+": bonus, money passed on, a break or a note. What was added shows as its own chip (a tap edits it).
@@ -422,24 +428,6 @@ fun KisEditorPage(
             check.warnings.forEach { Notice(it) }
             if (d.mode == EntryMode.GROUP) GroupBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
             if (d.mode == EntryMode.JOB && d.team) JobTeamBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
-            if (!d.editing && d.mode == EntryMode.CLOCK && d.start != null) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                            Text("חוזרת כל שבוע", style = KisType.label, color = c.ink)
-                            InfoDot("חוזרת כל שבוע", "משמרת קבועה: היא תופיע מראש בבית ובהיסטוריה תחת \"מתוכנן\", ותירשם לבד כשהזמן שלה נגמר. תמיד אפשר לבטל.")
-                        }
-                        KisSwitch(repeat, { repeat = it }, Modifier.testTag("repeat_switch"), label = "חוזרת כל שבוע")
-                    }
-                    if (repeat) {
-                        RepeatBlock(repeatSet, repeatUntil, repeatPreview, onDays = { set -> repeatDays = set.sorted().joinToString(",") }, onUntil = { repeatUntil = it })
-                        val left = listOfNotNull("הפסקה".takeIf { d.breakMin > 0 }, "בונוס".takeIf { d.bonusValue() > 0 }, "הערה".takeIf { d.notes.isNotBlank() },
-                            "החזר הוצאות".takeIf { d.passThroughValue() > 0 })
-                        if (left.isNotEmpty()) Text("${if (left.size > 1) left.dropLast(1).joinToString(", ") + " ו" + left.last() else left.single()} לא נשמרים במשמרת קבועה", style = KisType.caption, color = c.muted,
-                            modifier = Modifier.testTag("repeat_not_kept"))
-                    }
-                }
-            }
             if ((showBreak || showNote) && d.mode != EntryMode.JOB) KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (showBreak && d.start != null && d.mode != EntryMode.HOURS && !d.groupByHours) Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("break_block")) {
@@ -471,6 +459,29 @@ fun KisEditorPage(
         else SaveBar(check, if (repeatOn(d, repeat)) "יצירת הסדרה" else saveLabel(d, changed),
             check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatPreview?.created?.isNotEmpty() == true), ::save, refused)
     }
+    }
+
+    // "חוזרת כל שבוע" from its square: a short, friendly explanation, the switch, and then the days and until when.
+    if (repeatSheet) KisSheet(onDismiss = { repeatSheet = false }, tag = "repeat_sheet") {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(c.sunk), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Outlined.Repeat, null, tint = c.ink, modifier = Modifier.size(22.dp))
+                }
+                Text("חוזרת כל שבוע", style = KisType.title.copy(fontSize = 20.sp), color = c.ink, modifier = Modifier.weight(1f))
+                KisSwitch(repeat, { repeat = it }, Modifier.testTag("repeat_switch"), label = "חוזרת כל שבוע")
+            }
+            Text("עובד באותן שעות כל שבוע? מגדירים פעם אחת, והמשמרת תופיע מראש ב\"מתוכנן\" ותירשם לבד כשהיא נגמרת. אפשר לבטל בכל רגע.",
+                style = KisType.body, color = c.muted, modifier = Modifier.testTag("repeat_explain"))
+            if (repeat) {
+                RepeatBlock(repeatSet, repeatUntil, repeatPreview, onDays = { set -> repeatDays = set.sorted().joinToString(",") }, onUntil = { repeatUntil = it })
+                val left = listOfNotNull("הפסקה".takeIf { d.breakMin > 0 }, "בונוס".takeIf { d.bonusValue() > 0 }, "הערה".takeIf { d.notes.isNotBlank() },
+                    "החזר הוצאות".takeIf { d.passThroughValue() > 0 })
+                if (left.isNotEmpty()) Text("${if (left.size > 1) left.dropLast(1).joinToString(", ") + " ו" + left.last() else left.single()} לא נשמרים במשמרת קבועה", style = KisType.caption, color = c.muted,
+                    modifier = Modifier.testTag("repeat_not_kept"))
+            }
+            KisButton("סיום", { repeatSheet = false }, Modifier.fillMaxWidth().testTag("repeat_done"))
+        }
     }
 
     if (confirmLeave) KisConfirmSheet(
@@ -616,7 +627,7 @@ private fun DigitClock(value: String, label: String, style: androidx.compose.ui.
  */
 @Composable
 private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active: KeyTarget, startEdit: DigitEdit?, endEdit: DigitEdit?, ink: Color, accent: Color,
-                         onOpen: (KeyTarget, Int?) -> Unit, onNudge: ((KeyTarget, Int) -> Unit)?, length: String? = null) {
+                         onOpen: (KeyTarget, Int?) -> Unit, onNudge: ((KeyTarget, Int) -> Unit)?) {
     val c = Kis.colors
     val typing = startEdit != null || endEdit != null
     // The digits scale with the width so "00:00" always fits whole (a 280dp folding-phone cover screen included).
@@ -627,11 +638,10 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             @Composable fun cell(label: String, value: String, t: KeyTarget, empty: Boolean, edit: DigitEdit?, tag: String) {
                 val shape = RoundedCornerShape(12.dp)
-                // The time being typed is a lifted card with the place's colour on its edge; the ruler's choice is a soft tint.
+                // Only the time being typed is lifted (a card with the place's colour on its edge); otherwise one flat background.
                 val lifted = edit != null
-                val chosen = !typing && active == t
                 Column(Modifier.weight(1f).clip(shape)
-                    .background(when { lifted -> if (c.dark) ink.copy(alpha = 0.10f) else c.surface; chosen -> if (c.dark) ink.copy(alpha = 0.16f) else c.surface.copy(alpha = 0.7f); else -> Color.Transparent })
+                    .background(if (lifted) (if (c.dark) ink.copy(alpha = 0.10f) else c.surface) else Color.Transparent)
                     .then(if (lifted) Modifier.border(1.5.dp, accent, shape) else Modifier)
                     .kisClick { onOpen(t, null) }.semantics { selected = lifted }.testTag(tag).padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(label, color = ink.copy(alpha = if (c.dark) 0.85f else 0.7f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
@@ -655,12 +665,7 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
                 }
             }
             cell("התחלה", start, KeyTarget.START, startEmpty, startEdit, "clock_start")
-            // Between the times: the arrow and the shift's length.
-            Column(Modifier.padding(top = digits.value.dp * 0.55f).testTag("clock_length"), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("←", color = ink.copy(alpha = 0.5f), fontSize = 18.sp)
-                if (length != null) Text(length, color = ink.copy(alpha = if (c.dark) 0.8f else 0.65f), maxLines = 1, softWrap = false,
-                    style = KisType.caption.copy(fontWeight = FontWeight.SemiBold, textDirection = TextDirection.Ltr))
-            }
+            Text("←", color = ink.copy(alpha = 0.5f), fontSize = 18.sp, modifier = Modifier.padding(top = digits.value.dp * 0.6f))
             cell("סיום", end, KeyTarget.END, false, endEdit, "clock_end")
         }
     }
@@ -680,13 +685,7 @@ private fun HoursDisplay(value: String, edit: DigitEdit?, ink: Color, accent: Co
         val style = KisType.hero.copy(fontSize = (54f / LocalDensity.current.fontScale.coerceAtLeast(1f)).sp, textDirection = TextDirection.Ltr, fontFeatureSettings = "tnum")
         DigitClock(shown, "משך", style, ink, ink, accent, edit, "duration") { i -> onOpen(i) }
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf(2, 4, 6, 8).forEach { h ->
-            Box(Modifier.weight(1f).heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
-                .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(8.dp))).kisClick { onQuick(h) }.testTag("quick_hours_$h"),
-                contentAlignment = Alignment.Center) { Text("$h ש׳", color = ink, style = KisType.label) }
-        }
-    }
+    // No ready-made hour suggestions (owner 2026-11-26): the length is typed on the clock digits.
     if (onUseClock != null) Text("לפי שעון (התחלה וסיום)", color = ink.copy(alpha = 0.85f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold),
         modifier = Modifier.clip(RoundedCornerShape(8.dp)).kisClick(onClick = onUseClock).padding(vertical = 4.dp))
 }
@@ -764,13 +763,9 @@ private fun DayStrip(day: Long, onDay: (Long) -> Unit) {
 
 @Composable
 private fun JobNote(notes: String, history: List<WorkEntry>, onNotes: (String) -> Unit) {
-    val past = remember(history) { history.filter { it.kind == WorkEntry.KIND_JOB && it.notes.isNotBlank() }.map { it.notes }.distinct().take(4) }
     KisCard(padding = PaddingValues(14.dp), radius = 18.dp) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             KisTextField(notes, onNotes, "מה עשית?", Modifier.fillMaxWidth().testTag("job_note"), placeholder = "לא חובה")
-            if (past.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                past.forEach { n -> KisChip(n, dashed = true, onClick = { onNotes(n) }) }
-            }
         }
     }
 }
