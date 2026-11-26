@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Groups
@@ -73,6 +74,7 @@ private val DraftSaver = Saver<EntryDraft, String>(save = { it.toJson() }, resto
  * saves when something changed. Times and amounts are typed with the phone's own keyboard; a time is edited in place,
  * digit by digit, on the big clock at the top.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun KisEditorPage(
     viewModel: WorkViewModel,
@@ -284,8 +286,6 @@ fun KisEditorPage(
     LaunchedEffect(imeOpen, pad) {
         if (!pad) imeSeen = false else if (imeOpen) imeSeen = true else if (imeSeen) done()
     }
-    // A text field being typed in (not one of our values): the clock, ruler and places fold away.
-    val typingText = imeOpen && !pad
     val frame = RoundedCornerShape(24.dp)
     Box(Modifier.fillMaxSize().background(c.bg).then(if (d.team) Modifier.border(2.5.dp, accent, frame).testTag("team_frame") else Modifier)) {
     // Light: the page glows in the chosen place's colour, so the screen keeps to one colour (the place, its span on the
@@ -293,16 +293,19 @@ fun KisEditorPage(
     KisGlow(Modifier.fillMaxSize(), if (c.dark) null else accent)
     if (!aiMode) KeySink(target, focusAsk, pad, onFocus = { sinkFocused = it }, onKey = ::key,
         onNext = { open(KeyTarget.END) }, onDone = ::done)
-    BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
-    // A short screen (a Pixel 2, a phone with a large display size): the clock, ruler and places are capped so the
-    // form below keeps at least a usable strip and the save bar, and they scroll on their own instead (2.4.1 RC).
-    // While a value is typed the top keeps its full height: the clock must stay in view above the keyboard.
-    val topMax = if (pad || typingText) androidx.compose.ui.unit.Dp.Infinity else maxOf(maxHeight - 160.dp, 260.dp)
-    Column(Modifier.fillMaxSize().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
-        // ---------------- top ----------------
-        Column(Modifier.fillMaxWidth().heightIn(max = topMax).verticalScroll(rememberScrollState()).testTag("editor_top")
-            .statusBarsPadding().padding(horizontal = 16.dp).padding(top = 10.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    // Owner 2026-11-26: the whole page scrolls as one (no half that stays stuck), only the title row and the save bar stay.
+    // Nothing folds away when the system keyboard opens, so the page does not jump under the finger.
+    val pageScroll = rememberScrollState()
+    val extrasInView = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    // Typing a time, duration or amount: the clock goes to the top so it stays above the keyboard. Typing the rate,
+    // a bonus, expenses or a break: that row is brought into view once the keyboard is up.
+    LaunchedEffect(pad, target, imeOpen) {
+        if (!pad) return@LaunchedEffect
+        if (target in setOf(KeyTarget.START, KeyTarget.END, KeyTarget.HOURS, KeyTarget.AMOUNT)) pageScroll.animateScrollTo(0)
+        else { kotlinx.coroutines.delay(60); extrasInView.bringIntoView() }
+    }
+    Column(Modifier.fillMaxSize().imePadding().testTag(if (d.editing) "edit_page" else "add_page").semantics { contentDescription = if (d.editing) "עריכת משמרת" else "משמרת חדשה" }) {
+        Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp).padding(top = 10.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 TopPill(if (d.editing) "סגירה" else "ביטול", onTop, tag = "editor_close") { close() }
                 Text(when { d.editing && d.team -> "עריכת משמרת קבוצתית"; d.editing -> "עריכת משמרת"; d.team -> "משמרת קבוצתית"; else -> "משמרת חדשה" }, Modifier.weight(1f).semantics { heading() },
                     color = if (d.team) accent else onTop, style = KisType.label.copy(fontSize = 16.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -313,20 +316,31 @@ fun KisEditorPage(
                     d = d.withTeam(!d.team)
                     if (!aiMode) target = when (d.tab) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
                 }
-            }
-            // While the system keyboard is open (note, worker name) the clock, ruler and places fold away,
-            // the mode tabs and total stay, so the form and the Save bar keep their room on small phones.
-            if (!aiMode && !imeOpen && !pad && d.editing && base != null) WasBanner(base, changed, onTop)
-            ModeTabs(if (aiMode) null else d.tab, onTop, c.bg, ai = !d.editing, onAi = { commitBuf(); pad = false; aiMode = true }) { m ->
+        }
+        if (aiMode) Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 12.dp)) {
+            ModeTabs(null, onTop, c.bg, ai = !d.editing, onAi = {}) { m -> aiMode = false; d = d.withTab(m)
+                target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START } }
+        }
+        if (aiMode) {
+            KisAiEntry(viewModel, categories, Modifier.weight(1f), team = d.team, onSaved = { n ->
+                settings.haptic(KisSettings.Haptic.SUCCESS)
+                onSaved(if (n == 1) "המשמרת נשמרה ✓" else "$n משמרות נשמרו ✓") { viewModel.undoLastAddedEntry() }
+                onClose()
+            })
+            return@Column
+        }
+        Column(Modifier.weight(1f).verticalScroll(pageScroll).testTag("editor_scroll").padding(horizontal = 16.dp).padding(top = 4.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (!pad && d.editing && base != null) WasBanner(base, changed, onTop)
+            ModeTabs(d.tab, onTop, c.bg, ai = !d.editing, onAi = { commitBuf(); pad = false; aiMode = true }) { m ->
                 if (pad) done()
                 if (pad) return@ModeTabs
-                aiMode = false
                 d = d.withTab(m)
                 target = when (m) { EntryMode.JOB -> KeyTarget.AMOUNT; EntryMode.HOURS -> KeyTarget.HOURS; else -> KeyTarget.START }
             }
-            if (!aiMode) {
-                if (!typingText) {
-                    // While a value is typed with the keyboard open, the places fold away so the clock and the form keep their room.
+            run {
+                run {
+                    // While a time is typed with the keyboard open, the places fold away so the clock stays above the keyboard.
                     if (!(pad && imeOpen)) CategoryChips(categories, d.category, onTop, topBg, accent, workplace.accentInk(c.dark), onPick = { cat -> if (commitBuf()) d = d.withCategory(cat, viewModel::categoryCurrency) }, onAdd = { if (pad) done(); addingPlace = true })
                     when {
                         d.mode == EntryMode.JOB -> JobAmount(d, shown(KeyTarget.AMOUNT), pad && target == KeyTarget.AMOUNT, onTop, accent,
@@ -335,10 +349,14 @@ fun KisEditorPage(
                         d.mode == EntryMode.HOURS || d.groupByHours -> HoursDisplay(shown(KeyTarget.HOURS), edit(KeyTarget.HOURS), onTop, accent,
                             onOpen = { at -> open(KeyTarget.HOURS, at) }, onQuick = { h -> d = d.copy(hours = h.toString()); if (pad && target == KeyTarget.HOURS) { buf = fieldDigits(target); fresh = true; digitsDirty = false } },
                             onUseClock = null)
-                        else -> {
+                        else -> Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(if (c.dark) onTop.copy(alpha = 0.06f) else topBg.copy(alpha = 0.55f))
+                            .testTag("clock_card").padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            // Design option 1 (owner 2026-11-26): start and end in one card with the length between them,
+                            // one split −15|+15 under each time, and the ruler in the same card.
                             Box(Modifier.coachTarget(CoachTarget.FIELDS)) {
                                 ClockDisplay(shown(KeyTarget.START), shown(KeyTarget.END), d.start == null && !(pad && target == KeyTarget.START && buf.any { it != '·' }),
                                     target, edit(KeyTarget.START), edit(KeyTarget.END), onTop, accent, onOpen = ::open,
+                                    length = check.minutes?.takeIf { it > 0 }?.let { KisFormat.hm(it) },
                                     // The ±15 buttons fold away with the ruler while typing (so it fits a 360dp phone above the keyboard).
                                     onNudge = if (pad) null else { t, n -> timeOf(t)?.let { setTime(t, nudge(it, n)) } })
                             }
@@ -353,61 +371,54 @@ fun KisEditorPage(
                 val shownTotal = if (base != null && check.canSave) com.example.data.WorkPay.pay(com.example.data.WorkEntryEdits.apply(base, d.toEntry(base))) else check.total
                 MetaLine(d, check.copy(total = shownTotal), onTop, topBg)
             }
-        }
-        if (aiMode) {
-            KisAiEntry(viewModel, categories, Modifier.weight(1f), team = d.team, onSaved = { n ->
-                settings.haptic(KisSettings.Haptic.SUCCESS)
-                onSaved(if (n == 1) "המשמרת נשמרה ✓" else "$n משמרות נשמרו ✓") { viewModel.undoLastAddedEntry() }
-                onClose()
-            })
-            return@Column
-        }
-        // ---------------- details ----------------
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 2.dp, bottom = 14.dp).testTag("editor_scroll"),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (d.mode == EntryMode.JOB) JobNote(d.notes, history) { d = d.copy(notes = it) }
             DayStrip(d.day) { d = d.copy(day = it) }
-            // The Hebrew date label is long: the chip takes what is left, and the currency toggle always stays on screen.
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                KisChip(dayLabelLong(d.day).takeIf { !isWithinWeek(d.day) } ?: "תאריך אחר", modifier = Modifier.weight(1f, fill = false), leading = Icons.Outlined.CalendarMonth, tag = "editor_other_date", onClick = {
+            // Owner 2026-11-26: date, rate and "+" share one row. Another date is a small calendar button (the chosen
+            // date shows on it only when it is outside the week above); the currency stays at the row's end.
+            Row(Modifier.fillMaxWidth().bringIntoViewRequester(extrasInView).testTag("editor_extras"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                val otherDay = !isWithinWeek(d.day)
+                KisChip(if (otherDay) Calendar.getInstance().apply { timeInMillis = d.day }.let { "${it.get(Calendar.DAY_OF_MONTH)}.${it.get(Calendar.MONTH) + 1}" } else "", leading = Icons.Outlined.CalendarMonth, tag = "editor_other_date",
+                    modifier = Modifier.semantics { contentDescription = if (otherDay) "תאריך: ${dayLabelLong(d.day)}" else "תאריך אחר" }, onClick = {
                     val cal = Calendar.getInstance().apply { timeInMillis = d.day }
                     DatePickerDialog(context, { _, y, m, day -> d = d.copy(day = Calendar.getInstance().apply { clear(); set(y, m, day) }.timeInMillis) },
                         cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
                 })
+                if (d.mode != EntryMode.JOB) {
+                    if (d.rateUnknown) KisChip("תעריף חסר", warn = true, tag = "editor_rate_known", modifier = Modifier.weight(1f, fill = false), onClick = { d = d.copy(rateUnknown = false); open(KeyTarget.RATE) })
+                    else KisChip("${d.currency}${shown(KeyTarget.RATE).ifEmpty { "?" }} לשעה", selected = pad && target == KeyTarget.RATE, tag = "editor_rate", modifier = Modifier.weight(1f, fill = false), onClick = { open(KeyTarget.RATE) })
+                }
+                KisChip("+", selected = plusOpen, tag = "editor_plus", modifier = Modifier.semantics { contentDescription = "הוספה: בונוס, החזר הוצאות, הפסקה או הערה" },
+                    onClick = { if (pad) done(); plusOpen = !plusOpen })
                 Spacer(Modifier.weight(1f))
                 CurrencyToggle(d.currency, { d = d.copy(currency = it) }, "editor_currency")
             }
-            FlowRowCompat {
-                if (d.mode != EntryMode.JOB) {
-                    if (d.rateUnknown) KisChip("תעריף חסר · להוספה", warn = true, tag = "editor_rate_known", onClick = { d = d.copy(rateUnknown = false); open(KeyTarget.RATE) })
-                    else KisChip("${d.currency}${shown(KeyTarget.RATE).ifEmpty { "?" }} לשעה", selected = pad && target == KeyTarget.RATE, tag = "editor_rate", onClick = { open(KeyTarget.RATE) })
-                    // "לא יודע" belongs to the rate: it shows while the rate is typed, not as a button of its own.
-                    if (pad && target == KeyTarget.RATE) KisChip("לא יודע", tag = "editor_rate_unknown", onClick = { buf = ""; done(); d = d.copy(rateUnknown = true) })
-                }
-                // What was added with "+" shows as its own chip (a tap edits it); nothing shows for what was not added.
-                val b = shown(KeyTarget.BONUS)
-                if (d.mode != EntryMode.JOB && (b.isNotEmpty() && b != "0" || pad && target == KeyTarget.BONUS))
-                    KisChip("בונוס ${d.currency}${b.ifEmpty { "0" }}", selected = pad && target == KeyTarget.BONUS, tag = "editor_bonus", onClick = { open(KeyTarget.BONUS) })
-                val p = shown(KeyTarget.PASS)
-                if (p.isNotEmpty() && p != "0" || pad && target == KeyTarget.PASS)
-                    KisChip("החזר הוצאות ${d.currency}${p.ifEmpty { "0" }}", selected = pad && target == KeyTarget.PASS, tag = "editor_pass_through", onClick = { open(KeyTarget.PASS) })
-                KisChip("+", selected = plusOpen, tag = "editor_plus", onClick = { if (pad) done(); plusOpen = !plusOpen })
-                if (d.mode != EntryMode.JOB) KisChip("הערה", selected = showNote, tag = "editor_note", onClick = { if (pad) done(); showNote = !showNote })
-            }
-            // "+": one money line at a time (bonus or money passed on), or a break. Each kind once; adding it again edits it.
+            // "לא יודע" belongs to the rate: it shows while the rate is typed, not as a button of its own.
+            if (d.mode != EntryMode.JOB && pad && target == KeyTarget.RATE) KisChip("לא יודע את התעריף", tag = "editor_rate_unknown", onClick = { buf = ""; done(); d = d.copy(rateUnknown = true) })
+            // "+": bonus, money passed on, a break or a note. What was added shows as its own chip (a tap edits it).
             if (plusOpen) {
                 val canBreak = d.mode != EntryMode.JOB && d.start != null && d.mode != EntryMode.HOURS && !d.groupByHours
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("plus_block")) {
                     Text("מה להוסיף?", style = KisType.label, color = c.muted)
                     FlowRowCompat {
-                        if (d.mode != EntryMode.JOB) KisChip("בונוס", tag = "plus_bonus", onClick = { plusOpen = false; open(KeyTarget.BONUS) })
-                        KisChip("החזר הוצאות", tag = "plus_pass", onClick = { plusOpen = false; open(KeyTarget.PASS) })
-                        if (canBreak) KisChip("הפסקה", tag = "plus_break", onClick = { plusOpen = false; showBreak = true })
+                        if (d.mode != EntryMode.JOB) KisChip("בונוס", dashed = true, tag = "plus_bonus", onClick = { plusOpen = false; open(KeyTarget.BONUS) })
+                        KisChip("החזר הוצאות", dashed = true, tag = "plus_pass", onClick = { plusOpen = false; open(KeyTarget.PASS) })
+                        if (canBreak && !showBreak) KisChip("הפסקה", dashed = true, tag = "plus_break", onClick = { plusOpen = false; showBreak = true })
+                        if (d.mode != EntryMode.JOB && !showNote) KisChip("הערה", dashed = true, tag = "plus_note", onClick = { plusOpen = false; showNote = true })
                     }
                 }
             }
-            // Money passed through (car, materials) is owed by the employer but is not the user's income; say so where it is typed.
-            if (d.passThroughValue() > 0 || pad && target == KeyTarget.PASS) PassThroughNote(d, check.total)
+            run {
+                val b = shown(KeyTarget.BONUS)
+                val p = shown(KeyTarget.PASS)
+                val hasBonus = d.mode != EntryMode.JOB && (b.isNotEmpty() && b != "0" || pad && target == KeyTarget.BONUS)
+                val hasPass = p.isNotEmpty() && p != "0" || pad && target == KeyTarget.PASS
+                if (hasBonus || hasPass) FlowRowCompat {
+                    if (hasBonus) KisChip("בונוס ${d.currency}${b.ifEmpty { "0" }}", selected = pad && target == KeyTarget.BONUS, tag = "editor_bonus", onClick = { open(KeyTarget.BONUS) })
+                    if (hasPass) KisChip("החזר הוצאות ${d.currency}${p.ifEmpty { "0" }}", selected = pad && target == KeyTarget.PASS, tag = "editor_pass_through", onClick = { open(KeyTarget.PASS) })
+                }
+            }
+            // Bonus and expenses: how the amount is made up, so it is clear what is income and what the employer owes.
+            if (d.bonusValue() > 0 && d.mode != EntryMode.JOB && d.mode != EntryMode.GROUP || d.passThroughValue() > 0 || pad && target == KeyTarget.PASS) PayBreakdown(d, check)
             check.warnings.forEach { Notice(it) }
             if (d.mode == EntryMode.GROUP) GroupBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
             if (d.mode == EntryMode.JOB && d.team) JobTeamBlock(d, workersDirectory, onForget = viewModel::forgetWorker) { d = it }
@@ -459,7 +470,6 @@ fun KisEditorPage(
             onNext = { open(KeyTarget.END) }, onDone = ::done)
         else SaveBar(check, if (repeatOn(d, repeat)) "יצירת הסדרה" else saveLabel(d, changed),
             check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatPreview?.created?.isNotEmpty() == true), ::save, refused)
-    }
     }
     }
 
@@ -606,7 +616,7 @@ private fun DigitClock(value: String, label: String, style: androidx.compose.ui.
  */
 @Composable
 private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active: KeyTarget, startEdit: DigitEdit?, endEdit: DigitEdit?, ink: Color, accent: Color,
-                         onOpen: (KeyTarget, Int?) -> Unit, onNudge: ((KeyTarget, Int) -> Unit)?) {
+                         onOpen: (KeyTarget, Int?) -> Unit, onNudge: ((KeyTarget, Int) -> Unit)?, length: String? = null) {
     val c = Kis.colors
     val typing = startEdit != null || endEdit != null
     // The digits scale with the width so "00:00" always fits whole (a 280dp folding-phone cover screen included).
@@ -626,10 +636,13 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
                     .kisClick { onOpen(t, null) }.semantics { selected = lifted }.testTag(tag).padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(label, color = ink.copy(alpha = if (c.dark) 0.85f else 0.7f), style = KisType.caption.copy(fontWeight = FontWeight.SemiBold))
                     DigitClock(value, label, style, ink.copy(alpha = if (empty && edit == null) 0.45f else 1f), ink, accent, edit, tag) { i -> onOpen(t, if (empty) null else i) }
-                    if (onNudge != null && !empty) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf(-15, 15).forEach { n ->
-                            Box(Modifier.weight(1f).heightIn(min = KisMinTouch).clip(RoundedCornerShape(8.dp)).background(if (c.dark) ink.copy(alpha = 0.16f) else c.surface)
-                                .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(8.dp)))
+                    // One split button: −15 | +15 (design option 1), each half its own 48dp target.
+                    if (onNudge != null && !empty) Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min).clip(RoundedCornerShape(12.dp))
+                        .background(if (c.dark) ink.copy(alpha = 0.10f) else c.surface)
+                        .then(if (c.dark) Modifier else Modifier.border(1.dp, c.line, RoundedCornerShape(12.dp)))) {
+                        listOf(-15, 15).forEachIndexed { i, n ->
+                            if (i == 1) Box(Modifier.width(1.dp).fillMaxHeight().background(if (c.dark) ink.copy(alpha = 0.16f) else c.line))
+                            Box(Modifier.weight(1f).heightIn(min = KisMinTouch)
                                 .kisClick(haptic = KisSettings.Haptic.TICK) { onNudge(t, n) }
                                 .semantics { contentDescription = "$label ${if (n > 0) "$n דקות קדימה" else "${-n} דקות אחורה"}" }
                                 .testTag("nudge_${t.name.lowercase()}_$n"), contentAlignment = Alignment.Center) {
@@ -642,7 +655,12 @@ private fun ClockDisplay(start: String, end: String, startEmpty: Boolean, active
                 }
             }
             cell("התחלה", start, KeyTarget.START, startEmpty, startEdit, "clock_start")
-            Text("←", color = ink.copy(alpha = 0.5f), fontSize = 20.sp, modifier = Modifier.padding(top = digits.value.dp * 0.6f))
+            // Between the times: the arrow and the shift's length.
+            Column(Modifier.padding(top = digits.value.dp * 0.55f).testTag("clock_length"), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("←", color = ink.copy(alpha = 0.5f), fontSize = 18.sp)
+                if (length != null) Text(length, color = ink.copy(alpha = if (c.dark) 0.8f else 0.65f), maxLines = 1, softWrap = false,
+                    style = KisType.caption.copy(fontWeight = FontWeight.SemiBold, textDirection = TextDirection.Ltr))
+            }
             cell("סיום", end, KeyTarget.END, false, endEdit, "clock_end")
         }
     }
@@ -757,13 +775,42 @@ private fun JobNote(notes: String, history: List<WorkEntry>, onNotes: (String) -
     }
 }
 
-/** "Not your income, but owed by the employer", with what the employer owes once it is known (a team shows it in its own block). */
+/**
+ * How the amount is made up once a bonus or expenses are added (owner 2026-11-26): hours × rate, + bonus = your income;
+ * expenses are not income but the employer owes them too. A group or a team job shows the employer's side in its own block.
+ */
 @Composable
-private fun PassThroughNote(d: EntryDraft, own: Double?) {
+private fun PayBreakdown(d: EntryDraft, check: EntryDraft.Check) {
     val c = Kis.colors
-    val due = if (d.mode == EntryMode.GROUP || d.teamJob) null else d.employerDue(own, 0.0)
-    Text((if (due != null) "לקבל מהמעסיק ${KisFormat.money(due, d.currency)} · " else "") + "ההחזר לא נספר בהכנסה שלך, רק במה שהמעסיק צריך לשלם",
-        Modifier.fillMaxWidth().testTag("pass_through_note"), color = c.muted, style = KisType.caption.copy(textDirection = TextDirection.Rtl))
+    val cur = d.currency
+    val solo = d.mode != EntryMode.GROUP && !d.teamJob
+    val bonus = if (d.mode == EntryMode.JOB) 0.0 else d.bonusValue()
+    val pass = d.passThroughValue()
+    val total = check.total
+    @Composable fun line(label: String, value: String, strong: Boolean = false, tag: String? = null) =
+        Row(Modifier.fillMaxWidth().then(if (tag != null) Modifier.testTag(tag) else Modifier), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, Modifier.weight(1f), color = if (strong) c.ink else c.muted, style = if (strong) KisType.label else KisType.caption.copy(fontSize = 13.sp))
+            Text(value, color = c.ink, style = (if (strong) KisType.label else KisType.caption.copy(fontSize = 13.sp)).copy(textDirection = TextDirection.Ltr), maxLines = 1)
+        }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (c.dark) c.surface else c.surface.copy(alpha = 0.7f))
+        .testTag("pay_breakdown").padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        if (solo && total != null) {
+            val base = Math.round((total - bonus) * 100) / 100.0
+            val minutes = check.minutes
+            val rate = d.rateValue()
+            line(if (d.mode == EntryMode.JOB) "סכום העבודה" else if (minutes != null && rate != null) "${KisFormat.hm(minutes)} שעות × ${KisFormat.money(rate, cur)}" else "שכר השעות", KisFormat.money(base, cur))
+            if (bonus > 0) line("בונוס", "+" + KisFormat.money(bonus, cur), tag = "breakdown_bonus")
+            if (bonus > 0 || pass > 0) line("ההכנסה שלך", KisFormat.money(total, cur), strong = true, tag = "breakdown_income")
+        } else if (bonus > 0 && d.mode != EntryMode.GROUP) line("בונוס (נספר בהכנסה)", "+" + KisFormat.money(bonus, cur), tag = "breakdown_bonus")
+        if (pass > 0) {
+            line("החזר הוצאות (לא הכנסה)", "+" + KisFormat.money(pass, cur), tag = "breakdown_pass")
+            val due = if (solo) d.employerDue(total, 0.0) else null
+            if (due != null) line("לקבל מהמעסיק", KisFormat.money(due, cur), strong = true, tag = "breakdown_due")
+        }
+        if (pass > 0 || d.passThroughValue() == 0.0 && bonus == 0.0)
+            Text("ההחזר לא נספר בהכנסה שלך, רק במה שהמעסיק צריך לשלם", Modifier.fillMaxWidth().testTag("pass_through_note"), color = c.muted,
+                style = KisType.caption.copy(textDirection = TextDirection.Rtl))
+    }
 }
 
 @Composable

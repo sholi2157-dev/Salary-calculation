@@ -53,7 +53,7 @@ class DistributionUiTest {
         // Add page: every mode, a typed note survives mode changes and an Activity recreation.
         ui.onNodeWithTag("add_entry_button").performClick()
         ui.onNodeWithTag("add_page").assertIsDisplayed()
-        ui.onNodeWithTag("editor_note").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_plus").performScrollTo().performClick(); ui.onNodeWithTag("plus_note").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("בדיקת טיוטה")
         for (mode in listOf("hours", "job", "group", "clock")) {
             ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performClick()

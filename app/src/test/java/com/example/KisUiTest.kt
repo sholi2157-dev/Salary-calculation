@@ -181,7 +181,7 @@ class KisUiTest {
         ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪437.50")
         shot("editor-clock-$suffix")
         // A note survives every mode switch (draft is kept).
-        ui.onNodeWithTag("editor_note").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_plus").performScrollTo().performClick(); ui.onNodeWithTag("plus_note").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("טיוטה שנשמרת במעבר")
         // "group" is the "קבוצה" button at the top (on, then off again back to the user's own shift).
         for (mode in listOf("hours", "group", "clock")) {
@@ -1495,7 +1495,7 @@ class KisUiTest {
             null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
         shot("review-clock-411x659")
         ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(80.dp)
-        ui.onNodeWithTag("editor_note").performScrollTo().assertIsDisplayed().performClick()
+        ui.onNodeWithTag("editor_plus").performScrollTo().assertIsDisplayed().performClick(); ui.onNodeWithTag("plus_note").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().assertIsDisplayed()
         ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
     }
@@ -1512,6 +1512,41 @@ class KisUiTest {
             listOf(-15, 15).forEach { n -> ui.onNodeWithTag("nudge_${time}_$n").assertIsDisplayed().assertHeightIsAtLeast(48.dp) }
         }
         ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(120.dp)
+    }
+
+    /**
+     * Owner 2026-11-26: date (a calendar button), rate and "+" on one row with the currency; the note is inside "+";
+     * the whole page scrolls as one, so the clock scrolls away with the form instead of staying stuck.
+     */
+    @Test @Config(qualifiers = "w360dp-h708dp-xxhdpi") fun dateRateAndPlusShareOneRowAndThePageScrollsAsOne() {
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00", rate = "50"),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        val tops = listOf("editor_other_date", "editor_rate", "editor_plus").map { ui.onNodeWithTag(it).performScrollTo().getUnclippedBoundsInRoot().top.value }
+        tops.forEach { assertEquals("date, rate and + share one row", tops.first(), it, 0.5f) }
+        ui.onNodeWithTag("editor_note").assertDoesNotExist()
+        ui.onNodeWithTag("editor_plus").performClick()
+        listOf("plus_bonus", "plus_pass", "plus_break", "plus_note").forEach { ui.onNodeWithTag(it).assertExists() }
+        ui.onNodeWithTag("plus_note").performScrollTo().performClick()
+        ui.onNodeWithTag("notes_input").performScrollTo().assertIsDisplayed()
+        // One scroller: once the note is in view the clock has scrolled up with the rest of the page.
+        val clock = ui.onNodeWithTag("clock_card").getUnclippedBoundsInRoot()
+        val page = ui.onNodeWithTag("editor_scroll").getUnclippedBoundsInRoot()
+        assertTrue("the clock scrolls with the form", clock.top < page.top)
+        ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
+        shot("review-one-row-360x708")
+    }
+
+    /** Bonus is income, expenses are not: the editor spells out hours × rate + bonus = income, + expenses = owed by the employer. */
+    @Test fun bonusAndExpensesAreSpelledOut() {
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "13:00", rate = "50", bonus = "30", passThrough = "20"),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        ui.onNodeWithTag("pay_breakdown").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithTag("breakdown_bonus", useUnmergedTree = true).assertTextContains("+₪30", substring = true)
+        ui.onNodeWithTag("breakdown_income", useUnmergedTree = true).assertTextContains("₪230", substring = true)
+        ui.onNodeWithTag("breakdown_pass", useUnmergedTree = true).assertTextContains("+₪20", substring = true)
+        ui.onNodeWithTag("breakdown_due", useUnmergedTree = true).assertTextContains("₪250", substring = true)
+        ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪230")
+        shot("review-pay-breakdown")
     }
 
     @Test fun knownZeroRateIsShownAndIsNotOfferedAsMissing() {
