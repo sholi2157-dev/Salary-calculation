@@ -1526,9 +1526,9 @@ class KisUiTest {
      * the whole page scrolls as one, so the clock scrolls away with the form instead of staying stuck.
      */
     @Test @Config(qualifiers = "w360dp-h708dp-xxhdpi") fun dateRateAndPlusShareOneRowAndThePageScrollsAsOne() {
-        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00", rate = "50"),
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00", rate = "120.50"),
             null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
-        val tops = listOf("editor_other_date", "editor_rate", "editor_plus").map { ui.onNodeWithTag(it).performScrollTo().getUnclippedBoundsInRoot().top.value }
+        val tops = listOf("editor_other_date", "editor_rate", "editor_plus", "editor_repeat", "editor_currency").map { ui.onNodeWithTag(it).performScrollTo().getUnclippedBoundsInRoot().top.value }
         tops.forEach { assertEquals("date, rate and + share one row", tops.first(), it, 0.5f) }
         ui.onNodeWithTag("editor_note").assertDoesNotExist()
         ui.onNodeWithTag("editor_scroll").performScrollToNode(hasTestTag("clock_card"))
