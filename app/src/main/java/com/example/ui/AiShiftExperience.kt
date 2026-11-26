@@ -88,7 +88,7 @@ fun AiShiftInput(text: String, onText: (String) -> Unit, capturing: Boolean, lis
         val pulse = rememberInfiniteTransition(label = "voice")
         val glow by pulse.animateFloat(0.10f, 0.26f, infiniteRepeatable(tween(850), RepeatMode.Reverse), label = "listening glow")
         val ring = if (capturing && listening) glow else 0.14f
-        Box(Modifier.padding(vertical = 6.dp).size(184.dp).clip(CircleShape).background(accent.copy(alpha = ring * 0.5f)), contentAlignment = Alignment.Center) {
+        Box(Modifier.padding(vertical = 6.dp).size(184.dp).coachTarget(CoachTarget.AI).clip(CircleShape).background(accent.copy(alpha = ring * 0.5f)), contentAlignment = Alignment.Center) {
             Box(Modifier.size(156.dp).clip(CircleShape).background(accent.copy(alpha = ring)), contentAlignment = Alignment.Center) {
                 Box(Modifier.size(128.dp).clip(CircleShape).background(if (processing) c.sunk else accent)
                     .clickable(enabled = !processing && !capturing, role = Role.Button) { keyboard?.hide(); focus.clearFocus(); onRecord() }
@@ -112,7 +112,7 @@ fun AiShiftInput(text: String, onText: (String) -> Unit, capturing: Boolean, lis
             Text("או להקליד", color = c.muted, style = com.example.ui.kis.KisType.caption)
             Box(Modifier.weight(1f).height(1.dp).background(c.line))
         }
-        com.example.ui.kis.KisTextField(text, onText, "תיאור המשמרת", Modifier.fillMaxWidth().coachTarget(CoachTarget.AI).testTag("ai_free_text_input"),
+        com.example.ui.kis.KisTextField(text, onText, "תיאור המשמרת", Modifier.fillMaxWidth().testTag("ai_free_text_input"),
             placeholder = "כותבים כאן...", singleLine = false, minLines = 2,
             enabled = !processing && !capturing,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); focus.clearFocus() }))
