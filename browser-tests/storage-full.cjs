@@ -68,7 +68,7 @@ const tid = t => `[data-testid="${t}"]`;
     });
     await edit.evaluate(() => Kis.openDetail('r02'));
     await edit.click(tid('detail-edit'));
-    if (!await edit.locator(tid('notes-input')).count()) await edit.click(tid('editor-note'));
+    if (!await edit.locator(tid('notes-input')).count()) await edit.click(tid('editor-plus')).then(() => edit.click(tid('plus-note')));
     await edit.locator(tid('notes-input')).fill('עריכה סינתטית שנשארת');
     await edit.click(tid('save-shift'));
     assert.equal(await edit.locator(tid('notes-input')).inputValue(), 'עריכה סינתטית שנשארת');

@@ -74,6 +74,9 @@ const tid = t => `[data-testid="${t}"]`;
       // Start and end share one row on every phone width.
       const tops = await page.$$eval('.clock-row > .time-box', bs => bs.map(b => Math.round(b.getBoundingClientRect().top)));
       assert.equal(new Set(tops).size, 1, `${width}/${theme}: time cards wrapped ${tops}`);
+      // Owner 2026-11-26: date (calendar button), rate and "+" share one row.
+      const rowTops = await page.$$eval('[data-testid=editor-other-date], [data-testid=rate-field], [data-testid=editor-plus]', bs => bs.map(b => Math.round(b.getBoundingClientRect().top)));
+      assert.equal(rowTops.length, 3); assert.equal(new Set(rowTops).size, 1, `${width}/${theme}: date, rate and + wrapped ${rowTops}`);
       await fit(); await shot('editor-targets');
       await hit(tid('ruler-start')); await hit(tid('ruler-end'));
       // The enlarged last digit still selects just that digit and keeps the native keyboard path.

@@ -52,9 +52,9 @@ test('2.4.1: four highlights, the same lines as Android, ', () => {
   const kt = path.join(__dirname, '..', 'app', 'src', 'main', 'java', 'com', 'example', 'ui', 'kis', 'KisWhatsNew.kt');
   if (fs.existsSync(kt)) { const src = fs.readFileSync(kt, 'utf8'); for (const line of lines) assert.ok(src.includes(line.replace(/"/g, '\\"')), 'Android has: ' + line); }
 });
-test('2.4.2: this site is 2.4.2 with its one highlight, the same line as Android', () => {
+test('2.4.2: this site is 2.4.2 with its four highlights, the same lines as Android', () => {
   assert.equal(W.VERSION, '2.4.2');
-  assert.deepEqual(W.NOTES['2.4.2'], ['במשמרת חדשה, שעת ההתחלה ושעת הסיום שוב מופיעות אחת ליד השנייה, כמו קודם.']);
+  assert.deepEqual(W.NOTES['2.4.2'], ['מסך הוספת משמרת מסודר יותר: ההתחלה והסיום בכרטיס אחד, עם משך המשמרת ביניהן.', 'תאריך, תעריף ו-+ בשורה אחת. בונוס, החזר הוצאות, הפסקה והערה מוסיפים מה-+.', 'כשיש בונוס או החזר הוצאות, רואים בדיוק מה ההכנסה שלך ומה לקבל מהמעסיק.', 'כל המסך נגלל יחד, גם כשהמקלדת פתוחה.']);
   for (const line of W.NOTES['2.4.2']) assert.doesNotMatch(line, /תקלה|באג|תיקון/);
   const kt = path.join(__dirname, '..', 'app', 'src', 'main', 'java', 'com', 'example', 'ui', 'kis', 'KisWhatsNew.kt');
   if (fs.existsSync(kt)) { const src = fs.readFileSync(kt, 'utf8'); for (const line of W.NOTES['2.4.2']) assert.ok(src.includes(line), 'Android has: ' + line); }

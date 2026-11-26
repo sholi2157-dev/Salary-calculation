@@ -24,16 +24,16 @@ const server = http.createServer((q, r) => { let p = decodeURIComponent(new URL(
   await page.evaluate(() => window.Kis.openNew()); await page.waitForTimeout(300);
   await page.click('[data-mode="CLOCK"]').catch(() => {});
   // 2 then 5 cannot be an hour: the app says so.
-  await page.click(tid('clock-start')); await page.keyboard.type('25');
+  await page.click('.time-box[data-t=START] > .caption'); await page.keyboard.type('25');
   await page.waitForSelector('#toast:has-text("אין שעה כזאת")');
   // 22:00 → 06:00 ends the next day.
-  await page.click(tid('clock-start')); await page.keyboard.type('2200');
-  await page.click(tid('clock-end')); await page.keyboard.type('0600'); await page.keyboard.press('Enter');
+  await page.click('.time-box[data-t=START] > .caption'); await page.keyboard.type('2200');
+  await page.click('.time-box[data-t=END] > .caption'); await page.keyboard.type('0600'); await page.keyboard.press('Enter');
   assert.match(await page.textContent(tid('editor-meta')), /הסיום למחרת/);
   // 06:00 → 23:00 is 17 hours: saving asks first, and nothing is saved until confirmed.
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('work_complete_backup')).entries.length);
-  await page.click(tid('clock-start')); await page.keyboard.type('0600');
-  await page.click(tid('clock-end')); await page.keyboard.type('2300'); await page.keyboard.press('Enter');
+  await page.click('.time-box[data-t=START] > .caption'); await page.keyboard.type('0600');
+  await page.click('.time-box[data-t=END] > .caption'); await page.keyboard.type('2300'); await page.keyboard.press('Enter');
   assert.match(await page.textContent(tid('editor-meta')), /ארוכה מ־16 שעות/);
   await page.click(tid('save-shift'));
   await page.waitForSelector('[data-testid="confirm-sheet"], .sheet:has-text("לשמור משמרת של 17:00 שעות")');
@@ -73,7 +73,7 @@ const server = http.createServer((q, r) => { let p = decodeURIComponent(new URL(
     assert.equal(JSON.parse(entry.groupWorkersJson)[0].bonus || 0, target === 'ME' ? 0 : 30);
     await page.reload(); await page.waitForSelector(tid('home-hero'));
     await page.evaluate(id => window.KisEditor.open(window.Kis, { entry: window.Kis.store.data.entries.find(e => e.id === id) }), entry.id);
-    if (!await page.locator('[data-f=notes]').count()) await page.click('[data-a=note]');
+    if (!await page.locator('[data-f=notes]').count()) { await page.click('[data-a=plus]'); await page.click('[data-plus=note]'); }
     await page.fill('[data-f=notes]', 'הערה סינתטית'); await page.click(tid('save-shift'));
     await page.waitForSelector(tid('edit-page'), { state: 'detached' });
     const edited = await page.evaluate(id => window.Kis.store.data.entries.find(e => e.id === id), entry.id);

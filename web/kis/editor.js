@@ -45,6 +45,7 @@ const defaultStart = end => R().fromMinutes(R().toMinutes(end) - DEFAULT_MINUTES
 // ---- typing a time digit by digit (Android: typeTime / parseTime / timeDigits) ----
 /** What the hidden typing field holds, so a delete always has something to remove. */
 const SINK = '        ';
+const CAL = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
 /** "17:30" → "1730"; no time yet → "····". */
 const timeDigits = t => R().isTime(t) ? R().fromMinutes(R().toMinutes(t)).replace(':', '') : '····';
 /** Four digits (unset ones count as 0) → "HH:MM", or null when it is not a time of day. */
@@ -385,12 +386,14 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
       ${d.mode === 'JOB' ? `<div class="row"><label class="field grow">${teamJob(d) ? 'הסכום שלך בלבד' : 'הסכום שהתקבל'} (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="amount" value="${esc(d.amount)}" ${d.amountUnknown ? 'disabled' : ''} data-testid="job-amount" ${teamJob(d) && !sameRate(d) ? 'placeholder="רק ארגנתי את הצוות? אפשר 0"' : ''}></label>
           <div>${durationControl(true)}</div></div>
           <button class="chip${d.amountUnknown ? ' on' : ''}" data-a="amount-unknown">${d.amountUnknown ? 'סכום חסר · לחיצה להזנה' : 'לא יודע עדיין'}</button>`
-        : clockMode ? `<div class="clock-row">${[['START', 'התחלה'], ['END', 'סיום']].map(([t, label]) => { const v = shown(t) || '--:--', id = t === 'START' ? 'clock-start' : 'clock-end';
+        // Design option 1 (owner 2026-11-26): start and end in one card with the length between them, one split −15|+15
+        // under each time, and the ruler inside the same card.
+        : clockMode ? `<div class="clock-card" data-testid="clock-card"><div class="clock-row">${[['START', 'התחלה'], ['END', 'סיום']].map(([t, label]) => { const v = shown(t) || '--:--', id = t === 'START' ? 'clock-start' : 'clock-end';
             // A tap on the time selects all of it (typing starts it over); a tap on one digit changes only it. Each time has its own −15/+15.
             return `<div class="time-box${target === t && pad ? ' on' : ''}" data-t="${t}"><span class="caption">${label}</span>
               ${digitsHtml(t, shown(t), label, id)}
-              ${pad || !timeOf(t) ? '' : `<div class="nudges">${[-15, 15].map(n => `<button data-nt="${t}" data-n="${n}" aria-label="${label} ${n > 0 ? n + ' דקות קדימה' : -n + ' דקות אחורה'}" data-testid="nudge-${t.toLowerCase()}-${n}">${n > 0 ? '+' + n : '−' + -n}</button>`).join('')}</div>`}</div>`; }).join('')}</div>
-          ${pad ? '' : ruler(d, target)}
+              ${pad || !timeOf(t) ? '' : `<div class="nudges">${[-15, 15].map(n => `<button data-nt="${t}" data-n="${n}" aria-label="${label} ${n > 0 ? n + ' דקות קדימה' : -n + ' דקות אחורה'}" data-testid="nudge-${t.toLowerCase()}-${n}">${n > 0 ? '+' + n : '−' + -n}</button>`).join('')}</div>`}</div>`; }).join(`<div class="clock-mid" data-testid="clock-length"><i>←</i>${c.minutes > 0 ? `<span dir="ltr">${U().hm(c.minutes)}</span>` : ''}</div>`)}</div>
+          ${pad ? '' : ruler(d, target)}</div>
 `
         : `${durationControl()}
           <div class="chips">${[4, 6, 8, 10, 12].map(h => `<button class="chip" data-q="${h}">${h} ש׳</button>`).join('')}</div>`}
@@ -407,12 +410,13 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     const created = preview ? preview.dates.length - preview.clashes.length : 0;
     body.innerHTML = `
       <div class="days">${days.map(ms => `<button aria-pressed="${ms === d.day}" data-day="${ms}"><small>${ms === days[3] ? 'היום' : U().DAY_SHORT[new Date(ms).getDay()]}</small>${new Date(ms).getDate()}</button>`).join('')}</div>
-      <div class="row" style="align-items:center;flex-wrap:wrap"><label class="chip" style="position:relative">${days.includes(d.day) ? 'תאריך אחר' : esc(U().dayLabelLong(d.day))}
-          <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
+      <div class="extras-row" data-testid="editor-extras-row">
+        <label class="chip cal-chip" data-testid="editor-other-date" aria-label="${days.includes(d.day) ? 'תאריך אחר' : 'תאריך: ' + esc(U().dayLabelLong(d.day))}">${CAL}${days.includes(d.day) ? '' : `<span>${new Date(d.day).getDate()}.${new Date(d.day).getMonth() + 1}</span>`}
+          <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר"></label>
+        ${d.mode === 'JOB' ? '' : d.rateUnknown ? '<button class="chip warn" data-a="rate-unknown" data-testid="rate-unknown" aria-pressed="true">תעריף חסר</button>'
+          : `<label class="chip rate-chip" data-testid="rate-field">${esc(d.currency)}<input inputmode="decimal" data-f="rate" value="${esc(d.rate)}" placeholder="?" aria-label="תעריף לשעה" data-testid="rate-input">לשעה</label>`}
+        ${plusButton(d, clockMode)}<span class="grow"></span>
         <div class="seg">${['₪', '$'].map(cur => `<button aria-pressed="${d.currency === cur}" data-cur="${cur}">${cur}</button>`).join('')}</div></div>
-      ${d.mode !== 'JOB' ? `<div class="field" data-testid="rate-field"><div class="row" style="align-items:center"><span class="grow">תעריף לשעה (${esc(d.currency)})</span>
-          <button class="chip${d.rateUnknown ? ' warn' : ''}" style="padding:0 12px" data-a="rate-unknown" data-testid="rate-unknown" aria-pressed="${!!d.rateUnknown}">${d.rateUnknown ? 'תעריף חסר · לחיצה להזנה' : 'לא יודע'}</button></div>
-          <input class="input" inputmode="decimal" data-f="rate" value="${esc(d.rate)}" ${d.rateUnknown ? 'disabled' : ''} aria-label="תעריף לשעה" data-testid="rate-input"></div>` : ''}
       ${extrasRow(d, clockMode)}
       ${d.mode === 'GROUP' ? groupBlock(d) : ''}
       ${d.mode === 'JOB' && d.team ? jobTeamBlock(d) : ''}
@@ -427,6 +431,7 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
       ${showBonus && d.mode !== 'JOB' ? `<label class="field" data-testid="bonus-block">בונוס (${esc(d.currency)})<input class="input" inputmode="decimal" data-f="bonus" value="${esc(d.bonus)}" placeholder="לא חובה" data-testid="bonus-input"></label>` : ''}
       ${showNote && d.mode !== 'JOB' ? `<label class="field">הערה<textarea data-f="notes" placeholder="לא חובה" data-testid="notes-input">${esc(d.notes)}</textarea></label>` : ''}
       ${passBlock(d)}
+      <div data-breakdown>${breakdown(d, c)}</div>
       ${d.mode === 'JOB' ? `<label class="field">מה עשית<textarea data-f="notes" placeholder="לא חובה" data-testid="notes-input">${esc(d.notes)}</textarea></label>` : ''}`;
 
     const bottom = host.querySelector('[data-bottom]');
@@ -460,13 +465,13 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     all('[data-cur]').forEach(b => b.onclick = () => set({ currency: b.dataset.cur }));
     all('[data-b]').forEach(b => b.onclick = () => set({ breakMin: +b.dataset.b }));
     all('[data-wd]').forEach(b => b.onclick = () => { const s = new Set(d.repeatDays ?? [new Date(d.day).getDay()]); const i = +b.dataset.wd; s.has(i) ? s.delete(i) : s.add(i); set({ repeatDays: [...s].sort() }); });
-    q('[data-a=rate-unknown]')?.addEventListener('click', () => set({ rateUnknown: !d.rateUnknown }));
+    q('[data-a=rate-unknown]')?.addEventListener('click', () => { const known = d.rateUnknown; plusOpen = false; set({ rateUnknown: !d.rateUnknown });
+      if (known) host.querySelector('[data-testid=rate-input]')?.focus(); });
     q('[data-a=amount-unknown]')?.addEventListener('click', () => set({ amountUnknown: !d.amountUnknown }));
     q('[data-a=plus]')?.addEventListener('click', () => { plusOpen = !plusOpen; draw(); });
-    q('[data-a=note]')?.addEventListener('click', () => { showNote = true; plusOpen = false; draw(); host.querySelector('[data-testid=notes-input]')?.focus(); });
     all('[data-plus]').forEach(b => b.onclick = () => { const k = b.dataset.plus; plusOpen = false;
-      if (k === 'bonus') showBonus = true; else if (k === 'pass') passOpen = true; else showBreak = true;
-      draw(); host.querySelector(k === 'bonus' ? '[data-f=bonus]' : k === 'pass' ? '[data-f=passThrough]' : '[data-testid=break-block] button')?.focus(); });
+      if (k === 'bonus') showBonus = true; else if (k === 'pass') passOpen = true; else if (k === 'note') showNote = true; else showBreak = true;
+      draw(); host.querySelector(k === 'bonus' ? '[data-f=bonus]' : k === 'pass' ? '[data-f=passThrough]' : k === 'note' ? '[data-testid=notes-input]' : '[data-testid=break-block] button')?.focus(); });
     q('[data-a=repeat]')?.addEventListener('click', () => set({ repeat: !d.repeat }));
     q('[data-a=save]')?.addEventListener('click', save);
     // Text fields update the draft without redrawing (no lost caret); numbers redraw the totals on change.
@@ -523,6 +528,8 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     host.querySelectorAll('[data-testid^=job-worker-same-]').forEach(el => { const p = jobWorkerPay({}, d); el.innerHTML = p != null ? U().moneyHtml(p, d.currency) : 'כמו שלך'; });
     const note = host.querySelector('[data-testid=pass-through-note]');
     if (note) note.outerHTML = passNote(d, c);
+    const bd = host.querySelector('[data-breakdown]');
+    if (bd) bd.innerHTML = breakdown(d, c);
     if (pad) return;
     // The same save button is updated in place, so a tap that lands while a field commits still saves.
     const btn = host.querySelector('[data-a=save]'), hint = host.querySelector('[data-testid=save-hint]');
@@ -567,15 +574,45 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     const names = dr.workers.map(w => w.name.trim()).filter(Boolean).filter(n => !store.data.workers.some(w => w.name === n));
     if (names.length) store.update(x => { x.workers.push(...names.map(name => ({ name }))); });
   }
-  /** "+" adds what is not shown yet: bonus (not in a job), expenses, and a break when the shift has clock times. "הערה" opens the note. */
+  /** What "+" can add that is not shown yet: bonus (not in a job), expenses, a break (clock times), a note, or "the rate is not known". */
+  function plusOptions(dr, clockMode) {
+    return [dr.mode !== 'JOB' && !showBonus ? ['bonus', 'בונוס'] : null, !passOpen && !String(dr.passThrough || '').trim() ? ['pass', 'החזר הוצאות'] : null,
+      clockMode && !showBreak ? ['break', 'הפסקה'] : null, dr.mode !== 'JOB' && !showNote ? ['note', 'הערה'] : null].filter(Boolean);
+  }
+  function plusButton(dr, clockMode) {
+    const opts = plusOptions(dr, clockMode);
+    return opts.length || (dr.mode !== 'JOB' && !dr.rateUnknown) ? `<button class="chip plus-chip" aria-expanded="${plusOpen}" aria-label="הוספה: ${opts.map(o => o[1]).join(', ')}" data-a="plus" data-testid="editor-plus">+</button>` : '';
+  }
+  /** Owner 2026-11-26: date, rate and "+" share one row; "+" opens bonus, expenses, a break and the note. */
   function extrasRow(dr, clockMode) {
-    const opts = [dr.mode !== 'JOB' && !showBonus ? ['bonus', 'בונוס'] : null, !passOpen && !String(dr.passThrough || '').trim() ? ['pass', 'החזר הוצאות'] : null,
-      clockMode && !showBreak ? ['break', 'הפסקה'] : null].filter(Boolean);
-    const note = dr.mode !== 'JOB' && !showNote;
-    if (!opts.length && !note) return '';
-    return `<div class="chips wrap" data-testid="editor-extras">${opts.length ? `<button class="chip" aria-expanded="${plusOpen}" aria-label="הוספה: ${opts.map(o => o[1]).join(', ')}" data-a="plus" data-testid="editor-plus" style="min-width:52px;font-size:1.25rem">+</button>` : ''}
-      ${plusOpen ? opts.map(([k, l]) => `<button class="chip dashed" data-plus="${k}" data-testid="plus-${k}">+ ${l}</button>`).join('') : ''}
-      ${note ? '<button class="chip" data-a="note" data-testid="editor-note">הערה</button>' : ''}</div>`;
+    if (!plusOpen) return '';
+    const opts = plusOptions(dr, clockMode);
+    return `<div class="plus-menu" data-testid="plus-block"><span class="caption">מה להוסיף?</span><div class="chips wrap">
+      ${opts.map(([k, l]) => `<button class="chip dashed" data-plus="${k}" data-testid="plus-${k}">${l}</button>`).join('')}
+      ${dr.mode !== 'JOB' && !dr.rateUnknown ? '<button class="chip dashed" data-a="rate-unknown" data-testid="rate-unknown" aria-pressed="false">לא יודע את התעריף</button>' : ''}</div></div>`;
+  }
+  /**
+   * How the amount is made up once a bonus or expenses are added (owner 2026-11-26, same as Android): hours × rate,
+   * + bonus = your income; expenses are not income but the employer owes them too. A group or team job shows the employer's side in its own block.
+   */
+  function breakdown(dr, c) {
+    const { esc } = U(), cur = dr.currency, money = v => esc(U().money(v, cur));
+    const bonus = dr.mode === 'JOB' ? 0 : (num(dr.bonus) > 0 ? num(dr.bonus) : 0), pass = passThroughOf(dr), solo = dr.mode !== 'GROUP' && !teamJob(dr);
+    if (!(bonus > 0 && dr.mode !== 'GROUP') && !(pass > 0)) return '';
+    const total = c.total, line = (label, value, strong, id) => `<div class="bd-line${strong ? ' strong' : ''}"${id ? ` data-testid="${id}"` : ''}><span>${label}</span><b dir="ltr">${value}</b></div>`;
+    let h = '';
+    if (solo && total != null) {
+      const rate = num(dr.rate), mins = c.minutes;
+      h += line(dr.mode === 'JOB' ? 'סכום העבודה' : mins > 0 && rate != null ? `${U().hm(mins)} שעות × ${money(rate)}` : 'שכר השעות', money(Math.round((total - bonus) * 100) / 100));
+      if (bonus > 0) h += line('בונוס', money(bonus), false, 'breakdown-bonus');
+      h += line('ההכנסה שלך', money(total), true, 'breakdown-income');
+    } else if (bonus > 0) h += line('בונוס (נספר בהכנסה)', money(bonus), false, 'breakdown-bonus');
+    if (pass > 0) {
+      h += line('החזר הוצאות (לא הכנסה)', money(pass), false, 'breakdown-pass');
+      const due = solo ? employerDue(total, 0, dr) : null;
+      if (due != null) h += line('לקבל מהמעסיק', money(due), true, 'breakdown-due');
+    }
+    return `<div class="pay-breakdown" data-testid="pay-breakdown">${h}</div>`;
   }
   /** Money passed through (car, materials): owed by the employer, never income. A chip until used, in every kind of entry. */
   function passBlock(dr) {
@@ -585,8 +622,7 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
       ${passNote(dr, evaluate(dr))}</div>`;
   }
   function passNote(dr, c) {
-    const { esc } = U(), due = dr.mode === 'GROUP' || teamJob(dr) ? null : employerDue(c.total, 0, dr);
-    return `<span class="caption" data-testid="pass-through-note">${due != null && passThroughOf(dr) > 0 ? `<b>לקבל מהמעסיק ${esc(U().money(due, dr.currency))}</b> · ` : ''}ההחזר לא נספר בהכנסה שלך, רק במה שהמעסיק צריך לשלם</span>`;
+    return '<span class="caption" data-testid="pass-through-note">ההחזר לא נספר בהכנסה שלך, רק במה שהמעסיק צריך לשלם</span>';
   }
   function jobTeamBlock(dr) {
     const { esc, moneyHtml } = U();
