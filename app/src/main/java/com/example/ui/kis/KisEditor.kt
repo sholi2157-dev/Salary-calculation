@@ -349,7 +349,7 @@ fun KisEditorPage(
                         d.mode == EntryMode.HOURS || d.groupByHours -> HoursDisplay(shown(KeyTarget.HOURS), edit(KeyTarget.HOURS), onTop, accent,
                             onOpen = { at -> open(KeyTarget.HOURS, at) }, onQuick = { h -> d = d.copy(hours = h.toString()); if (pad && target == KeyTarget.HOURS) { buf = fieldDigits(target); fresh = true; digitsDirty = false } },
                             onUseClock = null)
-                        else -> Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(if (c.dark) onTop.copy(alpha = 0.06f) else topBg.copy(alpha = 0.55f))
+                        else -> Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(if (c.dark) onTop.copy(alpha = 0.06f) else topBg.copy(alpha = 0.55f))
                             .testTag("clock_card").padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             // Design option 1 (owner 2026-11-26): start and end in one card with the length between them,
                             // one split −15|+15 under each time, and the ruler in the same card.
@@ -792,18 +792,18 @@ private fun PayBreakdown(d: EntryDraft, check: EntryDraft.Check) {
             Text(label, Modifier.weight(1f), color = if (strong) c.ink else c.muted, style = if (strong) KisType.label else KisType.caption.copy(fontSize = 13.sp))
             Text(value, color = c.ink, style = (if (strong) KisType.label else KisType.caption.copy(fontSize = 13.sp)).copy(textDirection = TextDirection.Ltr), maxLines = 1)
         }
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (c.dark) c.surface else c.surface.copy(alpha = 0.7f))
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (c.dark) c.surface else c.surface.copy(alpha = 0.7f))
         .testTag("pay_breakdown").padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
         if (solo && total != null) {
             val base = Math.round((total - bonus) * 100) / 100.0
             val minutes = check.minutes
             val rate = d.rateValue()
             line(if (d.mode == EntryMode.JOB) "סכום העבודה" else if (minutes != null && rate != null) "${KisFormat.hm(minutes)} שעות × ${KisFormat.money(rate, cur)}" else "שכר השעות", KisFormat.money(base, cur))
-            if (bonus > 0) line("בונוס", "+" + KisFormat.money(bonus, cur), tag = "breakdown_bonus")
+            if (bonus > 0) line("בונוס", KisFormat.money(bonus, cur), tag = "breakdown_bonus")
             if (bonus > 0 || pass > 0) line("ההכנסה שלך", KisFormat.money(total, cur), strong = true, tag = "breakdown_income")
-        } else if (bonus > 0 && d.mode != EntryMode.GROUP) line("בונוס (נספר בהכנסה)", "+" + KisFormat.money(bonus, cur), tag = "breakdown_bonus")
+        } else if (bonus > 0 && d.mode != EntryMode.GROUP) line("בונוס (נספר בהכנסה)", KisFormat.money(bonus, cur), tag = "breakdown_bonus")
         if (pass > 0) {
-            line("החזר הוצאות (לא הכנסה)", "+" + KisFormat.money(pass, cur), tag = "breakdown_pass")
+            line("החזר הוצאות (לא הכנסה)", KisFormat.money(pass, cur), tag = "breakdown_pass")
             val due = if (solo) d.employerDue(total, 0.0) else null
             if (due != null) line("לקבל מהמעסיק", KisFormat.money(due, cur), strong = true, tag = "breakdown_due")
         }

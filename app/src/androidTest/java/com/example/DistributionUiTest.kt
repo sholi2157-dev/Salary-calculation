@@ -56,7 +56,7 @@ class DistributionUiTest {
         ui.onNodeWithTag("editor_plus").performScrollTo().performClick(); ui.onNodeWithTag("plus_note").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("בדיקת טיוטה")
         for (mode in listOf("hours", "job", "group", "clock")) {
-            ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performClick()
+            ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performScrollTo().performClick()
             ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
             snap("v2-add-$mode")
         }

@@ -58,7 +58,7 @@ class ReportKeyboardTest {
         ui.onNodeWithTag("entry_bar").assertDoesNotExist()
         ui.onNodeWithTag("editor_plus").performScrollTo().performClick(); ui.onNodeWithTag("plus_note").performScrollTo().performClick()
         for (mode in listOf("clock", "hours")) {
-            ui.onNodeWithTag("mode_$mode").performClick()
+            ui.onNodeWithTag("mode_$mode").performScrollTo().performClick()
             repeat(2) {
                 focus("notes_input")
                 ui.onNodeWithTag("notes_input").performTextReplacement("V2 $mode $it")
@@ -74,7 +74,7 @@ class ReportKeyboardTest {
                 saveVisible()
             }
         }
-        ui.onNodeWithTag("quick_hours_4").performClick()
+        ui.onNodeWithTag("quick_hours_4").performScrollTo().performClick()
         // "קבוצה" at the top: the same tab, now with the people who worked.
         ui.onNodeWithTag("editor_team").performClick()
         focus("worker_name_input")
@@ -85,7 +85,7 @@ class ReportKeyboardTest {
         Espresso.closeSoftKeyboard(); awaitIme(false)
         ui.onNodeWithTag("worker_name_input").performTextReplacement("")
         ui.onNodeWithTag("editor_team").performClick()
-        ui.onNodeWithTag("mode_hours").performClick()
+        ui.onNodeWithTag("mode_hours").performScrollTo().performClick()
         focus("notes_input")
         ui.onNodeWithTag("notes_input").performTextReplacement("V2 one real save")
         // Background and resume without losing the form.
@@ -111,7 +111,7 @@ class ReportKeyboardTest {
         assertEquals(4.0, saved.hours, 0.0); assertFalse(saved.isTimeRange)
         // The AI page keeps its text through the keyboard.
         openAdd()
-        ui.onNodeWithTag("mode_ai").performClick()
+        ui.onNodeWithTag("mode_ai").performScrollTo().performClick()
         focus("ai_free_text_input")
         ui.onNodeWithTag("ai_free_text_input").performTextReplacement("טיוטה לבדיקה בלבד")
         Espresso.closeSoftKeyboard(); awaitIme(false)
