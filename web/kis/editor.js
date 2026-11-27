@@ -247,7 +247,7 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
   // [pad]: a time is typed with the device's own keyboard, through the hidden [sink] field.
   let target = 'START', pad = false, fresh = false, dirtyDigits = false, buf = '', cursor = 0, passOpen = false;
   // Extras (owner feedback 2.3): rate, "+" (bonus / expenses / break), note and date. A field shows only once chosen or filled.
-  let repeatOpen = false, plusOpen = false, showNote = !!String(d.notes || '').trim(), showBreak = d.breakMin > 0, showBonus = !!String(d.bonus || '').trim();
+  let repeatOpen = false, daysOpen = false, daysMonth = null, daysPrev = null, daysNext = null, plusOpen = false, showNote = !!String(d.notes || '').trim(), showBreak = d.breakMin > 0, showBonus = !!String(d.bonus || '').trim();
   const host = document.createElement('div');
   host.className = 'editor' + (base ? ' framed' : '');
   host.setAttribute('data-testid', base ? 'edit-page' : 'add-page');
@@ -351,6 +351,10 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
   }
 
   let lastRepeatBlocked = false, lastRepeatOn = false;
+  // Owner 2026-11-27: one new shift can be saved on several days picked in a month calendar (same hours and details).
+  const extraDays = () => base ? [] : (d.moreDays || []).filter(x => x !== d.day);
+  const dayCount = () => 1 + extraDays().length;
+  const saveLabel = () => lastRepeatOn ? 'יצירת הסדרה' : base ? (changed() ? 'שמירת שינויים' : 'אין שינויים') : dayCount() > 1 ? `שמירת ${dayCount()} משמרות` : 'שמירה';
   function metaHtml(c) {
     const { moneyHtml } = U();
     const total = base && c.canSave ? root.KisPay.pay(toEntry(d, base)) : c.total;
@@ -368,7 +372,32 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     // While a time is typed, a slim bar above the keyboard names it and closes it (it never saves).
     return pad ? `<div class="type-bar" data-testid="entry-bar"><span class="label grow" data-testid="entry-label">${target === 'HOURS' ? 'שעות ודקות' : target === 'START' ? 'שעת התחלה' : 'שעת סיום'}</span>
         ${target === 'START' && hasEnd() ? '<button class="btn ghost" data-a="next" data-testid="entry-next">לשעת הסיום</button>' : ''}<button class="btn primary" data-a="done" data-testid="entry-done">אישור</button></div>`
-      : `<div class="save-bar">${c.canSave ? '' : `<p data-testid="save-hint">${esc(c.errors[0])}</p>`}<button class="btn primary" data-a="save" data-testid="save-shift" ${c.canSave && (!base || changed()) && !lastRepeatBlocked ? '' : 'disabled'}>${lastRepeatOn ? 'יצירת הסדרה' : base ? (changed() ? 'שמירת שינויים' : 'אין שינויים') : 'שמירה'}</button></div>`;
+      : `<div class="save-bar">${c.canSave ? '' : `<p data-testid="save-hint">${esc(c.errors[0])}</p>`}<button class="btn primary" data-a="save" data-testid="save-shift" ${c.canSave && (!base || changed()) && !lastRepeatBlocked ? '' : 'disabled'}>${saveLabel()}</button></div>`;
+  }
+  function monthCard(chosen) {
+    // Owner 2026-11-27: the calendar follows the date choice in Settings. Hebrew only = Hebrew months (א׳ to the month's
+    // end); both = civil month with the Hebrew day under each number; civil only = civil numbers. Same as Android.
+    const H = root.KisHebrew, mode = H.getMode(), heb = mode === 'HEB', both = mode === 'BOTH';
+    const addDays = (ms, n) => { const t = new Date(ms); t.setHours(12, 0, 0, 0); t.setDate(t.getDate() + n); return U().startOfDay(t.getTime()); };
+    const hebDay = ms => H.fromMillis(ms)[2];
+    const monthStart = ms => heb ? addDays(ms, 1 - hebDay(ms)) : (t => { t.setDate(1); return U().startOfDay(t.getTime()); })(new Date(ms));
+    const start = monthStart(daysMonth ?? d.day);
+    const len = heb ? (hebDay(addDays(start, 29)) === 30 ? 30 : 29) : new Date(new Date(start).getFullYear(), new Date(start).getMonth() + 1, 0).getDate();
+    daysPrev = monthStart(addDays(start, -1)); daysNext = addDays(start, len);
+    const today = U().startOfDay(Date.now());
+    const [hy, hm] = H.fromMillis(start), [zy, zm] = H.fromMillis(addDays(start, len - 1));
+    const title = heb ? `${H.monthName(hy, hm)} ${H.gematria(hy)}` : `${U().MONTHS[new Date(start).getMonth()]} ${new Date(start).getFullYear()}`;
+    const sub = both ? (hm === zm ? H.monthName(hy, hm) : `${H.monthName(hy, hm)} – ${H.monthName(zy, zm)}`) + ' ' + H.gematria(zy) : '';
+    const cells = Array.from({ length: new Date(start).getDay() }, () => '<span></span>').concat(Array.from({ length: len }, (_, i) => {
+      const ms = addDays(start, i), n = heb ? hebDay(ms) : new Date(ms).getDate();
+      return `<button aria-pressed="${chosen.has(ms)}" data-mday="${ms}" data-testid="month-day-${n}" aria-label="${U().esc(U().dayLabelLong(ms))}"${ms === today ? ' class="today"' : ''}>${heb ? H.gematria(n) : n}${both ? `<small>${H.gematria(hebDay(ms))}</small>` : ''}</button>`; })).join('');
+    return `<div class="card days-card" data-testid="days-sheet"><b class="label">באילו ימים?</b>
+      <p class="caption" data-testid="days-explain" style="margin:0">אפשר לבחור יום אחד או כמה. המשמרת תישמר באותן שעות ובאותם פרטים בכל יום שבוחרים.</p>
+      <div class="month-head"><button class="chip" data-mstep="-1" data-testid="month-prev" aria-label="החודש הקודם">›</button>
+        <div class="grow"><b class="label" data-testid="month-title">${title}</b>${sub ? `<small data-testid="month-title-heb">${sub}</small>` : ''}</div>
+        <button class="chip" data-mstep="1" data-testid="month-next" aria-label="החודש הבא">‹</button></div>
+      <div class="month-grid${both ? ' both' : ''}">${U().DAY_SHORT.map(n => `<small>${n}</small>`).join('')}${cells}</div>
+      <button class="btn primary" data-a="days-done" data-testid="days-done">סיום · ${chosen.size === 1 ? 'יום אחד' : chosen.size + ' ימים'}</button></div>`;
   }
   function draw() {
     const active = document.activeElement, focusKey = active && host.contains(active)
@@ -403,8 +432,9 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
 
     const body = host.querySelector('[data-body]');
     const days = Array.from({ length: 7 }, (_, i) => (() => { const day = new Date(U().startOfDay(Date.now())); day.setDate(day.getDate() + i - 3); return day.getTime(); })());
-    const canRepeat = !base && d.mode === 'CLOCK' && d.start != null;
-    const repeatOn = d.repeat && !base && d.mode === 'CLOCK' && d.start != null;
+    const extra = extraDays(), chosen = new Set([d.day, ...extra]);
+    const canRepeat = !base && d.mode === 'CLOCK' && d.start != null && !extra.length;
+    const repeatOn = d.repeat && canRepeat;
     const repeatDays = new Set(d.repeatDays ?? [new Date(d.day).getDay()]);
     const fromIso = root.KisPlan.dateOf(d.day), until = d.repeatUntil || root.KisRules.civilFromDays(root.KisRules.daysFromCivil(fromIso) + 56);
     // An end date before the start is said where it is chosen, never moved quietly (preview and save use the same rule, CW-10).
@@ -412,10 +442,10 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     const preview = repeatOn && !untilBad ? root.KisPlans.previewFor(store, repeatDays, fromIso, until, d.start, d.end) : null;
     const created = preview ? preview.dates.length - preview.clashes.length : 0;
     body.innerHTML = `
-      <div class="days">${days.map(ms => `<button aria-pressed="${ms === d.day}" data-day="${ms}"><small>${ms === days[3] ? 'היום' : U().DAY_SHORT[new Date(ms).getDay()]}</small>${new Date(ms).getDate()}</button>`).join('')}</div>
+      <div class="days">${days.map(ms => `<button aria-pressed="${chosen.has(ms)}" data-day="${ms}"><small>${ms === days[3] ? 'היום' : U().DAY_SHORT[new Date(ms).getDay()]}</small>${root.KisHebrew.getMode() === 'HEB' ? root.KisHebrew.gematria(root.KisHebrew.fromMillis(ms)[2]) : new Date(ms).getDate()}</button>`).join('')}</div>
       <div class="extras-row" data-testid="editor-extras-row">
-        <label class="chip cal-chip" data-testid="editor-other-date" aria-label="${days.includes(d.day) ? 'תאריך אחר' : 'תאריך: ' + esc(U().dayLabelLong(d.day))}">${CAL}${days.includes(d.day) ? '' : `<span>${new Date(d.day).getDate()}.${new Date(d.day).getMonth() + 1}</span>`}
-          <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר"></label>
+        ${base ? `<label class="chip cal-chip" data-testid="editor-other-date" aria-label="${days.includes(d.day) ? 'תאריך אחר' : 'תאריך: ' + esc(U().dayLabelLong(d.day))}">${CAL}${days.includes(d.day) ? '' : `<span>${root.KisHebrew.getMode() === 'HEB' ? root.KisHebrew.day(d.day) : new Date(d.day).getDate() + '.' + (new Date(d.day).getMonth() + 1)}</span>`}
+          <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר"></label>` : `<button class="chip cal-chip" data-a="days-open" data-testid="editor-other-date" aria-pressed="${extra.length > 0 || !days.includes(d.day)}" aria-expanded="${daysOpen}" aria-label="${extra.length ? 'נבחרו ' + chosen.size + ' ימים' : 'בחירת ימים בלוח'}">${CAL}${extra.length ? `<span>${chosen.size} ימים</span>` : days.includes(d.day) ? '' : `<span>${root.KisHebrew.getMode() === 'HEB' ? root.KisHebrew.day(d.day) : new Date(d.day).getDate() + '.' + (new Date(d.day).getMonth() + 1)}</span>`}</button>`}
         ${d.mode === 'JOB' ? '' : d.rateUnknown ? '<button class="chip warn" data-a="rate-unknown" data-testid="rate-unknown" aria-pressed="true">תעריף חסר</button>'
           : `<label class="chip rate-chip" data-testid="rate-field">${esc(d.currency)}<input inputmode="decimal" data-f="rate" value="${esc(d.rate)}" placeholder="?" aria-label="תעריף לשעה" data-testid="rate-input" style="width:${rateWidth(d.rate)}">לשעה</label>`}
         ${plusButton(d, clockMode)}
@@ -424,6 +454,7 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
       ${extrasRow(d, clockMode)}
       ${d.mode === 'GROUP' ? groupBlock(d) : ''}
       ${d.mode === 'JOB' && d.team ? jobTeamBlock(d) : ''}
+      ${!base && daysOpen ? monthCard(chosen) : ''}
       ${canRepeat && repeatOpen ? `<div class="card repeat-card" style="display:grid;gap:10px" data-testid="repeat-sheet"><div class="row" style="align-items:center"><span class="repeat-ico">${REPEAT}</span><b class="label grow">חוזרת כל שבוע</b>
           <button class="switch" role="switch" aria-checked="${d.repeat}" aria-label="חוזרת כל שבוע" data-a="repeat" data-testid="repeat-switch"></button></div>
           <p class="caption" data-testid="repeat-explain" style="margin:0">עובד באותן שעות כל שבוע? מגדירים פעם אחת, והמשמרת תופיע מראש ב"מתוכנן" ותירשם לבד כשהיא נגמרת. אפשר לבטל בכל רגע.</p>
@@ -466,7 +497,7 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     q('[data-a=done]')?.addEventListener('click', () => done());
     all('[data-nt]').forEach(b => b.onclick = e => { e.stopPropagation(); const t = b.dataset.nt, v = timeOf(t), n = +b.dataset.n; if (!v) return;
       set(t === 'START' ? { start: R().fromMinutes(R().toMinutes(v) + n) } : { end: R().fromMinutes(R().toMinutes(v) + n) }); U().haptic('tick'); });
-    all('[data-day]').forEach(b => b.onclick = () => set({ day: +b.dataset.day, repeatDays: d.repeatDays ? [...new Set([...d.repeatDays, new Date(+b.dataset.day).getDay()])] : null }));
+    all('[data-day]').forEach(b => b.onclick = () => set({ day: +b.dataset.day, moreDays: [], repeatDays: d.repeatDays ? [...new Set([...d.repeatDays, new Date(+b.dataset.day).getDay()])] : null }));
     all('[data-cur]').forEach(b => b.onclick = () => set({ currency: b.dataset.cur }));
     all('[data-b]').forEach(b => b.onclick = () => set({ breakMin: +b.dataset.b }));
     all('[data-wd]').forEach(b => b.onclick = () => { const s = new Set(d.repeatDays ?? [new Date(d.day).getDay()]); const i = +b.dataset.wd; s.has(i) ? s.delete(i) : s.add(i); set({ repeatDays: [...s].sort() }); });
@@ -477,6 +508,13 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     all('[data-plus]').forEach(b => b.onclick = () => { const k = b.dataset.plus; plusOpen = false;
       if (k === 'bonus') showBonus = true; else if (k === 'pass') passOpen = true; else if (k === 'note') showNote = true; else showBreak = true;
       draw(); host.querySelector(k === 'bonus' ? '[data-f=bonus]' : k === 'pass' ? '[data-f=passThrough]' : k === 'note' ? '[data-testid=notes-input]' : '[data-testid=break-block] button')?.focus(); });
+    q('[data-a=days-open]')?.addEventListener('click', () => { daysOpen = !daysOpen; plusOpen = false; repeatOpen = false; daysMonth = null; draw(); if (daysOpen) host.querySelector('[data-testid=days-sheet]')?.scrollIntoView({ block: 'nearest' }); });
+    all('[data-mstep]').forEach(b => b.onclick = () => { daysMonth = +b.dataset.mstep < 0 ? daysPrev : daysNext; draw(); });
+    all('[data-mday]').forEach(b => b.onclick = () => { const ms = +b.dataset.mday, s = new Set([d.day, ...extraDays()]);
+      if (s.has(ms)) { if (s.size > 1) s.delete(ms); } else s.add(ms);
+      const list = [...s].sort((a, b) => a - b); U().haptic('tick');
+      set({ day: list[0], moreDays: list.slice(1), repeat: list.length > 1 ? false : d.repeat }); });
+    q('[data-a=days-done]')?.addEventListener('click', () => { daysOpen = false; draw(); host.querySelector('[data-testid=editor-other-date]')?.focus({ preventScroll: true }); });
     q('[data-a=repeat]')?.addEventListener('click', () => set({ repeat: !d.repeat }));
     q('[data-a=repeat-open]')?.addEventListener('click', () => { repeatOpen = !repeatOpen; plusOpen = false; draw(); if (repeatOpen) host.querySelector('[data-testid=repeat-sheet]')?.scrollIntoView({ block: 'nearest' }); });
     q('[data-a=repeat-done]')?.addEventListener('click', () => { repeatOpen = false; draw(); host.querySelector('[data-testid=editor-repeat]')?.focus({ preventScroll: true }); });
@@ -542,7 +580,7 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     const btn = host.querySelector('[data-a=save]'), hint = host.querySelector('[data-testid=save-hint]');
     if (btn) {
       btn.disabled = !(c.canSave && (!base || changed()) && !lastRepeatBlocked);
-      btn.textContent = lastRepeatOn ? 'יצירת הסדרה' : base ? (changed() ? 'שמירת שינויים' : 'אין שינויים') : 'שמירה';
+      btn.textContent = saveLabel();
       if (c.canSave) hint?.remove();
       else if (hint) hint.textContent = c.errors[0];
       else btn.insertAdjacentHTML('beforebegin', `<p data-testid="save-hint">${U().esc(c.errors[0])}</p>`);
@@ -571,6 +609,13 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     try {
       if (base) { store.replaceEntry(base.id, row, base); close(true); U().haptic('success'); U().toast('השינויים נשמרו ✓', 'ביטול', () => store.replaceEntry(base.id, base)); onSaved?.(base.id); }
       else {
+        const extra = extraDays();
+        if (extra.length) {
+          const rows = [d.day, ...extra].sort((a, b) => a - b).map(day => toEntry({ ...d, day }, null));
+          const ids = store.addEntries(rows); remember(d); close(true); U().haptic('success');
+          U().toast(`נשמרו ${rows.length} משמרות ✓`, 'ביטול', () => { const gone = store.data.entries.filter(e => ids.includes(e.id)); store.update(x => { x.entries = x.entries.filter(e => !ids.includes(e.id)); }); return gone; });
+          return;
+        }
         const [id] = store.addEntries([row]); remember(d); close(true); U().haptic('success');
         U().toast(row.payKnown ? 'המשמרת נשמרה ✓' : 'נשמרה · התעריף יחכה להשלמה', 'ביטול', () => { const gone = store.data.entries.filter(e => e.id === id); store.update(x => { x.entries = x.entries.filter(e => e.id !== id); }); return gone; });
       }

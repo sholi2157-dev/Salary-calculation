@@ -7,7 +7,7 @@
 (function (root) {
 'use strict';
 /** This site's release (bump at publish, with the Android versionName). */
-const VERSION = '2.4.2';
+const VERSION = '2.4.3';
 // 2.3.0: placeholder draft; the final wording may be replaced at publish time. 3–5 short lines, features only.
 const NOTES = {
   '2.3.0': [
@@ -41,6 +41,11 @@ const NOTES = {
     'תאריך, תעריף, +, משמרת חוזרת ומטבע בשורה אחת. בונוס, החזר הוצאות, הפסקה והערה מוסיפים מה-+.',
     'כשיש בונוס או החזר הוצאות, רואים בדיוק מה ההכנסה שלך ומה לקבל מהמעסיק.',
     'כל המסך נגלל יחד, גם כשהמקלדת פתוחה.',
+  ],
+  // 2.4.3: draft lines, the owner approves the wording at publish (identical on Android, KisWhatsNew.kt).
+  '2.4.3': [
+    'אפשר לשמור משמרת אחת בכמה ימים: בוחרים ימים בלוח, והיא נשמרת באותן שעות ובאותם פרטים בכל אחד מהם.',
+    'הלוח מראה תאריך עברי, לועזי או את שניהם, לפי מה שבחרת בהגדרות.',
   ],
 };
 const KEY = 'whatsNewSeen';
