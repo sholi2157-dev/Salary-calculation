@@ -304,11 +304,15 @@ button { cursor: pointer; }
 .weekdays button[aria-pressed="true"] { background: var(--pick-bg); color: var(--pick-ink); border: 2px solid var(--pick-edge); }
 .days-card { display: grid; gap: 10px; }
 .month-head { display: flex; align-items: center; gap: 8px; text-align: center; }
-.month-head b { flex: 1; }
+.month-head .grow { flex: 1; display: grid; gap: 2px; }
+.month-head .grow small { color: var(--muted); font-size: 12px; }
 .month-head .chip { min-width: 48px; justify-content: center; }
 .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
 .month-grid small { color: var(--muted); font-size: 12px; padding-bottom: 2px; }
 .month-grid button { min-height: 44px; border-radius: 12px; border: 1.5px solid transparent; background: none; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.month-grid.both button { min-height: 50px; display: grid; place-content: center; gap: 1px; line-height: 1.1; }
+.month-grid button small { font-size: 10px; font-weight: 500; color: var(--muted); }
+.month-grid button[aria-pressed="true"] small { color: inherit; }
 .month-grid button.today { border-color: var(--line); }
 .month-grid button[aria-pressed="true"] { background: var(--pick-bg); color: var(--pick-ink); border: 2px solid var(--pick-edge); }
 .editor-in > [data-bottom] { position: sticky; bottom: 0; z-index: 3; }

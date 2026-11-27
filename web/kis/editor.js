@@ -247,7 +247,7 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
   // [pad]: a time is typed with the device's own keyboard, through the hidden [sink] field.
   let target = 'START', pad = false, fresh = false, dirtyDigits = false, buf = '', cursor = 0, passOpen = false;
   // Extras (owner feedback 2.3): rate, "+" (bonus / expenses / break), note and date. A field shows only once chosen or filled.
-  let repeatOpen = false, daysOpen = false, daysMonth = null, plusOpen = false, showNote = !!String(d.notes || '').trim(), showBreak = d.breakMin > 0, showBonus = !!String(d.bonus || '').trim();
+  let repeatOpen = false, daysOpen = false, daysMonth = null, daysPrev = null, daysNext = null, plusOpen = false, showNote = !!String(d.notes || '').trim(), showBreak = d.breakMin > 0, showBonus = !!String(d.bonus || '').trim();
   const host = document.createElement('div');
   host.className = 'editor' + (base ? ' framed' : '');
   host.setAttribute('data-testid', base ? 'edit-page' : 'add-page');
@@ -375,17 +375,28 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
       : `<div class="save-bar">${c.canSave ? '' : `<p data-testid="save-hint">${esc(c.errors[0])}</p>`}<button class="btn primary" data-a="save" data-testid="save-shift" ${c.canSave && (!base || changed()) && !lastRepeatBlocked ? '' : 'disabled'}>${saveLabel()}</button></div>`;
   }
   function monthCard(chosen) {
-    const first = new Date(daysMonth ?? d.day); first.setDate(1); first.setHours(0, 0, 0, 0);
-    const y = first.getFullYear(), m = first.getMonth(), len = new Date(y, m + 1, 0).getDate(), today = U().startOfDay(Date.now());
-    const cells = Array.from({ length: first.getDay() }, () => '<span></span>').concat(Array.from({ length: len }, (_, i) => {
-      const ms = new Date(y, m, i + 1).getTime();
-      return `<button aria-pressed="${chosen.has(ms)}" data-mday="${ms}" data-testid="month-day-${i + 1}"${ms === today ? ' class="today"' : ''}>${i + 1}</button>`; })).join('');
+    // Owner 2026-11-27: the calendar follows the date choice in Settings. Hebrew only = Hebrew months (א׳ to the month's
+    // end); both = civil month with the Hebrew day under each number; civil only = civil numbers. Same as Android.
+    const H = root.KisHebrew, mode = H.getMode(), heb = mode === 'HEB', both = mode === 'BOTH';
+    const addDays = (ms, n) => { const t = new Date(ms); t.setHours(12, 0, 0, 0); t.setDate(t.getDate() + n); return U().startOfDay(t.getTime()); };
+    const hebDay = ms => H.fromMillis(ms)[2];
+    const monthStart = ms => heb ? addDays(ms, 1 - hebDay(ms)) : (t => { t.setDate(1); return U().startOfDay(t.getTime()); })(new Date(ms));
+    const start = monthStart(daysMonth ?? d.day);
+    const len = heb ? (hebDay(addDays(start, 29)) === 30 ? 30 : 29) : new Date(new Date(start).getFullYear(), new Date(start).getMonth() + 1, 0).getDate();
+    daysPrev = monthStart(addDays(start, -1)); daysNext = addDays(start, len);
+    const today = U().startOfDay(Date.now());
+    const [hy, hm] = H.fromMillis(start), [zy, zm] = H.fromMillis(addDays(start, len - 1));
+    const title = heb ? `${H.monthName(hy, hm)} ${H.gematria(hy)}` : `${U().MONTHS[new Date(start).getMonth()]} ${new Date(start).getFullYear()}`;
+    const sub = both ? (hm === zm ? H.monthName(hy, hm) : `${H.monthName(hy, hm)} – ${H.monthName(zy, zm)}`) + ' ' + H.gematria(zy) : '';
+    const cells = Array.from({ length: new Date(start).getDay() }, () => '<span></span>').concat(Array.from({ length: len }, (_, i) => {
+      const ms = addDays(start, i), n = heb ? hebDay(ms) : new Date(ms).getDate();
+      return `<button aria-pressed="${chosen.has(ms)}" data-mday="${ms}" data-testid="month-day-${n}" aria-label="${U().esc(U().dayLabelLong(ms))}"${ms === today ? ' class="today"' : ''}>${heb ? H.gematria(n) : n}${both ? `<small>${H.gematria(hebDay(ms))}</small>` : ''}</button>`; })).join('');
     return `<div class="card days-card" data-testid="days-sheet"><b class="label">באילו ימים?</b>
       <p class="caption" data-testid="days-explain" style="margin:0">אפשר לבחור יום אחד או כמה. המשמרת תישמר באותן שעות ובאותם פרטים בכל יום שבוחרים.</p>
       <div class="month-head"><button class="chip" data-mstep="-1" data-testid="month-prev" aria-label="החודש הקודם">›</button>
-        <b class="label grow" data-testid="month-title">${U().MONTHS[m]} ${y}</b>
+        <div class="grow"><b class="label" data-testid="month-title">${title}</b>${sub ? `<small data-testid="month-title-heb">${sub}</small>` : ''}</div>
         <button class="chip" data-mstep="1" data-testid="month-next" aria-label="החודש הבא">‹</button></div>
-      <div class="month-grid">${U().DAY_SHORT.map(n => `<small>${n}</small>`).join('')}${cells}</div>
+      <div class="month-grid${both ? ' both' : ''}">${U().DAY_SHORT.map(n => `<small>${n}</small>`).join('')}${cells}</div>
       <button class="btn primary" data-a="days-done" data-testid="days-done">סיום · ${chosen.size === 1 ? 'יום אחד' : chosen.size + ' ימים'}</button></div>`;
   }
   function draw() {
@@ -431,10 +442,10 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
     const preview = repeatOn && !untilBad ? root.KisPlans.previewFor(store, repeatDays, fromIso, until, d.start, d.end) : null;
     const created = preview ? preview.dates.length - preview.clashes.length : 0;
     body.innerHTML = `
-      <div class="days">${days.map(ms => `<button aria-pressed="${chosen.has(ms)}" data-day="${ms}"><small>${ms === days[3] ? 'היום' : U().DAY_SHORT[new Date(ms).getDay()]}</small>${new Date(ms).getDate()}</button>`).join('')}</div>
+      <div class="days">${days.map(ms => `<button aria-pressed="${chosen.has(ms)}" data-day="${ms}"><small>${ms === days[3] ? 'היום' : U().DAY_SHORT[new Date(ms).getDay()]}</small>${root.KisHebrew.getMode() === 'HEB' ? root.KisHebrew.gematria(root.KisHebrew.fromMillis(ms)[2]) : new Date(ms).getDate()}</button>`).join('')}</div>
       <div class="extras-row" data-testid="editor-extras-row">
-        ${base ? `<label class="chip cal-chip" data-testid="editor-other-date" aria-label="${days.includes(d.day) ? 'תאריך אחר' : 'תאריך: ' + esc(U().dayLabelLong(d.day))}">${CAL}${days.includes(d.day) ? '' : `<span>${new Date(d.day).getDate()}.${new Date(d.day).getMonth() + 1}</span>`}
-          <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר"></label>` : `<button class="chip cal-chip" data-a="days-open" data-testid="editor-other-date" aria-pressed="${extra.length > 0 || !days.includes(d.day)}" aria-expanded="${daysOpen}" aria-label="${extra.length ? 'נבחרו ' + chosen.size + ' ימים' : 'בחירת ימים בלוח'}">${CAL}${extra.length ? `<span>${chosen.size} ימים</span>` : days.includes(d.day) ? '' : `<span>${new Date(d.day).getDate()}.${new Date(d.day).getMonth() + 1}</span>`}</button>`}
+        ${base ? `<label class="chip cal-chip" data-testid="editor-other-date" aria-label="${days.includes(d.day) ? 'תאריך אחר' : 'תאריך: ' + esc(U().dayLabelLong(d.day))}">${CAL}${days.includes(d.day) ? '' : `<span>${root.KisHebrew.getMode() === 'HEB' ? root.KisHebrew.day(d.day) : new Date(d.day).getDate() + '.' + (new Date(d.day).getMonth() + 1)}</span>`}
+          <input type="date" data-f="date" value="${root.KisHistory.iso(d.day)}" aria-label="תאריך אחר"></label>` : `<button class="chip cal-chip" data-a="days-open" data-testid="editor-other-date" aria-pressed="${extra.length > 0 || !days.includes(d.day)}" aria-expanded="${daysOpen}" aria-label="${extra.length ? 'נבחרו ' + chosen.size + ' ימים' : 'בחירת ימים בלוח'}">${CAL}${extra.length ? `<span>${chosen.size} ימים</span>` : days.includes(d.day) ? '' : `<span>${root.KisHebrew.getMode() === 'HEB' ? root.KisHebrew.day(d.day) : new Date(d.day).getDate() + '.' + (new Date(d.day).getMonth() + 1)}</span>`}</button>`}
         ${d.mode === 'JOB' ? '' : d.rateUnknown ? '<button class="chip warn" data-a="rate-unknown" data-testid="rate-unknown" aria-pressed="true">תעריף חסר</button>'
           : `<label class="chip rate-chip" data-testid="rate-field">${esc(d.currency)}<input inputmode="decimal" data-f="rate" value="${esc(d.rate)}" placeholder="?" aria-label="תעריף לשעה" data-testid="rate-input" style="width:${rateWidth(d.rate)}">לשעה</label>`}
         ${plusButton(d, clockMode)}
@@ -498,7 +509,7 @@ function open(app, { entry = null, restore = null, onSaved = null } = {}) {
       if (k === 'bonus') showBonus = true; else if (k === 'pass') passOpen = true; else if (k === 'note') showNote = true; else showBreak = true;
       draw(); host.querySelector(k === 'bonus' ? '[data-f=bonus]' : k === 'pass' ? '[data-f=passThrough]' : k === 'note' ? '[data-testid=notes-input]' : '[data-testid=break-block] button')?.focus(); });
     q('[data-a=days-open]')?.addEventListener('click', () => { daysOpen = !daysOpen; plusOpen = false; repeatOpen = false; daysMonth = null; draw(); if (daysOpen) host.querySelector('[data-testid=days-sheet]')?.scrollIntoView({ block: 'nearest' }); });
-    all('[data-mstep]').forEach(b => b.onclick = () => { const m = new Date(daysMonth ?? d.day); daysMonth = new Date(m.getFullYear(), m.getMonth() + +b.dataset.mstep, 1).getTime(); draw(); });
+    all('[data-mstep]').forEach(b => b.onclick = () => { daysMonth = +b.dataset.mstep < 0 ? daysPrev : daysNext; draw(); });
     all('[data-mday]').forEach(b => b.onclick = () => { const ms = +b.dataset.mday, s = new Set([d.day, ...extraDays()]);
       if (s.has(ms)) { if (s.size > 1) s.delete(ms); } else s.add(ms);
       const list = [...s].sort((a, b) => a - b); U().haptic('tick');

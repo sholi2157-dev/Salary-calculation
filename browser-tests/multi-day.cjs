@@ -17,6 +17,7 @@ const others=[1,2,3,4,5].map(k=>((today-1+k*5)%last)+1).filter(x=>x!==today).sli
 for(const x of others) await p.click(`[data-testid=month-day-${x}]`);
 assert.match(await p.textContent('[data-testid=days-done]'),/3 ימים/);
 await shot('web-several-days-sheet');
+assert.ok(await p.$('[data-testid=month-title-heb]'),'both: Hebrew months under the title');
 await p.click('[data-testid=days-done]');
 assert.match(await p.textContent('[data-testid=editor-other-date]'),/3 ימים/);
 assert.equal(await p.$('[data-testid=editor-repeat]'),null,'no weekly repeat with several days');
@@ -34,4 +35,15 @@ await p.waitForSelector('text=נשמרו 3 משמרות');
 await p.click('.toast button, [data-testid=toast-action]').catch(()=>{});
 await p.waitForTimeout(300);
 assert.equal(await p.evaluate(()=>window.Kis.store.data.entries.length),before,'one undo removes all three');
+// Hebrew only (Settings): Hebrew months and Hebrew day numbers.
+await p.evaluate(()=>{window.KisHebrew.setMode('HEB'); window.Kis.openNew();}); await p.waitForTimeout(300);
+await p.click('[data-testid=editor-other-date]'); await p.waitForSelector('[data-testid=days-sheet]');
+const [hy,hm,hd]=await p.evaluate(()=>window.KisHebrew.fromMillis(Date.now()));
+const want=await p.evaluate(([y,m])=>window.KisHebrew.monthName(y,m)+' '+window.KisHebrew.gematria(y),[hy,hm]);
+assert.equal((await p.textContent('[data-testid=month-title]')).trim(),want);
+assert.equal(await p.getAttribute(`[data-testid=month-day-${hd}]`,'aria-pressed'),'true');
+assert.equal(await p.$('[data-testid=month-title-heb]'),null);
+await shot('web-days-hebrew');
+await p.click('[data-testid=month-next]'); await p.click('[data-testid=month-prev]');
+assert.equal((await p.textContent('[data-testid=month-title]')).trim(),want,'month arrows go and come back');
 assert.deepEqual(errs,[]); console.log('multi-day ok'); await b.close(); s.close();});
