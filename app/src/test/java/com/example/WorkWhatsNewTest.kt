@@ -63,4 +63,12 @@ class WorkWhatsNewTest {
         assertNull(WhatsNew.decide(null, 56, updated = false, versionName = "2.4.1"))
         assertNull(WhatsNew.decide(56, 56, updated = true, versionName = "2.4.1"))
     }
+
+    @Test fun release242HasItsHighlightsAndShowsOnceAfterTheUpdate() {
+        val lines = WhatsNew.NOTES.getValue("2.4.2")
+        assertEquals(listOf("מסך הוספת משמרת נקי וקצר יותר: השעות בלי מסגרת, ובלי הצעות מוכנות שלא ביקשת.", "תאריך, תעריף, +, משמרת חוזרת ומטבע בשורה אחת. בונוס, החזר הוצאות, הפסקה והערה מוסיפים מה-+.", "כשיש בונוס או החזר הוצאות, רואים בדיוק מה ההכנסה שלך ומה לקבל מהמעסיק.", "כל המסך נגלל יחד, גם כשהמקלדת פתוחה."), lines)
+        assertEquals(lines, WhatsNew.decide(56, 57, updated = true, versionName = "2.4.2"))
+        assertNull(WhatsNew.decide(null, 57, updated = false, versionName = "2.4.2"))
+        assertNull(WhatsNew.decide(57, 57, updated = true, versionName = "2.4.2"))
+    }
 }

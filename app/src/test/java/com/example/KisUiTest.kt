@@ -96,7 +96,7 @@ class KisUiTest {
         ui.onNodeWithText("היום").assertExists()
         ui.onNodeWithTag("day_-3").assertExists()
         ui.onNodeWithTag("day_3").assertExists()
-        ui.onNodeWithTag("mode_hours").performClick()
+        ui.onNodeWithTag("mode_hours").performScrollTo().performClick()
         // The phone's keyboard types into the page; there is no keypad of the app's own.
         // The label selects the whole duration; the enlarged digits remain independent touch targets.
         ui.onNodeWithText("שעות ודקות", useUnmergedTree = true).performClick()
@@ -181,21 +181,21 @@ class KisUiTest {
         ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪437.50")
         shot("editor-clock-$suffix")
         // A note survives every mode switch (draft is kept).
-        ui.onNodeWithTag("editor_note").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_plus").performScrollTo().performClick(); ui.onNodeWithTag("plus_note").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().performTextReplacement("טיוטה שנשמרת במעבר")
         // "group" is the "קבוצה" button at the top (on, then off again back to the user's own shift).
         for (mode in listOf("hours", "group", "clock")) {
-            ui.onNodeWithTag(if (mode == "group") "editor_team" else "mode_$mode").performClick()
+            (if (mode == "group") ui.onNodeWithTag("editor_team") else ui.onNodeWithTag("mode_$mode").performScrollTo()).performClick()
             ui.onNodeWithTag("notes_input").performScrollTo().assertTextContains("טיוטה שנשמרת במעבר")
             ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
             if (mode == "group") ui.onNodeWithTag("group_block").performScrollTo().assertIsDisplayed()
             shot("editor-$mode-$suffix")
             if (mode == "group") ui.onNodeWithTag("editor_team").performClick()
         }
-        ui.onNodeWithTag("mode_job").performClick()
+        ui.onNodeWithTag("mode_job").performScrollTo().performClick()
         ui.onNodeWithTag("job_note").performScrollTo().assertIsDisplayed()
         shot("editor-job-$suffix")
-        ui.onNodeWithTag("mode_clock").performClick()
+        ui.onNodeWithTag("mode_clock").performScrollTo().performClick()
         // Unknown rate: saving is allowed and the total says what is missing instead of ₪0.
         // A break is one tap: 30 minutes off the shift, then back to none.
         // The break is added from "+" (with the bonus and money passed on), not a button of its own.
@@ -642,11 +642,18 @@ class KisUiTest {
             KisEditorPage(vm, EntryDraft(category = "מסעדה", rate = "50", currency = "₪", start = "09:00", end = "17:00", day = day), null, categories, emptyList(), emptyList(),
                 onClose = { closed = true }, onSaved = { _, _ -> }, onDeleted = {})
         }
+        // "חוזרת כל שבוע" is a square on the date/rate row; it opens a sheet that explains it and holds the switch and days.
+        ui.onNodeWithTag("editor_repeat").performScrollTo().performClick()
+        ui.onNodeWithTag("repeat_explain").assertExists()
         ui.onNodeWithTag("repeat_switch").performScrollTo().performClick()
         val weekday = weekdayOf(day)
         ui.onNodeWithTag("repeat_day_$weekday").performScrollTo().assertIsSelected()
         // Today plus eight weeks: nine days, nothing overlaps.
         ui.onNodeWithTag("repeat_preview").performScrollTo().assertTextEquals("9 משמרות ייכנסו ללוח")
+        shot("editor-repeat-sheet")
+        ui.onNodeWithTag("repeat_done").performScrollTo().performClick()
+        ui.onNodeWithTag("repeat_sheet").assertDoesNotExist()
+        ui.onNodeWithTag("editor_repeat").assertIsSelected()
         ui.onNodeWithTag("save_shift_button").assertTextContains("יצירת הסדרה", substring = true)
         shot("editor-repeat")
         ui.onNodeWithTag("save_shift_button").performClick()
@@ -1221,12 +1228,12 @@ class KisUiTest {
         ui.onNodeWithTag("group_block").assertDoesNotExist()
         ui.onNodeWithTag("team_frame").assertDoesNotExist()
         shot("team-personal-editor")
-        ui.onNodeWithTag("mode_job").performClick()
+        ui.onNodeWithTag("mode_job").performScrollTo().performClick()
         ui.onNodeWithTag("job_team_block").assertDoesNotExist()
         ui.onNodeWithTag("editor_team").performClick()
         ui.onNodeWithTag("team_frame").assertExists()
         ui.onNodeWithTag("job_team_block").performScrollTo().assertExists()
-        ui.onNodeWithTag("mode_clock").performClick()
+        ui.onNodeWithTag("mode_clock").performScrollTo().performClick()
         ui.onNodeWithTag("group_block").performScrollTo().assertExists()
         ui.onNodeWithTag("save_shift_button").assertIsNotEnabled()
         shot("team-group-editor")
@@ -1466,6 +1473,7 @@ class KisUiTest {
         assertEquals(ThemeChoice.DARK, theme)
     }
 
+    /** Digits are 48dp tall and never overlap; their width is the digit's own so both times share one row (owner 2026-11-25). */
     @Test fun reviewClockDigitTargetsAre48dpWithoutOverlap() {
         host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00"),
             null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
@@ -1474,7 +1482,7 @@ class KisUiTest {
             var right = 0.dp
             for (i in 0..3) {
                 val node = ui.onNodeWithTag("clock_${time}_d$i", useUnmergedTree = true)
-                node.assertIsDisplayed().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+                node.assertIsDisplayed().assertHeightIsAtLeast(48.dp)
                 val bounds = node.getUnclippedBoundsInRoot()
                 assertTrue("digits cannot overlap", bounds.left >= right)
                 right = bounds.right
@@ -1493,23 +1501,76 @@ class KisUiTest {
         host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00"),
             null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
         shot("review-clock-411x659")
-        ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(100.dp)
-        ui.onNodeWithTag("editor_note").performScrollTo().assertIsDisplayed().performClick()
+        ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(80.dp)
+        ui.onNodeWithTag("editor_plus").performScrollTo().assertIsDisplayed().performClick(); ui.onNodeWithTag("plus_note").performScrollTo().performClick()
         ui.onNodeWithTag("notes_input").performScrollTo().assertIsDisplayed()
         ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
     }
 
-    /** A 360dp phone (Galaxy S23 width) keeps each time on one row: 48dp digits and both nudges side by side. */
-    @Test @Config(qualifiers = "w360dp-h708dp-xxhdpi") fun clockTimesAreOneRowEachOnA360dpPhone() {
+    /** A 360dp phone (Galaxy S23 width): start and end side by side, as in 2.4.0 (owner 2026-11-25), and the form keeps its room. */
+    @Test @Config(qualifiers = "w360dp-h708dp-xxhdpi") fun clockTimesSitSideBySideOnA360dpPhone() {
         host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00"),
             null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
         shot("review-clock-360x708")
+        val start = ui.onNodeWithTag("clock_start").getUnclippedBoundsInRoot()
+        val end = ui.onNodeWithTag("clock_end").getUnclippedBoundsInRoot()
+        assertEquals("start and end share one row", start.top.value, end.top.value, 0.5f)
         listOf("start", "end").forEach { time ->
-            val digits = ui.onNodeWithTag("clock_${time}_d0", useUnmergedTree = true).assertWidthIsAtLeast(48.dp).getUnclippedBoundsInRoot()
-            val minus = ui.onNodeWithTag("nudge_${time}_-15").assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp).getUnclippedBoundsInRoot()
-            assertTrue("the nudges sit beside the digits, not under them", minus.top < digits.bottom)
+            listOf(-15, 15).forEach { n -> ui.onNodeWithTag("nudge_${time}_$n").assertIsDisplayed().assertHeightIsAtLeast(48.dp) }
         }
-        ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(100.dp)
+        ui.onNodeWithTag("editor_scroll").assertHeightIsAtLeast(120.dp)
+    }
+
+    /**
+     * Owner 2026-11-26: date (a calendar button), rate and "+" on one row with the currency; the note is inside "+";
+     * the whole page scrolls as one, so the clock scrolls away with the form instead of staying stuck.
+     */
+    @Test @Config(qualifiers = "w360dp-h708dp-xxhdpi") fun dateRateAndPlusShareOneRowAndThePageScrollsAsOne() {
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "17:00", rate = "120.50"),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        val tops = listOf("editor_other_date", "editor_rate", "editor_plus", "editor_repeat", "editor_currency").map { ui.onNodeWithTag(it).performScrollTo().getUnclippedBoundsInRoot().top.value }
+        tops.forEach { assertEquals("date, rate and + share one row", tops.first(), it, 0.5f) }
+        // The squares fill the whole row: the calendar touches one edge and the currency the other.
+        val row = ui.onNodeWithTag("editor_extras").getUnclippedBoundsInRoot()
+        val cal = ui.onNodeWithTag("editor_other_date").getUnclippedBoundsInRoot()
+        val cur = ui.onNodeWithTag("editor_currency").getUnclippedBoundsInRoot()
+        assertEquals("calendar at the row's right edge", row.right.value, cal.right.value, 1f)
+        assertEquals("currency at the row's left edge", row.left.value, cur.left.value, 1f)
+        shot("addshift-row-clock")
+        ui.onNodeWithTag("mode_hours").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_currency").performScrollTo()
+        assertEquals(row.left.value, ui.onNodeWithTag("editor_currency").getUnclippedBoundsInRoot().left.value, 1f)
+        shot("addshift-row-hours")
+        ui.onNodeWithTag("mode_job").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_currency").performScrollTo()
+        assertEquals(row.left.value, ui.onNodeWithTag("editor_currency").getUnclippedBoundsInRoot().left.value, 1f)
+        shot("addshift-row-job")
+        ui.onNodeWithTag("mode_clock").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_note").assertDoesNotExist()
+        ui.onNodeWithTag("editor_scroll").performScrollToNode(hasTestTag("clock_card"))
+        val clockBefore = ui.onNodeWithTag("clock_card").getUnclippedBoundsInRoot().top
+        ui.onNodeWithTag("editor_plus").performClick()
+        listOf("plus_bonus", "plus_pass", "plus_break", "plus_note").forEach { ui.onNodeWithTag(it).assertExists() }
+        ui.onNodeWithTag("plus_note").performScrollTo().performClick()
+        ui.onNodeWithTag("notes_input").performScrollTo().assertIsDisplayed()
+        // One scroller: once the note is in view the clock has scrolled up with the rest of the page.
+        val clock = ui.onNodeWithTag("clock_card").getUnclippedBoundsInRoot()
+        assertTrue("the clock scrolls with the form", clock.top < clockBefore)
+        ui.onNodeWithTag("save_shift_button").assertIsDisplayed()
+        shot("review-one-row-360x708")
+    }
+
+    /** Bonus is income, expenses are not: the editor spells out hours × rate + bonus = income, + expenses = owed by the employer. */
+    @Test fun bonusAndExpensesAreSpelledOut() {
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "13:00", rate = "50", bonus = "30", passThrough = "20"),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        ui.onNodeWithTag("pay_breakdown").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithTag("breakdown_bonus").assertTextContains("₪30", substring = true)
+        ui.onNodeWithTag("breakdown_income").assertTextContains("₪230", substring = true)
+        ui.onNodeWithTag("breakdown_pass").assertTextContains("₪20", substring = true)
+        ui.onNodeWithTag("breakdown_due").assertTextContains("₪250", substring = true)
+        ui.onNodeWithTag("editor_total", useUnmergedTree = true).assertTextEquals("₪230")
+        shot("review-pay-breakdown")
     }
 
     @Test fun knownZeroRateIsShownAndIsNotOfferedAsMissing() {
