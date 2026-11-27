@@ -6,6 +6,13 @@ import android.speech.SpeechRecognizer
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,36 +77,47 @@ fun AiShiftInput(text: String, onText: (String) -> Unit, capturing: Boolean, lis
     val focus = LocalFocusManager.current
     val c = com.example.ui.kis.Kis.colors
     val accent = com.example.ui.kis.Workplaces[0].accent(c.dark)
-    Column(Modifier.fillMaxWidth().testTag("ai_experience"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Icon(Icons.Filled.AutoAwesome, null, tint = accent, modifier = Modifier.size(26.dp))
-            Column {
-                Text("משמרת במילים שלך", color = c.ink, style = com.example.ui.kis.KisType.title)
-                Text("כותבים או מכתיבים ← פענוח ← בדיקה ושמירה", color = c.muted, style = com.example.ui.kis.KisType.caption)
+    val onAccent = if (c.dark) c.bg else Color.White
+    // Owner 2026-11-26 (option 2): the page is built around dictation. A big microphone in the middle, a short line on
+    // what to say, and a smaller box for typing below it. Nothing is saved without the review.
+    Column(Modifier.fillMaxWidth().testTag("ai_experience"), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("ספר לי על המשמרת", color = c.ink, style = com.example.ui.kis.KisType.title, textAlign = TextAlign.Center)
+            Text("למשל: \"אתמול במסעדה מ-5 עד 11, חצי שעה הפסקה\"", color = c.muted, style = com.example.ui.kis.KisType.caption, textAlign = TextAlign.Center)
+        }
+        val pulse = rememberInfiniteTransition(label = "voice")
+        val glow by pulse.animateFloat(0.10f, 0.26f, infiniteRepeatable(tween(850), RepeatMode.Reverse), label = "listening glow")
+        val ring = if (capturing && listening) glow else 0.14f
+        Box(Modifier.padding(vertical = 6.dp).size(184.dp).coachTarget(CoachTarget.AI).clip(CircleShape).background(accent.copy(alpha = ring * 0.5f)), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(156.dp).clip(CircleShape).background(accent.copy(alpha = ring)), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(128.dp).clip(CircleShape).background(if (processing) c.sunk else accent)
+                    .clickable(enabled = !processing && !capturing, role = Role.Button) { keyboard?.hide(); focus.clearFocus(); onRecord() }
+                    .semantics { contentDescription = if (capturing) "מקשיב" else "הקלטת תיאור בקול" }.testTag("ai_mic_btn"),
+                    contentAlignment = Alignment.Center) {
+                    Icon(Icons.Outlined.Mic, null, tint = if (processing) c.muted else onAccent, modifier = Modifier.size(52.dp))
+                }
             }
         }
-        com.example.ui.kis.KisTextField(text, onText, "תיאור המשמרת", Modifier.fillMaxWidth().coachTarget(CoachTarget.AI).testTag("ai_free_text_input"),
-            placeholder = "אתמול עבדתי במסעדה מ-17 עד 23, חצי שעה הפסקה, 52 שקל לשעה", singleLine = false, minLines = 3,
-            enabled = !processing && !capturing,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); focus.clearFocus() }))
         if (capturing) {
-            val pulse = rememberInfiniteTransition(label = "voice")
-            val alpha by pulse.animateFloat(0.45f, 1f, infiniteRepeatable(tween(850), RepeatMode.Reverse), label = "listening glow")
-            Column(Modifier.fillMaxWidth().background(c.sunk, RoundedCornerShape(16.dp)).padding(12.dp).testTag("ai_recording"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Outlined.Mic, null, tint = accent.copy(alpha = if (listening) alpha else 1f))
-                    Text(if (listening) "מקשיב... אפשר לדבר" else "מסיים את התמלול...", color = c.ink, style = com.example.ui.kis.KisType.body)
-                }
+            Column(Modifier.fillMaxWidth().testTag("ai_recording"), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(if (listening) "מקשיב... אפשר לדבר" else "מסיים את התמלול...", color = c.ink, style = com.example.ui.kis.KisType.label)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     com.example.ui.kis.KisButton("סיום הקלטה", onStop, Modifier.weight(1f), com.example.ui.kis.KisButtonKind.PRIMARY, enabled = listening, height = 48.dp, tag = "ai_stop")
                     com.example.ui.kis.KisButton("ביטול הקלטה", onCancel, Modifier.weight(1f), com.example.ui.kis.KisButtonKind.GHOST, height = 48.dp, tag = "ai_cancel_voice")
                 }
             }
-        } else {
-            com.example.ui.kis.KisButton("הקלטת תיאור בקול", { keyboard?.hide(); focus.clearFocus(); onRecord() }, Modifier.fillMaxWidth(),
-                com.example.ui.kis.KisButtonKind.OUTLINE, enabled = !processing, icon = Icons.Outlined.Mic, height = 50.dp, tag = "ai_mic_btn")
-            Text("אפשר לערוך את הטקסט לפני הפענוח. שום משמרת לא נשמרת בלי אישור שלך.", color = c.muted, style = com.example.ui.kis.KisType.caption)
+        } else Text("לחיצה ומדברים", color = c.ink, style = com.example.ui.kis.KisType.label)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.weight(1f).height(1.dp).background(c.line))
+            Text("או להקליד", color = c.muted, style = com.example.ui.kis.KisType.caption)
+            Box(Modifier.weight(1f).height(1.dp).background(c.line))
         }
+        com.example.ui.kis.KisTextField(text, onText, "תיאור המשמרת", Modifier.fillMaxWidth().testTag("ai_free_text_input"),
+            placeholder = "כותבים כאן...", singleLine = false, minLines = 2,
+            enabled = !processing && !capturing,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); focus.clearFocus() }))
+        if (!capturing) Text("אחרי הפענוח רואים את כל הפרטים ומאשרים לפני שמירה.", color = c.muted, style = com.example.ui.kis.KisType.caption,
+            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         if (error != null) Text(error, color = c.danger, style = com.example.ui.kis.KisType.caption, modifier = Modifier.testTag("ai_inline_error"))
         if (processing) {
             Column(Modifier.fillMaxWidth().background(c.sunk, RoundedCornerShape(16.dp)).padding(14.dp).testTag("ai_processing"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
