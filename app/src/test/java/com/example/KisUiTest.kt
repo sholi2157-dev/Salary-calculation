@@ -1591,6 +1591,25 @@ class KisUiTest {
         waitFor(10_000) { closed }
     }
 
+    /** Owner 2026-11-27: the days calendar follows the date choice in Settings (Hebrew only = Hebrew months; both = Hebrew day under each). */
+    @Test fun daysCalendarFollowsTheDateChoice() {
+        val (hy, hm, hd) = com.example.data.HebrewDate.fromMillis(day)
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "13:00", rate = "50", day = day),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        ui.onNodeWithTag("editor_other_date").performScrollTo().performClick()
+        ui.onNodeWithTag("month_title_heb").assertTextContains(com.example.data.HebrewDate.monthName(hy, hm), substring = true)
+        shot("editor-days-both")
+        ui.onNodeWithTag("days_done").performScrollTo().performClick()
+        com.example.data.HebrewDate.mode = com.example.data.HebrewDate.HEB
+        try {
+            ui.onNodeWithTag("editor_other_date").performScrollTo().performClick()
+            ui.onNodeWithTag("month_title").assertTextContains(com.example.data.HebrewDate.monthName(hy, hm) + " " + com.example.data.HebrewDate.gematria(hy))
+            ui.onNodeWithTag("month_day_$hd").assertIsSelected().assertTextContains(com.example.data.HebrewDate.gematria(hd))
+            ui.onNodeWithTag("month_title_heb").assertDoesNotExist()
+            shot("editor-days-hebrew")
+        } finally { com.example.data.HebrewDate.mode = com.example.data.HebrewDate.BOTH }
+    }
+
     /** Bonus is income, expenses are not: the editor spells out hours × rate + bonus = income, + expenses = owed by the employer. */
     @Test fun bonusAndExpensesAreSpelledOut() {
         host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "13:00", rate = "50", bonus = "30", passThrough = "20"),
