@@ -397,7 +397,7 @@ fun KisEditorPage(
                 val dayCount = 1 + extraDays(moreDays, d.day).size
                 KisChip(when { dayCount > 1 -> "$dayCount ימים"; otherDay -> Calendar.getInstance().apply { timeInMillis = d.day }.let { "${it.get(Calendar.DAY_OF_MONTH)}.${it.get(Calendar.MONTH) + 1}" }; else -> "" },
                     selected = dayCount > 1, leading = Icons.Outlined.CalendarMonth, tag = "editor_other_date", padX = 10.dp,
-                    modifier = Modifier.weight(1f).semantics { contentDescription = when { dayCount > 1 -> "$dayCount ימים נבחרו"; otherDay -> "תאריך: ${dayLabelLong(d.day)}"; else -> "בחירת יום או כמה ימים" } }, onClick = {
+                    modifier = Modifier.weight(if (dayCount > 1) 1.6f else 1f).semantics { contentDescription = when { dayCount > 1 -> "$dayCount ימים נבחרו"; otherDay -> "תאריך: ${dayLabelLong(d.day)}"; else -> "בחירת יום או כמה ימים" } }, onClick = {
                     if (pad) done()
                     if (d.editing) {
                         val cal = Calendar.getInstance().apply { timeInMillis = d.day }
@@ -1062,10 +1062,10 @@ private fun MonthPicker(chosen: Set<Long>, onToggle: (Long) -> Unit) {
     fun shift(by: Int) { month = Calendar.getInstance().apply { timeInMillis = month; add(Calendar.MONTH, by) }.timeInMillis }
     Column(Modifier.fillMaxWidth().testTag("month_picker"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            KisChip("‹", tag = "month_prev", onClick = { shift(-1) }, modifier = Modifier.semantics { contentDescription = "החודש הקודם" })
+            KisChip("›", tag = "month_prev", onClick = { shift(-1) }, modifier = Modifier.semantics { contentDescription = "החודש הקודם" })
             Text(java.text.SimpleDateFormat("LLLL yyyy", java.util.Locale("he")).format(java.util.Date(month)), style = KisType.label.copy(fontSize = 16.sp),
                 color = c.ink, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f).testTag("month_title"))
-            KisChip("›", tag = "month_next", onClick = { shift(1) }, modifier = Modifier.semantics { contentDescription = "החודש הבא" })
+            KisChip("‹", tag = "month_next", onClick = { shift(1) }, modifier = Modifier.semantics { contentDescription = "החודש הבא" })
         }
         Row(Modifier.fillMaxWidth()) {
             KisFormat.DAY_SHORT.forEach { Text(it, style = KisType.micro.copy(fontSize = 12.sp), color = c.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f)) }
