@@ -1,12 +1,12 @@
 {
-  "runId": 45672101223,
-  "sourceSha": "8305453fc6ee166ba625f6fa25070707a79d39a3",
-  "artifactName": "salary-2.4.1-code56-candidate",
-  "tag": "android-v2.4.1-code56",
-  "fileName": "Salary2.4.1.apk",
-  "versionCode": 56,
-  "versionName": "2.4.1",
-  "sha256": "c9a78e1d3a16d7ffe8b44fdffaefdfb2e4379b3690e35baab7a59a97a7985edf",
+  "runId": 45929468595,
+  "sourceSha": "77f7d8e1400f957c1c4b1b2ca4e3fb7551eebbcc",
+  "artifactName": "salary-2.4.2-code57-candidate",
+  "tag": "android-v2.4.2-code57",
+  "fileName": "Salary2.4.2.apk",
+  "versionCode": 57,
+  "versionName": "2.4.2",
+  "sha256": "9e5be362d40febbdba24c75fa27338c3fa8d8a082b610fb245027e1693aaf8a1",
   "certificateSha256": "ebaacacf243e5f5411033654fa07e74aefb503e8173fdd87fc62986552e78220",
-  "releaseNotes": "בטלפון מתקפל פתוח הכול נראה כמו בטלפון רגיל, רק גדול יותר. בהיסטוריה יש כפתור שיתוף ששולח בדיוק את המשמרות שמוצגות, ודוחות השיתוף קצרים וברורים יותר. העתקה של משמרות נעשית כטבלה מוכנה ל-Excel. כל המשמרות, הסכומים וההגדרות נשמרים."
+  "releaseNotes": "מסך הוספת משמרת חדש: נקי וקצר יותר, ותאריך, תעריף, +, משמרת חוזרת ומטבע בשורה אחת. בונוס, החזר הוצאות, הפסקה והערה מוסיפים מה-+, ורואים בדיוק מה ההכנסה שלך ומה לקבל מהמעסיק. כל המסך נגלל יחד, גם כשהמקלדת פתוחה. כל המשמרות, הסכומים וההגדרות נשמרים."
 }
