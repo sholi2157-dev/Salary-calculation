@@ -20,7 +20,7 @@ const tid = t => `[data-testid="${t}"]`;
       await ctx.route('**/*', r => new URL(r.request().url()).hostname === '127.0.0.1' ? r.continue() : r.abort());
       await ctx.addInitScript(data => {
         for (const [k, v] of Object.entries(data)) localStorage.setItem(k, JSON.stringify(v));
-        localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.1' })); localStorage.setItem('kis_signin_skip_v1', '1');
+        localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.2' })); localStorage.setItem('kis_signin_skip_v1', '1');
       }, rich);
       const page = await ctx.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
       const shot = async name => {
@@ -35,6 +35,15 @@ const tid = t => `[data-testid="${t}"]`;
           const r = n.getBoundingClientRect(); return { id: n.dataset.testid || n.textContent, w: r.width, h: r.height };
         }).filter(r => r.w < 43.99 || r.h < 43.99));
         assert.deepEqual(small, [], `${width}/${theme}: undersized controls`);
+      };
+      // Clock digits: 48px tall, their own width (both times share one row; owner 2026-11-25), never overlapping.
+      const digits = async () => {
+        const rows = await page.$$eval('.editor .digits-row', rs => rs.filter(r => r.getClientRects().length).map(r =>
+          [...r.querySelectorAll('button')].map(n => { const b = n.getBoundingClientRect(); return { l: b.left, r: b.right, h: b.height }; })));
+        for (const row of rows) row.forEach((d, i) => {
+          assert.ok(d.h >= 43.99, `${width}/${theme}: digit ${i} is ${d.h}px tall`);
+          if (i) assert.ok(d.l >= row[i - 1].r - 0.5, `${width}/${theme}: digits ${i - 1} and ${i} overlap`);
+        });
       };
       // Validate the full 44px effective area, including transparent pseudo-element extensions.
       const hit = async selector => {
@@ -61,14 +70,20 @@ const tid = t => `[data-testid="${t}"]`;
       const b = await page.locator(sw).boundingBox(); await page.mouse.click(b.x + b.width / 2, b.y - 5);
       assert.notEqual(await page.locator(sw).getAttribute('aria-checked'), before);
       await page.evaluate(() => Kis.openNew()); await page.waitForSelector(tid('add-page'));
-      await sizes('.editor .modes button, .editor .places button, .editor .seg button, .editor .digits-row button, .editor .nudges button, [data-testid=rate-unknown], .editor .info-dot');
+      await sizes('.editor .modes button, .editor .places button, .editor .seg button, .editor .nudges button, [data-testid=rate-unknown], .editor .info-dot'); await digits();
+      // Start and end share one row on every phone width.
+      const tops = await page.$$eval('.clock-row > .time-box', bs => bs.map(b => Math.round(b.getBoundingClientRect().top)));
+      assert.equal(new Set(tops).size, 1, `${width}/${theme}: time cards wrapped ${tops}`);
+      // Owner 2026-11-26: date (calendar button), rate and "+" share one row.
+      const rowTops = await page.$$eval('[data-testid=editor-other-date], [data-testid=rate-field], [data-testid=editor-plus]', bs => bs.map(b => Math.round(b.getBoundingClientRect().top)));
+      assert.equal(rowTops.length, 3); assert.equal(new Set(rowTops).size, 1, `${width}/${theme}: date, rate and + wrapped ${rowTops}`);
       await fit(); await shot('editor-targets');
       await hit(tid('ruler-start')); await hit(tid('ruler-end'));
       // The enlarged last digit still selects just that digit and keeps the native keyboard path.
       await page.click(tid('clock-end-d3')); await page.keyboard.type('5'); await page.click(tid('entry-done'));
       assert.match(await page.textContent(tid('clock-end')), /5$/);
-      await page.click(tid('mode-hours')); await sizes('.editor .digits-row button'); await fit();
-      await page.click(tid('mode-job')); await sizes('.editor .digits-row button'); await fit(); await shot('job-targets');
+      await page.click(tid('mode-hours')); await digits(); await fit();
+      await page.click(tid('mode-job')); await digits(); await fit(); await shot('job-targets');
       await page.evaluate(() => Kis.closeEditor());
       if (await page.locator(tid('confirm-ok')).count()) await page.click(tid('confirm-ok'));
       await page.evaluate(() => Kis.openDetail('r02'));
@@ -80,6 +95,6 @@ const tid = t => `[data-testid="${t}"]`;
       assert.ok(contrast >= 4.5, `delete contrast ${contrast} at ${width}/${theme}`);
       await shot('delete-contrast'); assert.deepEqual(errors, []); await ctx.close();
     }
-    console.log('review-targets: 320/360/390/412 light/dark, >=44px hit areas, actual switch/clock taps, no overflow and delete contrast >=4.5 passed');
+    console.log('review-targets: 320/360/390/412 light/dark, >=44px hit areas, 48px side-by-side clock digits, actual switch/clock taps, no overflow and delete contrast >=4.5 passed');
   } finally { await browser.close(); server.close(); }
 })().catch(e => { console.error(e); process.exit(1); });

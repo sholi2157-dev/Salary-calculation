@@ -12,7 +12,7 @@ s.listen(0,async()=>{const b=await chromium.launch(process.env.CHROMIUM_PATH?{ex
   const stored=()=>p.evaluate(()=>JSON.parse(localStorage.getItem('work_complete_backup')).entries.find(e=>e.id==='r01'));
   const before=await stored();
   await p.evaluate(()=>window.Kis.openDetail('r01')); await p.click('[data-testid=detail-edit]'); await p.waitForSelector('[data-testid=save-shift]');
-  await p.click('[data-testid=editor-note]'); const note='[data-testid=notes-input]';
+  await p.click('[data-testid=editor-plus]'); await p.click('[data-testid=plus-note]'); const note='[data-testid=notes-input]';
   await p.locator(note).fill('שורה ראשונה'); await p.locator(note).press('End');
   await p.keyboard.press('Enter');
   // Still open, the editor and its note, with the focus in the note.

@@ -230,18 +230,18 @@ button { cursor: pointer; }
 .places button { min-height: 44px; border-radius: 99px; border: 1.5px solid color-mix(in srgb, var(--ink) 25%, transparent); background: color-mix(in srgb, var(--surface) 60%, transparent);
   padding: 0 14px; font-weight: 600; font-size: 0.875rem; white-space: nowrap; }
 .places button[aria-pressed="true"] { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
-.clock-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
-/* Four separate 44px digits cannot fit twice across a phone. Wrap the time cards instead of overlapping hit areas. */
-.clock-row > .time-box { flex-basis: 210px; }
+/* Start and end side by side, as in 2.4.0 (owner 2026-11-25: the wrapped cards of 2.4.1 looked bad). */
+.clock-row { display: flex; align-items: stretch; gap: 10px; }
 .time-box { flex: 1; border: 1.5px solid transparent; border-radius: 16px; background: color-mix(in srgb, var(--tile) 60%, transparent); padding: 10px 14px; text-align: start; display: grid; gap: 2px; cursor: pointer; }
 /* The time being typed: a lifted card with the place's colour on its edge. */
 .time-box.on { background: var(--tile); border-color: var(--acc); }
-.time-box b { font: 2.75rem/3rem var(--display); direction: ltr; text-align: end; display: flex; width: max-content; max-width: 100%; justify-self: end; justify-content: flex-end; align-items: center; border-radius: 12px; }
+.time-box b { font: 2.75rem/3rem var(--display); direction: ltr; text-align: end; display: flex; justify-content: flex-end; align-items: center; border-radius: 12px; }
 .time-box b i { font-style: normal; }
 .time-box b.blank { color: var(--muted); }
 /* All selected (typing starts over), or one digit marked with the place's colour (the next key replaces it). */
 .time-box b.all { background: color-mix(in srgb, var(--acc) 20%, transparent); }
-.time-box b button { border: 0; background: none; font: inherit; color: inherit; padding: 0 1px; min-width: 44px; min-height: 48px; border-radius: 8px; cursor: pointer; }
+/* Each digit is 48px tall to tap; its width stays the digit's own so both times fit one row. A tap on the time selects all of it. */
+.time-box b button { border: 0; background: none; font: inherit; color: inherit; padding: 0 1px; min-width: .62em; min-height: 48px; border-radius: 8px; cursor: pointer; }
 .time-box b button[aria-pressed="true"] { background: color-mix(in srgb, var(--acc) 20%, transparent); box-shadow: inset 0 -3px 0 var(--acc); }
 @media (hover: hover) { .time-box b button:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); } }
 .time-box .nudges button { min-height: 44px; font-size: 0.875rem; }
@@ -258,6 +258,38 @@ button { cursor: pointer; }
 .nudges { display: flex; gap: 6px; align-items: center; }
 .nudges span { font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
 .nudges button { flex: 1; min-height: 44px; border: 1px solid var(--tile-edge); border-radius: 12px; background: var(--tile); font-weight: 600; direction: ltr; }
+/* Design option 1 (owner 2026-11-26): one clock card, the length between the times, a split −15|+15, the ruler inside. */
+.clock-card { display: grid; gap: 2px; }
+.clock-card .clock-row { gap: 4px; }
+.clock-card .time-box { background: transparent; padding: 8px 10px; min-width: 0; }
+.clock-card .time-box b { font-size: clamp(1.625rem, 9vw, 2.75rem); }
+.clock-card .time-box.on { background: var(--tile); }
+.clock-mid { display: grid; justify-items: center; align-content: start; gap: 2px; padding-top: 40px; color: var(--muted); font-size: 0.75rem; font-weight: 600; flex: none; }
+.clock-mid i { font-style: normal; font-size: 1.125rem; line-height: 1; }
+.clock-card .nudges { gap: 0; border: 1px solid var(--tile-edge); border-radius: 12px; overflow: hidden; background: var(--tile); }
+.clock-card .nudges button { border: 0; border-radius: 0; background: transparent; }
+.clock-card .nudges button + button { border-inline-start: 1px solid var(--tile-edge); }
+.clock-card .ruler { margin-block: 0 -6px; }
+/* Owner 2026-11-26: date (a calendar button), rate and "+" on one row with the currency. */
+.extras-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.extras-row .grow { flex: 1; }
+.cal-chip { position: relative; min-width: 44px; padding: 0 8px; justify-content: center; gap: 6px; }
+.cal-chip svg { flex: none; }
+.cal-chip input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.rate-chip { gap: 2px; padding: 0 8px; cursor: text; }
+.extras-row .seg button { padding: 0 8px; }
+.rate-chip input { width: 4.2ch; min-width: 2.8ch; border: 0; background: transparent; font: inherit; color: inherit; text-align: center; padding: 0; min-height: 40px; outline: none; }
+.rate-chip:focus-within { border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc); }
+.plus-chip { min-width: 44px; padding: 0; justify-content: center; font-size: 1.25rem; }
+.icon-chip, .cur-chip { min-width: 44px; justify-content: center; padding: 0; }
+.icon-chip[aria-pressed="true"] { background: var(--selected-bg); color: var(--selected-ink); border: 2px solid var(--selected-edge); }
+.cur-chip { font-family: Rubik, var(--font, sans-serif); font-size: 1rem; }
+.repeat-ico { width: 40px; height: 40px; border-radius: 12px; background: var(--sunk); display: grid; place-items: center; flex: none; }
+.plus-menu { display: grid; gap: 6px; }
+.pay-breakdown { background: color-mix(in srgb, var(--surface) 70%, transparent); border-radius: 12px; padding: 8px 12px; display: grid; gap: 3px; font-size: 0.8125rem; color: var(--muted); }
+.pay-breakdown .bd-line { display: flex; justify-content: space-between; gap: 8px; }
+.pay-breakdown b { color: var(--ink); font-weight: 600; }
+.pay-breakdown .strong { color: var(--ink); font-size: 0.9375rem; font-weight: 600; }
 .meta-line { display: flex; align-items: center; gap: 8px; }
 .meta-line .grow { flex: 1; font-weight: 600; }
 .editor-body { padding: 0 16px 16px; display: grid; gap: 12px; flex: 1; position: relative; z-index: 1; }
@@ -615,6 +647,7 @@ button.grip { border: 0; background: none; padding: 0; min-width: 44px; min-heig
   .set-body .row > .grow { min-width: 9em; }
   .time-box { padding: 8px 10px; }
   .time-box b { font-size: clamp(1.875rem, 11vw, 2.75rem); line-height: 1.1; }
+  .clock-card .time-box { padding: 6px 8px; }
 }
 @media (max-width: 339px) { .page-title { font-size: 1.625rem; line-height: 2rem; } }
 
@@ -638,3 +671,8 @@ button.grip { border: 0; background: none; padding: 0; min-width: 44px; min-heig
    ("לא שולם", "מתוכנן") under it on the other, so a long Hebrew date never pushes a tag onto a line of its own. */
 .shift .end { display: grid; justify-items: end; gap: 4px; flex-shrink: 0; }
 .shift .end .tags { display: flex; gap: 4px; }
+[data-breakdown]:empty { display: none; }
+/* Owner 2026-11-26: the squares share the whole row; the rate keeps its own width so it is never cut. */
+
+.extras-row > .cal-chip, .extras-row > .plus-chip, .extras-row > .icon-chip, .extras-row > .cur-chip { flex: 1 1 0; }
+.extras-row > .rate-chip { flex: none; }

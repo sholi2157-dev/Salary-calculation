@@ -23,7 +23,7 @@ const tid = t => `[data-testid="${t}"]`;
         createdAt: +date, isTimeRange: false, hours: 2, hourlyRate: 40, totalEarnings: 80, currency: '₪', isPaid: false, notes: 'בדיקת אחסון '.repeat(8),
         isGroupShift: false, groupWorkersJson: '', startTime: null, endTime: null }));
       localStorage.setItem('work_complete_backup', JSON.stringify({ entries, categories: [{ name: 'בדיקה', defaultRate: 40 }], workers: [] }));
-      localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.1' }));
+      localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.2' }));
       localStorage.setItem('kis_signin_skip_v1', '1'); localStorage.setItem('kis_ai_invited_v1', '1');
       // One due plan makes startup attempt a migration checkpoint before an automatic write.
       const day = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
@@ -56,7 +56,7 @@ const tid = t => `[data-testid="${t}"]`;
     await small.route('**/*', r => new URL(r.request().url()).hostname === '127.0.0.1' ? r.continue() : r.abort());
     await small.addInitScript(data => {
       for (const [k, v] of Object.entries(data)) localStorage.setItem(k, JSON.stringify(v));
-      localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.1' }));
+      localStorage.setItem('kis_web_v1', JSON.stringify({ launched: 2, tourDone: true, whatsNewSeen: '2.4.2' }));
       localStorage.setItem('kis_signin_skip_v1', '1');
     }, JSON.parse(fs.readFileSync('web-tests/fixtures/synthetic/rich-v2.json', 'utf8')));
     const edit = await small.newPage(); edit.on('pageerror', e => errors.push(e.message));
@@ -68,7 +68,7 @@ const tid = t => `[data-testid="${t}"]`;
     });
     await edit.evaluate(() => Kis.openDetail('r02'));
     await edit.click(tid('detail-edit'));
-    if (!await edit.locator(tid('notes-input')).count()) await edit.click(tid('editor-note'));
+    if (!await edit.locator(tid('notes-input')).count()) await edit.click(tid('editor-plus')).then(() => edit.click(tid('plus-note')));
     await edit.locator(tid('notes-input')).fill('עריכה סינתטית שנשארת');
     await edit.click(tid('save-shift'));
     assert.equal(await edit.locator(tid('notes-input')).inputValue(), 'עריכה סינתטית שנשארת');

@@ -61,12 +61,12 @@ const seed = { entries: [row('ils', 'עצמאי', day(1), 1.5, 40.25, '₪', 'ש
   await page.reload(); await page.waitForSelector(tid('home-hero'));
   await page.click(tid('add-shift')); await page.waitForSelector(tid('save-shift'));
   assert.equal(await page.getAttribute(tid('place-דולר חדש'), 'aria-pressed'), 'true');
-  assert.equal(await page.getAttribute('.editor-in [data-cur="$"]', 'aria-pressed'), 'true');
+  assert.equal(await page.getAttribute('.editor-in [data-testid=editor-currency]', 'data-currency'), '$');
   await page.click(tid('editor-close')); if (await page.isVisible(tid('confirm-ok'))) await page.click(tid('confirm-ok')); await editorOff();
 
   // Closing the editor saves nothing; saving keeps the currency and the stored amount, after a reload too.
   const openUsd = async () => { await page.click(tid('tab-history')); await page.click(tid('shift-usd')); await page.click(tid('detail-edit')); await page.waitForSelector(tid('save-shift'));
-    if (!await page.isVisible(tid('notes-input'))) await page.click(tid('editor-note')); };
+    if (!await page.isVisible(tid('notes-input'))) await page.click(tid('editor-plus')).then(() => page.click(tid('plus-note'))); };
   await openUsd(); await page.fill(tid('notes-input'), 'שינוי לביטול');
   await page.click(tid('editor-close')); if (await page.isVisible(tid('confirm-ok'))) await page.click(tid('confirm-ok')); await editorOff();
   assert.equal((await entry('usd')).notes, 'דולר סינתטי');

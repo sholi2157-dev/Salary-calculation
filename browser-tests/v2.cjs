@@ -64,8 +64,9 @@ const seed = {
     assert.equal(await durationValue(page),'1:50');
     await page.click(tid('hours-input-d2'));await page.keyboard.type('4');
     assert.equal(await durationValue(page),'1:40');
-    await page.click(tid('hours-input-d2'));await page.click('[data-q="4"]');await page.click(tid('entry-done'));
-    assert.equal(await durationValue(page),'4:00', 'quick hours replace the value being typed');
+    assert.equal(await page.locator('[data-q]').count(), 0, 'no ready-made hours (owner 2026-11-26)');
+    await setDuration(page,'4:00');
+    assert.equal(await durationValue(page),'4:00');
     await setDuration(page,'1:40');
     assert.equal(await page.getByText('לחיצה על ספרה משנה רק אותה',{exact:true}).count(),0);
 
@@ -90,7 +91,7 @@ const seed = {
     assert.match(await page.textContent(tid('editor-total')),/99\.91/);
     await page.click(tid('hours-input-d2'));await page.click(tid('entry-done'));
     assert.ok(await page.isDisabled(tid('save-shift')), 'opening a rounded display does not change imported hours');
-    await page.click(tid('editor-note'));await page.fill(tid('notes-input'),'הערה בלבד');
+    await page.click(tid('editor-plus')).then(() => page.click(tid('plus-note')));await page.fill(tid('notes-input'),'הערה בלבד');
     assert.match(await page.textContent(tid('editor-total')),/99\.91/);
     await page.click(tid('save-shift'));const row=(await stored(page)).entries[0];assert.equal(row.hours,1.234567);assert.equal(row.totalEarnings,99.91);
     await ctx.close();
@@ -127,7 +128,7 @@ const seed = {
   // 2. Add a clock shift with the device's keyboard, unknown rate never 0, then complete the rate for it; edit keeps the stored amount.
   {
     const { ctx, page } = await open();
-    await page.click(tid('add-shift')); await page.click(tid('clock-start'));
+    await page.click(tid('add-shift')); await page.click('.time-box[data-t=START] > .caption');
     assert.match(await page.textContent(tid('entry-label')), /שעת התחלה/);
     assert.equal(await page.locator(tid('save-shift')).count(), 0, 'the typing bar never saves');
     const endBefore = await page.textContent(tid('clock-end'));
@@ -146,7 +147,7 @@ const seed = {
     // Each time has its own ±15.
     await page.click(tid('nudge-start--15')); assert.equal(await page.textContent(tid('clock-start')), '08:45');
     await page.click(tid('nudge-start-15')); assert.equal(await page.textContent(tid('clock-start')), '09:00');
-    await page.click(tid('rate-unknown'));
+    await page.click(tid('editor-plus')); await page.click(tid('rate-unknown'));
     assert.match(await page.textContent(tid('editor-meta')), /תעריף חסר/);
     await shot(page, 'editor-light-390');
     await page.click(tid('save-shift'));
@@ -157,7 +158,7 @@ const seed = {
     rows = (await stored(page)).entries; assert.equal(rows.find(e => e.id === added.id).totalEarnings, 350);
     // Edit only the note: the stored amount of an old row stays exactly as it was.
     await page.click(tid('tab-history')); await page.click(tid('shift-b')); await page.click(tid('detail-edit'));
-    await page.click(tid('editor-note')); await page.fill(tid('notes-input'), 'הערה'); await page.click(tid('save-shift'));
+    await page.click(tid('editor-plus')).then(() => page.click(tid('plus-note'))); await page.fill(tid('notes-input'), 'הערה'); await page.click(tid('save-shift'));
     const b = (await stored(page)).entries.find(e => e.id === 'b'); assert.equal(b.totalEarnings, 300); assert.equal(b.notes, 'הערה'); assert.equal(b.hours, 2.5);
     await ctx.close();
   }
@@ -169,7 +170,7 @@ const seed = {
     const t = w => page.textContent(tid('clock-' + w));
     const min = s => +s.slice(0, 2) * 60 + +s.slice(3);
     assert.equal((min(await t('end')) - min(await t('start')) + 1440) % 1440, 240, 'start is 4 hours before the end');
-    await page.click(tid('clock-start'));
+    await page.click('.time-box[data-t=START] > .caption');
     await page.keyboard.type('0530');
     assert.equal(await t('start'), '05:30');
     assert.match(await page.textContent(tid('entry-label')), /שעת התחלה/, 'a full start time does not jump to the end');
@@ -191,9 +192,10 @@ const seed = {
   // 3. A weekly plan that started 2 days ago: days already ended are recorded once (also after a reload), shown as "אוטו׳".
   {
     const { ctx, page } = await open({ width: 390, height: 844 }, 'dark');
-    await page.click(tid('add-shift')); await page.click(tid('clock-start'));
+    await page.click(tid('add-shift')); await page.click('.time-box[data-t=START] > .caption');
     await page.keyboard.type('0600'); await page.keyboard.press('Enter'); await page.keyboard.type('0630'); await page.keyboard.press('Enter');
     await page.locator('[data-day]').nth(1).click(); // today is index 3; two days ago is index 1
+    await page.click(tid('editor-repeat')); assert.ok(await page.isVisible(tid('repeat-explain')));
     await page.click(tid('repeat-switch'));
     for (let i = 0; i < 7; i++) { const b = page.locator(tid('repeat-day-' + i)); if ((await b.getAttribute('aria-pressed')) !== 'true') await b.click(); }
     assert.match(await page.textContent(tid('repeat-preview')), /ייכנסו ללוח/);
