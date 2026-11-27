@@ -1530,6 +1530,22 @@ class KisUiTest {
             null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
         val tops = listOf("editor_other_date", "editor_rate", "editor_plus", "editor_repeat", "editor_currency").map { ui.onNodeWithTag(it).performScrollTo().getUnclippedBoundsInRoot().top.value }
         tops.forEach { assertEquals("date, rate and + share one row", tops.first(), it, 0.5f) }
+        // The squares fill the whole row: the calendar touches one edge and the currency the other.
+        val row = ui.onNodeWithTag("editor_extras").getUnclippedBoundsInRoot()
+        val cal = ui.onNodeWithTag("editor_other_date").getUnclippedBoundsInRoot()
+        val cur = ui.onNodeWithTag("editor_currency").getUnclippedBoundsInRoot()
+        assertEquals("calendar at the row's right edge", row.right.value, cal.right.value, 1f)
+        assertEquals("currency at the row's left edge", row.left.value, cur.left.value, 1f)
+        shot("addshift-row-clock")
+        ui.onNodeWithTag("mode_hours").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_currency").performScrollTo()
+        assertEquals(row.left.value, ui.onNodeWithTag("editor_currency").getUnclippedBoundsInRoot().left.value, 1f)
+        shot("addshift-row-hours")
+        ui.onNodeWithTag("mode_job").performScrollTo().performClick()
+        ui.onNodeWithTag("editor_currency").performScrollTo()
+        assertEquals(row.left.value, ui.onNodeWithTag("editor_currency").getUnclippedBoundsInRoot().left.value, 1f)
+        shot("addshift-row-job")
+        ui.onNodeWithTag("mode_clock").performScrollTo().performClick()
         ui.onNodeWithTag("editor_note").assertDoesNotExist()
         ui.onNodeWithTag("editor_scroll").performScrollToNode(hasTestTag("clock_card"))
         val clockBefore = ui.onNodeWithTag("clock_card").getUnclippedBoundsInRoot().top

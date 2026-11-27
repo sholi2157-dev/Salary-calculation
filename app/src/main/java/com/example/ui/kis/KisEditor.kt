@@ -378,10 +378,11 @@ fun KisEditorPage(
             // Owner 2026-11-26 (later): "חוזרת כל שבוע" is a square with a repeat icon on the same row, the currency one square that
             // switches ₪/$, and the rate is never cut (the row wraps on a very narrow screen instead).
             val canRepeat = !d.editing && d.mode == EntryMode.CLOCK && d.start != null
-            Box(Modifier.fillMaxWidth().bringIntoViewRequester(extrasInView).testTag("editor_extras")) { FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Box(Modifier.fillMaxWidth().bringIntoViewRequester(extrasInView).testTag("editor_extras")) { // Owner 2026-11-26: the squares share the whole row (the rate keeps its own width, so it is never cut).
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 val otherDay = !isWithinWeek(d.day)
                 KisChip(if (otherDay) Calendar.getInstance().apply { timeInMillis = d.day }.let { "${it.get(Calendar.DAY_OF_MONTH)}.${it.get(Calendar.MONTH) + 1}" } else "", leading = Icons.Outlined.CalendarMonth, tag = "editor_other_date", padX = 10.dp,
-                    modifier = Modifier.semantics { contentDescription = if (otherDay) "תאריך: ${dayLabelLong(d.day)}" else "תאריך אחר" }, onClick = {
+                    modifier = Modifier.weight(1f).semantics { contentDescription = if (otherDay) "תאריך: ${dayLabelLong(d.day)}" else "תאריך אחר" }, onClick = {
                     val cal = Calendar.getInstance().apply { timeInMillis = d.day }
                     DatePickerDialog(context, { _, y, m, day -> d = d.copy(day = Calendar.getInstance().apply { clear(); set(y, m, day) }.timeInMillis) },
                         cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
@@ -390,12 +391,12 @@ fun KisEditorPage(
                     if (d.rateUnknown) KisChip("תעריף חסר", warn = true, tag = "editor_rate_known", padX = 10.dp, onClick = { d = d.copy(rateUnknown = false); open(KeyTarget.RATE) })
                     else KisChip("${d.currency}${shown(KeyTarget.RATE).ifEmpty { "?" }} לשעה", selected = pad && target == KeyTarget.RATE, tag = "editor_rate", padX = 10.dp, onClick = { open(KeyTarget.RATE) })
                 }
-                KisChip("+", selected = plusOpen, tag = "editor_plus", padX = 10.dp, modifier = Modifier.semantics { contentDescription = "הוספה: בונוס, החזר הוצאות, הפסקה או הערה" },
+                KisChip("+", selected = plusOpen, tag = "editor_plus", padX = 10.dp, modifier = Modifier.weight(1f).semantics { contentDescription = "הוספה: בונוס, החזר הוצאות, הפסקה או הערה" },
                     onClick = { if (pad) done(); plusOpen = !plusOpen })
                 if (canRepeat) KisChip("", selected = repeat, leading = Icons.Outlined.Repeat, tag = "editor_repeat", padX = 10.dp,
-                    modifier = Modifier.semantics { contentDescription = if (repeat) "חוזרת כל שבוע: פועל" else "חוזרת כל שבוע" }, onClick = { if (pad) done(); repeatSheet = true })
+                    modifier = Modifier.weight(1f).semantics { contentDescription = if (repeat) "חוזרת כל שבוע: פועל" else "חוזרת כל שבוע" }, onClick = { if (pad) done(); repeatSheet = true })
                 val other = if (d.currency == "₪") "$" else "₪"
-                KisChip(d.currency, tag = "editor_currency", padX = 10.dp, modifier = Modifier.semantics { contentDescription = "מטבע: ${if (d.currency == "₪") "שקל" else "דולר"}. לחיצה מחליפה ל${if (other == "₪") "שקל" else "דולר"}" },
+                KisChip(d.currency, tag = "editor_currency", padX = 10.dp, modifier = Modifier.weight(1f).semantics { contentDescription = "מטבע: ${if (d.currency == "₪") "שקל" else "דולר"}. לחיצה מחליפה ל${if (other == "₪") "שקל" else "דולר"}" },
                     onClick = { d = d.copy(currency = other) })
             } }
             // "לא יודע" belongs to the rate: it shows while the rate is typed, not as a button of its own.

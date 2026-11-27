@@ -269,7 +269,7 @@ fun KisChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifi
         })
         .kisClick(onLongClick = onLongClick, onClick = onClick).then(if (tag != null) Modifier.testTag(tag) else Modifier)
         .semantics { this.selected = selected }
-        .padding(horizontal = padX), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        .padding(horizontal = padX), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
         if (leading != null) Icon(leading, null, tint = fg, modifier = Modifier.size(18.dp))
         if (text.isNotEmpty() || leading == null) Text(text, style = KisType.label, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
