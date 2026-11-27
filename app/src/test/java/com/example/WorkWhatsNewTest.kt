@@ -71,4 +71,12 @@ class WorkWhatsNewTest {
         assertNull(WhatsNew.decide(null, 57, updated = false, versionName = "2.4.2"))
         assertNull(WhatsNew.decide(57, 57, updated = true, versionName = "2.4.2"))
     }
+
+    @Test fun release243HasItsHighlightsAndShowsOnceAfterTheUpdate() {
+        val lines = WhatsNew.NOTES.getValue("2.4.3")
+        assertEquals(listOf("אפשר לשמור משמרת אחת בכמה ימים: בוחרים ימים בלוח, והיא נשמרת באותן שעות ובאותם פרטים בכל אחד מהם.", "הלוח מראה תאריך עברי, לועזי או את שניהם, לפי מה שבחרת בהגדרות."), lines)
+        assertEquals(lines, WhatsNew.decide(57, 58, updated = true, versionName = "2.4.3"))
+        assertNull(WhatsNew.decide(null, 58, updated = false, versionName = "2.4.3"))
+        assertNull(WhatsNew.decide(58, 58, updated = true, versionName = "2.4.3"))
+    }
 }

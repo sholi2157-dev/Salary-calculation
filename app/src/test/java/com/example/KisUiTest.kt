@@ -1560,6 +1560,56 @@ class KisUiTest {
         shot("review-one-row-360x708")
     }
 
+    /** Owner 2026-11-27: one shift on several days picked in the calendar, each saved with the same times and details. */
+    @Test fun oneShiftOnSeveralChosenDays() {
+        var closed = false
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "13:00", rate = "50", day = day),
+            null, categories, emptyList(), emptyList(), onClose = { closed = true }, onSaved = { _, _ -> }, onDeleted = {}) }
+        val dom = java.util.Calendar.getInstance().apply { timeInMillis = day }.get(java.util.Calendar.DAY_OF_MONTH)
+        val others = if (dom <= 26) listOf(dom + 1, dom + 2) else listOf(dom - 1, dom - 2)
+        ui.onNodeWithTag("editor_other_date").performScrollTo().performClick()
+        ui.onNodeWithTag("days_explain").assertExists()
+        ui.onNodeWithTag("month_day_$dom").assertIsSelected()
+        others.forEach { ui.onNodeWithTag("month_day_$it").performScrollTo().performClick() }
+        others.forEach { ui.onNodeWithTag("month_day_$it").assertIsSelected() }
+        shot("editor-several-days-sheet")
+        ui.onNodeWithTag("days_done").performScrollTo().performClick()
+        ui.onNodeWithTag("days_sheet").assertDoesNotExist()
+        ui.onNodeWithTag("editor_other_date").assertTextContains("3 ימים", substring = true)
+        ui.onNodeWithTag("editor_repeat").assertDoesNotExist()
+        ui.onNodeWithTag("save_shift_button").assertTextContains("שמירת 3 משמרות", substring = true)
+        shot("editor-several-days")
+        ui.onNodeWithTag("save_shift_button").performClick()
+        waitFor(5_000) { rows().size == 3 }
+        val saved = rows()
+        val days = saved.map { java.util.Calendar.getInstance().apply { timeInMillis = it.date }.get(java.util.Calendar.DAY_OF_MONTH) }.toSet()
+        assertEquals((others + dom).toSet(), days)
+        saved.forEach { e ->
+            assertEquals("09:00", e.startTime); assertEquals("13:00", e.endTime); assertEquals(4.0, e.hours, 1e-9)
+            assertEquals(50.0, e.hourlyRate, 0.0); assertEquals(200.0, e.totalEarnings, 0.0); assertEquals(categories.first().name, e.category)
+        }
+        waitFor(10_000) { closed }
+    }
+
+    /** Owner 2026-11-27: the days calendar follows the date choice in Settings (Hebrew only = Hebrew months; both = Hebrew day under each). */
+    @Test fun daysCalendarFollowsTheDateChoice() {
+        val (hy, hm, hd) = com.example.data.HebrewDate.fromMillis(day)
+        host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "13:00", rate = "50", day = day),
+            null, categories, emptyList(), emptyList(), onClose = {}, onSaved = { _, _ -> }, onDeleted = {}) }
+        ui.onNodeWithTag("editor_other_date").performScrollTo().performClick()
+        ui.onNodeWithTag("month_title_heb").assertTextContains(com.example.data.HebrewDate.monthName(hy, hm), substring = true)
+        shot("editor-days-both")
+        ui.onNodeWithTag("days_done").performScrollTo().performClick()
+        com.example.data.HebrewDate.mode = com.example.data.HebrewDate.HEB
+        try {
+            ui.onNodeWithTag("editor_other_date").performScrollTo().performClick()
+            ui.onNodeWithTag("month_title").assertTextContains(com.example.data.HebrewDate.monthName(hy, hm) + " " + com.example.data.HebrewDate.gematria(hy))
+            ui.onNodeWithTag("month_day_$hd").assertIsSelected().assertTextContains(com.example.data.HebrewDate.gematria(hd))
+            ui.onNodeWithTag("month_title_heb").assertDoesNotExist()
+            shot("editor-days-hebrew")
+        } finally { com.example.data.HebrewDate.mode = com.example.data.HebrewDate.BOTH }
+    }
+
     /** Bonus is income, expenses are not: the editor spells out hours × rate + bonus = income, + expenses = owed by the employer. */
     @Test fun bonusAndExpensesAreSpelledOut() {
         host { KisEditorPage(model(), EntryDraft.new(categories.first(), "₪").copy(start = "09:00", end = "13:00", rate = "50", bonus = "30", passThrough = "20"),

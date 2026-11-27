@@ -123,6 +123,9 @@ fun KisEditorPage(
     // "חוזרת כל שבוע" (stage C): a new clock shift can become a weekly plan.
     var repeat by rememberSaveable { mutableStateOf(false) }
     var repeatSheet by rememberSaveable { mutableStateOf(false) }
+    // Owner 2026-11-27: the same shift on several days. The extra days besides d.day, as "millis,millis".
+    var moreDays by rememberSaveable { mutableStateOf("") }
+    var daysSheet by rememberSaveable { mutableStateOf(false) }
     var repeatDays by rememberSaveable { mutableStateOf(weekdayOf(initial.day).toString()) }
     var repeatUntil by rememberSaveable { mutableStateOf(isoDayPlus(initial.day, 56)) }
     val repeatSet = repeatDays.split(",").mapNotNull { it.toIntOrNull() }.toSet()
@@ -243,6 +246,16 @@ fun KisEditorPage(
                 }, null)
                 onClose()
             }
+            return
+        }
+        val more = extraDays(moreDays, d.day)
+        if (!d.editing && more.isNotEmpty()) {
+            val entries = (more + d.day).sorted().map { day -> d.copy(day = day).toEntry(null) }
+            viewModel.saveNewEntries(entries, onSaved = { n ->
+                settings.haptic(KisSettings.Haptic.SUCCESS)
+                onSaved("נשמרו $n משמרות ✓") { viewModel.undoLastAddedEntry() }
+                onClose()
+            }, onFailed = { saving = false; settings.haptic(KisSettings.Haptic.WARN) })
             return
         }
         val entry = d.toEntry(base)
@@ -372,20 +385,25 @@ fun KisEditorPage(
                 MetaLine(d, check.copy(total = shownTotal), onTop, topBg)
             }
             if (d.mode == EntryMode.JOB) JobNote(d.notes, history) { d = d.copy(notes = it) }
-            DayStrip(d.day) { d = d.copy(day = it) }
+            DayStrip(d.day, extraDays(moreDays, d.day)) { d = d.copy(day = it); moreDays = "" }
             // Owner 2026-11-26: date, rate and "+" share one row. Another date is a small calendar button (the chosen
             // date shows on it only when it is outside the week above); the currency stays at the row's end.
             // Owner 2026-11-26 (later): "חוזרת כל שבוע" is a square with a repeat icon on the same row, the currency one square that
             // switches ₪/$, and the rate is never cut (the row wraps on a very narrow screen instead).
-            val canRepeat = !d.editing && d.mode == EntryMode.CLOCK && d.start != null
+            val canRepeat = !d.editing && d.mode == EntryMode.CLOCK && d.start != null && moreDays.isEmpty()
             Box(Modifier.fillMaxWidth().bringIntoViewRequester(extrasInView).testTag("editor_extras")) { // Owner 2026-11-26: the squares share the whole row (the rate keeps its own width, so it is never cut).
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 val otherDay = !isWithinWeek(d.day)
-                KisChip(if (otherDay) Calendar.getInstance().apply { timeInMillis = d.day }.let { "${it.get(Calendar.DAY_OF_MONTH)}.${it.get(Calendar.MONTH) + 1}" } else "", leading = Icons.Outlined.CalendarMonth, tag = "editor_other_date", padX = 10.dp,
-                    modifier = Modifier.weight(1f).semantics { contentDescription = if (otherDay) "תאריך: ${dayLabelLong(d.day)}" else "תאריך אחר" }, onClick = {
-                    val cal = Calendar.getInstance().apply { timeInMillis = d.day }
-                    DatePickerDialog(context, { _, y, m, day -> d = d.copy(day = Calendar.getInstance().apply { clear(); set(y, m, day) }.timeInMillis) },
-                        cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+                val dayCount = 1 + extraDays(moreDays, d.day).size
+                KisChip(when { dayCount > 1 -> "$dayCount ימים"; otherDay && com.example.data.HebrewDate.mode == com.example.data.HebrewDate.HEB -> com.example.data.HebrewDate.day(d.day); otherDay -> Calendar.getInstance().apply { timeInMillis = d.day }.let { "${it.get(Calendar.DAY_OF_MONTH)}.${it.get(Calendar.MONTH) + 1}" }; else -> "" },
+                    selected = dayCount > 1, leading = Icons.Outlined.CalendarMonth, tag = "editor_other_date", padX = 10.dp,
+                    modifier = Modifier.weight(if (dayCount > 1) 1.6f else 1f).semantics { contentDescription = when { dayCount > 1 -> "$dayCount ימים נבחרו"; otherDay -> "תאריך: ${dayLabelLong(d.day)}"; else -> "בחירת יום או כמה ימים" } }, onClick = {
+                    if (pad) done()
+                    if (d.editing) {
+                        val cal = Calendar.getInstance().apply { timeInMillis = d.day }
+                        DatePickerDialog(context, { _, y, m, day -> d = d.copy(day = Calendar.getInstance().apply { clear(); set(y, m, day) }.timeInMillis) },
+                            cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+                    } else daysSheet = true
                 })
                 if (d.mode != EntryMode.JOB) {
                     if (d.rateUnknown) KisChip("תעריף חסר", warn = true, tag = "editor_rate_known", padX = 10.dp, onClick = { d = d.copy(rateUnknown = false); open(KeyTarget.RATE) })
@@ -457,9 +475,25 @@ fun KisEditorPage(
         if (pad) TypingBar(label = keyLabel(target, d.currency), value = if (isDigits(target)) null else shown(target),
             typing = buf.isNotEmpty(), next = if (target == KeyTarget.START && d.mode != EntryMode.HOURS && !d.groupByHours) "לשעת הסיום" else null,
             onNext = { open(KeyTarget.END) }, onDone = ::done)
-        else SaveBar(check, if (repeatOn(d, repeat)) "יצירת הסדרה" else saveLabel(d, changed),
+        else SaveBar(check, if (repeatOn(d, repeat)) "יצירת הסדרה" else if (!d.editing && extraDays(moreDays, d.day).isNotEmpty()) "שמירת ${1 + extraDays(moreDays, d.day).size} משמרות" else saveLabel(d, changed),
             check.canSave && (!d.editing || changed) && !saving && (!repeatOn(d, repeat) || repeatPreview?.created?.isNotEmpty() == true), ::save, refused)
     }
+    }
+
+    // Several days: a month to tap days on; the shift is saved with the same times and details on each one.
+    if (daysSheet) KisSheet(onDismiss = { daysSheet = false }, tag = "days_sheet") {
+        Text("באילו ימים?", style = KisType.title.copy(fontSize = 20.sp), color = c.ink)
+        Text("אפשר לבחור יום אחד או כמה. המשמרת תישמר באותן שעות ובאותם פרטים בכל יום שבוחרים.", style = KisType.body, color = c.muted,
+            modifier = Modifier.testTag("days_explain"))
+        val chosen = (extraDays(moreDays, d.day) + d.day)
+        MonthPicker(chosen) { day ->
+            val next = if (day in chosen) (chosen - day).ifEmpty { chosen } else chosen + day
+            val first = next.min()
+            d = d.copy(day = first)
+            moreDays = (next - first).sorted().joinToString(",")
+            if (next.size > 1) repeat = false
+        }
+        KisButton(if (chosen.size > 1) "סיום · ${chosen.size} ימים" else "סיום", { daysSheet = false }, Modifier.fillMaxWidth().testTag("days_done"))
     }
 
     // "חוזרת כל שבוע" from its square: a short, friendly explanation, the switch, and then the days and until when.
@@ -741,14 +775,14 @@ private fun MetaLine(d: EntryDraft, check: EntryDraft.Check, ink: Color, bg: Col
 }
 
 @Composable
-private fun DayStrip(day: Long, onDay: (Long) -> Unit) {
+private fun DayStrip(day: Long, more: Set<Long> = emptySet(), onDay: (Long) -> Unit) {
     val c = Kis.colors
     val today = EntryDraft.startOfDay(System.currentTimeMillis())
     Row(Modifier.fillMaxWidth().testTag("day_strip"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         for (i in -3..3) {
             val millis = Calendar.getInstance().apply { timeInMillis = today; add(Calendar.DAY_OF_MONTH, i) }.timeInMillis
             val cal = Calendar.getInstance().apply { timeInMillis = millis }
-            val on = millis == day
+            val on = millis == day || millis in more
             val shape = RoundedCornerShape(KisRadius.small)
             // M-30: the chosen day uses the one selected recipe (like a chosen chip) in both themes; the others sit back.
             Column(Modifier.weight(1f).heightIn(min = 56.dp).clip(shape)
@@ -756,7 +790,8 @@ private fun DayStrip(day: Long, onDay: (Long) -> Unit) {
                 .kisClick { onDay(millis) }.semantics { selected = on }.testTag("day_$i"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 val fg = if (on) c.selectedInk else c.ink
                 Text(if (i == 0) "היום" else KisFormat.DAY_SHORT[cal.get(Calendar.DAY_OF_WEEK) - 1], style = KisType.micro.copy(fontSize = 12.sp), color = if (on) fg else c.muted)
-                Text(cal.get(Calendar.DAY_OF_MONTH).toString(), style = KisType.body.copy(fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, fontSize = 17.sp), color = fg)
+                Text(if (com.example.data.HebrewDate.mode == com.example.data.HebrewDate.HEB) com.example.data.HebrewDate.gematria(com.example.data.HebrewDate.fromMillis(millis).third) else cal.get(Calendar.DAY_OF_MONTH).toString(),
+                    style = KisType.body.copy(fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, fontSize = 17.sp), color = fg)
             }
         }
     }
@@ -1013,4 +1048,69 @@ fun timeLabel(e: WorkEntry): String = when {
     // A job paid by the job has no hours to show unless some were typed.
     e.kind == WorkEntry.KIND_JOB && e.hours <= 0 -> "קבלנות"
     else -> "${KisFormat.duration(e.hours)} שעות"
+}
+
+private fun extraDays(saved: String, day: Long): Set<Long> = saved.split(',').mapNotNull { it.trim().toLongOrNull() }.filter { it != day }.toSet()
+
+/** A month of days to tap (several may be chosen). Weeks start on Sunday, right to left like the rest of the app. */
+@Composable
+private fun MonthPicker(chosen: Set<Long>, onToggle: (Long) -> Unit) {
+    val c = Kis.colors
+    // Owner 2026-11-27: the calendar follows the date choice in Settings. Hebrew only = Hebrew months (א׳ to the month's
+    // end); both = civil month with the Hebrew day under each number; civil only = as before.
+    val mode = com.example.data.HebrewDate.mode
+    val heb = mode == com.example.data.HebrewDate.HEB
+    val both = mode == com.example.data.HebrewDate.BOTH
+    fun addDays(ms: Long, n: Int) = EntryDraft.startOfDay(Calendar.getInstance().apply { timeInMillis = ms; set(Calendar.HOUR_OF_DAY, 12); add(Calendar.DAY_OF_MONTH, n) }.timeInMillis)
+    fun hebDay(ms: Long) = com.example.data.HebrewDate.fromMillis(ms).third
+    fun monthStart(ms: Long) = if (heb) addDays(ms, 1 - hebDay(ms))
+        else EntryDraft.startOfDay(Calendar.getInstance().apply { timeInMillis = ms; set(Calendar.DAY_OF_MONTH, 1) }.timeInMillis)
+    fun monthLength(start: Long) = if (heb) (29..30).last { hebDay(addDays(start, it - 1)) == it }
+        else Calendar.getInstance().apply { timeInMillis = start }.getActualMaximum(Calendar.DAY_OF_MONTH)
+    val first = chosen.minOrNull() ?: EntryDraft.startOfDay(System.currentTimeMillis())
+    var month by rememberSaveable(mode) { mutableStateOf(monthStart(first)) }
+    val today = EntryDraft.startOfDay(System.currentTimeMillis())
+    val count = monthLength(month)
+    fun shift(by: Int) { month = if (by < 0) monthStart(addDays(month, -1)) else addDays(month, count) }
+    val title = if (heb) com.example.data.HebrewDate.fromMillis(month).let { (y, m, _) -> com.example.data.HebrewDate.monthName(y, m) + " " + com.example.data.HebrewDate.gematria(y) }
+        else java.text.SimpleDateFormat("LLLL yyyy", java.util.Locale("he")).format(java.util.Date(month))
+    val sub = if (!both) null else listOf(month, addDays(month, count - 1)).map { com.example.data.HebrewDate.fromMillis(it) }.let { (a, z) ->
+        val name = { t: Triple<Int, Int, Int> -> com.example.data.HebrewDate.monthName(t.first, t.second) }
+        (if (a.second == z.second) name(a) else name(a) + " – " + name(z)) + " " + com.example.data.HebrewDate.gematria(z.first) }
+    Column(Modifier.fillMaxWidth().testTag("month_picker"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            KisChip("›", tag = "month_prev", onClick = { shift(-1) }, modifier = Modifier.semantics { contentDescription = "החודש הקודם" })
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(title, style = KisType.label.copy(fontSize = 16.sp), color = c.ink, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.testTag("month_title"))
+                if (sub != null) Text(sub, style = KisType.micro.copy(fontSize = 12.sp), color = c.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.testTag("month_title_heb"))
+            }
+            KisChip("‹", tag = "month_next", onClick = { shift(1) }, modifier = Modifier.semantics { contentDescription = "החודש הבא" })
+        }
+        Row(Modifier.fillMaxWidth()) {
+            KisFormat.DAY_SHORT.forEach { Text(it, style = KisType.micro.copy(fontSize = 12.sp), color = c.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f)) }
+        }
+        val lead = Calendar.getInstance().apply { timeInMillis = month }.get(Calendar.DAY_OF_WEEK) - 1
+        val cells = List(lead) { null } + (0 until count).map { addDays(month, it) }
+        val cellH = if (both) 50.dp else 44.dp
+        cells.chunked(7).forEach { week ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                (week + List(7 - week.size) { null }).forEach { millis ->
+                    if (millis == null) Spacer(Modifier.weight(1f).height(cellH))
+                    else {
+                        val on = millis in chosen
+                        val shape = RoundedCornerShape(KisRadius.small)
+                        val civil = Calendar.getInstance().apply { timeInMillis = millis }.get(Calendar.DAY_OF_MONTH)
+                        val n = if (heb) hebDay(millis) else civil
+                        Column(Modifier.weight(1f).height(cellH).clip(shape).background(if (on) c.selectedBg else Color.Transparent).kisSelected(on, c, shape)
+                            .kisClick { onToggle(millis) }.semantics { selected = on; contentDescription = dayLabelLong(millis) }.testTag("month_day_$n"),
+                            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                            Text(if (heb) com.example.data.HebrewDate.gematria(n) else n.toString(), style = KisType.body.copy(fontWeight = if (on || millis == today) FontWeight.Bold else FontWeight.Normal),
+                                color = if (on) c.selectedInk else c.ink)
+                            if (both) Text(com.example.data.HebrewDate.gematria(hebDay(millis)), style = KisType.micro.copy(fontSize = 10.sp), color = if (on) c.selectedInk else c.muted)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

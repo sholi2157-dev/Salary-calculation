@@ -844,6 +844,34 @@ class WorkViewModel(
     }
 
     /** Saves a new entry built by the editor. The stored total is computed here, never trusted from the UI for hourly pay. */
+    private fun prepareNew(draft: WorkEntry): WorkEntry = when {
+        !draft.payKnown -> draft.copy(hourlyRate = 0.0, totalEarnings = 0.0)
+        draft.kind == WorkEntry.KIND_JOB -> draft.copy(hourlyRate = 0.0, totalEarnings = Math.round(draft.totalEarnings * 100.0) / 100.0)
+        else -> draft.copy(totalEarnings = com.example.data.WorkPay.money(draft.hours, draft.hourlyRate, draft.bonus))
+    }.copy(id = 0)
+
+    /** Owner 2026-11-27: the same shift on several chosen days, saved together (one undo removes them all). */
+    fun saveNewEntries(drafts: List<WorkEntry>, onSaved: (Int) -> Unit = {}, onFailed: () -> Unit = {}) {
+        val entries = drafts.map(::prepareNew)
+        if (entries.isEmpty() || !entries.all(::valid)) { onFailed(); return }
+        storageScope.launch {
+            try {
+                val ids = owner.database(getApplication()).withTransaction {
+                    entries.map { entry -> repository.insertEntry(entry, getActiveUserId()).toInt().also { rememberWorkers(entry) } }
+                }
+                lastAddedEntryIds = ids
+                lastAddedEntryId = ids.lastOrNull()
+                performAutoBackup()
+                onSaved(ids.size)
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) {
+                android.util.Log.e("WorkViewModel", "Saving several entries failed", e)
+                WorkStorage.failed()
+                onFailed()
+            }
+        }
+    }
+
     fun saveNewEntry(draft: WorkEntry, onSaved: (Int) -> Unit = {}, onFailed: () -> Unit = {}) {
         val entry = when {
             !draft.payKnown -> draft.copy(hourlyRate = 0.0, totalEarnings = 0.0)
