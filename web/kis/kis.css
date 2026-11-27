@@ -673,6 +673,6 @@ button.grip { border: 0; background: none; padding: 0; min-width: 44px; min-heig
 .shift .end .tags { display: flex; gap: 4px; }
 [data-breakdown]:empty { display: none; }
 /* Owner 2026-11-26: the squares share the whole row; the rate keeps its own width so it is never cut. */
-.extras-row { flex-wrap: nowrap; }
+
 .extras-row > .cal-chip, .extras-row > .plus-chip, .extras-row > .icon-chip, .extras-row > .cur-chip { flex: 1 1 0; }
 .extras-row > .rate-chip { flex: none; }
